@@ -36,6 +36,50 @@ fn status_differences(replay: Replay, case: &str, database: &Database) -> Replay
     }
 }
 
+/// The differences that every launch answer has.
+fn launch_differences(replay: Replay, case: &str) -> Replay {
+    let version = json!(env!("CARGO_PKG_VERSION"));
+    let mut replay = replay
+        // There is no PHP, so the PHP version and the PHP user have fixed values.
+        .deviation("D-21", case, "/response/data/status/php", json!("n/a"))
+        .deviation("D-21", case, "/response/data/status/php_user", json!("n/a"))
+        .environment(
+            "the recording was made with Organizr 2.1.5000; this is another version",
+            case,
+            "/response/data/version",
+            version.clone(),
+        )
+        .environment(
+            "the recording was made with Organizr 2.1.5000; this is another version",
+            case,
+            "/response/data/status/version",
+            version,
+        );
+    if cfg!(windows) {
+        replay = replay.environment(
+            "the recording was made on Linux and this test runs on Windows",
+            case,
+            "/response/data/status/os",
+            json!("win"),
+        );
+    }
+    for (part, reason) in [
+        (
+            "settings",
+            "the settings of the front end are not built yet",
+        ),
+        ("plugins", "the plugins are not built yet"),
+        ("sso", "the single sign-on is not built yet"),
+        (
+            "status/userConfigPath",
+            "waits for a decision: PHP sends the path of its configuration file",
+        ),
+    ] {
+        replay = replay.pending_at(case, &format!("/response/data/{part}"), reason);
+    }
+    replay
+}
+
 /// The cookie difference that every answer has: there is no PHP session.
 fn without_php_session(replay: Replay) -> Replay {
     replay.without_cookie("D-27", "PHPSESSID")
@@ -60,6 +104,31 @@ async fn fresh_install_answers_like_php() {
             .deviation("D-18", me, "/response/data/token", Value::Null)
             .deviation("D-18", me, &format!("{session}/token"), Value::Null)
             .deviation_adds("D-18", me, session, "current", json!(true));
+
+        for case in [
+            "launch_before_the_set_up",
+            "launch_as_guest",
+            "launch_as_guest_with_a_trailing_slash",
+            "launch_as_admin",
+        ] {
+            replay = launch_differences(replay, case);
+        }
+        // The admin in the launch answer, as in `me_after_the_set_up` (D-18).
+        let launch = "launch_as_admin";
+        let session = "/response/data/user/tokenList/0";
+        replay = replay
+            .deviation("D-18", launch, "/response/data/user/token", Value::Null)
+            .deviation("D-18", launch, &format!("{session}/token"), Value::Null)
+            .deviation_adds("D-18", launch, session, "current", json!(true));
+        // The one tab an admin sees after the set-up is "Settings". The set-up of PHP
+        // leaves these switches empty (`null`). Here a switch is on or off.
+        for switch in ["splash", "ping", "timeout", "preload"] {
+            replay = replay.pending_at(
+                launch,
+                &format!("/response/data/tabs/0/{switch}"),
+                "waits for a decision: a switch that was never set is `null` in PHP and 0 here",
+            );
+        }
 
         // The application starts on a database without an install. The recorded
         // requests carry the set-up code of the test applications, which PHP ignores.

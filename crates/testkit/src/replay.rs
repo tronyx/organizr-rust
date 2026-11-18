@@ -24,9 +24,9 @@
 //! - an **expectation edit**: the expected body is changed, or an expected cookie is
 //!   removed, before the comparison. An edit names an approved entry of
 //!   `docs/deviations.md`, or a difference of the environment the test runs in.
-//! - a **pending marker**: the aspect, or the whole case, is not implemented yet. A pending
-//!   aspect must differ. When it starts to match, the test fails until the marker is
-//!   removed, so a marker cannot outlive its reason.
+//! - a **pending marker**: the aspect, the whole case, or one part of a JSON body is not
+//!   implemented yet. What is pending must differ. When it starts to match, the test
+//!   fails until the marker is removed, so a marker cannot outlive its reason.
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write as _;
@@ -70,6 +70,8 @@ pub struct Replay {
     edits: Vec<Edit>,
     pending_aspects: Vec<(String, Aspect)>,
     pending_cases: Vec<String>,
+    /// Parts of a JSON body that are not implemented yet: case and JSON pointer.
+    pending_parts: Vec<(String, String)>,
     absent_cookies: Vec<String>,
 }
 
@@ -91,6 +93,7 @@ impl Replay {
             edits: Vec::new(),
             pending_aspects: Vec::new(),
             pending_cases: Vec::new(),
+            pending_parts: Vec::new(),
             absent_cookies: Vec::new(),
         }
     }
@@ -155,6 +158,23 @@ impl Replay {
         self
     }
 
+    /// Marks one part of the JSON body of a case as not implemented yet. `pointer` is a
+    /// JSON pointer to a key of an object, for example `/response/data/settings`.
+    ///
+    /// The part is taken out of the recorded body and out of the answer before the two
+    /// are compared, so the rest of the body is still held to the recording. The part
+    /// itself must differ: the answer has another value there, or no such key.
+    ///
+    /// Both bodies are written again for the comparison, so for such a case the replay
+    /// compares the JSON values, not every byte.
+    #[must_use]
+    pub fn pending_at(mut self, case: &str, pointer: &str, reason: &str) -> Self {
+        assert!(!reason.is_empty(), "a pending marker needs a reason");
+        self.pending_parts
+            .push((case.to_owned(), pointer.to_owned()));
+        self
+    }
+
     /// Marks a whole case as not implemented yet.
     #[must_use]
     pub fn pending_case(mut self, case: &str, reason: &str) -> Self {
@@ -182,8 +202,9 @@ impl Replay {
         let mut problems = String::new();
         let mut browsers = Browsers::default();
         for case in &recording.cases {
-            let expected = self.expected(case);
-            let actual = Answer::of(app, &recording, case, &mut browsers).await;
+            let mut expected = self.expected(case);
+            let mut actual = Answer::of(app, &recording, case, &mut browsers).await;
+            self.take_out_pending_parts(case, &mut expected, &mut actual, &mut problems);
             let differing: Vec<Aspect> = ASPECTS
                 .into_iter()
                 .filter(|aspect| !expected.matches(&actual, *aspect))
@@ -298,6 +319,56 @@ impl Replay {
         }
     }
 
+    /// Takes the pending parts of a case out of the recorded body and out of the answer.
+    /// Reports a part that the answer already has as the recording has it.
+    fn take_out_pending_parts(
+        &self,
+        case: &Case,
+        expected: &mut Answer,
+        actual: &mut Answer,
+        problems: &mut String,
+    ) {
+        let pointers: Vec<&str> = self
+            .pending_parts
+            .iter()
+            .filter(|(name, _)| name == &case.name)
+            .map(|(_, pointer)| pointer.as_str())
+            .collect();
+        if pointers.is_empty() {
+            return;
+        }
+        let mut recorded: Value = serde_json::from_str(&expected.body)
+            .expect("a case with pending parts has a JSON body");
+        // An answer that is not JSON differs as a whole. Leave it as it is.
+        let Ok(mut answered) = serde_json::from_str::<Value>(&actual.body) else {
+            return;
+        };
+
+        for pointer in pointers {
+            let recorded_part = take_part(&mut recorded, pointer).unwrap_or_else(|| {
+                panic!(
+                    "case `{}`: the recorded body has nothing at `{pointer}`",
+                    case.name
+                )
+            });
+            if take_part(&mut answered, pointer) == Some(recorded_part) {
+                let _ = writeln!(
+                    problems,
+                    "case `{}`: the part at `{pointer}` is marked pending but now matches; \
+                     remove the marker",
+                    case.name
+                );
+            }
+        }
+
+        let write = |json: &Value| {
+            let bytes = organizr_api::php_json::to_vec(json).expect("the body can be written");
+            String::from_utf8(bytes).expect("the writer produces UTF-8")
+        };
+        expected.body = write(&recorded);
+        actual.body = write(&answered);
+    }
+
     /// Fails when an edit or a marker names a case the group does not have.
     fn check_names(&self, recording: &Recording) {
         let named = self
@@ -305,6 +376,7 @@ impl Replay {
             .iter()
             .map(|edit| &edit.case)
             .chain(self.pending_aspects.iter().map(|(case, _)| case))
+            .chain(self.pending_parts.iter().map(|(case, _)| case))
             .chain(&self.pending_cases);
         for name in named {
             assert!(
@@ -314,6 +386,12 @@ impl Replay {
             );
         }
     }
+}
+
+/// Removes the value at a JSON pointer to a key of an object, and returns it.
+fn take_part(json: &mut Value, pointer: &str) -> Option<Value> {
+    let (parent, key) = pointer.rsplit_once('/')?;
+    json.pointer_mut(parent)?.as_object_mut()?.shift_remove(key)
 }
 
 /// Fails unless `id` is an entry of `docs/deviations.md`.

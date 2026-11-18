@@ -275,15 +275,26 @@ pub async fn me(
     Extension(client): Extension<Client>,
     Extension(caller): Extension<Caller>,
 ) -> Result<Envelope<Option<UserObject<SessionSummary>>>, ApiError> {
-    let data = match &caller.identity {
-        Identity::Guest => Some(describe_guest(&state, client, caller.has_api_key).await?),
+    Ok(Envelope::success(
+        describe_caller(&state, &caller, client).await?,
+    ))
+}
+
+/// Describes the caller of a request, as `GET /token/me` and `GET /launch` show it.
+/// `None` stands for a caller whose session cookie was just dropped.
+pub async fn describe_caller(
+    state: &AppState,
+    caller: &Caller,
+    client: Client,
+) -> Result<Option<UserObject<SessionSummary>>, ApiError> {
+    Ok(match &caller.identity {
+        Identity::Guest => Some(describe_guest(state, client, caller.has_api_key).await?),
         Identity::Rejected => None,
         Identity::User(caller) => {
             let now = now_stamp(SystemTime::now());
-            Some(describe_user(&state, &caller.authenticated, None, client, now).await?)
+            Some(describe_user(state, &caller.authenticated, None, client, now).await?)
         }
-    };
-    Ok(Envelope::success(data))
+    })
 }
 
 /// The `data` of `POST /token/validate`: the user of the token, or `false`.

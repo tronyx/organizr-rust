@@ -12,7 +12,7 @@ use crate::caller::{Caller, identify_caller};
 use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
-use crate::handlers::{basics, login, logout, register, token, wizard};
+use crate::handlers::{basics, launch, login, logout, register, token, wizard};
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
 use crate::state::AppState;
@@ -28,6 +28,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
     let routes = Routes::default()
         .route("/", &get(basics::root))?
         .route("/status[/]", &get(basics::status))?
+        .route("/launch[/]", &get(launch::launch))?
         .route("/ping", &get(basics::ping))?
         .route("/rox", &get(basics::rox))?
         .route("/roxinsocks", &get(basics::roxinsocks))?

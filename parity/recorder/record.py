@@ -143,9 +143,14 @@ FRESH_INSTALL: list[tuple] = [
     ),
     ("wizard_with_several_fields_missing", "POST", "/api/v2/wizard", {"json": {**SEED, "email": "", "api": ""}}),
     ("status_before_the_set_up", "GET", "/api/v2/status"),
+    ("launch_before_the_set_up", "GET", "/api/v2/launch"),
     ("wizard", "POST", "/api/v2/wizard", {"json": SEED, "jar": "admin"}),
     ("status_after_the_set_up", "GET", "/api/v2/status"),
     ("me_after_the_set_up", "GET", "/api/v2/token/me", {"jar": "admin"}),
+    # What the front end loads first: the user, the tabs and how the page looks.
+    ("launch_as_guest", "GET", "/api/v2/launch"),
+    ("launch_as_guest_with_a_trailing_slash", "GET", "/api/v2/launch/"),
+    ("launch_as_admin", "GET", "/api/v2/launch", {"jar": "admin"}),
     ("wizard_again", "POST", "/api/v2/wizard", {"json": {**SEED, "username": "intruder"}}),
     ("wizard_again_without_fields", "POST", "/api/v2/wizard", {"json": {}}),
 ]

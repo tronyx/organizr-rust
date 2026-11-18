@@ -202,3 +202,81 @@ async fn added_key_cannot_replace_a_recorded_value() {
 async fn added_key_needs_an_approved_deviation() {
     let _ = basics().deviation_adds("D-99", "status", "/response/data", "made_up", json!(true));
 }
+
+#[tokio::test]
+async fn pending_part_of_a_body_lets_the_rest_be_compared() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The title of the `rox` answer is "not built yet": the application has it,
+        // but the marker names another value than the recording for the test.
+        let replay = basics_on(database.engine())
+            .environment(
+                "a deliberate mistake",
+                "rox",
+                "/response/message",
+                json!("another greeting"),
+            )
+            .pending_at("rox", "/response/message", "a part that differs");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "case `rox`: Body differs")]
+async fn difference_next_to_a_pending_part_fails_the_replay() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = basics()
+            .environment(
+                "a deliberate mistake",
+                "rox",
+                "/response/message",
+                json!("another greeting"),
+            )
+            .pending_at("rox", "/response/message", "a part that differs")
+            // The part next to it differs too, and nothing allows that.
+            .environment(
+                "a deliberate mistake",
+                "rox",
+                "/response/data",
+                json!("https://example.com/"),
+            );
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "the part at `/response/message` is marked pending but now matches")]
+async fn pending_part_that_matches_fails_the_replay() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = basics().pending_at("rox", "/response/message", "not needed any more");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "the recorded body has nothing at `/response/no_such_key`")]
+async fn pending_part_that_the_recording_does_not_have_is_refused() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = basics().pending_at("rox", "/response/no_such_key", "a typing mistake");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "the group `basics` has no case `no_such_case`")]
+async fn pending_part_of_a_case_that_does_not_exist_is_refused() {
+    let replay = basics().pending_at("no_such_case", "/response/data", "a typing mistake");
+
+    replay.run(&Router::new()).await;
+}

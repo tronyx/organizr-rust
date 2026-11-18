@@ -99,6 +99,35 @@ settings! {
     style: Text = "style", "dark".to_owned();
     /// Where tabs of the default category stand in the menu.
     unsorted_tabs: Choice<UnsortedTabs> = "unsortedTabs", UnsortedTabs::Top;
+    /// The release line of the PHP application. Kept for clients that read it.
+    branch: Text = "branch", "v2-master".to_owned();
+
+    /// The picture at the top of the menu, when `useLogo` is on.
+    logo: Text = "logo", "plugins/images/organizr/organizr-logo-h.png".to_owned();
+    /// The picture on the login page, when `useLogoLogin` is on.
+    login_logo: Text = "loginLogo", "plugins/images/organizr/organizr-logo-h.png".to_owned();
+    /// The background picture of the login page.
+    login_wallpaper: Text = "loginWallpaper", String::new();
+    /// Whether the menu shows the logo and not the title.
+    use_logo: Flag = "useLogo", false;
+    /// Whether the login page shows the logo and not the title.
+    use_logo_login: Flag = "useLogoLogin", false;
+    /// The colours of the page. An empty value means the colour of the theme.
+    header_color: Text = "headerColor", String::new();
+    header_text_color: Text = "headerTextColor", String::new();
+    sidebar_color: Text = "sidebarColor", String::new();
+    sidebar_text_color: Text = "sidebarTextColor", String::new();
+    accent_color: Text = "accentColor", String::new();
+    accent_text_color: Text = "accentTextColor", String::new();
+    button_color: Text = "buttonColor", String::new();
+    button_text_color: Text = "buttonTextColor", String::new();
+    button_hover_color: Text = "buttonHoverColor", String::new();
+    button_text_hover_color: Text = "buttonTextHoverColor", String::new();
+    /// Style sheets and scripts that the admin adds to every page.
+    custom_css: Text = "customCss", String::new();
+    custom_theme_css: Text = "customThemeCss", String::new();
+    custom_java: Text = "customJava", String::new();
+    custom_theme_java: Text = "customThemeJava", String::new();
 
     /// Which password check a login uses.
     auth_type: Choice<AuthType> = "authType", AuthType::Internal;
@@ -179,6 +208,29 @@ mod tests {
             ("theme", json!("Organizr")),
             ("style", json!("dark")),
             ("unsortedTabs", json!("top")),
+            ("branch", json!("v2-master")),
+            ("logo", json!("plugins/images/organizr/organizr-logo-h.png")),
+            (
+                "loginLogo",
+                json!("plugins/images/organizr/organizr-logo-h.png"),
+            ),
+            ("loginWallpaper", json!("")),
+            ("useLogo", json!(false)),
+            ("useLogoLogin", json!(false)),
+            ("headerColor", json!("")),
+            ("headerTextColor", json!("")),
+            ("sidebarColor", json!("")),
+            ("sidebarTextColor", json!("")),
+            ("accentColor", json!("")),
+            ("accentTextColor", json!("")),
+            ("buttonColor", json!("")),
+            ("buttonTextColor", json!("")),
+            ("buttonHoverColor", json!("")),
+            ("buttonTextHoverColor", json!("")),
+            ("customCss", json!("")),
+            ("customThemeCss", json!("")),
+            ("customJava", json!("")),
+            ("customThemeJava", json!("")),
             ("authType", json!("internal")),
             ("authBackend", json!("")),
             ("rememberMeDays", json!("7")),
