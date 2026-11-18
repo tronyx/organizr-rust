@@ -12,15 +12,18 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+organizr-db.workspace = true
+
+axum.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
-axum.workspace = true
 http-body-util.workspace = true
 tokio.workspace = true
 tower.workspace = true
-tower-http.workspace = true
 # The fixture test must keep key order and parse floats bit for bit.
 serde_json = { workspace = true, features = ["preserve_order", "float_roundtrip"] }

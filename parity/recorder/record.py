@@ -187,6 +187,7 @@ def record(group, cases, php_version):
             "organizr_commit": ORGANIZR_COMMIT,
             "php_version": php_version,
             "host": HOST,
+            "recorded_headers": list(RECORDED_HEADERS),
         },
         "cases": cases,
     }

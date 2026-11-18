@@ -1,6 +1,7 @@
 //! The database layer must behave the same on `SQLite` and on `PostgreSQL`.
 //!
-//! Every test here runs once per engine. See `support` for how the engines are chosen.
+//! Every test here runs once per engine. See `organizr_testkit::engines` for how the
+//! engines are chosen.
 
 #![allow(
     clippy::expect_used,
@@ -8,11 +9,9 @@
     reason = "helper functions of a test file may panic; the lint settings only exempt test functions"
 )]
 
-mod support;
-
 use organizr_db::{Database, DbError};
 use organizr_domain::{Group, GroupId, GroupLevel, NewGroup, NewUser, PasswordHash, Timestamp};
-use support::on_each_engine;
+use organizr_testkit::engines::{self, on_each_engine};
 
 /// A group with the given level and name, and nothing else set.
 fn new_group(level: u16, name: &str) -> NewGroup {
@@ -48,9 +47,9 @@ async fn insert_group(database: &Database, level: u16, name: &str) -> Group {
 async fn ci_runs_these_tests_on_postgres_too() {
     if std::env::var_os("CI").is_some() {
         assert!(
-            support::postgres_url().is_some(),
+            engines::postgres_url().is_some(),
             "CI must set {} so that every test also runs on PostgreSQL",
-            support::POSTGRES_URL_VARIABLE
+            engines::POSTGRES_URL_VARIABLE
         );
     }
 }
@@ -164,6 +163,26 @@ async fn two_groups_cannot_share_a_name_whatever_the_letter_case() {
         let result = database.groups().insert(new_group(2, "CO-ADMIN")).await;
 
         assert!(matches!(result, Err(DbError::Duplicate)), "{result:?}");
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn users_are_counted() {
+    on_each_engine(async |database| {
+        let group = insert_group(database, 4, "User").await;
+        let before = database.users().count().await.expect("the count works");
+
+        for name in ["one", "two"] {
+            database
+                .users()
+                .insert(new_user(name, group.id))
+                .await
+                .expect("the user can be stored");
+        }
+
+        let after = database.users().count().await.expect("the count works");
+        assert_eq!((before, after), (0, 2));
     })
     .await;
 }

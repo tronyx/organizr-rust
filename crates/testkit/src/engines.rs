@@ -1,4 +1,4 @@
-//! Runs a database test once per engine, each time on a fresh, migrated database.
+//! Runs a test once per database engine, each time on a fresh, migrated database.
 //!
 //! - `SQLite`: always, on a file in a temporary directory.
 //! - `PostgreSQL`: when `ORGANIZR_TEST_POSTGRES_URL` holds the URL of a server the test may

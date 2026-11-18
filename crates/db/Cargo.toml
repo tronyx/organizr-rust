@@ -19,5 +19,6 @@ sea-orm-migration.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
-tempfile.workspace = true
+organizr-testkit.workspace = true
+
 tokio.workspace = true

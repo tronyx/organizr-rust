@@ -2,7 +2,8 @@
 
 use organizr_domain::{GroupId, NewUser, PasswordHash, Timestamp, User, UserId};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+    ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait,
+    QueryFilter,
 };
 
 use crate::DbError;
@@ -36,6 +37,11 @@ impl<'a> Users<'a> {
             created_at: ActiveValue::Set(new.created_at.unix_seconds()),
         };
         Ok(row.insert(self.connection).await?.into())
+    }
+
+    /// How many users there are.
+    pub async fn count(&self) -> Result<u64, DbError> {
+        Ok(user::Entity::find().count(self.connection).await?)
     }
 
     /// The user with the given name, whatever its letter case.

@@ -1,6 +1,6 @@
 [package]
 name = "organizr-testkit"
-description = "Test helpers for Organizr: an in-process application on a temporary database and replay of recorded PHP cases."
+description = "Test helpers for Organizr: a database per engine, the seed of the recorded cases and the replay of recorded PHP answers."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,3 +10,20 @@ publish.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+organizr-api.workspace = true
+organizr-db.workspace = true
+organizr-domain.workspace = true
+
+axum.workspace = true
+http-body-util.workspace = true
+sea-orm.workspace = true
+serde.workspace = true
+# The replay must keep key order and parse floats bit for bit.
+serde_json = { workspace = true, features = ["preserve_order", "float_roundtrip"] }
+tempfile.workspace = true
+tower.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

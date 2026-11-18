@@ -1632,12 +1632,14 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "http-body-util",
+ "organizr-db",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
  "tower",
  "tower-http",
+ "tracing",
 ]
 
 [[package]]
@@ -1649,9 +1651,9 @@ name = "organizr-db"
 version = "0.1.0"
 dependencies = [
  "organizr-domain",
+ "organizr-testkit",
  "sea-orm",
  "sea-orm-migration",
- "tempfile",
  "thiserror",
  "tokio",
 ]
@@ -1682,6 +1684,19 @@ version = "0.1.0"
 [[package]]
 name = "organizr-testkit"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "http-body-util",
+ "organizr-api",
+ "organizr-db",
+ "organizr-domain",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tower",
+]
 
 [[package]]
 name = "ouroboros"

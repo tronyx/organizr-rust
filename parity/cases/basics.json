@@ -3,7 +3,17 @@
     "organizr_version": "2.1.5000",
     "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
     "php_version": "8.5.12",
-    "host": "organizr.test"
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ]
   },
   "cases": [
     {
