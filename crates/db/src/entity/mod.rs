@@ -8,6 +8,12 @@
     clippy::unused_async_trait_impl,
     reason = "the code that `sea_orm::model` generates has async functions without an await"
 )]
+#![allow(
+    clippy::struct_excessive_bools,
+    reason = "a row has one field per column, and some tables have many switches"
+)]
 
+pub mod category;
 pub mod group;
+pub mod tab;
 pub mod user;

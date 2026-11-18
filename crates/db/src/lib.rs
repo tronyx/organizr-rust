@@ -4,10 +4,12 @@
 //! The person installing chooses the engine with the database URL. All queries and all
 //! migrations are written once and run on both engines.
 
+mod categories;
 mod entity;
 mod error;
 mod groups;
 mod migration;
+mod tabs;
 mod users;
 
 use std::time::Duration;
@@ -16,8 +18,10 @@ use sea_orm::sqlx::sqlite::SqliteJournalMode;
 use sea_orm::{ConnectOptions, DatabaseConnection};
 use sea_orm_migration::MigratorTrait;
 
+pub use crate::categories::Categories;
 pub use crate::error::DbError;
 pub use crate::groups::Groups;
+pub use crate::tabs::Tabs;
 pub use crate::users::Users;
 
 /// How long a connection waits for another writer on SQLite before it gives up.
@@ -96,9 +100,19 @@ impl Database {
         self.connection.close().await.map_err(DbError::Engine)
     }
 
+    /// The categories.
+    pub const fn categories(&self) -> Categories<'_> {
+        Categories::new(&self.connection)
+    }
+
     /// The groups.
     pub const fn groups(&self) -> Groups<'_> {
         Groups::new(&self.connection)
+    }
+
+    /// The tabs.
+    pub const fn tabs(&self) -> Tabs<'_> {
+        Tabs::new(&self.connection)
     }
 
     /// The users.

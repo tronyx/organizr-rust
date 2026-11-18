@@ -1,6 +1,6 @@
 //! Identifiers. Each kind of record has its own type, so one cannot be passed for another.
 
-/// Defines an identifier type around the database row id.
+/// Defines an identifier type around a whole number.
 macro_rules! id_type {
     ($(#[$doc:meta])* $name:ident) => {
         $(#[$doc])*
@@ -8,12 +8,12 @@ macro_rules! id_type {
         pub struct $name(i64);
 
         impl $name {
-            /// Wraps a row id.
+            /// Wraps a number.
             pub const fn new(value: i64) -> Self {
                 Self(value)
             }
 
-            /// The row id.
+            /// The number.
             pub const fn get(self) -> i64 {
                 self.0
             }
@@ -38,4 +38,25 @@ id_type!(
 id_type!(
     /// Identifies a user.
     UserId
+);
+
+id_type!(
+    /// Identifies a category. The API calls it `id`.
+    ///
+    /// This is not the number that tabs and the API use to name a category. See
+    /// [`CategoryNumber`].
+    CategoryId
+);
+
+id_type!(
+    /// The number that names a category in the API, where it is called `category_id`.
+    ///
+    /// The set-up wizard gives the first category the number 0. A new category gets the
+    /// highest number plus one.
+    CategoryNumber
+);
+
+id_type!(
+    /// Identifies a tab.
+    TabId
 );

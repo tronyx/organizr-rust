@@ -6,12 +6,16 @@
 use sea_orm_migration::prelude::*;
 
 mod m20261118_000001_groups_and_users;
+mod m20261118_000002_categories_and_tabs;
 
 /// The list of all migrations, oldest first.
 pub struct Migrator;
 
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
-        vec![Box::new(m20261118_000001_groups_and_users::Migration)]
+        vec![
+            Box::new(m20261118_000001_groups_and_users::Migration),
+            Box::new(m20261118_000002_categories_and_tabs::Migration),
+        ]
     }
 }
