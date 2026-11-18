@@ -34,7 +34,8 @@ const LOGGED_IN: u16 = 998;
 /// order and with its types.
 #[derive(Debug, Serialize)]
 pub struct UserObject<S> {
-    /// The session token of the caller, or `null` for a guest.
+    /// The token that the caller sent to `POST /token/validate`. `null` in every other
+    /// answer.
     token: Option<String>,
     #[serde(rename = "tokenDate")]
     token_date: Option<PhpDateTime>,
@@ -89,20 +90,23 @@ enum Locked {
 /// A session in the list of `GET /token/me`.
 #[derive(Debug, Serialize)]
 pub struct SessionSummary {
-    /// The token of the session of the caller. `null` for every other session: only the
-    /// browser of a session knows its token.
+    /// Always `null`. The PHP application put the token of the session here.
     token: Option<String>,
     ip: String,
     id: i64,
     expires: String,
     created: String,
+    /// Whether this is the session of the request. The PHP application has no such
+    /// field: its front end compared the tokens.
+    current: bool,
 }
 
 /// A session in the list of `POST /token/validate`.
 #[derive(Debug, Serialize)]
 pub struct SessionRow {
     id: i64,
-    /// As in [`SessionSummary`].
+    /// The token that the caller sent, for the session of that token. `null` for every
+    /// other session: only the browser of a session knows its token.
     token: Option<String>,
     user_id: i64,
     browser: Option<String>,
@@ -112,25 +116,27 @@ pub struct SessionRow {
 }
 
 /// How a session becomes an entry of a session list. `token` is the token of the
-/// session, when the caller may see it.
+/// session, when the caller may see it. `current` says whether it is the session that the
+/// list is made for.
 trait SessionEntry {
-    fn of(session: &Session, token: Option<String>) -> Self;
+    fn of(session: &Session, token: Option<String>, current: bool) -> Self;
 }
 
 impl SessionEntry for SessionSummary {
-    fn of(session: &Session, token: Option<String>) -> Self {
+    fn of(session: &Session, token: Option<String>, current: bool) -> Self {
         Self {
             token,
             ip: session.ip.to_string(),
             id: session.id.get(),
             expires: date_and_time(session.expires_at),
             created: date_and_time(session.created_at),
+            current,
         }
     }
 }
 
 impl SessionEntry for SessionRow {
-    fn of(session: &Session, token: Option<String>) -> Self {
+    fn of(session: &Session, token: Option<String>, _current: bool) -> Self {
         Self {
             id: session.id.get(),
             token,
@@ -159,10 +165,14 @@ fn uid(address: IpAddr) -> String {
 }
 
 /// Describes a logged-in user with the valid sessions of that user.
+///
+/// `shown_token` is the token of the session, when the answer may hold it: that is when
+/// the caller sent the token in the request itself. A caller who is known by the session
+/// cookie gets no token, so a script of the page cannot read it from the answer.
 async fn describe_user<S: SessionEntry>(
     state: &AppState,
     authenticated: &Authenticated,
-    token: &SessionToken,
+    shown_token: Option<&SessionToken>,
     client: Client,
     now: Timestamp,
 ) -> Result<UserObject<S>, ApiError> {
@@ -179,13 +189,16 @@ async fn describe_user<S: SessionEntry>(
     let token_list = sessions
         .iter()
         .map(|listed| {
-            let own = (listed.id == session.id).then(|| token.expose().to_owned());
-            S::of(listed, own)
+            let current = listed.id == session.id;
+            let token = shown_token
+                .filter(|_| current)
+                .map(|token| token.expose().to_owned());
+            S::of(listed, token, current)
         })
         .collect();
 
     Ok(UserObject {
-        token: Some(token.expose().to_owned()),
+        token: shown_token.map(|token| token.expose().to_owned()),
         token_date: Some(PhpDateTime::of(session.created_at)),
         token_expire: Some(PhpDateTime::of(session.expires_at)),
         username: user.username.clone(),
@@ -256,7 +269,7 @@ pub async fn me(
         Caller::Rejected => None,
         Caller::User(caller) => {
             let now = now_stamp(SystemTime::now());
-            Some(describe_user(&state, &caller.authenticated, &caller.token, client, now).await?)
+            Some(describe_user(&state, &caller.authenticated, None, client, now).await?)
         }
     };
     Ok(Envelope::success(data))
@@ -316,7 +329,7 @@ pub async fn validate(
     let rule = browser_rule(state.settings(), &headers);
     match session::check(state.database(), &token, now, rule).await? {
         SessionCheck::Valid(authenticated) => {
-            let user = describe_user(&state, &authenticated, &token, client, now).await?;
+            let user = describe_user(&state, &authenticated, Some(&token), client, now).await?;
             Ok(Envelope::success(Validation::Valid(Box::new(user))).with_message("Token is valid"))
         }
         SessionCheck::Unknown => Ok(refused("Token was not in approved list")),

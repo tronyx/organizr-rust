@@ -132,7 +132,7 @@ fn installed_app_with(database: &Database, key: &str, value: &Value) -> Router {
 }
 
 #[tokio::test]
-async fn me_shows_the_account_and_only_the_token_of_this_browser() {
+async fn me_shows_the_account_and_the_sessions_but_no_token() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let app = installed_app(database);
@@ -143,7 +143,7 @@ async fn me_shows_the_account_and_only_the_token_of_this_browser() {
         let answer = get(&app, "/api/v2/token/me", &this_browser, "Browser/1").await;
 
         let me = answer.data();
-        assert_eq!(me["token"], json!(token_of(&this_browser)));
+        assert_eq!(me["token"], Value::Null);
         assert_eq!(me["username"], json!("admin"));
         assert_eq!(me["group"], json!("Admin"));
         assert_eq!(me["groupID"], json!(0));
@@ -158,15 +158,19 @@ async fn me_shows_the_account_and_only_the_token_of_this_browser() {
 
         let list = me["tokenList"].as_array().expect("the list is there");
         let tokens: Vec<&Value> = list.iter().map(|session| &session["token"]).collect();
+        assert_eq!(tokens, [&Value::Null, &Value::Null]);
+        let current: Vec<&Value> = list.iter().map(|session| &session["current"]).collect();
         assert_eq!(
-            tokens,
-            [&json!(token_of(&this_browser)), &Value::Null],
-            "the token of the other browser is not shown"
+            current,
+            [&json!(true), &json!(false)],
+            "the first session is the one of this browser"
         );
-        assert!(
-            !answer.body.contains(token_of(&other_browser)),
-            "the token of the other browser is nowhere in the answer"
-        );
+        for cookie in [&this_browser, &other_browser] {
+            assert!(
+                !answer.body.contains(token_of(cookie)),
+                "no token is anywhere in the answer"
+            );
+        }
         assert_eq!(list[0]["ip"], json!("0.0.0.0"));
 
         // The times are those of the session, in the two forms of the PHP application.
@@ -356,7 +360,9 @@ async fn validate_reads_the_token_from_the_query_or_a_form_only() {
             assert_eq!(valid.status, 200, "{}", valid.body);
             assert_eq!(valid.data()["username"], json!("admin"));
             assert_eq!(valid.data()["token"], json!(token));
-            // The full form of the session list.
+            // The full form of the session list, which has no `current` field.
+            assert_eq!(valid.data()["tokenList"][0]["token"], json!(token));
+            assert_eq!(valid.data()["tokenList"][0].get("current"), None);
             assert_eq!(valid.data()["tokenList"][0]["browser"], json!("Browser/1"));
             assert_eq!(
                 valid.data()["tokenList"][0]["user_id"],

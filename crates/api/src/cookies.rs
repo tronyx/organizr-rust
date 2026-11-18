@@ -53,6 +53,27 @@ impl CookieScope {
         value: &str,
         expires: SystemTime,
     ) -> Result<[HeaderValue; 2], CookieError> {
+        self.render(name, value, expires, self.secure)
+    }
+
+    /// As [`set`](Self::set), for a cookie that no script of the page may read: it is
+    /// `HttpOnly` also over plain HTTP. The session cookie is such a cookie.
+    pub fn set_hidden(
+        &self,
+        name: &str,
+        value: &str,
+        expires: SystemTime,
+    ) -> Result<[HeaderValue; 2], CookieError> {
+        self.render(name, value, expires, true)
+    }
+
+    fn render(
+        &self,
+        name: &str,
+        value: &str,
+        expires: SystemTime,
+        http_only: bool,
+    ) -> Result<[HeaderValue; 2], CookieError> {
         let since_epoch = expires
             .duration_since(UNIX_EPOCH)
             .map_err(|_| CookieError::Expiry)?;
@@ -70,7 +91,10 @@ impl CookieScope {
             }
             cookie.push_str("; SameSite=Lax");
             if self.secure {
-                cookie.push_str("; Secure; HttpOnly");
+                cookie.push_str("; Secure");
+            }
+            if http_only {
+                cookie.push_str("; HttpOnly");
             }
             HeaderValue::from_str(&cookie).map_err(|_| CookieError::Header)
         };
@@ -83,6 +107,17 @@ impl CookieScope {
     pub fn delete(&self, name: &str, now: SystemTime) -> Result<[HeaderValue; 2], CookieError> {
         let expired = now.checked_sub(DELETED_SINCE).ok_or(CookieError::Expiry)?;
         self.set(name, "", expired)
+    }
+
+    /// As [`delete`](Self::delete), for a cookie that was set with
+    /// [`set_hidden`](Self::set_hidden).
+    pub fn delete_hidden(
+        &self,
+        name: &str,
+        now: SystemTime,
+    ) -> Result<[HeaderValue; 2], CookieError> {
+        let expired = now.checked_sub(DELETED_SINCE).ok_or(CookieError::Expiry)?;
+        self.set_hidden(name, "", expired)
     }
 }
 
@@ -187,6 +222,43 @@ mod tests {
                 "organizr_user_uuid=the-id; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=.organizr.test; SameSite=Lax; Secure; HttpOnly",
                 "organizr_user_uuid=the-id; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=organizr.test; SameSite=Lax; Secure; HttpOnly",
             ]
+        );
+    }
+
+    #[test]
+    fn hidden_cookie_is_hidden_from_scripts_on_every_connection() {
+        let over_http = scope("app.example.com", false);
+        let over_https = scope("app.example.com", true);
+        let set = |scope: &super::CookieScope| {
+            text(
+                scope
+                    .set_hidden("organizr_token_temp", "the-token", expiry())
+                    .expect("the cookie can be written"),
+            )
+        };
+
+        assert_eq!(
+            set(&over_http),
+            [
+                "organizr_token_temp=the-token; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=.example.com; SameSite=Lax; HttpOnly",
+                "organizr_token_temp=the-token; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=app.example.com; SameSite=Lax; HttpOnly",
+            ]
+        );
+        assert_eq!(
+            set(&over_https),
+            [
+                "organizr_token_temp=the-token; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=.example.com; SameSite=Lax; Secure; HttpOnly",
+                "organizr_token_temp=the-token; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=app.example.com; SameSite=Lax; Secure; HttpOnly",
+            ]
+        );
+        let deleted = text(
+            over_http
+                .delete_hidden("organizr_token_temp", expiry())
+                .expect("the cookie can be written"),
+        );
+        assert_eq!(
+            deleted[0],
+            "organizr_token_temp=; expires=Wed, 25-Nov-2026 16:16:08 GMT; path=/; domain=.example.com; SameSite=Lax; HttpOnly"
         );
     }
 

@@ -349,8 +349,10 @@ async fn login_behind_a_trusted_https_proxy_gets_a_protected_cookie_and_the_real
                 "{cookie}"
             );
         }
+        // Over plain HTTP the cookie cannot be `Secure`, but it is still hidden from
+        // scripts.
         for cookie in over_http.session_cookies() {
-            assert!(cookie.ends_with("; SameSite=Lax"), "{cookie}");
+            assert!(cookie.ends_with("; SameSite=Lax; HttpOnly"), "{cookie}");
         }
         assert_eq!(over_https.session_cookies().len(), 2);
         assert_eq!(over_http.session_cookies().len(), 2);

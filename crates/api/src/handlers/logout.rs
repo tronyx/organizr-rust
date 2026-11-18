@@ -47,9 +47,8 @@ pub async fn logout(
         }
     }
 
-    // The order is the one of the PHP application.
-    let mut dropped = vec![session_cookie.as_str()];
-    dropped.extend(SINGLE_SIGN_ON_COOKIES);
+    // The order is the one of the PHP application: the session cookie first.
+    let mut dropped: Vec<&str> = SINGLE_SIGN_ON_COOKIES.to_vec();
     let sent = || cookies::request_cookies(&headers).map(|(name, _)| name);
     // Tautulli names its cookies after its own install, Jellyfin after the user.
     dropped.extend(sent().filter(|name| name.contains("tautulli")));
@@ -60,6 +59,7 @@ pub async fn logout(
     let now = SystemTime::now();
     let scope = CookieScope::of(&headers, client.https);
     let mut response = Envelope::success(NoData).into_response();
+    cookies::append(&mut response, scope.delete_hidden(&session_cookie, now)?);
     for name in dropped {
         match scope.delete(name, now) {
             Ok(values) => cookies::append(&mut response, values),

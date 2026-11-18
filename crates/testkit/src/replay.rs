@@ -77,6 +77,9 @@ pub struct Replay {
 struct Edit {
     case: String,
     pointer: String,
+    /// The key to add to the object at `pointer`. Without it, the value at `pointer`
+    /// is replaced.
+    new_key: Option<String>,
     value: Value,
 }
 
@@ -100,6 +103,30 @@ impl Replay {
     pub fn deviation(self, id: &str, case: &str, pointer: &str, value: Value) -> Self {
         assert_approved(id);
         self.edit(case, pointer, value)
+    }
+
+    /// Expects one more key in an object of the body of a case, because of an approved
+    /// deviation. The key comes after the keys the object has.
+    ///
+    /// `id` must be an entry of `docs/deviations.md`. `pointer` is a JSON pointer to the
+    /// object, for example `/response/data/tokenList/0`.
+    #[must_use]
+    pub fn deviation_adds(
+        mut self,
+        id: &str,
+        case: &str,
+        pointer: &str,
+        key: &str,
+        value: Value,
+    ) -> Self {
+        assert_approved(id);
+        self.edits.push(Edit {
+            case: case.to_owned(),
+            pointer: pointer.to_owned(),
+            new_key: Some(key.to_owned()),
+            value,
+        });
+        self
     }
 
     /// Expects that no case sets the named cookie, because of an approved deviation.
@@ -140,6 +167,7 @@ impl Replay {
         self.edits.push(Edit {
             case: case.to_owned(),
             pointer: pointer.to_owned(),
+            new_key: None,
             value,
         });
         self
@@ -231,7 +259,24 @@ impl Replay {
                         case.name, edit.pointer
                     )
                 });
-                *target = edit.value.clone();
+                match &edit.new_key {
+                    None => *target = edit.value.clone(),
+                    Some(key) => {
+                        let object = target.as_object_mut().unwrap_or_else(|| {
+                            panic!(
+                                "case `{}`: the recorded body has no object at `{}`",
+                                case.name, edit.pointer
+                            )
+                        });
+                        let replaced = object.insert(key.clone(), edit.value.clone());
+                        assert!(
+                            replaced.is_none(),
+                            "case `{}`: the object at `{}` already has the key `{key}`",
+                            case.name,
+                            edit.pointer
+                        );
+                    }
+                }
             }
             let bytes = organizr_api::php_json::to_vec(&json).expect("the body can be written");
             body = String::from_utf8(bytes).expect("the writer produces UTF-8");

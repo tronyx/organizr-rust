@@ -156,3 +156,36 @@ async fn marker_for_a_case_that_does_not_exist_is_refused() {
 
     replay.run(&Router::new()).await;
 }
+
+#[tokio::test]
+#[should_panic(expected = "case `status`: Body differs")]
+async fn key_that_the_application_does_not_send_fails_the_replay() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // An approved deviation adds a key, but the application does not send it.
+        let replay =
+            basics().deviation_adds("D-21", "status", "/response/data", "made_up", json!(true));
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "already has the key `php`")]
+async fn added_key_cannot_replace_a_recorded_value() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay =
+            basics().deviation_adds("D-21", "status", "/response/data", "php", json!("n/a"));
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "D-99 is not an entry of docs/deviations.md")]
+async fn added_key_needs_an_approved_deviation() {
+    let _ = basics().deviation_adds("D-99", "status", "/response/data", "made_up", json!(true));
+}

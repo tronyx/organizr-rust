@@ -147,7 +147,7 @@ pub async fn identify_caller(
     let mut response = next.run(request).await;
 
     if let Some(scope) = drop_cookie {
-        match scope.delete(&cookie_name, now) {
+        match scope.delete_hidden(&cookie_name, now) {
             // Before the cookies of the handler: a login in the same request sets the
             // cookie again, and the browser keeps the last one.
             Ok(values) => cookies::prepend(&mut response, values),

@@ -11,7 +11,7 @@
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::replay::Replay;
 use organizr_testkit::{app, installed_app, seed};
-use serde_json::json;
+use serde_json::{Value, json};
 
 /// The differences that every status answer has.
 fn status_differences(replay: Replay, case: &str) -> Replay {
@@ -88,23 +88,32 @@ async fn session_routes_answer_like_php() {
         seed::installed(database).await;
         seed::wizard_session(database).await;
         let mut replay = without_php_session(Replay::group("session"));
-        // A user sees the token of the session of the request only. PHP shows the tokens
-        // of all sessions of the user. Session 1 is the one of the set-up wizard, 2 is
-        // browser A and 3 is browser B.
-        for (case, sessions_of_others) in [
-            ("me_in_browser_a", [0, 2].as_slice()),
-            ("validate_token_in_the_query", &[0, 2]),
-            ("validate_token_in_a_form", &[0, 2]),
-            ("validate_token_of_another_browser", &[0, 2]),
-            ("me_in_browser_a_after_the_delete", &[0]),
+        // Session 1 is the one of the set-up wizard, 2 is browser A and 3 is browser B.
+        //
+        // `GET /token/me` holds no token, and says which session is the one of the
+        // request. PHP shows the tokens of all sessions of the user.
+        for (case, sessions, current) in [
+            ("me_in_browser_a", 3, 1),
+            ("me_in_browser_a_after_the_delete", 2, 1),
         ] {
-            for index in sessions_of_others {
-                replay = replay.deviation(
-                    "D-02",
-                    case,
-                    &format!("/response/data/tokenList/{index}/token"),
-                    serde_json::Value::Null,
-                );
+            replay = replay.deviation("D-18", case, "/response/data/token", Value::Null);
+            for index in 0..sessions {
+                let entry = format!("/response/data/tokenList/{index}");
+                replay = replay
+                    .deviation("D-18", case, &format!("{entry}/token"), Value::Null)
+                    .deviation_adds("D-18", case, &entry, "current", json!(index == current));
+            }
+        }
+        // `POST /token/validate` gives back the token that the caller sent, but not the
+        // tokens of the other sessions of the user.
+        for case in [
+            "validate_token_in_the_query",
+            "validate_token_in_a_form",
+            "validate_token_of_another_browser",
+        ] {
+            for index in [0, 2] {
+                let token = format!("/response/data/tokenList/{index}/token");
+                replay = replay.deviation("D-02", case, &token, Value::Null);
             }
         }
 

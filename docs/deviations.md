@@ -25,6 +25,7 @@ Status: all entries below were approved by the owner on 2026-11-18. A new deviat
 | D-15 | Users can change only their own user name, e-mail, password and image through `PUT /users/{id}`. `locked`, `auth_service`, `plex_token` and `group_id` need level 1 |
 | D-16 | URL fetches on behalf of non-admins (scrape, image cache) resolve the host once, check it, and connect to that address |
 | D-17 | Marketplace downloads use TLS verification, a pinned commit and a hash, with path and size checks |
+| D-18 | The session cookie is always `HttpOnly`, also over plain HTTP, so a script of the page cannot read it. For the same reason `GET /token/me` returns `null` for `token` and for every `token` in `tokenList`. Each entry of that list has a new field `current`, which is `true` for the session of the request. `POST /token/validate` still returns the token that the caller sent. Approved on 2026-11-18 |
 
 **Forced by the platform or by the new front end**
 
@@ -58,5 +59,6 @@ Status: all entries below were approved by the owner on 2026-11-18. A new deviat
 | D-31 | `DELETE /groups/{id}` with an unknown id returns `404 "id not found"` instead of `409` |
 | D-32 | The reorder routes (`PUT /tabs`, `PUT /categories`, bookmark equivalents) apply all changes or none |
 | D-33 | Expired sessions are purged by a scheduled job |
+| D-34 | A request that makes the PHP application crash gets an error answer in the usual form. PHP answers such a request with status `500` and an HTML page. A list or an object as `username` or `password` of `POST /login` gets `401 "User credentials incorrect"`. `POST /token/validate` without the field `Token` gets `403 "Token was invalid"`. Approved on 2026-11-18 |
 
 Kept exactly as they are, because clients depend on them: the envelope and pretty-printed JSON, `401` with `result:"success"` for a wrong 2FA code, `422` with `result:"warning"` for "2FA Code Needed", per-route content types, optional path segments and trailing-slash forms, message texts, validation rules and their order, numbers that the API returns as strings.
