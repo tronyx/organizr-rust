@@ -1718,6 +1718,7 @@ dependencies = [
  "jiff",
  "organizr-db",
  "organizr-settings",
+ "organizr-testkit",
  "serde",
  "serde_json",
  "tempfile",

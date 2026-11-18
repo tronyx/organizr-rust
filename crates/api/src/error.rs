@@ -20,6 +20,13 @@ pub enum ApiError {
         method: String,
     },
 
+    /// A browser on another site sent a request that would change something.
+    #[error("a request from another site to {route} was refused")]
+    CrossSite {
+        /// The request path.
+        route: String,
+    },
+
     /// The database failed. The caller gets no details; the log does.
     #[error(transparent)]
     Database(#[from] DbError),
@@ -39,6 +46,14 @@ impl IntoResponse for ApiError {
                 StatusCode::NOT_FOUND,
                 "Endpoint Not Found or Defined",
                 NotFoundData { endpoint, method },
+            )
+            .into_response(),
+            // The status and the text are those of the PHP application for a request
+            // without a valid form key.
+            Self::CrossSite { route } => Envelope::error(
+                StatusCode::UNAUTHORIZED,
+                format!("Not authorized for current Route: {route}"),
+                NoData,
             )
             .into_response(),
             Self::Database(error) => {
