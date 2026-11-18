@@ -1,0 +1,15 @@
+# The PHP reference for the parity tests. Start it, record, and throw it away:
+#
+#   docker compose -f parity/oracle/compose.yml up --build --detach
+#   python parity/recorder/record.py
+#   docker compose -f parity/oracle/compose.yml down --volumes
+#
+# It listens on this machine only. Its data lives in the container, so every start is a
+# fresh, empty install.
+name: organizr-parity
+
+services:
+  oracle:
+    build: .
+    ports:
+      - "127.0.0.1:8098:80"

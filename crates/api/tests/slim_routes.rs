@@ -6,8 +6,7 @@
 //! - requests reach the route that Slim would choose, including the unusual shapes
 //! - the cross-site request check of tower-http works as a layer on an Axum router
 //!
-//! The expectations for Slim follow its documented matching rules. The parity harness
-//! will confirm them against the running PHP application.
+//! The expectations for Slim are checked against recorded answers of the PHP application.
 
 #![allow(
     clippy::expect_used,
@@ -26,6 +25,10 @@ use tower::ServiceExt;
 use tower_http::csrf::CsrfLayer;
 
 const ROUTES: &str = include_str!("fixtures/organizr_routes.txt");
+
+/// What the PHP application answered to the routing requests. `parity/recorder/record.py`
+/// records it from the reference container.
+const RECORDED_ROUTING: &str = include_str!("../../../parity/cases/routing.json");
 
 /// The pattern that matches every path. Slim registers it last, as the "not found" answer.
 const CATCH_ALL: &str = "{route:.*}";
@@ -56,7 +59,10 @@ fn organizr_routes() -> Vec<(String, String)> {
 fn organizr_router() -> Router {
     let mut router = Router::new();
     for (method, pattern) in organizr_routes() {
-        if pattern == CATCH_ALL {
+        // The empty pattern can never match in the PHP application: Slim only applies its
+        // base path when the request path holds `api/v2/`, and then the rest is not empty.
+        // The recorded answer to `GET /api/v2` is "not found".
+        if pattern == CATCH_ALL || pattern.is_empty() {
             continue;
         }
         for route in expand(&pattern).expect("the pattern expands") {
@@ -113,8 +119,8 @@ async fn reach(router: &Router, method: Method, path: &str) -> String {
 
 /// Requests and the route each one must reach: method, path, expected answer.
 const ROUTING_CASES: &[(Method, &str, &str)] = &[
-    // The API root, with and without the slash.
-    (Method::GET, "/api/v2", " <>"),
+    // The API root: only the form with the slash is a route.
+    (Method::GET, "/api/v2", FALLBACK),
     (Method::GET, "/api/v2/", "/ <>"),
     // An optional trailing slash.
     (Method::GET, "/api/v2/status", "/status[/] <>"),
@@ -256,6 +262,31 @@ const ROUTING_CASES: &[(Method, &str, &str)] = &[
     (Method::GET, "/somewhere/else", FALLBACK),
 ];
 
+/// The recorded routing cases.
+#[derive(serde::Deserialize)]
+struct RecordedCases {
+    cases: Vec<RecordedCase>,
+}
+
+/// One request the recorder sent, and whether the PHP application found a route for it.
+#[derive(serde::Deserialize)]
+struct RecordedCase {
+    request: RecordedRequest,
+    reached_a_route: bool,
+}
+
+#[derive(serde::Deserialize)]
+struct RecordedRequest {
+    method: String,
+    path: String,
+}
+
+fn recorded_routing() -> Vec<RecordedCase> {
+    serde_json::from_str::<RecordedCases>(RECORDED_ROUTING)
+        .expect("the recorded routing cases are valid JSON")
+        .cases
+}
+
 #[test]
 fn every_organizr_pattern_expands() {
     let routes = organizr_routes();
@@ -285,6 +316,43 @@ async fn requests_reach_the_route_slim_would_choose() {
     for (method, path, expected) in ROUTING_CASES {
         let actual = reach(&router, method.clone(), path).await;
         assert_eq!(actual, *expected, "{method} {path}");
+    }
+}
+
+#[tokio::test]
+async fn router_and_php_agree_on_which_requests_reach_a_route() {
+    let router = organizr_router();
+    let recorded = recorded_routing();
+    assert!(!recorded.is_empty(), "there are recorded routing cases");
+
+    for case in recorded {
+        let method = Method::from_bytes(case.request.method.as_bytes())
+            .expect("the recorded method is valid");
+        let answer = reach(&router, method.clone(), &case.request.path).await;
+        assert_eq!(
+            answer != FALLBACK,
+            case.reached_a_route,
+            "{method} {}: the Rust router answered `{answer}`",
+            case.request.path
+        );
+    }
+}
+
+#[test]
+fn every_routing_expectation_is_backed_by_a_recording() {
+    let recorded = recorded_routing();
+
+    for (method, path, _) in ROUTING_CASES {
+        // Outside the API the web server answers, not the application.
+        if !path.starts_with("/api/v2") {
+            continue;
+        }
+        assert!(
+            recorded
+                .iter()
+                .any(|case| case.request.method == method.as_str() && case.request.path == *path),
+            "{method} {path} is not in parity/cases/routing.json; add it to ROUTING in              parity/recorder/record.py and record again"
+        );
     }
 }
 

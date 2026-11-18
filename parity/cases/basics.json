@@ -1,0 +1,210 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test"
+  },
+  "cases": [
+    {
+      "name": "status",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/status"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"writable\": true,\n            \"minVersion\": true,\n            \"os\": \"*nix\",\n            \"php\": \"8.5.12\",\n            \"userConfigPathExists\": true,\n            \"action\": \"launch\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "status_with_trailing_slash",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/status/"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"writable\": true,\n            \"minVersion\": true,\n            \"os\": \"*nix\",\n            \"php\": \"8.5.12\",\n            \"userConfigPathExists\": true,\n            \"action\": \"launch\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "ping",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/ping"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": \"pong\"\n    }\n}"
+      }
+    },
+    {
+      "name": "api_root",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2\",\n            \"method\": \"GET\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "api_root_with_trailing_slash",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "location": "/api/v2/status"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "unknown_route",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/nothing/here"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/nothing/here\",\n            \"method\": \"GET\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "wrong_method",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/status"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/status\",\n            \"method\": \"POST\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "rox",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/rox"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"rox in socks!\",\n        \"data\": \"https://www.roxinsocks.com/\"\n    }\n}"
+      }
+    },
+    {
+      "name": "roxinsocks_redirect",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/roxinsocks"
+      },
+      "response": {
+        "status": 301,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "location": "https://roxinsocks.com"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": ""
+      }
+    }
+  ]
+}

@@ -30,5 +30,8 @@ jobs:
       - name: hadolint
         run: docker run --rm -i -v "$PWD/docker/.hadolint.yaml:/.config/hadolint.yaml:ro" hadolint/hadolint:v2.15.1 < docker/Dockerfile
 
+      - name: hadolint (parity reference)
+        run: docker run --rm -i -v "$PWD/docker/.hadolint.yaml:/.config/hadolint.yaml:ro" hadolint/hadolint:v2.15.1 < parity/oracle/Dockerfile
+
       - name: actionlint
         run: docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.12 -color

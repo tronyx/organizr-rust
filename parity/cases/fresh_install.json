@@ -1,0 +1,68 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test"
+  },
+  "cases": [
+    {
+      "name": "status",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/status"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid"
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"writable\": true,\n            \"minVersion\": true,\n            \"os\": \"*nix\",\n            \"php\": \"8.5.12\",\n            \"userConfigPathExists\": false,\n            \"action\": \"wizard\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "wizard",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {
+          "driver": "sqlite3",
+          "dbName": "parity",
+          "dbPath": "/var/www/html/data/parity-db/",
+          "license": "personal",
+          "hashKey": "parity-hash-key-0123456789",
+          "api": "parityapikey01234567",
+          "registrationPassword": "parity-registration",
+          "username": "admin",
+          "password": "parity-admin-password",
+          "email": "admin@example.com"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          "PHPSESSID",
+          "organizr_user_uuid",
+          "organizr_user_uuid",
+          "organizr_token_<uuid>",
+          "organizr_token_<uuid>"
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": true\n    }\n}"
+      }
+    }
+  ]
+}
