@@ -12,6 +12,7 @@
 )]
 
 pub mod engines;
+pub mod http;
 pub mod replay;
 pub mod seed;
 

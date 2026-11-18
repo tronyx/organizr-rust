@@ -1,0 +1,1190 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>"
+    }
+  },
+  "cases": [
+    {
+      "name": "me_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"token\": null,\n            \"tokenDate\": null,\n            \"tokenExpire\": null,\n            \"username\": \"Guest\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Guest\",\n            \"groupID\": 999,\n            \"email\": null,\n            \"image\": \"plugins/images/groups/guest.png\",\n            \"userID\": null,\n            \"loggedin\": false,\n            \"locked\": false,\n            \"tokenList\": null,\n            \"authService\": null\n        }\n    }\n}",
+        "redacted": [
+          "uid"
+        ]
+      }
+    },
+    {
+      "name": "login_in_browser_a",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password"
+        },
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "login_in_browser_b",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password"
+        },
+        "headers": {
+          "User-Agent": "Parity-B/2.0"
+        },
+        "jar": "b"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "me_in_browser_a",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"token\": \"<token>\",\n            \"tokenDate\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"tokenExpire\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"username\": \"admin\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Admin\",\n            \"groupID\": 0,\n            \"email\": \"admin@example.com\",\n            \"image\": \"https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=100&d=mm\",\n            \"userID\": 1,\n            \"loggedin\": true,\n            \"locked\": 0,\n            \"tokenList\": [\n                {\n                    \"token\": \"<token>\",\n                    \"ip\": \"<ip>\",\n                    \"id\": 1,\n                    \"expires\": \"<time>\",\n                    \"created\": \"<time>\"\n                },\n                {\n                    \"token\": \"<token>\",\n                    \"ip\": \"<ip>\",\n                    \"id\": 2,\n                    \"expires\": \"<time>\",\n                    \"created\": \"<time>\"\n                },\n                {\n                    \"token\": \"<token>\",\n                    \"ip\": \"<ip>\",\n                    \"id\": 3,\n                    \"expires\": \"<time>\",\n                    \"created\": \"<time>\"\n                }\n            ],\n            \"authService\": \"internal\"\n        }\n    }\n}",
+        "redacted": [
+          "ip",
+          "uid",
+          "token",
+          "date",
+          "created",
+          "expires"
+        ]
+      }
+    },
+    {
+      "name": "me_with_a_trailing_slash",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me/",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/token/me/\",\n            \"method\": \"GET\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "me_with_a_cookie_that_is_no_token",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me",
+        "cookies": {
+          "{session_cookie}": "this-is-no-token"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "ping_with_a_cookie_that_is_no_token",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/ping",
+        "cookies": {
+          "{session_cookie}": "this-is-no-token"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": \"pong\"\n    }\n}"
+      }
+    },
+    {
+      "name": "unknown_route_with_a_cookie_that_is_no_token",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/nothing/here",
+        "cookies": {
+          "{session_cookie}": "this-is-no-token"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/nothing/here\",\n            \"method\": \"GET\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "me_with_an_empty_cookie",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me",
+        "cookies": {
+          "{session_cookie}": ""
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"token\": null,\n            \"tokenDate\": null,\n            \"tokenExpire\": null,\n            \"username\": \"Guest\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Guest\",\n            \"groupID\": 999,\n            \"email\": null,\n            \"image\": \"plugins/images/groups/guest.png\",\n            \"userID\": null,\n            \"loggedin\": false,\n            \"locked\": false,\n            \"tokenList\": null,\n            \"authService\": null\n        }\n    }\n}",
+        "redacted": [
+          "uid"
+        ]
+      }
+    },
+    {
+      "name": "validate_token_in_the_query",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/token/validate?Token={session_token:a}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Token is valid\",\n        \"data\": {\n            \"token\": \"<token>\",\n            \"tokenDate\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"tokenExpire\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"username\": \"admin\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Admin\",\n            \"groupID\": 0,\n            \"email\": \"admin@example.com\",\n            \"image\": \"https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=100&d=mm\",\n            \"userID\": 1,\n            \"loggedin\": true,\n            \"locked\": 0,\n            \"tokenList\": [\n                {\n                    \"id\": 1,\n                    \"token\": \"<token>\",\n                    \"user_id\": 1,\n                    \"browser\": null,\n                    \"ip\": \"<ip>\",\n                    \"created\": \"<time>\",\n                    \"expires\": \"<time>\"\n                },\n                {\n                    \"id\": 2,\n                    \"token\": \"<token>\",\n                    \"user_id\": 1,\n                    \"browser\": \"Parity-A/1.0\",\n                    \"ip\": \"<ip>\",\n                    \"created\": \"<time>\",\n                    \"expires\": \"<time>\"\n                },\n                {\n                    \"id\": 3,\n                    \"token\": \"<token>\",\n                    \"user_id\": 1,\n                    \"browser\": \"Parity-B/2.0\",\n                    \"ip\": \"<ip>\",\n                    \"created\": \"<time>\",\n                    \"expires\": \"<time>\"\n                }\n            ],\n            \"authService\": \"internal\"\n        }\n    }\n}",
+        "redacted": [
+          "ip",
+          "uid",
+          "token",
+          "date",
+          "created",
+          "expires"
+        ]
+      }
+    },
+    {
+      "name": "validate_token_in_a_form",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/token/validate",
+        "body": "Token={session_token:a}",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Token is valid\",\n        \"data\": {\n            \"token\": \"<token>\",\n            \"tokenDate\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"tokenExpire\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"username\": \"admin\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Admin\",\n            \"groupID\": 0,\n            \"email\": \"admin@example.com\",\n            \"image\": \"https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=100&d=mm\",\n            \"userID\": 1,\n            \"loggedin\": true,\n            \"locked\": 0,\n            \"tokenList\": [\n                {\n                    \"id\": 1,\n                    \"token\": \"<token>\",\n                    \"user_id\": 1,\n                    \"browser\": null,\n                    \"ip\": \"<ip>\",\n                    \"created\": \"<time>\",\n                    \"expires\": \"<time>\"\n                },\n                {\n                    \"id\": 2,\n                    \"token\": \"<token>\",\n                    \"user_id\": 1,\n                    \"browser\": \"Parity-A/1.0\",\n                    \"ip\": \"<ip>\",\n                    \"created\": \"<time>\",\n                    \"expires\": \"<time>\"\n                },\n                {\n                    \"id\": 3,\n                    \"token\": \"<token>\",\n                    \"user_id\": 1,\n                    \"browser\": \"Parity-B/2.0\",\n                    \"ip\": \"<ip>\",\n                    \"created\": \"<time>\",\n                    \"expires\": \"<time>\"\n                }\n            ],\n            \"authService\": \"internal\"\n        }\n    }\n}",
+        "redacted": [
+          "ip",
+          "uid",
+          "token",
+          "date",
+          "created",
+          "expires"
+        ]
+      }
+    },
+    {
+      "name": "validate_token_of_another_browser",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/token/validate?Token={session_token:a}",
+        "headers": {
+          "User-Agent": "Parity-B/2.0"
+        },
+        "jar": "b"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Token is valid\",\n        \"data\": {\n            \"token\": \"<token>\",\n            \"tokenDate\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"tokenExpire\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"username\": \"admin\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Admin\",\n            \"groupID\": 0,\n            \"email\": \"admin@example.com\",\n            \"image\": \"https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=100&d=mm\",\n            \"userID\": 1,\n            \"loggedin\": true,\n            \"locked\": 0,\n            \"tokenList\": [\n                {\n                    \"id\": 1,\n                    \"token\": \"<token>\",\n                    \"user_id\": 1,\n                    \"browser\": null,\n                    \"ip\": \"<ip>\",\n                    \"created\": \"<time>\",\n                    \"expires\": \"<time>\"\n                },\n                {\n                    \"id\": 2,\n                    \"token\": \"<token>\",\n                    \"user_id\": 1,\n                    \"browser\": \"Parity-A/1.0\",\n                    \"ip\": \"<ip>\",\n                    \"created\": \"<time>\",\n                    \"expires\": \"<time>\"\n                },\n                {\n                    \"id\": 3,\n                    \"token\": \"<token>\",\n                    \"user_id\": 1,\n                    \"browser\": \"Parity-B/2.0\",\n                    \"ip\": \"<ip>\",\n                    \"created\": \"<time>\",\n                    \"expires\": \"<time>\"\n                }\n            ],\n            \"authService\": \"internal\"\n        }\n    }\n}",
+        "redacted": [
+          "ip",
+          "uid",
+          "token",
+          "date",
+          "created",
+          "expires"
+        ]
+      }
+    },
+    {
+      "name": "validate_text_that_is_no_token",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/token/validate?Token=this-is-no-token"
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Token was invalid\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "validate_empty_token",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/token/validate?Token="
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Token was invalid\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "validate_with_get",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/validate?Token={session_token:a}"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/token/validate\",\n            \"method\": \"GET\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_as_guest",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/3"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_id_zero",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/0",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Id was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_unknown_id",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/99999",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": ""
+      }
+    },
+    {
+      "name": "delete_id_that_is_no_number",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/abc",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": ""
+      }
+    },
+    {
+      "name": "delete_id_me",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/me",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": ""
+      }
+    },
+    {
+      "name": "delete_id_validate",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/validate",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": ""
+      }
+    },
+    {
+      "name": "delete_id_me_as_guest",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/me"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_without_an_id",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/token/\",\n            \"method\": \"DELETE\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_session_of_browser_b",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/3",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": ""
+      }
+    },
+    {
+      "name": "me_in_browser_a_after_the_delete",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"token\": \"<token>\",\n            \"tokenDate\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"tokenExpire\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"username\": \"admin\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Admin\",\n            \"groupID\": 0,\n            \"email\": \"admin@example.com\",\n            \"image\": \"https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=100&d=mm\",\n            \"userID\": 1,\n            \"loggedin\": true,\n            \"locked\": 0,\n            \"tokenList\": [\n                {\n                    \"token\": \"<token>\",\n                    \"ip\": \"<ip>\",\n                    \"id\": 1,\n                    \"expires\": \"<time>\",\n                    \"created\": \"<time>\"\n                },\n                {\n                    \"token\": \"<token>\",\n                    \"ip\": \"<ip>\",\n                    \"id\": 2,\n                    \"expires\": \"<time>\",\n                    \"created\": \"<time>\"\n                }\n            ],\n            \"authService\": \"internal\"\n        }\n    }\n}",
+        "redacted": [
+          "ip",
+          "uid",
+          "token",
+          "date",
+          "created",
+          "expires"
+        ]
+      }
+    },
+    {
+      "name": "validate_token_of_the_deleted_session",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/token/validate?Token={session_token:b}"
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Token was not in approved list\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "logout_in_browser_b_after_the_delete",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/logout",
+        "headers": {
+          "User-Agent": "Parity-B/2.0"
+        },
+        "jar": "b"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "me_in_browser_b_after_the_logout",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me",
+        "headers": {
+          "User-Agent": "Parity-B/2.0"
+        },
+        "jar": "b"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"token\": null,\n            \"tokenDate\": null,\n            \"tokenExpire\": null,\n            \"username\": \"Guest\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Guest\",\n            \"groupID\": 999,\n            \"email\": null,\n            \"image\": \"plugins/images/groups/guest.png\",\n            \"userID\": null,\n            \"loggedin\": false,\n            \"locked\": false,\n            \"tokenList\": null,\n            \"authService\": null\n        }\n    }\n}",
+        "redacted": [
+          "uid"
+        ]
+      }
+    },
+    {
+      "name": "delete_own_session",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/token/2",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": ""
+      }
+    },
+    {
+      "name": "me_in_browser_a_after_deleting_the_own_session",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me",
+        "headers": {
+          "User-Agent": "Parity-A/1.0"
+        },
+        "jar": "a"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    }
+  ]
+}

@@ -46,6 +46,14 @@ impl<'a> Users<'a> {
         Ok(user::Entity::find().count(self.connection).await?)
     }
 
+    /// The user with the given id.
+    pub async fn find(&self, id: UserId) -> Result<Option<User>, DbError> {
+        let row = user::Entity::find_by_id(id.get())
+            .one(self.connection)
+            .await?;
+        Ok(row.map(User::from))
+    }
+
     /// The user with the given name, whatever its letter case.
     pub async fn find_by_username(&self, username: &str) -> Result<Option<User>, DbError> {
         let row = user::Entity::find()

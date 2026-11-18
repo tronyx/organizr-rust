@@ -81,3 +81,34 @@ async fn logout_answers_like_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn session_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        seed::wizard_session(database).await;
+        let mut replay = without_php_session(Replay::group("session"));
+        // A user sees the token of the session of the request only. PHP shows the tokens
+        // of all sessions of the user. Session 1 is the one of the set-up wizard, 2 is
+        // browser A and 3 is browser B.
+        for (case, sessions_of_others) in [
+            ("me_in_browser_a", [0, 2].as_slice()),
+            ("validate_token_in_the_query", &[0, 2]),
+            ("validate_token_in_a_form", &[0, 2]),
+            ("validate_token_of_another_browser", &[0, 2]),
+            ("me_in_browser_a_after_the_delete", &[0]),
+        ] {
+            for index in sessions_of_others {
+                replay = replay.deviation(
+                    "D-02",
+                    case,
+                    &format!("/response/data/tokenList/{index}/token"),
+                    serde_json::Value::Null,
+                );
+            }
+        }
+
+        replay.run(&installed_app(database)).await;
+    })
+    .await;
+}

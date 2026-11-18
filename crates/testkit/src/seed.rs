@@ -2,8 +2,8 @@
 
 use organizr_db::Database;
 use organizr_domain::{
-    CategoryId, CategoryNumber, GroupLevel, LevelRange, NewCategory, NewGroup, NewTab, NewUser,
-    PasswordHash, TabKind, Timestamp,
+    CategoryId, CategoryNumber, GroupLevel, LevelRange, NewCategory, NewGroup, NewSession, NewTab,
+    NewUser, PasswordHash, SessionTokenHash, TabKind, Timestamp,
 };
 
 /// The groups the set-up wizard of the PHP application creates: level, name, image, default.
@@ -66,9 +66,46 @@ pub const ADMIN_PASSWORD: &str = "parity-admin-password";
 pub const ADMIN_PASSWORD_HASH: &str =
     "$2y$12$WG7fEmudO2Nw2eBtDlehJOQDekAJhq89HWiaa2NQLdwG4hMT7aUNW";
 
+/// The picture the set-up wizard gives the admin account: the Gravatar address for
+/// [`ADMIN_EMAIL`].
+pub const ADMIN_IMAGE: &str =
+    "https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=100&d=mm";
+
+/// Stores the session that the set-up wizard of the PHP application leaves behind: it
+/// logs the new admin in, for one day, from a request without a `User-Agent` header.
+///
+/// No one knows the token of this session. It is there so that the sessions of the
+/// recorded cases get the ids they had in the recording. Call it after [`installed`].
+pub async fn wizard_session(database: &Database) {
+    let admin = database
+        .users()
+        .find_by_username(ADMIN_NAME)
+        .await
+        .expect("the lookup works")
+        .expect("the admin account is stored");
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("the clock is past 1970");
+    let now = i64::try_from(now.as_secs()).expect("the time fits");
+    database
+        .sessions()
+        .insert(NewSession {
+            token_hash: SessionTokenHash::new("00".repeat(32)),
+            user: admin.id,
+            user_agent: None,
+            ip: std::net::IpAddr::from([127, 0, 0, 1]),
+            created_at: Timestamp::from_unix_seconds(now),
+            expires_at: Timestamp::from_unix_seconds(now + 86_400),
+        })
+        .await
+        .expect("the session of the wizard can be stored");
+}
+
 /// Makes the database look as it does after the recorder has run the set-up wizard: the
 /// six standard groups, the admin account of `parity/recorder/record.py`, the category
 /// "Unsorted" and the tabs "Settings" and "Homepage".
+///
+/// The session that the wizard leaves behind is not included; see [`wizard_session`].
 pub async fn installed(database: &Database) {
     let mut admin_group = None;
     for (level, name, image, is_default) in WIZARD_GROUPS {
@@ -94,7 +131,7 @@ pub async fn installed(database: &Database) {
             email: Some(ADMIN_EMAIL.to_owned()),
             password_hash: PasswordHash::new(ADMIN_PASSWORD_HASH.to_owned()),
             group: admin_group.expect("the wizard creates the Admin group"),
-            image: None,
+            image: Some(ADMIN_IMAGE.to_owned()),
             created_at: Timestamp::from_unix_seconds(1_700_000_000),
         })
         .await

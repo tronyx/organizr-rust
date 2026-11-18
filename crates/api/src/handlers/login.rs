@@ -1,16 +1,15 @@
 //! `POST /login`: logging in with a name and a password.
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime};
 
 use axum::Extension;
 use axum::extract::State;
 use axum::http::{HeaderMap, header};
 use axum::response::{IntoResponse, Response};
 use organizr_auth::login::{self, Device};
-use organizr_domain::Timestamp;
-use organizr_settings::Settings;
 
 use crate::api_data::ApiData;
+use crate::caller::{now_stamp, session_cookie_name};
 use crate::client::Client;
 use crate::cookies::{self, CookieScope};
 use crate::envelope::{Envelope, NoData};
@@ -22,16 +21,6 @@ const ONE_DAY: Duration = Duration::from_hours(24);
 
 /// The longest a login lasts, in days, whatever the setting says.
 const MOST_DAYS: u32 = 365;
-
-/// The name of the session cookie. It ends with the id of the install, so two installs
-/// on one domain do not take each other's cookie.
-pub fn session_cookie_name(settings: &Settings) -> String {
-    if settings.install_id.is_empty() {
-        "organizr_token_temp".to_owned()
-    } else {
-        format!("organizr_token_{}", settings.install_id)
-    }
-}
 
 /// `POST /login`: checks a name, or an e-mail address, and a password. When they fit,
 /// the answer sets the session cookie.
@@ -55,9 +44,6 @@ pub async fn login(
     };
 
     let now = SystemTime::now();
-    let since_epoch = now.duration_since(UNIX_EPOCH).unwrap_or_default();
-    let now_stamp =
-        Timestamp::from_unix_seconds(i64::try_from(since_epoch.as_secs()).unwrap_or(i64::MAX));
     let device = Device {
         ip: client.address,
         user_agent: headers
@@ -71,7 +57,7 @@ pub async fn login(
         &name,
         &password,
         device,
-        now_stamp,
+        now_stamp(now),
         lifetime,
     )
     .await
@@ -90,26 +76,4 @@ pub async fn login(
     let mut response = Envelope::success(NoData).into_response();
     cookies::append(&mut response, session_cookie);
     Ok(response)
-}
-
-#[cfg(test)]
-mod tests {
-    use organizr_settings::Settings;
-    use serde_json::json;
-
-    use super::session_cookie_name;
-
-    #[test]
-    fn session_cookie_is_named_after_the_install() {
-        let mut settings = Settings::defaults();
-        assert_eq!(session_cookie_name(&settings), "organizr_token_temp");
-
-        settings
-            .set("uuid", &json!("0b1f6a3e-7c1d-4a52-9d55-3f2a8c9e1b47"))
-            .expect("the value is valid");
-        assert_eq!(
-            session_cookie_name(&settings),
-            "organizr_token_0b1f6a3e-7c1d-4a52-9d55-3f2a8c9e1b47"
-        );
-    }
 }

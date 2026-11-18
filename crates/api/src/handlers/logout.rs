@@ -8,12 +8,12 @@ use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use organizr_auth::SessionToken;
 
+use crate::caller::session_cookie_name;
 use crate::client::Client;
 use crate::cookies::{self, CookieScope};
 use crate::device_cookie::{DEVICE_COOKIE, new_device_cookie};
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
-use crate::handlers::login::session_cookie_name;
 use crate::same_origin::FromThisSite;
 use crate::state::AppState;
 

@@ -13,7 +13,17 @@
       "x-organizr-user",
       "x-organizr-email",
       "x-organizr-group"
-    ]
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>"
+    }
   },
   "cases": [
     {

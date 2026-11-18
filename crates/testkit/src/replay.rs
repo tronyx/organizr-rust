@@ -11,7 +11,13 @@
 //! A case can name a cookie jar. Its request carries the cookies of the jar, and the
 //! cookies of the answer go into the jar, as in a browser. The replay fills its own jars
 //! from the answers of the Rust application, so a later case uses the session of an
-//! earlier login of the same replay.
+//! earlier login of the same replay. In a path or a body, `{session_token:<jar>}` stands
+//! for the session token in a jar, and the cookie name `{session_cookie}` stands for the
+//! name of the session cookie.
+//!
+//! The recorder replaces values that change with every recording (addresses, tokens,
+//! times) by placeholders. The replay replaces the same values in the answers of the Rust
+//! application before it compares. What those values look like is tested elsewhere.
 //!
 //! An aspect may differ from the recording in two ways only:
 //!
@@ -146,10 +152,10 @@ impl Replay {
         self.check_names(&recording);
 
         let mut problems = String::new();
-        let mut jars = Jars::new();
+        let mut browsers = Browsers::default();
         for case in &recording.cases {
             let expected = self.expected(case);
-            let actual = Answer::of(app, &recording, case, &mut jars).await;
+            let actual = Answer::of(app, &recording, case, &mut browsers).await;
             let differing: Vec<Aspect> = ASPECTS
                 .into_iter()
                 .filter(|aspect| !expected.matches(&actual, *aspect))
@@ -286,30 +292,101 @@ struct Answer {
     body: String,
 }
 
-/// The cookie jars of a replay, by name: cookie name to value.
-type Jars = HashMap<String, BTreeMap<String, String>>;
+/// What a replay remembers from case to case.
+#[derive(Debug, Default)]
+struct Browsers {
+    /// The cookie jars, by name: cookie name to value.
+    jars: HashMap<String, BTreeMap<String, String>>,
+    /// The name of the session cookie, once an answer has set the cookie.
+    session_cookie: Option<String>,
+}
+
+impl Browsers {
+    /// Stands for the name of the session cookie in the `cookies` of a case.
+    const SESSION_COOKIE: &'static str = "{session_cookie}";
+
+    /// Starts the placeholder for the session token of a jar.
+    const SESSION_TOKEN: &'static str = "{session_token:";
+
+    fn session_cookie(&self) -> &str {
+        self.session_cookie
+            .as_deref()
+            .expect("an earlier case has set the session cookie")
+    }
+
+    /// Replaces each `{session_token:<jar>}` by the session token of that jar.
+    fn fill_in(&self, text: &str) -> String {
+        let mut filled = String::new();
+        let mut rest = text;
+        while let Some((before, after)) = rest.split_once(Self::SESSION_TOKEN) {
+            let (jar, after) = after
+                .split_once('}')
+                .expect("the placeholder ends with a brace");
+            let token = self
+                .jars
+                .get(jar)
+                .and_then(|jar| jar.get(self.session_cookie()))
+                .unwrap_or_else(|| panic!("the jar `{jar}` holds no session token"));
+            filled.push_str(before);
+            filled.push_str(token);
+            rest = after;
+        }
+        filled.push_str(rest);
+        filled
+    }
+}
+
+/// Replaces the text value of every `key` in a JSON body by `placeholder`, as the
+/// recorder does. A value that is empty, or not text, stays as it is.
+fn redact(body: &str, key: &str, placeholder: &str) -> String {
+    let marker = format!("\"{key}\": \"");
+    let mut redacted = String::with_capacity(body.len());
+    let mut rest = body;
+    while let Some((before, after)) = rest.split_once(&marker) {
+        redacted.push_str(before);
+        redacted.push_str(&marker);
+        // The value ends at the next quote. A value with an escape is left alone.
+        match after.split_once(['"', '\\']) {
+            Some((value, _)) if !value.is_empty() && after[value.len()..].starts_with('"') => {
+                redacted.push_str(placeholder);
+                rest = &after[value.len()..];
+            }
+            _ => rest = after,
+        }
+    }
+    redacted.push_str(rest);
+    redacted
+}
 
 impl Answer {
     /// Sends the request of a case to the application and takes the answer apart.
-    async fn of(app: &Router, recording: &Recording, case: &Case, jars: &mut Jars) -> Self {
+    async fn of(app: &Router, recording: &Recording, case: &Case, browsers: &mut Browsers) -> Self {
         let mut request = Request::builder()
             .method(case.request.method.as_str())
-            .uri(&case.request.path)
+            .uri(browsers.fill_in(&case.request.path))
             .header(header::HOST, &recording.source.host);
         let body = match (&case.request.json, &case.request.body) {
             (Some(json), _) => {
                 request = request.header(header::CONTENT_TYPE, "application/json");
                 Body::from(serde_json::to_vec(json).expect("the request body can be written"))
             }
-            (None, Some(text)) => Body::from(text.clone()),
+            (None, Some(text)) => Body::from(browsers.fill_in(text)),
             (None, None) => Body::empty(),
         };
         for (name, value) in &case.request.headers {
             request = request.header(name.as_str(), value.as_str());
         }
-        let mut sent_cookies = case.request.cookies.clone();
+        let mut sent_cookies = BTreeMap::new();
+        for (name, value) in &case.request.cookies {
+            let name = if name == Browsers::SESSION_COOKIE {
+                browsers.session_cookie()
+            } else {
+                name
+            };
+            sent_cookies.insert(name.to_owned(), value.clone());
+        }
         if let Some(jar) = &case.request.jar {
-            sent_cookies.extend(jars.entry(jar.clone()).or_default().clone());
+            sent_cookies.extend(browsers.jars.entry(jar.clone()).or_default().clone());
         }
         if !sent_cookies.is_empty() {
             let cookies: Vec<String> = sent_cookies
@@ -337,8 +414,11 @@ impl Answer {
         for value in response.headers().get_all(header::SET_COOKIE) {
             let value = value.to_str().expect("a cookie is text");
             let (name, cookie_value, cookie) = RecordedCookie::parse(value, now);
+            if cookie.name == RecordedCookie::SESSION_COOKIE {
+                browsers.session_cookie = Some(name.clone());
+            }
             if let Some(jar) = &case.request.jar {
-                let jar = jars.entry(jar.clone()).or_default();
+                let jar = browsers.jars.entry(jar.clone()).or_default();
                 if cookie.lifetime == "deleted" {
                     jar.remove(&name);
                 } else {
@@ -355,11 +435,16 @@ impl Answer {
             .expect("the body can be read")
             .to_bytes();
 
+        let mut body = String::from_utf8(bytes.to_vec()).expect("the body is UTF-8");
+        for (key, placeholder) in &recording.source.redacted_keys {
+            body = redact(&body, key, placeholder);
+        }
+
         Self {
             status,
             headers,
             cookies,
-            body: String::from_utf8(bytes.to_vec()).expect("the body is UTF-8"),
+            body,
         }
     }
 
@@ -406,6 +491,9 @@ struct Source {
     php_version: String,
     host: String,
     recorded_headers: Vec<String>,
+    /// Keys of a JSON body whose text value the recorder replaced, with the placeholder.
+    #[serde(default)]
+    redacted_keys: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -453,6 +541,9 @@ struct RecordedCookie {
 }
 
 impl RecordedCookie {
+    /// The name that stands for the session cookie of any install.
+    const SESSION_COOKIE: &'static str = "organizr_token_<uuid>";
+
     /// How `parity/recorder/record.py` and the Rust application write an expiry.
     const EXPIRY_FORMAT: &'static str = "%a, %d-%b-%Y %H:%M:%S GMT";
 
@@ -494,7 +585,7 @@ impl RecordedCookie {
         });
         let cookie = Self {
             name: if install_id.is_some() {
-                "organizr_token_<uuid>".to_owned()
+                Self::SESSION_COOKIE.to_owned()
             } else {
                 name.to_owned()
             },

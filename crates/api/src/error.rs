@@ -29,6 +29,15 @@ pub enum ApiError {
         route: String,
     },
 
+    /// The caller is not logged in, or the group of the caller does not have the access
+    /// that the route asks for.
+    #[error("the caller does not have the access that the route asks for")]
+    NotAuthorized,
+
+    /// The request lacks something the route needs. The text says what, for the caller.
+    #[error("the request cannot be carried out: {0}")]
+    Unprocessable(&'static str),
+
     /// A login failed: because of the name or the password, or because something broke.
     #[error(transparent)]
     Login(#[from] LoginError),
@@ -78,6 +87,12 @@ impl IntoResponse for ApiError {
                 NoData,
             )
             .into_response(),
+            Self::NotAuthorized => {
+                Envelope::error(StatusCode::UNAUTHORIZED, "Not Authorized", NoData).into_response()
+            }
+            Self::Unprocessable(message) => {
+                Envelope::error(StatusCode::UNPROCESSABLE_ENTITY, message, NoData).into_response()
+            }
             // One answer for an unknown name and for a wrong password, as in the PHP
             // application.
             Self::Login(LoginError::WrongCredentials) => Envelope::error(

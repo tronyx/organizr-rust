@@ -22,9 +22,18 @@ A case is defined as (name, method, path) or (name, method, path, options). The 
              case uses the session of an earlier login. The values in a jar are not
              recorded: a replay fills its own jar from the answers it gets.
 
+A path and a body can hold `{session_token:<jar>}`, which stands for the session token
+in that jar. The name `{session_cookie}` in `cookies` stands for the name of the session
+cookie, which differs for every install. The recording keeps the placeholders, and a
+replay fills in its own values.
+
 For each cookie an answer sets, the recorder keeps the name, the domain, the path and
 the lifetime: `deleted` when the cookie expires in the past, `session` when it has no
 expiry, otherwise the seconds until the expiry, rounded to a whole minute.
+
+In a body, the text values of some keys change with every recording: ids, addresses,
+tokens and times. REDACTED_KEYS lists them with the placeholder that replaces each value.
+A replay replaces the same values in the answers of the Rust application.
 
 Only the Python standard library is used. No data of a real install is involved.
 """
@@ -75,14 +84,36 @@ RECORDED_HEADERS = (
     "x-organizr-group",
 )
 
-# Values that differ on every request, and the placeholder that replaces each one.
-REDACTIONS = (
-    (re.compile(r'("uuid": ")[0-9a-f-]{36}(")'), r"\1<uuid>\2"),
-    (re.compile(r'("(?:user_)?ip": ")[0-9a-fA-F.:]+(")'), r"\1<ip>\2"),
+# Keys of a JSON body whose text value differs on every recording, and the placeholder
+# that replaces the value. A value that is empty, or not text, stays as it is.
+REDACTED_KEYS = {
+    # The device id, and the id of the install.
+    "uuid": "<uuid>",
+    # The address of the caller: here, the gateway of the container network.
+    "ip": "<ip>",
+    "user_ip": "<ip>",
+    # The first characters of a hash of the address of the caller.
+    "uid": "<uid>",
+    # A session token.
+    "token": "<token>",
+    # Times: of a token (`date`), and of a stored session.
+    "date": "<time>",
+    "created": "<time>",
+    "expires": "<time>",
+}
+REDACTIONS = tuple(
+    (key, re.compile(r'("%s": ")[^"\\]+(")' % re.escape(key)), placeholder)
+    for key, placeholder in REDACTED_KEYS.items()
 )
 
 # The session cookie carries the random id of the install in its name.
 SESSION_COOKIE = re.compile(r"^organizr_token_[0-9a-f-]{36}$")
+
+# Stands for the name of the session cookie in the `cookies` of a case.
+SESSION_COOKIE_PLACEHOLDER = "{session_cookie}"
+
+# Stands for the session token of a jar in a path or a body.
+SESSION_TOKEN_PLACEHOLDER = re.compile(r"\{session_token:([a-z_]+)\}")
 
 NOT_FOUND_MESSAGE = "Endpoint Not Found or Defined"
 
@@ -199,9 +230,64 @@ LOGIN = [
     ("get_instead_of_post", "GET", "/api/v2/login"),
 ]
 
+BROWSER_A = {"User-Agent": "Parity-A/1.0"}
+BROWSER_B = {"User-Agent": "Parity-B/2.0"}
+NO_TOKEN = {SESSION_COOKIE_PLACEHOLDER: "this-is-no-token"}
+
+# Who the caller is, and the sessions of a user. The cases are one story, in order: the
+# set-up wizard has logged the admin in (session 1), then the admin logs in from two
+# browsers (sessions 2 and 3).
+SESSION = [
+    ("me_as_guest", "GET", "/api/v2/token/me"),
+    ("login_in_browser_a", "POST", "/api/v2/login", {"json": ADMIN, "jar": "a", "headers": BROWSER_A}),
+    ("login_in_browser_b", "POST", "/api/v2/login", {"json": ADMIN, "jar": "b", "headers": BROWSER_B}),
+    ("me_in_browser_a", "GET", "/api/v2/token/me", {"jar": "a", "headers": BROWSER_A}),
+    ("me_with_a_trailing_slash", "GET", "/api/v2/token/me/", {"jar": "a", "headers": BROWSER_A}),
+    # A session cookie that names no session is dropped, on every route.
+    ("me_with_a_cookie_that_is_no_token", "GET", "/api/v2/token/me", {"cookies": NO_TOKEN}),
+    ("ping_with_a_cookie_that_is_no_token", "GET", "/api/v2/ping", {"cookies": NO_TOKEN}),
+    ("unknown_route_with_a_cookie_that_is_no_token", "GET", "/api/v2/nothing/here", {"cookies": NO_TOKEN}),
+    ("me_with_an_empty_cookie", "GET", "/api/v2/token/me", {"cookies": {SESSION_COOKIE_PLACEHOLDER: ""}}),
+    # Asking whether a token is valid. PHP reads `Token` from the query or from a form.
+    ("validate_token_in_the_query", "POST", "/api/v2/token/validate?Token={session_token:a}"),
+    (
+        "validate_token_in_a_form",
+        "POST",
+        "/api/v2/token/validate",
+        {"body": "Token={session_token:a}", "headers": FORM},
+    ),
+    (
+        "validate_token_of_another_browser",
+        "POST",
+        "/api/v2/token/validate?Token={session_token:a}",
+        {"jar": "b", "headers": BROWSER_B},
+    ),
+    ("validate_text_that_is_no_token", "POST", "/api/v2/token/validate?Token=this-is-no-token"),
+    ("validate_empty_token", "POST", "/api/v2/token/validate?Token="),
+    ("validate_with_get", "GET", "/api/v2/token/validate?Token={session_token:a}"),
+    # Deleting sessions. Only a logged-in user can, and only sessions of their own.
+    ("delete_as_guest", "DELETE", "/api/v2/token/3"),
+    ("delete_id_zero", "DELETE", "/api/v2/token/0", {"jar": "a", "headers": BROWSER_A}),
+    ("delete_unknown_id", "DELETE", "/api/v2/token/99999", {"jar": "a", "headers": BROWSER_A}),
+    ("delete_id_that_is_no_number", "DELETE", "/api/v2/token/abc", {"jar": "a", "headers": BROWSER_A}),
+    # The paths of the two other token routes are ids for a DELETE.
+    ("delete_id_me", "DELETE", "/api/v2/token/me", {"jar": "a", "headers": BROWSER_A}),
+    ("delete_id_validate", "DELETE", "/api/v2/token/validate", {"jar": "a", "headers": BROWSER_A}),
+    ("delete_id_me_as_guest", "DELETE", "/api/v2/token/me"),
+    ("delete_without_an_id", "DELETE", "/api/v2/token/", {"jar": "a", "headers": BROWSER_A}),
+    ("delete_session_of_browser_b", "DELETE", "/api/v2/token/3", {"jar": "a", "headers": BROWSER_A}),
+    ("me_in_browser_a_after_the_delete", "GET", "/api/v2/token/me", {"jar": "a", "headers": BROWSER_A}),
+    ("validate_token_of_the_deleted_session", "POST", "/api/v2/token/validate?Token={session_token:b}"),
+    # The cookie of browser B is dropped twice: once because its session is gone, once
+    # by the logout itself.
+    ("logout_in_browser_b_after_the_delete", "GET", "/api/v2/logout", {"jar": "b", "headers": BROWSER_B}),
+    ("me_in_browser_b_after_the_logout", "GET", "/api/v2/token/me", {"jar": "b", "headers": BROWSER_B}),
+    ("delete_own_session", "DELETE", "/api/v2/token/2", {"jar": "a", "headers": BROWSER_A}),
+    ("me_in_browser_a_after_deleting_the_own_session", "GET", "/api/v2/token/me", {"jar": "a", "headers": BROWSER_A}),
+]
+
 # Logging out. The cases with the jar `browser` are one visit: log in, log out, log out
-# again. A logout with a session cookie that is no longer valid is not recorded yet: PHP
-# drops such a cookie on every route, which belongs to reading the session of a request.
+# again. A logout with a session cookie that is no longer valid is in SESSION.
 LOGOUT = [
     ("login", "POST", "/api/v2/login", {"json": ADMIN, "jar": "browser"}),
     ("logout", "GET", "/api/v2/logout", {"jar": "browser"}),
@@ -274,7 +360,22 @@ ROUTING = [
 
 
 # The cookie jars of the recording, by name: cookie name to value.
-JARS = {}
+JARS: dict[str, dict[str, str]] = {}
+
+# The name of the session cookie of this install, once an answer has set the cookie.
+session_cookie_name = None
+
+
+def fill_in(text):
+    """Replace each `{session_token:<jar>}` with the session token of that jar."""
+
+    def token_of(match):
+        jar = JARS.get(match.group(1), {})
+        if session_cookie_name not in jar:
+            sys.exit(f"The jar `{match.group(1)}` holds no session token.")
+        return jar[session_cookie_name]
+
+    return SESSION_TOKEN_PLACEHOLDER.sub(token_of, text)
 
 # How PHP writes the expiry of a cookie: its own cookies, and the one of the PHP session.
 EXPIRY_FORMATS = ("%a, %d-%b-%Y %H:%M:%S GMT", "%a, %d %b %Y %H:%M:%S GMT")
@@ -303,6 +404,9 @@ def describe_cookie(header, now):
         seconds = (expires.replace(tzinfo=timezone.utc) - now).total_seconds()
         lifetime = "deleted" if seconds < 0 else f"{round(seconds / 60) * 60}s"
 
+    if SESSION_COOKIE.match(name):
+        global session_cookie_name
+        session_cookie_name = name
     recorded = {
         "name": SESSION_COOKIE.sub("organizr_token_<uuid>", name),
         "domain": attributes.get("domain"),
@@ -322,15 +426,21 @@ def send(method, path, json_body=None, body=None, headers=None, cookies=None, ja
         payload = json.dumps(json_body).encode("utf-8")
         all_headers["Content-Type"] = "application/json"
     if body is not None:
-        payload = body.encode("utf-8")
+        payload = fill_in(body).encode("utf-8")
     all_headers.update(headers or {})
-    sent_cookies = dict(cookies or {})
+    sent_cookies = {}
+    for name, value in (cookies or {}).items():
+        if name == SESSION_COOKIE_PLACEHOLDER:
+            if session_cookie_name is None:
+                sys.exit("No answer has set the session cookie yet, so its name is not known.")
+            name = session_cookie_name
+        sent_cookies[name] = value
     if jar is not None:
         sent_cookies.update(JARS.setdefault(jar, {}))
     if sent_cookies:
         all_headers["Cookie"] = "; ".join(f"{name}={value}" for name, value in sent_cookies.items())
     try:
-        connection.request(method, path, body=payload, headers=all_headers)
+        connection.request(method, fill_in(path), body=payload, headers=all_headers)
         response = connection.getresponse()
         text = response.read().decode("utf-8")
         now = parsedate_to_datetime(response.getheader("Date"))
@@ -353,10 +463,10 @@ def send(method, path, json_body=None, body=None, headers=None, cookies=None, ja
         connection.close()
 
     redacted = []
-    for pattern, replacement in REDACTIONS:
-        text, count = pattern.subn(replacement, text)
+    for key, pattern, placeholder in REDACTIONS:
+        text, count = pattern.subn(lambda match: match.group(1) + placeholder + match.group(2), text)
         if count:
-            redacted.append(replacement.split("<")[1].split(">")[0])
+            redacted.append(key)
 
     request = {"method": method, "path": path}
     if json_body is not None:
@@ -397,6 +507,7 @@ def record(group, cases, php_version):
             "php_version": php_version,
             "host": HOST,
             "recorded_headers": list(RECORDED_HEADERS),
+            "redacted_keys": REDACTED_KEYS,
         },
         "cases": cases,
     }
@@ -438,6 +549,8 @@ def main():
     record("fresh_install", fresh, php_version)
 
     record("basics", named(BASICS), php_version)
+    # Before the other groups log in, so the only earlier session is the one of the wizard.
+    record("session", named(SESSION), php_version)
     record("login", named(LOGIN), php_version)
     record("logout", named(LOGOUT), php_version)
 

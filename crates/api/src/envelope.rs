@@ -105,6 +105,24 @@ impl<T> Envelope<T> {
     }
 }
 
+/// A `204` answer: the request was carried out and there is nothing to say. It has no
+/// body, but it keeps the content type that the PHP application sends with it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoContent;
+
+impl IntoResponse for NoContent {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::NO_CONTENT,
+            [(
+                header::CONTENT_TYPE,
+                JsonContentType::WithCharset.header_value(),
+            )],
+        )
+            .into_response()
+    }
+}
+
 /// The envelope as it goes over the wire.
 #[derive(Serialize)]
 struct Wire<'a, T> {

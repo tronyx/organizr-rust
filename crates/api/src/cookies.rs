@@ -93,6 +93,20 @@ pub fn append(response: &mut Response, values: impl IntoIterator<Item = HeaderVa
     }
 }
 
+/// Adds `Set-Cookie` values to an answer, before the ones it already has. A browser
+/// applies the values in order, so for a cookie that is set twice the later one stays.
+pub fn prepend(response: &mut Response, values: impl IntoIterator<Item = HeaderValue>) {
+    let later: Vec<HeaderValue> = response
+        .headers()
+        .get_all(header::SET_COOKIE)
+        .iter()
+        .cloned()
+        .collect();
+    response.headers_mut().remove(header::SET_COOKIE);
+    append(response, values);
+    append(response, later);
+}
+
 /// The cookies of a request, in the order the browser sent them: name and value.
 pub fn request_cookies(headers: &HeaderMap) -> impl Iterator<Item = (&str, &str)> {
     headers
@@ -225,6 +239,25 @@ mod tests {
             scope("app.example.com:8443", true)
         );
         assert_eq!(CookieScope::of(&HeaderMap::new(), false), scope("", false));
+    }
+
+    #[test]
+    fn prepended_cookies_come_before_the_ones_of_the_answer() {
+        use axum::response::IntoResponse;
+
+        let mut response = ().into_response();
+        let cookie = |text: &'static str| HeaderValue::from_static(text);
+        super::append(&mut response, [cookie("a=1"), cookie("b=2")]);
+
+        super::prepend(&mut response, [cookie("a=; deleted"), cookie("c=3")]);
+
+        let values: Vec<&str> = response
+            .headers()
+            .get_all(header::SET_COOKIE)
+            .iter()
+            .map(|value| value.to_str().expect("the value is text"))
+            .collect();
+        assert_eq!(values, ["a=; deleted", "c=3", "a=1", "b=2"]);
     }
 
     #[test]

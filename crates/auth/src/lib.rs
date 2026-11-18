@@ -2,6 +2,7 @@
 
 pub mod login;
 pub mod password;
+pub mod session;
 mod session_token;
 
 pub use session_token::{SessionToken, TokenError};

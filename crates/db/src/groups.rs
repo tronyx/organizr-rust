@@ -36,6 +36,15 @@ impl<'a> Groups<'a> {
         row.insert(self.connection).await?.try_into()
     }
 
+    /// The group with the given id.
+    pub async fn find(&self, id: GroupId) -> Result<Option<Group>, DbError> {
+        group::Entity::find_by_id(id.get())
+            .one(self.connection)
+            .await?
+            .map(Group::try_from)
+            .transpose()
+    }
+
     /// The group with the given level.
     pub async fn find_by_level(&self, level: GroupLevel) -> Result<Option<Group>, DbError> {
         group::Entity::find()

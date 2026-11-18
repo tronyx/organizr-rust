@@ -101,6 +101,18 @@ async fn group_comes_back_as_it_was_stored() {
             .expect("the group can be read");
 
         assert_eq!(found.as_ref(), Some(&stored));
+        let by_id = database
+            .groups()
+            .find(stored.id)
+            .await
+            .expect("the group can be read");
+        assert_eq!(by_id.as_ref(), Some(&stored));
+        let unknown = database
+            .groups()
+            .find(GroupId::new(12_345))
+            .await
+            .expect("the lookup works");
+        assert_eq!(unknown, None);
         assert_eq!(stored.level.get(), 4);
         assert_eq!(stored.name, "Üser Group");
         assert_eq!(
@@ -220,7 +232,19 @@ async fn user_comes_back_as_it_was_stored() {
             .find_by_username("Zoë")
             .await
             .expect("the user can be read");
-        assert_eq!(found, Some(stored));
+        assert_eq!(found.as_ref(), Some(&stored));
+        let by_id = database
+            .users()
+            .find(stored.id)
+            .await
+            .expect("the user can be read");
+        assert_eq!(by_id, Some(stored));
+        let unknown = database
+            .users()
+            .find(UserId::new(12_345))
+            .await
+            .expect("the lookup works");
+        assert_eq!(unknown, None);
     })
     .await;
 }

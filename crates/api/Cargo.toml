@@ -19,8 +19,10 @@ organizr-settings.workspace = true
 
 axum.workspace = true
 form_urlencoded.workspace = true
+hex.workspace = true
 ipnet.workspace = true
 jiff.workspace = true
+md-5.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

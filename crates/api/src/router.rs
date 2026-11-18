@@ -1,15 +1,18 @@
 //! The route table of the API.
 
-use axum::Router;
+use axum::extract::State;
 use axum::http::{HeaderValue, Method, Uri, header};
 use axum::middleware::{from_fn, from_fn_with_state};
-use axum::routing::{MethodRouter, get, post};
+use axum::response::Response;
+use axum::routing::{MethodRouter, delete, get, post};
+use axum::{Extension, Router};
 use tower_http::set_header::SetResponseHeaderLayer;
 
+use crate::caller::{Caller, identify_caller};
 use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
-use crate::handlers::{basics, login, logout};
+use crate::handlers::{basics, login, logout, token};
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
 use crate::state::AppState;
@@ -29,9 +32,28 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/rox", &get(basics::rox))?
         .route("/roxinsocks", &get(basics::roxinsocks))?
         .route("/login", &post(login::login))?
-        .route("/logout", &get(logout::logout))?;
+        .route("/logout", &get(logout::logout))?
+        // The PHP router tries `/token/{id}` for a DELETE of the two fixed paths too.
+        .route(
+            "/token/me",
+            &get(token::me).delete(|state, caller| revoke_fixed(state, caller, "me")),
+        )?
+        .route(
+            "/token/validate",
+            &post(token::validate).delete(|state, caller| revoke_fixed(state, caller, "validate")),
+        )?
+        .route("/token/{id}", &delete(token::revoke))?;
 
     Ok(finish(routes.router, state))
+}
+
+/// `DELETE /token/{id}` for a path that Axum gives to a route without a parameter.
+async fn revoke_fixed(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    id: &'static str,
+) -> Result<Response, ApiError> {
+    token::revoke_by_text(&state, &caller, id).await
 }
 
 /// Adds what every route gets, and the answer for a request that no route takes.
@@ -45,6 +67,9 @@ fn finish(routes: Router<AppState>, state: AppState) -> Router {
         .fallback(not_found)
         .method_not_allowed_fallback(not_found)
         .layer(from_fn(ensure_device_cookie))
+        // Added before the layer that identifies the client, so it runs after it: the
+        // cookie it may drop needs to know whether the browser used HTTPS.
+        .layer(from_fn_with_state(state.clone(), identify_caller))
         // Added after the device cookie, so it runs before it: the device cookie reads
         // the client that this layer works out.
         .layer(from_fn_with_state(state.clone(), identify_client))
