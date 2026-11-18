@@ -70,3 +70,14 @@ async fn login_answers_like_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn logout_answers_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = without_php_session(Replay::group("logout"));
+
+        replay.run(&installed_app(database)).await;
+    })
+    .await;
+}

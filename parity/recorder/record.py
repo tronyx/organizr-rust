@@ -199,6 +199,37 @@ LOGIN = [
     ("get_instead_of_post", "GET", "/api/v2/login"),
 ]
 
+# Logging out. The cases with the jar `browser` are one visit: log in, log out, log out
+# again. A logout with a session cookie that is no longer valid is not recorded yet: PHP
+# drops such a cookie on every route, which belongs to reading the session of a request.
+LOGOUT = [
+    ("login", "POST", "/api/v2/login", {"json": ADMIN, "jar": "browser"}),
+    ("logout", "GET", "/api/v2/logout", {"jar": "browser"}),
+    ("logout_again", "GET", "/api/v2/logout", {"jar": "browser"}),
+    ("logout_without_cookies", "GET", "/api/v2/logout"),
+    # Cookies of other applications that a login can set. PHP drops every cookie whose
+    # name contains `tautulli` or `user-`.
+    (
+        "logout_with_cookies_of_other_applications",
+        "GET",
+        "/api/v2/logout",
+        {
+            "cookies": {
+                "organizr_user_uuid": "0e3b1d7c-5f0a-4c59-9f3c-2a6d1b8e4f70",
+                "tautulli_token_abc": "1",
+                "my_tautulli": "2",
+                "Tautulli": "3",
+                "user-abc": "4",
+                "superuser-1": "5",
+                "user": "6",
+                "mpt": "7",
+                "theme": "8",
+            }
+        },
+    ),
+    ("post_instead_of_get", "POST", "/api/v2/logout"),
+]
+
 # Requests that show which route the PHP router chooses. The Rust router must choose the
 # same one. Keep in step with ROUTING_CASES in crates/api/tests/slim_routes.rs.
 ROUTING = [
@@ -408,6 +439,7 @@ def main():
 
     record("basics", named(BASICS), php_version)
     record("login", named(LOGIN), php_version)
+    record("logout", named(LOGOUT), php_version)
 
     routing = []
     for method, path in ROUTING:

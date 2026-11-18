@@ -9,7 +9,7 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
-use crate::handlers::{basics, login};
+use crate::handlers::{basics, login, logout};
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
 use crate::state::AppState;
@@ -28,7 +28,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/ping", &get(basics::ping))?
         .route("/rox", &get(basics::rox))?
         .route("/roxinsocks", &get(basics::roxinsocks))?
-        .route("/login", &post(login::login))?;
+        .route("/login", &post(login::login))?
+        .route("/logout", &get(logout::logout))?;
 
     Ok(finish(routes.router, state))
 }

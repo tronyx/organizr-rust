@@ -1,0 +1,704 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ]
+  },
+  "cases": [
+    {
+      "name": "login",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password"
+        },
+        "jar": "browser"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "logout",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/logout",
+        "jar": "browser"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "logout_again",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/logout",
+        "jar": "browser"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "logout_without_cookies",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/logout"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "logout_with_cookies_of_other_applications",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/logout",
+        "cookies": {
+          "organizr_user_uuid": "0e3b1d7c-5f0a-4c59-9f3c-2a6d1b8e4f70",
+          "tautulli_token_abc": "1",
+          "my_tautulli": "2",
+          "Tautulli": "3",
+          "user-abc": "4",
+          "superuser-1": "5",
+          "user": "6",
+          "mpt": "7",
+          "theme": "8"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "mpt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "Auth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "oAuth",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "connect.sid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "petio_jwt",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "tautulli_token_abc",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "tautulli_token_abc",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "my_tautulli",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "my_tautulli",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "user-abc",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "user-abc",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "superuser-1",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "superuser-1",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "jellyfin_credentials",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "deleted"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "post_instead_of_get",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/logout"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/logout\",\n            \"method\": \"POST\"\n        }\n    }\n}"
+      }
+    }
+  ]
+}

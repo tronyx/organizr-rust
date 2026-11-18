@@ -9,9 +9,14 @@
 //! This replaces the "form key" of the PHP application, which was the same for every
 //! visitor, never changed and was checked on POST only. A refused request gets the answer
 //! PHP gives for a wrong form key, so clients see the error they know.
+//!
+//! A few routes of the PHP application change something with a GET request, for example
+//! `GET /logout`. The layer lets every GET through, so the handler of such a route asks
+//! for [`FromThisSite`], which makes the same decision for any method.
 
-use axum::extract::Request;
-use axum::http::header;
+use axum::extract::{FromRequestParts, Request};
+use axum::http::request::Parts;
+use axum::http::{HeaderMap, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use tower_http::csrf::{CsrfLayer, ProtectionError};
@@ -53,5 +58,126 @@ pub async fn answer_refusal(request: Request, next: Next) -> Response {
             ApiError::CrossSite { route }.into_response()
         }
         None => response,
+    }
+}
+
+/// Proof that a request does not come from another site. A handler that changes
+/// something with a GET request takes it as an argument; a request from another site
+/// then gets the refusal and the handler does not run.
+#[derive(Debug, Clone, Copy)]
+pub struct FromThisSite;
+
+impl<S: Send + Sync> FromRequestParts<S> for FromThisSite {
+    type Rejection = ApiError;
+
+    // The decision needs nothing that must be waited for, so the answer is ready at once.
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &S,
+    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
+        std::future::ready(Self::check(parts))
+    }
+}
+
+impl FromThisSite {
+    fn check(parts: &Parts) -> Result<Self, ApiError> {
+        if comes_from_another_site(&parts.headers) {
+            let route = parts.uri.path().to_owned();
+            tracing::warn!(
+                method = %parts.method,
+                %route,
+                client = ?parts.extensions.get::<Client>().map(|client| client.address),
+                "refused a request from another site"
+            );
+            return Err(ApiError::CrossSite { route });
+        }
+        Ok(Self)
+    }
+}
+
+/// The decision of [`layer`], for a request of any method.
+///
+/// - `Sec-Fetch-Site` says it: `same-origin` and `none` (the user typed the address or
+///   used a bookmark) are this site, every other value is another site.
+/// - Without that header, an `Origin` header must name the host of the request.
+/// - A request with neither header does not come from a browser, so no other site made
+///   the browser send it.
+fn comes_from_another_site(headers: &HeaderMap) -> bool {
+    // A value that is not text is none of the known values.
+    let text = |name: &str| headers.get(name).map(|value| value.to_str().unwrap_or(""));
+
+    match (text("sec-fetch-site"), text("origin")) {
+        (Some(site), _) => !matches!(site, "same-origin" | "none"),
+        (None, Some(origin)) => {
+            let authority = origin.split_once("://").map(|(_, authority)| authority);
+            authority.is_none() || authority != text("host")
+        }
+        (None, None) => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::http::{HeaderMap, HeaderName, HeaderValue};
+
+    use super::comes_from_another_site;
+
+    fn request(headers: &[(&'static str, &'static str)]) -> HeaderMap {
+        let mut map = HeaderMap::new();
+        map.insert("host", HeaderValue::from_static("organizr.example.com"));
+        for (name, value) in headers {
+            map.insert(
+                HeaderName::from_static(name),
+                HeaderValue::from_static(value),
+            );
+        }
+        map
+    }
+
+    #[test]
+    fn request_of_the_application_itself_is_from_this_site() {
+        let from_here: [&[(&str, &str)]; 6] = [
+            // A current browser on a page of the application.
+            &[("sec-fetch-site", "same-origin")],
+            // The user typed the address or used a bookmark.
+            &[("sec-fetch-site", "none")],
+            // The fetch header decides, whatever else is sent.
+            &[
+                ("sec-fetch-site", "same-origin"),
+                ("origin", "https://evil.example.net"),
+            ],
+            // An older browser on a page of the application.
+            &[("origin", "https://organizr.example.com")],
+            &[("origin", "http://organizr.example.com")],
+            // A script or an API client: no browser headers at all.
+            &[],
+        ];
+
+        for headers in from_here {
+            assert!(!comes_from_another_site(&request(headers)), "{headers:?}");
+        }
+    }
+
+    #[test]
+    fn request_that_another_site_made_the_browser_send_is_from_another_site() {
+        let from_elsewhere: [&[(&str, &str)]; 8] = [
+            &[("sec-fetch-site", "cross-site")],
+            // A sibling sub-domain, for example another application behind the same proxy.
+            &[("sec-fetch-site", "same-site")],
+            &[("sec-fetch-site", "something-new")],
+            &[
+                ("sec-fetch-site", "cross-site"),
+                ("origin", "https://organizr.example.com"),
+            ],
+            &[("origin", "https://evil.example.net")],
+            &[("origin", "https://organizr.example.com.evil.example.net")],
+            &[("origin", "https://organizr.example.com:8443")],
+            // What a browser sends from a sandboxed page or a local file.
+            &[("origin", "null")],
+        ];
+
+        for headers in from_elsewhere {
+            assert!(comes_from_another_site(&request(headers)), "{headers:?}");
+        }
     }
 }
