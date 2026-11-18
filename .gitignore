@@ -32,3 +32,6 @@ node_modules/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Python byte code, from running the recorder
+__pycache__/
