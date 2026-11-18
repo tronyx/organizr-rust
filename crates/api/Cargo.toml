@@ -16,11 +16,13 @@ organizr-db.workspace = true
 organizr-settings.workspace = true
 
 axum.workspace = true
+jiff.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tower-http.workspace = true
 tracing.workspace = true
+uuid.workspace = true
 
 [dev-dependencies]
 http-body-util.workspace = true

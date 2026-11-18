@@ -2,9 +2,11 @@
 
 use axum::Router;
 use axum::http::{HeaderValue, Method, Uri, header};
+use axum::middleware::from_fn;
 use axum::routing::{MethodRouter, get};
 use tower_http::set_header::SetResponseHeaderLayer;
 
+use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::basics;
 use crate::slim_route::{RoutePatternError, expand};
@@ -29,6 +31,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .router
         .fallback(not_found)
         .method_not_allowed_fallback(not_found)
+        .layer(from_fn(ensure_device_cookie))
         // The PHP application starts a PHP session on every request, which adds these
         // three headers to every answer. They also keep answers out of caches.
         .layer(SetResponseHeaderLayer::overriding(

@@ -7,9 +7,9 @@
 //!
 //! An aspect may differ from the recording in two ways only:
 //!
-//! - an **expectation edit**: the expected body is changed before the comparison. An edit
-//!   names an approved entry of `docs/deviations.md`, or a difference of the environment
-//!   the test runs in.
+//! - an **expectation edit**: the expected body is changed, or an expected cookie is
+//!   removed, before the comparison. An edit names an approved entry of
+//!   `docs/deviations.md`, or a difference of the environment the test runs in.
 //! - a **pending marker**: the aspect, or the whole case, is not implemented yet. A pending
 //!   aspect must differ. When it starts to match, the test fails until the marker is
 //!   removed, so a marker cannot outlive its reason.
@@ -56,6 +56,7 @@ pub struct Replay {
     edits: Vec<Edit>,
     pending_aspects: Vec<(String, Aspect)>,
     pending_cases: Vec<String>,
+    absent_cookies: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -73,6 +74,7 @@ impl Replay {
             edits: Vec::new(),
             pending_aspects: Vec::new(),
             pending_cases: Vec::new(),
+            absent_cookies: Vec::new(),
         }
     }
 
@@ -82,13 +84,18 @@ impl Replay {
     /// recorded body, for example `/response/data/php`.
     #[must_use]
     pub fn deviation(self, id: &str, case: &str, pointer: &str, value: Value) -> Self {
-        let approved = std::fs::read_to_string(repository_root().join("docs/deviations.md"))
-            .expect("docs/deviations.md can be read");
-        assert!(
-            approved.contains(&format!("| {id} |")),
-            "{id} is not an entry of docs/deviations.md; a deviation needs approval first"
-        );
+        assert_approved(id);
         self.edit(case, pointer, value)
+    }
+
+    /// Expects that no case sets the named cookie, because of an approved deviation.
+    ///
+    /// `id` must be an entry of `docs/deviations.md`.
+    #[must_use]
+    pub fn without_cookie(mut self, id: &str, name: &str) -> Self {
+        assert_approved(id);
+        self.absent_cookies.push(name.to_owned());
+        self
     }
 
     /// Expects another value in the body of a case, because the test does not run where
@@ -216,6 +223,7 @@ impl Replay {
         }
 
         let mut cookies = case.response.cookies_set.clone();
+        cookies.retain(|name| !self.absent_cookies.contains(name));
         cookies.sort();
         Answer {
             status: case.response.status,
@@ -241,6 +249,16 @@ impl Replay {
             );
         }
     }
+}
+
+/// Fails unless `id` is an entry of `docs/deviations.md`.
+fn assert_approved(id: &str) {
+    let approved = std::fs::read_to_string(repository_root().join("docs/deviations.md"))
+        .expect("docs/deviations.md can be read");
+    assert!(
+        approved.contains(&format!("| {id} |")),
+        "{id} is not an entry of docs/deviations.md; a deviation needs approval first"
+    );
 }
 
 /// The compared parts of an answer, recorded or actual.

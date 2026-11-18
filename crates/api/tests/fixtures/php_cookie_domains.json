@@ -1,0 +1,165 @@
+{
+    "php_version": "8.5.12",
+    "cases": [
+        {
+            "host": "localhost",
+            "wide_domain": "",
+            "host_domain": "localhost"
+        },
+        {
+            "host": "localhost:8080",
+            "wide_domain": "",
+            "host_domain": "localhost"
+        },
+        {
+            "host": "organizr",
+            "wide_domain": "",
+            "host_domain": "organizr"
+        },
+        {
+            "host": "",
+            "wide_domain": "",
+            "host_domain": ""
+        },
+        {
+            "host": "127.0.0.1",
+            "wide_domain": "",
+            "host_domain": "127.0.0.1"
+        },
+        {
+            "host": "127.0.0.1:8098",
+            "wide_domain": "",
+            "host_domain": "127.0.0.1"
+        },
+        {
+            "host": "192.168.1.10",
+            "wide_domain": "",
+            "host_domain": "192.168.1.10"
+        },
+        {
+            "host": "10.0.0.5:32400",
+            "wide_domain": "",
+            "host_domain": "10.0.0.5"
+        },
+        {
+            "host": "[::1]:8080",
+            "wide_domain": "",
+            "host_domain": "["
+        },
+        {
+            "host": "example.com",
+            "wide_domain": ".example.com",
+            "host_domain": "example.com"
+        },
+        {
+            "host": "example.com:8443",
+            "wide_domain": ".example.com",
+            "host_domain": "example.com"
+        },
+        {
+            "host": "organizr.test",
+            "wide_domain": ".organizr.test",
+            "host_domain": "organizr.test"
+        },
+        {
+            "host": "EXAMPLE.COM",
+            "wide_domain": ".EXAMPLE.COM",
+            "host_domain": "EXAMPLE.COM"
+        },
+        {
+            "host": "app.example.com",
+            "wide_domain": ".example.com",
+            "host_domain": "app.example.com"
+        },
+        {
+            "host": "app.example.com:443",
+            "wide_domain": ".example.com",
+            "host_domain": "app.example.com"
+        },
+        {
+            "host": "www.example.com",
+            "wide_domain": ".example.com",
+            "host_domain": "www.example.com"
+        },
+        {
+            "host": "example.co.uk",
+            "wide_domain": ".example.co.uk",
+            "host_domain": "example.co.uk"
+        },
+        {
+            "host": "www.co.uk",
+            "wide_domain": ".co.uk",
+            "host_domain": "www.co.uk"
+        },
+        {
+            "host": "App.Example.Com",
+            "wide_domain": ".Example.Com",
+            "host_domain": "App.Example.Com"
+        },
+        {
+            "host": "home.ddns.net",
+            "wide_domain": ".home.ddns.net",
+            "host_domain": "home.ddns.net"
+        },
+        {
+            "host": "myhouse.hopto.org",
+            "wide_domain": ".myhouse.hopto.org",
+            "host_domain": "myhouse.hopto.org"
+        },
+        {
+            "host": "HOME.DDNS.NET",
+            "wide_domain": ".HOME.DDNS.NET",
+            "host_domain": "HOME.DDNS.NET"
+        },
+        {
+            "host": "app.home.example.com",
+            "wide_domain": ".home.example.com",
+            "host_domain": "app.home.example.com"
+        },
+        {
+            "host": "app.example.co.uk",
+            "wide_domain": ".example.co.uk",
+            "host_domain": "app.example.co.uk"
+        },
+        {
+            "host": "organizr.home.ddns.net",
+            "wide_domain": ".organizr.home.ddns.net",
+            "host_domain": "organizr.home.ddns.net"
+        },
+        {
+            "host": "www.app.example.com",
+            "wide_domain": ".app.example.com",
+            "host_domain": "www.app.example.com"
+        },
+        {
+            "host": "1app.home.example.com",
+            "wide_domain": "",
+            "host_domain": "1app.home.example.com"
+        },
+        {
+            "host": "a.b.c.example.com",
+            "wide_domain": ".b.c.example",
+            "host_domain": "a.b.c.example.com"
+        },
+        {
+            "host": "a.b.home.ddns.net",
+            "wide_domain": ".b.home.ddns",
+            "host_domain": "a.b.home.ddns.net"
+        },
+        {
+            "host": "example.com.",
+            "wide_domain": ".com.",
+            "host_domain": "example.com."
+        },
+        {
+            "host": ".example.com",
+            "wide_domain": ".example.com",
+            "host_domain": ".example.com"
+        },
+        {
+            "host": "app..example.com",
+            "wide_domain": "..example.com",
+            "host_domain": "app..example.com"
+        }
+    ]
+}

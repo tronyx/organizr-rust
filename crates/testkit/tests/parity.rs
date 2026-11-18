@@ -9,7 +9,7 @@
 )]
 
 use organizr_testkit::engines::on_each_engine;
-use organizr_testkit::replay::{Aspect, EVERY_CASE, Replay};
+use organizr_testkit::replay::Replay;
 use organizr_testkit::{app, seed};
 use serde_json::json;
 
@@ -29,13 +29,9 @@ fn status_differences(replay: Replay, case: &str) -> Replay {
     }
 }
 
-/// The cookie difference that every answer has for now.
-fn cookies_pending(replay: Replay) -> Replay {
-    replay.pending(
-        EVERY_CASE,
-        Aspect::Cookies,
-        "the device cookie arrives with the session slice; whether to send PHPSESSID is undecided",
-    )
+/// The cookie difference that every answer has: there is no PHP session.
+fn without_php_session(replay: Replay) -> Replay {
+    replay.without_cookie("D-27", "PHPSESSID")
 }
 
 #[tokio::test]
@@ -43,7 +39,7 @@ async fn fresh_install_answers_like_php() {
     on_each_engine(async |database| {
         let replay = Replay::group("fresh_install")
             .pending_case("wizard", "the set-up wizard is not implemented yet");
-        let replay = cookies_pending(status_differences(replay, "status"));
+        let replay = without_php_session(status_differences(replay, "status"));
 
         replay.run(&app(database)).await;
     })
@@ -57,7 +53,7 @@ async fn basic_routes_answer_like_php() {
         let replay = Replay::group("basics");
         let replay = status_differences(replay, "status");
         let replay = status_differences(replay, "status_with_trailing_slash");
-        let replay = cookies_pending(replay);
+        let replay = without_php_session(replay);
 
         replay.run(&app(database)).await;
     })

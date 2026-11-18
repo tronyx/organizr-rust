@@ -14,11 +14,7 @@ use serde_json::json;
 
 /// The replay of the `basics` group with the differences that are allowed today.
 fn basics() -> Replay {
-    let mut replay = Replay::group("basics").pending(
-        EVERY_CASE,
-        Aspect::Cookies,
-        "cookies are not implemented yet",
-    );
+    let mut replay = Replay::group("basics").without_cookie("D-27", "PHPSESSID");
     for case in ["status", "status_with_trailing_slash"] {
         replay = replay.deviation("D-21", case, "/response/data/php", json!("n/a"));
         if cfg!(windows) {
@@ -74,15 +70,53 @@ async fn difference_without_its_deviation_fails_the_replay() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         // No deviation for the PHP version: the recorded value is expected as it is.
-        let replay = Replay::group("basics").pending(
-            EVERY_CASE,
-            Aspect::Cookies,
-            "cookies are not implemented yet",
-        );
+        let replay = Replay::group("basics").without_cookie("D-27", "PHPSESSID");
 
         replay.run(&app(database)).await;
     })
     .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "case `ping`: Cookies differ")]
+async fn cookie_that_php_sets_and_no_deviation_removes_fails_the_replay() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // Without D-27 the PHP session cookie is expected, and the application sends none.
+        let mut replay = Replay::group("basics");
+        for case in ["status", "status_with_trailing_slash"] {
+            replay = replay.deviation("D-21", case, "/response/data/php", json!("n/a"));
+            if cfg!(windows) {
+                replay = replay.environment(
+                    "this test runs on Windows",
+                    case,
+                    "/response/data/os",
+                    json!("win"),
+                );
+            }
+        }
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "case `ping`: Cookies is marked pending but now matches")]
+async fn pending_marker_on_cookies_that_match_fails_the_replay() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = basics().pending(EVERY_CASE, Aspect::Cookies, "not needed any more");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[test]
+#[should_panic(expected = "D-999 is not an entry of docs/deviations.md")]
+fn cookie_deviation_that_is_not_approved_is_refused() {
+    let _ = Replay::group("basics").without_cookie("D-999", "PHPSESSID");
 }
 
 #[tokio::test]
