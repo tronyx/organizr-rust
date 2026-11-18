@@ -114,3 +114,24 @@ jobs:
 
           echo "The image does not run as root"
           [[ "$(docker image inspect --format '{{.Config.User}}' "${IMAGE}")" == "65532:65532" ]]
+
+          echo "The server starts and becomes healthy"
+          docker run --detach --name organizr-smoke --publish 127.0.0.1:8080:8080 "${IMAGE}"
+          health=starting
+          for _ in $(seq 1 30); do
+            health=$(docker inspect --format '{{.State.Health.Status}}' organizr-smoke)
+            if [[ "${health}" != "starting" ]]; then break; fi
+            sleep 2
+          done
+          docker logs organizr-smoke
+          [[ "${health}" == "healthy" ]]
+
+          echo "The server answers the ping"
+          answer=$(curl --silent --fail http://127.0.0.1:8080/api/v2/ping | tr -d '[:space:]')
+          echo "${answer}"
+          [[ "${answer}" == '{"response":{"result":"success","message":null,"data":"pong"}}' ]]
+
+          echo "The server stops cleanly when asked"
+          docker stop --time 10 organizr-smoke
+          [[ "$(docker inspect --format '{{.State.ExitCode}}' organizr-smoke)" == "0" ]]
+          docker rm organizr-smoke

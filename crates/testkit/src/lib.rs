@@ -14,3 +14,13 @@
 pub mod engines;
 pub mod replay;
 pub mod seed;
+
+use axum::Router;
+use organizr_api::{AppState, router};
+use organizr_db::Database;
+use organizr_settings::Settings;
+
+/// The application on the given database, with every setting at its default.
+pub fn app(database: &Database) -> Router {
+    router(AppState::new(database.clone(), Settings::defaults())).expect("the route table is valid")
+}

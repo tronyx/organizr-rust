@@ -8,17 +8,10 @@
     reason = "helper functions of a test file may panic; the lint settings only exempt test functions"
 )]
 
-use axum::Router;
-use organizr_api::{AppState, router};
-use organizr_db::Database;
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::replay::{Aspect, EVERY_CASE, Replay};
-use organizr_testkit::seed;
+use organizr_testkit::{app, seed};
 use serde_json::json;
-
-fn app(database: &Database) -> Router {
-    router(AppState::new(database.clone())).expect("the route table is valid")
-}
 
 /// The differences that every status answer has.
 fn status_differences(replay: Replay, case: &str) -> Replay {

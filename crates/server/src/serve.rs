@@ -1,0 +1,175 @@
+//! The `serve` command: opens the database, loads the settings and serves the API.
+
+use std::net::SocketAddr;
+use std::path::{Path, PathBuf};
+
+use anyhow::Context;
+use organizr_api::{AppState, router};
+use organizr_db::{Database, Engine};
+use organizr_settings::Settings;
+use tokio::net::TcpListener;
+use tracing_subscriber::EnvFilter;
+
+/// The options of `organizr serve`. Each one can also be set in the environment.
+///
+/// These are the settings the application needs before it can read its database, so they
+/// cannot live in the database.
+#[derive(Debug, clap::Args)]
+pub struct Args {
+    /// The address and port to listen on.
+    #[arg(long, env = "ORGANIZR_LISTEN", default_value = "0.0.0.0:8080")]
+    listen: SocketAddr,
+
+    /// The folder for the data of the application.
+    #[arg(long, env = "ORGANIZR_DATA_DIR", default_value = "data")]
+    data_dir: PathBuf,
+
+    /// The database: `sqlite:<file>` or `postgres://user:password@host/database`.
+    /// Without it, the application uses the SQLite file `organizr.db` in the data folder.
+    #[arg(long, env = "ORGANIZR_DATABASE_URL", hide_env_values = true)]
+    database_url: Option<String>,
+}
+
+/// Runs the server until the process is asked to stop.
+pub async fn run(args: Args) -> anyhow::Result<()> {
+    start_logging();
+
+    let database = open_database(&args).await?;
+    let settings = load_settings(&database).await?;
+    let app = router(AppState::new(database.clone(), settings))
+        .context("the route table is not valid")?;
+
+    let listener = TcpListener::bind(args.listen)
+        .await
+        .with_context(|| format!("cannot listen on {}", args.listen))?;
+    tracing::info!(address = %args.listen, version = env!("CARGO_PKG_VERSION"), "Organizr is listening");
+
+    axum::serve(listener, app)
+        .with_graceful_shutdown(stop_requested())
+        .await
+        .context("the server stopped with an error")?;
+
+    tracing::info!("Organizr is stopping");
+    database
+        .close()
+        .await
+        .context("the database did not close cleanly")
+}
+
+/// Writes log lines to the standard output. `ORGANIZR_LOG` sets the level, for example
+/// `debug` or `organizr_api=debug,info`. The default is `info`.
+fn start_logging() {
+    let filter = EnvFilter::try_from_env("ORGANIZR_LOG").unwrap_or_else(|_| EnvFilter::new("info"));
+    tracing_subscriber::fmt().with_env_filter(filter).init();
+}
+
+/// Opens the database and brings its schema up to date.
+async fn open_database(args: &Args) -> anyhow::Result<Database> {
+    let url = if let Some(url) = &args.database_url {
+        url.clone()
+    } else {
+        std::fs::create_dir_all(&args.data_dir).with_context(|| {
+            format!("cannot create the data folder {}", args.data_dir.display())
+        })?;
+        default_database_url(&args.data_dir)
+    };
+
+    // The URL can hold a password, so it is not put into an error or a log line.
+    let database = Database::connect(&url)
+        .await
+        .context("cannot open the database")?;
+    database
+        .migrate()
+        .await
+        .context("cannot bring the database schema up to date")?;
+
+    let engine = match database.engine() {
+        Engine::Sqlite => "SQLite",
+        Engine::Postgres => "PostgreSQL",
+    };
+    tracing::info!(engine, "the database is ready");
+    Ok(database)
+}
+
+/// The URL of the SQLite file in the data folder.
+fn default_database_url(data_dir: &Path) -> String {
+    let file = data_dir.join("organizr.db");
+    format!("sqlite:{}", file.display().to_string().replace('\\', "/"))
+}
+
+/// Reads the settings. A stored entry that cannot be used is logged and left at its default.
+async fn load_settings(database: &Database) -> anyhow::Result<Settings> {
+    let stored = database
+        .settings()
+        .all()
+        .await
+        .context("cannot read the settings")?;
+    let (settings, problems) = Settings::from_stored(
+        stored
+            .iter()
+            .map(|setting| (setting.key.as_str(), setting.value.as_str())),
+    );
+    for problem in &problems {
+        tracing::warn!(%problem, "a stored setting is ignored");
+    }
+    Ok(settings)
+}
+
+/// Completes when the process is asked to stop: Ctrl-C, or the terminate signal that
+/// `docker stop` sends.
+async fn stop_requested() {
+    let interrupt = async {
+        if let Err(error) = tokio::signal::ctrl_c().await {
+            tracing::warn!(%error, "cannot wait for Ctrl-C");
+            std::future::pending::<()>().await;
+        }
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        use tokio::signal::unix::{SignalKind, signal};
+        match signal(SignalKind::terminate()) {
+            Ok(mut stream) => {
+                stream.recv().await;
+            }
+            Err(error) => {
+                tracing::warn!(%error, "cannot wait for the terminate signal");
+                std::future::pending::<()>().await;
+            }
+        }
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        () = interrupt => {}
+        () = terminate => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::default_database_url;
+
+    #[test]
+    fn default_database_is_a_file_in_the_data_folder() {
+        assert_eq!(
+            default_database_url(Path::new("/config")),
+            "sqlite:/config/organizr.db"
+        );
+        assert_eq!(
+            default_database_url(Path::new("data")),
+            "sqlite:data/organizr.db"
+        );
+    }
+
+    #[test]
+    fn windows_paths_are_written_with_forward_slashes() {
+        assert_eq!(
+            default_database_url(Path::new(r"C:\Organizr\data")),
+            "sqlite:C:/Organizr/data/organizr.db"
+        );
+    }
+}

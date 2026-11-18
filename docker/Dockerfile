@@ -27,17 +27,32 @@ COPY crates ./crates
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/build/target,sharing=locked \
     cargo build --release --locked --workspace \
-    && cp target/release/organizr /organizr
+    && cp target/release/organizr /organizr \
+    && mkdir /config
 
 ############################
-# Final image: the binary and nothing else
+# Final image: the binary and an empty data folder
 ############################
 FROM ${RUNTIME_IMAGE}
 
 COPY --from=builder /organizr /usr/local/bin/organizr
 
+# The data folder: the SQLite database and, later, uploads and backups. It belongs to the
+# user the application runs as. A folder mounted here must be writable for that user.
+COPY --from=builder --chown=65532:65532 /config /config
+ENV ORGANIZR_DATA_DIR=/config
+VOLUME /config
+
 # The "nonroot" user of the base image, by number, so that a platform that checks for a
 # non-root user id can see it.
 USER 65532:65532
 
+EXPOSE 8080
+
+# The image has no shell and no curl, so the binary checks itself. During the start period
+# the check runs every two seconds, so a container is reported healthy soon after it starts.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --start-interval=2s --retries=3 \
+    CMD ["/usr/local/bin/organizr", "healthcheck"]
+
 ENTRYPOINT ["/usr/local/bin/organizr"]
+CMD ["serve"]

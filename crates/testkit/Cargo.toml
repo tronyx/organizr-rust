@@ -15,6 +15,7 @@ workspace = true
 organizr-api.workspace = true
 organizr-db.workspace = true
 organizr-domain.workspace = true
+organizr-settings.workspace = true
 
 axum.workspace = true
 http-body-util.workspace = true

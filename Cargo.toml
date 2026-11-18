@@ -42,8 +42,9 @@ organizr-domain = { path = "crates/domain" }
 organizr-settings = { path = "crates/settings" }
 organizr-testkit = { path = "crates/testkit" }
 
+anyhow = "1.0.104"
 axum = "0.8.9"
-clap = { version = "4.6.8", features = ["derive"] }
+clap = { version = "4.6.8", features = ["derive", "env"] }
 http-body-util = "0.1.5"
 sea-orm = { version = "2.0.4", default-features = false, features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls", "macros"] }
 sea-orm-migration = { version = "2.0.4", default-features = false, features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls"] }
@@ -55,6 +56,7 @@ tokio = { version = "1.54", features = ["macros", "rt"] }
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.7.1", features = ["csrf", "set-header"] }
 tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 # The shipped binary: link-time optimisation and no debug symbols.
 [profile.release]

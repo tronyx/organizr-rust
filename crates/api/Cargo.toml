@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 organizr-db.workspace = true
+organizr-settings.workspace = true
 
 axum.workspace = true
 serde.workspace = true
