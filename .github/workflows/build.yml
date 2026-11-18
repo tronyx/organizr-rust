@@ -1,0 +1,116 @@
+name: build
+
+# Builds the image for both architectures and tests that it starts. Nothing is pushed yet.
+# It runs only when a file that changes the image changes, and on request.
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - docker/**
+      - .dockerignore
+      - Cargo.toml
+      - Cargo.lock
+      - rust-toolchain.toml
+      - .github/workflows/build.yml
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - docker/**
+      - .dockerignore
+      - Cargo.toml
+      - Cargo.lock
+      - rust-toolchain.toml
+      - .github/workflows/build.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test the image (${{ matrix.architecture }})
+    strategy:
+      matrix:
+        include:
+          - architecture: linux-amd64
+            runner: ubuntu-26.04
+          - architecture: linux-arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    env:
+      IMAGE: organizr-smoke-test:${{ matrix.architecture }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check that the Dockerfile and rust-toolchain.toml name the same Rust version
+        run: |
+          toolchain=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)
+          image=$(sed -n 's/^ARG RUST_IMAGE=rust:\([0-9.]*\)-.*$/\1/p' docker/Dockerfile)
+          echo "rust-toolchain.toml: ${toolchain}"
+          echo "docker/Dockerfile:   ${image}"
+          if [[ -z "${toolchain}" || "${toolchain}" != "${image}" ]]; then
+            echo "::error::The Rust versions differ. Update both files together."
+            exit 1
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.4.1
+        with:
+          version: v0.39.0
+          driver-opts: image=moby/buildkit:v0.35.0
+
+      - name: Prepare
+        id: prep
+        run: |
+          # GITHUB_REF_NAME is N/merge on pull requests, which has no cache of its own
+          if [[ "${GITHUB_EVENT_NAME}" == pull_request ]]; then
+            CACHE_REF_NAME="${GITHUB_BASE_REF}"
+          else
+            CACHE_REF_NAME="${GITHUB_REF_NAME}"
+          fi
+          ARCHITECTURE=${{ matrix.architecture }}
+          {
+            echo "platform=${ARCHITECTURE//-/\/}"
+            echo "cache=type=gha,scope=${CACHE_REF_NAME}-${ARCHITECTURE}"
+            echo "version=$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build for testing
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          load: true
+          platforms: ${{ steps.prep.outputs.platform }}
+          cache-from: ${{ steps.prep.outputs.cache }}
+          cache-to: ${{ steps.prep.outputs.cache }},mode=max
+          tags: ${{ env.IMAGE }}
+
+      - name: Smoke test
+        env:
+          VERSION: ${{ steps.prep.outputs.version }}
+          PLATFORM: ${{ steps.prep.outputs.platform }}
+        run: |
+          set -euo pipefail
+
+          echo "The binary starts and reports the version of the workspace"
+          output=$(docker run --rm "${IMAGE}" --version)
+          echo "${output}"
+          [[ "${output}" == "organizr ${VERSION}" ]]
+
+          echo "The image is for ${PLATFORM}"
+          [[ "$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "${IMAGE}")" == "${PLATFORM}" ]]
+
+          echo "The image does not run as root"
+          [[ "$(docker image inspect --format '{{.Config.User}}' "${IMAGE}")" == "65532:65532" ]]

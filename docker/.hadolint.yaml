@@ -1,0 +1,2 @@
+# Warnings and errors fail the lint workflow; info and style findings are still printed.
+failure-threshold: warning

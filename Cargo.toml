@@ -50,3 +50,8 @@ thiserror = "2.0.21"
 tokio = { version = "1.54", features = ["macros", "rt"] }
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.7.1", features = ["csrf"] }
+
+# The shipped binary: link-time optimisation and no debug symbols.
+[profile.release]
+lto = "thin"
+strip = true

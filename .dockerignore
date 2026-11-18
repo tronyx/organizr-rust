@@ -1,0 +1,6 @@
+# Allow-list: the image build sees only what it needs to compile the binary.
+# Anything new stays out of the build context until it is added here.
+*
+!Cargo.toml
+!Cargo.lock
+!crates/
