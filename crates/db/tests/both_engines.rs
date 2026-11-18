@@ -357,6 +357,91 @@ async fn login_text_that_fits_two_users_finds_the_older_one() {
 }
 
 #[tokio::test]
+async fn name_or_address_of_a_user_is_taken_whatever_the_letter_case() {
+    on_each_engine(async |database| {
+        let group = insert_group(database, 4, "User").await;
+        database
+            .users()
+            .insert(NewUser {
+                email: Some("Zoe@Example.com".to_owned()),
+                ..new_user("Zoë", group.id)
+            })
+            .await
+            .expect("the user can be stored");
+        database
+            .users()
+            .insert(new_user("without-address", group.id))
+            .await
+            .expect("the user can be stored");
+        let is_taken = async |username: &str, email: &str| {
+            database
+                .users()
+                .is_taken(username, email)
+                .await
+                .expect("the question can be answered")
+        };
+
+        assert!(is_taken("zoë", "new@example.com").await, "the name");
+        assert!(is_taken("ZOË", "new@example.com").await, "the name");
+        assert!(is_taken("new", "zoe@example.com").await, "the address");
+        assert!(is_taken("new", "ZOE@EXAMPLE.COM").await, "the address");
+        assert!(is_taken("without-address", "new@example.com").await);
+        assert!(!is_taken("new", "new@example.com").await);
+        // A name is not compared with an address, and an address not with a name.
+        assert!(!is_taken("zoe@example.com", "new@example.com").await);
+        assert!(!is_taken("new", "zoë").await);
+        // A user without an address does not take the empty address.
+        assert!(!is_taken("new", "").await);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn default_group_is_the_group_that_new_users_join() {
+    on_each_engine(async |database| {
+        let none = database
+            .groups()
+            .find_default()
+            .await
+            .expect("the lookup works");
+        assert_eq!(none, None);
+
+        insert_group(database, 0, "Admin").await;
+        let user = database
+            .groups()
+            .insert(NewGroup {
+                is_default: true,
+                ..new_group(4, "User")
+            })
+            .await
+            .expect("the group can be stored");
+        let found = database
+            .groups()
+            .find_default()
+            .await
+            .expect("the lookup works");
+        assert_eq!(found.as_ref(), Some(&user));
+
+        // Two default groups are a mistake in the data. The one with less access wins.
+        database
+            .groups()
+            .insert(NewGroup {
+                is_default: true,
+                ..new_group(2, "Super User")
+            })
+            .await
+            .expect("the group can be stored");
+        let found = database
+            .groups()
+            .find_default()
+            .await
+            .expect("the lookup works");
+        assert_eq!(found, Some(user));
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn password_hash_of_a_user_can_be_replaced() {
     on_each_engine(async |database| {
         let group = insert_group(database, 4, "User").await;

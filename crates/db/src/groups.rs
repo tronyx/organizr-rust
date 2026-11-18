@@ -47,6 +47,18 @@ impl<'a> Groups<'a> {
             .transpose()
     }
 
+    /// The group that new users join. When several groups are marked as the default,
+    /// it is the one of them with the least access.
+    pub async fn find_default(&self) -> Result<Option<Group>, DbError> {
+        group::Entity::find()
+            .filter(group::Column::IsDefault.eq(true))
+            .order_by_desc(group::Column::Level)
+            .one(self.connection)
+            .await?
+            .map(Group::try_from)
+            .transpose()
+    }
+
     /// All groups, from the most access to the least.
     pub async fn list(&self) -> Result<Vec<Group>, DbError> {
         group::Entity::find()

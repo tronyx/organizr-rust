@@ -67,6 +67,20 @@ impl<'a> Users<'a> {
         Ok(row.map(User::from))
     }
 
+    /// Whether a user has the given name, or the given e-mail address, whatever the
+    /// letter case. A new account can have neither.
+    pub async fn is_taken(&self, username: &str, email: &str) -> Result<bool, DbError> {
+        let found = user::Entity::find()
+            .filter(
+                Condition::any()
+                    .add(user::Column::UsernameKey.eq(username.to_lowercase()))
+                    .add(user::Column::EmailKey.eq(email.to_lowercase())),
+            )
+            .count(self.connection)
+            .await?;
+        Ok(found > 0)
+    }
+
     /// Replaces the stored password hash of a user. Returns whether the user existed.
     pub async fn set_password_hash(
         &self,

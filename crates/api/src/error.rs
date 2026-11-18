@@ -6,6 +6,7 @@ use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use organizr_auth::install::InstallError;
 use organizr_auth::login::LoginError;
+use organizr_auth::registration::RegistrationError;
 use organizr_db::DbError;
 use serde::Serialize;
 use thiserror::Error;
@@ -56,6 +57,10 @@ pub enum ApiError {
     /// The set-up of the install broke. The caller gets no details; the log does.
     #[error(transparent)]
     Install(#[from] InstallError),
+
+    /// A registration broke. The caller gets no details; the log does.
+    #[error(transparent)]
+    Registration(#[from] RegistrationError),
 
     /// A cookie of the answer could not be written. The caller gets no details; the log
     /// does.
@@ -128,6 +133,9 @@ impl IntoResponse for ApiError {
             .into_response(),
             Self::Login(error) => internal_error(&error, "a login could not be completed"),
             Self::Install(error) => internal_error(&error, "the set-up could not be completed"),
+            Self::Registration(error) => {
+                internal_error(&error, "a registration could not be completed")
+            }
             Self::Cookie(error) => internal_error(&error, "a cookie could not be written"),
             Self::Database(error) => internal_error(&error, "a request failed in the database"),
         }

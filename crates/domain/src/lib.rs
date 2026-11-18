@@ -1,6 +1,7 @@
 //! Domain types for Organizr: ids, levels, enums, state machines and domain errors. No I/O.
 
 mod category;
+pub mod email;
 mod group;
 mod ids;
 mod session;

@@ -43,6 +43,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -121,7 +122,7 @@ SESSION_TOKEN_PLACEHOLDER = re.compile(r"\{session_token:([a-z_]+)\}")
 NOT_FOUND_MESSAGE = "Endpoint Not Found or Defined"
 
 # Answers of an install that has not been set up, and the set-up itself.
-FRESH_INSTALL = [
+FRESH_INSTALL: list[tuple] = [
     ("status", "GET", "/api/v2/status"),
     # A field that both applications need is missing or empty. Nothing is set up.
     ("wizard_without_license", "POST", "/api/v2/wizard", {"json": {**SEED, "license": ""}}),
@@ -408,6 +409,111 @@ API_KEY = [
     ("delete_with_a_wrong_key", "DELETE", "/api/v2/token/99999", {"headers": {"Token": WRONG_KEY}}),
 ]
 
+# Registering an account. REGISTRATION is the registration password of the install; see
+# prepare_registration().
+REGISTRATION = "let-new-users-in"
+ZOE = {
+    "username": "zoe",
+    "password": "the-password-of-zoe",
+    "email": "zoe@example.com",
+    "registrationPassword": REGISTRATION,
+}
+REGISTER = [
+    # PHP asks for the fields in this order.
+    ("without_fields", "POST", "/api/v2/users/register", {"json": {}}),
+    ("without_email", "POST", "/api/v2/users/register", {"json": {**ZOE, "email": ""}}),
+    ("without_user_name", "POST", "/api/v2/users/register", {"json": {**ZOE, "username": None}}),
+    ("without_password", "POST", "/api/v2/users/register", {"json": {**ZOE, "password": ""}}),
+    (
+        "without_registration_password",
+        "POST",
+        "/api/v2/users/register",
+        {"json": {key: value for key, value in ZOE.items() if key != "registrationPassword"}},
+    ),
+    # The text `0` counts as nothing in PHP.
+    ("user_name_zero", "POST", "/api/v2/users/register", {"json": {**ZOE, "username": "0"}}),
+    (
+        "wrong_registration_password",
+        "POST",
+        "/api/v2/users/register",
+        {"json": {**ZOE, "registrationPassword": "let-me-in-anyway"}},
+    ),
+    # The checks of a new account, in the order of PHP.
+    ("email_that_is_no_address", "POST", "/api/v2/users/register", {"json": {**ZOE, "email": "not-an-address"}}),
+    ("user_name_taken", "POST", "/api/v2/users/register", {"json": {**ZOE, "username": "ADMIN"}}),
+    ("email_taken", "POST", "/api/v2/users/register", {"json": {**ZOE, "email": "Admin@Example.COM"}}),
+    ("user_name_too_long", "POST", "/api/v2/users/register", {"json": {**ZOE, "username": "z" * 51}}),
+    (
+        "email_too_long",
+        "POST",
+        "/api/v2/users/register",
+        {"json": {**ZOE, "email": "z" * 39 + "@example.com"}},
+    ),
+    ("password_too_long", "POST", "/api/v2/users/register", {"json": {**ZOE, "password": "p" * 201}}),
+    # Two things are wrong at once: the answer shows which check comes first.
+    (
+        "no_address_and_user_name_taken",
+        "POST",
+        "/api/v2/users/register",
+        {"json": {**ZOE, "email": "not-an-address", "username": "admin"}},
+    ),
+    (
+        "user_name_taken_and_password_too_long",
+        "POST",
+        "/api/v2/users/register",
+        {"json": {**ZOE, "username": "admin", "password": "p" * 201}},
+    ),
+    (
+        "user_name_and_email_too_long",
+        "POST",
+        "/api/v2/users/register",
+        {"json": {**ZOE, "username": "z" * 51, "email": "z" * 39 + "@example.com", "password": "p" * 201}},
+    ),
+    (
+        "longest_values",
+        "POST",
+        "/api/v2/users/register",
+        {
+            "json": {
+                **ZOE,
+                "username": "y" * 50,
+                "email": "y" * 38 + "@example.com",
+                "password": "p" * 200,
+            }
+        },
+    ),
+    ("new_account", "POST", "/api/v2/users/register", {"json": ZOE, "jar": "zoe"}),
+    ("same_account_again", "POST", "/api/v2/users/register", {"json": ZOE}),
+    (
+        "login_as_the_new_account",
+        "POST",
+        "/api/v2/login",
+        {"json": {"username": "ZOE", "password": ZOE["password"]}},
+    ),
+    # The space around the name and the address is cut off.
+    (
+        "space_around_name_and_address",
+        "POST",
+        "/api/v2/users/register",
+        {"json": {**ZOE, "username": "  Yan  ", "email": "  Yan@Example.com  "}},
+    ),
+    (
+        "login_as_the_account_with_the_space_cut_off",
+        "POST",
+        "/api/v2/login",
+        {"json": {"username": "yan@example.com", "password": ZOE["password"]}},
+    ),
+    (
+        "form_body",
+        "POST",
+        "/api/v2/users/register",
+        {
+            "body": f"username=form&password=pw&email=form%40example.com&registrationPassword={REGISTRATION}",
+            "headers": FORM,
+        },
+    ),
+]
+
 # Requests that show which route the PHP router chooses. The Rust router must choose the
 # same one. Keep in step with ROUTING_CASES in crates/api/tests/slim_routes.rs.
 ROUTING = [
@@ -624,6 +730,31 @@ def named(definitions):
     return cases
 
 
+def prepare_registration():
+    """Give the reference a registration password that works. Nothing of this is recorded.
+
+    The set-up wizard of PHP stores the registration password as it is, but the
+    registration reads it as encrypted text. So after a set-up nobody can register, until
+    an admin saves the password on the settings page. This does what that page does.
+    """
+    JARS.clear()
+    send("POST", "/api/v2/login", json_body=ADMIN, jar="admin")
+    saved = send("PUT", "/api/v2/config", json_body={"registrationPassword": REGISTRATION}, jar="admin")
+    if envelope(saved).get("result") != "success":
+        sys.exit(f"The registration password was not saved:\n{saved['response']['body']}")
+
+    # PHP keeps compiled files for up to two seconds, the configuration file among them.
+    # Wait until a registration with the new password gets past the password check. The
+    # address is not valid, so this request creates nothing.
+    probe = {**ZOE, "email": "not-an-address"}
+    for _ in range(40):
+        answer = send("POST", "/api/v2/users/register", json_body=probe)
+        if answer["response"]["status"] == 409:
+            return
+        time.sleep(0.25)
+    sys.exit("The reference did not start to use the new registration password.")
+
+
 def main():
     status = envelope(send("GET", "/api/v2/status")).get("data") or {}
     if status.get("action") != "wizard":
@@ -648,6 +779,8 @@ def main():
     record("logout", named(LOGOUT), php_version)
     record("lockout", named(LOCKOUT), php_version)
     record("api_key", named(API_KEY), php_version)
+    prepare_registration()
+    record("register", named(REGISTER), php_version)
 
     routing = []
     for method, path in ROUTING:

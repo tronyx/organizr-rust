@@ -1,0 +1,420 @@
+{
+    "php_version": "8.5.12",
+    "cases": [
+        {
+            "input": "admin@example.com",
+            "valid": true,
+            "sanitized": "admin@example.com"
+        },
+        {
+            "input": "Admin@Example.COM",
+            "valid": true,
+            "sanitized": "Admin@Example.COM"
+        },
+        {
+            "input": "first.last@example.com",
+            "valid": true,
+            "sanitized": "first.last@example.com"
+        },
+        {
+            "input": "first.last+tag@sub.example.co.uk",
+            "valid": true,
+            "sanitized": "first.last+tag@sub.example.co.uk"
+        },
+        {
+            "input": "a@b.co",
+            "valid": true,
+            "sanitized": "a@b.co"
+        },
+        {
+            "input": "user_name-1@example-domain.org",
+            "valid": true,
+            "sanitized": "user_name-1@example-domain.org"
+        },
+        {
+            "input": "x@xn--bcher-kva.example",
+            "valid": true,
+            "sanitized": "x@xn--bcher-kva.example"
+        },
+        {
+            "input": "x@example.xn--p1ai",
+            "valid": true,
+            "sanitized": "x@example.xn--p1ai"
+        },
+        {
+            "input": "o'brien@example.com",
+            "valid": true,
+            "sanitized": "o'brien@example.com"
+        },
+        {
+            "input": "!#$%&'*+-/=?^_`{|}~@example.com",
+            "valid": true,
+            "sanitized": "!#$%&'*+-=?^_`{|}~@example.com"
+        },
+        {
+            "input": "123@example.com",
+            "valid": true,
+            "sanitized": "123@example.com"
+        },
+        {
+            "input": "user@123.example.com",
+            "valid": true,
+            "sanitized": "user@123.example.com"
+        },
+        {
+            "input": "user@a-b.example.com",
+            "valid": true,
+            "sanitized": "user@a-b.example.com"
+        },
+        {
+            "input": "user@a--b.example.com",
+            "valid": true,
+            "sanitized": "user@a--b.example.com"
+        },
+        {
+            "input": "  spaces@example.com  ",
+            "valid": true,
+            "sanitized": "spaces@example.com"
+        },
+        {
+            "input": "\ttab@example.com\n",
+            "valid": true,
+            "sanitized": "tab@example.com"
+        },
+        {
+            "input": "",
+            "valid": false,
+            "sanitized": ""
+        },
+        {
+            "input": " ",
+            "valid": false,
+            "sanitized": ""
+        },
+        {
+            "input": "not-an-address",
+            "valid": false,
+            "sanitized": "not-an-address"
+        },
+        {
+            "input": "@example.com",
+            "valid": false,
+            "sanitized": "@example.com"
+        },
+        {
+            "input": "user@",
+            "valid": false,
+            "sanitized": "user@"
+        },
+        {
+            "input": "user@@example.com",
+            "valid": false,
+            "sanitized": "user@@example.com"
+        },
+        {
+            "input": "user@example",
+            "valid": false,
+            "sanitized": "user@example"
+        },
+        {
+            "input": "user@localhost",
+            "valid": false,
+            "sanitized": "user@localhost"
+        },
+        {
+            "input": "user@.example.com",
+            "valid": false,
+            "sanitized": "user@.example.com"
+        },
+        {
+            "input": "user@example..com",
+            "valid": false,
+            "sanitized": "user@example..com"
+        },
+        {
+            "input": "user@example.com.",
+            "valid": false,
+            "sanitized": "user@example.com."
+        },
+        {
+            "input": "user@-example.com",
+            "valid": false,
+            "sanitized": "user@-example.com"
+        },
+        {
+            "input": "user@example-.com",
+            "valid": false,
+            "sanitized": "user@example-.com"
+        },
+        {
+            "input": "user@example.c",
+            "valid": true,
+            "sanitized": "user@example.c"
+        },
+        {
+            "input": "user@example.1com",
+            "valid": false,
+            "sanitized": "user@example.1com"
+        },
+        {
+            "input": "user@example.123",
+            "valid": false,
+            "sanitized": "user@example.123"
+        },
+        {
+            "input": "user@exa_mple.com",
+            "valid": false,
+            "sanitized": "user@exa_mple.com"
+        },
+        {
+            "input": ".user@example.com",
+            "valid": false,
+            "sanitized": ".user@example.com"
+        },
+        {
+            "input": "user.@example.com",
+            "valid": false,
+            "sanitized": "user.@example.com"
+        },
+        {
+            "input": "us..er@example.com",
+            "valid": false,
+            "sanitized": "us..er@example.com"
+        },
+        {
+            "input": "us er@example.com",
+            "valid": false,
+            "sanitized": "user@example.com"
+        },
+        {
+            "input": "user@exa mple.com",
+            "valid": false,
+            "sanitized": "user@example.com"
+        },
+        {
+            "input": "user name@example.com",
+            "valid": false,
+            "sanitized": "username@example.com"
+        },
+        {
+            "input": "user@example.com extra",
+            "valid": false,
+            "sanitized": "user@example.comextra"
+        },
+        {
+            "input": "user(comment)@example.com",
+            "valid": false,
+            "sanitized": "usercomment@example.com"
+        },
+        {
+            "input": "user,name@example.com",
+            "valid": false,
+            "sanitized": "username@example.com"
+        },
+        {
+            "input": "user;name@example.com",
+            "valid": false,
+            "sanitized": "username@example.com"
+        },
+        {
+            "input": "user:name@example.com",
+            "valid": false,
+            "sanitized": "username@example.com"
+        },
+        {
+            "input": "user<name>@example.com",
+            "valid": false,
+            "sanitized": "username@example.com"
+        },
+        {
+            "input": "user[name]@example.com",
+            "valid": false,
+            "sanitized": "user[name]@example.com"
+        },
+        {
+            "input": "user\\name@example.com",
+            "valid": false,
+            "sanitized": "username@example.com"
+        },
+        {
+            "input": "user\"name@example.com",
+            "valid": false,
+            "sanitized": "username@example.com"
+        },
+        {
+            "input": "Name <user@example.com>",
+            "valid": false,
+            "sanitized": "Nameuser@example.com"
+        },
+        {
+            "input": "mailto:user@example.com",
+            "valid": false,
+            "sanitized": "mailtouser@example.com"
+        },
+        {
+            "input": "üser@example.com",
+            "valid": false,
+            "sanitized": "ser@example.com"
+        },
+        {
+            "input": "user@exämple.com",
+            "valid": false,
+            "sanitized": "user@exmple.com"
+        },
+        {
+            "input": "user@example.cöm",
+            "valid": false,
+            "sanitized": "user@example.cm"
+        },
+        {
+            "input": "日本@example.com",
+            "valid": false,
+            "sanitized": "@example.com"
+        },
+        {
+            "input": "\"user name\"@example.com",
+            "valid": false,
+            "sanitized": "username@example.com"
+        },
+        {
+            "input": "\"user@name\"@example.com",
+            "valid": true,
+            "sanitized": "user@name@example.com"
+        },
+        {
+            "input": "\"user\\\"name\"@example.com",
+            "valid": true,
+            "sanitized": "username@example.com"
+        },
+        {
+            "input": "\"user\".\"name\"@example.com",
+            "valid": true,
+            "sanitized": "user.name@example.com"
+        },
+        {
+            "input": "user.\"name\"@example.com",
+            "valid": true,
+            "sanitized": "user.name@example.com"
+        },
+        {
+            "input": "\"\"@example.com",
+            "valid": true,
+            "sanitized": "@example.com"
+        },
+        {
+            "input": "\"unclosed@example.com",
+            "valid": false,
+            "sanitized": "unclosed@example.com"
+        },
+        {
+            "input": "user@[192.0.2.1]",
+            "valid": true,
+            "sanitized": "user@[192.0.2.1]"
+        },
+        {
+            "input": "user@[192.0.2.256]",
+            "valid": false,
+            "sanitized": "user@[192.0.2.256]"
+        },
+        {
+            "input": "user@[192.0.2]",
+            "valid": false,
+            "sanitized": "user@[192.0.2]"
+        },
+        {
+            "input": "user@192.0.2.1",
+            "valid": false,
+            "sanitized": "user@192.0.2.1"
+        },
+        {
+            "input": "user@[IPv6:2001:db8::1]",
+            "valid": true,
+            "sanitized": "user@[IPv62001db81]"
+        },
+        {
+            "input": "user@[IPv6:2001:db8:0:0:0:0:0:1]",
+            "valid": true,
+            "sanitized": "user@[IPv62001db8000001]"
+        },
+        {
+            "input": "user@[2001:db8::1]",
+            "valid": false,
+            "sanitized": "user@[2001db81]"
+        },
+        {
+            "input": "user@[IPv6:::1]",
+            "valid": true,
+            "sanitized": "user@[IPv61]"
+        },
+        {
+            "input": "user@[IPv6:2001:db8::192.0.2.1]",
+            "valid": true,
+            "sanitized": "user@[IPv62001db8192.0.2.1]"
+        },
+        {
+            "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com",
+            "valid": true,
+            "sanitized": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com"
+        },
+        {
+            "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com",
+            "valid": false,
+            "sanitized": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@example.com"
+        },
+        {
+            "input": "user@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com",
+            "valid": true,
+            "sanitized": "user@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com"
+        },
+        {
+            "input": "user@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com",
+            "valid": false,
+            "sanitized": "user@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.com"
+        },
+        {
+            "input": "user@a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.com",
+            "valid": true,
+            "sanitized": "user@a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.com"
+        },
+        {
+            "input": "user@a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.com",
+            "valid": false,
+            "sanitized": "user@a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.com"
+        },
+        {
+            "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.com",
+            "valid": false,
+            "sanitized": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.com"
+        },
+        {
+            "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.ddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.com",
+            "valid": true,
+            "sanitized": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.ddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.com"
+        },
+        {
+            "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.dddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.com",
+            "valid": false,
+            "sanitized": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.dddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.com"
+        },
+        {
+            "input": "us(er)@example.com",
+            "valid": false,
+            "sanitized": "user@example.com"
+        },
+        {
+            "input": "user@example.com/path",
+            "valid": false,
+            "sanitized": "user@example.compath"
+        },
+        {
+            "input": "user\u0000@example.com",
+            "valid": false,
+            "sanitized": "user@example.com"
+        },
+        {
+            "input": "user@example.com",
+            "valid": false,
+            "sanitized": "user@example.com"
+        }
+    ]
+}

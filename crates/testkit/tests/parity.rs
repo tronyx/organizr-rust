@@ -170,3 +170,18 @@ async fn api_key_answers_like_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn registration_answers_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The registration password of the recording, stored as the set-up stores it.
+        let hash = organizr_auth::password::hash("let-new-users-in")
+            .expect("the registration password can be hashed");
+        let app = installed_app_with(database, &[("registrationPassword", json!(hash.expose()))]);
+        let replay = without_php_session(Replay::group("register"));
+
+        replay.run(&app).await;
+    })
+    .await;
+}
