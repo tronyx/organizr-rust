@@ -20,6 +20,7 @@ bcrypt.workspace = true
 getrandom.workspace = true
 hex.workspace = true
 sha2.workspace = true
+subtle.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true

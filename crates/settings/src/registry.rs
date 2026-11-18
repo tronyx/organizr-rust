@@ -124,6 +124,9 @@ settings! {
     /// The random id of the install. It is part of the name of the session cookie. It is
     /// empty until the install is set up.
     install_id: Text = "uuid", String::new();
+    /// The API key of the install: 20 characters that give a script the access of an
+    /// Admin. It is empty until the install is set up.
+    api_key: Text = "organizrAPI", String::new();
 }
 
 impl Settings {
@@ -180,9 +183,10 @@ mod tests {
             ("lockScreen", json!(false)),
             ("hideRegistration", json!(false)),
             ("localIPList", json!("")),
-            // Not in `default.php`: the set-up wizard writes it. Before that, PHP reads
-            // it as empty.
+            // The last two are not in `default.php`: the set-up wizard writes them.
+            // Before that, PHP reads them as empty.
             ("uuid", json!("")),
+            ("organizrAPI", json!("")),
         ]
     }
 

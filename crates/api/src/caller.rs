@@ -1,7 +1,8 @@
-//! Who makes a request: a logged-in user or a guest.
+//! Who makes a request: a logged-in user, a guest, or a script with the API key.
 //!
-//! A browser proves a login with the session cookie. [`identify_caller`] reads the cookie
-//! on every request, looks the session up and gives the handlers a [`Caller`].
+//! A browser proves a login with the session cookie. A script proves its right with the
+//! API key of the install, in the header `token` or in the query field `apikey`.
+//! [`identify_caller`] reads both on every request and gives the handlers a [`Caller`].
 //!
 //! A session cookie that names no valid session is dropped: the answer tells the browser
 //! to delete it, on every route, as the PHP application does. The next request of that
@@ -10,10 +11,11 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::extract::{Request, State};
-use axum::http::header;
+use axum::http::{HeaderMap, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use organizr_auth::SessionToken;
+use organizr_auth::api_key::is_api_key;
 use organizr_auth::session::{self, Authenticated, BrowserRule, SessionCheck};
 use organizr_domain::{GroupLevel, Timestamp};
 use organizr_settings::Settings;
@@ -23,13 +25,29 @@ use crate::cookies::{self, CookieScope};
 use crate::error::ApiError;
 use crate::state::AppState;
 
+/// The header that carries the API key.
+const API_KEY_HEADER: &str = "token";
+
+/// The query field that carries the API key when the header is not sent.
+const API_KEY_QUERY_FIELD: &str = "apikey";
+
 /// Who makes a request.
 #[derive(Debug, Clone)]
-pub enum Caller {
+pub struct Caller {
+    /// What the session cookie says about the caller.
+    pub identity: Identity,
+    /// Whether the request carries the API key of the install. The key gives the access
+    /// of an Admin, whoever the caller is.
+    pub has_api_key: bool,
+}
+
+/// What the session cookie of a request says about the caller.
+#[derive(Debug, Clone)]
+pub enum Identity {
     /// The request has no session cookie.
     Guest,
-    /// The request has a session cookie that names no valid session. The caller has the
-    /// rights of a guest, and the answer drops the cookie.
+    /// The request has a session cookie that names no valid session. The answer drops
+    /// the cookie.
     Rejected,
     /// A user with a valid session.
     User(Box<LoggedInCaller>),
@@ -47,9 +65,12 @@ pub struct LoggedInCaller {
 impl Caller {
     /// The access level of the caller. A lower number means more access.
     pub fn level(&self) -> GroupLevel {
-        match self {
-            Self::Guest | Self::Rejected => GroupLevel::GUEST,
-            Self::User(caller) => caller.authenticated.group.level,
+        if self.has_api_key {
+            return GroupLevel::ADMIN;
+        }
+        match &self.identity {
+            Identity::Guest | Identity::Rejected => GroupLevel::GUEST,
+            Identity::User(caller) => caller.authenticated.group.level,
         }
     }
 
@@ -65,9 +86,9 @@ impl Caller {
 
     /// The logged-in caller, when there is one.
     pub fn user(&self) -> Option<&LoggedInCaller> {
-        match self {
-            Self::User(caller) => Some(caller),
-            Self::Guest | Self::Rejected => None,
+        match &self.identity {
+            Identity::User(caller) => Some(caller),
+            Identity::Guest | Identity::Rejected => None,
         }
     }
 }
@@ -89,10 +110,7 @@ pub fn now_stamp(now: SystemTime) -> Timestamp {
 }
 
 /// The browser rule that the settings ask for, for a request with the given headers.
-pub fn browser_rule<'a>(
-    settings: &Settings,
-    headers: &'a axum::http::HeaderMap,
-) -> BrowserRule<'a> {
+pub fn browser_rule<'a>(settings: &Settings, headers: &'a HeaderMap) -> BrowserRule<'a> {
     if settings.match_user_agents {
         BrowserRule::Same(
             headers
@@ -102,6 +120,20 @@ pub fn browser_rule<'a>(
     } else {
         BrowserRule::Any
     }
+}
+
+/// The text that a request gives as the API key: the header `token`, or else the query
+/// field `apikey`. As in the PHP application, the query is not read when the header is
+/// sent, also when the header holds something else.
+fn presented_api_key(headers: &HeaderMap, query: Option<&str>) -> Option<String> {
+    if let Some(value) = headers.get(API_KEY_HEADER) {
+        // A value that is not text is no key.
+        return Some(value.to_str().unwrap_or_default().to_owned());
+    }
+    form_urlencoded::parse(query?.as_bytes())
+        .filter(|(name, _)| name == API_KEY_QUERY_FIELD)
+        .map(|(_, value)| value.into_owned())
+        .last()
 }
 
 /// Works out who makes each request and makes it available to the handlers as a
@@ -117,32 +149,40 @@ pub async fn identify_caller(
     let headers = request.headers();
     let now = SystemTime::now();
 
+    let has_api_key = presented_api_key(headers, request.uri().query())
+        .is_some_and(|presented| is_api_key(&presented, &settings.api_key));
+
     // An empty cookie counts as no cookie, as in the PHP application.
     let sent = cookies::cookie_value(headers, &cookie_name).filter(|value| !value.is_empty());
-    let caller = match sent.map(SessionToken::parse) {
-        None => Caller::Guest,
-        Some(None) => Caller::Rejected,
+    let identity = match sent.map(SessionToken::parse) {
+        None => Identity::Guest,
+        Some(None) => Identity::Rejected,
         Some(Some(token)) => {
             let rule = browser_rule(settings, headers);
             match session::check(state.database(), &token, now_stamp(now), rule).await {
-                Ok(SessionCheck::Valid(authenticated)) => Caller::User(Box::new(LoggedInCaller {
-                    token,
-                    authenticated: *authenticated,
-                })),
-                Ok(SessionCheck::Unknown | SessionCheck::OtherBrowser) => Caller::Rejected,
+                Ok(SessionCheck::Valid(authenticated)) => {
+                    Identity::User(Box::new(LoggedInCaller {
+                        token,
+                        authenticated: *authenticated,
+                    }))
+                }
+                Ok(SessionCheck::Unknown | SessionCheck::OtherBrowser) => Identity::Rejected,
                 Err(error) => return ApiError::Database(error).into_response(),
             }
         }
     };
 
-    let drop_cookie = matches!(caller, Caller::Rejected).then(|| {
+    let drop_cookie = matches!(identity, Identity::Rejected).then(|| {
         let secure = request
             .extensions()
             .get::<Client>()
             .is_some_and(|client| client.https);
         CookieScope::of(headers, secure)
     });
-    request.extensions_mut().insert(caller);
+    request.extensions_mut().insert(Caller {
+        identity,
+        has_api_key,
+    });
 
     let mut response = next.run(request).await;
 
@@ -159,11 +199,12 @@ pub async fn identify_caller(
 
 #[cfg(test)]
 mod tests {
+    use axum::http::{HeaderMap, HeaderValue};
     use organizr_domain::GroupLevel;
     use organizr_settings::Settings;
     use serde_json::json;
 
-    use super::{Caller, session_cookie_name};
+    use super::{Caller, Identity, presented_api_key, session_cookie_name};
     use crate::error::ApiError;
 
     #[test]
@@ -182,7 +223,12 @@ mod tests {
 
     #[test]
     fn caller_without_a_valid_session_has_the_level_of_a_guest() {
-        for caller in [Caller::Guest, Caller::Rejected] {
+        for identity in [Identity::Guest, Identity::Rejected] {
+            let caller = Caller {
+                identity,
+                has_api_key: false,
+            };
+
             assert_eq!(caller.level(), GroupLevel::GUEST);
             assert!(caller.user().is_none());
             assert!(caller.require(GroupLevel::GUEST).is_ok());
@@ -196,5 +242,61 @@ mod tests {
                 Err(ApiError::NotAuthorized)
             ));
         }
+    }
+
+    #[test]
+    fn api_key_gives_the_level_of_an_admin_but_no_user() {
+        for identity in [Identity::Guest, Identity::Rejected] {
+            let caller = Caller {
+                identity,
+                has_api_key: true,
+            };
+
+            assert_eq!(caller.level(), GroupLevel::ADMIN);
+            assert!(caller.require(GroupLevel::ADMIN).is_ok());
+            assert!(caller.user().is_none());
+        }
+    }
+
+    fn headers(token: Option<&'static str>) -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        if let Some(token) = token {
+            headers.insert("token", HeaderValue::from_static(token));
+        }
+        headers
+    }
+
+    #[test]
+    fn api_key_is_read_from_the_header_or_else_from_the_query() {
+        assert_eq!(
+            presented_api_key(&headers(Some("from-header")), None).as_deref(),
+            Some("from-header")
+        );
+        assert_eq!(
+            presented_api_key(&headers(None), Some("a=1&apikey=from%2Dquery&z=2")).as_deref(),
+            Some("from-query")
+        );
+        // The last field counts, as in PHP.
+        assert_eq!(
+            presented_api_key(&headers(None), Some("apikey=first&apikey=last")).as_deref(),
+            Some("last")
+        );
+        assert_eq!(presented_api_key(&headers(None), None), None);
+        assert_eq!(presented_api_key(&headers(None), Some("a=1")), None);
+        // The field has exactly this name.
+        assert_eq!(presented_api_key(&headers(None), Some("APIKEY=x")), None);
+        assert_eq!(presented_api_key(&headers(None), Some("token=x")), None);
+    }
+
+    #[test]
+    fn header_hides_the_query_also_when_it_holds_something_else() {
+        assert_eq!(
+            presented_api_key(&headers(Some("something-else")), Some("apikey=the-key")).as_deref(),
+            Some("something-else")
+        );
+        assert_eq!(
+            presented_api_key(&headers(Some("")), Some("apikey=the-key")).as_deref(),
+            Some("")
+        );
     }
 }

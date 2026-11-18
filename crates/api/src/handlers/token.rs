@@ -17,7 +17,7 @@ use organizr_auth::session::{self, Authenticated, SessionCheck};
 use organizr_domain::{GroupLevel, Session, SessionId, Timestamp};
 use serde::Serialize;
 
-use crate::caller::{Caller, browser_rule, now_stamp};
+use crate::caller::{Caller, Identity, browser_rule, now_stamp};
 use crate::client::Client;
 use crate::envelope::{Envelope, NoContent};
 use crate::error::ApiError;
@@ -216,10 +216,14 @@ async fn describe_user<S: SessionEntry>(
     })
 }
 
-/// Describes a caller who is not logged in.
+/// Describes a caller who is not logged in: a guest, or a script with the API key.
+///
+/// The PHP application calls a script with the API key the user "Organizr API" of the
+/// group Admin. It has the picture of a guest, and it is not a user that is logged in.
 async fn describe_guest(
     state: &AppState,
     client: Client,
+    has_api_key: bool,
 ) -> Result<UserObject<SessionSummary>, ApiError> {
     let group = state
         .database()
@@ -236,14 +240,20 @@ async fn describe_guest(
         |group| (group.name, group.image),
     );
 
+    let (username, group, level) = if has_api_key {
+        ("Organizr API", "Admin".to_owned(), GroupLevel::ADMIN)
+    } else {
+        ("Guest", name, GroupLevel::GUEST)
+    };
+
     Ok(UserObject {
         token: None,
         token_date: None,
         token_expire: None,
-        username: "Guest".to_owned(),
+        username: username.to_owned(),
         uid: uid(client.address),
-        group: name,
-        group_id: GroupLevel::GUEST.get(),
+        group,
+        group_id: level.get(),
         email: None,
         image,
         user_id: None,
@@ -257,17 +267,18 @@ async fn describe_guest(
 /// `GET /token/me`: describes the caller.
 ///
 /// A logged-in user gets the account and the list of their valid sessions. A guest gets
-/// the description of a guest. A caller whose session cookie was just dropped gets
-/// `null`, as in the PHP application; the next request is that of a guest.
+/// the description of a guest, and a script with the API key that of the user "Organizr
+/// API". A caller whose session cookie was just dropped gets `null`, as in the PHP
+/// application; the next request is that of a guest.
 pub async fn me(
     State(state): State<AppState>,
     Extension(client): Extension<Client>,
     Extension(caller): Extension<Caller>,
 ) -> Result<Envelope<Option<UserObject<SessionSummary>>>, ApiError> {
-    let data = match &caller {
-        Caller::Guest => Some(describe_guest(&state, client).await?),
-        Caller::Rejected => None,
-        Caller::User(caller) => {
+    let data = match &caller.identity {
+        Identity::Guest => Some(describe_guest(&state, client, caller.has_api_key).await?),
+        Identity::Rejected => None,
+        Identity::User(caller) => {
             let now = now_stamp(SystemTime::now());
             Some(describe_user(&state, &caller.authenticated, None, client, now).await?)
         }

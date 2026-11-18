@@ -21,6 +21,7 @@ use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use tower_http::csrf::{CsrfLayer, ProtectionError};
 
+use crate::caller::Caller;
 use crate::client::Client;
 use crate::error::ApiError;
 
@@ -61,9 +62,9 @@ pub async fn answer_refusal(request: Request, next: Next) -> Response {
     }
 }
 
-/// Proof that a request does not come from another site. A handler that changes
-/// something with a GET request takes it as an argument; a request from another site
-/// then gets the refusal and the handler does not run.
+/// Proof that a request does not come from another site, or that it carries the API
+/// key. A handler that changes something with a GET request takes it as an argument; a
+/// request from another site then gets the refusal and the handler does not run.
 #[derive(Debug, Clone, Copy)]
 pub struct FromThisSite;
 
@@ -81,7 +82,13 @@ impl<S: Send + Sync> FromRequestParts<S> for FromThisSite {
 
 impl FromThisSite {
     fn check(parts: &Parts) -> Result<Self, ApiError> {
-        if comes_from_another_site(&parts.headers) {
+        // Another site cannot make a browser send the API key, so a request with the
+        // key is the request of a script that someone gave the key to.
+        let has_api_key = parts
+            .extensions
+            .get::<Caller>()
+            .is_some_and(|caller| caller.has_api_key);
+        if !has_api_key && comes_from_another_site(&parts.headers) {
             let route = parts.uri.path().to_owned();
             tracing::warn!(
                 method = %parts.method,

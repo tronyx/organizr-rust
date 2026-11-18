@@ -27,7 +27,7 @@ pub fn app(database: &Database) -> Router {
 }
 
 /// The application on the given database, with the settings of an install that has been
-/// set up: the defaults and [`seed::INSTALL_ID`].
+/// set up: the defaults, [`seed::INSTALL_ID`] and [`seed::API_KEY`].
 pub fn installed_app(database: &Database) -> Router {
     installed_app_with(database, &[])
 }
@@ -38,6 +38,9 @@ pub fn installed_app_with(database: &Database, changed: &[(&str, serde_json::Val
     settings
         .set("uuid", &serde_json::Value::from(seed::INSTALL_ID))
         .expect("the install id is a valid setting");
+    settings
+        .set("organizrAPI", &serde_json::Value::from(seed::API_KEY))
+        .expect("the API key is a valid setting");
     for (key, value) in changed {
         settings
             .set(key, value)

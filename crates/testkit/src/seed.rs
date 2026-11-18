@@ -51,6 +51,10 @@ const WIZARD_TABS: [(i64, &str, &str, bool, u16, &str); 2] = [
 /// one.
 pub const INSTALL_ID: &str = "5d0c6f0e-2b7a-4a36-8e55-9c1f4d3a7b21";
 
+/// The API key of the seeded install, as in `parity/recorder/record.py`. It protects
+/// nothing.
+pub const API_KEY: &str = "parityapikey01234567";
+
 /// The name of the admin account, as in `parity/recorder/record.py`.
 pub const ADMIN_NAME: &str = "admin";
 

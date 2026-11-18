@@ -344,6 +344,43 @@ LOCKOUT = [
     ("other_routes_work_while_locked_out", "GET", "/api/v2/token/me", {"jar": "visitor"}),
 ]
 
+# The API key of the install: in the header `token`, or else in the query field `apikey`.
+# It gives the access of an Admin. `GET /token/me` shows who PHP takes the caller for, and
+# `DELETE /token/{id}` needs a caller who is more than a guest.
+KEY = SEED["api"]
+WRONG_KEY = KEY[:-1] + "8"
+API_KEY = [
+    ("me_with_the_key_in_the_header", "GET", "/api/v2/token/me", {"headers": {"Token": KEY}}),
+    ("me_with_the_key_in_the_query", "GET", f"/api/v2/token/me?apikey={KEY}"),
+    ("me_with_another_header_name_case", "GET", "/api/v2/token/me", {"headers": {"TOKEN": KEY}}),
+    ("me_with_a_wrong_key_in_the_header", "GET", "/api/v2/token/me", {"headers": {"Token": WRONG_KEY}}),
+    ("me_with_a_wrong_key_in_the_query", "GET", f"/api/v2/token/me?apikey={WRONG_KEY}"),
+    ("me_with_a_part_of_the_key", "GET", "/api/v2/token/me", {"headers": {"Token": KEY[:19]}}),
+    ("me_with_the_key_and_more", "GET", "/api/v2/token/me", {"headers": {"Token": KEY + "8"}}),
+    ("me_with_the_key_in_upper_case", "GET", "/api/v2/token/me", {"headers": {"Token": KEY.upper()}}),
+    ("me_with_another_query_field_case", "GET", f"/api/v2/token/me?APIKEY={KEY}"),
+    # The header counts when it is sent, also when only the query has the key.
+    (
+        "me_with_a_wrong_header_and_the_key_in_the_query",
+        "GET",
+        f"/api/v2/token/me?apikey={KEY}",
+        {"headers": {"Token": WRONG_KEY}},
+    ),
+    # A login, so that a replay knows the name of the session cookie for the next case.
+    ("login", "POST", "/api/v2/login", {"json": ADMIN, "jar": "admin"}),
+    (
+        "me_with_the_key_and_a_cookie_that_is_no_token",
+        "GET",
+        "/api/v2/token/me",
+        {"headers": {"Token": KEY}, "cookies": NO_TOKEN},
+    ),
+    # A route that a guest may not use. No session has the id, so nothing is deleted.
+    ("delete_without_the_key", "DELETE", "/api/v2/token/99999"),
+    ("delete_with_the_key_in_the_header", "DELETE", "/api/v2/token/99999", {"headers": {"Token": KEY}}),
+    ("delete_with_the_key_in_the_query", "DELETE", f"/api/v2/token/99999?apikey={KEY}"),
+    ("delete_with_a_wrong_key", "DELETE", "/api/v2/token/99999", {"headers": {"Token": WRONG_KEY}}),
+]
+
 # Requests that show which route the PHP router chooses. The Rust router must choose the
 # same one. Keep in step with ROUTING_CASES in crates/api/tests/slim_routes.rs.
 ROUTING = [
@@ -582,6 +619,7 @@ def main():
     record("login", named(LOGIN), php_version)
     record("logout", named(LOGOUT), php_version)
     record("lockout", named(LOCKOUT), php_version)
+    record("api_key", named(API_KEY), php_version)
 
     routing = []
     for method, path in ROUTING:

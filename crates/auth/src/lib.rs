@@ -1,5 +1,6 @@
 //! Authentication and authorisation for Organizr: passwords, sessions, two-factor, login backends and forward-auth.
 
+pub mod api_key;
 pub mod login;
 pub mod login_limit;
 pub mod password;
