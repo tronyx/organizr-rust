@@ -11,8 +11,9 @@ pub const API_KEY_LENGTH: usize = 20;
 /// Both must have exactly [`API_KEY_LENGTH`] characters. The comparison takes the same
 /// time wherever the two differ, so the time of an answer tells nothing about the key.
 ///
-/// The PHP application compares with `==`, which reads two texts of digits as numbers
-/// and takes some wrong keys for the right one. Here every character must be the same.
+/// The PHP application compares with `==`, which compares two texts that look like
+/// numbers as numbers. For a key that looks like a number, PHP therefore takes other
+/// spellings of the same number for the key. Here every character must be the same.
 pub fn is_api_key(presented: &str, configured: &str) -> bool {
     presented.len() == API_KEY_LENGTH
         && configured.len() == API_KEY_LENGTH
@@ -54,10 +55,22 @@ mod tests {
     }
 
     #[test]
-    fn keys_of_digits_are_compared_as_text() {
-        // PHP takes these two for the same key: as numbers, both are 1.2345678901234567e19.
-        assert!(!is_api_key("12345678901234567890", "12345678901234567891"));
-        assert!(!is_api_key("00000000000000000010", "0000000000000000001e1"));
+    fn keys_that_look_like_numbers_are_compared_as_text() {
+        // The key of the install is the number 10, written with 20 characters. PHP 8.5
+        // accepts each of these other spellings of 10 as that key: its `==` compares
+        // two texts that look like numbers as numbers.
+        let key = "00000000000000000010";
+        for presented in [
+            "000000000000000001e1",
+            "0000000000000000010.",
+            "000000000000000010.0",
+            "                  10",
+            "10                  ",
+        ] {
+            assert_eq!(presented.len(), 20);
+            assert!(!is_api_key(presented, key), "{presented:?}");
+        }
+        assert!(is_api_key(key, key));
     }
 
     #[test]
