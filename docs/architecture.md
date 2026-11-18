@@ -64,7 +64,7 @@ Date: 2026-11-18. Baseline: Organizr 2.1.5000 (upstream `v2-develop` at `2c1d419
 
 ### 3.1 Database: two engines, SQLite recommended
 
-The person installing chooses the engine with one setting, `ORGANIZR_DATABASE_URL`. Without it the app creates a SQLite file in the data volume. A `postgres://` URL selects PostgreSQL. The first-run wizard offers the same choice, as the original does.
+The person installing chooses the engine with one setting, `ORGANIZR_DATABASE_URL`. Without it the app creates a SQLite file in the data volume. A `postgres://` URL selects PostgreSQL. The first-run wizard does not offer this choice. It shows the engine in use and refuses a set-up that names another one (D-46). See `choosing-a-database.md`.
 
 | | SQLite (WAL mode), the default | PostgreSQL 18 (separate container) |
 |---|---|---|
