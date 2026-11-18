@@ -1,7 +1,9 @@
 //! Storage of tabs.
 
 use organizr_domain::{CategoryId, GroupLevel, LevelRange, NewTab, Tab, TabId, TabKind};
-use sea_orm::{ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, QueryOrder};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue, ConnectionTrait, DatabaseConnection, EntityTrait, QueryOrder,
+};
 
 use crate::DbError;
 use crate::entity::tab;
@@ -22,29 +24,7 @@ impl<'a> Tabs<'a> {
     /// Fails with [`DbError::Duplicate`] when the name is taken, whatever its letter case,
     /// and with [`DbError::ReferenceViolation`] when the category does not exist.
     pub async fn insert(&self, new: NewTab) -> Result<Tab, DbError> {
-        let row = tab::ActiveModel {
-            id: ActiveValue::NotSet,
-            position: ActiveValue::Set(new.position),
-            category_id: ActiveValue::Set(new.category.get()),
-            name_key: ActiveValue::Set(new.name.to_lowercase()),
-            name: ActiveValue::Set(new.name),
-            url: ActiveValue::Set(new.url),
-            url_local: ActiveValue::Set(new.url_local),
-            is_default: ActiveValue::Set(new.is_default),
-            enabled: ActiveValue::Set(new.enabled),
-            least_access_level: ActiveValue::Set(i32::from(new.access.least_access().get())),
-            most_access_level: ActiveValue::Set(i32::from(new.access.most_access().get())),
-            add_to_admin: ActiveValue::Set(new.add_to_admin),
-            image: ActiveValue::Set(new.image),
-            kind: ActiveValue::Set(i32::from(new.kind.code())),
-            splash: ActiveValue::Set(new.splash),
-            ping: ActiveValue::Set(new.ping),
-            ping_url: ActiveValue::Set(new.ping_url),
-            timeout: ActiveValue::Set(new.timeout),
-            timeout_ms: ActiveValue::Set(new.timeout_ms),
-            preload: ActiveValue::Set(new.preload),
-        };
-        row.insert(self.connection).await?.try_into()
+        insert_in(self.connection, new).await
     }
 
     /// The tab with the given id.
@@ -75,6 +55,36 @@ impl<'a> Tabs<'a> {
             .await?;
         Ok(result.rows_affected > 0)
     }
+}
+
+/// Stores a new record through any connection: the pool, or a transaction.
+pub(crate) async fn insert_in<C: ConnectionTrait>(
+    connection: &C,
+    new: NewTab,
+) -> Result<Tab, DbError> {
+    let row = tab::ActiveModel {
+        id: ActiveValue::NotSet,
+        position: ActiveValue::Set(new.position),
+        category_id: ActiveValue::Set(new.category.get()),
+        name_key: ActiveValue::Set(new.name.to_lowercase()),
+        name: ActiveValue::Set(new.name),
+        url: ActiveValue::Set(new.url),
+        url_local: ActiveValue::Set(new.url_local),
+        is_default: ActiveValue::Set(new.is_default),
+        enabled: ActiveValue::Set(new.enabled),
+        least_access_level: ActiveValue::Set(i32::from(new.access.least_access().get())),
+        most_access_level: ActiveValue::Set(i32::from(new.access.most_access().get())),
+        add_to_admin: ActiveValue::Set(new.add_to_admin),
+        image: ActiveValue::Set(new.image),
+        kind: ActiveValue::Set(i32::from(new.kind.code())),
+        splash: ActiveValue::Set(new.splash),
+        ping: ActiveValue::Set(new.ping),
+        ping_url: ActiveValue::Set(new.ping_url),
+        timeout: ActiveValue::Set(new.timeout),
+        timeout_ms: ActiveValue::Set(new.timeout_ms),
+        preload: ActiveValue::Set(new.preload),
+    };
+    row.insert(connection).await?.try_into()
 }
 
 impl TryFrom<tab::Model> for Tab {

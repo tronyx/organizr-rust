@@ -7,6 +7,7 @@ use serde::Serialize;
 
 use crate::envelope::{Envelope, JsonContentType};
 use crate::error::ApiError;
+use crate::handlers::wizard::engine_name;
 use crate::state::AppState;
 
 /// `GET /`: sends the caller to the status route.
@@ -33,7 +34,7 @@ pub async fn roxinsocks() -> Response {
 
 /// `GET /status`: tells the front end whether the install needs the set-up wizard.
 pub async fn status(State(state): State<AppState>) -> Result<Envelope<StatusData>, ApiError> {
-    let is_set_up = state.database().users().count().await? > 0;
+    let is_set_up = state.database().install().is_done().await?;
     Ok(Envelope::success(StatusData {
         writable: true,
         min_version: true,
@@ -45,6 +46,7 @@ pub async fn status(State(state): State<AppState>) -> Result<Envelope<StatusData
         } else {
             NextStep::Wizard
         },
+        database: engine_name(state.database().engine()),
     }))
 }
 
@@ -66,6 +68,10 @@ pub struct StatusData {
     user_config_path_exists: bool,
     /// What the front end does next.
     action: NextStep,
+    /// The database engine the server uses: `sqlite` or `postgresql`. The PHP
+    /// application has no such field. The set-up wizard shows it, because the engine is
+    /// chosen before the first start and cannot be changed in the wizard.
+    database: &'static str,
 }
 
 /// What the front end does after it has read the status.

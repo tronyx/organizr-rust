@@ -107,6 +107,21 @@ pub async fn with_password(
         tracing::info!(user = %user.username, "the password hash of the user was renewed");
     }
 
+    start_session(database, user, device, now, lifetime).await
+}
+
+/// Logs a user in whose right to log in is already proven: stores a session that lasts
+/// for `lifetime` from `now` and returns its token.
+///
+/// [`with_password`] calls this after it has checked the password. The set-up of an
+/// install calls it for the Admin account it has just created.
+pub async fn start_session(
+    database: &Database,
+    user: User,
+    device: Device,
+    now: Timestamp,
+    lifetime: Duration,
+) -> Result<LoggedIn, LoginError> {
     let token = SessionToken::generate()?;
     let lifetime = i64::try_from(lifetime.as_secs()).unwrap_or(i64::MAX);
     let session = database

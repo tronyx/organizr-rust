@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use organizr_auth::login_limit::LoginLimiter;
+use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, DbError};
 use organizr_settings::{Settings, SettingsError};
 
@@ -16,6 +17,7 @@ pub struct AppState {
     settings: Arc<ArcSwap<Settings>>,
     trusted_proxies: Arc<TrustedProxies>,
     login_limiter: Arc<LoginLimiter>,
+    setup_code: Option<Arc<SetupCode>>,
 }
 
 impl AppState {
@@ -27,6 +29,7 @@ impl AppState {
             settings: Arc::new(ArcSwap::from_pointee(settings)),
             trusted_proxies: Arc::new(TrustedProxies::default()),
             login_limiter: Arc::new(LoginLimiter::new()),
+            setup_code: None,
         }
     }
 
@@ -34,6 +37,14 @@ impl AppState {
     #[must_use]
     pub fn with_trusted_proxies(mut self, trusted_proxies: TrustedProxies) -> Self {
         self.trusted_proxies = Arc::new(trusted_proxies);
+        self
+    }
+
+    /// Sets the code that the set-up wizard asks for. Without a code, the wizard takes
+    /// no set-up at all.
+    #[must_use]
+    pub fn with_setup_code(mut self, setup_code: SetupCode) -> Self {
+        self.setup_code = Some(Arc::new(setup_code));
         self
     }
 
@@ -68,6 +79,11 @@ impl AppState {
     /// The reverse proxies whose forwarding headers are believed.
     pub fn trusted_proxies(&self) -> &TrustedProxies {
         &self.trusted_proxies
+    }
+
+    /// The code that the set-up wizard asks for, when there is one.
+    pub fn setup_code(&self) -> Option<&SetupCode> {
+        self.setup_code.as_deref()
     }
 
     /// The count of failed logins. It starts empty when the application starts.

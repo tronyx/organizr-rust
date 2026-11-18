@@ -7,16 +7,29 @@
 )]
 
 use axum::Router;
+use organizr_db::Engine;
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::replay::{Aspect, EVERY_CASE, Replay};
 use organizr_testkit::{app, seed};
 use serde_json::json;
 
-/// The replay of the `basics` group with the differences that are allowed today.
+/// The replay of the `basics` group with the differences that are allowed today, for an
+/// application on SQLite. A test that must fail does so on SQLite, which is tried first.
 fn basics() -> Replay {
+    basics_on(Engine::Sqlite)
+}
+
+/// The replay of the `basics` group with the differences that are allowed today, for an
+/// application on the given engine.
+fn basics_on(engine: Engine) -> Replay {
+    let engine = match engine {
+        Engine::Sqlite => "sqlite",
+        Engine::Postgres => "postgresql",
+    };
     let mut replay = Replay::group("basics").without_cookie("D-27", "PHPSESSID");
     for case in ["status", "status_with_trailing_slash"] {
         replay = replay.deviation("D-21", case, "/response/data/php", json!("n/a"));
+        replay = replay.deviation_adds("D-46", case, "/response/data", "database", json!(engine));
         if cfg!(windows) {
             replay = replay.environment(
                 "this test runs on Windows",
@@ -34,7 +47,7 @@ async fn allowed_differences_alone_let_the_replay_pass() {
     on_each_engine(async |database| {
         seed::installed(database).await;
 
-        basics().run(&app(database)).await;
+        basics_on(database.engine()).run(&app(database)).await;
     })
     .await;
 }

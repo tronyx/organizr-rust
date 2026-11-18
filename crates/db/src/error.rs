@@ -21,6 +21,10 @@ pub enum DbError {
     #[error("the operation breaks a reference between records")]
     ReferenceViolation,
 
+    /// The install has been set up already, so it cannot be set up again.
+    #[error("the install has been set up already")]
+    AlreadySetUp,
+
     /// A stored record cannot be turned into its domain type.
     #[error("a stored {record} is not valid: {reason}")]
     InvalidRecord {

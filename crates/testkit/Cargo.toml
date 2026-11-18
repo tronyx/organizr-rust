@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 organizr-api.workspace = true
+organizr-auth.workspace = true
 organizr-db.workspace = true
 organizr-domain.workspace = true
 organizr-settings.workspace = true

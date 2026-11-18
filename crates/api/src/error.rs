@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
+use organizr_auth::install::InstallError;
 use organizr_auth::login::LoginError;
 use organizr_db::DbError;
 use serde::Serialize;
@@ -51,6 +52,10 @@ pub enum ApiError {
     /// A login failed: because of the name or the password, or because something broke.
     #[error(transparent)]
     Login(#[from] LoginError),
+
+    /// The set-up of the install broke. The caller gets no details; the log does.
+    #[error(transparent)]
+    Install(#[from] InstallError),
 
     /// A cookie of the answer could not be written. The caller gets no details; the log
     /// does.
@@ -122,6 +127,7 @@ impl IntoResponse for ApiError {
             )
             .into_response(),
             Self::Login(error) => internal_error(&error, "a login could not be completed"),
+            Self::Install(error) => internal_error(&error, "the set-up could not be completed"),
             Self::Cookie(error) => internal_error(&error, "a cookie could not be written"),
             Self::Database(error) => internal_error(&error, "a request failed in the database"),
         }

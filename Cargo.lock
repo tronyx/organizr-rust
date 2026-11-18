@@ -1785,6 +1785,7 @@ dependencies = [
  "axum",
  "clap",
  "organizr-api",
+ "organizr-auth",
  "organizr-db",
  "organizr-settings",
  "tempfile",
@@ -1829,6 +1830,7 @@ dependencies = [
  "bcrypt",
  "getrandom 0.4.3",
  "hex",
+ "md-5",
  "organizr-db",
  "organizr-domain",
  "organizr-testkit",
@@ -1839,6 +1841,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1889,6 +1892,7 @@ dependencies = [
  "http-body-util",
  "jiff",
  "organizr-api",
+ "organizr-auth",
  "organizr-db",
  "organizr-domain",
  "organizr-settings",

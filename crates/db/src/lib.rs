@@ -8,6 +8,7 @@ mod categories;
 mod entity;
 mod error;
 mod groups;
+mod install;
 mod migration;
 mod sessions;
 mod stored_settings;
@@ -23,6 +24,7 @@ use sea_orm_migration::MigratorTrait;
 pub use crate::categories::Categories;
 pub use crate::error::DbError;
 pub use crate::groups::Groups;
+pub use crate::install::{Install, NewInstall};
 pub use crate::sessions::Sessions;
 pub use crate::stored_settings::{StoredSetting, StoredSettings};
 pub use crate::tabs::Tabs;
@@ -112,6 +114,11 @@ impl Database {
     /// The groups.
     pub const fn groups(&self) -> Groups<'_> {
         Groups::new(&self.connection)
+    }
+
+    /// The set-up of a new install.
+    pub const fn install(&self) -> Install<'_> {
+        Install::new(&self.connection)
     }
 
     /// The sessions.

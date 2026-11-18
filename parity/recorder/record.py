@@ -59,8 +59,11 @@ ORGANIZR_COMMIT = "2c1d41997f6ed61b5a760412efef8a7386a68e62"
 HOST = "organizr.test"
 
 # The made-up install. These values protect nothing: the reference is a throwaway container.
+# There is no `driver`: PHP then uses SQLite, and the Rust application, which checks a
+# `driver` against the database it runs on, can replay the request on every engine.
 SEED = {
-    "driver": "sqlite3",
+    # The Rust application asks for a set-up code. PHP does not read the field.
+    "setupCode": "PARK-TYPA-RKTY",
     "dbName": "parity",
     "dbPath": "/var/www/html/data/parity-db/",
     "license": "personal",
@@ -117,9 +120,33 @@ SESSION_TOKEN_PLACEHOLDER = re.compile(r"\{session_token:([a-z_]+)\}")
 
 NOT_FOUND_MESSAGE = "Endpoint Not Found or Defined"
 
-# Answers of an install that has not been set up.
+# Answers of an install that has not been set up, and the set-up itself.
 FRESH_INSTALL = [
     ("status", "GET", "/api/v2/status"),
+    # A field that both applications need is missing or empty. Nothing is set up.
+    ("wizard_without_license", "POST", "/api/v2/wizard", {"json": {**SEED, "license": ""}}),
+    ("wizard_without_api_key", "POST", "/api/v2/wizard", {"json": {**SEED, "api": ""}}),
+    (
+        "wizard_without_registration_password",
+        "POST",
+        "/api/v2/wizard",
+        {"json": {**SEED, "registrationPassword": None}},
+    ),
+    ("wizard_without_user_name", "POST", "/api/v2/wizard", {"json": {**SEED, "username": ""}}),
+    ("wizard_without_password", "POST", "/api/v2/wizard", {"json": {**SEED, "password": ""}}),
+    (
+        "wizard_without_email",
+        "POST",
+        "/api/v2/wizard",
+        {"json": {key: value for key, value in SEED.items() if key != "email"}},
+    ),
+    ("wizard_with_several_fields_missing", "POST", "/api/v2/wizard", {"json": {**SEED, "email": "", "api": ""}}),
+    ("status_before_the_set_up", "GET", "/api/v2/status"),
+    ("wizard", "POST", "/api/v2/wizard", {"json": SEED, "jar": "admin"}),
+    ("status_after_the_set_up", "GET", "/api/v2/status"),
+    ("me_after_the_set_up", "GET", "/api/v2/token/me", {"jar": "admin"}),
+    ("wizard_again", "POST", "/api/v2/wizard", {"json": {**SEED, "username": "intruder"}}),
+    ("wizard_again_without_fields", "POST", "/api/v2/wizard", {"json": {}}),
 ]
 
 # Routes that need no login and no data.
@@ -586,6 +613,8 @@ def record(group, cases, php_version):
 
 def named(definitions):
     """Send the requests of a group whose cases have names."""
+    # Every group starts with empty jars, as a replay of the group does.
+    JARS.clear()
     cases = []
     for name, method, path, *rest in definitions:
         options = dict(rest[0]) if rest else {}
@@ -607,10 +636,9 @@ def main():
     php_version = status.get("php", "unknown")
 
     fresh = named(FRESH_INSTALL)
-    wizard = send("POST", "/api/v2/wizard", json_body=SEED)
+    wizard = next(case for case in fresh if case["name"] == "wizard")
     if envelope(wizard).get("result") != "success":
         sys.exit(f"The set-up wizard failed:\n{wizard['response']['body']}")
-    fresh.append({"name": "wizard", **wizard})
     record("fresh_install", fresh, php_version)
 
     record("basics", named(BASICS), php_version)

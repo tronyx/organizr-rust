@@ -19,14 +19,16 @@ argon2.workspace = true
 bcrypt.workspace = true
 getrandom.workspace = true
 hex.workspace = true
+md-5.workspace = true
+serde_json.workspace = true
 sha2.workspace = true
 subtle.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+uuid.workspace = true
 
 [dev-dependencies]
 organizr-testkit.workspace = true
 
 serde.workspace = true
-serde_json.workspace = true

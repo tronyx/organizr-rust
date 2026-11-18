@@ -26,6 +26,7 @@ Status: all entries below were approved by the owner on 2026-11-18. A new deviat
 | D-16 | URL fetches on behalf of non-admins (scrape, image cache) resolve the host once, check it, and connect to that address |
 | D-17 | Marketplace downloads use TLS verification, a pinned commit and a hash, with path and size checks |
 | D-18 | The session cookie is always `HttpOnly`, also over plain HTTP, so a script of the page cannot read it. For the same reason `GET /token/me` returns `null` for `token` and for every `token` in `tokenList`. Each entry of that list has a new field `current`, which is `true` for the session of the request. `POST /token/validate` still returns the token that the caller sent. Approved on 2026-11-18 |
+| D-19 | The set-up wizard asks for a set-up code. The server makes a random code when it starts on an install that is not set up, and writes the code to its log. `POST /wizard` needs the code in the field `setupCode`. Without the right code the answer is `403`. In PHP the first visitor of a new install becomes the Admin. Approved on 2026-11-18 |
 
 **Forced by the platform or by the new front end**
 
@@ -50,6 +51,7 @@ Status: all entries below were approved by the owner on 2026-11-18. A new deviat
 | D-43 | Scheduled jobs run in-process. `cron.php` and the system cron entry are not needed |
 | D-44 | Chat uses built-in server-sent events. Pusher settings are imported and ignored |
 | D-45 | Config lives in the database, not in `config.php`. Bootstrap values come from environment variables |
+| D-46 | The set-up wizard does not choose or create the database. The database is the one the server was started with: SQLite, or the database that `ORGANIZR_DATABASE_URL` names. `GET /status` has a new field `database` (`sqlite` or `postgresql`), so the wizard can show the engine. `POST /wizard` does not read `dbName`, `dbPath`, `dbHost`, `dbUsername`, `dbPassword` and `hashKey`. A `driver` that names another engine than the one in use gets `422`. The registration password is stored as a hash. See `choosing-a-database.md`. Approved on 2026-11-18 |
 
 **Bug fixes that change an observable result**
 

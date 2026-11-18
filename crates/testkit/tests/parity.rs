@@ -8,15 +8,22 @@
     reason = "helper functions of a test file may panic; the lint settings only exempt test functions"
 )]
 
+use organizr_db::{Database, Engine};
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::replay::Replay;
 use organizr_testkit::{NO_LOGIN_LIMIT, app, installed_app, installed_app_with, seed};
 use serde_json::{Value, json};
 
 /// The differences that every status answer has.
-fn status_differences(replay: Replay, case: &str) -> Replay {
+fn status_differences(replay: Replay, case: &str, database: &Database) -> Replay {
     // There is no PHP, so the PHP version has a fixed value.
     let replay = replay.deviation("D-21", case, "/response/data/php", json!("n/a"));
+    // The answer names the database engine, which the set-up wizard cannot choose.
+    let engine = match database.engine() {
+        Engine::Sqlite => "sqlite",
+        Engine::Postgres => "postgresql",
+    };
+    let replay = replay.deviation_adds("D-46", case, "/response/data", "database", json!(engine));
     if cfg!(windows) {
         replay.environment(
             "the recording was made on Linux and this test runs on Windows",
@@ -37,10 +44,25 @@ fn without_php_session(replay: Replay) -> Replay {
 #[tokio::test]
 async fn fresh_install_answers_like_php() {
     on_each_engine(async |database| {
-        let replay = Replay::group("fresh_install")
-            .pending_case("wizard", "the set-up wizard is not implemented yet");
-        let replay = without_php_session(status_differences(replay, "status"));
+        let mut replay = without_php_session(Replay::group("fresh_install"));
+        for case in [
+            "status",
+            "status_before_the_set_up",
+            "status_after_the_set_up",
+        ] {
+            replay = status_differences(replay, case, database);
+        }
+        // The admin sees no token, and which session is the one of the request (D-18).
+        // The only session is the one that the set-up started.
+        let me = "me_after_the_set_up";
+        let session = "/response/data/tokenList/0";
+        replay = replay
+            .deviation("D-18", me, "/response/data/token", Value::Null)
+            .deviation("D-18", me, &format!("{session}/token"), Value::Null)
+            .deviation_adds("D-18", me, session, "current", json!(true));
 
+        // The application starts on a database without an install. The recorded
+        // requests carry the set-up code of the test applications, which PHP ignores.
         replay.run(&app(database)).await;
     })
     .await;
@@ -51,8 +73,8 @@ async fn basic_routes_answer_like_php() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let replay = Replay::group("basics");
-        let replay = status_differences(replay, "status");
-        let replay = status_differences(replay, "status_with_trailing_slash");
+        let replay = status_differences(replay, "status", database);
+        let replay = status_differences(replay, "status_with_trailing_slash", database);
         let replay = without_php_session(replay);
 
         replay.run(&app(database)).await;

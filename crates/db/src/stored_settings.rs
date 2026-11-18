@@ -5,7 +5,7 @@
 //! registry, before a value gets here.
 
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveValue, DatabaseConnection, EntityTrait};
+use sea_orm::{ActiveValue, ConnectionTrait, DatabaseConnection, EntityTrait};
 
 use crate::DbError;
 use crate::entity::setting;
@@ -49,19 +49,7 @@ impl<'a> StoredSettings<'a> {
 
     /// Stores the value of a setting, in place of any value it had.
     pub async fn put(&self, key: &str, value: &str) -> Result<(), DbError> {
-        let row = setting::ActiveModel {
-            name: ActiveValue::Set(key.to_owned()),
-            value: ActiveValue::Set(value.to_owned()),
-        };
-        setting::Entity::insert(row)
-            .on_conflict(
-                OnConflict::column(setting::Column::Name)
-                    .update_column(setting::Column::Value)
-                    .to_owned(),
-            )
-            .exec_without_returning(self.connection)
-            .await?;
-        Ok(())
+        put_in(self.connection, key, value).await
     }
 
     /// Removes the stored value of a setting, which puts the setting back to its default.
@@ -72,4 +60,25 @@ impl<'a> StoredSettings<'a> {
             .await?;
         Ok(result.rows_affected > 0)
     }
+}
+
+/// Stores the value of a setting through any connection: the pool, or a transaction.
+pub(crate) async fn put_in<C: ConnectionTrait>(
+    connection: &C,
+    key: &str,
+    value: &str,
+) -> Result<(), DbError> {
+    let row = setting::ActiveModel {
+        name: ActiveValue::Set(key.to_owned()),
+        value: ActiveValue::Set(value.to_owned()),
+    };
+    setting::Entity::insert(row)
+        .on_conflict(
+            OnConflict::column(setting::Column::Name)
+                .update_column(setting::Column::Value)
+                .to_owned(),
+        )
+        .exec_without_returning(connection)
+        .await?;
+    Ok(())
 }

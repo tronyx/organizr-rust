@@ -64,12 +64,391 @@
       }
     },
     {
+      "name": "wizard_without_license",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {
+          "setupCode": "PARK-TYPA-RKTY",
+          "dbName": "parity",
+          "dbPath": "/var/www/html/data/parity-db/",
+          "license": "",
+          "hashKey": "parity-hash-key-0123456789",
+          "api": "parityapikey01234567",
+          "registrationPassword": "parity-registration",
+          "username": "admin",
+          "password": "parity-admin-password",
+          "email": "admin@example.com"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"[license] cannot be empty\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "wizard_without_api_key",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {
+          "setupCode": "PARK-TYPA-RKTY",
+          "dbName": "parity",
+          "dbPath": "/var/www/html/data/parity-db/",
+          "license": "personal",
+          "hashKey": "parity-hash-key-0123456789",
+          "api": "",
+          "registrationPassword": "parity-registration",
+          "username": "admin",
+          "password": "parity-admin-password",
+          "email": "admin@example.com"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"[api] cannot be empty\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "wizard_without_registration_password",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {
+          "setupCode": "PARK-TYPA-RKTY",
+          "dbName": "parity",
+          "dbPath": "/var/www/html/data/parity-db/",
+          "license": "personal",
+          "hashKey": "parity-hash-key-0123456789",
+          "api": "parityapikey01234567",
+          "registrationPassword": null,
+          "username": "admin",
+          "password": "parity-admin-password",
+          "email": "admin@example.com"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"[registrationPassword] cannot be empty\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "wizard_without_user_name",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {
+          "setupCode": "PARK-TYPA-RKTY",
+          "dbName": "parity",
+          "dbPath": "/var/www/html/data/parity-db/",
+          "license": "personal",
+          "hashKey": "parity-hash-key-0123456789",
+          "api": "parityapikey01234567",
+          "registrationPassword": "parity-registration",
+          "username": "",
+          "password": "parity-admin-password",
+          "email": "admin@example.com"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"[username] cannot be empty\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "wizard_without_password",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {
+          "setupCode": "PARK-TYPA-RKTY",
+          "dbName": "parity",
+          "dbPath": "/var/www/html/data/parity-db/",
+          "license": "personal",
+          "hashKey": "parity-hash-key-0123456789",
+          "api": "parityapikey01234567",
+          "registrationPassword": "parity-registration",
+          "username": "admin",
+          "password": "",
+          "email": "admin@example.com"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"[password] cannot be empty\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "wizard_without_email",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {
+          "setupCode": "PARK-TYPA-RKTY",
+          "dbName": "parity",
+          "dbPath": "/var/www/html/data/parity-db/",
+          "license": "personal",
+          "hashKey": "parity-hash-key-0123456789",
+          "api": "parityapikey01234567",
+          "registrationPassword": "parity-registration",
+          "username": "admin",
+          "password": "parity-admin-password"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"[email] cannot be empty\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "wizard_with_several_fields_missing",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {
+          "setupCode": "PARK-TYPA-RKTY",
+          "dbName": "parity",
+          "dbPath": "/var/www/html/data/parity-db/",
+          "license": "personal",
+          "hashKey": "parity-hash-key-0123456789",
+          "api": "",
+          "registrationPassword": "parity-registration",
+          "username": "admin",
+          "password": "parity-admin-password",
+          "email": ""
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"[api] cannot be empty\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "status_before_the_set_up",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/status"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"writable\": true,\n            \"minVersion\": true,\n            \"os\": \"*nix\",\n            \"php\": \"8.5.12\",\n            \"userConfigPathExists\": false,\n            \"action\": \"wizard\"\n        }\n    }\n}"
+      }
+    },
+    {
       "name": "wizard",
       "request": {
         "method": "POST",
         "path": "/api/v2/wizard",
         "json": {
-          "driver": "sqlite3",
+          "setupCode": "PARK-TYPA-RKTY",
           "dbName": "parity",
           "dbPath": "/var/www/html/data/parity-db/",
           "license": "personal",
@@ -79,7 +458,8 @@
           "username": "admin",
           "password": "parity-admin-password",
           "email": "admin@example.com"
-        }
+        },
+        "jar": "admin"
       },
       "response": {
         "status": 200,
@@ -122,6 +502,157 @@
           }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": true\n    }\n}"
+      }
+    },
+    {
+      "name": "status_after_the_set_up",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/status"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"writable\": true,\n            \"minVersion\": true,\n            \"os\": \"*nix\",\n            \"php\": \"8.5.12\",\n            \"userConfigPathExists\": true,\n            \"action\": \"launch\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "me_after_the_set_up",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me",
+        "jar": "admin"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"token\": \"<token>\",\n            \"tokenDate\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"tokenExpire\": {\n                \"date\": \"<time>\",\n                \"timezone_type\": 1,\n                \"timezone\": \"+00:00\"\n            },\n            \"username\": \"admin\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Admin\",\n            \"groupID\": 0,\n            \"email\": \"admin@example.com\",\n            \"image\": \"https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=100&d=mm\",\n            \"userID\": 1,\n            \"loggedin\": true,\n            \"locked\": 0,\n            \"tokenList\": [\n                {\n                    \"token\": \"<token>\",\n                    \"ip\": \"<ip>\",\n                    \"id\": 1,\n                    \"expires\": \"<time>\",\n                    \"created\": \"<time>\"\n                }\n            ],\n            \"authService\": \"internal\"\n        }\n    }\n}",
+        "redacted": [
+          "ip",
+          "uid",
+          "token",
+          "date",
+          "created",
+          "expires"
+        ]
+      }
+    },
+    {
+      "name": "wizard_again",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {
+          "setupCode": "PARK-TYPA-RKTY",
+          "dbName": "parity",
+          "dbPath": "/var/www/html/data/parity-db/",
+          "license": "personal",
+          "hashKey": "parity-hash-key-0123456789",
+          "api": "parityapikey01234567",
+          "registrationPassword": "parity-registration",
+          "username": "intruder",
+          "password": "parity-admin-password",
+          "email": "admin@example.com"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint disabled as database already exists\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "wizard_again_without_fields",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/wizard",
+        "json": {}
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint disabled as database already exists\",\n        \"data\": false\n    }\n}"
       }
     }
   ]

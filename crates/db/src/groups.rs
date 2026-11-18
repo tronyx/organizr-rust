@@ -2,8 +2,8 @@
 
 use organizr_domain::{Group, GroupId, GroupLevel, NewGroup};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
-    QueryOrder,
+    ActiveModelTrait, ActiveValue, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
+    QueryFilter, QueryOrder,
 };
 
 use crate::DbError;
@@ -25,15 +25,7 @@ impl<'a> Groups<'a> {
     /// Fails with [`DbError::Duplicate`] when the level is taken, or when the name is
     /// taken, whatever its letter case.
     pub async fn insert(&self, new: NewGroup) -> Result<Group, DbError> {
-        let row = group::ActiveModel {
-            id: ActiveValue::NotSet,
-            level: ActiveValue::Set(i32::from(new.level.get())),
-            name_key: ActiveValue::Set(new.name.to_lowercase()),
-            name: ActiveValue::Set(new.name),
-            image: ActiveValue::Set(new.image),
-            is_default: ActiveValue::Set(new.is_default),
-        };
-        row.insert(self.connection).await?.try_into()
+        insert_in(self.connection, new).await
     }
 
     /// The group with the given id.
@@ -75,6 +67,22 @@ impl<'a> Groups<'a> {
             .await?;
         Ok(result.rows_affected > 0)
     }
+}
+
+/// Stores a new record through any connection: the pool, or a transaction.
+pub(crate) async fn insert_in<C: ConnectionTrait>(
+    connection: &C,
+    new: NewGroup,
+) -> Result<Group, DbError> {
+    let row = group::ActiveModel {
+        id: ActiveValue::NotSet,
+        level: ActiveValue::Set(i32::from(new.level.get())),
+        name_key: ActiveValue::Set(new.name.to_lowercase()),
+        name: ActiveValue::Set(new.name),
+        image: ActiveValue::Set(new.image),
+        is_default: ActiveValue::Set(new.is_default),
+    };
+    row.insert(connection).await?.try_into()
 }
 
 impl TryFrom<group::Model> for Group {

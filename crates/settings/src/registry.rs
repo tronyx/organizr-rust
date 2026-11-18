@@ -127,6 +127,12 @@ settings! {
     /// The API key of the install: 20 characters that give a script the access of an
     /// Admin. It is empty until the install is set up.
     api_key: Text = "organizrAPI", String::new();
+    /// The licence the install is used under: `personal` or `business`. It is empty until
+    /// the install is set up.
+    license: Text = "license", String::new();
+    /// The hash of the password that a new user must know to register an account. Empty
+    /// means that nobody can register.
+    registration_password_hash: Text = "registrationPassword", String::new();
 }
 
 impl Settings {
@@ -183,10 +189,12 @@ mod tests {
             ("lockScreen", json!(false)),
             ("hideRegistration", json!(false)),
             ("localIPList", json!("")),
-            // The last two are not in `default.php`: the set-up wizard writes them.
-            // Before that, PHP reads them as empty.
+            // `uuid`, `organizrAPI` and `license` are not in `default.php`: the set-up
+            // wizard writes them. Before that, PHP reads them as empty.
             ("uuid", json!("")),
             ("organizrAPI", json!("")),
+            ("license", json!("")),
+            ("registrationPassword", json!("")),
         ]
     }
 

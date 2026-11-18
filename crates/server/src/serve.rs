@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use organizr_api::client::TrustedProxies;
 use organizr_api::{AppState, router};
+use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, Engine};
 use organizr_settings::Settings;
 use tokio::net::TcpListener;
@@ -50,7 +51,21 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     if trusted_proxies == TrustedProxies::default() {
         tracing::info!("no reverse proxy is trusted; forwarding headers are ignored");
     }
-    let state = AppState::new(database.clone(), settings).with_trusted_proxies(trusted_proxies);
+    let mut state = AppState::new(database.clone(), settings).with_trusted_proxies(trusted_proxies);
+    let is_set_up = database
+        .install()
+        .is_done()
+        .await
+        .context("cannot read whether the install is set up")?;
+    if !is_set_up {
+        // The code goes to the log on purpose: only the person who runs the server can
+        // read it there, and the set-up wizard asks for it. Each start makes a new one.
+        let code = SetupCode::generate().context("cannot make the set-up code")?;
+        tracing::warn!(
+            "this install is not set up; the set-up wizard asks for the set-up code {code}"
+        );
+        state = state.with_setup_code(code);
+    }
     let app = router(state).context("the route table is not valid")?;
 
     let listener = TcpListener::bind(args.listen)

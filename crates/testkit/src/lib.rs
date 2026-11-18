@@ -18,6 +18,7 @@ pub mod seed;
 
 use axum::Router;
 use organizr_api::{AppState, router};
+use organizr_auth::setup_code::SetupCode;
 use organizr_db::Database;
 use organizr_settings::Settings;
 
@@ -53,7 +54,15 @@ pub fn installed_app_with(database: &Database, changed: &[(&str, serde_json::Val
 /// many logins from one address for another reason than the login limit.
 pub const NO_LOGIN_LIMIT: &str = "1000000";
 
-/// The application on the given database, with the given settings.
+/// The application on the given database, with the given settings. The set-up wizard
+/// asks for [`seed::SETUP_CODE`].
 pub fn app_with(database: &Database, settings: Settings) -> Router {
-    router(AppState::new(database.clone(), settings)).expect("the route table is valid")
+    router(state_with(database, settings)).expect("the route table is valid")
+}
+
+/// The state of [`app_with`], for a test that changes it while the application runs.
+pub fn state_with(database: &Database, settings: Settings) -> AppState {
+    let setup_code =
+        SetupCode::parse(seed::SETUP_CODE).expect("the set-up code of the tests is valid");
+    AppState::new(database.clone(), settings).with_setup_code(setup_code)
 }

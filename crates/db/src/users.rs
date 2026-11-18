@@ -3,8 +3,8 @@
 use organizr_domain::{GroupId, NewUser, PasswordHash, Timestamp, User, UserId};
 use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, Condition, DatabaseConnection, EntityTrait,
-    PaginatorTrait, QueryFilter, QueryOrder,
+    ActiveModelTrait, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
+    EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
 };
 
 use crate::DbError;
@@ -26,19 +26,7 @@ impl<'a> Users<'a> {
     /// Fails with [`DbError::Duplicate`] when the name is taken, whatever its letter case,
     /// and with [`DbError::ReferenceViolation`] when the group does not exist.
     pub async fn insert(&self, new: NewUser) -> Result<User, DbError> {
-        let row = user::ActiveModel {
-            id: ActiveValue::NotSet,
-            username_key: ActiveValue::Set(new.username.to_lowercase()),
-            username: ActiveValue::Set(new.username),
-            email_key: ActiveValue::Set(new.email.as_deref().map(str::to_lowercase)),
-            email: ActiveValue::Set(new.email),
-            password_hash: ActiveValue::Set(new.password_hash.expose().to_owned()),
-            group_id: ActiveValue::Set(new.group.get()),
-            locked: ActiveValue::Set(false),
-            image: ActiveValue::Set(new.image),
-            created_at: ActiveValue::Set(new.created_at.unix_seconds()),
-        };
-        Ok(row.insert(self.connection).await?.into())
+        insert_in(self.connection, new).await
     }
 
     /// How many users there are.
@@ -103,6 +91,26 @@ impl<'a> Users<'a> {
             .await?;
         Ok(result.rows_affected > 0)
     }
+}
+
+/// Stores a new record through any connection: the pool, or a transaction.
+pub(crate) async fn insert_in<C: ConnectionTrait>(
+    connection: &C,
+    new: NewUser,
+) -> Result<User, DbError> {
+    let row = user::ActiveModel {
+        id: ActiveValue::NotSet,
+        username_key: ActiveValue::Set(new.username.to_lowercase()),
+        username: ActiveValue::Set(new.username),
+        email_key: ActiveValue::Set(new.email.as_deref().map(str::to_lowercase)),
+        email: ActiveValue::Set(new.email),
+        password_hash: ActiveValue::Set(new.password_hash.expose().to_owned()),
+        group_id: ActiveValue::Set(new.group.get()),
+        locked: ActiveValue::Set(false),
+        image: ActiveValue::Set(new.image),
+        created_at: ActiveValue::Set(new.created_at.unix_seconds()),
+    };
+    Ok(row.insert(connection).await?.into())
 }
 
 impl From<user::Model> for User {

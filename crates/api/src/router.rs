@@ -12,7 +12,7 @@ use crate::caller::{Caller, identify_caller};
 use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
-use crate::handlers::{basics, login, logout, token};
+use crate::handlers::{basics, login, logout, token, wizard};
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
 use crate::state::AppState;
@@ -31,6 +31,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/ping", &get(basics::ping))?
         .route("/rox", &get(basics::rox))?
         .route("/roxinsocks", &get(basics::roxinsocks))?
+        .route("/wizard", &post(wizard::wizard))?
         .route("/login", &post(login::login))?
         .route("/logout", &get(logout::logout))?
         // The PHP router tries `/token/{id}` for a DELETE of the two fixed paths too.

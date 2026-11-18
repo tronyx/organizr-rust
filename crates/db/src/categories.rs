@@ -1,7 +1,9 @@
 //! Storage of categories.
 
 use organizr_domain::{Category, CategoryId, CategoryNumber, NewCategory};
-use sea_orm::{ActiveModelTrait, ActiveValue, DatabaseConnection, EntityTrait, QueryOrder};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue, ConnectionTrait, DatabaseConnection, EntityTrait, QueryOrder,
+};
 
 use crate::DbError;
 use crate::entity::category;
@@ -22,16 +24,7 @@ impl<'a> Categories<'a> {
     /// Fails with [`DbError::Duplicate`] when the number is taken, or when the name is
     /// taken, whatever its letter case.
     pub async fn insert(&self, new: NewCategory) -> Result<Category, DbError> {
-        let row = category::ActiveModel {
-            id: ActiveValue::NotSet,
-            number: ActiveValue::Set(new.number.get()),
-            position: ActiveValue::Set(new.position),
-            name_key: ActiveValue::Set(new.name.to_lowercase()),
-            name: ActiveValue::Set(new.name),
-            image: ActiveValue::Set(new.image),
-            is_default: ActiveValue::Set(new.is_default),
-        };
-        Ok(row.insert(self.connection).await?.into())
+        insert_in(self.connection, new).await
     }
 
     /// All categories in menu order.
@@ -53,6 +46,23 @@ impl<'a> Categories<'a> {
             .await?;
         Ok(result.rows_affected > 0)
     }
+}
+
+/// Stores a new record through any connection: the pool, or a transaction.
+pub(crate) async fn insert_in<C: ConnectionTrait>(
+    connection: &C,
+    new: NewCategory,
+) -> Result<Category, DbError> {
+    let row = category::ActiveModel {
+        id: ActiveValue::NotSet,
+        number: ActiveValue::Set(new.number.get()),
+        position: ActiveValue::Set(new.position),
+        name_key: ActiveValue::Set(new.name.to_lowercase()),
+        name: ActiveValue::Set(new.name),
+        image: ActiveValue::Set(new.image),
+        is_default: ActiveValue::Set(new.is_default),
+    };
+    Ok(row.insert(connection).await?.into())
 }
 
 impl From<category::Model> for Category {
