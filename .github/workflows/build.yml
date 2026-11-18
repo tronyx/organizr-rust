@@ -1,7 +1,8 @@
 name: build
 
 # Builds the image for both architectures and tests that it starts. Nothing is pushed yet.
-# It runs only when a file that changes the image changes, and on request.
+# It runs only when a file that changes the image changes (the Dockerfile, the source code
+# or the dependencies), and on request.
 on:
   push:
     branches:
@@ -9,6 +10,7 @@ on:
       - main
     paths:
       - docker/**
+      - crates/**
       - .dockerignore
       - Cargo.toml
       - Cargo.lock
@@ -20,6 +22,7 @@ on:
       - main
     paths:
       - docker/**
+      - crates/**
       - .dockerignore
       - Cargo.toml
       - Cargo.lock
