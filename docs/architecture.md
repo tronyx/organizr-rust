@@ -216,6 +216,7 @@ secrecy = "0.10.3"
 zeroize = "1.9.2"
 subtle = "2.6.1"
 rand = "0.10.4"
+getrandom = "0.4.3"
 bcrypt = "0.19.3"
 argon2 = "0.6.0"
 totp-rs = { version = "6.0.0", features = ["otpauth", "qr", "gen_secret", "zeroize"] }

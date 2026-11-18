@@ -15,6 +15,7 @@
 
 pub mod category;
 pub mod group;
+pub mod session;
 pub mod setting;
 pub mod tab;
 pub mod user;

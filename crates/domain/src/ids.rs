@@ -60,3 +60,8 @@ id_type!(
     /// Identifies a tab.
     TabId
 );
+
+id_type!(
+    /// Identifies a session. The API calls it the `id` of a token.
+    SessionId
+);

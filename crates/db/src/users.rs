@@ -52,6 +52,14 @@ impl<'a> Users<'a> {
             .await?;
         Ok(row.map(User::from))
     }
+
+    /// Deletes a user and the sessions of that user. Returns whether the user existed.
+    pub async fn delete(&self, id: UserId) -> Result<bool, DbError> {
+        let result = user::Entity::delete_by_id(id.get())
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected > 0)
+    }
 }
 
 impl From<user::Model> for User {
