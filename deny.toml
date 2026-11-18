@@ -6,7 +6,12 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
-ignore = []
+ignore = [
+    # An "unmaintained" notice, not a vulnerability. chrono arrives through
+    # sea-orm-migration, which turns on the default date types of SeaORM. The code of
+    # this project does not use chrono. Remove this entry when SeaORM drops it.
+    { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained; it is a dependency of sea-orm-migration and is not used by this project's code" },
+]
 
 [licenses]
 version = 2
@@ -15,6 +20,9 @@ confidence-threshold = 0.8
 allow = [
     "MIT",
     "Apache-2.0",
+    "BSD-3-Clause",
+    "CDLA-Permissive-2.0",
+    "ISC",
     "Unicode-3.0",
     "Zlib",
 ]
