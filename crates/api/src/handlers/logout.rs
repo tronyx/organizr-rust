@@ -34,7 +34,7 @@ pub async fn logout(
     _: FromThisSite,
     headers: HeaderMap,
 ) -> Result<Response, ApiError> {
-    let session_cookie = session_cookie_name(state.settings());
+    let session_cookie = session_cookie_name(&state.settings());
     let token = cookies::cookie_value(&headers, &session_cookie).and_then(SessionToken::parse);
     if let Some(token) = token {
         let existed = state

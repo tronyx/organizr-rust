@@ -145,7 +145,7 @@ pub async fn identify_caller(
     next: Next,
 ) -> Response {
     let settings = state.settings();
-    let cookie_name = session_cookie_name(settings);
+    let cookie_name = session_cookie_name(&settings);
     let headers = request.headers();
     let now = SystemTime::now();
 
@@ -158,7 +158,7 @@ pub async fn identify_caller(
         None => Identity::Guest,
         Some(None) => Identity::Rejected,
         Some(Some(token)) => {
-            let rule = browser_rule(settings, headers);
+            let rule = browser_rule(&settings, headers);
             match session::check(state.database(), &token, now_stamp(now), rule).await {
                 Ok(SessionCheck::Valid(authenticated)) => {
                     Identity::User(Box::new(LoggedInCaller {

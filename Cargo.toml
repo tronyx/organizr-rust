@@ -44,6 +44,7 @@ organizr-settings = { path = "crates/settings" }
 organizr-testkit = { path = "crates/testkit" }
 
 anyhow = "1.0.104"
+arc-swap = "1.9.5"
 argon2 = "0.6.0"
 axum = "0.8.9"
 bcrypt = "0.19.3"

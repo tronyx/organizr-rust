@@ -337,7 +337,8 @@ pub async fn validate(
     };
 
     let now = now_stamp(SystemTime::now());
-    let rule = browser_rule(state.settings(), &headers);
+    let settings = state.settings();
+    let rule = browser_rule(&settings, &headers);
     match session::check(state.database(), &token, now, rule).await? {
         SessionCheck::Valid(authenticated) => {
             let user = describe_user(&state, &authenticated, Some(&token), client, now).await?;

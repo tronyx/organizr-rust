@@ -2,9 +2,10 @@
 
 use std::sync::Arc;
 
+use arc_swap::ArcSwap;
 use organizr_auth::login_limit::LoginLimiter;
-use organizr_db::Database;
-use organizr_settings::Settings;
+use organizr_db::{Database, DbError};
+use organizr_settings::{Settings, SettingsError};
 
 use crate::client::TrustedProxies;
 
@@ -12,7 +13,7 @@ use crate::client::TrustedProxies;
 #[derive(Debug, Clone)]
 pub struct AppState {
     database: Database,
-    settings: Arc<Settings>,
+    settings: Arc<ArcSwap<Settings>>,
     trusted_proxies: Arc<TrustedProxies>,
     login_limiter: Arc<LoginLimiter>,
 }
@@ -23,7 +24,7 @@ impl AppState {
     pub fn new(database: Database, settings: Settings) -> Self {
         Self {
             database,
-            settings: Arc::new(settings),
+            settings: Arc::new(ArcSwap::from_pointee(settings)),
             trusted_proxies: Arc::new(TrustedProxies::default()),
             login_limiter: Arc::new(LoginLimiter::new()),
         }
@@ -41,9 +42,27 @@ impl AppState {
         &self.database
     }
 
-    /// The settings as they were when the application started.
-    pub fn settings(&self) -> &Settings {
-        &self.settings
+    /// The settings as they are now.
+    ///
+    /// The settings can change while the application runs. A handler asks once and uses
+    /// what it got, so one request works with one set of settings from start to end.
+    pub fn settings(&self) -> Arc<Settings> {
+        self.settings.load_full()
+    }
+
+    /// Puts new settings in place of the current ones. Requests that start after this
+    /// call use them. A request that is under way keeps the settings it started with.
+    pub fn replace_settings(&self, settings: Settings) {
+        self.settings.store(Arc::new(settings));
+    }
+
+    /// Reads the settings from the database again and puts them in place of the current
+    /// ones. Returns the stored entries that cannot be used; each of those settings has
+    /// its default.
+    pub async fn reload_settings(&self) -> Result<Vec<SettingsError>, DbError> {
+        let (settings, problems) = stored_settings(&self.database).await?;
+        self.replace_settings(settings);
+        Ok(problems)
     }
 
     /// The reverse proxies whose forwarding headers are believed.
@@ -55,4 +74,16 @@ impl AppState {
     pub fn login_limiter(&self) -> &LoginLimiter {
         &self.login_limiter
     }
+}
+
+/// Reads the settings that the database holds: the defaults, with each stored value on
+/// top. Also returns the stored entries that cannot be used; each of those settings has
+/// its default.
+pub async fn stored_settings(
+    database: &Database,
+) -> Result<(Settings, Vec<SettingsError>), DbError> {
+    let stored = database.settings().all().await?;
+    Ok(Settings::from_stored(stored.iter().map(|setting| {
+        (setting.key.as_str(), setting.value.as_str())
+    })))
 }

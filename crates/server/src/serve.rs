@@ -118,16 +118,9 @@ fn default_database_url(data_dir: &Path) -> String {
 
 /// Reads the settings. A stored entry that cannot be used is logged and left at its default.
 async fn load_settings(database: &Database) -> anyhow::Result<Settings> {
-    let stored = database
-        .settings()
-        .all()
+    let (settings, problems) = organizr_api::stored_settings(database)
         .await
         .context("cannot read the settings")?;
-    let (settings, problems) = Settings::from_stored(
-        stored
-            .iter()
-            .map(|setting| (setting.key.as_str(), setting.value.as_str())),
-    );
     for problem in &problems {
         tracing::warn!(%problem, "a stored setting is ignored");
     }

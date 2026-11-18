@@ -105,7 +105,7 @@ pub async fn login(
     tracing::info!(user = %logged_in.user.username, client = %client.address, "a user logged in");
 
     let session_cookie = CookieScope::of(&headers, client.https).set_hidden(
-        &session_cookie_name(settings),
+        &session_cookie_name(&settings),
         logged_in.token.expose(),
         now + lifetime,
     )?;

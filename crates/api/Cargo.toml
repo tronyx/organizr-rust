@@ -17,6 +17,7 @@ organizr-db.workspace = true
 organizr-domain.workspace = true
 organizr-settings.workspace = true
 
+arc-swap.workspace = true
 axum.workspace = true
 form_urlencoded.workspace = true
 hex.workspace = true

@@ -16,4 +16,4 @@ pub mod slim_route;
 mod state;
 
 pub use crate::router::{API_BASE, router};
-pub use crate::state::AppState;
+pub use crate::state::{AppState, stored_settings};
