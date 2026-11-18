@@ -12,10 +12,13 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+organizr-auth.workspace = true
 organizr-db.workspace = true
+organizr-domain.workspace = true
 organizr-settings.workspace = true
 
 axum.workspace = true
+form_urlencoded.workspace = true
 ipnet.workspace = true
 jiff.workspace = true
 serde.workspace = true

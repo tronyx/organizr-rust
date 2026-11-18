@@ -1,0 +1,1240 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ]
+  },
+  "cases": [
+    {
+      "name": "wrong_password",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "not-it"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "unknown_user",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "nobody",
+          "password": "parity-admin-password"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "correct_password",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "user_name_in_upper_case",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "ADMIN",
+          "password": "parity-admin-password"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "email_in_another_letter_case",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "Admin@Example.COM",
+          "password": "parity-admin-password"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "spaces_around_the_user_name",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": " admin ",
+          "password": "parity-admin-password"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "remember_true",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password",
+          "remember": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "remember_false",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password",
+          "remember": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "remember_null",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password",
+          "remember": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "other_fields_are_ignored",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password",
+          "formKey": "anything",
+          "tfaCode": "",
+          "output": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "device_cookie_and_user_agent_sent",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password"
+        },
+        "headers": {
+          "User-Agent": "Parity/1.0"
+        },
+        "cookies": {
+          "organizr_user_uuid": "0e3b1d7c-5f0a-4c59-9f3c-2a6d1b8e4f70"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "no_body",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "empty_object",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {}
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "json_array",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": [
+          "admin",
+          "parity-admin-password"
+        ]
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "json_text",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": "admin"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "invalid_json",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "body": "{\"username\": \"admin\", ",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "password_only",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "password": "parity-admin-password"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "user_name_only",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "number_as_user_name",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": 123,
+          "password": "parity-admin-password"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "number_as_password",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": 123
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "form_body",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "body": "username=admin&password=parity-admin-password&remember=on",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "form_body_with_charset_and_escapes",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "body": "username=%61dmin&password=parity%2Dadmin%2Dpassword",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "form_body_with_wrong_password",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "body": "username=admin&password=not+it",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "json_type_in_another_letter_case_with_charset",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "body": "{\"username\": \"admin\", \"password\": \"parity-admin-password\"}",
+        "headers": {
+          "Content-Type": "Application/JSON; charset=utf-8"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "json_body_without_a_content_type",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "body": "{\"username\": \"admin\", \"password\": \"parity-admin-password\"}"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "json_body_sent_as_a_form",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "body": "{\"username\": \"admin\", \"password\": \"parity-admin-password\"}",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "get_instead_of_post",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/login"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/login\",\n            \"method\": \"GET\"\n        }\n    }\n}"
+      }
+    }
+  ]
+}

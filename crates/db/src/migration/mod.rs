@@ -9,6 +9,7 @@ mod m20261118_000001_groups_and_users;
 mod m20261118_000002_categories_and_tabs;
 mod m20261118_000003_settings;
 mod m20261118_000004_sessions;
+mod m20261118_000005_user_email_key;
 
 /// The list of all migrations, oldest first.
 pub struct Migrator;
@@ -20,6 +21,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261118_000002_categories_and_tabs::Migration),
             Box::new(m20261118_000003_settings::Migration),
             Box::new(m20261118_000004_sessions::Migration),
+            Box::new(m20261118_000005_user_email_key::Migration),
         ]
     }
 }

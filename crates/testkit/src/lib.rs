@@ -22,5 +22,20 @@ use organizr_settings::Settings;
 
 /// The application on the given database, with every setting at its default.
 pub fn app(database: &Database) -> Router {
-    router(AppState::new(database.clone(), Settings::defaults())).expect("the route table is valid")
+    app_with(database, Settings::defaults())
+}
+
+/// The application on the given database, with the settings of an install that has been
+/// set up: the defaults and [`seed::INSTALL_ID`].
+pub fn installed_app(database: &Database) -> Router {
+    let mut settings = Settings::defaults();
+    settings
+        .set("uuid", &serde_json::Value::from(seed::INSTALL_ID))
+        .expect("the install id is a valid setting");
+    app_with(database, settings)
+}
+
+/// The application on the given database, with the given settings.
+pub fn app_with(database: &Database, settings: Settings) -> Router {
+    router(AppState::new(database.clone(), settings)).expect("the route table is valid")
 }

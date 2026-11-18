@@ -11,6 +11,21 @@ wizard with made-up values and records the other groups. Each group becomes one 
 parity/cases/. Recording again must give the same files, so values that change on every
 request (the device id, the caller address) are replaced by placeholders.
 
+A case is defined as (name, method, path) or (name, method, path, options). The options:
+
+    json     a value that is sent as a JSON body
+    body     a text that is sent as the body, as it is (name the type in `headers`)
+    headers  request headers
+    cookies  cookies that are sent with fixed values
+    jar      the name of a cookie jar. The request carries the cookies of the jar, and
+             the cookies of the answer go into it, as in a browser. This is how a later
+             case uses the session of an earlier login. The values in a jar are not
+             recorded: a replay fills its own jar from the answers it gets.
+
+For each cookie an answer sets, the recorder keeps the name, the domain, the path and
+the lifetime: `deleted` when the cookie expires in the past, `session` when it has no
+expiry, otherwise the seconds until the expiry, rounded to a whole minute.
+
 Only the Python standard library is used. No data of a real install is involved.
 """
 
@@ -19,6 +34,8 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -87,6 +104,101 @@ BASICS = [
     ("roxinsocks_redirect", "GET", "/api/v2/roxinsocks"),
 ]
 
+# The name and the password of the made-up admin account.
+ADMIN = {"username": SEED["username"], "password": SEED["password"]}
+FORM = {"Content-Type": "application/x-www-form-urlencoded"}
+
+# Logging in with a local password. No case shares cookies with another one.
+LOGIN = [
+    ("wrong_password", "POST", "/api/v2/login", {"json": {**ADMIN, "password": "not-it"}}),
+    ("unknown_user", "POST", "/api/v2/login", {"json": {**ADMIN, "username": "nobody"}}),
+    ("correct_password", "POST", "/api/v2/login", {"json": ADMIN}),
+    ("user_name_in_upper_case", "POST", "/api/v2/login", {"json": {**ADMIN, "username": "ADMIN"}}),
+    (
+        "email_in_another_letter_case",
+        "POST",
+        "/api/v2/login",
+        {"json": {**ADMIN, "username": "Admin@Example.COM"}},
+    ),
+    ("spaces_around_the_user_name", "POST", "/api/v2/login", {"json": {**ADMIN, "username": " admin "}}),
+    # "Remember me": any value other than null counts, also false.
+    ("remember_true", "POST", "/api/v2/login", {"json": {**ADMIN, "remember": True}}),
+    ("remember_false", "POST", "/api/v2/login", {"json": {**ADMIN, "remember": False}}),
+    ("remember_null", "POST", "/api/v2/login", {"json": {**ADMIN, "remember": None}}),
+    (
+        "other_fields_are_ignored",
+        "POST",
+        "/api/v2/login",
+        {"json": {**ADMIN, "formKey": "anything", "tfaCode": "", "output": True}},
+    ),
+    (
+        "device_cookie_and_user_agent_sent",
+        "POST",
+        "/api/v2/login",
+        {
+            "json": ADMIN,
+            "cookies": {"organizr_user_uuid": "0e3b1d7c-5f0a-4c59-9f3c-2a6d1b8e4f70"},
+            "headers": {"User-Agent": "Parity/1.0"},
+        },
+    ),
+    # Bodies that give no name or no password.
+    ("no_body", "POST", "/api/v2/login"),
+    ("empty_object", "POST", "/api/v2/login", {"json": {}}),
+    ("json_array", "POST", "/api/v2/login", {"json": ["admin", SEED["password"]]}),
+    ("json_text", "POST", "/api/v2/login", {"json": "admin"}),
+    (
+        "invalid_json",
+        "POST",
+        "/api/v2/login",
+        {"body": '{"username": "admin", ', "headers": {"Content-Type": "application/json"}},
+    ),
+    ("password_only", "POST", "/api/v2/login", {"json": {"password": SEED["password"]}}),
+    ("user_name_only", "POST", "/api/v2/login", {"json": {"username": "admin"}}),
+    ("number_as_user_name", "POST", "/api/v2/login", {"json": {**ADMIN, "username": 123}}),
+    ("number_as_password", "POST", "/api/v2/login", {"json": {**ADMIN, "password": 123}}),
+    # How the body is read depends on the content type.
+    (
+        "form_body",
+        "POST",
+        "/api/v2/login",
+        {"body": f"username=admin&password={SEED['password']}&remember=on", "headers": FORM},
+    ),
+    (
+        "form_body_with_charset_and_escapes",
+        "POST",
+        "/api/v2/login",
+        {
+            "body": f"username=%61dmin&password={SEED['password'].replace('-', '%2D')}",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
+        },
+    ),
+    (
+        "form_body_with_wrong_password",
+        "POST",
+        "/api/v2/login",
+        {"body": "username=admin&password=not+it", "headers": FORM},
+    ),
+    (
+        "json_type_in_another_letter_case_with_charset",
+        "POST",
+        "/api/v2/login",
+        {"body": json.dumps(ADMIN), "headers": {"Content-Type": "Application/JSON; charset=utf-8"}},
+    ),
+    (
+        "json_body_without_a_content_type",
+        "POST",
+        "/api/v2/login",
+        {"body": json.dumps(ADMIN)},
+    ),
+    (
+        "json_body_sent_as_a_form",
+        "POST",
+        "/api/v2/login",
+        {"body": json.dumps(ADMIN), "headers": FORM},
+    ),
+    ("get_instead_of_post", "GET", "/api/v2/login"),
+]
+
 # Requests that show which route the PHP router chooses. The Rust router must choose the
 # same one. Keep in step with ROUTING_CASES in crates/api/tests/slim_routes.rs.
 ROUTING = [
@@ -130,28 +242,81 @@ ROUTING = [
 ]
 
 
-def send(method, path, body=None):
+# The cookie jars of the recording, by name: cookie name to value.
+JARS = {}
+
+# How PHP writes the expiry of a cookie: its own cookies, and the one of the PHP session.
+EXPIRY_FORMATS = ("%a, %d-%b-%Y %H:%M:%S GMT", "%a, %d %b %Y %H:%M:%S GMT")
+
+
+def describe_cookie(header, now):
+    """Take a Set-Cookie value apart: (name, value, what the recording keeps)."""
+    first, *rest = [part.strip() for part in header.split(";")]
+    name, _, value = first.partition("=")
+    attributes = {}
+    for part in rest:
+        key, _, attribute = part.partition("=")
+        attributes[key.lower()] = attribute
+
+    lifetime = "session"
+    if "expires" in attributes:
+        expires = None
+        for expiry_format in EXPIRY_FORMATS:
+            try:
+                expires = datetime.strptime(attributes["expires"], expiry_format)
+            except ValueError:
+                continue
+            break
+        if expires is None:
+            sys.exit(f"The expiry of a cookie has an unknown form: {header}")
+        seconds = (expires.replace(tzinfo=timezone.utc) - now).total_seconds()
+        lifetime = "deleted" if seconds < 0 else f"{round(seconds / 60) * 60}s"
+
+    recorded = {
+        "name": SESSION_COOKIE.sub("organizr_token_<uuid>", name),
+        "domain": attributes.get("domain"),
+        "path": attributes.get("path"),
+        "lifetime": lifetime,
+    }
+    return name, value, recorded
+
+
+def send(method, path, json_body=None, body=None, headers=None, cookies=None, jar=None):
     """Send one request to the reference and return the parts of the answer that matter."""
     target = urlsplit(ORACLE_URL)
     connection = http.client.HTTPConnection(target.hostname, target.port or 80, timeout=60)
-    headers = {"Host": HOST}
+    all_headers = {"Host": HOST}
     payload = None
+    if json_body is not None:
+        payload = json.dumps(json_body).encode("utf-8")
+        all_headers["Content-Type"] = "application/json"
     if body is not None:
-        payload = json.dumps(body).encode("utf-8")
-        headers["Content-Type"] = "application/json"
+        payload = body.encode("utf-8")
+    all_headers.update(headers or {})
+    sent_cookies = dict(cookies or {})
+    if jar is not None:
+        sent_cookies.update(JARS.setdefault(jar, {}))
+    if sent_cookies:
+        all_headers["Cookie"] = "; ".join(f"{name}={value}" for name, value in sent_cookies.items())
     try:
-        connection.request(method, path, body=payload, headers=headers)
+        connection.request(method, path, body=payload, headers=all_headers)
         response = connection.getresponse()
         text = response.read().decode("utf-8")
+        now = parsedate_to_datetime(response.getheader("Date"))
         recorded_headers = {}
-        cookies = []
+        recorded_cookies = []
         for name, value in response.getheaders():
             lower = name.lower()
             if lower in RECORDED_HEADERS:
                 recorded_headers[lower] = value
             elif lower == "set-cookie":
-                name = value.split("=", 1)[0]
-                cookies.append(SESSION_COOKIE.sub("organizr_token_<uuid>", name))
+                cookie_name, cookie_value, recorded = describe_cookie(value, now)
+                recorded_cookies.append(recorded)
+                if jar is not None:
+                    if recorded["lifetime"] == "deleted":
+                        JARS[jar].pop(cookie_name, None)
+                    else:
+                        JARS[jar][cookie_name] = cookie_value
         status = response.status
     finally:
         connection.close()
@@ -163,9 +328,22 @@ def send(method, path, body=None):
             redacted.append(replacement.split("<")[1].split(">")[0])
 
     request = {"method": method, "path": path}
+    if json_body is not None:
+        request["json"] = json_body
     if body is not None:
-        request["json"] = body
-    answer = {"status": status, "headers": recorded_headers, "cookies_set": cookies, "body": text}
+        request["body"] = body
+    if headers:
+        request["headers"] = headers
+    if cookies:
+        request["cookies"] = cookies
+    if jar is not None:
+        request["jar"] = jar
+    answer = {
+        "status": status,
+        "headers": recorded_headers,
+        "cookies_set": recorded_cookies,
+        "body": text,
+    }
     if redacted:
         answer["redacted"] = redacted
     return {"request": request, "response": answer}
@@ -201,7 +379,13 @@ def record(group, cases, php_version):
 
 def named(definitions):
     """Send the requests of a group whose cases have names."""
-    return [{"name": name, **send(method, path)} for name, method, path in definitions]
+    cases = []
+    for name, method, path, *rest in definitions:
+        options = dict(rest[0]) if rest else {}
+        if "json" in options:
+            options["json_body"] = options.pop("json")
+        cases.append({"name": name, **send(method, path, **options)})
+    return cases
 
 
 def main():
@@ -216,13 +400,14 @@ def main():
     php_version = status.get("php", "unknown")
 
     fresh = named(FRESH_INSTALL)
-    wizard = send("POST", "/api/v2/wizard", body=SEED)
+    wizard = send("POST", "/api/v2/wizard", json_body=SEED)
     if envelope(wizard).get("result") != "success":
         sys.exit(f"The set-up wizard failed:\n{wizard['response']['body']}")
     fresh.append({"name": "wizard", **wizard})
     record("fresh_install", fresh, php_version)
 
     record("basics", named(BASICS), php_version)
+    record("login", named(LOGIN), php_version)
 
     routing = []
     for method, path in ROUTING:

@@ -10,7 +10,9 @@
 )]
 
 use organizr_db::{Database, DbError};
-use organizr_domain::{Group, GroupId, GroupLevel, NewGroup, NewUser, PasswordHash, Timestamp};
+use organizr_domain::{
+    Group, GroupId, GroupLevel, NewGroup, NewUser, PasswordHash, Timestamp, UserId,
+};
 use organizr_testkit::engines::{self, on_each_engine};
 
 /// A group with the given level and name, and nothing else set.
@@ -248,6 +250,127 @@ async fn user_is_found_whatever_the_letter_case_of_the_name() {
             .await
             .expect("the lookup works");
         assert_eq!(missing, None);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn user_logs_in_with_the_name_or_the_email_address_in_any_letter_case() {
+    on_each_engine(async |database| {
+        let group = insert_group(database, 4, "User").await;
+        let zoe = database
+            .users()
+            .insert(NewUser {
+                email: Some("Zoe.Öz@Example.com".to_owned()),
+                ..new_user("Zoë", group.id)
+            })
+            .await
+            .expect("the user can be stored");
+        database
+            .users()
+            .insert(new_user("without-address", group.id))
+            .await
+            .expect("the user can be stored");
+
+        for text in [
+            "Zoë",
+            "zoë",
+            "ZOË",
+            "zoe.öz@example.com",
+            "ZOE.ÖZ@EXAMPLE.COM",
+        ] {
+            let found = database
+                .users()
+                .find_by_login(text)
+                .await
+                .expect("the lookup works");
+            assert_eq!(found.as_ref(), Some(&zoe), "logged in as `{text}`");
+        }
+        for text in ["", " zoë", "zoe", "example.com", "zoe.öz@example.com "] {
+            let found = database
+                .users()
+                .find_by_login(text)
+                .await
+                .expect("the lookup works");
+            assert_eq!(found, None, "logged in as `{text}`");
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn login_text_that_fits_two_users_finds_the_older_one() {
+    on_each_engine(async |database| {
+        let group = insert_group(database, 4, "User").await;
+        // The name of the second user is the address of the first, and both have the
+        // same address. The PHP application allows this.
+        let first = database
+            .users()
+            .insert(NewUser {
+                email: Some("shared@example.com".to_owned()),
+                ..new_user("first", group.id)
+            })
+            .await
+            .expect("the user can be stored");
+        database
+            .users()
+            .insert(NewUser {
+                email: Some("shared@example.com".to_owned()),
+                ..new_user("Shared@Example.com", group.id)
+            })
+            .await
+            .expect("two users can share an address");
+
+        let found = database
+            .users()
+            .find_by_login("shared@example.com")
+            .await
+            .expect("the lookup works");
+
+        assert_eq!(found, Some(first));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn password_hash_of_a_user_can_be_replaced() {
+    on_each_engine(async |database| {
+        let group = insert_group(database, 4, "User").await;
+        let chris = database
+            .users()
+            .insert(new_user("chris", group.id))
+            .await
+            .expect("the user can be stored");
+        let zoe = database
+            .users()
+            .insert(new_user("zoe", group.id))
+            .await
+            .expect("the user can be stored");
+        let new_hash = PasswordHash::new("$argon2id$v=19$not.a.real.hash".to_owned());
+
+        let changed = database
+            .users()
+            .set_password_hash(chris.id, &new_hash)
+            .await
+            .expect("the update works");
+        let unknown = database
+            .users()
+            .set_password_hash(UserId::new(12_345), &new_hash)
+            .await
+            .expect("the update works");
+
+        assert!(changed, "the user exists");
+        assert!(!unknown, "no such user");
+        let stored = |name: &'static str| async move {
+            database
+                .users()
+                .find_by_username(name)
+                .await
+                .expect("the lookup works")
+                .expect("the user exists")
+        };
+        assert_eq!(stored("chris").await.password_hash, new_hash);
+        assert_eq!(stored("zoe").await, zoe, "another user is not touched");
     })
     .await;
 }

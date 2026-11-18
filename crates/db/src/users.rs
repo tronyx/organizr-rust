@@ -1,9 +1,10 @@
 //! Storage of users.
 
 use organizr_domain::{GroupId, NewUser, PasswordHash, Timestamp, User, UserId};
+use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait,
-    QueryFilter,
+    ActiveModelTrait, ActiveValue, ColumnTrait, Condition, DatabaseConnection, EntityTrait,
+    PaginatorTrait, QueryFilter, QueryOrder,
 };
 
 use crate::DbError;
@@ -29,6 +30,7 @@ impl<'a> Users<'a> {
             id: ActiveValue::NotSet,
             username_key: ActiveValue::Set(new.username.to_lowercase()),
             username: ActiveValue::Set(new.username),
+            email_key: ActiveValue::Set(new.email.as_deref().map(str::to_lowercase)),
             email: ActiveValue::Set(new.email),
             password_hash: ActiveValue::Set(new.password_hash.expose().to_owned()),
             group_id: ActiveValue::Set(new.group.get()),
@@ -51,6 +53,39 @@ impl<'a> Users<'a> {
             .one(self.connection)
             .await?;
         Ok(row.map(User::from))
+    }
+
+    /// The user who logs in with the given text: the first user, by id, whose name or
+    /// whose e-mail address is that text, whatever the letter case.
+    pub async fn find_by_login(&self, name_or_email: &str) -> Result<Option<User>, DbError> {
+        let key = name_or_email.to_lowercase();
+        let row = user::Entity::find()
+            .filter(
+                Condition::any()
+                    .add(user::Column::UsernameKey.eq(key.as_str()))
+                    .add(user::Column::EmailKey.eq(key.as_str())),
+            )
+            .order_by_asc(user::Column::Id)
+            .one(self.connection)
+            .await?;
+        Ok(row.map(User::from))
+    }
+
+    /// Replaces the stored password hash of a user. Returns whether the user existed.
+    pub async fn set_password_hash(
+        &self,
+        id: UserId,
+        password_hash: &PasswordHash,
+    ) -> Result<bool, DbError> {
+        let result = user::Entity::update_many()
+            .col_expr(
+                user::Column::PasswordHash,
+                Expr::value(password_hash.expose()),
+            )
+            .filter(user::Column::Id.eq(id.get()))
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected > 0)
     }
 
     /// Deletes a user and the sessions of that user. Returns whether the user existed.

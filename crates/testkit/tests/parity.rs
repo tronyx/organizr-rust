@@ -10,7 +10,7 @@
 
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::replay::Replay;
-use organizr_testkit::{app, seed};
+use organizr_testkit::{app, installed_app, seed};
 use serde_json::json;
 
 /// The differences that every status answer has.
@@ -56,6 +56,17 @@ async fn basic_routes_answer_like_php() {
         let replay = without_php_session(replay);
 
         replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn login_answers_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = without_php_session(Replay::group("login"));
+
+        replay.run(&installed_app(database)).await;
     })
     .await;
 }

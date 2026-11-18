@@ -15,6 +15,8 @@ pub struct Model {
     #[sea_orm(unique)]
     pub username_key: String,
     pub email: Option<String>,
+    /// The e-mail address in lower case, for the lookup at login. Not unique.
+    pub email_key: Option<String>,
     pub password_hash: String,
     /// The row id of the group. A group with users cannot be deleted.
     pub group_id: i64,

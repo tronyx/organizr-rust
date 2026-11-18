@@ -31,9 +31,24 @@
           "pragma": "no-cache"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"writable\": true,\n            \"minVersion\": true,\n            \"os\": \"*nix\",\n            \"php\": \"8.5.12\",\n            \"userConfigPathExists\": true,\n            \"action\": \"launch\"\n        }\n    }\n}"
       }
@@ -53,9 +68,24 @@
           "pragma": "no-cache"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"writable\": true,\n            \"minVersion\": true,\n            \"os\": \"*nix\",\n            \"php\": \"8.5.12\",\n            \"userConfigPathExists\": true,\n            \"action\": \"launch\"\n        }\n    }\n}"
       }
@@ -75,9 +105,24 @@
           "pragma": "no-cache"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": \"pong\"\n    }\n}"
       }
@@ -97,9 +142,24 @@
           "pragma": "no-cache"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2\",\n            \"method\": \"GET\"\n        }\n    }\n}"
       }
@@ -120,9 +180,24 @@
           "location": "/api/v2/status"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": ""
       }
@@ -142,9 +217,24 @@
           "pragma": "no-cache"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/nothing/here\",\n            \"method\": \"GET\"\n        }\n    }\n}"
       }
@@ -164,9 +254,24 @@
           "pragma": "no-cache"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/status\",\n            \"method\": \"POST\"\n        }\n    }\n}"
       }
@@ -186,9 +291,24 @@
           "pragma": "no-cache"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"rox in socks!\",\n        \"data\": \"https://www.roxinsocks.com/\"\n    }\n}"
       }
@@ -209,9 +329,24 @@
           "location": "https://roxinsocks.com"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": ""
       }

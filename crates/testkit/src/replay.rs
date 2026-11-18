@@ -2,8 +2,16 @@
 //!
 //! `parity/recorder/record.py` writes the cases to `parity/cases/<group>.json`. A replay
 //! sends each recorded request to the router and compares four aspects of the answer:
-//! the status code, the recorded headers, the names of the cookies set, and the body, byte
-//! for byte.
+//! the status code, the recorded headers, the cookies set, and the body, byte for byte.
+//!
+//! Of a cookie, the name, the domain, the path and the lifetime are compared: `deleted`,
+//! `session`, or the seconds until the expiry, rounded to a whole minute. The value is
+//! not compared; it is random.
+//!
+//! A case can name a cookie jar. Its request carries the cookies of the jar, and the
+//! cookies of the answer go into the jar, as in a browser. The replay fills its own jars
+//! from the answers of the Rust application, so a later case uses the session of an
+//! earlier login of the same replay.
 //!
 //! An aspect may differ from the recording in two ways only:
 //!
@@ -14,7 +22,7 @@
 //!   aspect must differ. When it starts to match, the test fails until the marker is
 //!   removed, so a marker cannot outlive its reason.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write as _;
 use std::path::PathBuf;
 
@@ -36,7 +44,7 @@ pub enum Aspect {
     Status,
     /// The headers the recorder keeps, for example `Content-Type` and `Location`.
     Headers,
-    /// The names of the cookies the answer sets.
+    /// The cookies the answer sets: name, domain, path and lifetime of each.
     Cookies,
     /// The body, byte for byte.
     Body,
@@ -138,9 +146,10 @@ impl Replay {
         self.check_names(&recording);
 
         let mut problems = String::new();
+        let mut jars = Jars::new();
         for case in &recording.cases {
             let expected = self.expected(case);
-            let actual = Answer::of(app, &recording, case).await;
+            let actual = Answer::of(app, &recording, case, &mut jars).await;
             let differing: Vec<Aspect> = ASPECTS
                 .into_iter()
                 .filter(|aspect| !expected.matches(&actual, *aspect))
@@ -222,8 +231,13 @@ impl Replay {
             body = String::from_utf8(bytes).expect("the writer produces UTF-8");
         }
 
-        let mut cookies = case.response.cookies_set.clone();
-        cookies.retain(|name| !self.absent_cookies.contains(name));
+        let mut cookies: Vec<String> = case
+            .response
+            .cookies_set
+            .iter()
+            .filter(|cookie| !self.absent_cookies.contains(&cookie.name))
+            .map(RecordedCookie::describe)
+            .collect();
         cookies.sort();
         Answer {
             status: case.response.status,
@@ -267,25 +281,43 @@ struct Answer {
     status: u16,
     /// The recorded headers that are present, by lower-case name.
     headers: BTreeMap<String, String>,
-    /// The names of the cookies set, sorted.
+    /// The cookies set, each as [`RecordedCookie::describe`] writes it, sorted.
     cookies: Vec<String>,
     body: String,
 }
 
+/// The cookie jars of a replay, by name: cookie name to value.
+type Jars = HashMap<String, BTreeMap<String, String>>;
+
 impl Answer {
     /// Sends the request of a case to the application and takes the answer apart.
-    async fn of(app: &Router, recording: &Recording, case: &Case) -> Self {
+    async fn of(app: &Router, recording: &Recording, case: &Case, jars: &mut Jars) -> Self {
         let mut request = Request::builder()
             .method(case.request.method.as_str())
             .uri(&case.request.path)
             .header(header::HOST, &recording.source.host);
-        let body = match &case.request.json {
-            Some(json) => {
+        let body = match (&case.request.json, &case.request.body) {
+            (Some(json), _) => {
                 request = request.header(header::CONTENT_TYPE, "application/json");
                 Body::from(serde_json::to_vec(json).expect("the request body can be written"))
             }
-            None => Body::empty(),
+            (None, Some(text)) => Body::from(text.clone()),
+            (None, None) => Body::empty(),
         };
+        for (name, value) in &case.request.headers {
+            request = request.header(name.as_str(), value.as_str());
+        }
+        let mut sent_cookies = case.request.cookies.clone();
+        if let Some(jar) = &case.request.jar {
+            sent_cookies.extend(jars.entry(jar.clone()).or_default().clone());
+        }
+        if !sent_cookies.is_empty() {
+            let cookies: Vec<String> = sent_cookies
+                .iter()
+                .map(|(name, value)| format!("{name}={value}"))
+                .collect();
+            request = request.header(header::COOKIE, cookies.join("; "));
+        }
         let response = app
             .clone()
             .oneshot(request.body(body).expect("the recorded request is valid"))
@@ -300,13 +332,21 @@ impl Answer {
                 headers.insert(name.clone(), value.to_owned());
             }
         }
-        let mut cookies: Vec<String> = response
-            .headers()
-            .get_all(header::SET_COOKIE)
-            .iter()
-            .filter_map(|value| value.to_str().ok())
-            .filter_map(|cookie| cookie.split_once('=').map(|(name, _)| name.to_owned()))
-            .collect();
+        let now = jiff::Timestamp::now();
+        let mut cookies = Vec::new();
+        for value in response.headers().get_all(header::SET_COOKIE) {
+            let value = value.to_str().expect("a cookie is text");
+            let (name, cookie_value, cookie) = RecordedCookie::parse(value, now);
+            if let Some(jar) = &case.request.jar {
+                let jar = jars.entry(jar.clone()).or_default();
+                if cookie.lifetime == "deleted" {
+                    jar.remove(&name);
+                } else {
+                    jar.insert(name, cookie_value);
+                }
+            }
+            cookies.push(cookie.describe());
+        }
         cookies.sort();
         let bytes = response
             .into_body()
@@ -379,15 +419,102 @@ struct Case {
 struct RecordedRequest {
     method: String,
     path: String,
+    /// A value to send as a JSON body.
     json: Option<Value>,
+    /// A text to send as the body, as it is.
+    body: Option<String>,
+    #[serde(default)]
+    headers: BTreeMap<String, String>,
+    /// Cookies to send with fixed values.
+    #[serde(default)]
+    cookies: BTreeMap<String, String>,
+    /// The cookie jar the request uses.
+    jar: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct RecordedResponse {
     status: u16,
     headers: BTreeMap<String, String>,
-    cookies_set: Vec<String>,
+    cookies_set: Vec<RecordedCookie>,
     body: String,
+}
+
+/// What is compared of a cookie that an answer sets.
+#[derive(Debug, Deserialize)]
+struct RecordedCookie {
+    /// The name. The session cookie is named `organizr_token_<uuid>`, whatever the id of
+    /// the install is.
+    name: String,
+    domain: Option<String>,
+    path: Option<String>,
+    /// `deleted`, `session`, or seconds rounded to a whole minute, for example `86400s`.
+    lifetime: String,
+}
+
+impl RecordedCookie {
+    /// How `parity/recorder/record.py` and the Rust application write an expiry.
+    const EXPIRY_FORMAT: &'static str = "%a, %d-%b-%Y %H:%M:%S GMT";
+
+    /// Takes a `Set-Cookie` value apart, as the recorder does: the name as sent, the
+    /// value, and what is compared.
+    fn parse(header: &str, now: jiff::Timestamp) -> (String, String, Self) {
+        let mut parts = header.split(';').map(str::trim);
+        let (name, value) = parts
+            .next()
+            .and_then(|first| first.split_once('='))
+            .unwrap_or_else(|| panic!("`{header}` is not a cookie"));
+        let attributes: BTreeMap<String, &str> = parts
+            .map(|part| {
+                let (key, attribute) = part.split_once('=').unwrap_or((part, ""));
+                (key.to_lowercase(), attribute)
+            })
+            .collect();
+
+        let lifetime = match attributes.get("expires") {
+            None => "session".to_owned(),
+            Some(expires) => {
+                let expires = jiff::civil::DateTime::strptime(Self::EXPIRY_FORMAT, expires)
+                    .and_then(|time| jiff::tz::TimeZone::UTC.to_timestamp(time))
+                    .unwrap_or_else(|error| panic!("the expiry of `{header}`: {error}"));
+                let seconds = expires.as_second() - now.as_second();
+                if seconds < 0 {
+                    "deleted".to_owned()
+                } else {
+                    format!("{}s", (seconds + 30) / 60 * 60)
+                }
+            }
+        };
+
+        let install_id = name.strip_prefix("organizr_token_").filter(|id| {
+            id.len() == 36
+                && id
+                    .bytes()
+                    .all(|byte| byte.is_ascii_hexdigit() || byte == b'-')
+        });
+        let cookie = Self {
+            name: if install_id.is_some() {
+                "organizr_token_<uuid>".to_owned()
+            } else {
+                name.to_owned()
+            },
+            domain: attributes.get("domain").map(|domain| (*domain).to_owned()),
+            path: attributes.get("path").map(|path| (*path).to_owned()),
+            lifetime,
+        };
+        (name.to_owned(), value.to_owned(), cookie)
+    }
+
+    /// One line that shows everything that is compared.
+    fn describe(&self) -> String {
+        format!(
+            "{}; domain={}; path={}; lifetime={}",
+            self.name,
+            self.domain.as_deref().unwrap_or("none"),
+            self.path.as_deref().unwrap_or("none"),
+            self.lifetime
+        )
+    }
 }
 
 /// The root of the repository, two levels above this crate.

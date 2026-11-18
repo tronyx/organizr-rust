@@ -47,11 +47,28 @@ const WIZARD_TABS: [(i64, &str, &str, bool, u16, &str); 2] = [
     ),
 ];
 
+/// The id of the seeded install. The set-up wizard of the PHP application makes a random
+/// one.
+pub const INSTALL_ID: &str = "5d0c6f0e-2b7a-4a36-8e55-9c1f4d3a7b21";
+
+/// The name of the admin account, as in `parity/recorder/record.py`.
+pub const ADMIN_NAME: &str = "admin";
+
+/// The e-mail address of the admin account, as in `parity/recorder/record.py`.
+pub const ADMIN_EMAIL: &str = "admin@example.com";
+
+/// The password of the admin account, as in `parity/recorder/record.py`. It protects
+/// nothing.
+pub const ADMIN_PASSWORD: &str = "parity-admin-password";
+
+/// A hash of [`ADMIN_PASSWORD`] as the set-up wizard stores it. PHP 8.5 made it with
+/// `password_hash($password, PASSWORD_BCRYPT)`.
+pub const ADMIN_PASSWORD_HASH: &str =
+    "$2y$12$WG7fEmudO2Nw2eBtDlehJOQDekAJhq89HWiaa2NQLdwG4hMT7aUNW";
+
 /// Makes the database look as it does after the recorder has run the set-up wizard: the
 /// six standard groups, the admin account of `parity/recorder/record.py`, the category
 /// "Unsorted" and the tabs "Settings" and "Homepage".
-///
-/// The password hash is not a real hash. No recorded case logs in with it yet.
 pub async fn installed(database: &Database) {
     let mut admin_group = None;
     for (level, name, image, is_default) in WIZARD_GROUPS {
@@ -73,9 +90,9 @@ pub async fn installed(database: &Database) {
     database
         .users()
         .insert(NewUser {
-            username: "admin".to_owned(),
-            email: Some("admin@example.com".to_owned()),
-            password_hash: PasswordHash::new("not-a-real-hash".to_owned()),
+            username: ADMIN_NAME.to_owned(),
+            email: Some(ADMIN_EMAIL.to_owned()),
+            password_hash: PasswordHash::new(ADMIN_PASSWORD_HASH.to_owned()),
             group: admin_group.expect("the wizard creates the Admin group"),
             image: None,
             created_at: Timestamp::from_unix_seconds(1_700_000_000),

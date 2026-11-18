@@ -31,9 +31,24 @@
           "pragma": "no-cache"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"writable\": true,\n            \"minVersion\": true,\n            \"os\": \"*nix\",\n            \"php\": \"8.5.12\",\n            \"userConfigPathExists\": false,\n            \"action\": \"wizard\"\n        }\n    }\n}"
       }
@@ -65,11 +80,36 @@
           "pragma": "no-cache"
         },
         "cookies_set": [
-          "PHPSESSID",
-          "organizr_user_uuid",
-          "organizr_user_uuid",
-          "organizr_token_<uuid>",
-          "organizr_token_<uuid>"
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
         ],
         "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": true\n    }\n}"
       }

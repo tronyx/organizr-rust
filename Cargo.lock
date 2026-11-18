@@ -1789,10 +1789,13 @@ name = "organizr-api"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "form_urlencoded",
  "http-body-util",
  "ipnet",
  "jiff",
+ "organizr-auth",
  "organizr-db",
+ "organizr-domain",
  "organizr-settings",
  "organizr-testkit",
  "serde",
@@ -1814,11 +1817,15 @@ dependencies = [
  "bcrypt",
  "getrandom 0.4.3",
  "hex",
+ "organizr-db",
  "organizr-domain",
+ "organizr-testkit",
  "serde",
  "serde_json",
  "sha2",
  "thiserror",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1867,6 +1874,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "http-body-util",
+ "jiff",
  "organizr-api",
  "organizr-db",
  "organizr-domain",

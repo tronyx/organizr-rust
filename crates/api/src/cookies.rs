@@ -1,0 +1,258 @@
+//! Reading the cookies of a request and writing cookies as the PHP application does.
+
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use axum::http::{HeaderMap, HeaderValue, header};
+use axum::response::Response;
+
+use crate::cookie_domain::cookie_domains;
+
+/// How far in the past the expiry of a deleted cookie lies.
+const DELETED_SINCE: Duration = Duration::from_hours(1);
+
+/// Why a cookie could not be written.
+#[derive(Debug, thiserror::Error)]
+pub enum CookieError {
+    /// The expiry time is outside what a date can hold.
+    #[error("the expiry time of the cookie is not a valid date")]
+    Expiry,
+    /// The cookie holds a character that a header cannot carry.
+    #[error("the cookie holds a character that is not allowed in a header")]
+    Header,
+}
+
+/// Where a cookie goes: the host the browser asked for, and whether it used HTTPS.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CookieScope {
+    /// The `Host` header of the request.
+    pub host: String,
+    /// Whether the browser used HTTPS. See [`Client`](crate::client::Client).
+    pub secure: bool,
+}
+
+impl CookieScope {
+    /// The scope for the answer to a request with the given headers.
+    pub fn of(headers: &HeaderMap, secure: bool) -> Self {
+        let host = headers
+            .get(header::HOST)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default()
+            .to_owned();
+        Self { host, secure }
+    }
+
+    /// The two `Set-Cookie` values that give the browser a cookie until `expires`.
+    ///
+    /// The PHP application sends every cookie twice: first for the wider domain, then
+    /// for the host itself. A host without a wider domain (an IP address, `localhost`)
+    /// gets no domain on either. `Secure` and `HttpOnly` are sent only over HTTPS, as
+    /// PHP does. `SameSite=Lax` replaces PHP's `SameSite=None`.
+    pub fn set(
+        &self,
+        name: &str,
+        value: &str,
+        expires: SystemTime,
+    ) -> Result<[HeaderValue; 2], CookieError> {
+        let since_epoch = expires
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| CookieError::Expiry)?;
+        let seconds = i64::try_from(since_epoch.as_secs()).map_err(|_| CookieError::Expiry)?;
+        let expires = jiff::Timestamp::from_second(seconds)
+            .map_err(|_| CookieError::Expiry)?
+            .strftime("%a, %d-%b-%Y %H:%M:%S GMT");
+
+        let domains = cookie_domains(&self.host);
+        let render = |domain: &str| {
+            let mut cookie = format!("{name}={value}; expires={expires}; path=/");
+            if !domains.wide.is_empty() {
+                cookie.push_str("; domain=");
+                cookie.push_str(domain);
+            }
+            cookie.push_str("; SameSite=Lax");
+            if self.secure {
+                cookie.push_str("; Secure; HttpOnly");
+            }
+            HeaderValue::from_str(&cookie).map_err(|_| CookieError::Header)
+        };
+
+        Ok([render(&domains.wide)?, render(&domains.host)?])
+    }
+
+    /// The two `Set-Cookie` values that make the browser drop a cookie: an empty value
+    /// and an expiry one hour before `now`, as the PHP application sends them.
+    pub fn delete(&self, name: &str, now: SystemTime) -> Result<[HeaderValue; 2], CookieError> {
+        let expired = now.checked_sub(DELETED_SINCE).ok_or(CookieError::Expiry)?;
+        self.set(name, "", expired)
+    }
+}
+
+/// Adds `Set-Cookie` values to an answer, after the ones it already has.
+pub fn append(response: &mut Response, values: impl IntoIterator<Item = HeaderValue>) {
+    for value in values {
+        response.headers_mut().append(header::SET_COOKIE, value);
+    }
+}
+
+/// The cookies of a request, in the order the browser sent them: name and value.
+pub fn request_cookies(headers: &HeaderMap) -> impl Iterator<Item = (&str, &str)> {
+    headers
+        .get_all(header::COOKIE)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .flat_map(|cookies| cookies.split(';'))
+        .map(|cookie| {
+            let cookie = cookie.trim();
+            cookie.split_once('=').unwrap_or((cookie, ""))
+        })
+        .filter(|(name, _)| !name.is_empty())
+}
+
+/// The value of the first cookie of the given name that the request carries.
+pub fn cookie_value<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
+    request_cookies(headers)
+        .find(|(cookie, _)| *cookie == name)
+        .map(|(_, value)| value)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+    use axum::http::{HeaderMap, HeaderValue, header};
+
+    use super::{CookieScope, cookie_value, request_cookies};
+
+    /// 2026-11-25 17:16:08 UTC, the expiry in a header that the PHP application sent.
+    const EXPIRY_SECONDS: u64 = 1_795_626_968;
+
+    fn expiry() -> SystemTime {
+        UNIX_EPOCH + Duration::from_secs(EXPIRY_SECONDS)
+    }
+
+    fn scope(host: &str, secure: bool) -> CookieScope {
+        CookieScope {
+            host: host.to_owned(),
+            secure,
+        }
+    }
+
+    fn text(values: [HeaderValue; 2]) -> [String; 2] {
+        values.map(|value| value.to_str().expect("the value is text").to_owned())
+    }
+
+    fn values(host: &str, secure: bool) -> [String; 2] {
+        text(
+            scope(host, secure)
+                .set("organizr_user_uuid", "the-id", expiry())
+                .expect("the cookie can be written"),
+        )
+    }
+
+    fn headers(value: &'static str) -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(header::COOKIE, HeaderValue::from_static(value));
+        headers
+    }
+
+    #[test]
+    fn cookie_is_set_for_the_wider_domain_and_for_the_host() {
+        assert_eq!(
+            values("app.example.com", false),
+            [
+                "organizr_user_uuid=the-id; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=.example.com; SameSite=Lax",
+                "organizr_user_uuid=the-id; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=app.example.com; SameSite=Lax",
+            ]
+        );
+    }
+
+    #[test]
+    fn cookie_over_https_is_secure_and_hidden_from_scripts() {
+        assert_eq!(
+            values("organizr.test", true),
+            [
+                "organizr_user_uuid=the-id; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=.organizr.test; SameSite=Lax; Secure; HttpOnly",
+                "organizr_user_uuid=the-id; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; domain=organizr.test; SameSite=Lax; Secure; HttpOnly",
+            ]
+        );
+    }
+
+    #[test]
+    fn host_without_a_wider_domain_gets_no_domain_at_all() {
+        for host in ["127.0.0.1:8098", "localhost"] {
+            assert_eq!(
+                values(host, false),
+                [
+                    "organizr_user_uuid=the-id; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; SameSite=Lax",
+                    "organizr_user_uuid=the-id; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/; SameSite=Lax",
+                ],
+                "host `{host}`"
+            );
+        }
+    }
+
+    #[test]
+    fn deleted_cookie_is_empty_and_expired_an_hour_ago() {
+        let deleted = scope("app.example.com", true)
+            .delete("organizr_token_temp", expiry())
+            .expect("the cookie can be written");
+
+        assert_eq!(
+            text(deleted),
+            [
+                "organizr_token_temp=; expires=Wed, 25-Nov-2026 16:16:08 GMT; path=/; domain=.example.com; SameSite=Lax; Secure; HttpOnly",
+                "organizr_token_temp=; expires=Wed, 25-Nov-2026 16:16:08 GMT; path=/; domain=app.example.com; SameSite=Lax; Secure; HttpOnly",
+            ]
+        );
+    }
+
+    #[test]
+    fn cookie_that_a_header_cannot_carry_is_refused() {
+        let result = scope("app.example.com", false).set("name", "line\nbreak", expiry());
+
+        assert!(result.is_err(), "{result:?}");
+    }
+
+    #[test]
+    fn scope_takes_the_host_from_the_request() {
+        let mut request = HeaderMap::new();
+        request.insert(
+            header::HOST,
+            HeaderValue::from_static("app.example.com:8443"),
+        );
+
+        assert_eq!(
+            CookieScope::of(&request, true),
+            scope("app.example.com:8443", true)
+        );
+        assert_eq!(CookieScope::of(&HeaderMap::new(), false), scope("", false));
+    }
+
+    #[test]
+    fn cookies_of_a_request_are_read_in_order() {
+        let request = headers("theme=dark; organizr_user_uuid=abc;other=1=2; flag; =nameless");
+
+        let cookies: Vec<(&str, &str)> = request_cookies(&request).collect();
+
+        assert_eq!(
+            cookies,
+            [
+                ("theme", "dark"),
+                ("organizr_user_uuid", "abc"),
+                ("other", "1=2"),
+                ("flag", ""),
+            ]
+        );
+    }
+
+    #[test]
+    fn cookie_is_found_by_its_whole_name() {
+        let request = headers("theme=dark; organizr_user_uuid=abc; empty=; theme=light");
+
+        assert_eq!(cookie_value(&request, "organizr_user_uuid"), Some("abc"));
+        assert_eq!(cookie_value(&request, "theme"), Some("dark"));
+        assert_eq!(cookie_value(&request, "empty"), Some(""));
+        assert_eq!(cookie_value(&request, "organizr_user"), None);
+        assert_eq!(cookie_value(&request, "uuid"), None);
+        assert_eq!(cookie_value(&HeaderMap::new(), "theme"), None);
+    }
+}

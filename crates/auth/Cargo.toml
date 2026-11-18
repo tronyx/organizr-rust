@@ -12,6 +12,7 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+organizr-db.workspace = true
 organizr-domain.workspace = true
 
 argon2.workspace = true
@@ -20,7 +21,11 @@ getrandom.workspace = true
 hex.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
+organizr-testkit.workspace = true
+
 serde.workspace = true
 serde_json.workspace = true

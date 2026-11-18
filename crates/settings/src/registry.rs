@@ -120,6 +120,10 @@ settings! {
     hide_registration: Flag = "hideRegistration", false;
     /// Addresses and ranges, separated by commas, that count as the local network.
     local_ip_list: Text = "localIPList", String::new();
+
+    /// The random id of the install. It is part of the name of the session cookie. It is
+    /// empty until the install is set up.
+    install_id: Text = "uuid", String::new();
 }
 
 impl Settings {
@@ -176,6 +180,9 @@ mod tests {
             ("lockScreen", json!(false)),
             ("hideRegistration", json!(false)),
             ("localIPList", json!("")),
+            // Not in `default.php`: the set-up wizard writes it. Before that, PHP reads
+            // it as empty.
+            ("uuid", json!("")),
         ]
     }
 

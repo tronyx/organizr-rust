@@ -37,6 +37,7 @@ must_use_candidate = "allow"
 # docs/architecture.md, section 5, lists the full planned set and its versions.
 [workspace.dependencies]
 organizr-api = { path = "crates/api" }
+organizr-auth = { path = "crates/auth" }
 organizr-db = { path = "crates/db" }
 organizr-domain = { path = "crates/domain" }
 organizr-settings = { path = "crates/settings" }
@@ -47,6 +48,7 @@ argon2 = "0.6.0"
 axum = "0.8.9"
 bcrypt = "0.19.3"
 clap = { version = "4.6.8", features = ["derive", "env"] }
+form_urlencoded = "1.2.2"
 getrandom = "0.4.3"
 hex = "0.4.3"
 http-body-util = "0.1.5"

@@ -3,13 +3,13 @@
 use axum::Router;
 use axum::http::{HeaderValue, Method, Uri, header};
 use axum::middleware::{from_fn, from_fn_with_state};
-use axum::routing::{MethodRouter, get};
+use axum::routing::{MethodRouter, get, post};
 use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
-use crate::handlers::basics;
+use crate::handlers::{basics, login};
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
 use crate::state::AppState;
@@ -27,7 +27,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/status[/]", &get(basics::status))?
         .route("/ping", &get(basics::ping))?
         .route("/rox", &get(basics::rox))?
-        .route("/roxinsocks", &get(basics::roxinsocks))?;
+        .route("/roxinsocks", &get(basics::roxinsocks))?
+        .route("/login", &post(login::login))?;
 
     Ok(finish(routes.router, state))
 }

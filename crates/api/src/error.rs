@@ -2,10 +2,12 @@
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use organizr_auth::login::LoginError;
 use organizr_db::DbError;
 use serde::Serialize;
 use thiserror::Error;
 
+use crate::cookies::CookieError;
 use crate::envelope::{Envelope, NoData};
 
 /// Why a request failed.
@@ -27,9 +29,29 @@ pub enum ApiError {
         route: String,
     },
 
+    /// A login failed: because of the name or the password, or because something broke.
+    #[error(transparent)]
+    Login(#[from] LoginError),
+
+    /// A cookie of the answer could not be written. The caller gets no details; the log
+    /// does.
+    #[error(transparent)]
+    Cookie(#[from] CookieError),
+
     /// The database failed. The caller gets no details; the log does.
     #[error(transparent)]
     Database(#[from] DbError),
+}
+
+/// The answer to a failure that is not the fault of the caller. The log has the details.
+fn internal_error(error: &dyn std::error::Error, what: &str) -> Response {
+    tracing::error!(%error, "{what}");
+    Envelope::error(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Internal Server Error",
+        NoData,
+    )
+    .into_response()
 }
 
 /// The `data` of the "not found" answer.
@@ -56,15 +78,17 @@ impl IntoResponse for ApiError {
                 NoData,
             )
             .into_response(),
-            Self::Database(error) => {
-                tracing::error!(%error, "a request failed in the database");
-                Envelope::error(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal Server Error",
-                    NoData,
-                )
-                .into_response()
-            }
+            // One answer for an unknown name and for a wrong password, as in the PHP
+            // application.
+            Self::Login(LoginError::WrongCredentials) => Envelope::error(
+                StatusCode::UNAUTHORIZED,
+                "User credentials incorrect",
+                NoData,
+            )
+            .into_response(),
+            Self::Login(error) => internal_error(&error, "a login could not be completed"),
+            Self::Cookie(error) => internal_error(&error, "a cookie could not be written"),
+            Self::Database(error) => internal_error(&error, "a request failed in the database"),
         }
     }
 }
