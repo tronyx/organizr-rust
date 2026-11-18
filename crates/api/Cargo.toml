@@ -1,0 +1,12 @@
+[package]
+name = "organizr-api"
+description = "The HTTP API of Organizr: router, response envelope, extractors, error type and handlers."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

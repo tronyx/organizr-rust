@@ -1,0 +1,12 @@
+[package]
+name = "organizr-db"
+description = "Database access for Organizr on SQLite and PostgreSQL: entities, migrations, repositories and the secrets store."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

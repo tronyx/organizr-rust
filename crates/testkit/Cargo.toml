@@ -1,0 +1,12 @@
+[package]
+name = "organizr-testkit"
+description = "Test helpers for Organizr: an in-process application on a temporary database and replay of recorded PHP cases."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

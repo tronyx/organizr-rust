@@ -1,0 +1,12 @@
+[package]
+name = "organizr-integrations"
+description = "Clients for the external services Organizr shows on its homepage, one module per service."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

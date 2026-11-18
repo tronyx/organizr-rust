@@ -1,0 +1,37 @@
+# cargo-deny configuration: security advisories, licences, banned crates and sources.
+
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = []
+
+[licenses]
+version = 2
+confidence-threshold = 0.8
+# Licences that may be combined with this GPL-3.0 project.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Unicode-3.0",
+]
+
+[licenses.private]
+# The workspace crates are not published and carry the project's own licence.
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+allow-wildcard-paths = true
+deny = [
+    { crate = "openssl", reason = "TLS uses rustls; the image must not need OpenSSL" },
+    { crate = "openssl-sys", reason = "TLS uses rustls; the image must not need OpenSSL" },
+    { crate = "native-tls", reason = "TLS uses rustls; the image must not need OpenSSL" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
