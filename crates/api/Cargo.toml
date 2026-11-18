@@ -10,3 +10,11 @@ publish.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+# The fixture test must keep key order and parse floats bit for bit.
+serde_json = { workspace = true, features = ["preserve_order", "float_roundtrip"] }

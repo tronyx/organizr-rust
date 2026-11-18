@@ -1,0 +1,201 @@
+{
+    "php_version": "8.3.36",
+    "flags": "JSON_HEX_QUOT | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES",
+    "cases": [
+        {
+            "name": "envelope_default",
+            "input": "{\"response\":{\"result\":\"success\",\"message\":null,\"data\":null}}",
+            "expected": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+        },
+        {
+            "name": "envelope_pong",
+            "input": "{\"response\":{\"result\":\"success\",\"message\":null,\"data\":\"pong\"}}",
+            "expected": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": \"pong\"\n    }\n}"
+        },
+        {
+            "name": "envelope_error_with_data",
+            "input": "{\"response\":{\"result\":\"error\",\"message\":\"Endpoint Not Found or Defined\",\"data\":{\"endpoint\":\"/api/v2/nothing\",\"method\":\"GET\"}}}",
+            "expected": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/nothing\",\n            \"method\": \"GET\"\n        }\n    }\n}"
+        },
+        {
+            "name": "null",
+            "input": "null",
+            "expected": "null"
+        },
+        {
+            "name": "true",
+            "input": "true",
+            "expected": "true"
+        },
+        {
+            "name": "false",
+            "input": "false",
+            "expected": "false"
+        },
+        {
+            "name": "empty_string",
+            "input": "\"\"",
+            "expected": "\"\""
+        },
+        {
+            "name": "plain_string",
+            "input": "\"Organizr\"",
+            "expected": "\"Organizr\""
+        },
+        {
+            "name": "empty_list",
+            "input": "[]",
+            "expected": "[]"
+        },
+        {
+            "name": "empty_object",
+            "input": "{}",
+            "expected": "{}"
+        },
+        {
+            "name": "list_of_scalars",
+            "input": "[1,\"two\",3.5,true,null]",
+            "expected": "[\n    1,\n    \"two\",\n    3.5,\n    true,\n    null\n]"
+        },
+        {
+            "name": "nested_empty_containers",
+            "input": "{\"list\":[],\"object\":{},\"deep\":[[],[[]]]}",
+            "expected": "{\n    \"list\": [],\n    \"object\": {},\n    \"deep\": [\n        [],\n        [\n            []\n        ]\n    ]\n}"
+        },
+        {
+            "name": "list_of_objects",
+            "input": "[{\"id\":1,\"name\":\"a\"},{\"id\":2,\"name\":\"b\"}]",
+            "expected": "[\n    {\n        \"id\": 1,\n        \"name\": \"a\"\n    },\n    {\n        \"id\": 2,\n        \"name\": \"b\"\n    }\n]"
+        },
+        {
+            "name": "deep_nesting",
+            "input": "{\"a\":{\"b\":{\"c\":{\"d\":[1,[2,[3]]]}}}}",
+            "expected": "{\n    \"a\": {\n        \"b\": {\n            \"c\": {\n                \"d\": [\n                    1,\n                    [\n                        2,\n                        [\n                            3\n                        ]\n                    ]\n                ]\n            }\n        }\n    }\n}"
+        },
+        {
+            "name": "key_order_is_kept",
+            "input": "{\"zebra\":1,\"apple\":2,\"mango\":3,\"10\":4,\"2\":5}",
+            "expected": "{\n    \"zebra\": 1,\n    \"apple\": 2,\n    \"mango\": 3,\n    \"10\": 4,\n    \"2\": 5\n}"
+        },
+        {
+            "name": "double_quote",
+            "input": "\"say \\\"hello\\\"\"",
+            "expected": "\"say \\u0022hello\\u0022\""
+        },
+        {
+            "name": "single_quote",
+            "input": "\"it's\"",
+            "expected": "\"it's\""
+        },
+        {
+            "name": "slashes",
+            "input": "\"https://example.com/a/b?c=d\"",
+            "expected": "\"https://example.com/a/b?c=d\""
+        },
+        {
+            "name": "backslashes",
+            "input": "\"C:\\\\path\\\\to\\\\file\"",
+            "expected": "\"C:\\\\path\\\\to\\\\file\""
+        },
+        {
+            "name": "html_characters",
+            "input": "\"<a href=\\\"x\\\">Tom & Jerry</a>\"",
+            "expected": "\"<a href=\\u0022x\\u0022>Tom & Jerry</a>\""
+        },
+        {
+            "name": "named_control_characters",
+            "input": "\"backspace\\b formfeed\\f newline\\n return\\r tab\\t\"",
+            "expected": "\"backspace\\b formfeed\\f newline\\n return\\r tab\\t\""
+        },
+        {
+            "name": "other_control_characters",
+            "input": "\"nul\\u0000 soh\\u0001 bell\\u0007 vt\\u000b esc\\u001b us\\u001f\"",
+            "expected": "\"nul\\u0000 soh\\u0001 bell\\u0007 vt\\u000b esc\\u001b us\\u001f\""
+        },
+        {
+            "name": "delete_character",
+            "input": "\"del\"",
+            "expected": "\"del\""
+        },
+        {
+            "name": "latin",
+            "input": "\"café Zoë naïve\"",
+            "expected": "\"caf\\u00e9 Zo\\u00eb na\\u00efve\""
+        },
+        {
+            "name": "cjk",
+            "input": "\"日本語 中文 한국어\"",
+            "expected": "\"\\u65e5\\u672c\\u8a9e \\u4e2d\\u6587 \\ud55c\\uad6d\\uc5b4\""
+        },
+        {
+            "name": "emoji",
+            "input": "\"ok 😀 👍🏽\"",
+            "expected": "\"ok \\ud83d\\ude00 \\ud83d\\udc4d\\ud83c\\udffd\""
+        },
+        {
+            "name": "line_separators",
+            "input": "\"ls\\u2028ps\\u2029\"",
+            "expected": "\"ls\\u2028ps\\u2029\""
+        },
+        {
+            "name": "highest_code_points",
+            "input": "\"￿𐀀􏿿\"",
+            "expected": "\"\\uffff\\ud800\\udc00\\udbff\\udfff\""
+        },
+        {
+            "name": "unicode_in_keys",
+            "input": "{\"clé\":\"valeur\",\"emoji 😀\":1,\"quote\\\"key\":2,\"slash/key\":3}",
+            "expected": "{\n    \"cl\\u00e9\": \"valeur\",\n    \"emoji \\ud83d\\ude00\": 1,\n    \"quote\\u0022key\": 2,\n    \"slash/key\": 3\n}"
+        },
+        {
+            "name": "integers",
+            "input": "[0,1,-1,42,2147483647,-2147483648,9223372036854775807,-9223372036854775808]",
+            "expected": "[\n    0,\n    1,\n    -1,\n    42,\n    2147483647,\n    -2147483648,\n    9223372036854775807,\n    -9223372036854775808\n]"
+        },
+        {
+            "name": "float_zero",
+            "input": "0.0",
+            "expected": "0"
+        },
+        {
+            "name": "float_negative_zero",
+            "input": "-0.0",
+            "expected": "-0"
+        },
+        {
+            "name": "float_whole_numbers",
+            "input": "[1.0,-1.0,10.0,100.0,1000000.0,1000000000000000.0]",
+            "expected": "[\n    1,\n    -1,\n    10,\n    100,\n    1000000,\n    1000000000000000\n]"
+        },
+        {
+            "name": "float_fractions",
+            "input": "[0.1,0.5,1.5,-2.25,3.14,99.99,100000.5,123456789.12345678,0.30000000000000004]",
+            "expected": "[\n    0.1,\n    0.5,\n    1.5,\n    -2.25,\n    3.14,\n    99.99,\n    100000.5,\n    123456789.12345678,\n    0.30000000000000004\n]"
+        },
+        {
+            "name": "float_small",
+            "input": "[0.01,0.001,0.0001,0.00012,1.0e-5,1.5e-5,1.0e-7,1.5e-7,2.5e-10,5.0e-324]",
+            "expected": "[\n    0.01,\n    0.001,\n    0.0001,\n    0.00012,\n    1.0e-5,\n    1.5e-5,\n    1.0e-7,\n    1.5e-7,\n    2.5e-10,\n    5.0e-324\n]"
+        },
+        {
+            "name": "float_large",
+            "input": "[100000000000000.0,1000000000000000.0,10000000000000000.0,1.0e+17,1.0e+18,1.0e+19,1.0e+20,1.0e+21,1.0e+22,1.0e+25,1.5e+25,1.2345678901234568e+17,1.2345678901234567e+20,1.7976931348623157e+308]",
+            "expected": "[\n    100000000000000,\n    1000000000000000,\n    10000000000000000,\n    1.0e+17,\n    1.0e+18,\n    1.0e+19,\n    1.0e+20,\n    1.0e+21,\n    1.0e+22,\n    1.0e+25,\n    1.5e+25,\n    1.2345678901234568e+17,\n    1.2345678901234567e+20,\n    1.7976931348623157e+308\n]"
+        },
+        {
+            "name": "float_negative_exponent_forms",
+            "input": "[-1.0e+25,-1.5e-7,-1.0e+17]",
+            "expected": "[\n    -1.0e+25,\n    -1.5e-7,\n    -1.0e+17\n]"
+        },
+        {
+            "name": "float_boundaries",
+            "input": "[9.9e-5,9.999e-5,9.99999999999e-5,0.00010000000000000002,99999999999999980.0,99999999999999980.0,12345678901234568.0,12345678901234568.0,9007199254740992.0,5.0e-324,2.2250738585072014e-308]",
+            "expected": "[\n    9.9e-5,\n    9.999e-5,\n    9.99999999999e-5,\n    0.00010000000000000002,\n    99999999999999980,\n    99999999999999980,\n    12345678901234568,\n    12345678901234568,\n    9007199254740992,\n    5.0e-324,\n    2.2250738585072014e-308\n]"
+        },
+        {
+            "name": "mixed_record",
+            "input": "{\"id\":7,\"ratio\":0.75,\"percent\":100.0,\"title\":\"Tom & Jerry: \\\"The Movie\\\"\",\"url\":\"http://10.0.0.5:32400/web/index.html#!/server\",\"tags\":[\"4k\",\"hdr\"],\"missing\":null,\"nested\":{\"ok\":true,\"items\":[]}}",
+            "expected": "{\n    \"id\": 7,\n    \"ratio\": 0.75,\n    \"percent\": 100,\n    \"title\": \"Tom & Jerry: \\u0022The Movie\\u0022\",\n    \"url\": \"http://10.0.0.5:32400/web/index.html#!/server\",\n    \"tags\": [\n        \"4k\",\n        \"hdr\"\n    ],\n    \"missing\": null,\n    \"nested\": {\n        \"ok\": true,\n        \"items\": []\n    }\n}"
+        }
+    ]
+}
