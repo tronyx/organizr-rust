@@ -9,6 +9,7 @@ mod entity;
 mod error;
 mod groups;
 mod migration;
+mod stored_settings;
 mod tabs;
 mod users;
 
@@ -21,6 +22,7 @@ use sea_orm_migration::MigratorTrait;
 pub use crate::categories::Categories;
 pub use crate::error::DbError;
 pub use crate::groups::Groups;
+pub use crate::stored_settings::{StoredSetting, StoredSettings};
 pub use crate::tabs::Tabs;
 pub use crate::users::Users;
 
@@ -108,6 +110,11 @@ impl Database {
     /// The groups.
     pub const fn groups(&self) -> Groups<'_> {
         Groups::new(&self.connection)
+    }
+
+    /// The stored settings.
+    pub const fn settings(&self) -> StoredSettings<'_> {
+        StoredSettings::new(&self.connection)
     }
 
     /// The tabs.

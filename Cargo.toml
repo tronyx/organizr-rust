@@ -39,6 +39,7 @@ must_use_candidate = "allow"
 organizr-api = { path = "crates/api" }
 organizr-db = { path = "crates/db" }
 organizr-domain = { path = "crates/domain" }
+organizr-settings = { path = "crates/settings" }
 organizr-testkit = { path = "crates/testkit" }
 
 axum = "0.8.9"

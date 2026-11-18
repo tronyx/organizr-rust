@@ -1,1 +1,13 @@
-//! Typed registry of every Organizr setting: type, default, group, minimum level and form descriptor.
+//! Typed registry of every Organizr setting: type, default, group, minimum level and form
+//! descriptor.
+//!
+//! [`Settings`] holds every setting as a typed field. The stored form of each value is the
+//! one the PHP application uses, so the API can return settings as it always has.
+
+mod choices;
+mod codec;
+mod registry;
+
+pub use crate::choices::{AuthType, UnsortedTabs};
+pub use crate::codec::{Choice, Codec, Flag, Text, TextChoice, TextNumber};
+pub use crate::registry::{Settings, SettingsError};

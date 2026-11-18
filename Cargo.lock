@@ -1651,6 +1651,7 @@ name = "organizr-db"
 version = "0.1.0"
 dependencies = [
  "organizr-domain",
+ "organizr-settings",
  "organizr-testkit",
  "sea-orm",
  "sea-orm-migration",
@@ -1680,6 +1681,10 @@ version = "0.1.0"
 [[package]]
 name = "organizr-settings"
 version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "thiserror",
+]
 
 [[package]]
 name = "organizr-testkit"
