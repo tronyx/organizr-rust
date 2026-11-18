@@ -1,0 +1,34 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Front end
+node_modules/
+/web/dist/
+/web/.svelte-kit/
+/web/playwright-report/
+/web/test-results/
+
+# Local runtime data: never commit databases, keys, uploads or live-install copies
+/data/
+/config/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.key
+*.pem
+.env
+.env.*
+!.env.example
+
+# Parity oracle working files (recorded cases under parity/cases/ are committed)
+/parity/oracle/data/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
