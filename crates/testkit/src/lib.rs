@@ -29,12 +29,26 @@ pub fn app(database: &Database) -> Router {
 /// The application on the given database, with the settings of an install that has been
 /// set up: the defaults and [`seed::INSTALL_ID`].
 pub fn installed_app(database: &Database) -> Router {
+    installed_app_with(database, &[])
+}
+
+/// As [`installed_app`], with other values for some settings: key and stored value.
+pub fn installed_app_with(database: &Database, changed: &[(&str, serde_json::Value)]) -> Router {
     let mut settings = Settings::defaults();
     settings
         .set("uuid", &serde_json::Value::from(seed::INSTALL_ID))
         .expect("the install id is a valid setting");
+    for (key, value) in changed {
+        settings
+            .set(key, value)
+            .unwrap_or_else(|error| panic!("the setting `{key}` cannot be set: {error}"));
+    }
     app_with(database, settings)
 }
+
+/// A value for the `loginAttempts` setting that no test reaches. For tests that fail
+/// many logins from one address for another reason than the login limit.
+pub const NO_LOGIN_LIMIT: &str = "1000000";
 
 /// The application on the given database, with the given settings.
 pub fn app_with(database: &Database, settings: Settings) -> Router {

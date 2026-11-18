@@ -1,0 +1,278 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>"
+    }
+  },
+  "cases": [
+    {
+      "name": "wrong_password_1",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "not-it",
+          "loginAttempts": 1
+        },
+        "jar": "visitor"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "wrong_password_2",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "not-it",
+          "loginAttempts": 2
+        },
+        "jar": "visitor"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "wrong_password_3",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "not-it",
+          "loginAttempts": 3
+        },
+        "jar": "visitor"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "wrong_password_4",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "not-it",
+          "loginAttempts": 4
+        },
+        "jar": "visitor"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "wrong_password_5",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "not-it",
+          "loginAttempts": 5
+        },
+        "jar": "visitor"
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "lockout",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "60s"
+          },
+          {
+            "name": "lockout",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "60s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is locked out\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "correct_password_while_locked_out",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password",
+          "loginAttempts": 6
+        },
+        "jar": "visitor"
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "lockout",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "60s"
+          },
+          {
+            "name": "lockout",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "60s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is locked out\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "correct_password_while_locked_out_from_a_new_page",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password",
+          "loginAttempts": 1
+        },
+        "jar": "visitor"
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "lockout",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "60s"
+          },
+          {
+            "name": "lockout",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "60s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is locked out\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "other_routes_work_while_locked_out",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/token/me",
+        "jar": "visitor"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"token\": null,\n            \"tokenDate\": null,\n            \"tokenExpire\": null,\n            \"username\": \"Guest\",\n            \"uid\": \"<uid>\",\n            \"group\": \"Guest\",\n            \"groupID\": 999,\n            \"email\": null,\n            \"image\": \"plugins/images/groups/guest.png\",\n            \"userID\": null,\n            \"loggedin\": false,\n            \"locked\": false,\n            \"tokenList\": null,\n            \"authService\": null\n        }\n    }\n}",
+        "redacted": [
+          "uid"
+        ]
+      }
+    }
+  ]
+}

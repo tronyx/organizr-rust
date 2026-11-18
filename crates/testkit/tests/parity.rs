@@ -10,7 +10,7 @@
 
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::replay::Replay;
-use organizr_testkit::{app, installed_app, seed};
+use organizr_testkit::{NO_LOGIN_LIMIT, app, installed_app, installed_app_with, seed};
 use serde_json::{Value, json};
 
 /// The differences that every status answer has.
@@ -65,8 +65,11 @@ async fn login_answers_like_php() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let replay = without_php_session(Replay::group("login"));
+        // The group fails more logins from one address than the login limit allows. PHP
+        // has no limit on the server; the group `lockout` is about the limit.
+        let app = installed_app_with(database, &[("loginAttempts", json!(NO_LOGIN_LIMIT))]);
 
-        replay.run(&installed_app(database)).await;
+        replay.run(&app).await;
     })
     .await;
 }
@@ -116,6 +119,19 @@ async fn session_routes_answer_like_php() {
                 replay = replay.deviation("D-02", case, &token, Value::Null);
             }
         }
+
+        replay.run(&installed_app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn login_limit_answers_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // PHP remembers a lock-out in a cookie of the browser. Here the server remembers.
+        let replay =
+            without_php_session(Replay::group("lockout")).without_cookie("D-04", "lockout");
 
         replay.run(&installed_app(database)).await;
     })

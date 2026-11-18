@@ -24,7 +24,7 @@ use organizr_db::Database;
 use organizr_domain::{NewUser, Session, Timestamp, User};
 use organizr_settings::Settings;
 use organizr_testkit::engines::on_each_engine;
-use organizr_testkit::{app_with, installed_app, seed};
+use organizr_testkit::{NO_LOGIN_LIMIT, app_with, installed_app, installed_app_with, seed};
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
@@ -213,7 +213,8 @@ async fn first_login_replaces_the_hash_that_php_made() {
 async fn refused_login_stores_nothing_and_sets_no_session_cookie() {
     on_each_engine(async |database| {
         seed::installed(database).await;
-        let app = installed_app(database);
+        // This test is not about the login limit, and it fails more logins than the limit.
+        let app = installed_app_with(database, &[("loginAttempts", json!(NO_LOGIN_LIMIT))]);
         let attempts = [
             json!({"username": seed::ADMIN_NAME, "password": "not-it"}),
             json!({"username": "nobody", "password": seed::ADMIN_PASSWORD}),

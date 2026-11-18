@@ -316,6 +316,34 @@ LOGOUT = [
     ("post_instead_of_get", "POST", "/api/v2/logout"),
 ]
 
+# The limit on failed logins. PHP keeps no count on the server: its front end counts the
+# logins of the page in `loginAttempts`, starting at 1, and PHP remembers a lock-out in
+# the cookie `lockout`. The cases are one visit of a browser that behaves like that front
+# end. The Rust application counts on the server and must give the same answers.
+WRONG = {**ADMIN, "password": "not-it"}
+LOCKOUT = [
+    ("wrong_password_1", "POST", "/api/v2/login", {"json": {**WRONG, "loginAttempts": 1}, "jar": "visitor"}),
+    ("wrong_password_2", "POST", "/api/v2/login", {"json": {**WRONG, "loginAttempts": 2}, "jar": "visitor"}),
+    ("wrong_password_3", "POST", "/api/v2/login", {"json": {**WRONG, "loginAttempts": 3}, "jar": "visitor"}),
+    ("wrong_password_4", "POST", "/api/v2/login", {"json": {**WRONG, "loginAttempts": 4}, "jar": "visitor"}),
+    # The failure that reaches the limit of 5 already gets the lock-out answer.
+    ("wrong_password_5", "POST", "/api/v2/login", {"json": {**WRONG, "loginAttempts": 5}, "jar": "visitor"}),
+    (
+        "correct_password_while_locked_out",
+        "POST",
+        "/api/v2/login",
+        {"json": {**ADMIN, "loginAttempts": 6}, "jar": "visitor"},
+    ),
+    # A new page starts its count again, but the lock-out stays.
+    (
+        "correct_password_while_locked_out_from_a_new_page",
+        "POST",
+        "/api/v2/login",
+        {"json": {**ADMIN, "loginAttempts": 1}, "jar": "visitor"},
+    ),
+    ("other_routes_work_while_locked_out", "GET", "/api/v2/token/me", {"jar": "visitor"}),
+]
+
 # Requests that show which route the PHP router chooses. The Rust router must choose the
 # same one. Keep in step with ROUTING_CASES in crates/api/tests/slim_routes.rs.
 ROUTING = [
@@ -553,6 +581,7 @@ def main():
     record("session", named(SESSION), php_version)
     record("login", named(LOGIN), php_version)
     record("logout", named(LOGOUT), php_version)
+    record("lockout", named(LOCKOUT), php_version)
 
     routing = []
     for method, path in ROUTING:

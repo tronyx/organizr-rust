@@ -2,7 +2,7 @@
 
 use axum::Router;
 use axum::body::Body;
-use axum::http::{Request, StatusCode, header};
+use axum::http::{HeaderMap, Request, StatusCode, header};
 use http_body_util::BodyExt;
 use serde_json::Value;
 use tower::ServiceExt;
@@ -12,6 +12,8 @@ use tower::ServiceExt;
 pub struct Answer {
     /// The status code.
     pub status: StatusCode,
+    /// All headers.
+    pub headers: HeaderMap,
     /// The `Set-Cookie` values, in order.
     pub cookies: Vec<String>,
     /// The body as text.
@@ -69,6 +71,7 @@ pub async fn send(app: &Router, request: Request<Body>) -> Answer {
         .await
         .expect("the router answers");
     let status = response.status();
+    let headers = response.headers().clone();
     let cookies = response
         .headers()
         .get_all(header::SET_COOKIE)
@@ -83,6 +86,7 @@ pub async fn send(app: &Router, request: Request<Body>) -> Answer {
         .to_bytes();
     Answer {
         status,
+        headers,
         cookies,
         body: String::from_utf8(body.to_vec()).expect("the body is UTF-8"),
     }

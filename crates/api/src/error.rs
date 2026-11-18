@@ -1,6 +1,8 @@
 //! The one error type of the API. Every failure of a handler becomes an envelope here.
 
-use axum::http::StatusCode;
+use std::time::Duration;
+
+use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use organizr_auth::login::LoginError;
 use organizr_db::DbError;
@@ -37,6 +39,14 @@ pub enum ApiError {
     /// The request lacks something the route needs. The text says what, for the caller.
     #[error("the request cannot be carried out: {0}")]
     Unprocessable(&'static str),
+
+    /// Too many logins failed from the address of the caller, or for the name. No login
+    /// is taken from it, or for it, until the time is over.
+    #[error("too many logins failed; the next one is taken in {} seconds", retry_after.as_secs())]
+    LockedOut {
+        /// How long the lock still lasts.
+        retry_after: Duration,
+    },
 
     /// A login failed: because of the name or the password, or because something broke.
     #[error(transparent)]
@@ -92,6 +102,16 @@ impl IntoResponse for ApiError {
             }
             Self::Unprocessable(message) => {
                 Envelope::error(StatusCode::UNPROCESSABLE_ENTITY, message, NoData).into_response()
+            }
+            // The status and the text are those of the PHP application. The header
+            // tells a client how many seconds to wait, rounded up.
+            Self::LockedOut { retry_after } => {
+                let seconds = retry_after.as_secs() + u64::from(retry_after.subsec_nanos() > 0);
+                (
+                    [(header::RETRY_AFTER, seconds.max(1).to_string())],
+                    Envelope::error(StatusCode::FORBIDDEN, "User is locked out", NoData),
+                )
+                    .into_response()
             }
             // One answer for an unknown name and for a wrong password, as in the PHP
             // application.

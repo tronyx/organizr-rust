@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use organizr_auth::login_limit::LoginLimiter;
 use organizr_db::Database;
 use organizr_settings::Settings;
 
@@ -13,6 +14,7 @@ pub struct AppState {
     database: Database,
     settings: Arc<Settings>,
     trusted_proxies: Arc<TrustedProxies>,
+    login_limiter: Arc<LoginLimiter>,
 }
 
 impl AppState {
@@ -23,6 +25,7 @@ impl AppState {
             database,
             settings: Arc::new(settings),
             trusted_proxies: Arc::new(TrustedProxies::default()),
+            login_limiter: Arc::new(LoginLimiter::new()),
         }
     }
 
@@ -46,5 +49,10 @@ impl AppState {
     /// The reverse proxies whose forwarding headers are believed.
     pub fn trusted_proxies(&self) -> &TrustedProxies {
         &self.trusted_proxies
+    }
+
+    /// The count of failed logins. It starts empty when the application starts.
+    pub fn login_limiter(&self) -> &LoginLimiter {
+        &self.login_limiter
     }
 }
