@@ -1,5 +1,6 @@
 //! The HTTP API of Organizr: router, response envelope, extractors, error type and handlers.
 
+pub mod client;
 pub mod cookie_domain;
 pub mod device_cookie;
 pub mod envelope;

@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
+use organizr_api::client::TrustedProxies;
 use organizr_api::{AppState, router};
 use organizr_db::{Database, Engine};
 use organizr_settings::Settings;
@@ -28,6 +29,12 @@ pub struct Args {
     /// Without it, the application uses the SQLite file `organizr.db` in the data folder.
     #[arg(long, env = "ORGANIZR_DATABASE_URL", hide_env_values = true)]
     database_url: Option<String>,
+
+    /// The reverse proxies in front of the application: addresses and networks, separated
+    /// by commas, for example `172.18.0.0/16`. The headers `X-Forwarded-For` and
+    /// `X-Forwarded-Proto` are believed only from these. Without it, no proxy is trusted.
+    #[arg(long, env = "ORGANIZR_TRUSTED_PROXIES", default_value = "")]
+    trusted_proxies: String,
 }
 
 /// Runs the server until the process is asked to stop.
@@ -36,18 +43,30 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     let database = open_database(&args).await?;
     let settings = load_settings(&database).await?;
-    let app = router(AppState::new(database.clone(), settings))
-        .context("the route table is not valid")?;
+    let trusted_proxies: TrustedProxies = args
+        .trusted_proxies
+        .parse()
+        .context("the list of trusted proxies is not valid")?;
+    if trusted_proxies == TrustedProxies::default() {
+        tracing::info!("no reverse proxy is trusted; forwarding headers are ignored");
+    }
+    let state = AppState::new(database.clone(), settings).with_trusted_proxies(trusted_proxies);
+    let app = router(state).context("the route table is not valid")?;
 
     let listener = TcpListener::bind(args.listen)
         .await
         .with_context(|| format!("cannot listen on {}", args.listen))?;
     tracing::info!(address = %args.listen, version = env!("CARGO_PKG_VERSION"), "Organizr is listening");
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(stop_requested())
-        .await
-        .context("the server stopped with an error")?;
+    // The address of each connection goes to the application, which needs it to decide
+    // whether a forwarding header can be believed.
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(stop_requested())
+    .await
+    .context("the server stopped with an error")?;
 
     tracing::info!("Organizr is stopping");
     database

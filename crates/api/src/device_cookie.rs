@@ -12,6 +12,7 @@ use axum::middleware::Next;
 use axum::response::Response;
 use uuid::Uuid;
 
+use crate::client::Client;
 use crate::cookie_domain::cookie_domains;
 
 /// The name of the device cookie.
@@ -29,7 +30,11 @@ pub async fn ensure_device_cookie(request: Request, next: Next) -> Response {
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default()
         .to_owned();
-    let secure = is_https(headers);
+    // Without an identified client nothing says the browser used HTTPS.
+    let secure = request
+        .extensions()
+        .get::<Client>()
+        .is_some_and(|client| client.https);
 
     let mut response = next.run(request).await;
 
@@ -58,14 +63,6 @@ fn has_cookie(headers: &HeaderMap, name: &str) -> bool {
         .any(|cookie| cookie.trim().split('=').next() == Some(name))
 }
 
-/// Whether the browser reached the application over HTTPS, as the proxy in front reports
-/// it. The application itself does not speak HTTPS.
-fn is_https(headers: &HeaderMap) -> bool {
-    headers
-        .get("x-forwarded-proto")
-        .is_some_and(|value| value.as_bytes() == b"https")
-}
-
 /// Why a cookie could not be written.
 #[derive(Debug, thiserror::Error)]
 enum CookieError {
@@ -81,7 +78,8 @@ enum CookieError {
 /// first for the wider domain, the second for the host itself.
 ///
 /// A host without a wider domain (an IP address, `localhost`) gets no domain on either.
-/// `Secure` and `HttpOnly` are sent only over HTTPS, as PHP does. `SameSite=Lax` replaces
+/// `Secure` and `HttpOnly` are sent only over HTTPS, as PHP does. Whether the browser
+/// used HTTPS is what a trusted proxy reports; see [`Client`]. `SameSite=Lax` replaces
 /// PHP's `SameSite=None`.
 fn set_cookie_values(
     name: &str,
@@ -121,7 +119,7 @@ mod tests {
 
     use axum::http::{HeaderMap, HeaderValue, header};
 
-    use super::{has_cookie, is_https, set_cookie_values};
+    use super::{has_cookie, set_cookie_values};
 
     /// 2026-11-25 17:16:08 UTC, the expiry in a header that the PHP application sent.
     const EXPIRY_SECONDS: u64 = 1_795_626_968;
@@ -194,15 +192,5 @@ mod tests {
         let request = headers(header::COOKIE, "organizr_user_uuid=");
 
         assert!(has_cookie(&request, "organizr_user_uuid"));
-    }
-
-    #[test]
-    fn only_the_exact_proxy_header_means_https() {
-        let forwarded = header::HeaderName::from_static("x-forwarded-proto");
-
-        assert!(is_https(&headers(forwarded.clone(), "https")));
-        assert!(!is_https(&headers(forwarded.clone(), "http")));
-        assert!(!is_https(&headers(forwarded, "HTTPS")));
-        assert!(!is_https(&HeaderMap::new()));
     }
 }

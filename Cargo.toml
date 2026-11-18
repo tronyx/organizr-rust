@@ -46,6 +46,7 @@ anyhow = "1.0.104"
 axum = "0.8.9"
 clap = { version = "4.6.8", features = ["derive", "env"] }
 http-body-util = "0.1.5"
+ipnet = "2.12.2"
 jiff = "1.0.1"
 sea-orm = { version = "2.0.4", default-features = false, features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls", "macros"] }
 sea-orm-migration = { version = "2.0.4", default-features = false, features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls"] }

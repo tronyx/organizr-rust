@@ -41,6 +41,7 @@ impl Server {
             .arg(data_dir)
             // The test must not pick up settings of the machine it runs on.
             .env_remove("ORGANIZR_DATABASE_URL")
+            .env_remove("ORGANIZR_TRUSTED_PROXIES")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
@@ -85,6 +86,32 @@ fn serve_answers_and_creates_its_database_in_the_data_folder() {
     assert!(
         data_dir.path().join("organizr.db").is_file(),
         "the default database is an SQLite file in the data folder"
+    );
+}
+
+#[test]
+fn serve_refuses_a_list_of_trusted_proxies_that_is_not_valid() {
+    let data_dir = tempfile::tempdir().expect("a temporary folder can be created");
+
+    let output = Command::new(ORGANIZR)
+        .args([
+            "serve",
+            "--listen",
+            &free_address().to_string(),
+            "--data-dir",
+        ])
+        .arg(data_dir.path())
+        .args(["--trusted-proxies", "172.18.0.0/16, my-proxy"])
+        .env_remove("ORGANIZR_DATABASE_URL")
+        .output()
+        .expect("the binary can be run");
+
+    assert!(!output.status.success(), "the server must not start");
+    let message = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        message.contains("the list of trusted proxies is not valid")
+            && message.contains("`my-proxy` is not an IP address or a network"),
+        "the error names the entry: {message}"
     );
 }
 

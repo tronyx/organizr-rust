@@ -5,11 +5,14 @@
     reason = "helper functions of a test file may panic; the lint settings only exempt test functions"
 )]
 
-use axum::Router;
+use std::net::{IpAddr, Ipv4Addr};
+
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use axum::middleware::from_fn;
 use axum::routing::get;
+use axum::{Extension, Router};
+use organizr_api::client::{AddressSource, Client};
 use organizr_api::device_cookie::{DEVICE_COOKIE, ensure_device_cookie};
 use tower::ServiceExt;
 
@@ -19,13 +22,31 @@ fn app() -> Router {
         .layer(from_fn(ensure_device_cookie))
 }
 
+/// The application as it sees a browser that a trusted proxy reports to use HTTPS.
+fn app_behind_https_proxy() -> Router {
+    app().layer(Extension(Client {
+        address: IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
+        source: AddressSource::TrustedProxy,
+        https: true,
+    }))
+}
+
 /// Sends a request to `path` and returns the status and the `Set-Cookie` values.
 async fn cookies_set(path: &str, request_headers: &[(&str, &str)]) -> (StatusCode, Vec<String>) {
+    cookies_set_by(app(), path, request_headers).await
+}
+
+/// Sends a request to `path` of `app` and returns the status and the `Set-Cookie` values.
+async fn cookies_set_by(
+    app: Router,
+    path: &str,
+    request_headers: &[(&str, &str)],
+) -> (StatusCode, Vec<String>) {
     let mut request = Request::builder().uri(path);
     for (name, value) in request_headers {
         request = request.header(*name, *value);
     }
-    let response = app()
+    let response = app
         .oneshot(request.body(Body::empty()).expect("the request is valid"))
         .await
         .expect("the router answers");
@@ -110,6 +131,21 @@ async fn cookie_is_also_set_on_an_answer_that_is_not_a_success() {
 
 #[tokio::test]
 async fn cookie_over_https_is_secure() {
+    let (_, cookies) =
+        cookies_set_by(app_behind_https_proxy(), "/", &[("host", "organizr.test")]).await;
+
+    assert_eq!(cookies.len(), 2);
+    for cookie in &cookies {
+        assert!(
+            cookie.ends_with("; SameSite=Lax; Secure; HttpOnly"),
+            "{cookie}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn header_that_claims_https_does_not_make_the_cookie_secure_by_itself() {
+    // Nothing has checked that the header comes from a trusted proxy.
     let (_, cookies) = cookies_set(
         "/",
         &[("host", "organizr.test"), ("x-forwarded-proto", "https")],
@@ -118,9 +154,6 @@ async fn cookie_over_https_is_secure() {
 
     assert_eq!(cookies.len(), 2);
     for cookie in &cookies {
-        assert!(
-            cookie.ends_with("; SameSite=Lax; Secure; HttpOnly"),
-            "{cookie}"
-        );
+        assert!(cookie.ends_with("; SameSite=Lax"), "{cookie}");
     }
 }

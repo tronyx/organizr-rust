@@ -16,6 +16,7 @@ organizr-db.workspace = true
 organizr-settings.workspace = true
 
 axum.workspace = true
+ipnet.workspace = true
 jiff.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -26,6 +27,7 @@ uuid.workspace = true
 
 [dev-dependencies]
 http-body-util.workspace = true
+tempfile.workspace = true
 tokio.workspace = true
 tower.workspace = true
 # The fixture test must keep key order and parse floats bit for bit.
