@@ -4,6 +4,7 @@ pub mod basics;
 pub mod categories;
 pub mod fields;
 pub mod launch;
+pub mod launch_settings;
 pub mod login;
 pub mod logout;
 pub mod register;

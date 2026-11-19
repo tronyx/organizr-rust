@@ -1,8 +1,8 @@
 //! `GET /launch`: what the front end loads first.
 //!
-//! The answer holds the caller, the tabs and categories the caller sees, and how the page
-//! looks. The PHP application also sends its settings, its plugins and the state of the
-//! single sign-on here. Those parts are not built yet, and the answer leaves them out.
+//! The answer holds the caller, the tabs and categories the caller sees, how the page
+//! looks, and the settings that a page needs. The module `launch_settings` builds the
+//! parts `settings`, `plugins` and `sso`.
 
 use axum::Extension;
 use axum::extract::State;
@@ -10,11 +10,13 @@ use axum::http::{HeaderMap, header};
 use organizr_domain::{Category, GroupLevel, Tab};
 use organizr_settings::{Settings, UnsortedTabs};
 use serde::Serialize;
+use serde_json::Value;
 
 use crate::caller::Caller;
 use crate::client::{Client, LocalNetworks};
 use crate::envelope::Envelope;
 use crate::error::ApiError;
+use crate::handlers::launch_settings::Visitor;
 use crate::handlers::tabs::{CategoryRow, PageAddress, TabRow, TabVariables};
 use crate::handlers::token::{SessionSummary, UserObject, describe_caller};
 use crate::state::AppState;
@@ -56,8 +58,11 @@ pub struct LaunchData {
     theme: String,
     style: String,
     version: &'static str,
+    settings: Value,
+    plugins: Value,
     appearance: Appearance,
     status: LaunchStatus,
+    sso: Value,
     /// Warnings of the server for the admin, for example about a full disk. None yet.
     warnings: Option<Vec<String>>,
 }
@@ -219,13 +224,21 @@ pub async fn launch(
     let database = state.database();
     let is_set_up = database.install().is_done().await?;
     let variables = TabVariables::of(&caller, &headers);
+    let caller_is_local = LocalNetworks::from_setting(&settings.local_ip_list).contains(&client);
+    let visitor = Visitor {
+        settings: &settings,
+        level: caller.level(),
+        client: &client,
+        is_local: caller_is_local,
+        headers: &headers,
+    };
     let page = PageAddress {
         https: client.https,
         host: headers
             .get(header::HOST)
             .and_then(|value| value.to_str().ok())
             .unwrap_or_default(),
-        caller_is_local: LocalNetworks::from_setting(&settings.local_ip_list).contains(&client),
+        caller_is_local,
     };
 
     let (categories, tabs) = if is_set_up {
@@ -265,6 +278,8 @@ pub async fn launch(
         theme: settings.theme.clone(),
         style: settings.style.clone(),
         version: VERSION,
+        settings: visitor.settings(),
+        plugins: visitor.plugins(),
         appearance: appearance(&settings),
         status: LaunchStatus {
             status: if is_set_up { "ok" } else { "wizard" },
@@ -277,6 +292,7 @@ pub async fn launch(
             php: "n/a",
             php_user: "n/a",
         },
+        sso: visitor.sso_cookies(),
         warnings: None,
     }))
 }

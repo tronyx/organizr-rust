@@ -15,6 +15,10 @@ pub trait Codec {
     /// The type the application works with.
     type Value;
 
+    /// Whether the value is a secret, such as a password or the token of a service.
+    /// The API never shows a secret.
+    const SECRET: bool = false;
+
     /// Reads a stored value. The error says what is wrong with it.
     fn decode(stored: &Value) -> Result<Self::Value, String>;
 
@@ -52,6 +56,28 @@ impl Codec for Text {
             .as_str()
             .map(str::to_owned)
             .ok_or_else(|| format!("expected text, found {stored}"))
+    }
+
+    fn encode(value: &String) -> Value {
+        Value::String(value.clone())
+    }
+}
+
+/// A secret, stored as a string: a password, a token or a key.
+#[derive(Debug)]
+pub struct Secret;
+
+impl Codec for Secret {
+    type Value = String;
+
+    const SECRET: bool = true;
+
+    fn decode(stored: &Value) -> Result<String, String> {
+        // The refusal does not repeat the value.
+        stored
+            .as_str()
+            .map(str::to_owned)
+            .ok_or_else(|| "expected text".to_owned())
     }
 
     fn encode(value: &String) -> Value {
@@ -124,5 +150,49 @@ impl<T: TextChoice> Codec for Choice<T> {
 
     fn encode(value: &T) -> Value {
         Value::String(value.as_str().to_owned())
+    }
+}
+
+/// A whole number, stored as a JSON number.
+///
+/// Most numbers of the PHP application are stored as text, see [`TextNumber`]. This codec
+/// is for the few that are not.
+#[derive(Debug)]
+pub struct Number<T>(PhantomData<T>);
+
+impl<T> Codec for Number<T>
+where
+    T: TryFrom<u64> + Into<u64> + Copy,
+{
+    type Value = T;
+
+    fn decode(stored: &Value) -> Result<T, String> {
+        stored
+            .as_u64()
+            .and_then(|number| T::try_from(number).ok())
+            .ok_or_else(|| format!("expected a whole number, found {stored}"))
+    }
+
+    fn encode(value: &T) -> Value {
+        Value::from((*value).into())
+    }
+}
+
+/// A list, stored as a JSON list. The entries are kept as they are.
+#[derive(Debug)]
+pub struct List;
+
+impl Codec for List {
+    type Value = Vec<Value>;
+
+    fn decode(stored: &Value) -> Result<Vec<Value>, String> {
+        stored
+            .as_array()
+            .cloned()
+            .ok_or_else(|| format!("expected a list, found {stored}"))
+    }
+
+    fn encode(value: &Vec<Value>) -> Value {
+        Value::Array(value.clone())
     }
 }

@@ -1,0 +1,3625 @@
+{
+    "source": "Organizr 2.1.5000, api/config/default.php and api/plugins/*/config.php",
+    "defaults": [
+        {
+            "key": "driver",
+            "value": "sqlite3"
+        },
+        {
+            "key": "dbHost",
+            "value": ""
+        },
+        {
+            "key": "dbUsername",
+            "value": ""
+        },
+        {
+            "key": "dbPassword",
+            "value": ""
+        },
+        {
+            "key": "branch",
+            "value": "v2-master"
+        },
+        {
+            "key": "authType",
+            "value": "internal"
+        },
+        {
+            "key": "authBackend",
+            "value": ""
+        },
+        {
+            "key": "authBackendHost",
+            "value": ""
+        },
+        {
+            "key": "authBackendHostPrefix",
+            "value": ""
+        },
+        {
+            "key": "authBackendHostSuffix",
+            "value": ""
+        },
+        {
+            "key": "ldapBindUsername",
+            "value": ""
+        },
+        {
+            "key": "ldapBindPassword",
+            "value": ""
+        },
+        {
+            "key": "ldapSSL",
+            "value": false
+        },
+        {
+            "key": "ldapTLS",
+            "value": false
+        },
+        {
+            "key": "authBaseDN",
+            "value": ""
+        },
+        {
+            "key": "authBackendDomain",
+            "value": ""
+        },
+        {
+            "key": "ldapType",
+            "value": "1"
+        },
+        {
+            "key": "logo",
+            "value": "plugins/images/organizr/organizr-logo-h.png"
+        },
+        {
+            "key": "loginLogo",
+            "value": "plugins/images/organizr/organizr-logo-h.png"
+        },
+        {
+            "key": "loginWallpaper",
+            "value": ""
+        },
+        {
+            "key": "title",
+            "value": "Organizr V2"
+        },
+        {
+            "key": "useLogo",
+            "value": false
+        },
+        {
+            "key": "useLogoLogin",
+            "value": false
+        },
+        {
+            "key": "headerColor",
+            "value": ""
+        },
+        {
+            "key": "headerTextColor",
+            "value": ""
+        },
+        {
+            "key": "sidebarColor",
+            "value": ""
+        },
+        {
+            "key": "sidebarTextColor",
+            "value": ""
+        },
+        {
+            "key": "accentColor",
+            "value": ""
+        },
+        {
+            "key": "accentTextColor",
+            "value": ""
+        },
+        {
+            "key": "buttonColor",
+            "value": ""
+        },
+        {
+            "key": "buttonTextColor",
+            "value": ""
+        },
+        {
+            "key": "buttonHoverColor",
+            "value": ""
+        },
+        {
+            "key": "buttonTextHoverColor",
+            "value": ""
+        },
+        {
+            "key": "alternateHomepageHeaders",
+            "value": false
+        },
+        {
+            "key": "lockScreen",
+            "value": false
+        },
+        {
+            "key": "theme",
+            "value": "Organizr"
+        },
+        {
+            "key": "style",
+            "value": "dark"
+        },
+        {
+            "key": "plexURL",
+            "value": ""
+        },
+        {
+            "key": "plexTabURL",
+            "value": ""
+        },
+        {
+            "key": "plexToken",
+            "value": ""
+        },
+        {
+            "key": "plexTabName",
+            "value": ""
+        },
+        {
+            "key": "plexAdmin",
+            "value": ""
+        },
+        {
+            "key": "plexDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "plexUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "embyTabURL",
+            "value": ""
+        },
+        {
+            "key": "embyTabName",
+            "value": ""
+        },
+        {
+            "key": "embyURL",
+            "value": ""
+        },
+        {
+            "key": "embyToken",
+            "value": ""
+        },
+        {
+            "key": "embyDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "embyUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "jellyfinTabName",
+            "value": ""
+        },
+        {
+            "key": "jellyfinURL",
+            "value": ""
+        },
+        {
+            "key": "jellyfinToken",
+            "value": ""
+        },
+        {
+            "key": "jellyfinSSOURL",
+            "value": ""
+        },
+        {
+            "key": "jellyfinUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "jellyfinDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "plexID",
+            "value": ""
+        },
+        {
+            "key": "tautulliURL",
+            "value": ""
+        },
+        {
+            "key": "ombiURL",
+            "value": ""
+        },
+        {
+            "key": "ombiToken",
+            "value": ""
+        },
+        {
+            "key": "ombiAlias",
+            "value": false
+        },
+        {
+            "key": "ombiFallbackUser",
+            "value": ""
+        },
+        {
+            "key": "ombiFallbackPassword",
+            "value": ""
+        },
+        {
+            "key": "ombiDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "ombiUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "overseerrURL",
+            "value": ""
+        },
+        {
+            "key": "overseerrToken",
+            "value": ""
+        },
+        {
+            "key": "overseerrFallbackUser",
+            "value": ""
+        },
+        {
+            "key": "overseerrFallbackPassword",
+            "value": ""
+        },
+        {
+            "key": "overseerrDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "overseerrUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "petioURL",
+            "value": ""
+        },
+        {
+            "key": "petioToken",
+            "value": ""
+        },
+        {
+            "key": "petioFallbackUser",
+            "value": ""
+        },
+        {
+            "key": "petioFallbackPassword",
+            "value": ""
+        },
+        {
+            "key": "ssoPlex",
+            "value": false
+        },
+        {
+            "key": "ssoOmbi",
+            "value": false
+        },
+        {
+            "key": "ssoTautulli",
+            "value": false
+        },
+        {
+            "key": "ssoTautulliAuth",
+            "value": "4"
+        },
+        {
+            "key": "ssoJellyfin",
+            "value": false
+        },
+        {
+            "key": "ssoOverseerr",
+            "value": false
+        },
+        {
+            "key": "ssoPetio",
+            "value": false
+        },
+        {
+            "key": "ssoKomga",
+            "value": false
+        },
+        {
+            "key": "ssoKomgaAuth",
+            "value": "4"
+        },
+        {
+            "key": "komgaURL",
+            "value": ""
+        },
+        {
+            "key": "komgaFallbackUser",
+            "value": ""
+        },
+        {
+            "key": "komgaFallbackPassword",
+            "value": ""
+        },
+        {
+            "key": "komgaSSOMasterPassword",
+            "value": ""
+        },
+        {
+            "key": "sonarrURL",
+            "value": ""
+        },
+        {
+            "key": "sonarrUnmonitored",
+            "value": false
+        },
+        {
+            "key": "sonarrIcon",
+            "value": true
+        },
+        {
+            "key": "sonarrCalendarLink",
+            "value": ""
+        },
+        {
+            "key": "sonarrFrameTarget",
+            "value": ""
+        },
+        {
+            "key": "sonarrToken",
+            "value": ""
+        },
+        {
+            "key": "sonarrSocksEnabled",
+            "value": false
+        },
+        {
+            "key": "sonarrSocksAuth",
+            "value": "999"
+        },
+        {
+            "key": "sonarrDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "sonarrUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "lidarrURL",
+            "value": ""
+        },
+        {
+            "key": "lidarrToken",
+            "value": ""
+        },
+        {
+            "key": "lidarrSocksEnabled",
+            "value": false
+        },
+        {
+            "key": "lidarrSocksAuth",
+            "value": "999"
+        },
+        {
+            "key": "lidarrDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "lidarrUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "lidarrIcon",
+            "value": true
+        },
+        {
+            "key": "lidarrCalendarLink",
+            "value": ""
+        },
+        {
+            "key": "lidarrFrameTarget",
+            "value": ""
+        },
+        {
+            "key": "radarrURL",
+            "value": ""
+        },
+        {
+            "key": "radarrUnmonitored",
+            "value": false
+        },
+        {
+            "key": "radarrIcon",
+            "value": true
+        },
+        {
+            "key": "radarrCalendarLink",
+            "value": ""
+        },
+        {
+            "key": "radarrFrameTarget",
+            "value": ""
+        },
+        {
+            "key": "radarrPhysicalRelease",
+            "value": true
+        },
+        {
+            "key": "radarrDigitalRelease",
+            "value": false
+        },
+        {
+            "key": "radarrCinemaRelease",
+            "value": false
+        },
+        {
+            "key": "radarrToken",
+            "value": ""
+        },
+        {
+            "key": "radarrSocksEnabled",
+            "value": false
+        },
+        {
+            "key": "radarrSocksAuth",
+            "value": "999"
+        },
+        {
+            "key": "radarrDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "radarrUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "couchpotatoURL",
+            "value": ""
+        },
+        {
+            "key": "couchpotatoToken",
+            "value": ""
+        },
+        {
+            "key": "couchpotatoDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "couchpotatoUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "sickrageURL",
+            "value": ""
+        },
+        {
+            "key": "sickrageToken",
+            "value": ""
+        },
+        {
+            "key": "sickrageDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "sickrageUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "jdownloaderURL",
+            "value": ""
+        },
+        {
+            "key": "jdownloaderUsername",
+            "value": ""
+        },
+        {
+            "key": "jdownloaderPassword",
+            "value": ""
+        },
+        {
+            "key": "jdownloaderCombine",
+            "value": false
+        },
+        {
+            "key": "jdownloaderRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "jdownloaderUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "jdownloaderDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "sabnzbdURL",
+            "value": ""
+        },
+        {
+            "key": "sabnzbdToken",
+            "value": ""
+        },
+        {
+            "key": "sabnzbdSocksEnabled",
+            "value": false
+        },
+        {
+            "key": "sabnzbdSocksAuth",
+            "value": "999"
+        },
+        {
+            "key": "sabnzbdCombine",
+            "value": false
+        },
+        {
+            "key": "sabnzbdRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "sabnzbdDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "sabnzbdUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "nzbgetURL",
+            "value": ""
+        },
+        {
+            "key": "nzbgetUsername",
+            "value": ""
+        },
+        {
+            "key": "nzbgetPassword",
+            "value": ""
+        },
+        {
+            "key": "nzbgetSocksEnabled",
+            "value": false
+        },
+        {
+            "key": "nzbgetSocksAuth",
+            "value": "999"
+        },
+        {
+            "key": "nzbgetCombine",
+            "value": false
+        },
+        {
+            "key": "nzbgetRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "nzbgetDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "nzbgetUseCustomCertificate",
+            "value": true
+        },
+        {
+            "key": "transmissionURL",
+            "value": ""
+        },
+        {
+            "key": "transmissionUsername",
+            "value": ""
+        },
+        {
+            "key": "transmissionPassword",
+            "value": ""
+        },
+        {
+            "key": "transmissionHideSeeding",
+            "value": false
+        },
+        {
+            "key": "transmissionHideCompleted",
+            "value": false
+        },
+        {
+            "key": "transmissionCombine",
+            "value": false
+        },
+        {
+            "key": "transmissionRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "transmissionUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "transmissionDisableCertCheck",
+            "value": true
+        },
+        {
+            "key": "delugeURL",
+            "value": ""
+        },
+        {
+            "key": "delugePassword",
+            "value": ""
+        },
+        {
+            "key": "delugeHideSeeding",
+            "value": false
+        },
+        {
+            "key": "delugeHideCompleted",
+            "value": false
+        },
+        {
+            "key": "delugeHideStatus",
+            "value": true
+        },
+        {
+            "key": "delugeCombine",
+            "value": false
+        },
+        {
+            "key": "delugeRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "delugeDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "delugeUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "qBittorrentURL",
+            "value": ""
+        },
+        {
+            "key": "qBittorrentUsername",
+            "value": ""
+        },
+        {
+            "key": "qBittorrentPassword",
+            "value": ""
+        },
+        {
+            "key": "qBittorrentHideSeeding",
+            "value": false
+        },
+        {
+            "key": "qBittorrentHideCompleted",
+            "value": false
+        },
+        {
+            "key": "qBittorrentSortOrder",
+            "value": "eta"
+        },
+        {
+            "key": "qBittorrentReverseSorting",
+            "value": false
+        },
+        {
+            "key": "qBittorrentCombine",
+            "value": false
+        },
+        {
+            "key": "qBittorrentApiVersion",
+            "value": "1"
+        },
+        {
+            "key": "qBittorrentDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "qBittorrentUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "qBittorrentRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "qBittorrentSocksEnabled",
+            "value": false
+        },
+        {
+            "key": "qBittorrentSocksAuth",
+            "value": "999"
+        },
+        {
+            "key": "rTorrentURL",
+            "value": ""
+        },
+        {
+            "key": "uTorrentCombine",
+            "value": false
+        },
+        {
+            "key": "uTorrentCookie",
+            "value": ""
+        },
+        {
+            "key": "uTorrentDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "uTorrentHideCompleted",
+            "value": false
+        },
+        {
+            "key": "uTorrentHideSeeding",
+            "value": false
+        },
+        {
+            "key": "uTorrentPassword",
+            "value": ""
+        },
+        {
+            "key": "uTorrentRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "uTorrentToken",
+            "value": ""
+        },
+        {
+            "key": "uTorrentURL",
+            "value": ""
+        },
+        {
+            "key": "uTorrentUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "uTorrentUsername",
+            "value": ""
+        },
+        {
+            "key": "rTorrentURLOverride",
+            "value": ""
+        },
+        {
+            "key": "rTorrentUsername",
+            "value": ""
+        },
+        {
+            "key": "rTorrentPassword",
+            "value": ""
+        },
+        {
+            "key": "rTorrentHideSeeding",
+            "value": false
+        },
+        {
+            "key": "rTorrentHideCompleted",
+            "value": false
+        },
+        {
+            "key": "rTorrentSortOrder",
+            "value": "datea"
+        },
+        {
+            "key": "rTorrentReverseSorting",
+            "value": false
+        },
+        {
+            "key": "rTorrentCombine",
+            "value": false
+        },
+        {
+            "key": "rTorrentIgnoreLabel",
+            "value": ""
+        },
+        {
+            "key": "rTorrentDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "rTorrentUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "rTorrentLimit",
+            "value": "200"
+        },
+        {
+            "key": "rTorrentRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "homepageJackettEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageJackettAuth",
+            "value": "1"
+        },
+        {
+            "key": "jackettURL",
+            "value": ""
+        },
+        {
+            "key": "jackettToken",
+            "value": ""
+        },
+        {
+            "key": "jackettUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "jackettDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "homepageJackettBackholeDownload",
+            "value": false
+        },
+        {
+            "key": "homepageProwlarrBackholeDownload",
+            "value": false
+        },
+        {
+            "key": "homepageProwlarrEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageProwlarrAuth",
+            "value": "1"
+        },
+        {
+            "key": "ProwlarrURL",
+            "value": ""
+        },
+        {
+            "key": "ProwlarrToken",
+            "value": ""
+        },
+        {
+            "key": "ProwlarrUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "ProwlarrDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "homepageCalendarEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageCalendarAuth",
+            "value": "4"
+        },
+        {
+            "key": "calendariCal",
+            "value": ""
+        },
+        {
+            "key": "homepageCustomHTML01Enabled",
+            "value": false
+        },
+        {
+            "key": "homepageCustomHTML01Auth",
+            "value": "1"
+        },
+        {
+            "key": "customHTML01",
+            "value": ""
+        },
+        {
+            "key": "homepageCustomHTML02Enabled",
+            "value": false
+        },
+        {
+            "key": "homepageCustomHTML02Auth",
+            "value": "1"
+        },
+        {
+            "key": "customHTML02",
+            "value": ""
+        },
+        {
+            "key": "homepageCustomHTML03Enabled",
+            "value": false
+        },
+        {
+            "key": "homepageCustomHTML03Auth",
+            "value": "1"
+        },
+        {
+            "key": "customHTML03",
+            "value": ""
+        },
+        {
+            "key": "homepageCustomHTML04Enabled",
+            "value": false
+        },
+        {
+            "key": "homepageCustomHTML04Auth",
+            "value": "1"
+        },
+        {
+            "key": "customHTML04",
+            "value": ""
+        },
+        {
+            "key": "homepageCustomHTML05Enabled",
+            "value": false
+        },
+        {
+            "key": "homepageCustomHTML05Auth",
+            "value": "1"
+        },
+        {
+            "key": "customHTML05",
+            "value": ""
+        },
+        {
+            "key": "homepageCustomHTML06Enabled",
+            "value": false
+        },
+        {
+            "key": "homepageCustomHTML06Auth",
+            "value": "1"
+        },
+        {
+            "key": "customHTML06",
+            "value": ""
+        },
+        {
+            "key": "homepageCustomHTML07Enabled",
+            "value": false
+        },
+        {
+            "key": "homepageCustomHTML07Auth",
+            "value": "1"
+        },
+        {
+            "key": "customHTML07",
+            "value": ""
+        },
+        {
+            "key": "homepageCustomHTML08Enabled",
+            "value": false
+        },
+        {
+            "key": "homepageCustomHTML08Auth",
+            "value": "1"
+        },
+        {
+            "key": "customHTML08",
+            "value": ""
+        },
+        {
+            "key": "homepageDelugeEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageDelugeAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageJdownloaderEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageJdownloaderAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageSabnzbdEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageSabnzbdAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageSonarrEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageSonarrAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageSonarrQueueEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageSonarrQueueAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageSonarrQueueCombine",
+            "value": false
+        },
+        {
+            "key": "homepageSonarrQueueRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "homepageLidarrEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageLidarrAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageCouchpotatoEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageCouchpotatoAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageSickrageEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageSickrageAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageRadarrEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageRadarrAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageRadarrQueueEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageRadarrQueueAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageRadarrQueueCombine",
+            "value": false
+        },
+        {
+            "key": "homepageRadarrQueueRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "homepageTransmissionEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageTransmissionAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageqBittorrentEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageqBittorrentAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepagerTorrentEnabled",
+            "value": false
+        },
+        {
+            "key": "homepagerTorrentAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageuTorrentAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageuTorrentEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageNzbgetEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageNzbgetAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepagePlexEnabled",
+            "value": false
+        },
+        {
+            "key": "homepagePlexAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageEmbyEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageEmbyAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageJellyfinEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageJellyfinAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageOmbiEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageOmbiAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageOmbiRequestAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageOverseerrEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageOverseerrAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageOverseerrRequestAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageJellyfinInstead",
+            "value": false
+        },
+        {
+            "key": "ombiLimitUser",
+            "value": false
+        },
+        {
+            "key": "ombiRefresh",
+            "value": "600000"
+        },
+        {
+            "key": "ombiTvDefault",
+            "value": "all"
+        },
+        {
+            "key": "overseerrLimitUser",
+            "value": false
+        },
+        {
+            "key": "overseerrRefresh",
+            "value": "600000"
+        },
+        {
+            "key": "overseerrTvDefault",
+            "value": "all"
+        },
+        {
+            "key": "overseerrPrefer4K",
+            "value": false
+        },
+        {
+            "key": "homepageWeatherAndAirEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageWeatherAndAirAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageWeatherAndAirRefresh",
+            "value": "3600000"
+        },
+        {
+            "key": "homepageWeatherAndAirLatitude",
+            "value": ""
+        },
+        {
+            "key": "homepageWeatherAndAirLongitude",
+            "value": ""
+        },
+        {
+            "key": "homepageWeatherAndAirUnits",
+            "value": "imperial"
+        },
+        {
+            "key": "homepageWeatherAndAirPollenEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageWeatherAndAirAirQualityEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageWeatherAndAirWeatherEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageWeatherAndAirWeatherHeader",
+            "value": ""
+        },
+        {
+            "key": "homepageWeatherAndAirWeatherHeaderToggle",
+            "value": false
+        },
+        {
+            "key": "homepageHealthChecksEnabled",
+            "value": false
+        },
+        {
+            "key": "healthChecksToken",
+            "value": ""
+        },
+        {
+            "key": "healthChecksTags",
+            "value": ""
+        },
+        {
+            "key": "homepageHealthChecksAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageHealthChecksShowDesc",
+            "value": false
+        },
+        {
+            "key": "homepageHealthChecksShowTags",
+            "value": false
+        },
+        {
+            "key": "healthChecksDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "healthChecksUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "homepageDonateEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageDonateAuth",
+            "value": "999"
+        },
+        {
+            "key": "homepageDonatePublicToken",
+            "value": ""
+        },
+        {
+            "key": "homepageDonateSecretToken",
+            "value": ""
+        },
+        {
+            "key": "homepageDonateProductID",
+            "value": ""
+        },
+        {
+            "key": "homepageDonateCustomizeHeading",
+            "value": "Donate Please"
+        },
+        {
+            "key": "homepageDonateCustomizeDescription",
+            "value": "Hi!  Help me out with a donation..."
+        },
+        {
+            "key": "homepageDonateMinimum",
+            "value": "100"
+        },
+        {
+            "key": "homepageDonateShowUserHistory",
+            "value": false
+        },
+        {
+            "key": "homepageOrdercustomhtml01",
+            "value": "1"
+        },
+        {
+            "key": "homepageOrdercustomhtml02",
+            "value": "2"
+        },
+        {
+            "key": "homepageOrdertransmission",
+            "value": "3"
+        },
+        {
+            "key": "homepageOrderqBittorrent",
+            "value": "4"
+        },
+        {
+            "key": "homepageOrderdeluge",
+            "value": "5"
+        },
+        {
+            "key": "homepageOrdernzbget",
+            "value": "6"
+        },
+        {
+            "key": "homepageOrdersabnzbd",
+            "value": "7"
+        },
+        {
+            "key": "homepageOrderplexnowplaying",
+            "value": "8"
+        },
+        {
+            "key": "homepageOrderplexrecent",
+            "value": "9"
+        },
+        {
+            "key": "homepageOrderplexplaylist",
+            "value": "10"
+        },
+        {
+            "key": "homepageOrderembynowplaying",
+            "value": "11"
+        },
+        {
+            "key": "homepageOrderembyrecent",
+            "value": "12"
+        },
+        {
+            "key": "homepageOrderombi",
+            "value": "13"
+        },
+        {
+            "key": "homepageOrdercalendar",
+            "value": "14"
+        },
+        {
+            "key": "homepageOrderrTorrent",
+            "value": "15"
+        },
+        {
+            "key": "homepageOrderdownloader",
+            "value": "16"
+        },
+        {
+            "key": "homepageOrderhealthchecks",
+            "value": "17"
+        },
+        {
+            "key": "homepageOrderjdownloader",
+            "value": "18"
+        },
+        {
+            "key": "homepageOrderunifi",
+            "value": "19"
+        },
+        {
+            "key": "homepageOrderPihole",
+            "value": "20"
+        },
+        {
+            "key": "homepageOrdertautulli",
+            "value": "21"
+        },
+        {
+            "key": "homepageOrderMonitorr",
+            "value": "22"
+        },
+        {
+            "key": "homepageOrderWeatherAndAir",
+            "value": "23"
+        },
+        {
+            "key": "homepageOrderSpeedtest",
+            "value": "24"
+        },
+        {
+            "key": "homepageOrderNetdata",
+            "value": "25"
+        },
+        {
+            "key": "homepageOrderSonarrQueue",
+            "value": "26"
+        },
+        {
+            "key": "homepageOrderRadarrQueue",
+            "value": "27"
+        },
+        {
+            "key": "homepageOrderOctoprint",
+            "value": "28"
+        },
+        {
+            "key": "homepageOrderjellyfinnowplaying",
+            "value": "29"
+        },
+        {
+            "key": "homepageOrderjellyfinrecent",
+            "value": "30"
+        },
+        {
+            "key": "homepageOrderJackett",
+            "value": "31"
+        },
+        {
+            "key": "homepageOrdercustomhtml03",
+            "value": "32"
+        },
+        {
+            "key": "homepageOrdercustomhtml04",
+            "value": "33"
+        },
+        {
+            "key": "homepageOrdercustomhtml05",
+            "value": "34"
+        },
+        {
+            "key": "homepageOrdercustomhtml06",
+            "value": "35"
+        },
+        {
+            "key": "homepageOrdercustomhtml07",
+            "value": "36"
+        },
+        {
+            "key": "homepageOrdercustomhtml08",
+            "value": "37"
+        },
+        {
+            "key": "homepageOrderuTorrent",
+            "value": "38"
+        },
+        {
+            "key": "homepageOrderoverseerr",
+            "value": "39"
+        },
+        {
+            "key": "homepageOrderBookmarks",
+            "value": "40"
+        },
+        {
+            "key": "homepageOrderDonate",
+            "value": "41"
+        },
+        {
+            "key": "homepageOrderAdguard",
+            "value": "42"
+        },
+        {
+            "key": "homepageOrderProwlarr",
+            "value": "43"
+        },
+        {
+            "key": "homepageOrderUptimeKuma",
+            "value": "44"
+        },
+        {
+            "key": "homepageOrderPromPage",
+            "value": "45"
+        },
+        {
+            "key": "homepageOrderEmbyLiveTVTracker",
+            "value": "46"
+        },
+        {
+            "key": "homepageOrderUserWatchStats",
+            "value": "47"
+        },
+        {
+            "key": "homepageOrderJellyStat",
+            "value": "48"
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerRefresh",
+            "value": "5"
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerDaysShown",
+            "value": "7"
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerCompactView",
+            "value": false
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerShowDuration",
+            "value": true
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerShowSeriesInfo",
+            "value": true
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerShowUserInfo",
+            "value": false
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerMaxItems",
+            "value": "10"
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerShowCompleted",
+            "value": true
+        },
+        {
+            "key": "homepageEmbyLiveTVTrackerMaxCompletedItems",
+            "value": "5"
+        },
+        {
+            "key": "homepageUserWatchStatsEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageUserWatchStatsAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageUserWatchStatsRefresh",
+            "value": "30"
+        },
+        {
+            "key": "homepageUserWatchStatsService",
+            "value": "plex"
+        },
+        {
+            "key": "homepageUserWatchStatsURL",
+            "value": ""
+        },
+        {
+            "key": "homepageUserWatchStatsToken",
+            "value": ""
+        },
+        {
+            "key": "homepageUserWatchStatsDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "homepageUserWatchStatsUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "homepageUserWatchStatsDays",
+            "value": "30"
+        },
+        {
+            "key": "homepageUserWatchStatsCompactView",
+            "value": false
+        },
+        {
+            "key": "homepageUserWatchStatsShowTopUsers",
+            "value": true
+        },
+        {
+            "key": "homepageUserWatchStatsShowMostWatched",
+            "value": true
+        },
+        {
+            "key": "homepageUserWatchStatsShowRecentActivity",
+            "value": true
+        },
+        {
+            "key": "homepageUserWatchStatsMaxItems",
+            "value": "10"
+        },
+        {
+            "key": "homepageUserWatchStatsHeader",
+            "value": "User Watch Statistics"
+        },
+        {
+            "key": "homepageUserWatchStatsHeaderToggle",
+            "value": true
+        },
+        {
+            "key": "homepageJellyStatEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageJellyStatAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageJellyStatDisplayMode",
+            "value": "native"
+        },
+        {
+            "key": "jellyStatURL",
+            "value": ""
+        },
+        {
+            "key": "jellyStatInternalURL",
+            "value": ""
+        },
+        {
+            "key": "jellyStatApikey",
+            "value": ""
+        },
+        {
+            "key": "jellyStatDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "jellyStatUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "homepageJellyStatRefresh",
+            "value": "5"
+        },
+        {
+            "key": "homepageJellyStatDays",
+            "value": "30"
+        },
+        {
+            "key": "homepageJellyStatShowLibraries",
+            "value": true
+        },
+        {
+            "key": "homepageJellyStatShowUsers",
+            "value": true
+        },
+        {
+            "key": "homepageJellyStatShowMostWatched",
+            "value": true
+        },
+        {
+            "key": "homepageJellyStatShowRecentActivity",
+            "value": true
+        },
+        {
+            "key": "homepageJellyStatMaxItems",
+            "value": "10"
+        },
+        {
+            "key": "homepageJellyStatShowMostWatchedMovies",
+            "value": true
+        },
+        {
+            "key": "homepageJellyStatShowMostWatchedShows",
+            "value": true
+        },
+        {
+            "key": "homepageJellyStatShowMostListenedMusic",
+            "value": true
+        },
+        {
+            "key": "homepageJellyStatMostWatchedCount",
+            "value": "10"
+        },
+        {
+            "key": "homepageJellyStatIframeHeight",
+            "value": "800"
+        },
+        {
+            "key": "homepageJellyStatIframeScrolling",
+            "value": true
+        },
+        {
+            "key": "homepageShowStreamNames",
+            "value": false
+        },
+        {
+            "key": "homepageShowStreamNamesAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageShowStreamNamesWithoutIp",
+            "value": false
+        },
+        {
+            "key": "homepageShowStreamNamesWithoutIpAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageUseCustomStreamNames",
+            "value": false
+        },
+        {
+            "key": "homepageCustomStreamNames",
+            "value": ""
+        },
+        {
+            "key": "homepageStreamRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "homepageRecentRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "homepageDownloadRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "homepageHealthChecksRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "homepagePlexStreams",
+            "value": false
+        },
+        {
+            "key": "homepagePlexStreamsAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepagePlexStreamsExclude",
+            "value": ""
+        },
+        {
+            "key": "homepagePlexRecent",
+            "value": false
+        },
+        {
+            "key": "homepagePlexRecentExclude",
+            "value": ""
+        },
+        {
+            "key": "homepageRecentLimit",
+            "value": "50"
+        },
+        {
+            "key": "homepagePlexRecentAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepagePlexPlaylist",
+            "value": false
+        },
+        {
+            "key": "homepagePlexPlaylistAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepagePlexSearchExclude",
+            "value": ""
+        },
+        {
+            "key": "homepageEmbyStreams",
+            "value": false
+        },
+        {
+            "key": "homepageEmbyStreamsAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageEmbyRecent",
+            "value": false
+        },
+        {
+            "key": "homepageEmbyRecentAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageEmbyLink",
+            "value": " http://app.emby.media/#!/item/item.html?id={id}&serverId={serverId}"
+        },
+        {
+            "key": "homepageJellyfinStreams",
+            "value": false
+        },
+        {
+            "key": "homepageJellyStreamsAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageJellyfinRecent",
+            "value": false
+        },
+        {
+            "key": "homepageJellyfinRecentAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageJellyfinLink",
+            "value": "http://hostname:port/jellyfin/web/index.html#!/details?id={id}&serverId={serverId}"
+        },
+        {
+            "key": "homepageBookmarksAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageBookmarksEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageBookmarksRefresh",
+            "value": "3600000"
+        },
+        {
+            "key": "calendarDefault",
+            "value": "month"
+        },
+        {
+            "key": "calendarFirstDay",
+            "value": "1"
+        },
+        {
+            "key": "calendarStart",
+            "value": "14"
+        },
+        {
+            "key": "calendarEnd",
+            "value": "14"
+        },
+        {
+            "key": "calendarRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "calendarTimeFormat",
+            "value": "h(:mm)t"
+        },
+        {
+            "key": "calendarLimit",
+            "value": "1000"
+        },
+        {
+            "key": "calendarLocale",
+            "value": "en"
+        },
+        {
+            "key": "customCss",
+            "value": ""
+        },
+        {
+            "key": "customThemeCss",
+            "value": ""
+        },
+        {
+            "key": "mediaSearch",
+            "value": false
+        },
+        {
+            "key": "mediaSearchType",
+            "value": ""
+        },
+        {
+            "key": "mediaSearchAuth",
+            "value": "1"
+        },
+        {
+            "key": "registrationPassword",
+            "value": ""
+        },
+        {
+            "key": "hideRegistration",
+            "value": false
+        },
+        {
+            "key": "favIcon",
+            "value": ""
+        },
+        {
+            "key": "pingAuth",
+            "value": "1"
+        },
+        {
+            "key": "pingAuthMessage",
+            "value": "1"
+        },
+        {
+            "key": "adminPingRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "otherPingRefresh",
+            "value": "600000"
+        },
+        {
+            "key": "pingOfflineSound",
+            "value": "plugins/sounds/default/open-ended.mp3"
+        },
+        {
+            "key": "pingOnlineSound",
+            "value": "plugins/sounds/default/awareness.mp3"
+        },
+        {
+            "key": "pingMs",
+            "value": false
+        },
+        {
+            "key": "pingAuthMs",
+            "value": "1"
+        },
+        {
+            "key": "notificationBackbone",
+            "value": "izi"
+        },
+        {
+            "key": "notificationPosition",
+            "value": "br"
+        },
+        {
+            "key": "lockoutSystem",
+            "value": false
+        },
+        {
+            "key": "lockoutTimeout",
+            "value": "60"
+        },
+        {
+            "key": "lockoutMaxAuth",
+            "value": "0"
+        },
+        {
+            "key": "lockoutMinAuth",
+            "value": "1"
+        },
+        {
+            "key": "themeInstalled",
+            "value": ""
+        },
+        {
+            "key": "themeVersion",
+            "value": ""
+        },
+        {
+            "key": "installedPlugins",
+            "value": []
+        },
+        {
+            "key": "installedThemes",
+            "value": ""
+        },
+        {
+            "key": "authDebug",
+            "value": false
+        },
+        {
+            "key": "customJava",
+            "value": ""
+        },
+        {
+            "key": "customThemeJava",
+            "value": ""
+        },
+        {
+            "key": "minimalLoginScreen",
+            "value": false
+        },
+        {
+            "key": "unsortedTabs",
+            "value": "top"
+        },
+        {
+            "key": "cacheImageSize",
+            "value": "2"
+        },
+        {
+            "key": "plexoAuth",
+            "value": false
+        },
+        {
+            "key": "statusSounds",
+            "value": false
+        },
+        {
+            "key": "rememberMeDays",
+            "value": "7"
+        },
+        {
+            "key": "rememberMe",
+            "value": true
+        },
+        {
+            "key": "plexStrictFriends",
+            "value": true
+        },
+        {
+            "key": "ignoreTFAIfPlexOAuth",
+            "value": false
+        },
+        {
+            "key": "debugAreaAuth",
+            "value": "1"
+        },
+        {
+            "key": "commit",
+            "value": "n/a"
+        },
+        {
+            "key": "ombiLimit",
+            "value": "50"
+        },
+        {
+            "key": "overseerrLimit",
+            "value": "50"
+        },
+        {
+            "key": "localIPFrom",
+            "value": ""
+        },
+        {
+            "key": "localIPTo",
+            "value": ""
+        },
+        {
+            "key": "localIPList",
+            "value": ""
+        },
+        {
+            "key": "sandbox",
+            "value": "allow-presentation,allow-forms,allow-same-origin,allow-pointer-lock,allow-scripts,allow-popups,allow-modals,allow-top-navigation,allow-downloads,allow-orientation-lock,allow-popups-to-escape-sandbox,allow-top-navigation-by-user-activation"
+        },
+        {
+            "key": "iframeAllow",
+            "value": "fullscreen,autoplay,clipboard-read,clipboard-write,camera,microphone,speaker-selection,display-capture,web-share,encrypted-media,picture-in-picture"
+        },
+        {
+            "key": "description",
+            "value": "Organizr - Accept no others"
+        },
+        {
+            "key": "debugErrors",
+            "value": false
+        },
+        {
+            "key": "healthChecksURL",
+            "value": "https://healthchecks.io/api/v1/checks/"
+        },
+        {
+            "key": "gaTrackingID",
+            "value": ""
+        },
+        {
+            "key": "loginAttempts",
+            "value": "5"
+        },
+        {
+            "key": "loginLockout",
+            "value": "60000"
+        },
+        {
+            "key": "ombiDefaultFilterAvailable",
+            "value": true
+        },
+        {
+            "key": "ombiDefaultFilterUnavailable",
+            "value": true
+        },
+        {
+            "key": "ombiDefaultFilterApproved",
+            "value": true
+        },
+        {
+            "key": "ombiDefaultFilterUnapproved",
+            "value": true
+        },
+        {
+            "key": "ombiDefaultFilterDenied",
+            "value": true
+        },
+        {
+            "key": "overseerrDefaultFilterAvailable",
+            "value": true
+        },
+        {
+            "key": "overseerrDefaultFilterUnavailable",
+            "value": true
+        },
+        {
+            "key": "overseerrDefaultFilterApproved",
+            "value": true
+        },
+        {
+            "key": "overseerrDefaultFilterUnapproved",
+            "value": true
+        },
+        {
+            "key": "overseerrDefaultFilterDenied",
+            "value": true
+        },
+        {
+            "key": "selfSignedCert",
+            "value": ""
+        },
+        {
+            "key": "homepagePlexRecentlyAddedMethod",
+            "value": "legacy"
+        },
+        {
+            "key": "authProxyEnabled",
+            "value": false
+        },
+        {
+            "key": "authProxyHeaderName",
+            "value": ""
+        },
+        {
+            "key": "authProxyHeaderNameEmail",
+            "value": ""
+        },
+        {
+            "key": "authProxyWhitelist",
+            "value": ""
+        },
+        {
+            "key": "authProxyOverrideLogout",
+            "value": false
+        },
+        {
+            "key": "authProxyLogoutURL",
+            "value": ""
+        },
+        {
+            "key": "ignoreTFALocal",
+            "value": false
+        },
+        {
+            "key": "unifiURL",
+            "value": ""
+        },
+        {
+            "key": "unifiUsername",
+            "value": ""
+        },
+        {
+            "key": "unifiPassword",
+            "value": ""
+        },
+        {
+            "key": "unifiSiteName",
+            "value": ""
+        },
+        {
+            "key": "unifiCookie",
+            "value": ""
+        },
+        {
+            "key": "unifiUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "unifiDisableCertCheck",
+            "value": true
+        },
+        {
+            "key": "homepageUnifiEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageUnifiAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageUnifiRefresh",
+            "value": "600000"
+        },
+        {
+            "key": "youtubeAPI",
+            "value": ""
+        },
+        {
+            "key": "wanDomain",
+            "value": ""
+        },
+        {
+            "key": "localAddress",
+            "value": ""
+        },
+        {
+            "key": "enableLocalAddressForward",
+            "value": false
+        },
+        {
+            "key": "performanceDisableIconDropdown",
+            "value": false
+        },
+        {
+            "key": "performanceDisableImageDropdown",
+            "value": false
+        },
+        {
+            "key": "traefikAuthEnable",
+            "value": false
+        },
+        {
+            "key": "traefikDomainOverride",
+            "value": ""
+        },
+        {
+            "key": "homepageTautulliEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageTautulliAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageTautulliLibraryAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageTautulliLibraryStatsExclude",
+            "value": ""
+        },
+        {
+            "key": "homepageTautulliViewsAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageTautulliMiscAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageTautulliViewingStatsExclude",
+            "value": ""
+        },
+        {
+            "key": "homepageTautulliRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "tautulliApikey",
+            "value": ""
+        },
+        {
+            "key": "tautulliLibraries",
+            "value": true
+        },
+        {
+            "key": "tautulliTopMovies",
+            "value": true
+        },
+        {
+            "key": "tautulliTopTV",
+            "value": true
+        },
+        {
+            "key": "tautulliTopUsers",
+            "value": true
+        },
+        {
+            "key": "tautulliTopPlatforms",
+            "value": true
+        },
+        {
+            "key": "tautulliPopularMovies",
+            "value": true
+        },
+        {
+            "key": "tautulliPopularTV",
+            "value": true
+        },
+        {
+            "key": "tautulliHeader",
+            "value": "Tautulli"
+        },
+        {
+            "key": "tautulliHeaderToggle",
+            "value": true
+        },
+        {
+            "key": "tautulliFriendlyName",
+            "value": true
+        },
+        {
+            "key": "tautulliSocksEnabled",
+            "value": false
+        },
+        {
+            "key": "tautulliSocksAuth",
+            "value": "999"
+        },
+        {
+            "key": "tautulliUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "tautulliDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "homepagePiholeEnabled",
+            "value": false
+        },
+        {
+            "key": "homepagePiholeAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepagePiholeRefresh",
+            "value": "10000"
+        },
+        {
+            "key": "homepagePiholeCombine",
+            "value": false
+        },
+        {
+            "key": "piholeHeaderToggle",
+            "value": true
+        },
+        {
+            "key": "piholeURL",
+            "value": ""
+        },
+        {
+            "key": "piholeToken",
+            "value": ""
+        },
+        {
+            "key": "homepageAdGuardEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageAdGuardAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageAdGuardRefresh",
+            "value": "10000"
+        },
+        {
+            "key": "homepageAdGuardCombine",
+            "value": false
+        },
+        {
+            "key": "adguardQueriesToggle",
+            "value": true
+        },
+        {
+            "key": "adguardQueriesBlockedToggle",
+            "value": true
+        },
+        {
+            "key": "adguardPercentToggle",
+            "value": true
+        },
+        {
+            "key": "adguardProcessingToggle",
+            "value": true
+        },
+        {
+            "key": "adguardDomainListToggle",
+            "value": false
+        },
+        {
+            "key": "adguardHeaderToggle",
+            "value": true
+        },
+        {
+            "key": "adguardURL",
+            "value": ""
+        },
+        {
+            "key": "homepageMonitorrEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageMonitorrAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageMonitorrRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "monitorrURL",
+            "value": ""
+        },
+        {
+            "key": "monitorrHeaderToggle",
+            "value": true
+        },
+        {
+            "key": "monitorrHeader",
+            "value": "Monitorr"
+        },
+        {
+            "key": "monitorrCompact",
+            "value": false
+        },
+        {
+            "key": "monitorrDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "monitorrUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "homepageSpeedtestEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageSpeedtestAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageSpeedtestRefresh",
+            "value": "1800000"
+        },
+        {
+            "key": "speedtestURL",
+            "value": ""
+        },
+        {
+            "key": "speedtestHeaderToggle",
+            "value": true
+        },
+        {
+            "key": "speedtestHeader",
+            "value": "Speedtest"
+        },
+        {
+            "key": "speedtestDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "speedtestUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "homepageNetdataEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageNetdataRefresh",
+            "value": "10000"
+        },
+        {
+            "key": "homepageNetdataAuth",
+            "value": "1"
+        },
+        {
+            "key": "netdataDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "netdataUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "netdataURL",
+            "value": ""
+        },
+        {
+            "key": "netdata1Title",
+            "value": ""
+        },
+        {
+            "key": "netdata1Chart",
+            "value": ""
+        },
+        {
+            "key": "netdata1Data",
+            "value": ""
+        },
+        {
+            "key": "netdata1Colour",
+            "value": ""
+        },
+        {
+            "key": "netdata1Size",
+            "value": ""
+        },
+        {
+            "key": "netdata1sm",
+            "value": true
+        },
+        {
+            "key": "netdata1md",
+            "value": true
+        },
+        {
+            "key": "netdata1lg",
+            "value": true
+        },
+        {
+            "key": "netdata2Title",
+            "value": ""
+        },
+        {
+            "key": "netdata2Chart",
+            "value": ""
+        },
+        {
+            "key": "netdata2Data",
+            "value": ""
+        },
+        {
+            "key": "netdata2Colour",
+            "value": ""
+        },
+        {
+            "key": "netdata2Size",
+            "value": ""
+        },
+        {
+            "key": "netdata2sm",
+            "value": true
+        },
+        {
+            "key": "netdata2md",
+            "value": true
+        },
+        {
+            "key": "netdata2lg",
+            "value": true
+        },
+        {
+            "key": "netdata3Title",
+            "value": ""
+        },
+        {
+            "key": "netdata3Chart",
+            "value": ""
+        },
+        {
+            "key": "netdata3Data",
+            "value": ""
+        },
+        {
+            "key": "netdata3Colour",
+            "value": ""
+        },
+        {
+            "key": "netdata3Size",
+            "value": ""
+        },
+        {
+            "key": "netdata3sm",
+            "value": true
+        },
+        {
+            "key": "netdata3md",
+            "value": true
+        },
+        {
+            "key": "netdata3lg",
+            "value": true
+        },
+        {
+            "key": "netdata4Title",
+            "value": ""
+        },
+        {
+            "key": "netdata4Chart",
+            "value": ""
+        },
+        {
+            "key": "netdata4Data",
+            "value": ""
+        },
+        {
+            "key": "netdata4Colour",
+            "value": ""
+        },
+        {
+            "key": "netdata4Size",
+            "value": ""
+        },
+        {
+            "key": "netdata4sm",
+            "value": true
+        },
+        {
+            "key": "netdata4md",
+            "value": true
+        },
+        {
+            "key": "netdata4lg",
+            "value": true
+        },
+        {
+            "key": "netdata5Title",
+            "value": ""
+        },
+        {
+            "key": "netdata5Chart",
+            "value": ""
+        },
+        {
+            "key": "netdata5Data",
+            "value": ""
+        },
+        {
+            "key": "netdata5Colour",
+            "value": ""
+        },
+        {
+            "key": "netdata5Size",
+            "value": ""
+        },
+        {
+            "key": "netdata5sm",
+            "value": true
+        },
+        {
+            "key": "netdata5md",
+            "value": true
+        },
+        {
+            "key": "netdata5lg",
+            "value": true
+        },
+        {
+            "key": "netdata6Title",
+            "value": ""
+        },
+        {
+            "key": "netdata6Chart",
+            "value": ""
+        },
+        {
+            "key": "netdata6Data",
+            "value": ""
+        },
+        {
+            "key": "netdata6Colour",
+            "value": ""
+        },
+        {
+            "key": "netdata6Size",
+            "value": ""
+        },
+        {
+            "key": "netdata6sm",
+            "value": true
+        },
+        {
+            "key": "netdata6md",
+            "value": true
+        },
+        {
+            "key": "netdata6lg",
+            "value": true
+        },
+        {
+            "key": "netdata7Title",
+            "value": ""
+        },
+        {
+            "key": "netdata7Chart",
+            "value": ""
+        },
+        {
+            "key": "netdata7Data",
+            "value": ""
+        },
+        {
+            "key": "netdata7Colour",
+            "value": ""
+        },
+        {
+            "key": "netdata7Size",
+            "value": ""
+        },
+        {
+            "key": "netdata7sm",
+            "value": true
+        },
+        {
+            "key": "netdata7md",
+            "value": true
+        },
+        {
+            "key": "netdata7lg",
+            "value": true
+        },
+        {
+            "key": "netdata1Enabled",
+            "value": false
+        },
+        {
+            "key": "netdata2Enabled",
+            "value": false
+        },
+        {
+            "key": "netdata3Enabled",
+            "value": false
+        },
+        {
+            "key": "netdata4Enabled",
+            "value": false
+        },
+        {
+            "key": "netdata5Enabled",
+            "value": false
+        },
+        {
+            "key": "netdata6Enabled",
+            "value": false
+        },
+        {
+            "key": "netdata7Enabled",
+            "value": false
+        },
+        {
+            "key": "netdataCustom",
+            "value": "{}"
+        },
+        {
+            "key": "homepageOctoprintEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageOctoprintAuth",
+            "value": "1"
+        },
+        {
+            "key": "homepageOctoprintRefresh",
+            "value": "10000"
+        },
+        {
+            "key": "octoprintURL",
+            "value": ""
+        },
+        {
+            "key": "octoprintToken",
+            "value": ""
+        },
+        {
+            "key": "octoprintHeaderToggle",
+            "value": true
+        },
+        {
+            "key": "octoprintHeader",
+            "value": "Octoprint"
+        },
+        {
+            "key": "octoprintDisableCertCheck",
+            "value": false
+        },
+        {
+            "key": "octoprintUseCustomCertificate",
+            "value": false
+        },
+        {
+            "key": "githubMenuLink",
+            "value": true
+        },
+        {
+            "key": "organizrSupportMenuLink",
+            "value": true
+        },
+        {
+            "key": "organizrDocsMenuLink",
+            "value": true
+        },
+        {
+            "key": "organizrSignoutMenuLink",
+            "value": true
+        },
+        {
+            "key": "organizrFeatureRequestLink",
+            "value": true
+        },
+        {
+            "key": "breezometerToken",
+            "value": "d95ab607392d4fa5bf64bb26a5cb2a06"
+        },
+        {
+            "key": "customForgotPassText",
+            "value": ""
+        },
+        {
+            "key": "disableRecoverPass",
+            "value": false
+        },
+        {
+            "key": "expandCategoriesByDefault",
+            "value": false
+        },
+        {
+            "key": "ignoredNewsIds",
+            "value": []
+        },
+        {
+            "key": "homepageTraktEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageTraktAuth",
+            "value": "1"
+        },
+        {
+            "key": "calendarStartTrakt",
+            "value": "14"
+        },
+        {
+            "key": "calendarEndTrakt",
+            "value": "14"
+        },
+        {
+            "key": "traktClientId",
+            "value": ""
+        },
+        {
+            "key": "traktClientSecret",
+            "value": ""
+        },
+        {
+            "key": "traktAccessToken",
+            "value": ""
+        },
+        {
+            "key": "traktAccessTokenExpires",
+            "value": ""
+        },
+        {
+            "key": "traktRefreshToken",
+            "value": ""
+        },
+        {
+            "key": "autoCollapseCategories",
+            "value": false
+        },
+        {
+            "key": "autoExpandNavBar",
+            "value": true
+        },
+        {
+            "key": "defaultSettingsTab",
+            "value": "5"
+        },
+        {
+            "key": "blacklisted",
+            "value": ""
+        },
+        {
+            "key": "blacklistedMessage",
+            "value": "You have been blacklisted from this site."
+        },
+        {
+            "key": "defaultRequestService",
+            "value": "ombi"
+        },
+        {
+            "key": "easterEggs",
+            "value": true
+        },
+        {
+            "key": "allowCollapsableSideMenu",
+            "value": false
+        },
+        {
+            "key": "sideMenuCollapsed",
+            "value": false
+        },
+        {
+            "key": "collapseSideMenuOnClick",
+            "value": false
+        },
+        {
+            "key": "logLevel",
+            "value": "INFO"
+        },
+        {
+            "key": "maxLogFiles",
+            "value": "7"
+        },
+        {
+            "key": "logLiveUpdateRefresh",
+            "value": "5000"
+        },
+        {
+            "key": "logPageSize",
+            "value": "50"
+        },
+        {
+            "key": "includeDatabaseQueriesInDebug",
+            "value": false
+        },
+        {
+            "key": "externalPluginMarketplaceRepos",
+            "value": ""
+        },
+        {
+            "key": "externalThemeMarketplaceRepos",
+            "value": ""
+        },
+        {
+            "key": "githubAccessToken",
+            "value": ""
+        },
+        {
+            "key": "checkForPluginUpdate",
+            "value": true
+        },
+        {
+            "key": "checkForThemeUpdate",
+            "value": true
+        },
+        {
+            "key": "autoUpdateCronEnabled",
+            "value": false
+        },
+        {
+            "key": "autoUpdateCronSchedule",
+            "value": "@weekly"
+        },
+        {
+            "key": "autoBackupCronEnabled",
+            "value": false
+        },
+        {
+            "key": "autoBackupCronSchedule",
+            "value": "@weekly"
+        },
+        {
+            "key": "keepBackupsCountCron",
+            "value": "20"
+        },
+        {
+            "key": "backupLocation",
+            "value": ""
+        },
+        {
+            "key": "useRandomMediaImage",
+            "value": false
+        },
+        {
+            "key": "sendLogsToSlack",
+            "value": false
+        },
+        {
+            "key": "slackLogLevel",
+            "value": "WARNING"
+        },
+        {
+            "key": "slackLogWebhook",
+            "value": ""
+        },
+        {
+            "key": "slackLogWebHookChannel",
+            "value": ""
+        },
+        {
+            "key": "matchUserAgents",
+            "value": false
+        },
+        {
+            "key": "matchUserIP",
+            "value": false
+        },
+        {
+            "key": "disableHomepageModals",
+            "value": false
+        },
+        {
+            "key": "homepageUptimeKumaEnabled",
+            "value": false
+        },
+        {
+            "key": "homepageUptimeKumaAuth",
+            "value": "1"
+        },
+        {
+            "key": "uptimeKumaURL",
+            "value": ""
+        },
+        {
+            "key": "uptimeKumaToken",
+            "value": ""
+        },
+        {
+            "key": "homepageUptimeKumaRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "homepageUptimeKumaHeader",
+            "value": "Uptime Kuma"
+        },
+        {
+            "key": "homepageUptimeKumaHeaderToggle",
+            "value": true
+        },
+        {
+            "key": "homepageUptimeKumaCompact",
+            "value": true
+        },
+        {
+            "key": "homepageUptimeKumaShowLatency",
+            "value": true
+        },
+        {
+            "key": "homepagePromPageEnabled",
+            "value": false
+        },
+        {
+            "key": "promPageURL",
+            "value": ""
+        },
+        {
+            "key": "homepagePromPageRefresh",
+            "value": "60000"
+        },
+        {
+            "key": "homepagePromPageHeader",
+            "value": "Status Page"
+        },
+        {
+            "key": "homepagePromPageHeaderToggle",
+            "value": true
+        },
+        {
+            "key": "homepagePromPageCompact",
+            "value": true
+        },
+        {
+            "key": "homepagePromPageShowUptime",
+            "value": true
+        },
+        {
+            "key": "checkForUpdate",
+            "value": true
+        },
+        {
+            "key": "socksDebug",
+            "value": false
+        },
+        {
+            "key": "maxSocksDebugSize",
+            "value": 100
+        },
+        {
+            "key": "bypassLoginForLocal",
+            "value": false
+        },
+        {
+            "key": "localLoginUserId",
+            "value": "1"
+        },
+        {
+            "key": "oidcEnabled",
+            "value": false
+        },
+        {
+            "key": "oidcAutoRedirect",
+            "value": false
+        },
+        {
+            "key": "oidcAutoRedirectProvider",
+            "value": ""
+        },
+        {
+            "key": "oidcAutoRedirectLogoutUrl",
+            "value": ""
+        },
+        {
+            "key": "oidcAutoCreateUsers",
+            "value": true
+        },
+        {
+            "key": "oidcLinkExistingUsers",
+            "value": true
+        },
+        {
+            "key": "oidcDefaultGroupId",
+            "value": "4"
+        },
+        {
+            "key": "oidcGroupClaimName",
+            "value": "groups"
+        },
+        {
+            "key": "oidcGroupMappings",
+            "value": "{}"
+        },
+        {
+            "key": "oidcGroupMappingMode",
+            "value": "first"
+        },
+        {
+            "key": "oidcUpdateGroupsOnLogin",
+            "value": false
+        },
+        {
+            "key": "oidcAuthentikEnabled",
+            "value": false
+        },
+        {
+            "key": "oidcAuthentikName",
+            "value": "Authentik"
+        },
+        {
+            "key": "oidcAuthentikClientId",
+            "value": ""
+        },
+        {
+            "key": "oidcAuthentikClientSecret",
+            "value": ""
+        },
+        {
+            "key": "oidcAuthentikDiscoveryUrl",
+            "value": ""
+        },
+        {
+            "key": "oidcAuthentikScopes",
+            "value": "openid,profile,email,groups"
+        },
+        {
+            "key": "oidcAuthentikGroupClaim",
+            "value": ""
+        },
+        {
+            "key": "oidcKeycloakEnabled",
+            "value": false
+        },
+        {
+            "key": "oidcKeycloakName",
+            "value": "Keycloak"
+        },
+        {
+            "key": "oidcKeycloakClientId",
+            "value": ""
+        },
+        {
+            "key": "oidcKeycloakClientSecret",
+            "value": ""
+        },
+        {
+            "key": "oidcKeycloakDiscoveryUrl",
+            "value": ""
+        },
+        {
+            "key": "oidcKeycloakScopes",
+            "value": "openid,profile,email"
+        },
+        {
+            "key": "oidcKeycloakGroupClaim",
+            "value": ""
+        },
+        {
+            "key": "oidcPocketidEnabled",
+            "value": false
+        },
+        {
+            "key": "oidcPocketidName",
+            "value": "PocketID"
+        },
+        {
+            "key": "oidcPocketidClientId",
+            "value": ""
+        },
+        {
+            "key": "oidcPocketidClientSecret",
+            "value": ""
+        },
+        {
+            "key": "oidcPocketidDiscoveryUrl",
+            "value": ""
+        },
+        {
+            "key": "oidcPocketidScopes",
+            "value": "openid,profile,email"
+        },
+        {
+            "key": "oidcPocketidGroupClaim",
+            "value": ""
+        },
+        {
+            "key": "oidcZitadelEnabled",
+            "value": false
+        },
+        {
+            "key": "oidcZitadelName",
+            "value": "Zitadel"
+        },
+        {
+            "key": "oidcZitadelClientId",
+            "value": ""
+        },
+        {
+            "key": "oidcZitadelClientSecret",
+            "value": ""
+        },
+        {
+            "key": "oidcZitadelDiscoveryUrl",
+            "value": ""
+        },
+        {
+            "key": "oidcZitadelScopes",
+            "value": "openid,profile,email,urn:zitadel:iam:org:project:roles"
+        },
+        {
+            "key": "oidcZitadelGroupClaim",
+            "value": "urn:zitadel:iam:org:project:roles"
+        },
+        {
+            "key": "BOOKMARK-enabled",
+            "value": false
+        },
+        {
+            "key": "CHAT-enabled",
+            "value": false
+        },
+        {
+            "key": "CHAT-Auth-include",
+            "value": "1"
+        },
+        {
+            "key": "CHAT-authKey-include",
+            "value": ""
+        },
+        {
+            "key": "CHAT-appID-include",
+            "value": ""
+        },
+        {
+            "key": "CHAT-cluster-include",
+            "value": ""
+        },
+        {
+            "key": "CHAT-secret",
+            "value": ""
+        },
+        {
+            "key": "CHAT-messageLoadLimit",
+            "value": "200"
+        },
+        {
+            "key": "CHAT-userRefreshTimeout",
+            "value": "60000"
+        },
+        {
+            "key": "CHAT-newMessageSound-include",
+            "value": "plugins/sounds/default/newmessage.mp3"
+        },
+        {
+            "key": "CHAT-newMessageSoundz-include",
+            "value": "plugins/sounds/default/newmessage.mp3"
+        },
+        {
+            "key": "CHAT-useSSL",
+            "value": false
+        },
+        {
+            "key": "HEALTHCHECKS-enabled",
+            "value": false
+        },
+        {
+            "key": "HEALTHCHECKS-401-enabled",
+            "value": false
+        },
+        {
+            "key": "HEALTHCHECKS-403-enabled",
+            "value": false
+        },
+        {
+            "key": "HEALTHCHECKS-cron-run-enabled",
+            "value": false
+        },
+        {
+            "key": "HEALTHCHECKS-cron-run-schedule",
+            "value": "*/5 * * * *"
+        },
+        {
+            "key": "HEALTHCHECKS-Auth-include",
+            "value": "1"
+        },
+        {
+            "key": "HEALTHCHECKS-option2-include",
+            "value": ""
+        },
+        {
+            "key": "HEALTHCHECKS-all-items",
+            "value": ""
+        },
+        {
+            "key": "HEALTHCHECKS-PingURL",
+            "value": "https://hc-ping.com/"
+        },
+        {
+            "key": "INVITES-enabled",
+            "value": false
+        },
+        {
+            "key": "INVITES-Auth-include",
+            "value": "1"
+        },
+        {
+            "key": "INVITES-dbVersion",
+            "value": "1.0.0"
+        },
+        {
+            "key": "INVITES-type-include",
+            "value": "plex"
+        },
+        {
+            "key": "INVITES-plexLibraries",
+            "value": ""
+        },
+        {
+            "key": "INVITES-add-plex-home",
+            "value": false
+        },
+        {
+            "key": "INVITES-EmbyTemplate",
+            "value": ""
+        },
+        {
+            "key": "INVITES-plex-tv-labels",
+            "value": ""
+        },
+        {
+            "key": "INVITES-plex-music-labels",
+            "value": ""
+        },
+        {
+            "key": "INVITES-plex-movies-labels",
+            "value": ""
+        },
+        {
+            "key": "INVITES-allow-delete-include",
+            "value": false
+        },
+        {
+            "key": "INVITES-maximum-invites",
+            "value": "0"
+        },
+        {
+            "key": "INVITES-komga-enabled",
+            "value": false
+        },
+        {
+            "key": "INVITES-komga-uri",
+            "value": ""
+        },
+        {
+            "key": "INVITES-komga-api-key",
+            "value": ""
+        },
+        {
+            "key": "INVITES-komga-default-user-password",
+            "value": ""
+        },
+        {
+            "key": "INVITES-komga-roles",
+            "value": ""
+        },
+        {
+            "key": "INVITES-komga-libraryIds",
+            "value": ""
+        },
+        {
+            "key": "INVITES-nextcloud-enabled",
+            "value": false
+        },
+        {
+            "key": "INVITES-nextcloud-plex-sso",
+            "value": false
+        },
+        {
+            "key": "INVITES-nextcloud-url",
+            "value": ""
+        },
+        {
+            "key": "INVITES-nextcloud-admin-user",
+            "value": ""
+        },
+        {
+            "key": "INVITES-nextcloud-admin-password",
+            "value": ""
+        },
+        {
+            "key": "INVITES-nextcloud-groups-member",
+            "value": ""
+        },
+        {
+            "key": "INVITES-nextcloud-quota",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-enabled",
+            "value": false
+        },
+        {
+            "key": "PHPMAILER-debugTesting",
+            "value": false
+        },
+        {
+            "key": "PHPMAILER-smtpHost",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-smtpHostPort",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-smtpHostAuth",
+            "value": true
+        },
+        {
+            "key": "PHPMAILER-smtpHostUsername",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-smtpHostPassword",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-smtpHostSenderName",
+            "value": "Organizr"
+        },
+        {
+            "key": "PHPMAILER-smtpHostSenderEmail",
+            "value": "no-reply@Organizr.tld"
+        },
+        {
+            "key": "PHPMAILER-smtpHostType",
+            "value": "tls"
+        },
+        {
+            "key": "PHPMAILER-domain",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-template",
+            "value": "default"
+        },
+        {
+            "key": "PHPMAILER-logo",
+            "value": "https://raw.githubusercontent.com/causefx/Organizr/v2-develop/plugins/images/organizr/logo-wide.png"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateReset",
+            "value": "\n\t<h2>Hey there {user}!</h2><br />\n\tLooks like you forgot your password.  Well, I got you...  Here is your new password: {password}<br />\n\tIf you want to change it once you log in, you can.  Head over to my website: {domain}<br />\n\t"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateResetSubject",
+            "value": "Password Reset"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateInviteUser",
+            "value": "\n\t<h2>Hey there {user}!</h2><br />\n\tHere is the invite code to join my cool media server: {inviteCode}<br/>\n\tHead over to my website and enter the code to join: {domain}<br />\n\t"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateInviteUserSubject",
+            "value": "You have been invited to join my server"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateRegisterUser",
+            "value": "\n\t<h2>Hey there {user}!</h2><br />\n\tWelcome to my site.<br/>\n\tIf you need anything, please let me know.<br />\n\t"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateRegisterUserSubject",
+            "value": "Thank you For Registering"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateRegisterUserEnabled",
+            "value": true
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-One",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-OneName",
+            "value": "Template #1"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-OneSubject",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-Two",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-TwoName",
+            "value": "Template #2"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-TwoSubject",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-Three",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-ThreeName",
+            "value": "Template #3"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-ThreeSubject",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-Four",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-FourName",
+            "value": "Template #4"
+        },
+        {
+            "key": "PHPMAILER-emailTemplateCustom-include-FourSubject",
+            "value": ""
+        },
+        {
+            "key": "PHPMAILER-verifyCert",
+            "value": true
+        },
+        {
+            "key": "SHUCKSTOP-enabled",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-cron-run-enabled",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-cron-run-schedule",
+            "value": "*/5 * * * *"
+        },
+        {
+            "key": "SHUCKSTOP-emails",
+            "value": ""
+        },
+        {
+            "key": "SHUCKSTOP-easystore",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-my-book",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-elements",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-8",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-10",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-12",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-14",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-16",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-18",
+            "value": false
+        },
+        {
+            "key": "SHUCKSTOP-20",
+            "value": false
+        },
+        {
+            "key": "SPEEDTEST-enabled",
+            "value": false
+        },
+        {
+            "key": "SPEEDTEST-Auth-include",
+            "value": "1"
+        },
+        {
+            "key": "SPEEDTEST-option2-include",
+            "value": ""
+        }
+    ]
+}

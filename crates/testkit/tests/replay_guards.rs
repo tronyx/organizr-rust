@@ -384,3 +384,51 @@ async fn absent_key_that_the_recording_does_not_have_is_refused() {
 async fn absent_key_needs_an_approved_deviation() {
     let _ = basics().deviation_without("D-99", "rox", "/response/message");
 }
+
+#[tokio::test]
+#[should_panic(expected = "case `rox`: Body differs")]
+async fn keys_that_are_expected_in_sorted_order_fail_the_replay_in_another_order() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The application sends `result`, `message`, `data`, as PHP does.
+        let replay = basics().deviation_sorts_keys("D-21", "rox", "/response");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(
+    expected = "case `rox`: the recorded keys at `/response` are sorted; remove the marker"
+)]
+async fn sorted_keys_marker_on_keys_that_are_sorted_is_refused() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The first marker sorts the keys, so the second one finds them sorted.
+        let replay = basics()
+            .deviation_sorts_keys("D-21", "rox", "/response")
+            .deviation_sorts_keys("D-21", "rox", "/response");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "case `rox`: the recorded body has no object at `/response/message`")]
+async fn sorted_keys_marker_on_something_that_is_no_object_is_refused() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = basics().deviation_sorts_keys("D-21", "rox", "/response/message");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "D-99 is not an entry of docs/deviations.md")]
+async fn sorted_keys_need_an_approved_deviation() {
+    let _ = basics().deviation_sorts_keys("D-99", "rox", "/response");
+}

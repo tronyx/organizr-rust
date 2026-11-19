@@ -151,6 +151,27 @@ FRESH_INSTALL: list[tuple] = [
     ("launch_as_guest", "GET", "/api/v2/launch"),
     ("launch_as_guest_with_a_trailing_slash", "GET", "/api/v2/launch/"),
     ("launch_as_admin", "GET", "/api/v2/launch", {"jar": "admin"}),
+    # The answer also tells the page which cookies of other services the browser holds,
+    # which browser it is and which page it came from.
+    (
+        "launch_with_cookies_of_other_services",
+        "GET",
+        "/api/v2/launch",
+        {
+            "headers": {"User-Agent": "Mozilla/5.0 (parity)", "Referer": "http://organizr.test/?from=here"},
+            "cookies": {
+                "mpt": "plex%20token+one",
+                "Auth": "ombi-token",
+                "oAuth": "true",
+                "connect.sid": "s%3Aoverseerr",
+                "petio_jwt": "petio",
+                "jellyfin_credentials": "%7B%22Servers%22%3A1%7D",
+                "komga_token": "komga",
+                "user-12ab-34cd": "jellyfin user",
+                "other": "is not sent back",
+            },
+        },
+    ),
     ("wizard_again", "POST", "/api/v2/wizard", {"json": {**SEED, "username": "intruder"}}),
     ("wizard_again_without_fields", "POST", "/api/v2/wizard", {"json": {}}),
 ]

@@ -9,5 +9,5 @@ mod codec;
 mod registry;
 
 pub use crate::choices::{AuthType, UnsortedTabs};
-pub use crate::codec::{Choice, Codec, Flag, Text, TextChoice, TextNumber};
+pub use crate::codec::{Choice, Codec, Flag, List, Number, Secret, Text, TextChoice, TextNumber};
 pub use crate::registry::{Settings, SettingsError};

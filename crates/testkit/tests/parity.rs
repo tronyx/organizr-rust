@@ -63,19 +63,28 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
             json!("win"),
         );
     }
-    for (part, reason) in [
-        (
-            "settings",
-            "the settings of the front end are not built yet",
-        ),
-        ("plugins", "the plugins are not built yet"),
-        ("sso", "the single sign-on is not built yet"),
-    ] {
-        replay = replay.pending_at(case, &format!("/response/data/{part}"), reason);
+    // The recording of a group that changed no setting has these lists in the order of
+    // the default settings.
+    if UNSORTED_LAUNCHES.contains(&case) {
+        for list in ["settings/homepage/refresh", "plugins", "plugins/includes"] {
+            replay = replay.deviation_sorts_keys("D-50", case, &format!("/response/data/{list}"));
+        }
     }
     // There is no configuration file whose path could be sent.
     replay.deviation_without("D-29", case, "/response/data/status/userConfigPath")
 }
+
+/// The launch cases that were recorded before PHP wrote its configuration file anew.
+const UNSORTED_LAUNCHES: [&str; 5] = [
+    "launch_before_the_set_up",
+    "launch_as_guest",
+    "launch_as_guest_with_a_trailing_slash",
+    "launch_as_admin",
+    "launch_with_cookies_of_other_services",
+];
+
+/// Where the launch answer holds the tables of the PHP application, for an admin.
+const SCHEMA: &str = "/response/data/settings/misc/schema";
 
 /// The switches of a tab that PHP sends as `null` when they were never set. Here a
 /// switch is 0 or 1.
@@ -111,6 +120,7 @@ async fn fresh_install_answers_like_php() {
             "launch_as_guest",
             "launch_as_guest_with_a_trailing_slash",
             "launch_as_admin",
+            "launch_with_cookies_of_other_services",
         ] {
             replay = launch_differences(replay, case);
         }
@@ -120,7 +130,9 @@ async fn fresh_install_answers_like_php() {
         replay = replay
             .deviation("D-18", launch, "/response/data/user/token", Value::Null)
             .deviation("D-18", launch, &format!("{session}/token"), Value::Null)
-            .deviation_adds("D-18", launch, session, "current", json!(true));
+            .deviation_adds("D-18", launch, session, "current", json!(true))
+            // PHP sends the SQL text of its tables to an admin.
+            .deviation("D-50", launch, SCHEMA, json!([]));
         // The one tab an admin sees after the set-up is "Settings". The set-up of PHP
         // leaves its switches empty (`null`). Here a switch is on or off.
         for switch in TAB_SWITCHES {
@@ -355,6 +367,7 @@ async fn tab_routes_answer_like_php() {
                 "/response/data/tabs/4/access_url",
                 json!(placeholders_filled_in("")),
             );
+        replay = replay.deviation("D-50", "launch_with_tabs", SCHEMA, json!([]));
         for case in ["launch_with_tabs_as_guest", "launch_with_tabs"] {
             replay = launch_differences(replay, case).deviation_for_nulls(
                 "D-28",

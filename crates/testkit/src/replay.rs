@@ -77,6 +77,8 @@ pub struct Replay {
     null_edits: Vec<NullEdit>,
     /// Keys that the answer does not have: case and JSON pointer.
     removals: Vec<(String, String)>,
+    /// Objects whose keys the answer has in sorted order: case and JSON pointer.
+    sorted_objects: Vec<(String, String)>,
     pending_aspects: Vec<(String, Aspect)>,
     pending_cases: Vec<String>,
     /// Parts of a JSON body that are not implemented yet: case and JSON pointer.
@@ -111,6 +113,7 @@ impl Replay {
             edits: Vec::new(),
             null_edits: Vec::new(),
             removals: Vec::new(),
+            sorted_objects: Vec::new(),
             pending_aspects: Vec::new(),
             pending_cases: Vec::new(),
             pending_parts: Vec::new(),
@@ -292,12 +295,12 @@ impl Replay {
                         );
                     }
                 } else if differs {
+                    let (php, rust) =
+                        at_first_difference(&expected.show(aspect), &actual.show(aspect));
                     let _ = writeln!(
                         problems,
-                        "case `{}`: {aspect:?} differs\n  PHP:  {}\n  Rust: {}",
+                        "case `{}`: {aspect:?} differs\n  PHP:  {php}\n  Rust: {rust}",
                         case.name,
-                        expected.show(aspect),
-                        actual.show(aspect)
                     );
                 }
             }
@@ -315,6 +318,17 @@ impl Replay {
         self.pending_aspects
             .iter()
             .any(|(name, pending)| *pending == aspect && (name == case || name == EVERY_CASE))
+    }
+
+    /// Expects the keys of an object in sorted order, because of an approved deviation.
+    ///
+    /// The values stay as recorded. The recording must have the keys in another order.
+    #[must_use]
+    pub fn deviation_sorts_keys(mut self, id: &str, case: &str, pointer: &str) -> Self {
+        assert_approved(id);
+        self.sorted_objects
+            .push((case.to_owned(), pointer.to_owned()));
+        self
     }
 
     /// The recorded answer of a case, with the expectation edits applied.
@@ -336,7 +350,17 @@ impl Replay {
             .filter(|(name, _)| name == &case.name)
             .map(|(_, pointer)| pointer.as_str())
             .collect();
-        if !edits.is_empty() || !null_edits.is_empty() || !removals.is_empty() {
+        let sorted_objects: Vec<&str> = self
+            .sorted_objects
+            .iter()
+            .filter(|(name, _)| name == &case.name)
+            .map(|(_, pointer)| pointer.as_str())
+            .collect();
+        if !edits.is_empty()
+            || !null_edits.is_empty()
+            || !removals.is_empty()
+            || !sorted_objects.is_empty()
+        {
             let mut json: Value =
                 serde_json::from_str(&body).expect("a case with edits has a JSON body");
             for edit in null_edits {
@@ -349,30 +373,7 @@ impl Replay {
                 );
             }
             for edit in edits {
-                let target = json.pointer_mut(&edit.pointer).unwrap_or_else(|| {
-                    panic!(
-                        "case `{}`: the recorded body has nothing at `{}`",
-                        case.name, edit.pointer
-                    )
-                });
-                match &edit.new_key {
-                    None => *target = edit.value.clone(),
-                    Some(key) => {
-                        let object = target.as_object_mut().unwrap_or_else(|| {
-                            panic!(
-                                "case `{}`: the recorded body has no object at `{}`",
-                                case.name, edit.pointer
-                            )
-                        });
-                        let replaced = object.insert(key.clone(), edit.value.clone());
-                        assert!(
-                            replaced.is_none(),
-                            "case `{}`: the object at `{}` already has the key `{key}`",
-                            case.name,
-                            edit.pointer
-                        );
-                    }
-                }
+                edit.apply(&mut json, &case.name);
             }
             // Last, so that a key can be taken out that an edit above has put in.
             for pointer in removals {
@@ -381,6 +382,9 @@ impl Replay {
                     "case `{}`: the recorded body has nothing at `{pointer}`",
                     case.name
                 );
+            }
+            for pointer in sorted_objects {
+                sort_keys_at(&mut json, pointer, &case.name);
             }
             let bytes = organizr_api::php_json::to_vec(&json).expect("the body can be written");
             body = String::from_utf8(bytes).expect("the writer produces UTF-8");
@@ -849,4 +853,71 @@ impl RecordedCookie {
 /// The root of the repository, two levels above this crate.
 fn repository_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
+impl Edit {
+    /// Makes the change in the recorded body of the case.
+    fn apply(&self, json: &mut Value, case: &str) {
+        let target = json.pointer_mut(&self.pointer).unwrap_or_else(|| {
+            panic!(
+                "case `{case}`: the recorded body has nothing at `{}`",
+                self.pointer
+            )
+        });
+        match &self.new_key {
+            None => *target = self.value.clone(),
+            Some(key) => {
+                let object = target.as_object_mut().unwrap_or_else(|| {
+                    panic!(
+                        "case `{case}`: the recorded body has no object at `{}`",
+                        self.pointer
+                    )
+                });
+                let replaced = object.insert(key.clone(), self.value.clone());
+                assert!(
+                    replaced.is_none(),
+                    "case `{case}`: the object at `{}` already has the key `{key}`",
+                    self.pointer
+                );
+            }
+        }
+    }
+}
+
+/// Sorts the keys of the object at `pointer` in the recorded body of the case. The keys
+/// must be in another order before.
+fn sort_keys_at(json: &mut Value, pointer: &str, case: &str) {
+    let object = json
+        .pointer_mut(pointer)
+        .and_then(Value::as_object_mut)
+        .unwrap_or_else(|| panic!("case `{case}`: the recorded body has no object at `{pointer}`"));
+    let recorded: Vec<String> = object.keys().cloned().collect();
+    object.sort_keys();
+    assert!(
+        object.keys().ne(recorded.iter()),
+        "case `{case}`: the recorded keys at `{pointer}` are sorted; remove the marker"
+    );
+}
+
+/// Cuts two long texts down to the place where they first differ, with some text before
+/// and after it. A report of two long answers is then readable.
+fn at_first_difference(php: &str, rust: &str) -> (String, String) {
+    const AROUND: usize = 240;
+    if php.len().max(rust.len()) <= 2 * AROUND {
+        return (php.to_owned(), rust.to_owned());
+    }
+    let same = php
+        .chars()
+        .zip(rust.chars())
+        .take_while(|(left, right)| left == right)
+        .count();
+    let cut = |text: &str| {
+        let part: String = text
+            .chars()
+            .skip(same.saturating_sub(AROUND / 2))
+            .take(AROUND)
+            .collect();
+        format!("[from character {same}] ...{part}...")
+    };
+    (cut(php), cut(rust))
 }
