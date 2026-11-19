@@ -5,6 +5,7 @@
   import { PAGES } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
   import Login from './Login.svelte';
+  import Settings from './settings/Settings.svelte';
 
   let { content }: { content: Exclude<Content, { kind: 'frame' }> } = $props();
 </script>
@@ -12,9 +13,7 @@
 {#if content.kind === 'login'}
   <Login />
 {:else if content.kind === 'settings'}
-  <Notice title="Settings">
-    <p>The settings are not built yet.</p>
-  </Notice>
+  <Settings section={content.section} />
 {:else if content.kind === 'notAllowed'}
   <Notice title="Settings">
     <p>Only an Admin or a Co-Admin can open the settings.</p>

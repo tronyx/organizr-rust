@@ -1,0 +1,31 @@
+<script lang="ts">
+  // A dialog on top of the page. It is open as long as it is part of the page.
+  import type { Snippet } from 'svelte';
+
+  let {
+    title,
+    onclose,
+    children,
+  }: {
+    title: string;
+    /** Called when the user closes the dialog, for example with the Escape key. */
+    onclose: () => void;
+    children: Snippet;
+  } = $props();
+
+  const titleId = $props.id();
+  let dialog = $state<HTMLDialogElement>();
+
+  $effect(() => {
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+    }
+  });
+</script>
+
+<dialog class="modal" bind:this={dialog} {onclose} aria-labelledby={titleId}>
+  <div class="modal-box max-w-2xl">
+    <h2 id={titleId} class="text-lg font-bold">{title}</h2>
+    {@render children()}
+  </div>
+</dialog>

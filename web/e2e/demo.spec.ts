@@ -163,3 +163,108 @@ test('a guest sees no tab of the Admin and gets the login page', async ({ page }
   await expect(page.getByRole('navigation', { name: 'Tabs' }).getByRole('link')).toHaveCount(0);
   await expect(page.locator('iframe')).toHaveCount(0);
 });
+
+test('the Admin adds, changes, hides, moves and deletes a tab in the settings', async ({
+  page,
+}) => {
+  await logIn(page);
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await expect(page).toHaveURL(/#\/settings\/tabs$/);
+  const menu = page.getByRole('navigation', { name: 'Tabs' });
+  const status = page.getByRole('status');
+  await expect(page.getByRole('row', { name: /Rox Page/ })).toContainText('Media');
+
+  // Add.
+  await page.getByRole('button', { name: 'Add a tab' }).click();
+  const added = page.getByRole('dialog', { name: 'Add a tab' });
+  await added.getByLabel('Name').fill('Status');
+  await added.getByLabel('Address', { exact: true }).fill('/api/v2/status');
+  await added.getByRole('button', { name: 'Save' }).click();
+  await expect(status).toHaveText('The tab is added.');
+  await expect(added).toHaveCount(0);
+  await expect(menu.getByRole('link', { name: 'Status' })).toBeVisible();
+
+  // A name that another tab has is refused inside the form.
+  await page.getByRole('button', { name: 'Add a tab' }).click();
+  await added.getByLabel('Name').fill('ping');
+  await added.getByLabel('Address', { exact: true }).fill('/api/v2/ping');
+  await added.getByRole('button', { name: 'Save' }).click();
+  await expect(added.getByRole('alert')).toHaveText('Tab name: ping is already taken');
+  await added.getByRole('button', { name: 'Cancel' }).click();
+  await expect(added).toHaveCount(0);
+
+  // Change. The form shows the address as it is stored.
+  await page
+    .getByRole('row', { name: /Status/ })
+    .getByRole('button', { name: /Change/ })
+    .click();
+  const changed = page.getByRole('dialog', { name: 'Change the tab Status' });
+  await expect(changed.getByLabel('Address', { exact: true })).toHaveValue('/api/v2/status');
+  await changed.getByLabel('Name').fill('Server Status');
+  await changed.getByRole('button', { name: 'Save' }).click();
+  await expect(status).toHaveText('The tab is changed.');
+  await expect(menu.getByRole('link', { name: 'Server Status' })).toBeVisible();
+
+  // Move it one place up.
+  const names = page.getByRole('rowheader');
+  await expect(names.last()).toContainText('Server Status');
+  await page.getByLabel('Move Server Status up').click();
+  await expect(status).toHaveText('The order is changed.');
+  await expect(names.last()).not.toContainText('Server Status');
+
+  // Take it out of the menu.
+  await page.getByLabel('Show Server Status in the menu').click();
+  await expect(menu.getByRole('link', { name: 'Server Status' })).toHaveCount(0);
+
+  // Delete it.
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page
+    .getByRole('row', { name: /Server Status/ })
+    .getByRole('button', { name: /Delete/ })
+    .click();
+  await expect(status).toHaveText('The tab is deleted.');
+  await expect(page.getByRole('row', { name: /Server Status/ })).toHaveCount(0);
+});
+
+test('the Admin manages the categories, and one with tabs is not deleted', async ({ page }) => {
+  await logIn(page);
+  await page.goto('./#/settings/tabs');
+  await page.getByRole('tab', { name: 'Categories' }).click();
+  await expect(page).toHaveURL(/#\/settings\/categories$/);
+  const status = page.getByRole('status');
+  await expect(page.getByRole('row', { name: /Media/ })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Add a category' }).click();
+  const added = page.getByRole('dialog', { name: 'Add a category' });
+  await added.getByLabel('Name').fill('Books');
+  await added.getByRole('button', { name: 'Save' }).click();
+  await expect(status).toHaveText('The category is added.');
+  await expect(page.getByRole('row', { name: /Books/ })).toBeVisible();
+
+  // The category "Media" holds the tab "Rox Page".
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page
+    .getByRole('row', { name: /Media/ })
+    .getByRole('button', { name: /Delete/ })
+    .click();
+  await expect(page.getByRole('alert')).toHaveText('Category name: Media still has tabs');
+  await expect(page.getByRole('row', { name: /Media/ })).toBeVisible();
+
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page
+    .getByRole('row', { name: /Books/ })
+    .getByRole('button', { name: /Delete/ })
+    .click();
+  await expect(status).toHaveText('The category is deleted.');
+  await expect(page.getByRole('row', { name: /Books/ })).toHaveCount(0);
+});
+
+test('a user who is no Admin cannot open the settings', async ({ page }) => {
+  await page.goto('./#/settings/tabs');
+
+  // A guest is asked to log in, and the API refuses the data of the editor.
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  const refused = await page.request.get('./api/v2/tabs');
+  expect(refused.status()).toBe(401);
+});
