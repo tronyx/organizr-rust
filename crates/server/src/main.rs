@@ -2,6 +2,7 @@
 
 mod healthcheck;
 mod serve;
+mod web;
 
 use clap::{Parser, Subcommand};
 

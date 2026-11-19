@@ -71,3 +71,98 @@ jobs:
 
       - name: Run cargo-deny
         uses: EmbarkStudios/cargo-deny-action@v2.1.2
+
+  web:
+    name: Web interface (format, types, lint, test and build)
+    runs-on: ubuntu-26.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Node
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 26.13.1
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install the packages named in package-lock.json
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Check the types with warnings as errors
+        run: npm run check
+
+      - name: Run ESLint with warnings as errors
+        run: npm run lint
+
+      - name: Run the tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  browser:
+    name: Browser tests against the real server
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        run: rustup toolchain install
+
+      - name: Cache the cargo registry and build output
+        uses: Swatinem/rust-cache@v2.9.3
+
+      - name: Install Node
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 26.13.1
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install the packages named in package-lock.json
+        working-directory: web
+        run: npm ci
+
+      - name: Build the web interface
+        working-directory: web
+        run: npm run build
+
+      # The other job lints and tests the server without the interface. The code that
+      # hands out the built interface is compiled only with this feature.
+      - name: Run clippy on the server with the interface built in
+        run: cargo clippy -p organizr --features embedded-web --all-targets --locked -- -D warnings
+
+      - name: Test the server with the interface built in
+        run: cargo test -p organizr --features embedded-web --locked
+
+      - name: Build the server with the interface built in
+        run: cargo build -p organizr --features embedded-web --locked
+
+      - name: Install the browser
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the browser tests
+        working-directory: web
+        run: npm run e2e
+
+      - name: Keep the report of failed browser tests
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: playwright-report
+          path: web/playwright-report/
+          retention-days: 7
+

@@ -2,7 +2,7 @@ name: build
 
 # Builds the image for both architectures and tests that it starts. Nothing is pushed yet.
 # It runs only when a file that changes the image changes (the Dockerfile, the source code
-# or the dependencies), and on request.
+# of the server or of the web interface, or the dependencies), and on request.
 on:
   push:
     branches:
@@ -11,6 +11,7 @@ on:
     paths:
       - docker/**
       - crates/**
+      - web/**
       - .dockerignore
       - Cargo.toml
       - Cargo.lock
@@ -23,6 +24,7 @@ on:
     paths:
       - docker/**
       - crates/**
+      - web/**
       - .dockerignore
       - Cargo.toml
       - Cargo.lock
@@ -133,6 +135,14 @@ jobs:
           answer=$(curl --silent --fail http://127.0.0.1:8080/api/v2/ping | tr -d '[:space:]')
           echo "${answer}"
           [[ "${answer}" == '{"response":{"result":"success","message":null,"data":"pong"}}' ]]
+
+          echo "The server hands out the web interface with its security policy"
+          page=$(curl --silent --fail --dump-header page-headers.txt http://127.0.0.1:8080/)
+          grep --ignore-case "^content-security-policy: default-src 'self'; script-src 'self';" page-headers.txt
+          [[ "${page}" == *'<div id="app">'* ]]
+          script=$(sed -n 's/.*src="\.\/\(assets\/[^"]*\.js\)".*/\1/p' <<< "${page}")
+          echo "${script}"
+          curl --silent --fail --output /dev/null "http://127.0.0.1:8080/${script}"
 
           echo "The server stops cleanly when asked"
           docker stop --time 10 organizr-smoke

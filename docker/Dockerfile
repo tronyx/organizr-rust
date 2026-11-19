@@ -5,9 +5,26 @@ ARG BUILDKIT_SBOM_SCAN_STAGE=true
 # Multi-arch index digests, so the same value works for amd64 and arm64.
 # The Rust version must match rust-toolchain.toml; the build workflow checks it.
 ARG RUST_IMAGE=rust:1.100.0-slim-trixie@sha256:6f14b2b4b278ec0d50aa1d69541c304ce0f95e0f6268487aa9924af1c2e9aebe
+# Builds the web interface. Its files end up inside the binary, so this image is no
+# part of the final image.
+ARG NODE_IMAGE=node:26.13.1-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc
 # glibc and libgcc only, no shell and no package manager.
 # Debian 13, like the builder, so the binary finds the glibc it was linked against.
 ARG RUNTIME_IMAGE=gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2
+
+############################
+# Web stage: build the web interface
+############################
+FROM ${NODE_IMAGE} AS web
+
+WORKDIR /web
+
+# The list of packages first, so this layer is reused until the list changes.
+COPY web/package.json web/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm,sharing=locked     npm ci
+
+COPY web ./
+RUN npm run build
 
 ############################
 # Builder stage: compile the organizr binary
@@ -16,9 +33,11 @@ FROM ${RUST_IMAGE} AS builder
 
 WORKDIR /build
 
-# The build context holds only these (see .dockerignore).
+# The build context holds only these and the folder `web` (see .dockerignore).
 COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
+# The built interface, where the server crate looks for it.
+COPY --from=web /web/dist ./web/dist
 
 # The whole workspace is built, not only the binary, so that a crate that stops compiling
 # on one architecture fails the image build at once.
@@ -26,7 +45,7 @@ COPY crates ./crates
 # The binary is copied out because a cache mount is not part of the image layer.
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/build/target,sharing=locked \
-    cargo build --release --locked --workspace \
+    cargo build --release --locked --workspace --features organizr/embedded-web \
     && cp target/release/organizr /organizr \
     && mkdir /config
 

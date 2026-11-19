@@ -66,7 +66,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         );
         state = state.with_setup_code(code);
     }
-    let app = router(state).context("the route table is not valid")?;
+    // A request for a file of the web interface is answered before it reaches the API.
+    let app = router(state)
+        .context("the route table is not valid")?
+        .layer(axum::middleware::from_fn(crate::web::serve_files));
 
     let listener = TcpListener::bind(args.listen)
         .await
