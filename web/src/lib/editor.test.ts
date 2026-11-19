@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { asSwitch, inMenuOrder, placesAfterMove } from './editor';
+import { asSwitch, inMenuOrder, isFixedGroup, placesAfterMove } from './editor';
 
 describe('inMenuOrder', () => {
   it('sorts by place, and by id for the same place', () => {
@@ -48,5 +48,14 @@ describe('asSwitch', () => {
   it('is 1 for on and 0 for off', () => {
     expect(asSwitch(true)).toBe(1);
     expect(asSwitch(false)).toBe(0);
+  });
+});
+
+describe('isFixedGroup', () => {
+  it('is true for the groups of the Admin and of guests only', () => {
+    expect(isFixedGroup({ group_id: 0 })).toBe(true);
+    expect(isFixedGroup({ group_id: 999 })).toBe(true);
+    expect(isFixedGroup({ group_id: 1 })).toBe(false);
+    expect(isFixedGroup({ group_id: 998 })).toBe(false);
   });
 });

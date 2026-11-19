@@ -4,11 +4,14 @@
 
 import type { MenuTab } from './types';
 
+/** The parts of the settings. */
+export type SettingsSection = 'tabs' | 'categories' | 'groups';
+
 export type Route =
   | { page: 'home' }
   | { page: 'login' }
   | { page: 'register' }
-  | { page: 'settings'; section: 'tabs' | 'categories' }
+  | { page: 'settings'; section: SettingsSection }
   /** A tab, by its name as the address writes it. */
   | { page: 'tab'; name: string };
 
@@ -19,6 +22,7 @@ export const PAGES = {
   register: '#/register',
   tabSettings: '#/settings/tabs',
   categorySettings: '#/settings/categories',
+  groupSettings: '#/settings/groups',
 } as const;
 
 /** Reads the part of an address from the `#` on. */
@@ -46,6 +50,8 @@ export function parseRoute(hash: string): Route {
       return { page: 'settings', section: 'tabs' };
     case '/settings/categories':
       return { page: 'settings', section: 'categories' };
+    case '/settings/groups':
+      return { page: 'settings', section: 'groups' };
     default:
       return { page: 'home' };
   }

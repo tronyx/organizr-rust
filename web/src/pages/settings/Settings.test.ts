@@ -63,7 +63,7 @@ const LAUNCH: CannedAnswer = {
 type Answers = Record<string, CannedAnswer | ((request: SentRequest) => CannedAnswer)>;
 
 /** Shows the settings on a stand-in for the API, and waits for the table. */
-async function show(section: 'tabs' | 'categories', answers: Answers = {}) {
+async function show(section: 'tabs' | 'categories' | 'groups', answers: Answers = {}) {
   const sent = stubApi({ 'GET tabs': { data: DATA }, 'GET launch': LAUNCH, ...answers });
   render(Settings, { section });
   await screen.findByRole('table');
@@ -322,6 +322,102 @@ describe('Settings, categories', () => {
     );
     expect(screen.getByRole('status').textContent).toBe('');
     expect(changes(sent)).toEqual([['DELETE categories/2', undefined]]);
+  });
+});
+
+describe('Settings, groups', () => {
+  it('lists the groups with their level, and marks the group for new users', async () => {
+    await show('groups');
+
+    const rows = screen.getAllByRole('row').slice(1);
+    expect(rows.map((row) => within(row).getByRole('rowheader').textContent?.trim())).toEqual([
+      'A Admin',
+      'C Co-Admin',
+      'U User',
+      'G Guest',
+    ]);
+    expect(within(rowOf('Guest')).getByRole('cell', { name: '999' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Put new users into User')).toBeChecked();
+  });
+
+  it('does not offer to delete the fixed groups or to put new users into them', async () => {
+    await show('groups');
+
+    for (const name of ['Admin', 'Guest']) {
+      // The whole name, because "Admin" is also a part of "Co-Admin".
+      const row = rowOf(`^${name}$`);
+      expect(within(row).getByRole('button', { name: /Delete/ })).toBeDisabled();
+      expect(screen.getByLabelText(`Put new users into ${name}`)).toBeDisabled();
+      expect(within(row).getByRole('button', { name: /Change/ })).toBeEnabled();
+    }
+    expect(within(rowOf('Co-Admin')).getByRole('button', { name: /Delete/ })).toBeEnabled();
+    expect(screen.getByLabelText('Put new users into Co-Admin')).toBeEnabled();
+  });
+
+  it('adds a group', async () => {
+    const sent = await show('groups', { 'POST groups': { message: 'Group added' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add a group' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Add a group' });
+    await fireEvent.input(within(dialog).getByLabelText('Name'), { target: { value: 'Editors' } });
+    await fireEvent.input(within(dialog).getByLabelText('Picture'), {
+      target: { value: 'https://example.com/editors.png' },
+    });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await statusSays('The group is added.');
+    expect(changes(sent)).toEqual([
+      ['POST groups', { group: 'Editors', image: 'https://example.com/editors.png' }],
+    ]);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('changes a group, and shows a refusal inside the form', async () => {
+    const sent = await show('groups', {
+      'PUT groups/2': { status: 409, message: 'Group name: User is already taken' },
+    });
+
+    await fireEvent.click(within(rowOf('Co-Admin')).getByRole('button', { name: /Change/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Change the group Co-Admin' });
+    expect(within(dialog).getByLabelText('Name')).toHaveValue('Co-Admin');
+    await fireEvent.input(within(dialog).getByLabelText('Name'), { target: { value: 'User' } });
+    await fireEvent.input(within(dialog).getByLabelText('Picture'), { target: { value: 'c.png' } });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'Group name: User is already taken',
+    );
+    expect(changes(sent)).toEqual([['PUT groups/2', { group: 'User', image: 'c.png' }]]);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('puts new users into another group', async () => {
+    const sent = await show('groups', { 'PUT groups/2': { message: 'Group info updated' } });
+
+    await fireEvent.click(screen.getByLabelText('Put new users into Co-Admin'));
+
+    await statusSays('The group is changed.');
+    expect(changes(sent)).toEqual([['PUT groups/2', { default: 1 }]]);
+  });
+
+  it('deletes a group only after the user said yes, and shows a refusal', async () => {
+    const sent = await show('groups', {
+      'DELETE groups/5': {
+        status: 409,
+        message: 'Cannot delete group as group still has users assigned to it',
+      },
+    });
+    const ask = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+
+    await fireEvent.click(within(rowOf('User')).getByRole('button', { name: /Delete/ }));
+    expect(changes(sent)).toEqual([]);
+    await fireEvent.click(within(rowOf('User')).getByRole('button', { name: /Delete/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Cannot delete group as group still has users assigned to it',
+    );
+    expect(ask).toHaveBeenCalledWith('Delete the group User?');
+    expect(changes(sent)).toEqual([['DELETE groups/5', undefined]]);
   });
 });
 

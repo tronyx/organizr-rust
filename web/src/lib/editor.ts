@@ -1,4 +1,4 @@
-// Helpers for the editors of tabs and categories.
+// Helpers for the editors of tabs, categories and groups.
 
 /** A record with a place in the menu. */
 export interface Placed {
@@ -32,4 +32,16 @@ export function placesAfterMove(items: Placed[], index: number, step: -1 | 1): P
 /** A switch as the API takes it. */
 export function asSwitch(on: boolean): 0 | 1 {
   return on ? 1 : 0;
+}
+
+/** The levels of the two groups that every install has and keeps. */
+const ADMIN_LEVEL = 0;
+const GUEST_LEVEL = 999;
+
+/**
+ * Whether a group is one of the two that every install keeps: the group of the Admin and
+ * the group of guests. Such a group cannot be deleted, and new users never join it.
+ */
+export function isFixedGroup(group: { group_id: number }): boolean {
+  return group.group_id === ADMIN_LEVEL || group.group_id === GUEST_LEVEL;
 }

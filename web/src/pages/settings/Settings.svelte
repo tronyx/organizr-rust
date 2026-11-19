@@ -1,15 +1,16 @@
 <script lang="ts">
-  // The settings: the editors for tabs and for categories.
+  // The settings: the editors for tabs, for categories and for groups.
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
-  import { PAGES } from '../../lib/route.svelte';
+  import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
   import type { EditorData } from '../../lib/types';
   import CategoriesEditor from './CategoriesEditor.svelte';
+  import GroupsEditor from './GroupsEditor.svelte';
   import TabsEditor from './TabsEditor.svelte';
 
-  let { section }: { section: 'tabs' | 'categories' } = $props();
+  let { section }: { section: SettingsSection } = $props();
 
   let data = $state<EditorData | null>(null);
   let loadError = $state<string | null>(null);
@@ -67,6 +68,15 @@
     >
       Categories
     </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'groups'}
+      aria-selected={section === 'groups'}
+      href={PAGES.groupSettings}
+    >
+      Groups
+    </a>
   </div>
 
   <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
@@ -74,8 +84,10 @@
   {#if data}
     {#if section === 'tabs'}
       <TabsEditor {data} {change} />
-    {:else}
+    {:else if section === 'categories'}
       <CategoriesEditor {data} {change} />
+    {:else}
+      <GroupsEditor {data} {change} />
     {/if}
   {:else if loadError}
     <div role="alert" class="alert alert-error">

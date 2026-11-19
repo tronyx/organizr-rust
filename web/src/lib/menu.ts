@@ -1,6 +1,6 @@
 // The menu of tabs and categories, and what the main area shows for an address.
 
-import { findTab, type Route } from './route.svelte';
+import { findTab, type Route, type SettingsSection } from './route.svelte';
 import type { MenuCategory, MenuTab, UnsortedPlace } from './types';
 
 /** The number of the category whose tabs stand in the menu without a heading. */
@@ -69,7 +69,7 @@ export function startTab(tabs: MenuTab[]): MenuTab | undefined {
 export type Content =
   | { kind: 'login' }
   | { kind: 'register' }
-  | { kind: 'settings'; section: 'tabs' | 'categories' }
+  | { kind: 'settings'; section: SettingsSection }
   /** The settings, for a caller who may not manage the install. */
   | { kind: 'notAllowed' }
   /** A tab that shows another application in a frame. */

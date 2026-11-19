@@ -264,6 +264,60 @@ test('the Admin manages the categories, and one with tabs is not deleted', async
   await expect(page.getByRole('row', { name: /Books/ })).toHaveCount(0);
 });
 
+test('the Admin manages the groups, and the group for new users is not deleted', async ({
+  page,
+}) => {
+  await logIn(page);
+  await page.goto('./#/settings/tabs');
+  await page.getByRole('tab', { name: 'Groups' }).click();
+  await expect(page).toHaveURL(/#\/settings\/groups$/);
+  const status = page.getByRole('status');
+  await expect(page.getByRole('row', { name: /Guest/ })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Add a group' }).click();
+  const added = page.getByRole('dialog', { name: 'Add a group' });
+  await added.getByLabel('Name').fill('Editors');
+  await added.getByLabel('Picture').fill('https://example.com/editors.png');
+  await added.getByRole('button', { name: 'Save' }).click();
+  await expect(status).toHaveText('The group is added.');
+  // The server gives the new group the level after "User", which has the level 4.
+  await expect(
+    page
+      .getByRole('row', { name: /Editors/ })
+      .getByRole('cell')
+      .first(),
+  ).toHaveText('5');
+
+  await page
+    .getByRole('row', { name: /Editors/ })
+    .getByRole('button', { name: /Change/ })
+    .click();
+  const changed = page.getByRole('dialog', { name: 'Change the group Editors' });
+  await changed.getByLabel('Name').fill('User');
+  await changed.getByRole('button', { name: 'Save' }).click();
+  await expect(changed.getByRole('alert')).toHaveText('Group name: User is already taken');
+  await changed.getByLabel('Name').fill('Writers');
+  await changed.getByRole('button', { name: 'Save' }).click();
+  await expect(status).toHaveText('The group is changed.');
+
+  // New users join the group "User". The server keeps that group.
+  const user = page.getByRole('row', { name: /^User/ });
+  await expect(page.getByLabel('Put new users into User')).toBeChecked();
+  page.once('dialog', (dialog) => void dialog.accept());
+  await user.getByRole('button', { name: /Delete/ }).click();
+  await expect(page.getByRole('alert')).toHaveText(
+    'Cannot delete group: User as it is the default group',
+  );
+
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page
+    .getByRole('row', { name: /Writers/ })
+    .getByRole('button', { name: /Delete/ })
+    .click();
+  await expect(status).toHaveText('The group is deleted.');
+  await expect(page.getByRole('row', { name: /Writers/ })).toHaveCount(0);
+});
+
 test('a guest cannot open the settings', async ({ page }) => {
   await page.goto('./#/settings/tabs');
 
