@@ -60,8 +60,39 @@ test('the wizard refuses a wrong set-up code and takes the right one', async ({ 
   await page.getByLabel('Set-up code').fill(setupCode());
   await page.getByRole('button', { name: 'Set up' }).click();
 
-  // The install is set up, and the wizard is gone.
-  await expect(page.getByText('The server is running.')).toBeVisible();
+  // The install is set up, the wizard is gone, and the new Admin is logged in.
+  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
   await page.reload();
-  await expect(page.getByText('The server is running.')).toBeVisible();
+  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+});
+
+test('the Admin logs out and sees the login page', async ({ page }) => {
+  await page.goto('./');
+  // The set-up logged the Admin in. This test has a browser of its own, so it logs in.
+  await page.getByLabel('User name or e-mail address').fill(ADMIN.username);
+  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('button', { name: 'Log in' }).click();
+  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('button', { name: 'Log out' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await expect(page.getByLabel('Menu of the user')).toHaveCount(0);
+});
+
+test('the login refuses a wrong password and takes the right one', async ({ page }) => {
+  await page.goto('./#/login');
+  await page.getByLabel('User name or e-mail address').fill(ADMIN.email);
+  await page.getByLabel('Password').fill('not the password');
+  await page.getByRole('button', { name: 'Log in' }).click();
+  await expect(page.getByRole('alert')).toHaveText('User credentials incorrect');
+
+  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('button', { name: 'Log in' }).click();
+
+  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+  // The login lasts: the cookie of the session is sent again after a reload.
+  await page.reload();
+  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
 });
