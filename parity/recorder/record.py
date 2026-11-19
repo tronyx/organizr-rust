@@ -104,6 +104,10 @@ REDACTED_KEYS = {
     "date": "<time>",
     "created": "<time>",
     "expires": "<time>",
+    # The hash of a password, which has a new random part on every recording, and the
+    # time at which a user was stored.
+    "password": "<password hash>",
+    "register_date": "<time>",
 }
 REDACTIONS = tuple(
     (key, re.compile(r'("%s": ")[^"\\]+(")' % re.escape(key)), placeholder)
@@ -901,6 +905,98 @@ CATEGORIES = [
 
 # Requests that show which route the PHP router chooses. The Rust router must choose the
 # same one. Keep in step with ROUTING_CASES in crates/api/tests/slim_routes.rs.
+# The group routes. A fresh install has the groups Admin (id 1, level 0), Co-Admin (2, 1),
+# Super User (3, 2), Power User (4, 3), User (5, 4, the default group) and Guest (6, 999).
+# The groups that the cases add get the ids from 7 on, in the order of the cases. The last
+# cases delete them again, so that the install is as the cases found it.
+#
+# Requests that PHP takes and the Rust application refuses are not recorded, because the
+# two installs would differ from there on. `docs/deviations.md` describes them.
+GROUPS_PATH = "/api/v2/groups"
+EDITORS = {"group": "Editors", "image": "plugins/images/groups/editors.png"}
+GROUPS = [
+    # Reading.
+    ("groups_as_guest", "GET", GROUPS_PATH),
+    admin_case("groups", "GET", GROUPS_PATH),
+    admin_case("groups_with_users", "GET", GROUPS_PATH + "?includeUsers"),
+    ("group_as_guest", "GET", GROUPS_PATH + "/5"),
+    admin_case("group", "GET", GROUPS_PATH + "/5"),
+    admin_case("group_unknown", "GET", GROUPS_PATH + "/99"),
+    admin_case("group_with_an_id_that_is_no_number", "GET", GROUPS_PATH + "/abc"),
+    # Adding: what is refused.
+    ("add_as_guest", "POST", GROUPS_PATH, {"json": EDITORS}),
+    admin_case("add_without_a_body", "POST", GROUPS_PATH),
+    admin_case("add_empty_object", "POST", GROUPS_PATH, {}),
+    admin_case("add_json_list", "POST", GROUPS_PATH, ["Editors"]),
+    admin_case("add_unknown_fields_only", "POST", GROUPS_PATH, {"nothing": 1}),
+    admin_case("add_without_name", "POST", GROUPS_PATH, {"image": "i"}),
+    admin_case("add_without_image", "POST", GROUPS_PATH, {"group": "Editors"}),
+    admin_case("add_with_empty_image", "POST", GROUPS_PATH, {"group": "Editors", "image": ""}),
+    admin_case("add_name_too_long", "POST", GROUPS_PATH, {**EDITORS, "group": "x" * 51}),
+    admin_case("add_name_of_a_seeded_group", "POST", GROUPS_PATH, {**EDITORS, "group": "user"}),
+    # Adding: id 7 with level 5, and what follows from it.
+    admin_case("add", "POST", GROUPS_PATH, EDITORS),
+    admin_case("add_name_taken", "POST", GROUPS_PATH, EDITORS),
+    admin_case("add_name_taken_in_another_letter_case", "POST", GROUPS_PATH, {**EDITORS, "group": "EDITORS"}),
+    # The level is the highest level below Guest plus one, whatever the request says (id 8).
+    admin_case("add_with_a_level", "POST", GROUPS_PATH, {"group": "Numbered", "image": "i", "group_id": 50}),
+    admin_case("add_name_of_50_characters", "POST", GROUPS_PATH, {"group": "y" * 50, "image": "i"}),
+    admin_case("add_with_spaces_around_name_and_image", "POST", GROUPS_PATH, {"group": "  Spaced  ", "image": "  i  "}),
+    admin_case("add_with_null_as_default", "POST", GROUPS_PATH, {"group": "Nulls", "image": "i", "default": None}),
+    admin_case("add_with_markup_in_the_name", "POST", GROUPS_PATH, {"group": "<b>Bold</b> & co", "image": "a&b.png"}),
+    admin_case("groups_after_adding", "GET", GROUPS_PATH),
+    admin_case("group_added", "GET", GROUPS_PATH + "/7"),
+    # A new group as the default group (id 13), and the group User as the default again.
+    admin_case("add_as_default", "POST", GROUPS_PATH, {"group": "Starters", "image": "i", "default": 1}),
+    admin_case("groups_after_adding_a_default", "GET", GROUPS_PATH),
+    admin_case("change_default_back_to_user", "PUT", GROUPS_PATH + "/5", {"default": 1}),
+    admin_case("groups_after_the_default_is_back", "GET", GROUPS_PATH),
+    # Changing.
+    ("change_as_guest", "PUT", GROUPS_PATH + "/7", {"json": {"group": "Writers"}}),
+    admin_case("change_without_a_body", "PUT", GROUPS_PATH + "/7"),
+    admin_case("change_empty_object", "PUT", GROUPS_PATH + "/7", {}),
+    admin_case("change_unknown_id", "PUT", GROUPS_PATH + "/99", {"group": "Writers"}),
+    admin_case("change_id_zero", "PUT", GROUPS_PATH + "/0", {"group": "Writers"}),
+    admin_case("change_unknown_fields_only", "PUT", GROUPS_PATH + "/7", {"nothing": 1}),
+    admin_case("change_name", "PUT", GROUPS_PATH + "/7", {"group": "Writers"}),
+    admin_case("change_name_to_empty", "PUT", GROUPS_PATH + "/7", {"group": ""}),
+    admin_case("change_name_taken", "PUT", GROUPS_PATH + "/7", {"group": "User"}),
+    admin_case("change_name_to_its_own", "PUT", GROUPS_PATH + "/7", {"group": "Writers"}),
+    admin_case("change_name_to_its_own_in_another_letter_case", "PUT", GROUPS_PATH + "/7", {"group": "WRITERS"}),
+    admin_case("change_name_too_long", "PUT", GROUPS_PATH + "/7", {"group": "x" * 51}),
+    admin_case("change_image", "PUT", GROUPS_PATH + "/7", {"image": "new.png"}),
+    admin_case("change_image_to_empty", "PUT", GROUPS_PATH + "/7", {"image": ""}),
+    admin_case("change_level", "PUT", GROUPS_PATH + "/7", {"group_id": 3}),
+    admin_case("change_level_to_its_own", "PUT", GROUPS_PATH + "/7", {"group_id": 5}),
+    # PHP changes the row id when the request has another one. This request has the same.
+    admin_case("change_with_its_own_row_id", "PUT", GROUPS_PATH + "/7", {"id": 7, "image": "again.png"}),
+    admin_case("change_name_and_image", "PUT", GROUPS_PATH + "/7", {"group": "  Authors ", "image": " both.png "}),
+    admin_case("change_default_on", "PUT", GROUPS_PATH + "/7", {"default": 1}),
+    admin_case("groups_after_a_new_default", "GET", GROUPS_PATH),
+    admin_case("change_default_on_again", "PUT", GROUPS_PATH + "/7", {"default": True}),
+    admin_case("change_default_of_admin", "PUT", GROUPS_PATH + "/1", {"default": 1}),
+    admin_case("change_default_of_guest", "PUT", GROUPS_PATH + "/6", {"default": 0}),
+    admin_case("change_name_of_admin", "PUT", GROUPS_PATH + "/1", {"group": "Owner"}),
+    admin_case("change_name_of_admin_back", "PUT", GROUPS_PATH + "/1", {"group": "Admin"}),
+    admin_case("groups_after_changing", "GET", GROUPS_PATH),
+    # Deleting.
+    ("delete_as_guest", "DELETE", GROUPS_PATH + "/7"),
+    admin_case("delete_admin", "DELETE", GROUPS_PATH + "/1"),
+    admin_case("delete_guest", "DELETE", GROUPS_PATH + "/6"),
+    admin_case("delete_group_with_users", "DELETE", GROUPS_PATH + "/5"),
+    # The group User is the default again, so that the new group can go.
+    admin_case("change_default_back_to_user_again", "PUT", GROUPS_PATH + "/5", {"default": 1}),
+    admin_case("delete", "DELETE", GROUPS_PATH + "/7"),
+    admin_case("group_deleted", "GET", GROUPS_PATH + "/7"),
+    admin_case("groups_after_deleting", "GET", GROUPS_PATH),
+    # The level of a deleted group is free again (id 14 gets level 11 or lower).
+    admin_case("add_after_deleting", "POST", GROUPS_PATH, {"group": "Late", "image": "i"}),
+    admin_case("group_added_after_deleting", "GET", GROUPS_PATH + "/14"),
+    # Clean-up: the other new groups go.
+    *[admin_case(f"clean_up_group_{id}", "DELETE", f"{GROUPS_PATH}/{id}") for id in range(8, 15)],
+    admin_case("groups_at_the_end", "GET", GROUPS_PATH),
+]
+
 ROUTING = [
     ("GET", "/api/v2"),
     ("GET", "/api/v2/"),
@@ -1179,8 +1275,10 @@ def main():
     record("routing", routing, php_version)
 
     # Last, because these groups change the tabs and categories that other groups see.
-    # The category group leaves the install as it found it, for the tab group.
+    # The category group and the group for groups leave the install as they found it,
+    # for the tab group.
     record("categories", named(CATEGORIES), php_version)
+    record("groups", named(GROUPS), php_version)
     record("tabs", named(TABS), php_version)
 
 

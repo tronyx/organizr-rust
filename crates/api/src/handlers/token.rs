@@ -150,7 +150,7 @@ impl SessionEntry for SessionRow {
 }
 
 /// A time as the PHP application stores it: `2026-11-18 19:02:06`, in UTC.
-fn date_and_time(time: Timestamp) -> String {
+pub(crate) fn date_and_time(time: Timestamp) -> String {
     jiff::Timestamp::from_second(time.unix_seconds()).map_or_else(
         |_| String::new(),
         |time| time.strftime("%Y-%m-%d %H:%M:%S").to_string(),

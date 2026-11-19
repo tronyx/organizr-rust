@@ -29,6 +29,15 @@ impl<'a> Users<'a> {
         insert_in(self.connection, new).await
     }
 
+    /// All users, in the order in which they were stored.
+    pub async fn list(&self) -> Result<Vec<User>, DbError> {
+        let rows = user::Entity::find()
+            .order_by_asc(user::Column::Id)
+            .all(self.connection)
+            .await?;
+        Ok(rows.into_iter().map(User::from).collect())
+    }
+
     /// How many users there are.
     pub async fn count(&self) -> Result<u64, DbError> {
         Ok(user::Entity::find().count(self.connection).await?)

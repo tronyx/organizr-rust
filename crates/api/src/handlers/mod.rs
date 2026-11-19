@@ -3,6 +3,7 @@
 pub mod basics;
 pub mod categories;
 pub mod fields;
+pub mod groups;
 pub mod launch;
 pub mod launch_settings;
 pub mod login;
@@ -10,4 +11,5 @@ pub mod logout;
 pub mod register;
 pub mod tabs;
 pub mod token;
+pub mod users;
 pub mod wizard;

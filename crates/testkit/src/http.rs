@@ -105,3 +105,36 @@ pub fn request(method: &str, path: &str, headers: &[(&str, &str)], body: &str) -
         .body(Body::from(body.to_owned()))
         .expect("the request is valid")
 }
+
+/// Who sends a request.
+#[derive(Debug, Clone, Copy)]
+pub enum As<'a> {
+    /// Nobody: no cookie and no key.
+    Guest,
+    /// A script with the API key of the seed, which counts as the Admin.
+    Admin,
+    /// A logged-in user, by the session cookie.
+    User(&'a str),
+}
+
+/// Sends a request to the API. `path` is the path below `/api/v2`. A body is sent as JSON.
+pub async fn call(
+    app: &Router,
+    who: As<'_>,
+    method: &str,
+    path: &str,
+    body: Option<Value>,
+) -> Answer {
+    let mut headers: Vec<(&str, &str)> = Vec::new();
+    match who {
+        As::Guest => {}
+        As::Admin => headers.push(("token", crate::seed::API_KEY)),
+        As::User(cookie) => headers.push(("cookie", cookie)),
+    }
+    let text = body.as_ref().map_or_default(Value::to_string);
+    if body.is_some() {
+        headers.push(("content-type", "application/json"));
+    }
+    let path = format!("/api/v2{path}");
+    send(app, request(method, &path, &headers, &text)).await
+}

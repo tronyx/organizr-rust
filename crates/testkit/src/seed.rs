@@ -1,7 +1,8 @@
 //! Puts a database into a state the recorded cases start from.
 
+use organizr_auth::install::gravatar;
 use organizr_db::{Database, NewInstall};
-use organizr_domain::{NewSession, PasswordHash, SessionTokenHash, Timestamp};
+use organizr_domain::{NewSession, NewUser, PasswordHash, SessionTokenHash, Timestamp};
 
 /// The set-up code of the applications that the test helpers build. A real server makes
 /// a random one at each start.
@@ -86,4 +87,79 @@ pub async fn installed(database: &Database) {
         })
         .await
         .expect("the install can be set up");
+}
+
+/// The users that the recorded group `register` leaves behind, with the name and the
+/// e-mail address of each: the ids 2 to 5, all in the group "User".
+pub const REGISTERED_USERS: [(&str, &str); 4] = [
+    (
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy@example.com",
+    ),
+    ("zoe", "zoe@example.com"),
+    ("Yan", "Yan@Example.com"),
+    ("form", "form@example.com"),
+];
+
+/// Stores [`REGISTERED_USERS`]. Call it after [`installed`], for the replay of a group
+/// that the recorder runs after the group `register`.
+pub async fn registered_users(database: &Database) {
+    let group = database
+        .groups()
+        .find_default()
+        .await
+        .expect("the lookup works")
+        .expect("the install has a default group");
+    for (username, email) in REGISTERED_USERS {
+        database
+            .users()
+            .insert(NewUser {
+                username: username.to_owned(),
+                email: Some(email.to_owned()),
+                // Nobody logs in as one of these users.
+                password_hash: PasswordHash::new(ADMIN_PASSWORD_HASH.to_owned()),
+                group: group.id,
+                image: Some(gravatar(email)),
+                created_at: Timestamp::from_unix_seconds(1_700_000_100),
+            })
+            .await
+            .expect("the user can be stored");
+    }
+}
+
+/// The password of the users that [`logged_in`] stores.
+pub const USER_PASSWORD: &str = "the password of the test users";
+
+/// Stores a user in the group of the given level, logs the user in through the
+/// application, and returns the session cookie as a browser sends it back.
+pub async fn logged_in(database: &Database, app: &axum::Router, name: &str, level: u16) -> String {
+    let level = organizr_domain::GroupLevel::new(level).expect("the level is valid");
+    let group = database
+        .groups()
+        .find_by_level(level)
+        .await
+        .expect("the lookup works")
+        .expect("the install has a group of the level");
+    database
+        .users()
+        .insert(NewUser {
+            username: name.to_owned(),
+            email: None,
+            password_hash: organizr_auth::password::hash(USER_PASSWORD)
+                .expect("the password can be hashed"),
+            group: group.id,
+            image: None,
+            created_at: Timestamp::from_unix_seconds(1_800_000_000),
+        })
+        .await
+        .expect("the user can be stored");
+    let body = serde_json::json!({"username": name, "password": USER_PASSWORD});
+    let answer = crate::http::call(app, crate::http::As::Guest, "POST", "/login", Some(body)).await;
+    answer
+        .cookies
+        .iter()
+        .find(|cookie| cookie.starts_with("organizr_token_"))
+        .and_then(|cookie| cookie.split(';').next())
+        .unwrap_or_else(|| panic!("the login sets the session cookie: {}", answer.body))
+        .to_owned()
 }

@@ -422,3 +422,61 @@ async fn category_routes_answer_like_php() {
     })
     .await;
 }
+
+/// The name and the picture of the group that the recorder adds with markup in both, as
+/// this application stores them: as they were sent.
+const MARKUP_NAME: &str = "<b>Bold</b> & co";
+const MARKUP_IMAGE: &str = "a&b.png";
+
+#[tokio::test]
+async fn group_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The recorder runs this group after the group `register`.
+        seed::registered_users(database).await;
+        let mut replay = without_php_session(Replay::group("groups"))
+            // PHP asks a guest for the form key first. Here a request that does not come
+            // from another site goes on to the check of the level.
+            .deviation(
+                "D-03",
+                "add_as_guest",
+                "/response/message",
+                json!("Not Authorized"),
+            )
+            // A user that was never locked has `null` in PHP.
+            .deviation_for_nulls("D-51", "groups_with_users", &["locked"], json!(0))
+            // In PHP a new default group leaves the old one as a second default group.
+            .deviation(
+                "D-51",
+                "groups_after_adding_a_default",
+                "/response/data/4/default",
+                json!(0),
+            );
+        // The hash of a password does not leave the server.
+        for user in 0..=seed::REGISTERED_USERS.len() {
+            replay = replay.deviation(
+                "D-05",
+                "groups_with_users",
+                &format!("/response/data/users/{user}/password"),
+                Value::Null,
+            );
+        }
+        // Text is stored as it was sent, not with HTML entities.
+        for (case, place) in [
+            ("groups_after_adding", 10),
+            ("groups_after_adding_a_default", 10),
+            ("groups_after_the_default_is_back", 10),
+            ("groups_after_a_new_default", 10),
+            ("groups_after_changing", 10),
+            ("groups_after_deleting", 9),
+        ] {
+            let group = format!("/response/data/{place}");
+            replay = replay
+                .deviation("D-24", case, &format!("{group}/group"), json!(MARKUP_NAME))
+                .deviation("D-24", case, &format!("{group}/image"), json!(MARKUP_IMAGE));
+        }
+
+        replay.run(&installed_app(database)).await;
+    })
+    .await;
+}

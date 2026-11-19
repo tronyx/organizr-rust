@@ -12,8 +12,8 @@ use axum::response::{IntoResponse, Response};
 use organizr_db::{Database, DbError};
 use organizr_domain::email::php_trim;
 use organizr_domain::{
-    Category, CategoryNumber, Change, Group, GroupLevel, InvalidMenuName, LevelRange,
-    MENU_NAME_LIMIT, NewTab, Tab, TabChanges, TabId, TabKind, menu_name,
+    Category, CategoryNumber, Change, GroupLevel, InvalidMenuName, LevelRange, MENU_NAME_LIMIT,
+    NewTab, Tab, TabChanges, TabId, TabKind, menu_name,
 };
 use serde::Serialize;
 use serde_json::Value;
@@ -24,6 +24,7 @@ use crate::cookies::cookie_value;
 use crate::envelope::{Envelope, NoContent, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::{Fields, Refusal, chosen, php_text, place_of, record_id};
+use crate::handlers::groups::GroupRow;
 use crate::php_url;
 use crate::state::AppState;
 
@@ -241,28 +242,6 @@ impl From<&Category> for CategoryRow {
             category_id: category.number.get(),
             image: category.image.clone(),
             default: u8::from(category.is_default),
-        }
-    }
-}
-
-/// A group as the API shows it.
-#[derive(Debug, Serialize)]
-struct GroupRow {
-    id: i64,
-    group: String,
-    group_id: u16,
-    image: Option<String>,
-    default: u8,
-}
-
-impl From<Group> for GroupRow {
-    fn from(group: Group) -> Self {
-        Self {
-            id: group.id.get(),
-            group: group.name,
-            group_id: group.level.get(),
-            image: group.image,
-            default: u8::from(group.is_default),
         }
     }
 }

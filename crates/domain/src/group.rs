@@ -2,7 +2,7 @@
 
 use thiserror::Error;
 
-use crate::GroupId;
+use crate::{Change, GroupId};
 
 /// The access level of a group. A lower number means more access.
 ///
@@ -33,6 +33,21 @@ impl GroupLevel {
     /// The level as a number.
     pub const fn get(self) -> u16 {
         self.0
+    }
+
+    /// The level for a new group, when this is the highest level in use below Guest:
+    /// the next one. There is none when the next one is the level of Guest.
+    #[must_use]
+    pub fn next_for_a_new_group(self) -> Option<Self> {
+        let next = self.0.checked_add(1)?;
+        (next < Self::GUEST.0).then_some(Self(next))
+    }
+
+    /// Whether the level is one of the two that every install has and keeps: Admin
+    /// and Guest. Their groups cannot be deleted, and neither can be the default group.
+    #[must_use]
+    pub fn is_fixed(self) -> bool {
+        self == Self::ADMIN || self == Self::GUEST
     }
 }
 
@@ -84,6 +99,18 @@ pub struct NewGroup {
     pub is_default: bool,
 }
 
+/// Changes to a group. A field that is [`Change::Keep`] stays as it is. The level of a
+/// group never changes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GroupChanges {
+    /// The name.
+    pub name: Change<String>,
+    /// The picture.
+    pub image: Change<String>,
+    /// Whether new users join this group.
+    pub is_default: Change<bool>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::{GroupLevel, InvalidGroupLevel};
@@ -108,6 +135,24 @@ mod tests {
             GroupLevel::try_from(70_000_i64),
             Err(InvalidGroupLevel(70_000))
         );
+    }
+
+    #[test]
+    fn new_group_gets_the_level_after_the_highest_one_below_guest() {
+        let level = |value| GroupLevel::new(value).expect("the level is valid");
+
+        assert_eq!(level(4).next_for_a_new_group(), Some(level(5)));
+        assert_eq!(level(997).next_for_a_new_group(), Some(level(998)));
+        // The next level would be the one of Guest.
+        assert_eq!(level(998).next_for_a_new_group(), None);
+        assert_eq!(GroupLevel::GUEST.next_for_a_new_group(), None);
+    }
+
+    #[test]
+    fn admin_and_guest_are_the_fixed_levels() {
+        assert!(GroupLevel::ADMIN.is_fixed());
+        assert!(GroupLevel::GUEST.is_fixed());
+        assert!(!GroupLevel::CO_ADMIN.is_fixed());
     }
 
     #[test]

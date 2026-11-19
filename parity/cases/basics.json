@@ -22,7 +22,9 @@
       "token": "<token>",
       "date": "<time>",
       "created": "<time>",
-      "expires": "<time>"
+      "expires": "<time>",
+      "password": "<password hash>",
+      "register_date": "<time>"
     }
   },
   "cases": [

@@ -1,0 +1,3168 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>",
+      "password": "<password hash>",
+      "register_date": "<time>"
+    }
+  },
+  "cases": [
+    {
+      "name": "groups_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "groups",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"group\": \"Admin\",\n                \"group_id\": 0,\n                \"image\": \"plugins/images/groups/admin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 2,\n                \"group\": \"Co-Admin\",\n                \"group_id\": 1,\n                \"image\": \"plugins/images/groups/coadmin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 3,\n                \"group\": \"Super User\",\n                \"group_id\": 2,\n                \"image\": \"plugins/images/groups/superuser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 4,\n                \"group\": \"Power User\",\n                \"group_id\": 3,\n                \"image\": \"plugins/images/groups/poweruser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 5,\n                \"group\": \"User\",\n                \"group_id\": 4,\n                \"image\": \"plugins/images/groups/user.png\",\n                \"default\": 1\n            },\n            {\n                \"id\": 6,\n                \"group\": \"Guest\",\n                \"group_id\": 999,\n                \"image\": \"plugins/images/groups/guest.png\",\n                \"default\": 0\n            }\n        ]\n    }\n}"
+      }
+    },
+    {
+      "name": "groups_with_users",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups?includeUsers",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"groups\": [\n                {\n                    \"id\": 1,\n                    \"group\": \"Admin\",\n                    \"group_id\": 0,\n                    \"image\": \"plugins/images/groups/admin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"group\": \"Co-Admin\",\n                    \"group_id\": 1,\n                    \"image\": \"plugins/images/groups/coadmin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"group\": \"Super User\",\n                    \"group_id\": 2,\n                    \"image\": \"plugins/images/groups/superuser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"group\": \"Power User\",\n                    \"group_id\": 3,\n                    \"image\": \"plugins/images/groups/poweruser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"image\": \"plugins/images/groups/user.png\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 6,\n                    \"group\": \"Guest\",\n                    \"group_id\": 999,\n                    \"image\": \"plugins/images/groups/guest.png\",\n                    \"default\": 0\n                }\n            ],\n            \"users\": [\n                {\n                    \"id\": 1,\n                    \"username\": \"admin\",\n                    \"password\": \"<password hash>\",\n                    \"email\": \"admin@example.com\",\n                    \"plex_token\": null,\n                    \"group\": \"Admin\",\n                    \"group_id\": 0,\n                    \"locked\": null,\n                    \"image\": \"https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=100&d=mm\",\n                    \"register_date\": \"<time>\",\n                    \"auth_service\": \"internal\"\n                },\n                {\n                    \"id\": 2,\n                    \"username\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                    \"password\": \"<password hash>\",\n                    \"email\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy@example.com\",\n                    \"plex_token\": null,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"locked\": null,\n                    \"image\": \"https://www.gravatar.com/avatar/6e7b2af2a94695a4cd356670f56910e6?s=100&d=mm\",\n                    \"register_date\": \"<time>\",\n                    \"auth_service\": \"internal\"\n                },\n                {\n                    \"id\": 3,\n                    \"username\": \"zoe\",\n                    \"password\": \"<password hash>\",\n                    \"email\": \"zoe@example.com\",\n                    \"plex_token\": null,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"locked\": null,\n                    \"image\": \"https://www.gravatar.com/avatar/76cec4168e20ad317a8afb3a81ae3fce?s=100&d=mm\",\n                    \"register_date\": \"<time>\",\n                    \"auth_service\": \"internal\"\n                },\n                {\n                    \"id\": 4,\n                    \"username\": \"Yan\",\n                    \"password\": \"<password hash>\",\n                    \"email\": \"Yan@Example.com\",\n                    \"plex_token\": null,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"locked\": null,\n                    \"image\": \"https://www.gravatar.com/avatar/e2f663e5cd8fa98a0373228869b5d092?s=100&d=mm\",\n                    \"register_date\": \"<time>\",\n                    \"auth_service\": \"internal\"\n                },\n                {\n                    \"id\": 5,\n                    \"username\": \"form\",\n                    \"password\": \"<password hash>\",\n                    \"email\": \"form@example.com\",\n                    \"plex_token\": null,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"locked\": null,\n                    \"image\": \"https://www.gravatar.com/avatar/9a1d57ec7f9ae8b917e1d34645105dcd?s=100&d=mm\",\n                    \"register_date\": \"<time>\",\n                    \"auth_service\": \"internal\"\n                }\n            ]\n        }\n    }\n}",
+        "redacted": [
+          "password",
+          "register_date"
+        ]
+      }
+    },
+    {
+      "name": "group_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups/5"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "group",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups/5",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"id\": 5,\n            \"group\": \"User\",\n            \"group_id\": 4,\n            \"image\": \"plugins/images/groups/user.png\",\n            \"default\": 1\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "group_unknown",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups/99",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "group_with_an_id_that_is_no_number",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups/abc",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_as_guest",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "Editors",
+          "image": "plugins/images/groups/editors.png"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not authorized for current Route: /api/v2/groups\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_without_a_body",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"no data was sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_empty_object",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {},
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"no data was sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_json_list",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": [
+          "Editors"
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group name was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_unknown_fields_only",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "nothing": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group name was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_without_name",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "image": "i"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group name was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_without_image",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "Editors"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group image was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_empty_image",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "Editors",
+          "image": ""
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group image cannot be empty\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_too_long",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "image": "plugins/images/groups/editors.png"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"String is over limit of: 50\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_of_a_seeded_group",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "user",
+          "image": "plugins/images/groups/editors.png"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group name: user is already taken\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "Editors",
+          "image": "plugins/images/groups/editors.png"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_taken",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "Editors",
+          "image": "plugins/images/groups/editors.png"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group name: Editors is already taken\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_taken_in_another_letter_case",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "EDITORS",
+          "image": "plugins/images/groups/editors.png"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group name: EDITORS is already taken\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_a_level",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "Numbered",
+          "image": "i",
+          "group_id": 50
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_of_50_characters",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+          "image": "i"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_spaces_around_name_and_image",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "  Spaced  ",
+          "image": "  i  "
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_null_as_default",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "Nulls",
+          "image": "i",
+          "default": null
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_markup_in_the_name",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "<b>Bold</b> & co",
+          "image": "a&b.png"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "groups_after_adding",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"group\": \"Admin\",\n                \"group_id\": 0,\n                \"image\": \"plugins/images/groups/admin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 2,\n                \"group\": \"Co-Admin\",\n                \"group_id\": 1,\n                \"image\": \"plugins/images/groups/coadmin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 3,\n                \"group\": \"Super User\",\n                \"group_id\": 2,\n                \"image\": \"plugins/images/groups/superuser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 4,\n                \"group\": \"Power User\",\n                \"group_id\": 3,\n                \"image\": \"plugins/images/groups/poweruser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 5,\n                \"group\": \"User\",\n                \"group_id\": 4,\n                \"image\": \"plugins/images/groups/user.png\",\n                \"default\": 1\n            },\n            {\n                \"id\": 7,\n                \"group\": \"Editors\",\n                \"group_id\": 5,\n                \"image\": \"plugins/images/groups/editors.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 8,\n                \"group\": \"Numbered\",\n                \"group_id\": 6,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 9,\n                \"group\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                \"group_id\": 7,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 10,\n                \"group\": \"Spaced\",\n                \"group_id\": 8,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 11,\n                \"group\": \"Nulls\",\n                \"group_id\": 9,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 12,\n                \"group\": \"&lt;b&gt;Bold&lt;/b&gt; &amp; co\",\n                \"group_id\": 10,\n                \"image\": \"a&amp;b.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 6,\n                \"group\": \"Guest\",\n                \"group_id\": 999,\n                \"image\": \"plugins/images/groups/guest.png\",\n                \"default\": 0\n            }\n        ]\n    }\n}"
+      }
+    },
+    {
+      "name": "group_added",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups/7",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"id\": 7,\n            \"group\": \"Editors\",\n            \"group_id\": 5,\n            \"image\": \"plugins/images/groups/editors.png\",\n            \"default\": 0\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "add_as_default",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "Starters",
+          "image": "i",
+          "default": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "groups_after_adding_a_default",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"group\": \"Admin\",\n                \"group_id\": 0,\n                \"image\": \"plugins/images/groups/admin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 2,\n                \"group\": \"Co-Admin\",\n                \"group_id\": 1,\n                \"image\": \"plugins/images/groups/coadmin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 3,\n                \"group\": \"Super User\",\n                \"group_id\": 2,\n                \"image\": \"plugins/images/groups/superuser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 4,\n                \"group\": \"Power User\",\n                \"group_id\": 3,\n                \"image\": \"plugins/images/groups/poweruser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 5,\n                \"group\": \"User\",\n                \"group_id\": 4,\n                \"image\": \"plugins/images/groups/user.png\",\n                \"default\": 1\n            },\n            {\n                \"id\": 7,\n                \"group\": \"Editors\",\n                \"group_id\": 5,\n                \"image\": \"plugins/images/groups/editors.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 8,\n                \"group\": \"Numbered\",\n                \"group_id\": 6,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 9,\n                \"group\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                \"group_id\": 7,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 10,\n                \"group\": \"Spaced\",\n                \"group_id\": 8,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 11,\n                \"group\": \"Nulls\",\n                \"group_id\": 9,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 12,\n                \"group\": \"&lt;b&gt;Bold&lt;/b&gt; &amp; co\",\n                \"group_id\": 10,\n                \"image\": \"a&amp;b.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 13,\n                \"group\": \"Starters\",\n                \"group_id\": 11,\n                \"image\": \"i\",\n                \"default\": 1\n            },\n            {\n                \"id\": 6,\n                \"group\": \"Guest\",\n                \"group_id\": 999,\n                \"image\": \"plugins/images/groups/guest.png\",\n                \"default\": 0\n            }\n        ]\n    }\n}"
+      }
+    },
+    {
+      "name": "change_default_back_to_user",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/5",
+        "json": {
+          "default": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "groups_after_the_default_is_back",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"group\": \"Admin\",\n                \"group_id\": 0,\n                \"image\": \"plugins/images/groups/admin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 2,\n                \"group\": \"Co-Admin\",\n                \"group_id\": 1,\n                \"image\": \"plugins/images/groups/coadmin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 3,\n                \"group\": \"Super User\",\n                \"group_id\": 2,\n                \"image\": \"plugins/images/groups/superuser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 4,\n                \"group\": \"Power User\",\n                \"group_id\": 3,\n                \"image\": \"plugins/images/groups/poweruser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 5,\n                \"group\": \"User\",\n                \"group_id\": 4,\n                \"image\": \"plugins/images/groups/user.png\",\n                \"default\": 1\n            },\n            {\n                \"id\": 7,\n                \"group\": \"Editors\",\n                \"group_id\": 5,\n                \"image\": \"plugins/images/groups/editors.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 8,\n                \"group\": \"Numbered\",\n                \"group_id\": 6,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 9,\n                \"group\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                \"group_id\": 7,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 10,\n                \"group\": \"Spaced\",\n                \"group_id\": 8,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 11,\n                \"group\": \"Nulls\",\n                \"group_id\": 9,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 12,\n                \"group\": \"&lt;b&gt;Bold&lt;/b&gt; &amp; co\",\n                \"group_id\": 10,\n                \"image\": \"a&amp;b.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 13,\n                \"group\": \"Starters\",\n                \"group_id\": 11,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 6,\n                \"group\": \"Guest\",\n                \"group_id\": 999,\n                \"image\": \"plugins/images/groups/guest.png\",\n                \"default\": 0\n            }\n        ]\n    }\n}"
+      }
+    },
+    {
+      "name": "change_as_guest",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group": "Writers"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_without_a_body",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"no data was sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_empty_object",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {},
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"no data was sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_unknown_id",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/99",
+        "json": {
+          "group": "Writers"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"No category info found\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_id_zero",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/0",
+        "json": {
+          "group": "Writers"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"id was not set\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_unknown_fields_only",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "nothing": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group": "Writers"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_to_empty",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group": ""
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group was set but empty\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_taken",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group": "User"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Group name: User is already taken\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_to_its_own",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group": "Writers"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_to_its_own_in_another_letter_case",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group": "WRITERS"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_too_long",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"String is over limit of: 50\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_image",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "image": "new.png"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_image_to_empty",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "image": ""
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Image was set but empty\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_level",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group_id": 3
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Cannot change group_id\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_level_to_its_own",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group_id": 5
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Cannot change group_id\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_with_its_own_row_id",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "id": 7,
+          "image": "again.png"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_and_image",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "group": "  Authors ",
+          "image": " both.png "
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_default_on",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "default": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "groups_after_a_new_default",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"group\": \"Admin\",\n                \"group_id\": 0,\n                \"image\": \"plugins/images/groups/admin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 2,\n                \"group\": \"Co-Admin\",\n                \"group_id\": 1,\n                \"image\": \"plugins/images/groups/coadmin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 3,\n                \"group\": \"Super User\",\n                \"group_id\": 2,\n                \"image\": \"plugins/images/groups/superuser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 4,\n                \"group\": \"Power User\",\n                \"group_id\": 3,\n                \"image\": \"plugins/images/groups/poweruser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 5,\n                \"group\": \"User\",\n                \"group_id\": 4,\n                \"image\": \"plugins/images/groups/user.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 7,\n                \"group\": \"Authors\",\n                \"group_id\": 5,\n                \"image\": \"both.png\",\n                \"default\": 1\n            },\n            {\n                \"id\": 8,\n                \"group\": \"Numbered\",\n                \"group_id\": 6,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 9,\n                \"group\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                \"group_id\": 7,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 10,\n                \"group\": \"Spaced\",\n                \"group_id\": 8,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 11,\n                \"group\": \"Nulls\",\n                \"group_id\": 9,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 12,\n                \"group\": \"&lt;b&gt;Bold&lt;/b&gt; &amp; co\",\n                \"group_id\": 10,\n                \"image\": \"a&amp;b.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 13,\n                \"group\": \"Starters\",\n                \"group_id\": 11,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 6,\n                \"group\": \"Guest\",\n                \"group_id\": 999,\n                \"image\": \"plugins/images/groups/guest.png\",\n                \"default\": 0\n            }\n        ]\n    }\n}"
+      }
+    },
+    {
+      "name": "change_default_on_again",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/7",
+        "json": {
+          "default": true
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_default_of_admin",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/1",
+        "json": {
+          "default": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Setting Admin as default group is not allowed\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_default_of_guest",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/6",
+        "json": {
+          "default": 0
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Setting Guest as default group is not allowed\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_of_admin",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/1",
+        "json": {
+          "group": "Owner"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_of_admin_back",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/1",
+        "json": {
+          "group": "Admin"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "groups_after_changing",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"group\": \"Admin\",\n                \"group_id\": 0,\n                \"image\": \"plugins/images/groups/admin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 2,\n                \"group\": \"Co-Admin\",\n                \"group_id\": 1,\n                \"image\": \"plugins/images/groups/coadmin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 3,\n                \"group\": \"Super User\",\n                \"group_id\": 2,\n                \"image\": \"plugins/images/groups/superuser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 4,\n                \"group\": \"Power User\",\n                \"group_id\": 3,\n                \"image\": \"plugins/images/groups/poweruser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 5,\n                \"group\": \"User\",\n                \"group_id\": 4,\n                \"image\": \"plugins/images/groups/user.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 7,\n                \"group\": \"Authors\",\n                \"group_id\": 5,\n                \"image\": \"both.png\",\n                \"default\": 1\n            },\n            {\n                \"id\": 8,\n                \"group\": \"Numbered\",\n                \"group_id\": 6,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 9,\n                \"group\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                \"group_id\": 7,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 10,\n                \"group\": \"Spaced\",\n                \"group_id\": 8,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 11,\n                \"group\": \"Nulls\",\n                \"group_id\": 9,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 12,\n                \"group\": \"&lt;b&gt;Bold&lt;/b&gt; &amp; co\",\n                \"group_id\": 10,\n                \"image\": \"a&amp;b.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 13,\n                \"group\": \"Starters\",\n                \"group_id\": 11,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 6,\n                \"group\": \"Guest\",\n                \"group_id\": 999,\n                \"image\": \"plugins/images/groups/guest.png\",\n                \"default\": 0\n            }\n        ]\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_as_guest",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/7"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_admin",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/1",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Cannot delete group: Admin as it is not allowed\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_guest",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/6",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Cannot delete group: Guest as it is not allowed\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_group_with_users",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/5",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Cannot delete group as group still has users assigned to it\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_default_back_to_user_again",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/groups/5",
+        "json": {
+          "default": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/7",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "group_deleted",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups/7",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "groups_after_deleting",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"group\": \"Admin\",\n                \"group_id\": 0,\n                \"image\": \"plugins/images/groups/admin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 2,\n                \"group\": \"Co-Admin\",\n                \"group_id\": 1,\n                \"image\": \"plugins/images/groups/coadmin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 3,\n                \"group\": \"Super User\",\n                \"group_id\": 2,\n                \"image\": \"plugins/images/groups/superuser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 4,\n                \"group\": \"Power User\",\n                \"group_id\": 3,\n                \"image\": \"plugins/images/groups/poweruser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 5,\n                \"group\": \"User\",\n                \"group_id\": 4,\n                \"image\": \"plugins/images/groups/user.png\",\n                \"default\": 1\n            },\n            {\n                \"id\": 8,\n                \"group\": \"Numbered\",\n                \"group_id\": 6,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 9,\n                \"group\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                \"group_id\": 7,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 10,\n                \"group\": \"Spaced\",\n                \"group_id\": 8,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 11,\n                \"group\": \"Nulls\",\n                \"group_id\": 9,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 12,\n                \"group\": \"&lt;b&gt;Bold&lt;/b&gt; &amp; co\",\n                \"group_id\": 10,\n                \"image\": \"a&amp;b.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 13,\n                \"group\": \"Starters\",\n                \"group_id\": 11,\n                \"image\": \"i\",\n                \"default\": 0\n            },\n            {\n                \"id\": 6,\n                \"group\": \"Guest\",\n                \"group_id\": 999,\n                \"image\": \"plugins/images/groups/guest.png\",\n                \"default\": 0\n            }\n        ]\n    }\n}"
+      }
+    },
+    {
+      "name": "add_after_deleting",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/groups",
+        "json": {
+          "group": "Late",
+          "image": "i"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Group added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "group_added_after_deleting",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups/14",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"id\": 14,\n            \"group\": \"Late\",\n            \"group_id\": 12,\n            \"image\": \"i\",\n            \"default\": 0\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "clean_up_group_8",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/8",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_group_9",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/9",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_group_10",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/10",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_group_11",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/11",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_group_12",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/12",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_group_13",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/13",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_group_14",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/groups/14",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "groups_at_the_end",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/groups",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            {\n                \"id\": 1,\n                \"group\": \"Admin\",\n                \"group_id\": 0,\n                \"image\": \"plugins/images/groups/admin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 2,\n                \"group\": \"Co-Admin\",\n                \"group_id\": 1,\n                \"image\": \"plugins/images/groups/coadmin.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 3,\n                \"group\": \"Super User\",\n                \"group_id\": 2,\n                \"image\": \"plugins/images/groups/superuser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 4,\n                \"group\": \"Power User\",\n                \"group_id\": 3,\n                \"image\": \"plugins/images/groups/poweruser.png\",\n                \"default\": 0\n            },\n            {\n                \"id\": 5,\n                \"group\": \"User\",\n                \"group_id\": 4,\n                \"image\": \"plugins/images/groups/user.png\",\n                \"default\": 1\n            },\n            {\n                \"id\": 6,\n                \"group\": \"Guest\",\n                \"group_id\": 999,\n                \"image\": \"plugins/images/groups/guest.png\",\n                \"default\": 0\n            }\n        ]\n    }\n}"
+      }
+    }
+  ]
+}

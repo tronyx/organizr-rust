@@ -13,7 +13,7 @@ mod user;
 
 pub use category::{Category, CategoryChanges, NewCategory};
 pub use change::Change;
-pub use group::{Group, GroupLevel, InvalidGroupLevel, NewGroup};
+pub use group::{Group, GroupChanges, GroupLevel, InvalidGroupLevel, NewGroup};
 pub use ids::{CategoryId, CategoryNumber, GroupId, SessionId, TabId, UserId};
 pub use menu_name::{InvalidMenuName, MENU_NAME_LIMIT, menu_name};
 pub use session::{NewSession, Session, SessionTokenHash};

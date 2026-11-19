@@ -11,7 +11,8 @@
 
 use organizr_db::{Database, DbError};
 use organizr_domain::{
-    Group, GroupId, GroupLevel, NewGroup, NewUser, PasswordHash, Timestamp, UserId,
+    Change, Group, GroupChanges, GroupId, GroupLevel, NewGroup, NewUser, PasswordHash, Timestamp,
+    UserId,
 };
 use organizr_testkit::engines::{self, on_each_engine};
 
@@ -422,8 +423,8 @@ async fn default_group_is_the_group_that_new_users_join() {
             .expect("the lookup works");
         assert_eq!(found.as_ref(), Some(&user));
 
-        // Two default groups are a mistake in the data. The one with less access wins.
-        database
+        // A new default group takes the mark from the group that had it.
+        let super_user = database
             .groups()
             .insert(NewGroup {
                 is_default: true,
@@ -436,7 +437,14 @@ async fn default_group_is_the_group_that_new_users_join() {
             .find_default()
             .await
             .expect("the lookup works");
-        assert_eq!(found, Some(user));
+        assert_eq!(found, Some(super_user));
+        let user = database
+            .groups()
+            .find(user.id)
+            .await
+            .expect("the lookup works")
+            .expect("the group exists");
+        assert!(!user.is_default);
     })
     .await;
 }
@@ -561,6 +569,247 @@ async fn group_without_users_can_be_deleted_once() {
 
         assert!(first, "the group existed");
         assert!(!second, "the group is gone");
+    })
+    .await;
+}
+
+/// Changes that keep every field.
+fn no_changes() -> GroupChanges {
+    GroupChanges {
+        name: Change::Keep,
+        image: Change::Keep,
+        is_default: Change::Keep,
+    }
+}
+
+#[tokio::test]
+async fn group_is_changed_field_by_field() {
+    on_each_engine(async |database| {
+        let editors = insert_group(database, 5, "Editors").await;
+        let groups = database.groups();
+
+        let unchanged = groups
+            .update(editors.id, no_changes())
+            .await
+            .expect("the update works");
+        assert_eq!(unchanged.as_ref(), Some(&editors));
+
+        let changed = groups
+            .update(
+                editors.id,
+                GroupChanges {
+                    name: Change::Set("Writers".to_owned()),
+                    image: Change::Set("writers.png".to_owned()),
+                    is_default: Change::Set(true),
+                },
+            )
+            .await
+            .expect("the update works")
+            .expect("the group exists");
+        assert_eq!(
+            changed,
+            Group {
+                name: "Writers".to_owned(),
+                image: Some("writers.png".to_owned()),
+                is_default: true,
+                ..editors.clone()
+            }
+        );
+        let stored = groups.find(editors.id).await.expect("the lookup works");
+        assert_eq!(stored, Some(changed));
+        // The old name is free, and the new one is taken in any letter case.
+        assert!(
+            !groups
+                .is_name_taken("editors", None)
+                .await
+                .expect("the lookup works")
+        );
+        assert!(
+            groups
+                .is_name_taken("WRITERS", None)
+                .await
+                .expect("the lookup works")
+        );
+
+        let missing = groups
+            .update(GroupId::new(editors.id.get() + 100), no_changes())
+            .await
+            .expect("the update works");
+        assert_eq!(missing, None);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn group_that_becomes_the_default_takes_the_mark_from_the_others() {
+    on_each_engine(async |database| {
+        let groups = database.groups();
+        let user = groups
+            .insert(NewGroup {
+                is_default: true,
+                ..new_group(4, "User")
+            })
+            .await
+            .expect("the group can be stored");
+        let editors = insert_group(database, 5, "Editors").await;
+
+        // A change that keeps the mark off takes it from nobody.
+        groups
+            .update(
+                editors.id,
+                GroupChanges {
+                    is_default: Change::Set(false),
+                    ..no_changes()
+                },
+            )
+            .await
+            .expect("the update works");
+        assert_eq!(
+            groups.find_default().await.expect("the lookup works"),
+            Some(user.clone())
+        );
+
+        groups
+            .update(
+                editors.id,
+                GroupChanges {
+                    is_default: Change::Set(true),
+                    ..no_changes()
+                },
+            )
+            .await
+            .expect("the update works");
+        let default = groups.find_default().await.expect("the lookup works");
+        assert_eq!(default.map(|group| group.id), Some(editors.id));
+        let user = groups
+            .find(user.id)
+            .await
+            .expect("the lookup works")
+            .expect("the group exists");
+        assert!(!user.is_default);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn changed_name_of_a_group_cannot_be_the_name_of_another_group() {
+    on_each_engine(async |database| {
+        insert_group(database, 4, "User").await;
+        let editors = insert_group(database, 5, "Editors").await;
+        let groups = database.groups();
+
+        let result = groups
+            .update(
+                editors.id,
+                GroupChanges {
+                    name: Change::Set("USER".to_owned()),
+                    ..no_changes()
+                },
+            )
+            .await;
+        assert!(matches!(result, Err(DbError::Duplicate)), "{result:?}");
+
+        // A group can take its own name in another letter case.
+        let renamed = groups
+            .update(
+                editors.id,
+                GroupChanges {
+                    name: Change::Set("EDITORS".to_owned()),
+                    ..no_changes()
+                },
+            )
+            .await
+            .expect("the update works")
+            .expect("the group exists");
+        assert_eq!(renamed.name, "EDITORS");
+        assert!(
+            groups
+                .is_name_taken("user", Some(editors.id))
+                .await
+                .expect("the lookup works")
+        );
+        assert!(
+            !groups
+                .is_name_taken("editors", Some(editors.id))
+                .await
+                .expect("the lookup works")
+        );
+        assert!(
+            groups
+                .is_name_taken("editors", None)
+                .await
+                .expect("the lookup works")
+        );
+        assert!(
+            !groups
+                .is_name_taken("nobody", None)
+                .await
+                .expect("the lookup works")
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn highest_level_below_guest_leaves_guest_out() {
+    on_each_engine(async |database| {
+        let groups = database.groups();
+        assert_eq!(
+            groups
+                .highest_level_below_guest()
+                .await
+                .expect("the lookup works"),
+            None
+        );
+
+        insert_group(database, 999, "Guest").await;
+        assert_eq!(
+            groups
+                .highest_level_below_guest()
+                .await
+                .expect("the lookup works"),
+            None
+        );
+
+        insert_group(database, 0, "Admin").await;
+        insert_group(database, 7, "Editors").await;
+        insert_group(database, 4, "User").await;
+        assert_eq!(
+            groups
+                .highest_level_below_guest()
+                .await
+                .expect("the lookup works"),
+            Some(GroupLevel::new(7).expect("the level is valid"))
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn users_of_a_group_are_counted() {
+    on_each_engine(async |database| {
+        let user = insert_group(database, 4, "User").await;
+        let editors = insert_group(database, 5, "Editors").await;
+        for name in ["zoe", "yan"] {
+            database
+                .users()
+                .insert(new_user(name, user.id))
+                .await
+                .expect("the user can be stored");
+        }
+
+        let groups = database.groups();
+        assert_eq!(
+            groups.user_count(user.id).await.expect("the count works"),
+            2
+        );
+        assert_eq!(
+            groups
+                .user_count(editors.id)
+                .await
+                .expect("the count works"),
+            0
+        );
     })
     .await;
 }
