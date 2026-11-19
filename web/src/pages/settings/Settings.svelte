@@ -6,11 +6,13 @@
   import { api, failureText } from '../../lib/api';
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
+  import { HOMEPAGE } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
   import CategoriesEditor from './CategoriesEditor.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
   import LoginSettings from './LoginSettings.svelte';
+  import SettingsForm from './SettingsForm.svelte';
   import MailSettings from './MailSettings.svelte';
   import TabsEditor from './TabsEditor.svelte';
   import UsersEditor from './UsersEditor.svelte';
@@ -122,6 +124,15 @@
     >
       Login
     </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'homepage'}
+      aria-selected={section === 'homepage'}
+      href={PAGES.homepageSettings}
+    >
+      Homepage
+    </a>
   </div>
 
   <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
@@ -132,6 +143,8 @@
     <MailSettings ondone={(message) => (done = message)} />
   {:else if section === 'login'}
     <LoginSettings ondone={(message) => (done = message)} />
+  {:else if section === 'homepage'}
+    <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
   {:else if data}
     {#if section === 'tabs'}
       <TabsEditor {data} {change} />

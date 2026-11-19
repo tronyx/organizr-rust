@@ -5,6 +5,7 @@
   import { PAGES } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
   import Account from './Account.svelte';
+  import Homepage from './homepage/Homepage.svelte';
   import Login from './Login.svelte';
   import Recover from './Recover.svelte';
   import Register from './Register.svelte';
@@ -28,9 +29,7 @@
     <p>Only an Admin or a Co-Admin can open the settings.</p>
   </Notice>
 {:else if content.kind === 'homepage'}
-  <Notice title={content.tab.name}>
-    <p>The homepage is not built yet.</p>
-  </Notice>
+  <Homepage title={content.tab.name} />
 {:else if content.kind === 'newWindow'}
   <Notice title={content.tab.name}>
     <p>This tab opens in a new window.</p>

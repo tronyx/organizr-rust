@@ -404,3 +404,37 @@ export function changedSettings(
   }
   return changed;
 }
+
+/** The numbers of the custom HTML items of the homepage. */
+const CUSTOM_HTML = ['01', '02', '03', '04', '05', '06', '07', '08'];
+
+/** The settings of the items of the homepage. */
+export const HOMEPAGE: FieldGroup[] = CUSTOM_HTML.map((number) => ({
+  title: `Custom HTML ${number}`,
+  fields: [
+    {
+      key: `homepageCustomHTML${number}Enabled`,
+      label: `Show custom HTML ${number}`,
+      kind: 'switch',
+    },
+    {
+      key: `homepageCustomHTML${number}Auth`,
+      label: `Custom HTML ${number} is for users of the level`,
+      kind: 'select',
+      options: LEVELS,
+    },
+    {
+      key: `homepageOrdercustomhtml${number}`,
+      label: `Place of custom HTML ${number} on the homepage`,
+      kind: 'number',
+      min: 0,
+      help: 'The item with the lowest number stands at the top.',
+    },
+    {
+      key: `customHTML${number}`,
+      label: `HTML of item ${number}`,
+      kind: 'textarea',
+      help: 'The homepage shows the HTML in a frame of its own, apart from Organizr.',
+    },
+  ],
+}));

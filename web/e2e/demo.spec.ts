@@ -715,6 +715,48 @@ test('an address of another site in the link is not followed', async ({ page, co
   expect(new URL(page.url()).host).toBe(new URL(ADDRESS_URL).host);
 });
 
+test('the homepage shows custom HTML of the Admin in a frame that keeps it apart', async ({
+  page,
+}) => {
+  await logIn(page);
+  await page.goto('./#/settings/tabs');
+  // The set-up makes the tab "Homepage" and leaves it out of the menu.
+  await page.getByLabel('Show Homepage in the menu').check();
+  await expect(page.getByRole('status')).toHaveText('The tab is changed.');
+  await page.getByRole('tab', { name: 'Homepage' }).click();
+  await expect(page).toHaveURL(/#\/settings\/homepage$/);
+
+  await page.getByLabel('Show custom HTML 01').check();
+  // The script tries to read the cookies of Organizr, which hold the session.
+  await page
+    .getByLabel('HTML of item 01')
+    .fill(
+      '<p>Hello from custom HTML</p><p id="cookies"></p>' +
+        '<div style="height: 400px"></div>' +
+        '<a href="#/settings/groups">Open the groups</a>' +
+        '<script>var seen; try { seen = "cookies: " + document.cookie; } catch (e) { seen = "no cookies for this frame"; }' +
+        ' document.getElementById("cookies").textContent = seen;</script>',
+    );
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+
+  await page.goto('./#Homepage');
+  await page.reload();
+  const frame = page.frameLocator('iframe[title="Custom HTML 01"]');
+  await expect(frame.getByText('Hello from custom HTML')).toBeVisible();
+  // The script of the item runs, and the browser keeps the cookies from it.
+  await expect(frame.locator('#cookies')).toHaveText('no cookies for this frame');
+  // The frame is as high as its content.
+  await expect
+    .poll(async () => (await page.locator('iframe[title="Custom HTML 01"]').boundingBox())?.height)
+    .toBeGreaterThan(400);
+
+  // A link of the item changes the page of Organizr.
+  await frame.getByRole('link', { name: 'Open the groups' }).click();
+  await expect(page).toHaveURL(/#\/settings\/groups$/);
+  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+});
+
 // This test stays the last one: after it, the login page has a second button whose name
 // starts with "Log in".
 test('the Admin switches the button "Log in with Plex" on, and the login page shows it', async ({
