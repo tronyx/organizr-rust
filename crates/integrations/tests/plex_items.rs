@@ -45,7 +45,7 @@ const SESSIONS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
 
 fn context<'a>(
     names: Option<&'a Map<String, Value>>,
-    is_cached: &'a dyn Fn(&str) -> bool,
+    is_cached: &'a (dyn Fn(&str) -> bool + Sync),
 ) -> ItemContext<'a> {
     ItemContext {
         show_names: true,
@@ -62,7 +62,7 @@ fn context<'a>(
     }
 }
 
-const NOTHING_CACHED: &dyn Fn(&str) -> bool = &|_| false;
+const NOTHING_CACHED: &(dyn Fn(&str) -> bool + Sync) = &|_| false;
 
 #[test]
 fn episode_that_plays_becomes_an_item_with_its_stream() {
@@ -186,7 +186,7 @@ fn caller_without_the_level_sees_no_name_and_no_address() {
 fn settings_change_the_name_the_link_and_the_source_of_a_picture() {
     let mut names = Map::new();
     names.insert("robin".to_owned(), json!("Robin R."));
-    let is_cached: &dyn Fn(&str) -> bool = &|key| key == "30-np";
+    let is_cached: &(dyn Fn(&str) -> bool + Sync) = &|key| key == "30-np";
     let changed = ItemContext {
         tab_url: "https://plex.example.com",
         tab_name: "Plex",

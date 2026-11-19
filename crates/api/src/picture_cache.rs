@@ -23,6 +23,9 @@ use crate::state::AppState;
 /// The largest picture that is kept, in bytes.
 const SIZE_LIMIT: usize = 10 * 1024 * 1024;
 
+/// How long a picture of a Plex server counts as fresh.
+const KEPT_FOR: Duration = Duration::from_hours(7 * 24);
+
 /// How long the source of a picture has to send it.
 const TIME_LIMIT: Duration = Duration::from_secs(15);
 
@@ -82,6 +85,32 @@ impl PictureCache {
 
     fn file(&self, name: &str) -> PathBuf {
         self.folder.join(format!("{name}.jpg"))
+    }
+
+    /// Whether the cache holds the picture, and got it less than a week ago.
+    pub fn is_fresh(&self, name: &str) -> bool {
+        is_cache_name(name)
+            && std::fs::metadata(self.file(name))
+                .and_then(|file| file.modified())
+                .ok()
+                .and_then(|modified| modified.elapsed().ok())
+                .is_some_and(|age| age < KEPT_FOR)
+    }
+
+    /// The bytes of a picture, when the cache holds it.
+    pub async fn read(&self, name: &str) -> Option<Vec<u8>> {
+        if !is_cache_name(name) {
+            return None;
+        }
+        tokio::fs::read(self.file(name)).await.ok()
+    }
+
+    /// Puts a picture into the cache, in the place of the one with the same name.
+    pub async fn keep(&self, name: &str, content: &[u8]) -> std::io::Result<()> {
+        if !is_cache_name(name) {
+            return Err(std::io::Error::other("the name is no name of the cache"));
+        }
+        store(&self.folder, &self.file(name), content).await
     }
 
     /// Fetches a picture in the background, unless the cache has it or it is on its
@@ -174,8 +203,13 @@ pub async fn cached_picture(
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Err(not_found()),
         Err(error) => return Err(ApiError::PictureFolder(error)),
     };
-    let content_type = picture_type(&content).ok_or_else(not_found)?;
+    picture_response(content).ok_or_else(not_found)
+}
 
+/// The answer that sends the bytes of a picture, or nothing when the bytes are no
+/// picture of a kind that a browser shows.
+pub fn picture_response(content: Vec<u8>) -> Option<Response> {
+    let content_type = picture_type(&content)?;
     let mut response = Response::new(Body::from(content));
     let headers = response.headers_mut();
     headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
@@ -188,7 +222,7 @@ pub async fn cached_picture(
         header::CONTENT_SECURITY_POLICY,
         HeaderValue::from_static("default-src 'none'; sandbox"),
     );
-    Ok(response)
+    Some(response)
 }
 
 #[cfg(test)]

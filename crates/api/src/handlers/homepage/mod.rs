@@ -9,6 +9,7 @@ pub mod arr;
 pub mod downloaders;
 pub mod health_checks;
 pub mod html;
+pub mod plex;
 pub mod tautulli;
 pub mod uptime_kuma;
 pub mod weather;
@@ -136,6 +137,9 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderqBittorrent" => ("qbittorrent", downloaders::qbittorrent_permissions()),
         "homepageOrderWeatherAndAir" => ("weather", weather::permissions()),
         "homepageOrdertautulli" => ("tautulli", tautulli::permissions()),
+        "homepageOrderplexnowplaying" => ("plexstreams", plex::permissions(plex::Part::Streams)),
+        "homepageOrderplexrecent" => ("plexrecent", plex::permissions(plex::Part::Recent)),
+        "homepageOrderplexplaylist" => ("plexplaylists", plex::permissions(plex::Part::Playlists)),
         _ => return None,
     };
     let item = Item {

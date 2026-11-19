@@ -151,6 +151,16 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/homepage/kuma/data", &get(homepage::uptime_kuma::data))?
         .route("/homepage/weather/data", &get(homepage::weather::data))?
         .route("/homepage/tautulli/data", &get(homepage::tautulli::data))?
+        .route("/homepage/tautulli/names", &get(homepage::plex::names))?
+        .route("/homepage/plex/streams", &get(homepage::plex::streams))?
+        .route("/homepage/plex/recent", &get(homepage::plex::recent))?
+        .route("/homepage/plex/playlists", &get(homepage::plex::playlists))?
+        .route("/homepage/plex/metadata", &post(homepage::plex::metadata))?
+        .route(
+            "/homepage/plex/search/{query}",
+            &get(homepage::plex::search),
+        )?
+        .route("/homepage/image", &get(homepage::plex::image))?
         .route("/homepage/calendar", &get(homepage::arr::calendar))?
         .route(
             "/homepage/sonarr/calendar",

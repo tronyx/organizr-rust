@@ -140,7 +140,7 @@ pub struct ItemContext<'a> {
     /// so the server fetches the picture again.
     pub fresh: &'a str,
     /// Whether the picture cache holds a fresh picture with the given key.
-    pub is_cached: &'a dyn Fn(&str) -> bool,
+    pub is_cached: &'a (dyn Fn(&str) -> bool + Sync),
 }
 
 impl std::fmt::Debug for ItemContext<'_> {

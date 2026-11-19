@@ -563,6 +563,10 @@ async fn tautulli_api(RawQuery(query): RawQuery) -> Response {
                 {"section_id": 3, "section_name": "Films for children", "section_type": "movie", "count": 20, "plays": 40},
             ],
         }),
+        Some("get_users") => json!([
+            {"user_id": 0, "username": "Local", "friendly_name": "Local"},
+            {"user_id": 11, "username": "robin", "friendly_name": "Robin R."},
+        ]),
         Some("pms_image_proxy") => {
             return ([(header::CONTENT_TYPE, "image/jpeg")], JPEG).into_response();
         }
@@ -575,4 +579,82 @@ async fn tautulli_api(RawQuery(query): RawQuery) -> Response {
 /// A stand-in for the API of Tautulli that the homepage reads.
 pub async fn tautulli_statistics() -> StandIn {
     StandIn::start(Router::new().route("/api/v2", get(tautulli_api))).await
+}
+
+/// The token of the Plex Media Server stand-in.
+pub const PLEX_SERVER_TOKEN: &str = "made-up-plex-server-token";
+
+const PLEX_SESSIONS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="2">
+  <Video type="episode" ratingKey="301" parentRatingKey="300" grandparentRatingKey="30" title="The One" parentTitle="Season 2" grandparentTitle="The Show" index="3" parentIndex="2" parentThumb="/library/metadata/300/thumb/1" grandparentArt="/library/metadata/30/art/1" librarySectionID="2" viewOffset="600000" duration="2400000" addedAt="1577880000">
+    <Media videoResolution="1080"><Part decision="directplay"/></Media>
+    <User id="1" title="robin" thumb="https://plex.tv/users/abc/avatar"/>
+    <Player address="192.0.2.50" machineIdentifier="player-one" platform="Chrome" product="Plex Web" device="Windows" state="playing"/>
+    <Session id="session-one" bandwidth="4000" location="lan"/>
+  </Video>
+  <Video type="movie" ratingKey="816" title="A Film For Children" year="2018" thumb="/library/metadata/816/thumb/1" art="/library/metadata/816/art/1" librarySectionID="3" duration="5000000">
+    <User id="2" title="pat"/>
+    <Player address="198.51.100.7" machineIdentifier="player-two" state="paused"/>
+    <Session id="session-two" bandwidth="2000" location="wan"/>
+  </Video>
+</MediaContainer>"#;
+
+fn plex_recent(kind: Option<&str>) -> &'static str {
+    match kind {
+        Some("1") => {
+            r#"<MediaContainer size="1"><Video type="movie" ratingKey="815" title="The Film" year="2019" thumb="/library/metadata/815/thumb/1" art="/library/metadata/815/art/1" librarySectionID="1" addedAt="1577880000" duration="6000000"/></MediaContainer>"#
+        }
+        Some("2") => {
+            r#"<MediaContainer size="1"><Directory type="season" ratingKey="300" parentRatingKey="30" title="Season 2" parentTitle="The Show" thumb="/library/metadata/300/thumb/1" art="/library/metadata/30/art/1" librarySectionID="2" addedAt="1577890000"/></MediaContainer>"#
+        }
+        _ => r#"<MediaContainer size="0"></MediaContainer>"#,
+    }
+}
+
+const PLEX_PLAYLISTS: &str = r#"<MediaContainer size="3">
+  <Playlist title="Film night!" playlistType="video" key="/playlists/7/items"/>
+  <Playlist title="A private list" playlistType="video" key="/playlists/8/items"/>
+  <Playlist title="Songs" playlistType="audio" key="/playlists/9/items"/>
+</MediaContainer>"#;
+
+const PLEX_FILM: &str = r#"<MediaContainer size="1"><Video type="movie" ratingKey="815" title="The Film" year="2019" summary="A film." thumb="/library/metadata/815/thumb/1" art="/library/metadata/815/art/1" librarySectionID="1" duration="6000000"><Genre tag="Drama"/></Video></MediaContainer>"#;
+
+const PLEX_FOUND: &str = r#"<MediaContainer size="2">
+  <Video type="movie" ratingKey="815" title="The Film" librarySectionID="1"/>
+  <Video type="episode" ratingKey="301" title="The One" librarySectionID="2"/>
+</MediaContainer>"#;
+
+async fn plex_server_api(
+    headers: HeaderMap,
+    uri: axum::http::Uri,
+    RawQuery(query): RawQuery,
+) -> Response {
+    let token = headers
+        .get("x-plex-token")
+        .and_then(|value| value.to_str().ok());
+    if token != Some(PLEX_SERVER_TOKEN) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            "<html><body>401 Unauthorized</body></html>",
+        )
+            .into_response();
+    }
+    let xml = |body: &'static str| {
+        ([(header::CONTENT_TYPE, "text/xml;charset=utf-8")], body).into_response()
+    };
+    match uri.path() {
+        "/status/sessions" => xml(PLEX_SESSIONS),
+        "/hubs/home/recentlyAdded" => xml(plex_recent(query_field(query.as_deref(), "type"))),
+        "/playlists" => xml(PLEX_PLAYLISTS),
+        "/playlists/7/items" | "/library/metadata/815" => xml(PLEX_FILM),
+        "/search" => xml(PLEX_FOUND),
+        "/photo/:/transcode" => ([(header::CONTENT_TYPE, "image/jpeg")], JPEG).into_response(),
+        _ => StatusCode::NOT_FOUND.into_response(),
+    }
+}
+
+/// A stand-in for a Plex Media Server: two sessions, two items that were added, three
+/// playlists, one film to look at and to find, and pictures.
+pub async fn plex_server() -> StandIn {
+    StandIn::start(Router::new().fallback(plex_server_api)).await
 }
