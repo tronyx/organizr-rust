@@ -27,6 +27,9 @@ const ADMIN = {
   password: 'the password of the browser tests',
 };
 
+/** The password that lets a person make an account. The set-up stores it. */
+const REGISTRATION_PASSWORD = 'registration of the browser tests';
+
 function setupCode(): string {
   const code = process.env[SETUP_CODE_VARIABLE];
   if (!code) {
@@ -54,7 +57,7 @@ test('the wizard refuses a wrong set-up code and takes the right one', async ({ 
   await page.getByLabel('E-mail address').fill(ADMIN.email);
   await page.getByLabel('Password', { exact: true }).fill(ADMIN.password);
   await page.getByLabel('Password, once more').fill(ADMIN.password);
-  await page.getByLabel('Registration password').fill('registration of the browser tests');
+  await page.getByLabel('Registration password').fill(REGISTRATION_PASSWORD);
 
   await page.getByRole('button', { name: 'Set up' }).click();
   await expect(page.getByRole('alert')).toContainText('Setup code is missing or wrong');
@@ -261,11 +264,44 @@ test('the Admin manages the categories, and one with tabs is not deleted', async
   await expect(page.getByRole('row', { name: /Books/ })).toHaveCount(0);
 });
 
-test('a user who is no Admin cannot open the settings', async ({ page }) => {
+test('a guest cannot open the settings', async ({ page }) => {
   await page.goto('./#/settings/tabs');
 
   // A guest is asked to log in, and the API refuses the data of the editor.
   await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  const refused = await page.request.get('./api/v2/tabs');
+  expect(refused.status()).toBe(401);
+});
+
+test('a person with the registration password makes an account and sees the tabs of a user', async ({
+  page,
+}) => {
+  await page.goto('./#/login');
+  await page.getByRole('link', { name: 'Make an account' }).click();
+  await expect(page).toHaveURL(/#\/register$/);
+  await expect(page.getByRole('heading', { name: 'Make an account' })).toBeVisible();
+  await page.getByLabel('User name', { exact: true }).fill('zoe');
+  await page.getByLabel('E-mail address').fill('zoe@example.com');
+  await page.getByLabel('Password', { exact: true }).fill('the password of zoe');
+  await page.getByLabel('Password, once more').fill('the password of zoe');
+
+  await page.getByLabel('Registration password').fill('not the registration password');
+  await page.getByRole('button', { name: 'Make the account' }).click();
+  await expect(page.getByRole('alert')).toHaveText('Registration Password was incorrect');
+
+  await page.getByLabel('Registration password').fill(REGISTRATION_PASSWORD);
+  await page.getByRole('button', { name: 'Make the account' }).click();
+
+  // The new user is logged in, in the default group, and sees the tabs of that group.
+  await expect(page.getByLabel('Menu of the user')).toHaveText('zoe');
+  const menu = page.getByRole('navigation', { name: 'Tabs' });
+  await expect(menu.getByRole('link', { name: 'Ping' })).toBeVisible();
+  // The tab "Settings" is for Admins and Co-Admins, and so are the settings.
+  await expect(menu.getByRole('link', { name: 'Settings' })).toHaveCount(0);
+  await page.getByLabel('Menu of the user').click();
+  await expect(page.getByRole('banner').getByRole('link', { name: 'Settings' })).toHaveCount(0);
+  await page.goto('./#/settings/tabs');
+  await expect(page.getByText('Only an Admin or a Co-Admin can open the settings.')).toBeVisible();
   const refused = await page.request.get('./api/v2/tabs');
   expect(refused.status()).toBe(401);
 });

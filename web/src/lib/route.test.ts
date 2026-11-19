@@ -12,6 +12,7 @@ describe('parseRoute', () => {
   it('knows the pages of the interface itself', () => {
     expect(parseRoute(PAGES.login)).toEqual({ page: 'login' });
     expect(parseRoute('#/login/')).toEqual({ page: 'login' });
+    expect(parseRoute(PAGES.register)).toEqual({ page: 'register' });
     expect(parseRoute(PAGES.tabSettings)).toEqual({ page: 'settings', section: 'tabs' });
     expect(parseRoute('#/settings')).toEqual({ page: 'settings', section: 'tabs' });
     expect(parseRoute(PAGES.categorySettings)).toEqual({

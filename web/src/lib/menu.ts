@@ -73,6 +73,7 @@ export function startTab(tabs: MenuTab[]): MenuTab | undefined {
 /** What the main area shows. */
 export type Content =
   | { kind: 'login' }
+  | { kind: 'register' }
   | { kind: 'settings'; section: 'tabs' | 'categories' }
   /** The settings, for a caller who may not manage the install. */
   | { kind: 'notAllowed' }
@@ -113,6 +114,8 @@ export function contentFor(route: Route, tabs: MenuTab[], caller: Caller): Conte
   switch (route.page) {
     case 'login':
       return caller.loggedIn ? contentFor({ page: 'home' }, tabs, caller) : { kind: 'login' };
+    case 'register':
+      return caller.loggedIn ? contentFor({ page: 'home' }, tabs, caller) : { kind: 'register' };
     case 'settings':
       if (caller.canManage) {
         return { kind: 'settings', section: route.section };

@@ -7,6 +7,7 @@ import type { MenuTab } from './types';
 export type Route =
   | { page: 'home' }
   | { page: 'login' }
+  | { page: 'register' }
   | { page: 'settings'; section: 'tabs' | 'categories' }
   /** A tab, by its name as the address writes it. */
   | { page: 'tab'; name: string };
@@ -15,6 +16,7 @@ export type Route =
 export const PAGES = {
   home: '#/',
   login: '#/login',
+  register: '#/register',
   tabSettings: '#/settings/tabs',
   categorySettings: '#/settings/categories',
 } as const;
@@ -37,6 +39,8 @@ export function parseRoute(hash: string): Route {
   switch (fragment.replace(/\/+$/, '')) {
     case '/login':
       return { page: 'login' };
+    case '/register':
+      return { page: 'register' };
     case '/settings':
     case '/settings/tabs':
       return { page: 'settings', section: 'tabs' };

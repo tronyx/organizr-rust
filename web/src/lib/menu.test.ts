@@ -153,8 +153,16 @@ describe('contentFor', () => {
     expect(contentFor({ page: 'home' }, [plex], GUEST)).toEqual({ kind: 'frame', tab: plex });
   });
 
+  it('shows the page for a new account to a guest', () => {
+    expect(contentFor({ page: 'register' }, tabs, GUEST)).toEqual({ kind: 'register' });
+  });
+
   it('does not show the login page to a user who is logged in', () => {
     expect(contentFor({ page: 'login' }, [plex], USER)).toEqual({ kind: 'frame', tab: plex });
+    expect(contentFor({ page: 'register' }, [plex], USER)).toEqual({
+      kind: 'frame',
+      tab: plex,
+    });
   });
 
   it('says so when a user who is logged in names a tab that is not there', () => {

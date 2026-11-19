@@ -5,6 +5,7 @@
   import { PAGES } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
   import Login from './Login.svelte';
+  import Register from './Register.svelte';
   import Settings from './settings/Settings.svelte';
 
   let { content }: { content: Exclude<Content, { kind: 'frame' }> } = $props();
@@ -12,6 +13,8 @@
 
 {#if content.kind === 'login'}
   <Login />
+{:else if content.kind === 'register'}
+  <Register />
 {:else if content.kind === 'settings'}
   <Settings section={content.section} />
 {:else if content.kind === 'notAllowed'}

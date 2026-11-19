@@ -67,6 +67,9 @@
           {#if busy}<span class="loading loading-spinner loading-sm"></span>{/if}
           Log in
         </button>
+        <a class="link link-hover w-full text-center text-sm" href={PAGES.register}>
+          Make an account
+        </a>
       </div>
     </div>
   </form>
