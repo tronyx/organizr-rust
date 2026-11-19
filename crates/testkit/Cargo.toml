@@ -19,7 +19,7 @@ organizr-domain.workspace = true
 organizr-plugins.workspace = true
 organizr-settings.workspace = true
 
-axum.workspace = true
+axum = { workspace = true, features = ["tokio", "http1", "json"] }
 http-body-util.workspace = true
 jiff.workspace = true
 sea-orm.workspace = true

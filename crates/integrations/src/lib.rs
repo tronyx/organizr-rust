@@ -1,1 +1,6 @@
-//! Clients for the external services Organizr shows on its homepage, one module per service.
+//! Clients for the services that Organizr talks to: the account service of Plex, and
+//! the applications that take part in single sign-on.
+
+pub mod http;
+pub mod plex;
+pub mod sso;

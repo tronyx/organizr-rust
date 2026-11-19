@@ -16,6 +16,7 @@ pub mod http;
 pub mod outbox;
 pub mod replay;
 pub mod seed;
+pub mod services;
 pub mod smtp;
 
 use axum::Router;
