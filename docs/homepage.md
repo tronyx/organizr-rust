@@ -30,6 +30,7 @@ This version has these items:
 - [SABnzbd](#sabnzbd)
 - [qBittorrent](#qbittorrent)
 - [Weather and air](#weather-and-air)
+- [Tautulli](#tautulli)
 
 You set all items up in **Settings**, on the tab **Homepage**.
 
@@ -251,3 +252,35 @@ The item needs an API key of BreezoMeter. PHP Organizr comes with a key of its a
 A kind of data that the API refuses is not shown. If the API gives nothing at all, the item says so.
 
 PHP Organizr can search the latitude and the longitude of a city. This application does not have that search yet.
+
+## Tautulli
+
+This item shows statistics of your Plex server from Tautulli: the films and series that are watched most, the most active users and players, and a table of the libraries.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageTautulliEnabled` |
+| Level | `homepageTautulliAuth` |
+| Place | `homepageOrdertautulli` |
+| Address of Tautulli | `tautulliURL` |
+| API key | `tautulliApikey` |
+| Do not check the certificate | `tautulliDisableCertCheck` |
+| Show a title | `tautulliHeaderToggle` |
+| Title | `tautulliHeader` |
+| Milliseconds between two loads | `homepageTautulliRefresh` |
+
+The address of Tautulli is the one of [single sign-on](single-sign-on.md), on the tab **Login** of the settings. If that setting holds more than one address, the homepage shows the first install.
+
+The statistics are in three groups. Each group has a level of its own, so you can show a user what is watched and keep back who watches.
+
+| Group | Level | Switches |
+|---|---|---|
+| What is watched | `homepageTautulliViewsAuth` | `tautulliTopMovies`, `tautulliPopularMovies`, `tautulliTopTV`, `tautulliPopularTV` |
+| Users and players | `homepageTautulliMiscAuth` | `tautulliTopUsers`, `tautulliTopPlatforms` |
+| Libraries | `homepageTautulliLibraryAuth` | `tautulliLibraries` |
+
+A person without the level of a group does not get the data of that group from the server.
+
+To leave libraries out, enter their ids in Tautulli with commas between them: `homepageTautulliViewingStatsExclude` for what is watched, and `homepageTautulliLibraryStatsExclude` for the table.
+
+The poster of the first row of a statistic comes through the picture cache of the server, as the [pictures of events](#pictures-of-events) do.

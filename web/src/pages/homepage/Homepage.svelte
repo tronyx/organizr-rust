@@ -12,6 +12,7 @@
   import HealthChecks from './HealthChecks.svelte';
   import Qbittorrent from './Qbittorrent.svelte';
   import Sabnzbd from './Sabnzbd.svelte';
+  import Tautulli from './Tautulli.svelte';
   import UptimeKuma from './UptimeKuma.svelte';
   import Weather from './Weather.svelte';
 
@@ -28,6 +29,7 @@
     'sabnzbd',
     'qbittorrent',
     'weather',
+    'tautulli',
   ]);
 
   /** How the calendar shows, from the options of its item. */
@@ -87,6 +89,8 @@
           <Sabnzbd />
         {:else if item.kind === 'qbittorrent'}
           <Qbittorrent />
+        {:else if item.kind === 'tautulli'}
+          <Tautulli />
         {:else if item.kind === 'weather'}
           <Weather title={typeof item.options?.title === 'string' ? item.options.title : ''} />
         {/if}

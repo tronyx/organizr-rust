@@ -99,6 +99,8 @@ export interface Launch {
       options: {
         /** The tags of the health checks that the homepage shows, with commas between them. */
         healthChecksTags: string;
+        /** The titles that items show above their data. */
+        titles?: { tautulli?: string };
       };
     };
     /** What the server says about single sign-on. */

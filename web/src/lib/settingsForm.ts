@@ -509,6 +509,82 @@ const SERVICE_ITEMS: FieldGroup[] = [
   },
 ];
 
+/** The settings of the Tautulli item. */
+const TAUTULLI_ITEMS: FieldGroup[] = [
+  {
+    title: 'Tautulli',
+    fields: [
+      ...itemFields(
+        'Tautulli',
+        'homepageTautulliEnabled',
+        'homepageTautulliAuth',
+        'homepageOrdertautulli',
+      ),
+      {
+        key: 'tautulliApikey',
+        label: 'API key of Tautulli',
+        kind: 'secret',
+        help: 'The address of Tautulli is on the tab "Login", with single sign-on.',
+      },
+      {
+        key: 'tautulliDisableCertCheck',
+        label: 'Do not check the certificate of Tautulli',
+        kind: 'switch',
+      },
+      { key: 'tautulliHeaderToggle', label: 'Show a title above the statistics', kind: 'switch' },
+      { key: 'tautulliHeader', label: 'Title above the statistics', kind: 'text' },
+      {
+        key: 'homepageTautulliViewsAuth',
+        label: 'What is watched is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      { key: 'tautulliTopMovies', label: 'Show the most watched films', kind: 'switch' },
+      { key: 'tautulliPopularMovies', label: 'Show the most popular films', kind: 'switch' },
+      { key: 'tautulliTopTV', label: 'Show the most watched series', kind: 'switch' },
+      { key: 'tautulliPopularTV', label: 'Show the most popular series', kind: 'switch' },
+      {
+        key: 'homepageTautulliViewingStatsExclude',
+        label: 'Libraries that these statistics leave out',
+        kind: 'text',
+        help: 'The ids of the libraries in Tautulli, with commas between them.',
+      },
+      {
+        key: 'homepageTautulliMiscAuth',
+        label: 'Users and players are for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      { key: 'tautulliTopUsers', label: 'Show the most active users', kind: 'switch' },
+      {
+        key: 'tautulliFriendlyName',
+        label: 'Show the friendly name of a user, not the user name',
+        kind: 'switch',
+      },
+      { key: 'tautulliTopPlatforms', label: 'Show the most used players', kind: 'switch' },
+      {
+        key: 'homepageTautulliLibraryAuth',
+        label: 'The libraries are for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      { key: 'tautulliLibraries', label: 'Show the libraries', kind: 'switch' },
+      {
+        key: 'homepageTautulliLibraryStatsExclude',
+        label: 'Libraries that the table leaves out',
+        kind: 'text',
+        help: 'The ids of the libraries in Tautulli, with commas between them.',
+      },
+      {
+        key: 'homepageTautulliRefresh',
+        label: 'Milliseconds between two loads of Tautulli',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+];
+
 /** The settings of the weather and air item. */
 const WEATHER_ITEMS: FieldGroup[] = [
   {
@@ -910,4 +986,5 @@ export const HOMEPAGE: FieldGroup[] = [
   ...CALENDAR_ITEMS,
   ...DOWNLOAD_ITEMS,
   ...WEATHER_ITEMS,
+  ...TAUTULLI_ITEMS,
 ];
