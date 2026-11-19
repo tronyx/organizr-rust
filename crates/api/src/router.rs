@@ -149,6 +149,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             &get(homepage::health_checks::tagged),
         )?
         .route("/homepage/kuma/data", &get(homepage::uptime_kuma::data))?
+        .route("/homepage/weather/data", &get(homepage::weather::data))?
         .route("/homepage/calendar", &get(homepage::arr::calendar))?
         .route(
             "/homepage/sonarr/calendar",

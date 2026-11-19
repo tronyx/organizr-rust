@@ -19,6 +19,7 @@ use tokio::sync::Mutex;
 use crate::client::TrustedProxies;
 use crate::picture_cache::PictureCache;
 use crate::ping::{Latency, PingTarget, Prober};
+use organizr_integrations::weather::BREEZOMETER;
 
 /// The shared state of the application.
 #[derive(Debug, Clone)]
@@ -42,6 +43,8 @@ pub struct AppState {
     outbound: Option<Outbound>,
     /// The address of the account service of Plex.
     plex_tv: Arc<str>,
+    /// The address of the weather API.
+    breezometer: Arc<str>,
     /// Held while settings are changed, so that two changes do not overwrite each other.
     settings_change: Arc<Mutex<()>>,
 }
@@ -83,6 +86,7 @@ impl AppState {
                 })
                 .ok(),
             plex_tv: Arc::from(PLEX_TV),
+            breezometer: Arc::from(BREEZOMETER),
             settings_change: Arc::new(Mutex::new(())),
         }
     }
@@ -221,6 +225,19 @@ impl AppState {
     pub fn with_plex_tv(mut self, address: &str) -> Self {
         self.plex_tv = Arc::from(address);
         self
+    }
+
+    /// The same state, with another address for the weather API. A test puts a
+    /// stand-in there.
+    #[must_use]
+    pub fn with_breezometer(mut self, address: &str) -> Self {
+        self.breezometer = Arc::from(address);
+        self
+    }
+
+    /// The address of the weather API.
+    pub fn breezometer(&self) -> &str {
+        &self.breezometer
     }
 
     /// The client for requests to other services.

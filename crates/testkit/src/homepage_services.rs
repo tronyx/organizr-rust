@@ -415,3 +415,106 @@ pub async fn qbittorrent() -> StandIn {
     )
     .await
 }
+
+/// The API key of the BreezoMeter stand-in.
+pub const WEATHER_KEY: &str = "made-up-weather-key";
+
+/// The answer of the BreezoMeter stand-in: the given data for the right key, and else
+/// the error that the API names in its answer.
+fn for_weather_key(query: Option<&str>, data: &Value) -> Response {
+    if query_field(query, "key") == Some(WEATHER_KEY) {
+        axum::Json(json!({"metadata": null, "data": data, "error": null})).into_response()
+    } else {
+        (
+            StatusCode::FORBIDDEN,
+            axum::Json(json!({
+                "metadata": null,
+                "data": null,
+                "error": {"code": "invalid_api_key", "title": "Invalid API key"},
+            })),
+        )
+            .into_response()
+    }
+}
+
+async fn weather_forecast(RawQuery(query): RawQuery) -> Response {
+    let hour = |time: &str, text: &str, degrees: f64| {
+        json!({
+            "datetime": time,
+            "is_day_time": true,
+            "icon_code": 2,
+            "weather_text": text,
+            "temperature": {"value": degrees, "units": "C"},
+            "feels_like_temperature": {"value": degrees - 1.0, "units": "C"},
+            "relative_humidity": 61,
+            "precipitation": {
+                "precipitation_probability": 20,
+                "total_precipitation": {"value": 0.0, "units": "mm"},
+            },
+            "wind": {"speed": {"value": 12.5, "units": "km/h"}, "direction": 270},
+        })
+    };
+    for_weather_key(
+        query.as_deref(),
+        &json!([
+            hour("2020-01-05T12:00:00Z", "Partly cloudy", 7.5),
+            hour("2020-01-05T13:00:00Z", "Cloudy", 8.0),
+        ]),
+    )
+}
+
+async fn weather_air(RawQuery(query): RawQuery) -> Response {
+    for_weather_key(
+        query.as_deref(),
+        &json!({
+            "datetime": "2020-01-05T12:00:00Z",
+            "data_available": true,
+            "indexes": {"baqi": {
+                "display_name": "BreezoMeter AQI",
+                "aqi": 67,
+                "aqi_display": "67",
+                "color": "#84CF33",
+                "category": "Good air quality",
+                "dominant_pollutant": "pm25",
+            }},
+            "health_recommendations": {
+                "general_population": "With this level of air quality, you have no limitations.",
+            },
+        }),
+    )
+}
+
+async fn weather_pollen(RawQuery(query): RawQuery) -> Response {
+    let kind = |name: &str, value: u8, category: &str| {
+        json!({
+            "display_name": name,
+            "in_season": true,
+            "data_available": true,
+            "index": {"value": value, "category": category, "color": "#FFD900"},
+        })
+    };
+    for_weather_key(
+        query.as_deref(),
+        &json!([{
+            "date": "2020-01-05",
+            "index_id": "bpi",
+            "index_display_name": "BreezoMeter Pollen Index",
+            "types": {
+                "grass": kind("Grass", 1, "Very Low"),
+                "tree": kind("Tree", 3, "Moderate"),
+                "weed": {"display_name": "Weed", "in_season": false, "data_available": false, "index": {"value": null, "category": null, "color": null}},
+            },
+        }]),
+    )
+}
+
+/// A stand-in for the API of BreezoMeter.
+pub async fn breezometer() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/weather/v1/forecast/hourly", get(weather_forecast))
+            .route("/air-quality/v2/current-conditions", get(weather_air))
+            .route("/pollen/v2/forecast/daily", get(weather_pollen)),
+    )
+    .await
+}

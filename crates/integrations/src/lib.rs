@@ -9,3 +9,4 @@ pub mod http;
 pub mod plex;
 pub mod sso;
 pub mod uptime_kuma;
+pub mod weather;

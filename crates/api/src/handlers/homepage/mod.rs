@@ -10,6 +10,7 @@ pub mod downloaders;
 pub mod health_checks;
 pub mod html;
 pub mod uptime_kuma;
+pub mod weather;
 
 use axum::Extension;
 use axum::extract::State;
@@ -132,6 +133,7 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderRadarrQueue" => ("radarrqueue", arr::queue_permissions(Kind::Radarr)),
         "homepageOrdersabnzbd" => ("sabnzbd", downloaders::sabnzbd_permissions()),
         "homepageOrderqBittorrent" => ("qbittorrent", downloaders::qbittorrent_permissions()),
+        "homepageOrderWeatherAndAir" => ("weather", weather::permissions()),
         _ => return None,
     };
     let item = Item {
