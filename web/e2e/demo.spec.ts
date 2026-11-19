@@ -169,7 +169,8 @@ test('the Admin adds, changes, hides, moves and deletes a tab in the settings', 
 }) => {
   await logIn(page);
   await page.getByLabel('Menu of the user').click();
-  await page.getByRole('link', { name: 'Settings' }).click();
+  // The menu of tabs has a link with the same name: the tab "Settings".
+  await page.getByRole('banner').getByRole('link', { name: 'Settings' }).click();
   await expect(page).toHaveURL(/#\/settings\/tabs$/);
   const menu = page.getByRole('navigation', { name: 'Tabs' });
   const status = page.getByRole('status');
