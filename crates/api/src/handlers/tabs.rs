@@ -2,7 +2,8 @@
 //!
 //! Every route needs an Admin or a Co-Admin. The PHP application stores whatever a
 //! request sends, in any field. Here a value must be of the kind its field takes, and a
-//! request with another value gets `422`.
+//! request with another value gets `422`. `docs/deviations.md` lists this and the other
+//! differences as D-39.
 
 use axum::Extension;
 use axum::extract::{Path, State};
@@ -108,8 +109,8 @@ pub struct TabVariables {
 impl TabVariables {
     /// The values for the caller of a request.
     ///
-    /// `{username_lower}` gets the name as it is, not in lower case, as in the PHP
-    /// application.
+    /// `{username_lower}` gets the name in lower case. In the PHP application it gets
+    /// the name as it is.
     pub fn of(caller: &Caller, headers: &HeaderMap) -> Self {
         let (username, email, group, level) = match &caller.identity {
             // A script with the API key is the user "Organizr API" of the group Admin.
@@ -142,8 +143,8 @@ impl TabVariables {
         Self {
             values: [
                 ("{domain}", header(header::HOST)),
-                ("{username}", username.clone()),
-                ("{username_lower}", username),
+                ("{username_lower}", username.to_lowercase()),
+                ("{username}", username),
                 ("{email}", email),
                 ("{group}", group),
                 ("{group_id}", level.get().to_string()),

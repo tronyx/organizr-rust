@@ -613,7 +613,7 @@ async fn list_fills_in_the_placeholders_for_the_user_who_asks() {
             .expect("the list has the tab");
         assert_eq!(
             listed["url"],
-            json!("https://organizr.example.com/Cora/Cora/Cora@example.com/Co-Admin/1")
+            json!("https://organizr.example.com/Cora/cora/Cora@example.com/Co-Admin/1")
         );
         assert_eq!(listed["url_local"], Value::Null, "an empty address");
         // One tab alone is shown as it is stored, for the form that edits it.

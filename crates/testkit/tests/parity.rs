@@ -257,6 +257,14 @@ async fn registration_answers_like_php() {
     .await;
 }
 
+/// The local address of the recorded tab "Local" as the list of tabs shows it to a
+/// script with the API key. `komga` is the value of the cookie `komga_token`.
+fn placeholders_filled_in(komga: &str) -> String {
+    format!(
+        "http://organizr.test/Organizr API/organizr api//Admin/0/{komga}/{{other}}/organizr.test"
+    )
+}
+
 #[tokio::test]
 async fn tab_routes_answer_like_php() {
     on_each_engine(async |database| {
@@ -301,6 +309,38 @@ async fn tab_routes_answer_like_php() {
                 "tab_with_html_in_the_name",
                 "/response/data/name",
                 json!("A & <b>"),
+            )
+            // The local address of the tab "Local" holds every placeholder.
+            // `{username_lower}` gives the name in lower case here.
+            .deviation(
+                "D-47",
+                "tabs_after_adding",
+                "/response/data/tabs/6/url_local",
+                json!(placeholders_filled_in("")),
+            )
+            .deviation(
+                "D-47",
+                "tabs_with_a_komga_cookie",
+                "/response/data/tabs/6/url_local",
+                json!(placeholders_filled_in("komga-value")),
+            )
+            .deviation(
+                "D-47",
+                "tabs_after_changing_the_default",
+                "/response/data/tabs/6/url_local",
+                json!(placeholders_filled_in("")),
+            )
+            .deviation(
+                "D-47",
+                "tabs_after_ordering",
+                "/response/data/tabs/1/url_local",
+                json!(placeholders_filled_in("")),
+            )
+            .deviation(
+                "D-47",
+                "tabs_after_deleting",
+                "/response/data/tabs/1/url_local",
+                json!(placeholders_filled_in("")),
             )
             .pending_case(
                 "launch_with_tabs",
