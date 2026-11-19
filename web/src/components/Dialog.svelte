@@ -17,9 +17,17 @@
   let dialog = $state<HTMLDialogElement>();
 
   $effect(() => {
-    if (dialog && !dialog.open) {
-      dialog.showModal();
+    const element = dialog;
+    if (!element) {
+      return;
     }
+    // A parent can still move the dialog to another place of the page. A dialog that is
+    // moved after it opened is no longer on top of the page, so opening waits for that.
+    queueMicrotask(() => {
+      if (element.isConnected && !element.open) {
+        element.showModal();
+      }
+    });
   });
 </script>
 

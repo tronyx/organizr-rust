@@ -1,6 +1,7 @@
 <script lang="ts">
   // The form for a new tab, or for a tab that is changed.
   import Dialog from '../../components/Dialog.svelte';
+  import PictureField from '../../components/PictureField.svelte';
   import { asSwitch } from '../../lib/editor';
   import type { Category, Group, Tab } from '../../lib/types';
 
@@ -109,12 +110,7 @@
       {/if}
 
       <label class="label" for="tab-image">Picture</label>
-      <input
-        id="tab-image"
-        class="input w-full"
-        bind:value={image}
-        placeholder="https://example.com/picture.png"
-      />
+      <PictureField id="tab-image" bind:value={image} {name} />
 
       <div class="grid gap-x-4 sm:grid-cols-2">
         <div>

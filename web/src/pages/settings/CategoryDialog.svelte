@@ -1,6 +1,7 @@
 <script lang="ts">
   // The form for a new category, or for a category that is changed.
   import Dialog from '../../components/Dialog.svelte';
+  import PictureField from '../../components/PictureField.svelte';
   import type { Category } from '../../lib/types';
 
   let {
@@ -38,12 +39,7 @@
       <input id="category-name" class="input w-full" bind:value={name} required maxlength="50" />
 
       <label class="label" for="category-image">Picture</label>
-      <input
-        id="category-image"
-        class="input w-full"
-        bind:value={image}
-        placeholder="https://example.com/picture.png"
-      />
+      <PictureField id="category-image" bind:value={image} {name} />
     </fieldset>
 
     {#if error}

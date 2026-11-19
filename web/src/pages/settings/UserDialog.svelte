@@ -1,6 +1,7 @@
 <script lang="ts">
   // The form for a new user, or for a user that is changed.
   import Dialog from '../../components/Dialog.svelte';
+  import PictureField from '../../components/PictureField.svelte';
   import { changedFields, GUEST_LEVEL } from '../../lib/editor';
   import type { Account, Group } from '../../lib/types';
 
@@ -111,12 +112,7 @@
         </select>
 
         <label class="label" for="user-image">Picture</label>
-        <input
-          id="user-image"
-          class="input w-full"
-          bind:value={image}
-          placeholder="https://example.com/picture.png"
-        />
+        <PictureField id="user-image" bind:value={image} name={username} />
       {/if}
     </fieldset>
 

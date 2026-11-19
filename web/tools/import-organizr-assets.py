@@ -154,7 +154,8 @@ def import_icons(container, work):
         if family.get("listed_only"):
             found = {name: found[name] for name in listed[word] if name in found}
         # The icon list of upstream names a few icons that its own style sheet does not have.
-        names[word] = [name for name in listed[word] if name in found]
+        # It also names some icons twice. Each name is kept once, in the order of the list.
+        names[word] = list(dict.fromkeys(name for name in listed[word] if name in found))
 
         font = Path(family["font"]).name
         docker("cp", f"{container}:{SOURCE}/{family['font']}", str(fonts / font))

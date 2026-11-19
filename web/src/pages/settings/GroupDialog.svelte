@@ -1,6 +1,7 @@
 <script lang="ts">
   // The form for a new group, or for a group that is changed.
   import Dialog from '../../components/Dialog.svelte';
+  import PictureField from '../../components/PictureField.svelte';
   import type { Group } from '../../lib/types';
 
   let {
@@ -38,13 +39,7 @@
       <input id="group-name" class="input w-full" bind:value={name} required maxlength="50" />
 
       <label class="label" for="group-image">Picture</label>
-      <input
-        id="group-image"
-        class="input w-full"
-        bind:value={image}
-        required
-        placeholder="https://example.com/picture.png"
-      />
+      <PictureField id="group-image" bind:value={image} {name} required />
     </fieldset>
 
     {#if error}

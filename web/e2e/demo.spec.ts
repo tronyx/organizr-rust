@@ -30,6 +30,10 @@ const ADMIN = {
 /** The password that lets a person make an account. The set-up stores it. */
 const REGISTRATION_PASSWORD = 'registration of the browser tests';
 
+/** A PNG picture of one pixel, as base64. */
+const ONE_PIXEL_PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
 /** The password that the Admin sets on the settings page later. */
 const NEW_REGISTRATION_PASSWORD = 'a second registration password';
 
@@ -282,6 +286,47 @@ test('a tab shows a picture of Organizr or an icon in the menu', async ({ page }
 
   await remove('Plex Picture');
   await remove('Cog Icon');
+
+  // A picture that the Admin uploads in the chooser.
+  await page.getByRole('button', { name: 'Add a tab' }).click();
+  const added = page.getByRole('dialog', { name: 'Add a tab' });
+  await added.getByLabel('Name').fill('Own Picture');
+  await added.getByLabel('Address', { exact: true }).fill('/api/v2/ping');
+  await added.getByRole('button', { name: 'Choose' }).click();
+  const chooser = page.getByRole('dialog', { name: 'Choose a picture' });
+  await expect(chooser.getByRole('button', { name: 'plex.png', exact: true })).toBeVisible();
+  await chooser.getByRole('tab', { name: 'Upload' }).click();
+  await chooser.getByLabel('Picture file').setInputFiles({
+    name: 'own picture.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(ONE_PIXEL_PNG, 'base64'),
+  });
+  await chooser.getByRole('button', { name: 'Upload' }).click();
+  await expect(chooser).toHaveCount(0);
+  await expect(added.getByLabel('Picture', { exact: true })).toHaveValue(
+    'data/userTabs/own picture.png',
+  );
+  await added.getByRole('button', { name: 'Save' }).click();
+  await expect(status).toHaveText('The tab is added.');
+  const own = menu.getByRole('link', { name: 'Own Picture' }).locator('img');
+  await expect
+    .poll(() => own.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
+
+  // The chooser lists the uploaded picture, and deletes it.
+  await page
+    .getByRole('row', { name: /Own Picture/ })
+    .getByRole('button', { name: /Change/ })
+    .click();
+  const changed = page.getByRole('dialog', { name: 'Change the tab Own Picture' });
+  await changed.getByRole('button', { name: 'Choose' }).click();
+  await chooser.getByLabel('Search').fill('own picture');
+  page.once('dialog', (dialog) => void dialog.accept());
+  await chooser.getByRole('button', { name: 'Delete own picture.png' }).click();
+  await expect(chooser.getByText('No picture has this text in its name.')).toBeVisible();
+  await chooser.getByRole('button', { name: 'Cancel' }).click();
+  await changed.getByRole('button', { name: 'Cancel' }).click();
+  await remove('Own Picture');
 });
 
 test('the Admin manages the categories, and one with tabs is not deleted', async ({ page }) => {

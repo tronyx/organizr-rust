@@ -48,7 +48,26 @@ export async function api<T>(method: string, path: string, body?: unknown): Prom
     headers['Content-Type'] = 'application/json';
     init.body = JSON.stringify(body);
   }
+  return send(path, init);
+}
 
+/**
+ * Uploads a file to an API route, in the field `file` of a form. Fails with an
+ * `ApiError`.
+ */
+export async function upload<T>(path: string, file: File): Promise<ApiAnswer<T>> {
+  const form = new FormData();
+  form.append('file', file);
+  // The browser writes the content type, with the line that separates the parts.
+  return send(path, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+    credentials: 'same-origin',
+    body: form,
+  });
+}
+
+async function send<T>(path: string, init: RequestInit): Promise<ApiAnswer<T>> {
   let response: Response;
   try {
     response = await fetch(apiUrl(path), init);
