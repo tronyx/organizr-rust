@@ -2,7 +2,8 @@
 //!
 //! Every route needs an Admin or a Co-Admin. `GET /categories` is the same as
 //! `GET /tabs`, and the router sends it there. As with tabs, a value must be of the kind
-//! its field takes. `docs/deviations.md` lists the differences from the PHP application.
+//! its field takes. `docs/deviations.md` lists the differences from the PHP application
+//! as D-48.
 
 use axum::Extension;
 use axum::extract::{Path, State};
