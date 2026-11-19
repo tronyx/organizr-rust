@@ -12,6 +12,7 @@
 )]
 
 pub mod engines;
+pub mod homepage_services;
 pub mod http;
 pub mod outbox;
 pub mod replay;

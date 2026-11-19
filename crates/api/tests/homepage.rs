@@ -2,12 +2,14 @@
 
 #![allow(
     clippy::expect_used,
+    clippy::indexing_slicing,
     clippy::panic,
     reason = "helper functions of a test file may panic; the lint settings only exempt test functions"
 )]
 
 use axum::http::StatusCode;
 use organizr_testkit::engines::on_each_engine;
+use organizr_testkit::homepage_services::{self, HEALTH_KEYS, KUMA_KEY};
 use organizr_testkit::http::{Answer, As, call};
 use organizr_testkit::{installed_app_with, seed};
 use serde_json::json;
@@ -152,6 +154,180 @@ async fn custom_html_is_refused_as_the_php_application_refuses_an_item() {
             .await;
             assert_eq!(missing.status, StatusCode::NOT_FOUND, "{number}");
         }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn health_checks_of_every_project_come_sorted_by_status() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let service = homepage_services::healthchecks().await;
+        let keys = format!("{},{}", HEALTH_KEYS.0, HEALTH_KEYS.1);
+        let app = installed_app_with(
+            database,
+            &[
+                ("homepageHealthChecksEnabled", json!(true)),
+                ("homepageHealthChecksShowTags", json!(true)),
+                (
+                    "healthChecksURL",
+                    json!(format!("{}/api/v1/checks", service.url())),
+                ),
+                ("healthChecksToken", json!(keys)),
+            ],
+        );
+        let names = |answer: &Answer| -> Vec<String> {
+            answer.data()["content"]["checks"]
+                .as_array()
+                .expect("the answer lists checks")
+                .iter()
+                .map(|check| {
+                    format!(
+                        "{} {}",
+                        check["status"].as_str().unwrap_or("?"),
+                        check["name"].as_str().unwrap_or("?")
+                    )
+                })
+                .collect()
+        };
+
+        let all = call(&app, As::Admin, "GET", "/homepage/healthchecks", None).await;
+
+        assert_eq!(all.status, StatusCode::OK, "{}", all.body);
+        // Checks of one status stay in the order of the projects.
+        assert_eq!(
+            names(&all),
+            [
+                "down Mail queue",
+                "down Site map",
+                "grace Certificate renewal",
+                "paused Old job",
+                "up Nightly backup",
+            ]
+        );
+        assert_eq!(all.data()["options"], json!({"desc": false, "tags": true}));
+        // The fields of a check come as the service gave them.
+        assert_eq!(
+            all.data()["content"]["checks"][0]["next_ping"],
+            json!("2026-11-02T10:00:00+00:00")
+        );
+        let seen = service.seen();
+        assert_eq!(seen.len(), 2);
+        assert_eq!(seen[0].path, "/api/v1/checks/");
+        assert_eq!(seen[0].header("x-api-key"), Some(HEALTH_KEYS.0));
+        assert_eq!(seen[1].header("x-api-key"), Some(HEALTH_KEYS.1));
+
+        let tagged = call(
+            &app,
+            As::Admin,
+            "GET",
+            "/homepage/healthchecks/prod,web",
+            None,
+        )
+        .await;
+        assert_eq!(names(&tagged), ["down Site map"]);
+        assert_eq!(
+            service.seen().last().map(|seen| seen.path.clone()),
+            Some("/api/v1/checks/?tag=prod&tag=web".to_owned())
+        );
+        let star = call(&app, As::Admin, "GET", "/homepage/healthchecks/*", None).await;
+        assert_eq!(names(&star).len(), 5);
+
+        // The item is on the list of the homepage for an Admin, and not for a guest.
+        let listed = call(&app, As::Admin, "GET", "/homepage/items", None).await;
+        assert_eq!(
+            listed.data(),
+            json!([{"key": "homepageOrderhealthchecks", "kind": "healthchecks", "id": ""}])
+        );
+        let refused = call(&app, As::Guest, "GET", "/homepage/healthchecks", None).await;
+        assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+        assert_eq!(service.seen().len(), 6);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn health_checks_leave_out_a_project_that_refuses() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let service = homepage_services::healthchecks().await;
+        let app = installed_app_with(
+            database,
+            &[
+                ("homepageHealthChecksEnabled", json!(true)),
+                (
+                    "healthChecksURL",
+                    json!(format!("{}/api/v1/checks", service.url())),
+                ),
+                (
+                    "healthChecksToken",
+                    json!(format!("a-wrong-key,{}", HEALTH_KEYS.1)),
+                ),
+            ],
+        );
+
+        let answer = call(&app, As::Admin, "GET", "/homepage/healthchecks", None).await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(
+            answer.data()["content"]["checks"].as_array().map(Vec::len),
+            Some(2)
+        );
+
+        // Without a key, the service is not asked.
+        let app = installed_app_with(database, &[("homepageHealthChecksEnabled", json!(true))]);
+        let refused = call(&app, As::Admin, "GET", "/homepage/healthchecks", None).await;
+        assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+        assert_eq!(
+            refused.message(),
+            json!("healthChecksToken was not supplied")
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn uptime_kuma_monitors_come_with_the_options_of_the_item() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let service = homepage_services::uptime_kuma().await;
+        let settings = |key: &str| {
+            vec![
+                ("homepageUptimeKumaEnabled", json!(true)),
+                ("homepageUptimeKumaAuth", json!("4")),
+                ("homepageUptimeKumaCompact", json!(false)),
+                ("uptimeKumaURL", json!(format!("{}/", service.url()))),
+                ("uptimeKumaToken", json!(key)),
+            ]
+        };
+        let app = installed_app_with(database, &settings(KUMA_KEY));
+        let user = seed::logged_in(database, &app, "zed", 4).await;
+
+        let answer = call(&app, As::User(&user), "GET", "/homepage/kuma/data", None).await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(
+            answer.data(),
+            json!({
+                "data": [
+                    {"name": "Router", "type": "ping", "url": "null", "status": true, "latency": 3},
+                    {"name": "Blog", "type": "http", "url": "https://blog.example.com", "status": false, "latency": null},
+                ],
+                "options": {"title": "Uptime Kuma", "titleToggle": true, "compact": false, "showLatency": true},
+            })
+        );
+        assert_eq!(service.seen()[0].path, "/metrics");
+
+        let guest = call(&app, As::Guest, "GET", "/homepage/kuma/data", None).await;
+        assert_eq!(guest.status, StatusCode::UNAUTHORIZED);
+        assert_eq!(guest.message(), json!("User not approved to view this homepage item"));
+        assert_eq!(service.seen().len(), 1);
+
+        // Uptime Kuma refuses a wrong key.
+        let wrong = installed_app_with(database, &settings("another-key"));
+        let refused = call(&wrong, As::Admin, "GET", "/homepage/kuma/data", None).await;
+        assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+        assert_eq!(refused.message(), json!("Uptime Kuma answered with the status 401"));
     })
     .await;
 }

@@ -54,12 +54,34 @@ impl Outbound {
     /// The client for a URL: the one that checks certificates, unless the URL reaches a
     /// service by its address over HTTPS.
     pub fn client_for(&self, url: &str) -> &Client {
-        if is_address_over_https(url) {
+        self.client(url, false)
+    }
+
+    /// The client for a URL of a service that has a setting "do not check the
+    /// certificate". With `never_check`, the certificate is not checked.
+    pub fn client(&self, url: &str, never_check: bool) -> &Client {
+        if never_check || is_address_over_https(url) {
             &self.not_checking
         } else {
             &self.checking
         }
     }
+}
+
+/// The time limit of a request from a setting of the PHP application, which is the
+/// time between two refreshes of a homepage item: a number of 1000 or more is in
+/// milliseconds, a smaller one is in seconds. A text that is no number is no limit.
+pub fn time_limit(setting: &str) -> Option<Duration> {
+    let number: f64 = setting.trim().parse().ok()?;
+    if !number.is_finite() || number <= 0.0 {
+        return None;
+    }
+    let seconds = if number >= 1000.0 {
+        number / 1000.0
+    } else {
+        number
+    };
+    Duration::try_from_secs_f64(seconds).ok()
 }
 
 /// Whether a URL names its host by an IP address and uses HTTPS.
@@ -84,7 +106,20 @@ pub fn is_address_over_https(url: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{Outbound, is_address_over_https, user_agent};
+    use std::time::Duration;
+
+    use super::{Outbound, is_address_over_https, time_limit, user_agent};
+
+    #[test]
+    fn time_limit_is_in_milliseconds_from_one_thousand_up() {
+        assert_eq!(time_limit("60000"), Some(Duration::from_secs(60)));
+        assert_eq!(time_limit("1000"), Some(Duration::from_secs(1)));
+        assert_eq!(time_limit("999"), Some(Duration::from_secs(999)));
+        assert_eq!(time_limit(" 30 "), Some(Duration::from_secs(30)));
+        for none in ["", "soon", "0", "-5", "NaN", "inf"] {
+            assert_eq!(time_limit(none), None, "{none}");
+        }
+    }
 
     #[test]
     fn certificate_is_not_checked_only_for_an_address_over_https() {

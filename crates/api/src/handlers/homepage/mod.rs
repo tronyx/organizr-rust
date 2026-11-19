@@ -5,17 +5,22 @@
 //! builds it. It asks `GET /homepage/items` which items the caller sees and in which
 //! order, and then asks the route of each item for its data.
 
+pub mod health_checks;
 pub mod html;
+pub mod uptime_kuma;
 
 use axum::Extension;
 use axum::extract::State;
+use axum::http::{HeaderMap, StatusCode, header};
 use organizr_settings::Settings;
 use serde::Serialize;
 use serde_json::Value;
 
 use crate::caller::Caller;
+use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
+use crate::php_url;
 use crate::state::AppState;
 
 /// What must hold before a caller gets an item: the `...HomepagePermissions` arrays
@@ -68,7 +73,7 @@ impl Permissions {
         for key in &self.auth {
             if u32::from(caller.level().get()) > level_of(settings.get(key).as_ref()) {
                 return Err(Refusal::Request(
-                    axum::http::StatusCode::UNAUTHORIZED,
+                    StatusCode::UNAUTHORIZED,
                     "User not approved to view this homepage item".to_owned(),
                 ));
             }
@@ -111,7 +116,36 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         };
         return Some((item, permissions));
     }
-    None
+    let (kind, permissions) = match key {
+        "homepageOrderhealthchecks" => ("healthchecks", health_checks::permissions()),
+        "homepageOrderUptimeKuma" => ("uptimekuma", uptime_kuma::permissions()),
+        _ => return None,
+    };
+    let item = Item {
+        key,
+        kind,
+        id: String::new(),
+    };
+    Some((item, permissions))
+}
+
+/// The address of a service as the settings hold it, completed as the PHP application
+/// completes it. An address that starts with a slash is a path on the host of
+/// Organizr.
+pub fn service_url(address: &str, headers: &HeaderMap, client: &Client) -> String {
+    let host = headers
+        .get(header::HOST)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+    php_url::qualify(address.trim(), client.https, host)
+}
+
+/// The answer when this server cannot send requests to other services.
+pub fn no_requests() -> Refusal {
+    Refusal::Request(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Requests to other services cannot be sent".to_owned(),
+    )
 }
 
 /// The items that the caller sees, in the order of the homepage.

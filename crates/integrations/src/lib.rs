@@ -1,6 +1,9 @@
-//! Clients for the services that Organizr talks to: the account service of Plex, and
-//! the applications that take part in single sign-on.
+//! Clients for the services that Organizr talks to: the account service of Plex, the
+//! applications that take part in single sign-on, and the applications whose data the
+//! homepage shows.
 
+pub mod health_checks;
 pub mod http;
 pub mod plex;
 pub mod sso;
+pub mod uptime_kuma;

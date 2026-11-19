@@ -142,6 +142,12 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         )?
         .route("/homepage/items", &get(homepage::items))?
         .route("/homepage/html/{number}", &get(homepage::html::show))?
+        .route("/homepage/healthchecks", &get(homepage::health_checks::all))?
+        .route(
+            "/homepage/healthchecks/{tags}",
+            &get(homepage::health_checks::tagged),
+        )?
+        .route("/homepage/kuma/data", &get(homepage::uptime_kuma::data))?
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
         .route("/plex/servers", &get(plex::servers))?
