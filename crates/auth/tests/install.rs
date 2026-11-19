@@ -80,6 +80,7 @@ async fn set_up_creates_an_admin_who_can_log_in() {
             database,
             "robin",
             "the password of robin",
+            organizr_auth::login::SecondFactor::without_code(&organizr_testkit::seed::secrets()),
             device,
             NOW,
             Duration::from_hours(24),

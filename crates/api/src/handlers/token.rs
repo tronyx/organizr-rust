@@ -56,7 +56,7 @@ pub struct UserObject<S> {
     #[serde(rename = "tokenList")]
     token_list: Option<Vec<S>>,
     #[serde(rename = "authService")]
-    auth_service: Option<&'static str>,
+    auth_service: Option<String>,
 }
 
 /// A time as PHP writes a date object to JSON.
@@ -197,6 +197,23 @@ async fn describe_user<S: SessionEntry>(
         })
         .collect();
 
+    // The PHP application keeps the service and the second factor in one text and
+    // shows its first part. So an account with a second factor shows the kind of the
+    // factor, and every other account the service that checks its password.
+    let auth_service = state
+        .database()
+        .users()
+        .login_of(user.id)
+        .await?
+        .map_or_else(
+            || "internal".to_owned(),
+            |login| {
+                login
+                    .two_factor
+                    .map_or(login.auth_service, |factor| factor.kind)
+            },
+        );
+
     Ok(UserObject {
         token: shown_token.map(|token| token.expose().to_owned()),
         token_date: Some(PhpDateTime::of(session.created_at)),
@@ -211,8 +228,7 @@ async fn describe_user<S: SessionEntry>(
         loggedin: true,
         locked: Locked::User(u8::from(user.locked)),
         token_list: Some(token_list),
-        // Two-factor login, which changes this value, is not implemented yet.
-        auth_service: Some("internal"),
+        auth_service: Some(auth_service),
     })
 }
 

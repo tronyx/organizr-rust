@@ -24,7 +24,8 @@
       "created": "<time>",
       "expires": "<time>",
       "password": "<password hash>",
-      "register_date": "<time>"
+      "register_date": "<time>",
+      "secret": "<secret>"
     }
   },
   "cases": [

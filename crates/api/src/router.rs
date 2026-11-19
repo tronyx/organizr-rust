@@ -16,7 +16,7 @@ use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
     basics, categories, config, fields, groups, images, launch, login, logout, ping, register,
-    tabs, token, users, wizard,
+    tabs, token, two_factor, users, wizard,
 };
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
@@ -34,6 +34,13 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/", &get(basics::root))?
         .route("/status[/]", &get(basics::status))?
         .route("/launch[/]", &get(launch::launch))?
+        .route(
+            "/2fa",
+            &post(two_factor::verify)
+                .put(two_factor::save)
+                .delete(two_factor::remove),
+        )?
+        .route("/2fa/{type}", &post(two_factor::create))?
         .route("/ping", &get(basics::ping).post(ping::many))?
         .route("/ping/{ping}", &get(ping::one))?
         .route("/rox", &get(basics::rox))?

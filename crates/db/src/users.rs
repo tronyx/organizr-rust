@@ -1,5 +1,7 @@
 //! Storage of users.
 
+use std::collections::HashMap;
+
 use organizr_domain::{
     Change, GroupId, NewUser, PasswordHash, Timestamp, User, UserChanges, UserId,
 };
@@ -172,17 +174,35 @@ impl<'a> Users<'a> {
         let row = user::Entity::find_by_id(id.get())
             .one(self.connection)
             .await?;
-        Ok(row.map(|row| UserLogin {
-            auth_service: row.auth_service,
-            auth_provider: row.auth_provider,
-            two_factor: row.two_factor_kind.zip(row.two_factor_secret).map(
-                |(kind, sealed_secret)| SealedTwoFactor {
-                    kind,
-                    sealed_secret,
-                },
-            ),
-            sealed_plex_token: row.plex_token,
-        }))
+        Ok(row.map(UserLogin::from))
+    }
+
+    /// How each user logs in, by the id of the user.
+    pub async fn logins(&self) -> Result<HashMap<UserId, UserLogin>, DbError> {
+        Ok(user::Entity::find()
+            .all(self.connection)
+            .await?
+            .into_iter()
+            .map(|row| (UserId::new(row.id), UserLogin::from(row)))
+            .collect())
+    }
+
+    /// Sets or removes the second factor of a user. Returns whether the user exists.
+    pub async fn set_two_factor(
+        &self,
+        id: UserId,
+        two_factor: Option<SealedTwoFactor>,
+    ) -> Result<bool, DbError> {
+        let (kind, secret) = two_factor
+            .map(|factor| (factor.kind, factor.sealed_secret))
+            .unzip();
+        let result = user::Entity::update_many()
+            .col_expr(user::Column::TwoFactorKind, Expr::value(kind))
+            .col_expr(user::Column::TwoFactorSecret, Expr::value(secret))
+            .filter(user::Column::Id.eq(id.get()))
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected > 0)
     }
 
     /// Deletes a user and the sessions of that user. Returns whether the user existed.
@@ -215,6 +235,35 @@ pub struct UserLogin {
     pub two_factor: Option<SealedTwoFactor>,
     /// The token of the Plex account, sealed.
     pub sealed_plex_token: Option<String>,
+}
+
+impl From<user::Model> for UserLogin {
+    fn from(row: user::Model) -> Self {
+        Self {
+            auth_service: row.auth_service,
+            auth_provider: row.auth_provider,
+            two_factor: row.two_factor_kind.zip(row.two_factor_secret).map(
+                |(kind, sealed_secret)| SealedTwoFactor {
+                    kind,
+                    sealed_secret,
+                },
+            ),
+            sealed_plex_token: row.plex_token,
+        }
+    }
+}
+
+impl UserLogin {
+    /// The text of the `auth_service` field of the PHP application for this login,
+    /// without a secret: the kind of the second factor when there is one, else the
+    /// service, with the provider of an `oidc` login behind `::`.
+    pub fn auth_service_text(&self) -> String {
+        match (&self.two_factor, &self.auth_provider) {
+            (Some(factor), _) => factor.kind.clone(),
+            (None, Some(provider)) => format!("{}::{provider}", self.auth_service),
+            (None, None) => self.auth_service.clone(),
+        }
+    }
 }
 
 /// Stores a new record through any connection: the pool, or a transaction.

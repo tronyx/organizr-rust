@@ -38,10 +38,14 @@ A replay replaces the same values in the answers of the Rust application.
 Only the Python standard library is used. No data of a real install is involved.
 """
 
+import base64
+import hashlib
+import hmac
 import http.client
 import json
 import os
 import re
+import struct
 import sys
 import time
 from datetime import datetime, timezone
@@ -108,6 +112,8 @@ REDACTED_KEYS = {
     # time at which a user was stored.
     "password": "<password hash>",
     "register_date": "<time>",
+    # The secret of a second factor, which is random.
+    "secret": "<secret>",
 }
 REDACTIONS = tuple(
     (key, re.compile(r'("%s": ")[^"\\]+(")' % re.escape(key)), placeholder)
@@ -554,6 +560,59 @@ REGISTER = [
 # cases add get the ids from 3 on, in the order of the cases.
 AS_ADMIN = {"Token": KEY}
 PLEX = {"name": "Plex", "url": "https://plex.example.com/", "image": "plugins/images/tabs/plex.png"}
+
+
+def two_factor_cases():
+    """The second factor: making, checking, saving, logging in with it, and removing it."""
+    path = "/api/v2/2fa"
+    user = {"jar": "first"}
+    login = {**ADMIN}
+
+    def as_user(name, method, to, json_body=None):
+        options = dict(user)
+        if json_body is not None:
+            options["json"] = json_body
+        return (name, method, to, options)
+
+    whole = {"secret": "{2fa_secret}", "code": "{2fa_code}", "type": "google"}
+    return [
+        # Only a user who is logged in can do any of it.
+        ("create_as_guest", "POST", path + "/google"),
+        ("verify_as_guest", "POST", path, {"json": {"secret": "A", "code": "1", "type": "google"}}),
+        ("save_as_guest", "PUT", path, {"json": {"secret": "A", "type": "google"}}),
+        ("remove_as_guest", "DELETE", path),
+        ("login", "POST", "/api/v2/login", {"json": login, "jar": "first"}),
+        # Making a secret.
+        as_user("create_of_an_unknown_kind", "POST", path + "/other"),
+        as_user("create", "POST", path + "/google"),
+        # Checking a code against a secret that is not saved yet.
+        as_user("verify_without_a_body", "POST", path),
+        as_user("verify_without_a_secret", "POST", path, {"code": "{2fa_code}", "type": "google"}),
+        as_user("verify_without_a_code", "POST", path, {"secret": "{2fa_secret}", "type": "google"}),
+        as_user("verify_without_a_type", "POST", path, {"secret": "{2fa_secret}", "code": "{2fa_code}"}),
+        as_user("verify_an_unknown_kind", "POST", path, {**whole, "type": "other"}),
+        as_user("verify_a_wrong_code", "POST", path, {**whole, "code": "{2fa_wrong_code}"}),
+        as_user("verify", "POST", path, whole),
+        as_user("verify_the_code_of_five_steps_ago", "POST", path, {**whole, "code": "{2fa_code:-5}"}),
+        as_user("verify_the_code_of_seven_steps_ago", "POST", path, {**whole, "code": "{2fa_code:-7}"}),
+        as_user("verify_the_code_in_five_steps", "POST", path, {**whole, "code": "{2fa_code:+5}"}),
+        as_user("verify_the_code_in_seven_steps", "POST", path, {**whole, "code": "{2fa_code:+7}"}),
+        # Saving.
+        as_user("save_without_a_body", "PUT", path),
+        as_user("save_without_a_secret", "PUT", path, {"type": "google"}),
+        as_user("save_without_a_type", "PUT", path, {"secret": "{2fa_secret}"}),
+        as_user("save", "PUT", path, {"secret": "{2fa_secret}", "type": "google"}),
+        # Logging in asks for the code now.
+        ("login_without_the_code", "POST", "/api/v2/login", {"json": login, "jar": "second"}),
+        ("login_with_an_empty_code", "POST", "/api/v2/login", {"json": {**login, "tfaCode": ""}, "jar": "second"}),
+        ("login_with_a_wrong_code", "POST", "/api/v2/login", {"json": {**login, "tfaCode": "{2fa_wrong_code}"}, "jar": "second"}),
+        ("login_with_a_wrong_password_and_the_code", "POST", "/api/v2/login", {"json": {**login, "password": "not-it", "tfaCode": "{2fa_code}"}, "jar": "second"}),
+        ("login_with_the_code", "POST", "/api/v2/login", {"json": {**login, "tfaCode": "{2fa_code}"}, "jar": "second"}),
+        # Removing. The first session is still good.
+        as_user("remove", "DELETE", path),
+        as_user("remove_again", "DELETE", path),
+        ("login_after_the_removal", "POST", "/api/v2/login", {"json": login, "jar": "third"}),
+    ]
 
 
 def admin_case(name, method, path, json_body=None, **options):
@@ -1318,8 +1377,54 @@ JARS: dict[str, dict[str, str]] = {}
 session_cookie_name = None
 
 
+# The secret of the second factor that the reference made last. A case can send it
+# back, and codes made from it:
+#   {2fa_secret}        the secret
+#   {2fa_code}          the code of this moment
+#   {2fa_code:-5}       the code of five steps of 30 seconds ago; `+5` is in the future
+#   {2fa_wrong_code}    six digits that are no code of the steps around this moment
+two_factor_secret = None
+TWO_FACTOR_PLACEHOLDER = re.compile(r"\{2fa_(secret|code|wrong_code)(?::([+-]\d+))?\}")
+TWO_FACTOR_STEP = 30
+
+
+def two_factor_code(secret, time_in_seconds):
+    """The code of RFC 6238 that authenticator apps show: SHA-1, six digits."""
+    key = base64.b32decode(secret.upper() + "=" * (-len(secret) % 8))
+    counter = struct.pack(">Q", int(time_in_seconds) // TWO_FACTOR_STEP)
+    digest = hmac.new(key, counter, hashlib.sha1).digest()
+    offset = digest[-1] & 0x0F
+    number = struct.unpack(">I", digest[offset : offset + 4])[0] & 0x7FFFFFFF
+    return f"{number % 1_000_000:06d}"
+
+
+def fill_in_two_factor(text):
+    def value_of(match):
+        if two_factor_secret is None:
+            sys.exit("No answer has held the secret of a second factor yet.")
+        now = time.time()
+        # Not in the last seconds of a step: the reference must see the same step.
+        if now % TWO_FACTOR_STEP > TWO_FACTOR_STEP - 3:
+            time.sleep(TWO_FACTOR_STEP - now % TWO_FACTOR_STEP + 0.1)
+            now = time.time()
+        kind, steps = match.group(1), int(match.group(2) or 0)
+        if kind == "secret":
+            return two_factor_secret
+        if kind == "code":
+            return two_factor_code(two_factor_secret, now + steps * TWO_FACTOR_STEP)
+        near = {
+            two_factor_code(two_factor_secret, now + step * TWO_FACTOR_STEP)
+            for step in range(-8, 9)
+        }
+        return next(code for code in (f"{n:06d}" for n in range(1_000_000)) if code not in near)
+
+    return TWO_FACTOR_PLACEHOLDER.sub(value_of, text)
+
+
 def fill_in(text):
-    """Replace each `{session_token:<jar>}` with the session token of that jar."""
+    """Replace each `{session_token:<jar>}` with the session token of that jar, and each
+    placeholder of the second factor with its value."""
+    text = fill_in_two_factor(text)
 
     def token_of(match):
         jar = JARS.get(match.group(1), {})
@@ -1375,7 +1480,7 @@ def send(method, path, json_body=None, body=None, headers=None, cookies=None, ja
     all_headers = {"Host": HOST}
     payload = None
     if json_body is not None:
-        payload = json.dumps(json_body).encode("utf-8")
+        payload = fill_in(json.dumps(json_body)).encode("utf-8")
         all_headers["Content-Type"] = "application/json"
     if body is not None:
         payload = fill_in(body).encode("utf-8")
@@ -1413,6 +1518,18 @@ def send(method, path, json_body=None, body=None, headers=None, cookies=None, ja
         status = response.status
     finally:
         connection.close()
+
+    # An answer that holds the secret of a second factor: later cases use the secret.
+    # The secret is also inside an address of the answer, so every copy is replaced.
+    try:
+        made = json.loads(text)["response"]["data"]["secret"]
+    except (ValueError, KeyError, TypeError):
+        made = None
+    if isinstance(made, str) and made:
+        global two_factor_secret
+        two_factor_secret = made
+        text = text.replace(f'"secret": "{made}"', '"secret": "<kept>"').replace(made, "<secret>")
+        text = text.replace('"secret": "<kept>"', f'"secret": "{made}"')
 
     redacted = []
     for key, pattern, placeholder in REDACTIONS:
@@ -1559,6 +1676,7 @@ def main():
     record("categories", named(CATEGORIES), php_version)
     record("groups", named(GROUPS), php_version)
     record("users", named(USERS), php_version)
+    record("two_factor", named(two_factor_cases()), php_version)
     record("images", named(IMAGES), php_version)
     record("ping", named(PINGS), php_version)
     record("tabs", named(TABS), php_version)

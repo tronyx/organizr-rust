@@ -4,6 +4,7 @@
 //! change some fields of the own account. `docs/deviations.md` lists the differences
 //! from the PHP application as D-05, D-15 and D-52.
 
+use std::collections::HashMap;
 use std::time::SystemTime;
 
 use axum::Extension;
@@ -12,7 +13,7 @@ use axum::response::{IntoResponse, Response};
 use organizr_auth::registration::{
     LONGEST_NAME, LONGEST_PASSWORD, NewAccount, create_account, hash_password,
 };
-use organizr_db::{Database, DbError};
+use organizr_db::{Database, DbError, UserLogin};
 use organizr_domain::email::{self, php_trim};
 use organizr_domain::{
     Change, Group, GroupId, GroupLevel, PasswordHash, User, UserChanges, UserId,
@@ -47,14 +48,15 @@ pub struct UserRow {
     image: Option<String>,
     /// When the user was stored, as `2026-11-18 19:02:06` in UTC.
     register_date: String,
-    /// Which service checks the password of the user. Only `internal` exists so far.
-    auth_service: &'static str,
+    /// Which service checks the password of the user, or the kind of the second
+    /// factor of the user. The secret of a second factor is never shown (D-57).
+    auth_service: String,
 }
 
 impl UserRow {
     /// The row for a user. `groups` are the groups of the install, for the name and the
-    /// level of the group of the user.
-    pub fn of(user: User, groups: &[Group]) -> Self {
+    /// level of the group of the user. `logins` says how each user logs in.
+    pub fn of(user: User, groups: &[Group], logins: &HashMap<UserId, UserLogin>) -> Self {
         let group = groups.iter().find(|group| group.id == user.group);
         Self {
             id: user.id.get(),
@@ -67,7 +69,9 @@ impl UserRow {
             locked: u8::from(user.locked),
             image: user.image,
             register_date: date_and_time(user.created_at),
-            auth_service: "internal",
+            auth_service: logins
+                .get(&user.id)
+                .map_or_else(|| "internal".to_owned(), UserLogin::auth_service_text),
         }
     }
 }
@@ -134,12 +138,13 @@ pub async fn list(
     caller.require(MANAGER)?;
     let database = state.database();
     let groups = database.groups().list().await?;
+    let logins = database.users().logins().await?;
     let users: Vec<UserRow> = database
         .users()
         .list()
         .await?
         .into_iter()
-        .map(|user| UserRow::of(user, &groups))
+        .map(|user| UserRow::of(user, &groups, &logins))
         .collect();
     let data = if has_key(query.as_deref(), "includeGroups") {
         UserList::WithGroups {
@@ -174,7 +179,8 @@ pub async fn one_by_text(
         return Ok(Envelope::success(None));
     };
     let groups = database.groups().list().await?;
-    Ok(Envelope::success(Some(UserRow::of(user, &groups))))
+    let logins = database.users().logins().await?;
+    Ok(Envelope::success(Some(UserRow::of(user, &groups, &logins))))
 }
 
 /// `POST /users`: adds a user to the default group.

@@ -64,7 +64,16 @@ fn device() -> Device {
 }
 
 async fn log_in(database: &Database, name: &str, password: &str) -> Result<LoggedIn, LoginError> {
-    login::with_password(database, name, password, device(), NOW, ONE_DAY).await
+    login::with_password(
+        database,
+        name,
+        password,
+        organizr_auth::login::SecondFactor::without_code(&organizr_testkit::seed::secrets()),
+        device(),
+        NOW,
+        ONE_DAY,
+    )
+    .await
 }
 
 async fn stored_hash(database: &Database, username: &str) -> PasswordHash {
@@ -189,9 +198,17 @@ async fn session_lasts_as_long_as_the_caller_says() {
         insert_user(database, "robin", argon2_hash()).await;
         let week = Duration::from_hours(7 * 24);
 
-        let logged_in = login::with_password(database, "robin", PASSWORD, device(), NOW, week)
-            .await
-            .expect("the login succeeds");
+        let logged_in = login::with_password(
+            database,
+            "robin",
+            PASSWORD,
+            organizr_auth::login::SecondFactor::without_code(&organizr_testkit::seed::secrets()),
+            device(),
+            NOW,
+            week,
+        )
+        .await
+        .expect("the login succeeds");
 
         assert_eq!(
             logged_in.session.expires_at.unix_seconds() - NOW.unix_seconds(),

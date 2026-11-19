@@ -6,12 +6,12 @@ use axum::Extension;
 use axum::extract::State;
 use axum::http::{HeaderMap, header};
 use axum::response::{IntoResponse, Response};
-use organizr_auth::login::{self, Device, LoginError};
+use organizr_auth::login::{self, Device, LoginError, SecondFactor};
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
 
 use crate::api_data::ApiData;
 use crate::caller::{now_stamp, session_cookie_name};
-use crate::client::Client;
+use crate::client::{Client, LocalNetworks};
 use crate::cookies::{self, CookieScope};
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
@@ -66,10 +66,20 @@ pub async fn login(
             .map(str::to_owned),
     };
 
+    // The code of the second factor. With the `ignoreTFALocal` setting, a login from
+    // the local network needs none.
+    let code = data.text("tfaCode").unwrap_or_default();
+    let second_factor = SecondFactor {
+        code: &code,
+        secrets: state.secrets(),
+        skip: settings.ignore_tfa_local
+            && LocalNetworks::from_setting(&settings.local_ip_list).contains(&client),
+    };
     let result = login::with_password(
         state.database(),
         &name,
         &password,
+        second_factor,
         device,
         now_stamp(now),
         lifetime,
@@ -77,8 +87,9 @@ pub async fn login(
     .await;
     let logged_in = match result {
         Ok(logged_in) => logged_in,
-        Err(LoginError::WrongCredentials) => {
-            tracing::warn!(name = %name, client = %client.address, "a login failed");
+        // A wrong code counts as a failed login, as a wrong password does.
+        Err(error @ (LoginError::WrongCredentials | LoginError::WrongSecondFactor)) => {
+            tracing::warn!(name = %name, client = %client.address, %error, "a login failed");
             let policy = LimitPolicy {
                 failures: settings.login_attempts,
                 lockout: Duration::from_millis(settings.login_lockout),
@@ -95,7 +106,7 @@ pub async fn login(
                         );
                         ApiError::LockedOut { retry_after }
                     }
-                    None => LoginError::WrongCredentials.into(),
+                    None => error.into(),
                 },
             );
         }
@@ -109,7 +120,13 @@ pub async fn login(
         logged_in.token.expose(),
         now + lifetime,
     )?;
-    let mut response = Envelope::success(NoData).into_response();
+    // The PHP application leaves the text of the code check in the answer.
+    let answer = if logged_in.second_factor_checked {
+        Envelope::success(NoData).with_message("Verification code verified")
+    } else {
+        Envelope::success(NoData)
+    };
+    let mut response = answer.into_response();
     cookies::append(&mut response, session_cookie);
     Ok(response)
 }

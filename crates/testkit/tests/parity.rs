@@ -609,3 +609,22 @@ async fn ping_routes_answer_like_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn second_factor_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = without_php_session(Replay::group("two_factor"))
+            // The QR code is a picture inside the answer. PHP sends the address of a
+            // service of Google that draws it, and that address holds the secret.
+            .deviation(
+                "D-57",
+                "create",
+                "/response/data/url",
+                json!(organizr_testkit::replay::PICTURE),
+            );
+
+        replay.run(&installed_app(database)).await;
+    })
+    .await;
+}

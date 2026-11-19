@@ -90,6 +90,25 @@ impl<T> Envelope<T> {
         }
     }
 
+    /// An answer with `result: "warning"`: the request needs something more.
+    pub fn warning(status: StatusCode, message: impl Into<String>, data: T) -> Self {
+        Self {
+            status,
+            outcome: Outcome::Warning,
+            message: Some(message.into()),
+            data,
+            content_type: JsonContentType::WithCharset,
+        }
+    }
+
+    /// Sets the status code and leaves the `result` field as it is. The PHP
+    /// application answers a few failed checks with `result: "success"`.
+    #[must_use]
+    pub const fn with_status(mut self, status: StatusCode) -> Self {
+        self.status = status;
+        self
+    }
+
     /// Sets the message.
     #[must_use]
     pub fn with_message(mut self, message: impl Into<String>) -> Self {

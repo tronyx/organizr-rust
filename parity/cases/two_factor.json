@@ -1,0 +1,870 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>",
+      "password": "<password hash>",
+      "register_date": "<time>",
+      "secret": "<secret>"
+    }
+  },
+  "cases": [
+    {
+      "name": "create_as_guest",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa/google"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_as_guest",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "A",
+          "code": "1",
+          "type": "google"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "save_as_guest",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "A",
+          "type": "google"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "remove_as_guest",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/2fa"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "login",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "create_of_an_unknown_kind",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa/other",
+        "jar": "first"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"other is not an available to be setup\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "create",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa/google",
+        "jar": "first"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"2FA code created - awaiting verification\",\n        \"data\": {\n            \"type\": \"google\",\n            \"secret\": \"<secret>\",\n            \"url\": \"https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth%3A%2F%2Ftotp%2FOrganizr%2520V2%3Aadmin%3Fsecret%3D<secret>%26issuer%3DOrganizr%2520V2\"\n        }\n    }\n}",
+        "redacted": [
+          "secret"
+        ]
+      }
+    },
+    {
+      "name": "verify_without_a_body",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "jar": "first"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Secret was not supplied or left blank\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_without_a_secret",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "code": "{2fa_code}",
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Secret was not supplied or left blank\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_without_a_code",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Code was not supplied or left blank\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_without_a_type",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "code": "{2fa_code}"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Type was not supplied or left blank\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_an_unknown_kind",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "code": "{2fa_code}",
+          "type": "other"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"other is not an available to be setup\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_a_wrong_code",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "code": "{2fa_wrong_code}",
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Verification code invalid\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "verify",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "code": "{2fa_code}",
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Verification code verified\",\n        \"data\": true\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_the_code_of_five_steps_ago",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "code": "{2fa_code:-5}",
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Verification code verified\",\n        \"data\": true\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_the_code_of_seven_steps_ago",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "code": "{2fa_code:-7}",
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Verification code invalid\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_the_code_in_five_steps",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "code": "{2fa_code:+5}",
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Verification code verified\",\n        \"data\": true\n    }\n}"
+      }
+    },
+    {
+      "name": "verify_the_code_in_seven_steps",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "code": "{2fa_code:+7}",
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Verification code invalid\",\n        \"data\": false\n    }\n}"
+      }
+    },
+    {
+      "name": "save_without_a_body",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/2fa",
+        "jar": "first"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Secret was not supplied or left blank\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "save_without_a_secret",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/2fa",
+        "json": {
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Secret was not supplied or left blank\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "save_without_a_type",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Type was not supplied or left blank\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "save",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/2fa",
+        "json": {
+          "secret": "{2fa_secret}",
+          "type": "google"
+        },
+        "jar": "first"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"2FA Added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "login_without_the_code",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password"
+        },
+        "jar": "second"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"warning\",\n        \"message\": \"2FA Code Needed\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "login_with_an_empty_code",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password",
+          "tfaCode": ""
+        },
+        "jar": "second"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"warning\",\n        \"message\": \"2FA Code Needed\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "login_with_a_wrong_code",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password",
+          "tfaCode": "{2fa_wrong_code}"
+        },
+        "jar": "second"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Wrong 2FA\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "login_with_a_wrong_password_and_the_code",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "not-it",
+          "tfaCode": "{2fa_code}"
+        },
+        "jar": "second"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User credentials incorrect\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "login_with_the_code",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password",
+          "tfaCode": "{2fa_code}"
+        },
+        "jar": "second"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Verification code verified\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "remove",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/2fa",
+        "jar": "first"
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": ""
+      }
+    },
+    {
+      "name": "remove_again",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/2fa",
+        "jar": "first"
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": ""
+      }
+    },
+    {
+      "name": "login_after_the_removal",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password"
+        },
+        "jar": "third"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    }
+  ]
+}

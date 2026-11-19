@@ -9,7 +9,9 @@ use organizr_domain::{NewSession, PasswordHash, Session, Timestamp, User};
 use thiserror::Error;
 
 use crate::password::{self, HashError, PasswordCheck};
+use crate::secrets::{SecretBox, two_factor_name};
 use crate::session_token::{SessionToken, TokenError};
+use crate::two_factor;
 
 /// The device a login comes from. It is stored with the session, so users can tell
 /// their sessions apart.
@@ -30,6 +32,8 @@ pub struct LoggedIn {
     pub token: SessionToken,
     /// The session as the database holds it.
     pub session: Session,
+    /// Whether the code of a second factor was checked for this login.
+    pub second_factor_checked: bool,
 }
 
 /// Why a login failed.
@@ -39,6 +43,14 @@ pub enum LoginError {
     /// The caller must not learn which of the two it was.
     #[error("the name or the password is wrong")]
     WrongCredentials,
+
+    /// The account has a second factor, and the login came without a code.
+    #[error("the login needs the code of the second factor")]
+    SecondFactorNeeded,
+
+    /// The code of the second factor is wrong.
+    #[error("the code of the second factor is wrong")]
+    WrongSecondFactor,
 
     /// The database failed.
     #[error(transparent)]
@@ -57,16 +69,85 @@ pub enum LoginError {
     Task(#[source] tokio::task::JoinError),
 }
 
+/// What a login brings for the second factor of an account.
+#[derive(Clone, Copy)]
+pub struct SecondFactor<'a> {
+    /// The code that came with the login. Empty when none came.
+    pub code: &'a str,
+    /// Opens the stored secret of the second factor.
+    pub secrets: &'a SecretBox,
+    /// Whether this login needs no code, for example because the `ignoreTFALocal`
+    /// setting is on and the login comes from the local network.
+    pub skip: bool,
+}
+
+impl<'a> SecondFactor<'a> {
+    /// A login that came without a code.
+    pub const fn without_code(secrets: &'a SecretBox) -> Self {
+        Self {
+            code: "",
+            secrets,
+            skip: false,
+        }
+    }
+}
+
+/// Checks the second factor of a user whose password was correct. Returns whether a
+/// code was checked.
+async fn check_second_factor(
+    database: &Database,
+    user: &User,
+    second_factor: SecondFactor<'_>,
+    now: Timestamp,
+) -> Result<bool, LoginError> {
+    let stored = database
+        .users()
+        .login_of(user.id)
+        .await?
+        .and_then(|login| login.two_factor);
+    let Some(stored) = stored.filter(|_| !second_factor.skip) else {
+        return Ok(false);
+    };
+    if second_factor.code.is_empty() {
+        return Err(LoginError::SecondFactorNeeded);
+    }
+
+    let now = u64::try_from(now.unix_seconds()).unwrap_or_default();
+    let valid = stored.kind == two_factor::KIND
+        && second_factor
+            .secrets
+            .open(&two_factor_name(user.id), &stored.sealed_secret)
+            .ok()
+            .and_then(|secret| two_factor::verify(&secret, second_factor.code, now).ok())
+            .unwrap_or_else(|| {
+                tracing::error!(
+                    user = %user.username,
+                    "the stored secret of the second factor of the user cannot be used"
+                );
+                false
+            });
+    if valid {
+        Ok(true)
+    } else {
+        Err(LoginError::WrongSecondFactor)
+    }
+}
+
 /// Logs a user in with a name, or an e-mail address, and a password.
 ///
 /// The letter case of the name and of the address does not matter. When the password is
 /// correct, a session that lasts for `lifetime` from `now` is stored and its token is
 /// returned. When the stored hash was made with an older method, it is replaced by a new
 /// hash of the same password.
+///
+/// An account with a second factor also needs its code. The password is checked first,
+/// so a login with a wrong password does not tell whether the account has a second
+/// factor.
 pub async fn with_password(
     database: &Database,
     name_or_email: &str,
     password: &str,
+    second_factor: SecondFactor<'_>,
     device: Device,
     now: Timestamp,
     lifetime: Duration,
@@ -94,6 +175,7 @@ pub async fn with_password(
         }
         _ => return Err(LoginError::WrongCredentials),
     };
+    let second_factor_checked = check_second_factor(database, &user, second_factor, now).await?;
 
     if outdated {
         let candidate = password.to_owned();
@@ -107,7 +189,9 @@ pub async fn with_password(
         tracing::info!(user = %user.username, "the password hash of the user was renewed");
     }
 
-    start_session(database, user, device, now, lifetime).await
+    let mut logged_in = start_session(database, user, device, now, lifetime).await?;
+    logged_in.second_factor_checked = second_factor_checked;
+    Ok(logged_in)
 }
 
 /// Logs a user in whose right to log in is already proven: stores a session that lasts
@@ -140,6 +224,7 @@ pub async fn start_session(
         user,
         token,
         session,
+        second_factor_checked: false,
     })
 }
 

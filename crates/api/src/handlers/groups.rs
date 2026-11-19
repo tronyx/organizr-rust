@@ -122,12 +122,13 @@ pub async fn list(
     let database = state.database();
     let groups = database.groups().list().await?;
     let data = if has_key(query.as_deref(), "includeUsers") {
+        let logins = database.users().logins().await?;
         let users = database
             .users()
             .list()
             .await?
             .into_iter()
-            .map(|user| UserRow::of(user, &groups))
+            .map(|user| UserRow::of(user, &groups, &logins))
             .collect();
         GroupList::WithUsers {
             groups: groups.into_iter().map(GroupRow::from).collect(),

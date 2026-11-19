@@ -54,9 +54,17 @@ async fn logged_in_user(database: &Database, user_agent: Option<&str>) -> Logged
         ip: IpAddr::from([192, 0, 2, 7]),
         user_agent: user_agent.map(str::to_owned),
     };
-    login::with_password(database, "robin", PASSWORD, device, NOW, ONE_DAY)
-        .await
-        .expect("the login succeeds")
+    login::with_password(
+        database,
+        "robin",
+        PASSWORD,
+        organizr_auth::login::SecondFactor::without_code(&organizr_testkit::seed::secrets()),
+        device,
+        NOW,
+        ONE_DAY,
+    )
+    .await
+    .expect("the login succeeds")
 }
 
 fn valid(check: SessionCheck) -> Authenticated {

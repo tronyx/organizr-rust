@@ -73,6 +73,7 @@ surge-ping = "0.9.1"
 tempfile = "3.27"
 thiserror = "2.0.21"
 tokio = { version = "1.54", features = ["macros", "rt"] }
+totp-rs = { version = "6.0.0", features = ["otpauth", "qr", "gen_secret", "zeroize"] }
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.7.1", features = ["csrf", "set-header"] }
 tracing = "0.1.44"

@@ -590,6 +590,8 @@ struct Browsers {
     jars: HashMap<String, BTreeMap<String, String>>,
     /// The name of the session cookie, once an answer has set the cookie.
     session_cookie: Option<String>,
+    /// The secret of the second factor that the application made last.
+    second_factor_secret: Option<String>,
 }
 
 impl Browsers {
@@ -605,10 +607,56 @@ impl Browsers {
             .expect("an earlier case has set the session cookie")
     }
 
-    /// Replaces each `{session_token:<jar>}` by the session token of that jar.
-    fn fill_in(&self, text: &str) -> String {
+    /// Replaces each placeholder of the second factor by its value: `{2fa_secret}` is
+    /// the secret that the application made last, `{2fa_code}` its code of this moment,
+    /// `{2fa_code:-5}` the code of five steps of 30 seconds ago, and `{2fa_wrong_code}`
+    /// six digits that are no code of the steps around this moment.
+    fn fill_in_second_factor(&self, text: &str) -> String {
+        const START: &str = "{2fa_";
         let mut filled = String::new();
         let mut rest = text;
+        while let Some((before, after)) = rest.split_once(START) {
+            let (placeholder, after) = after
+                .split_once('}')
+                .expect("the placeholder ends with a brace");
+            let secret = self
+                .second_factor_secret
+                .as_deref()
+                .expect("an earlier answer held the secret of a second factor");
+            let now = jiff::Timestamp::now().as_second();
+            let code_of_step = |steps: i64| {
+                let time = u64::try_from(now + steps * 30).expect("the time is after 1970");
+                organizr_auth::two_factor::code_at(secret, time).expect("the secret is valid")
+            };
+            let value = match placeholder.split_once(':') {
+                None if placeholder == "secret" => secret.to_owned(),
+                None if placeholder == "code" => code_of_step(0),
+                None if placeholder == "wrong_code" => {
+                    let near: Vec<String> = (-8..=8).map(code_of_step).collect();
+                    (0..1_000_000)
+                        .map(|number| format!("{number:06}"))
+                        .find(|code| !near.contains(code))
+                        .expect("some code is wrong")
+                }
+                Some(("code", steps)) => {
+                    code_of_step(steps.parse().expect("the steps are a whole number"))
+                }
+                _ => panic!("`{{2fa_{placeholder}}}` is no placeholder of the second factor"),
+            };
+            filled.push_str(before);
+            filled.push_str(&value);
+            rest = after;
+        }
+        filled.push_str(rest);
+        filled
+    }
+
+    /// Replaces each `{session_token:<jar>}` by the session token of that jar, and each
+    /// placeholder of the second factor by its value.
+    fn fill_in(&self, text: &str) -> String {
+        let text = self.fill_in_second_factor(text);
+        let mut filled = String::new();
+        let mut rest = text.as_str();
         while let Some((before, after)) = rest.split_once(Self::SESSION_TOKEN) {
             let (jar, after) = after
                 .split_once('}')
@@ -625,6 +673,27 @@ impl Browsers {
         filled.push_str(rest);
         filled
     }
+}
+
+/// What stands for a picture that is inside an answer as a `data:` address.
+pub const PICTURE: &str = "<picture>";
+
+/// Replaces each PNG picture that is inside a body as a `data:` address by [`PICTURE`].
+/// Such a picture is made from a random value, so no two answers hold the same one.
+fn without_pictures(body: &str) -> String {
+    const START: &str = "\"data:image/png;base64,";
+    let mut cleaned = String::with_capacity(body.len());
+    let mut rest = body;
+    while let Some((before, after)) = rest.split_once(START) {
+        let (_, after) = after.split_once('"').expect("the text ends with a quote");
+        cleaned.push_str(before);
+        cleaned.push('"');
+        cleaned.push_str(PICTURE);
+        cleaned.push('"');
+        rest = after;
+    }
+    cleaned.push_str(rest);
+    cleaned
 }
 
 /// Replaces the text value of every `key` in a JSON body by `placeholder`, as the
@@ -659,7 +728,8 @@ impl Answer {
         let body = match (&case.request.json, &case.request.body) {
             (Some(json), _) => {
                 request = request.header(header::CONTENT_TYPE, "application/json");
-                Body::from(serde_json::to_vec(json).expect("the request body can be written"))
+                let text = serde_json::to_string(json).expect("the request body can be written");
+                Body::from(browsers.fill_in(&text))
             }
             (None, Some(text)) => Body::from(browsers.fill_in(text)),
             (None, None) => Body::empty(),
@@ -734,6 +804,18 @@ impl Answer {
             .to_bytes();
 
         let mut body = String::from_utf8(bytes.to_vec()).expect("the body is UTF-8");
+        // An answer that holds the secret of a second factor: later cases use the secret.
+        let made = serde_json::from_str::<serde_json::Value>(&body)
+            .ok()
+            .and_then(|json| {
+                json.pointer("/response/data/secret")?
+                    .as_str()
+                    .map(str::to_owned)
+            });
+        if let Some(secret) = made.filter(|secret| !secret.is_empty()) {
+            browsers.second_factor_secret = Some(secret);
+        }
+        body = without_pictures(&body);
         for (key, placeholder) in &recording.source.redacted_keys {
             body = redact(&body, key, placeholder);
         }

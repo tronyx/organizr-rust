@@ -395,7 +395,19 @@ async fn imported_install_works_and_new_records_get_new_ids() {
         let app = organizr_api::router(state).expect("the route table is valid");
 
         // A user logs in with the password of the PHP install.
-        let body = json!({"username": "robin", "password": "the password of robin"});
+        let body = json!({"username": "Sam", "password": "the password of sam"});
+        let answer = call(&app, As::Guest, "POST", "/login", Some(body)).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        // A user with a second factor also needs the code, as before the import.
+        let mut body = json!({"username": "robin", "password": "the password of robin"});
+        let answer = call(&app, As::Guest, "POST", "/login", Some(body.clone())).await;
+        assert_eq!(answer.message(), json!("2FA Code Needed"), "{}", answer.body);
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("the clock is after 1970")
+            .as_secs();
+        let code = organizr_auth::two_factor::code_at("JBSWY3DPEHPK3PXP", now);
+        body["tfaCode"] = json!(code.expect("the secret is valid"));
         let answer = call(&app, As::Guest, "POST", "/login", Some(body)).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
 

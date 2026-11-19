@@ -142,6 +142,15 @@ impl IntoResponse for ApiError {
                 NoData,
             )
             .into_response(),
+            // The texts and the result `warning` are those of the PHP application.
+            Self::Login(LoginError::SecondFactorNeeded) => {
+                Envelope::warning(StatusCode::UNPROCESSABLE_ENTITY, "2FA Code Needed", NoData)
+                    .into_response()
+            }
+            Self::Login(LoginError::WrongSecondFactor) => {
+                Envelope::error(StatusCode::UNPROCESSABLE_ENTITY, "Wrong 2FA", NoData)
+                    .into_response()
+            }
             Self::Login(error) => internal_error(&error, "a login could not be completed"),
             Self::Install(error) => internal_error(&error, "the set-up could not be completed"),
             Self::Registration(error) => {

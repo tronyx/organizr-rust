@@ -14,5 +14,6 @@ pub mod ping;
 pub mod register;
 pub mod tabs;
 pub mod token;
+pub mod two_factor;
 pub mod users;
 pub mod wizard;

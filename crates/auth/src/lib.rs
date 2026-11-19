@@ -10,5 +10,6 @@ pub mod secrets;
 pub mod session;
 mod session_token;
 pub mod setup_code;
+pub mod two_factor;
 
 pub use session_token::{SessionToken, TokenError};
