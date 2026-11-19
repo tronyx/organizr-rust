@@ -5,6 +5,7 @@ import {
   formValues,
   GENERAL,
   hasSecret,
+  LOGIN,
   MAIL,
   SECURE,
   type FieldGroup,
@@ -104,11 +105,18 @@ describe('hasSecret', () => {
 
 describe('GENERAL and MAIL', () => {
   it('name each setting once', () => {
-    for (const groups of [GENERAL, MAIL]) {
+    for (const groups of [GENERAL, MAIL, LOGIN]) {
       const keys = groups.flatMap((group) => group.fields.map((field) => field.key));
 
       expect(new Set(keys).size).toBe(keys.length);
     }
+  });
+
+  it('keep the Plex token and the passwords of fallback users secret', () => {
+    const fields = LOGIN.flatMap((group) => group.fields);
+    const secrets = fields.filter((field) => field.kind === 'secret').map((field) => field.key);
+
+    expect(secrets).toEqual(['plexToken', 'ombiFallbackPassword', 'overseerrFallbackPassword']);
   });
 
   it('keep the password of the mail server a secret, and the texts of e-mails long', () => {

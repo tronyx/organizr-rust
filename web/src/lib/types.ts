@@ -89,13 +89,22 @@ export interface Launch {
   user: User | null;
   version: string;
   appearance: Appearance;
-  /** The settings that a page needs. Only the ones that the interface reads are listed. */
   /** The switch of each plugin, for example `PHPMAILER-enabled`, and what plugins add. */
   plugins: Record<string, unknown>;
+  /** The settings that a page needs. Only the ones that the interface reads are listed. */
   settings: {
+    /** What the server says about single sign-on. */
+    sso: {
+      plex: {
+        /** Whether a person can log in with a Plex account, without a password here. */
+        oAuthEnabled: boolean;
+      };
+    };
     misc: {
       /** Whether the tabs without a heading stand above the categories or below them. */
       unsortedTabs: UnsortedPlace;
+      /** The id of the install. */
+      uuid: string;
     };
     ping: {
       /** The level that may ask the server to check tabs, as text. */

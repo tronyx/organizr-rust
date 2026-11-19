@@ -10,6 +10,7 @@
   import CategoriesEditor from './CategoriesEditor.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
+  import LoginSettings from './LoginSettings.svelte';
   import MailSettings from './MailSettings.svelte';
   import TabsEditor from './TabsEditor.svelte';
   import UsersEditor from './UsersEditor.svelte';
@@ -112,6 +113,15 @@
     >
       E-mail
     </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'login'}
+      aria-selected={section === 'login'}
+      href={PAGES.loginSettings}
+    >
+      Login
+    </a>
   </div>
 
   <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
@@ -120,6 +130,8 @@
     <GeneralSettings ondone={(message) => (done = message)} />
   {:else if section === 'mail'}
     <MailSettings ondone={(message) => (done = message)} />
+  {:else if section === 'login'}
+    <LoginSettings ondone={(message) => (done = message)} />
   {:else if data}
     {#if section === 'tabs'}
       <TabsEditor {data} {change} />

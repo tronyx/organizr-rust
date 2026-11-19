@@ -118,6 +118,141 @@ export const GENERAL: FieldGroup[] = [
   },
 ];
 
+const LEVELS = [
+  { value: '0', label: 'Admin' },
+  { value: '1', label: 'Co-Admin and above' },
+  { value: '2', label: 'Super User and above' },
+  { value: '3', label: 'Power User and above' },
+  { value: '4', label: 'User and above' },
+  { value: '999', label: 'Everybody' },
+];
+
+/** The settings of the login through Plex, and of single sign-on. */
+export const LOGIN: FieldGroup[] = [
+  {
+    title: 'Who checks a password',
+    fields: [
+      {
+        key: 'authType',
+        label: 'A password is checked by',
+        kind: 'select',
+        options: [
+          { value: 'internal', label: 'Organizr' },
+          { value: 'both', label: 'The service below, and then Organizr' },
+          { value: 'external', label: 'The service below only' },
+        ],
+        help: 'With "the service only", the Admin of this install also needs an account at the service.',
+      },
+      {
+        key: 'authBackend',
+        label: 'Service',
+        kind: 'select',
+        options: [
+          { value: '', label: 'None' },
+          { value: 'plex', label: 'Plex' },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Plex',
+    fields: [
+      {
+        key: 'plexToken',
+        label: 'Plex token of the owner of the server',
+        kind: 'secret',
+        help: 'With it, Organizr reads the list of the accounts that the server is shared with.',
+      },
+      {
+        key: 'plexID',
+        label: 'Id of the Plex server',
+        kind: 'text',
+        help: 'The machine identifier of the server: 40 characters. The button below the form lists the servers of the token.',
+      },
+      {
+        key: 'plexAdmin',
+        label: 'Plex user name or e-mail address of the owner',
+        kind: 'text',
+        help: 'The owner is on no list of shared accounts. This account can log in all the same.',
+      },
+      {
+        key: 'plexStrictFriends',
+        label: 'Only accounts that this server is shared with can log in',
+        kind: 'switch',
+        help: 'With this off, every friend of the owner can log in, also one who only has another server.',
+      },
+      {
+        key: 'plexoAuth',
+        label: 'Show the button "Log in with Plex"',
+        kind: 'switch',
+        help: 'A person then logs in at Plex itself, and enters no password here.',
+      },
+    ],
+  },
+  {
+    title: 'Second factor',
+    fields: [
+      {
+        key: 'ignoreTFAIfPlexOAuth',
+        label: 'No code for a login with the button "Log in with Plex"',
+        kind: 'switch',
+      },
+      {
+        key: 'ignoreTFALocal',
+        label: 'No code for a login from the local network',
+        kind: 'switch',
+      },
+    ],
+  },
+  {
+    title: 'Single sign-on: Plex',
+    fields: [
+      {
+        key: 'ssoPlex',
+        label: 'Log the user in to Plex Web',
+        kind: 'switch',
+        help: 'Single sign-on works for applications on the same domain as Organizr.',
+      },
+    ],
+  },
+  {
+    title: 'Single sign-on: Ombi',
+    fields: [
+      { key: 'ssoOmbi', label: 'Log the user in to Ombi', kind: 'switch' },
+      { key: 'ombiURL', label: 'Address of Ombi', kind: 'text' },
+      {
+        key: 'ombiFallbackUser',
+        label: 'Fallback user',
+        kind: 'text',
+        help: 'A user whom Ombi does not know is logged in as this user. Leave it empty for no fallback.',
+      },
+      { key: 'ombiFallbackPassword', label: 'Password of the fallback user', kind: 'secret' },
+    ],
+  },
+  {
+    title: 'Single sign-on: Overseerr',
+    fields: [
+      { key: 'ssoOverseerr', label: 'Log the user in to Overseerr', kind: 'switch' },
+      { key: 'overseerrURL', label: 'Address of Overseerr', kind: 'text' },
+      { key: 'overseerrFallbackUser', label: 'E-mail address of the fallback user', kind: 'text' },
+      { key: 'overseerrFallbackPassword', label: 'Password of the fallback user', kind: 'secret' },
+    ],
+  },
+  {
+    title: 'Single sign-on: Tautulli',
+    fields: [
+      { key: 'ssoTautulli', label: 'Log the user in to Tautulli', kind: 'switch' },
+      {
+        key: 'tautulliURL',
+        label: 'Address of Tautulli',
+        kind: 'text',
+        help: 'For more than one Tautulli, write the addresses with commas between them.',
+      },
+      { key: 'ssoTautulliAuth', label: 'For users of the level', kind: 'select', options: LEVELS },
+    ],
+  },
+];
+
 const PLACEHOLDERS =
   'You can write {user}, {title} and {domain}. Each one stands for a value of the e-mail.';
 

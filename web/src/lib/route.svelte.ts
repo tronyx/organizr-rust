@@ -5,7 +5,8 @@
 import type { MenuTab } from './types';
 
 /** The parts of the settings. */
-export type SettingsSection = 'general' | 'tabs' | 'categories' | 'groups' | 'users' | 'mail';
+export type SettingsSection =
+  'general' | 'tabs' | 'categories' | 'groups' | 'users' | 'mail' | 'login';
 
 export type Route =
   | { page: 'home' }
@@ -32,6 +33,7 @@ export const PAGES = {
   groupSettings: '#/settings/groups',
   userSettings: '#/settings/users',
   mailSettings: '#/settings/mail',
+  loginSettings: '#/settings/login',
 } as const;
 
 /** Reads the part of an address from the `#` on. */
@@ -71,6 +73,8 @@ export function parseRoute(hash: string): Route {
       return { page: 'settings', section: 'users' };
     case '/settings/mail':
       return { page: 'settings', section: 'mail' };
+    case '/settings/login':
+      return { page: 'settings', section: 'login' };
     default:
       return { page: 'home' };
   }

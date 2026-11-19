@@ -78,7 +78,8 @@ const LAUNCH: CannedAnswer = {
     appearance: { title: 'Organizr' },
     plugins: {},
     settings: {
-      misc: { unsortedTabs: 'top' },
+      sso: { plex: { oAuthEnabled: false } },
+      misc: { unsortedTabs: 'top', uuid: 'made-up-install-id' },
       ping: { auth: '1', adminRefresh: '60000', everyoneRefresh: '600000' },
     },
     status: { status: 'ok' },
@@ -833,5 +834,121 @@ describe('Settings, e-mail', () => {
     await statusSays('The test e-mail was sent to the address of your account.');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(sent.filter((request) => request.path.endsWith('email/test'))).toHaveLength(2);
+  });
+});
+
+describe('Settings, login', () => {
+  const CONFIG = {
+    authType: 'internal',
+    authBackend: '',
+    plexToken: '',
+    plexID: '',
+    plexAdmin: '',
+    plexStrictFriends: true,
+    plexoAuth: false,
+    ignoreTFAIfPlexOAuth: false,
+    ignoreTFALocal: false,
+    ssoPlex: false,
+    ssoOmbi: false,
+    ombiURL: '',
+    ombiFallbackUser: '',
+    ombiFallbackPassword: '',
+    ssoOverseerr: false,
+    overseerrURL: '',
+    overseerrFallbackUser: '',
+    overseerrFallbackPassword: '',
+    ssoTautulli: false,
+    tautulliURL: '',
+    ssoTautulliAuth: '4',
+  };
+
+  async function showLogin(answers: Answers = {}) {
+    const sent = stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET launch': LAUNCH,
+      'GET config': { data: CONFIG },
+      ...answers,
+    });
+    render(Settings, { section: 'login' });
+    await screen.findByLabelText('A password is checked by');
+    return sent;
+  }
+
+  it('saves who checks a password, the Plex token and a single sign-on', async () => {
+    const sent = await showLogin({ 'PUT config': {} });
+    expect(screen.getByRole('tab', { name: 'Login' })).toHaveAttribute('aria-selected', 'true');
+
+    await fireEvent.change(screen.getByLabelText('A password is checked by'), {
+      target: { value: 'both' },
+    });
+    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'plex' } });
+    await fireEvent.input(screen.getByLabelText('Plex token of the owner of the server'), {
+      target: { value: 'made-up-token' },
+    });
+    await fireEvent.click(screen.getByLabelText('Show the button "Log in with Plex"'));
+    await fireEvent.click(screen.getByLabelText('Log the user in to Tautulli'));
+    await fireEvent.input(screen.getByLabelText('Address of Tautulli'), {
+      target: { value: 'https://tautulli.example.com' },
+    });
+    await fireEvent.change(screen.getByLabelText('For users of the level'), {
+      target: { value: '1' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([
+      [
+        'PUT config',
+        {
+          authType: 'both',
+          authBackend: 'plex',
+          plexToken: 'made-up-token',
+          plexoAuth: true,
+          ssoTautulli: true,
+          tautulliURL: 'https://tautulli.example.com',
+          ssoTautulliAuth: '1',
+        },
+      ],
+    ]);
+  });
+
+  it('lists the Plex servers of the token with their ids, or says why not', async () => {
+    let known = false;
+    await showLogin({
+      'GET plex/servers': () =>
+        known
+          ? {
+              data: [
+                {
+                  name: 'Media',
+                  address: '203.0.113.5',
+                  machineIdentifier: 'made-up-id',
+                  owned: 1,
+                },
+                {
+                  name: 'Shared',
+                  address: '198.51.100.9',
+                  machineIdentifier: 'other-id',
+                  owned: 0,
+                },
+              ],
+            }
+          : { status: 422, message: 'Plex Token cannot be empty' },
+    });
+    const button = screen.getByRole('button', { name: 'List the Plex servers' });
+
+    await fireEvent.click(button);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Plex Token cannot be empty');
+
+    known = true;
+    await fireEvent.click(button);
+    const row = (await screen.findByRole('rowheader', { name: 'Media' })).closest('tr');
+    expect(row).toHaveTextContent('made-up-id');
+    expect(row).toHaveTextContent('This account');
+    expect(screen.getByRole('rowheader', { name: 'Shared' }).closest('tr')).toHaveTextContent(
+      'Another account',
+    );
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

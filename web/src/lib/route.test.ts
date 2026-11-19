@@ -23,6 +23,7 @@ describe('parseRoute', () => {
     expect(parseRoute(PAGES.userSettings)).toEqual({ page: 'settings', section: 'users' });
     expect(parseRoute(PAGES.generalSettings)).toEqual({ page: 'settings', section: 'general' });
     expect(parseRoute(PAGES.mailSettings)).toEqual({ page: 'settings', section: 'mail' });
+    expect(parseRoute(PAGES.loginSettings)).toEqual({ page: 'settings', section: 'login' });
     expect(parseRoute(PAGES.recover)).toEqual({ page: 'recover' });
     expect(parseRoute(PAGES.account)).toEqual({ page: 'account' });
   });

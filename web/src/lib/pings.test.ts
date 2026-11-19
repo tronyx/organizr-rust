@@ -49,7 +49,8 @@ function launch(groupID: number | null, auth: string, admin = '60000', other = '
     appearance: { title: 'Organizr' },
     plugins: {},
     settings: {
-      misc: { unsortedTabs: 'top' },
+      sso: { plex: { oAuthEnabled: false } },
+      misc: { unsortedTabs: 'top', uuid: 'made-up-install-id' },
       ping: { auth, adminRefresh: admin, everyoneRefresh: other },
     },
     status: { status: 'ok' },

@@ -714,3 +714,34 @@ test('an address of another site in the link is not followed', async ({ page, co
   await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
   expect(new URL(page.url()).host).toBe(new URL(ADDRESS_URL).host);
 });
+
+// This test stays the last one: after it, the login page has a second button whose name
+// starts with "Log in".
+test('the Admin switches the button "Log in with Plex" on, and the login page shows it', async ({
+  page,
+  context,
+}) => {
+  await context.clearCookies();
+  await page.goto('./#/login');
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Log in with Plex' })).toHaveCount(0);
+
+  await logIn(page);
+  await page.goto('./#/settings/tabs');
+  await page.getByRole('tab', { name: 'Login' }).click();
+  await expect(page).toHaveURL(/#\/settings\/login$/);
+
+  // No Plex token is stored, so the server has no account to list the servers of.
+  await page.getByRole('button', { name: 'List the Plex servers' }).click();
+  await expect(page.getByRole('alert')).toHaveText('Plex Token cannot be empty');
+
+  await page.getByLabel('Show the button "Log in with Plex"').check();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+
+  await context.clearCookies();
+  await page.goto('./#/login');
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Log in with Plex' })).toBeVisible();
+});

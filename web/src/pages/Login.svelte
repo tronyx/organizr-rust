@@ -1,6 +1,7 @@
 <script lang="ts">
   // The login page.
   import { api, ApiError, failureText } from '../lib/api';
+  import { plexToken } from '../lib/plexLogin';
   import { takeReturn } from '../lib/returnTo';
   import { PAGES, router } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
@@ -16,20 +17,53 @@
   let needsCode = $state(false);
   let error = $state<string | null>(null);
   let busy = $state(false);
+  // The token of a login at Plex. With it, the login needs no name and no password.
+  let tokenOfPlex = $state<string | null>(null);
 
   // The server sends a new password by e-mail only when its mail plugin is on.
   const canRecover = $derived(session.launch?.plugins['PHPMAILER-enabled'] === true);
+  const canUsePlex = $derived(session.launch?.settings.sso.plex.oAuthEnabled === true);
 
-  async function logIn(event: SubmitEvent) {
+  function logIn(event: SubmitEvent) {
     event.preventDefault();
+    void send();
+  }
+
+  /** Opens the login of Plex in a small window, and logs in with the token from there. */
+  async function logInWithPlex() {
+    // The window opens at once, in the click itself. A browser stops a window that a
+    // page opens later.
+    const popup = window.open('', 'Plex-OAuth', 'width=600,height=700');
+    if (!popup) {
+      error = 'The browser did not open the window of Plex. Allow pop-up windows for this page.';
+      return;
+    }
+    busy = true;
+    error = null;
+    try {
+      const launch = session.launch;
+      tokenOfPlex = await plexToken(
+        { id: launch?.settings.misc.uuid ?? '', product: launch?.appearance.title || 'Organizr' },
+        popup,
+      );
+    } catch (failure) {
+      error = failureText(failure);
+      busy = false;
+      return;
+    }
+    await send();
+  }
+
+  async function send() {
     busy = true;
     error = null;
     try {
       // The server takes any value of `remember` for "yes", so the field is left out
       // for "no".
       await api('POST', 'login', {
-        username,
-        password,
+        ...(tokenOfPlex === null
+          ? { username, password }
+          : { oAuth: tokenOfPlex, oAuthType: 'plex' }),
         ...(remember ? { remember: true } : {}),
         ...(needsCode ? { tfaCode: code } : {}),
       });
@@ -49,6 +83,8 @@
         code = '';
       } else {
         error = failureText(failure);
+        // A token that the server refused is of no more use.
+        tokenOfPlex = null;
       }
     } finally {
       busy = false;
@@ -66,7 +102,7 @@
           id="login-username"
           class="input w-full"
           bind:value={username}
-          required
+          required={tokenOfPlex === null}
           autocomplete="username"
         />
         <label class="label" for="login-password">Password</label>
@@ -75,7 +111,7 @@
           class="input w-full"
           type="password"
           bind:value={password}
-          required
+          required={tokenOfPlex === null}
           autocomplete="current-password"
         />
         {#if needsCode}
@@ -112,6 +148,11 @@
           {#if busy}<span class="loading loading-spinner loading-sm"></span>{/if}
           Log in
         </button>
+        {#if canUsePlex}
+          <button type="button" class="btn w-full" disabled={busy} onclick={logInWithPlex}>
+            Log in with Plex
+          </button>
+        {/if}
         {#if canRecover}
           <a class="link link-hover w-full text-center text-sm" href={PAGES.recover}>
             Forgot your password?

@@ -14,7 +14,8 @@ function launch(changes: Record<string, unknown>) {
         appearance: { title: 'My Server' },
         plugins: {},
         settings: {
-          misc: { unsortedTabs: 'top' },
+          sso: { plex: { oAuthEnabled: false } },
+          misc: { unsortedTabs: 'top', uuid: 'made-up-install-id' },
           ping: { auth: '1', adminRefresh: '60000', everyoneRefresh: '600000' },
         },
         status: { status: 'ok' },

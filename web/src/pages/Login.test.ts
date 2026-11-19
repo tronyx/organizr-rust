@@ -1,10 +1,14 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { plexToken } from '../lib/plexLogin';
 import { PAGES, router } from '../lib/route.svelte';
 import { session } from '../lib/session.svelte';
 import { stubApi } from '../test-helpers';
 import Login from './Login.svelte';
+
+// The login at Plex itself happens in another window, at plex.tv.
+vi.mock('../lib/plexLogin', () => ({ plexToken: vi.fn() }));
 
 const LAUNCH = {
   'GET launch': {
@@ -16,7 +20,8 @@ const LAUNCH = {
       appearance: { title: 'Organizr' },
       plugins: {},
       settings: {
-        misc: { unsortedTabs: 'top' },
+        sso: { plex: { oAuthEnabled: false } },
+        misc: { unsortedTabs: 'top', uuid: 'made-up-install-id' },
         ping: { auth: '1', adminRefresh: '60000', everyoneRefresh: '600000' },
       },
       status: { status: 'ok' },
@@ -135,5 +140,93 @@ describe('Login', () => {
       'href',
       PAGES.recover,
     );
+  });
+
+  /** Shows the login page of an install with or without the login through Plex. */
+  async function showWithPlex(enabled: boolean, answers: Parameters<typeof stubApi>[0] = {}) {
+    const launch = LAUNCH['GET launch'].data;
+    const data = {
+      ...launch,
+      user: null,
+      settings: { ...launch.settings, sso: { plex: { oAuthEnabled: enabled } } },
+    };
+    const sent = stubApi({ 'GET launch': { data }, ...answers });
+    await session.load();
+    render(Login);
+    return sent;
+  }
+
+  it('offers the login with Plex only when the install has it switched on', async () => {
+    const { unmount } = render(Login);
+    await showWithPlex(false);
+    expect(screen.queryByRole('button', { name: 'Log in with Plex' })).not.toBeInTheDocument();
+    unmount();
+  });
+
+  it('logs in with the token that the window of Plex gave, without a password', async () => {
+    const popup = { closed: false, close: vi.fn(), location: { href: '' } };
+    const open = vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
+    vi.mocked(plexToken).mockResolvedValue('made-up-plex-token');
+    const sent = await showWithPlex(true, { 'POST login': {} });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Log in with Plex' }));
+
+    await waitFor(() => expect(router.route).toEqual({ page: 'home' }));
+    expect(open).toHaveBeenCalledWith('', 'Plex-OAuth', 'width=600,height=700');
+    // Plex gets the id and the name of this install.
+    expect(vi.mocked(plexToken).mock.calls[0]?.[0]).toEqual({
+      id: 'made-up-install-id',
+      product: 'Organizr',
+    });
+    const login = sent.find((request) => request.path === 'login');
+    expect(login?.body).toEqual({ oAuth: 'made-up-plex-token', oAuthType: 'plex' });
+    open.mockRestore();
+  });
+
+  it('asks for the code of a second factor after Plex, and sends the token again', async () => {
+    const popup = { closed: false, close: vi.fn(), location: { href: '' } };
+    const open = vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
+    vi.mocked(plexToken).mockResolvedValue('made-up-plex-token');
+    const sent = await showWithPlex(true, {
+      'POST login': (request) =>
+        (request.body as { tfaCode?: string }).tfaCode === '123456'
+          ? {}
+          : { status: 422, result: 'warning', message: '2FA Code Needed' },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Log in with Plex' }));
+    const code = await screen.findByLabelText('Code from your authenticator app');
+    await fireEvent.input(code, { target: { value: '123456' } });
+    await fireEvent.submit(code.closest('form') as HTMLFormElement);
+
+    await waitFor(() => expect(router.route).toEqual({ page: 'home' }));
+    const logins = sent.filter((request) => request.path === 'login');
+    expect(logins[1]?.body).toEqual({
+      oAuth: 'made-up-plex-token',
+      oAuthType: 'plex',
+      tfaCode: '123456',
+    });
+    open.mockRestore();
+  });
+
+  it('says why the login with Plex did not work', async () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    await showWithPlex(true);
+    const button = screen.getByRole('button', { name: 'Log in with Plex' });
+
+    // The browser did not open the window.
+    await fireEvent.click(button);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Allow pop-up windows');
+
+    // The person closed the window of Plex.
+    const popup = { closed: false, close: vi.fn(), location: { href: '' } };
+    open.mockReturnValue(popup as unknown as Window);
+    vi.mocked(plexToken).mockRejectedValue(new Error('The window of Plex was closed.'));
+    await fireEvent.click(button);
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('The window of Plex was closed.'),
+    );
+    expect(button).toBeEnabled();
+    open.mockRestore();
   });
 });
