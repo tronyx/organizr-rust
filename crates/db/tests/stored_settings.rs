@@ -179,3 +179,51 @@ async fn typed_settings_are_built_from_what_is_stored() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn several_settings_are_stored_and_removed_in_one_step() {
+    on_each_engine(async |database| {
+        let settings = database.settings();
+        settings
+            .put("title", "\"Old\"")
+            .await
+            .expect("the value can be stored");
+        settings
+            .put("lockScreen", "true")
+            .await
+            .expect("the value can be stored");
+        settings
+            .put("style", "\"light\"")
+            .await
+            .expect("the value can be stored");
+
+        settings
+            .apply(
+                &[
+                    stored("title", "\"Home\""),
+                    stored("rememberMeDays", "\"14\""),
+                ],
+                &["lockScreen".to_owned(), "notStored".to_owned()],
+            )
+            .await
+            .expect("the change can be stored");
+
+        let all = settings.all().await.expect("the settings can be read");
+        assert_eq!(
+            all,
+            [
+                stored("rememberMeDays", "\"14\""),
+                stored("style", "\"light\""),
+                stored("title", "\"Home\""),
+            ]
+        );
+
+        // A change without anything in it is fine, and changes nothing.
+        settings
+            .apply(&[], &[])
+            .await
+            .expect("an empty change can be stored");
+        assert_eq!(settings.all().await.expect("the settings can be read"), all);
+    })
+    .await;
+}

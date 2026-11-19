@@ -531,3 +531,54 @@ async fn user_routes_answer_like_php() {
     })
     .await;
 }
+
+/// The keys of the PHP configuration that are no settings here: the version of the
+/// configuration file, and where and how PHP finds its database.
+const PHP_ONLY_CONFIG: [&str; 8] = [
+    "configVersion",
+    "dbHost",
+    "dbLocation",
+    "dbName",
+    "dbPassword",
+    "dbUsername",
+    "driver",
+    "organizrHash",
+];
+
+#[tokio::test]
+async fn config_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let all = "config";
+        let data = "/response/data";
+        let mut replay = without_php_session(Replay::group("config"))
+            // A secret is not shown. The recorder gave the install a registration password.
+            .deviation(
+                "D-06",
+                all,
+                &format!("{data}/registrationPassword"),
+                json!("***Secure***"),
+            )
+            // PHP ships a token of a third party as a default.
+            .deviation("D-12", all, &format!("{data}/breezometerToken"), json!(""))
+            .pending_at(
+                all,
+                &format!("{data}/INVITES-dbVersion"),
+                "the invites plugin, which raises this version, is not built yet",
+            );
+        for key in PHP_ONLY_CONFIG {
+            replay = replay.deviation_without("D-53", all, &format!("{data}/{key}"));
+        }
+
+        // The install of the recorder at this point: set up, with a registration password.
+        let app = installed_app_with(
+            database,
+            &[
+                ("license", json!("personal")),
+                ("registrationPassword", json!("the hash of a password")),
+            ],
+        );
+        replay.run(&app).await;
+    })
+    .await;
+}

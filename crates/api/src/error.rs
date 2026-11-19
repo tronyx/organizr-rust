@@ -13,6 +13,7 @@ use thiserror::Error;
 
 use crate::cookies::CookieError;
 use crate::envelope::{Envelope, NoData};
+use crate::state::ChangeError;
 
 /// Why a request failed.
 #[derive(Debug, Error)]
@@ -70,6 +71,11 @@ pub enum ApiError {
     /// The database failed. The caller gets no details; the log does.
     #[error(transparent)]
     Database(#[from] DbError),
+
+    /// A change of settings could not be stored. The caller gets no details; the log
+    /// does.
+    #[error(transparent)]
+    Settings(#[from] ChangeError),
 }
 
 /// The answer to a failure that is not the fault of the caller. The log has the details.
@@ -138,6 +144,7 @@ impl IntoResponse for ApiError {
             }
             Self::Cookie(error) => internal_error(&error, "a cookie could not be written"),
             Self::Database(error) => internal_error(&error, "a request failed in the database"),
+            Self::Settings(error) => internal_error(&error, "settings could not be changed"),
         }
     }
 }

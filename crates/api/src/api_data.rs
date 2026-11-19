@@ -62,6 +62,14 @@ impl ApiData {
 
     /// What PHP's `foreach` goes through: the entries of a list, or the values of the
     /// fields of an object. The values of an object come in no promised order.
+    /// The fields of a body that is an object: each name with its value, in the order
+    /// of the body.
+    pub fn fields(&self) -> impl Iterator<Item = (&str, &Value)> {
+        self.fields
+            .iter()
+            .map(|(name, value)| (name.as_str(), value))
+    }
+
     pub fn entries(&self) -> impl Iterator<Item = &Value> {
         self.list.iter().chain(self.fields.values())
     }

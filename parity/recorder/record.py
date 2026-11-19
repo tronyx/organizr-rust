@@ -123,6 +123,11 @@ SESSION_COOKIE_PLACEHOLDER = "{session_cookie}"
 # Stands for the session token of a jar in a path or a body.
 SESSION_TOKEN_PLACEHOLDER = re.compile(r"\{session_token:([a-z_]+)\}")
 
+# How long the recorder waits after a change of the configuration of PHP. PHP looks at
+# a file again two seconds after it last looked, and it does not keep a file that is
+# younger than two seconds. A change showed after 0.5 to 3.1 seconds.
+CODE_CACHE_SECONDS = 4.5
+
 NOT_FOUND_MESSAGE = "Endpoint Not Found or Defined"
 
 # Answers of an install that has not been set up, and the set-up itself.
@@ -1116,6 +1121,72 @@ USERS = [
     admin_case("users_at_the_end", "GET", USERS_PATH),
 ]
 
+# The configuration routes. The cases change settings and give each one its old value
+# back, so that the install is as the cases found it.
+#
+# Requests that PHP takes and the Rust application refuses are not recorded: a key that is
+# no setting, and a value that is not of the kind of its setting.
+CONFIG_PATH = "/api/v2/config"
+CONFIG = [
+    # Reading everything.
+    ("config_as_guest", "GET", CONFIG_PATH),
+    admin_case("config", "GET", CONFIG_PATH),
+    # Reading one setting.
+    ("item_as_guest", "GET", CONFIG_PATH + "/title"),
+    admin_case("item_text", "GET", CONFIG_PATH + "/title"),
+    admin_case("item_number_as_text", "GET", CONFIG_PATH + "/rememberMeDays"),
+    admin_case("item_switch_that_is_off", "GET", CONFIG_PATH + "/lockScreen"),
+    admin_case("item_switch_that_is_on", "GET", CONFIG_PATH + "/rememberMe"),
+    admin_case("item_empty_text", "GET", CONFIG_PATH + "/customCss"),
+    admin_case("item_list", "GET", CONFIG_PATH + "/ignoredNewsIds"),
+    admin_case("item_number", "GET", CONFIG_PATH + "/maxSocksDebugSize"),
+    admin_case("item_unknown", "GET", CONFIG_PATH + "/noSuchSetting"),
+    admin_case("item_in_another_letter_case", "GET", CONFIG_PATH + "/TITLE"),
+    admin_case("item_with_one_more_part", "GET", CONFIG_PATH + "/title/more"),
+    admin_case("item_with_a_trailing_slash", "GET", CONFIG_PATH + "/title/"),
+    # Searching.
+    ("search_as_guest", "GET", CONFIG_PATH + "/search/remember"),
+    admin_case("search", "GET", CONFIG_PATH + "/search/remember"),
+    admin_case("search_in_another_letter_case", "GET", CONFIG_PATH + "/search/REMEMBERME"),
+    admin_case("search_with_the_word_in_capitals", "GET", CONFIG_PATH + "/SEARCH/rememberMeDays"),
+    admin_case("search_without_a_match", "GET", CONFIG_PATH + "/search/zzzz"),
+    admin_case("search_for_a_part_with_a_dash", "GET", CONFIG_PATH + "/search/INVITES-komga"),
+    # Changing.
+    ("change_as_guest", "PUT", CONFIG_PATH, {"json": {"title": "Home"}}),
+    admin_case("change_empty_object", "PUT", CONFIG_PATH, {}),
+    admin_case("change_text", "PUT", CONFIG_PATH, {"title": "Home"}, settle=True),
+    admin_case("item_after_changing_text", "GET", CONFIG_PATH + "/title"),
+    admin_case("change_switch", "PUT", CONFIG_PATH, {"lockScreen": True}, settle=True),
+    admin_case("item_after_changing_a_switch", "GET", CONFIG_PATH + "/lockScreen"),
+    admin_case("change_switch_as_text", "PUT", CONFIG_PATH, {"lockScreen": "false", "hideRegistration": "true"}, settle=True),
+    admin_case("search_after_changing_switches_as_text", "GET", CONFIG_PATH + "/search/hideRegistration"),
+    admin_case("change_number_as_text", "PUT", CONFIG_PATH, {"rememberMeDays": "30"}, settle=True),
+    admin_case("item_after_changing_a_number", "GET", CONFIG_PATH + "/rememberMeDays"),
+    admin_case("change_text_to_null", "PUT", CONFIG_PATH, {"description": None}, settle=True),
+    admin_case("item_after_changing_text_to_null", "GET", CONFIG_PATH + "/description"),
+    admin_case("change_with_a_form_key", "PUT", CONFIG_PATH, {"formKey": "anything", "title": "Home again"}, settle=True),
+    admin_case("search_after_a_form_key", "GET", CONFIG_PATH + "/search/formkey"),
+    admin_case("change_several", "PUT", CONFIG_PATH, {"title": "Third", "loginAttempts": "9", "useLogo": True}, settle=True),
+    admin_case("search_after_changing_several", "GET", CONFIG_PATH + "/search/logo"),
+    # Clean-up: every changed setting gets the value of a new install.
+    admin_case(
+        "clean_up",
+        "PUT",
+        CONFIG_PATH,
+        {
+            "title": "Organizr V2",
+            "lockScreen": False,
+            "hideRegistration": False,
+            "rememberMeDays": "7",
+            "description": "Organizr - Accept no others",
+            "loginAttempts": "5",
+            "useLogo": False,
+        },
+        settle=True,
+    ),
+    admin_case("search_at_the_end", "GET", CONFIG_PATH + "/search/title"),
+]
+
 ROUTING = [
     ("GET", "/api/v2"),
     ("GET", "/api/v2/"),
@@ -1326,7 +1397,13 @@ def named(definitions):
         options = dict(rest[0]) if rest else {}
         if "json" in options:
             options["json_body"] = options.pop("json")
+        settle = options.pop("settle", False)
         cases.append({"name": name, **send(method, path, **options)})
+        if settle:
+            # PHP keeps compiled files for some seconds, the configuration file among
+            # them. Until then it answers with the settings from before the change, and a
+            # second change would write the old value of the first one back.
+            time.sleep(CODE_CACHE_SECONDS)
     return cases
 
 
@@ -1400,6 +1477,8 @@ def main():
     record("groups", named(GROUPS), php_version)
     record("users", named(USERS), php_version)
     record("tabs", named(TABS), php_version)
+    # After the tab group, whose launch cases show the settings.
+    record("config", named(CONFIG), php_version)
 
 
 if __name__ == "__main__":

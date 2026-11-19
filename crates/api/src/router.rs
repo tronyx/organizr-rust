@@ -15,7 +15,8 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    basics, categories, fields, groups, launch, login, logout, register, tabs, token, users, wizard,
+    basics, categories, config, fields, groups, launch, login, logout, register, tabs, token,
+    users, wizard,
 };
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
@@ -96,6 +97,9 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             &put(categories::change.layer(map_response(fields::as_plain_json)))
                 .delete(categories::remove.layer(map_response(fields::as_plain_json))),
         )?
+        .route("/config", &get(config::all).put(config::change))?
+        .route("/config/{item}", &get(config::item))?
+        .route("/config/{item}/{term}", &get(config::item_with_term))?
         .route("/users", &get(users::list).post(users::add))?
         .route(
             "/users/{id}",

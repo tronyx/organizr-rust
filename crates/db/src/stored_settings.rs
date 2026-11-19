@@ -5,7 +5,10 @@
 //! registry, before a value gets here.
 
 use sea_orm::sea_query::OnConflict;
-use sea_orm::{ActiveValue, ConnectionTrait, DatabaseConnection, EntityTrait};
+use sea_orm::{
+    ActiveValue, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, QueryFilter,
+    TransactionTrait,
+};
 
 use crate::DbError;
 use crate::entity::setting;
@@ -54,6 +57,23 @@ impl<'a> StoredSettings<'a> {
 
     /// Removes the stored value of a setting, which puts the setting back to its default.
     /// Returns whether a value was stored.
+    /// Stores the given settings and removes the settings with the given keys. All of it
+    /// happens, or nothing does.
+    pub async fn apply(&self, puts: &[StoredSetting], removes: &[String]) -> Result<(), DbError> {
+        let transaction = self.connection.begin().await?;
+        for setting in puts {
+            put_in(&transaction, &setting.key, &setting.value).await?;
+        }
+        if !removes.is_empty() {
+            setting::Entity::delete_many()
+                .filter(setting::Column::Name.is_in(removes.iter().map(String::as_str)))
+                .exec(&transaction)
+                .await?;
+        }
+        transaction.commit().await?;
+        Ok(())
+    }
+
     pub async fn remove(&self, key: &str) -> Result<bool, DbError> {
         let result = setting::Entity::delete_by_id(key.to_owned())
             .exec(self.connection)

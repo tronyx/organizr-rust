@@ -4,11 +4,13 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use organizr_auth::login_limit::LoginLimiter;
-use organizr_auth::secrets::SecretBox;
+use organizr_auth::secrets::{SecretBox, SecretError};
 use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, DbError, StoredSetting};
 use organizr_settings::{Settings, SettingsError};
 use serde_json::Value;
+use thiserror::Error;
+use tokio::sync::Mutex;
 
 use crate::client::TrustedProxies;
 
@@ -21,6 +23,24 @@ pub struct AppState {
     login_limiter: Arc<LoginLimiter>,
     setup_code: Option<Arc<SetupCode>>,
     secrets: Arc<SecretBox>,
+    /// Held while settings are changed, so that two changes do not overwrite each other.
+    settings_change: Arc<Mutex<()>>,
+}
+
+/// Why a change of settings failed.
+#[derive(Debug, Error)]
+pub enum ChangeError {
+    /// A key is no setting, or a value does not fit its setting.
+    #[error(transparent)]
+    Settings(#[from] SettingsError),
+
+    /// A secret could not be sealed for storing.
+    #[error(transparent)]
+    Secret(#[from] SecretError),
+
+    /// The database failed.
+    #[error(transparent)]
+    Database(#[from] DbError),
 }
 
 impl AppState {
@@ -34,6 +54,7 @@ impl AppState {
             login_limiter: Arc::new(LoginLimiter::new()),
             setup_code: None,
             secrets: Arc::new(secrets),
+            settings_change: Arc::new(Mutex::new(())),
         }
     }
 
@@ -93,6 +114,44 @@ impl AppState {
     /// The count of failed logins. It starts empty when the application starts.
     pub fn login_limiter(&self) -> &LoginLimiter {
         &self.login_limiter
+    }
+
+    /// Changes settings: each key gets the value in its stored form. The new values are
+    /// stored in the database, and requests from now on use them.
+    ///
+    /// All settings are changed, or none is. A setting that gets its default has no row
+    /// in the database afterwards. A secret is sealed before it is stored.
+    pub async fn change_settings(&self, changes: Vec<(String, Value)>) -> Result<(), ChangeError> {
+        let _turn = self.settings_change.lock().await;
+        // The settings are large, so the copies do not stand in this future itself.
+        let mut settings = Box::new((*self.settings()).clone());
+        let defaults = Box::new(Settings::defaults());
+        let mut puts = Vec::new();
+        let mut removes = Vec::new();
+        for (key, value) in changes {
+            settings.set(&key, &value)?;
+            // The stored form as the registry writes it, for example a number as text.
+            let stored = settings.get(&key).unwrap_or(value);
+            if defaults.get(&key).as_ref() == Some(&stored) {
+                removes.push(key);
+            } else {
+                let value = self.stored_form(&key, &stored)?;
+                puts.push(StoredSetting { key, value });
+            }
+        }
+        self.database.settings().apply(&puts, &removes).await?;
+        self.replace_settings(*settings);
+        Ok(())
+    }
+
+    /// The text to store for a setting: JSON, with a secret sealed.
+    fn stored_form(&self, key: &str, value: &Value) -> Result<String, SecretError> {
+        match value {
+            Value::String(secret) if Settings::is_secret(key) => {
+                Ok(Value::String(self.secrets.seal(key, secret)?).to_string())
+            }
+            other => Ok(other.to_string()),
+        }
     }
 
     /// What seals the secrets that the install stores, and opens them again.

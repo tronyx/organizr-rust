@@ -2,6 +2,7 @@
 
 pub mod basics;
 pub mod categories;
+pub mod config;
 pub mod fields;
 pub mod groups;
 pub mod launch;

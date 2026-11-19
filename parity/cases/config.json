@@ -1,0 +1,1581 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>",
+      "password": "<password hash>",
+      "register_date": "<time>"
+    }
+  },
+  "cases": [
+    {
+      "name": "config_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "config",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"configVersion\": \"2.1.5000\",\n            \"BOOKMARK-enabled\": false,\n            \"CHAT-Auth-include\": \"1\",\n            \"CHAT-appID-include\": \"\",\n            \"CHAT-authKey-include\": \"\",\n            \"CHAT-cluster-include\": \"\",\n            \"CHAT-enabled\": false,\n            \"CHAT-messageLoadLimit\": \"200\",\n            \"CHAT-newMessageSound-include\": \"plugins/sounds/default/newmessage.mp3\",\n            \"CHAT-newMessageSoundz-include\": \"plugins/sounds/default/newmessage.mp3\",\n            \"CHAT-secret\": \"\",\n            \"CHAT-useSSL\": false,\n            \"CHAT-userRefreshTimeout\": \"60000\",\n            \"HEALTHCHECKS-401-enabled\": false,\n            \"HEALTHCHECKS-403-enabled\": false,\n            \"HEALTHCHECKS-Auth-include\": \"1\",\n            \"HEALTHCHECKS-PingURL\": \"https://hc-ping.com/\",\n            \"HEALTHCHECKS-all-items\": \"\",\n            \"HEALTHCHECKS-cron-run-enabled\": false,\n            \"HEALTHCHECKS-cron-run-schedule\": \"*/5 * * * *\",\n            \"HEALTHCHECKS-enabled\": false,\n            \"HEALTHCHECKS-option2-include\": \"\",\n            \"INVITES-Auth-include\": \"1\",\n            \"INVITES-EmbyTemplate\": \"\",\n            \"INVITES-add-plex-home\": false,\n            \"INVITES-allow-delete-include\": false,\n            \"INVITES-dbVersion\": \"1.1.0\",\n            \"INVITES-enabled\": false,\n            \"INVITES-komga-api-key\": \"\",\n            \"INVITES-komga-default-user-password\": \"\",\n            \"INVITES-komga-enabled\": false,\n            \"INVITES-komga-libraryIds\": \"\",\n            \"INVITES-komga-roles\": \"\",\n            \"INVITES-komga-uri\": \"\",\n            \"INVITES-maximum-invites\": \"0\",\n            \"INVITES-nextcloud-admin-password\": \"\",\n            \"INVITES-nextcloud-admin-user\": \"\",\n            \"INVITES-nextcloud-enabled\": false,\n            \"INVITES-nextcloud-groups-member\": \"\",\n            \"INVITES-nextcloud-plex-sso\": false,\n            \"INVITES-nextcloud-quota\": \"\",\n            \"INVITES-nextcloud-url\": \"\",\n            \"INVITES-plex-movies-labels\": \"\",\n            \"INVITES-plex-music-labels\": \"\",\n            \"INVITES-plex-tv-labels\": \"\",\n            \"INVITES-plexLibraries\": \"\",\n            \"INVITES-type-include\": \"plex\",\n            \"PHPMAILER-debugTesting\": false,\n            \"PHPMAILER-domain\": \"\",\n            \"PHPMAILER-emailTemplateCustom-include-Four\": \"\",\n            \"PHPMAILER-emailTemplateCustom-include-FourName\": \"Template #4\",\n            \"PHPMAILER-emailTemplateCustom-include-FourSubject\": \"\",\n            \"PHPMAILER-emailTemplateCustom-include-One\": \"\",\n            \"PHPMAILER-emailTemplateCustom-include-OneName\": \"Template #1\",\n            \"PHPMAILER-emailTemplateCustom-include-OneSubject\": \"\",\n            \"PHPMAILER-emailTemplateCustom-include-Three\": \"\",\n            \"PHPMAILER-emailTemplateCustom-include-ThreeName\": \"Template #3\",\n            \"PHPMAILER-emailTemplateCustom-include-ThreeSubject\": \"\",\n            \"PHPMAILER-emailTemplateCustom-include-Two\": \"\",\n            \"PHPMAILER-emailTemplateCustom-include-TwoName\": \"Template #2\",\n            \"PHPMAILER-emailTemplateCustom-include-TwoSubject\": \"\",\n            \"PHPMAILER-emailTemplateInviteUser\": \"\\n\\t<h2>Hey there {user}!</h2><br />\\n\\tHere is the invite code to join my cool media server: {inviteCode}<br/>\\n\\tHead over to my website and enter the code to join: {domain}<br />\\n\\t\",\n            \"PHPMAILER-emailTemplateInviteUserSubject\": \"You have been invited to join my server\",\n            \"PHPMAILER-emailTemplateRegisterUser\": \"\\n\\t<h2>Hey there {user}!</h2><br />\\n\\tWelcome to my site.<br/>\\n\\tIf you need anything, please let me know.<br />\\n\\t\",\n            \"PHPMAILER-emailTemplateRegisterUserEnabled\": true,\n            \"PHPMAILER-emailTemplateRegisterUserSubject\": \"Thank you For Registering\",\n            \"PHPMAILER-emailTemplateReset\": \"\\n\\t<h2>Hey there {user}!</h2><br />\\n\\tLooks like you forgot your password.  Well, I got you...  Here is your new password: {password}<br />\\n\\tIf you want to change it once you log in, you can.  Head over to my website: {domain}<br />\\n\\t\",\n            \"PHPMAILER-emailTemplateResetSubject\": \"Password Reset\",\n            \"PHPMAILER-enabled\": false,\n            \"PHPMAILER-logo\": \"https://raw.githubusercontent.com/causefx/Organizr/v2-develop/plugins/images/organizr/logo-wide.png\",\n            \"PHPMAILER-smtpHost\": \"\",\n            \"PHPMAILER-smtpHostAuth\": true,\n            \"PHPMAILER-smtpHostPassword\": \"\",\n            \"PHPMAILER-smtpHostPort\": \"\",\n            \"PHPMAILER-smtpHostSenderEmail\": \"no-reply@Organizr.tld\",\n            \"PHPMAILER-smtpHostSenderName\": \"Organizr\",\n            \"PHPMAILER-smtpHostType\": \"tls\",\n            \"PHPMAILER-smtpHostUsername\": \"\",\n            \"PHPMAILER-template\": \"default\",\n            \"PHPMAILER-verifyCert\": true,\n            \"ProwlarrDisableCertCheck\": false,\n            \"ProwlarrToken\": \"\",\n            \"ProwlarrURL\": \"\",\n            \"ProwlarrUseCustomCertificate\": false,\n            \"SHUCKSTOP-10\": false,\n            \"SHUCKSTOP-12\": false,\n            \"SHUCKSTOP-14\": false,\n            \"SHUCKSTOP-16\": false,\n            \"SHUCKSTOP-18\": false,\n            \"SHUCKSTOP-20\": false,\n            \"SHUCKSTOP-8\": false,\n            \"SHUCKSTOP-cron-run-enabled\": false,\n            \"SHUCKSTOP-cron-run-schedule\": \"*/5 * * * *\",\n            \"SHUCKSTOP-easystore\": false,\n            \"SHUCKSTOP-elements\": false,\n            \"SHUCKSTOP-emails\": \"\",\n            \"SHUCKSTOP-enabled\": false,\n            \"SHUCKSTOP-my-book\": false,\n            \"SPEEDTEST-Auth-include\": \"1\",\n            \"SPEEDTEST-enabled\": false,\n            \"SPEEDTEST-option2-include\": \"\",\n            \"accentColor\": \"\",\n            \"accentTextColor\": \"\",\n            \"adguardDomainListToggle\": false,\n            \"adguardHeaderToggle\": true,\n            \"adguardPercentToggle\": true,\n            \"adguardProcessingToggle\": true,\n            \"adguardQueriesBlockedToggle\": true,\n            \"adguardQueriesToggle\": true,\n            \"adguardURL\": \"\",\n            \"adminPingRefresh\": \"60000\",\n            \"allowCollapsableSideMenu\": false,\n            \"alternateHomepageHeaders\": false,\n            \"authBackend\": \"\",\n            \"authBackendDomain\": \"\",\n            \"authBackendHost\": \"\",\n            \"authBackendHostPrefix\": \"\",\n            \"authBackendHostSuffix\": \"\",\n            \"authBaseDN\": \"\",\n            \"authDebug\": false,\n            \"authProxyEnabled\": false,\n            \"authProxyHeaderName\": \"\",\n            \"authProxyHeaderNameEmail\": \"\",\n            \"authProxyLogoutURL\": \"\",\n            \"authProxyOverrideLogout\": false,\n            \"authProxyWhitelist\": \"\",\n            \"authType\": \"internal\",\n            \"autoBackupCronEnabled\": false,\n            \"autoBackupCronSchedule\": \"@weekly\",\n            \"autoCollapseCategories\": false,\n            \"autoExpandNavBar\": true,\n            \"autoUpdateCronEnabled\": false,\n            \"autoUpdateCronSchedule\": \"@weekly\",\n            \"backupLocation\": \"\",\n            \"blacklisted\": \"\",\n            \"blacklistedMessage\": \"You have been blacklisted from this site.\",\n            \"branch\": \"v2-master\",\n            \"breezometerToken\": \"d95ab607392d4fa5bf64bb26a5cb2a06\",\n            \"buttonColor\": \"\",\n            \"buttonHoverColor\": \"\",\n            \"buttonTextColor\": \"\",\n            \"buttonTextHoverColor\": \"\",\n            \"bypassLoginForLocal\": false,\n            \"cacheImageSize\": \"2\",\n            \"calendarDefault\": \"month\",\n            \"calendarEnd\": \"14\",\n            \"calendarEndTrakt\": \"14\",\n            \"calendarFirstDay\": \"1\",\n            \"calendarLimit\": \"1000\",\n            \"calendarLocale\": \"en\",\n            \"calendarRefresh\": \"60000\",\n            \"calendarStart\": \"14\",\n            \"calendarStartTrakt\": \"14\",\n            \"calendarTimeFormat\": \"h(:mm)t\",\n            \"calendariCal\": \"\",\n            \"checkForPluginUpdate\": true,\n            \"checkForThemeUpdate\": true,\n            \"checkForUpdate\": true,\n            \"collapseSideMenuOnClick\": false,\n            \"commit\": \"n/a\",\n            \"couchpotatoDisableCertCheck\": false,\n            \"couchpotatoToken\": \"\",\n            \"couchpotatoURL\": \"\",\n            \"couchpotatoUseCustomCertificate\": false,\n            \"customCss\": \"\",\n            \"customForgotPassText\": \"\",\n            \"customHTML01\": \"\",\n            \"customHTML02\": \"\",\n            \"customHTML03\": \"\",\n            \"customHTML04\": \"\",\n            \"customHTML05\": \"\",\n            \"customHTML06\": \"\",\n            \"customHTML07\": \"\",\n            \"customHTML08\": \"\",\n            \"customJava\": \"\",\n            \"customThemeCss\": \"\",\n            \"customThemeJava\": \"\",\n            \"dbHost\": \"\",\n            \"dbLocation\": \"/var/www/html/data/parity-db/\",\n            \"dbName\": \"parity.db\",\n            \"dbPassword\": \"\",\n            \"dbUsername\": \"\",\n            \"debugAreaAuth\": \"1\",\n            \"debugErrors\": false,\n            \"defaultRequestService\": \"ombi\",\n            \"defaultSettingsTab\": \"5\",\n            \"delugeCombine\": false,\n            \"delugeDisableCertCheck\": false,\n            \"delugeHideCompleted\": false,\n            \"delugeHideSeeding\": false,\n            \"delugeHideStatus\": true,\n            \"delugePassword\": \"\",\n            \"delugeRefresh\": \"60000\",\n            \"delugeURL\": \"\",\n            \"delugeUseCustomCertificate\": false,\n            \"description\": \"Organizr - Accept no others\",\n            \"disableHomepageModals\": false,\n            \"disableRecoverPass\": false,\n            \"driver\": \"sqlite3\",\n            \"easterEggs\": true,\n            \"embyDisableCertCheck\": false,\n            \"embyTabName\": \"\",\n            \"embyTabURL\": \"\",\n            \"embyToken\": \"\",\n            \"embyURL\": \"\",\n            \"embyUseCustomCertificate\": false,\n            \"enableLocalAddressForward\": false,\n            \"expandCategoriesByDefault\": false,\n            \"externalPluginMarketplaceRepos\": \"\",\n            \"externalThemeMarketplaceRepos\": \"\",\n            \"favIcon\": \"\",\n            \"gaTrackingID\": \"\",\n            \"githubAccessToken\": \"\",\n            \"githubMenuLink\": true,\n            \"headerColor\": \"\",\n            \"headerTextColor\": \"\",\n            \"healthChecksDisableCertCheck\": false,\n            \"healthChecksTags\": \"\",\n            \"healthChecksToken\": \"\",\n            \"healthChecksURL\": \"https://healthchecks.io/api/v1/checks/\",\n            \"healthChecksUseCustomCertificate\": false,\n            \"hideRegistration\": false,\n            \"homepageAdGuardAuth\": \"1\",\n            \"homepageAdGuardCombine\": false,\n            \"homepageAdGuardEnabled\": false,\n            \"homepageAdGuardRefresh\": \"10000\",\n            \"homepageBookmarksAuth\": \"1\",\n            \"homepageBookmarksEnabled\": false,\n            \"homepageBookmarksRefresh\": \"3600000\",\n            \"homepageCalendarAuth\": \"4\",\n            \"homepageCalendarEnabled\": false,\n            \"homepageCouchpotatoAuth\": \"1\",\n            \"homepageCouchpotatoEnabled\": false,\n            \"homepageCustomHTML01Auth\": \"1\",\n            \"homepageCustomHTML01Enabled\": false,\n            \"homepageCustomHTML02Auth\": \"1\",\n            \"homepageCustomHTML02Enabled\": false,\n            \"homepageCustomHTML03Auth\": \"1\",\n            \"homepageCustomHTML03Enabled\": false,\n            \"homepageCustomHTML04Auth\": \"1\",\n            \"homepageCustomHTML04Enabled\": false,\n            \"homepageCustomHTML05Auth\": \"1\",\n            \"homepageCustomHTML05Enabled\": false,\n            \"homepageCustomHTML06Auth\": \"1\",\n            \"homepageCustomHTML06Enabled\": false,\n            \"homepageCustomHTML07Auth\": \"1\",\n            \"homepageCustomHTML07Enabled\": false,\n            \"homepageCustomHTML08Auth\": \"1\",\n            \"homepageCustomHTML08Enabled\": false,\n            \"homepageCustomStreamNames\": \"\",\n            \"homepageDelugeAuth\": \"1\",\n            \"homepageDelugeEnabled\": false,\n            \"homepageDonateAuth\": \"999\",\n            \"homepageDonateCustomizeDescription\": \"Hi!  Help me out with a donation...\",\n            \"homepageDonateCustomizeHeading\": \"Donate Please\",\n            \"homepageDonateEnabled\": false,\n            \"homepageDonateMinimum\": \"100\",\n            \"homepageDonateProductID\": \"\",\n            \"homepageDonatePublicToken\": \"\",\n            \"homepageDonateSecretToken\": \"\",\n            \"homepageDonateShowUserHistory\": false,\n            \"homepageDownloadRefresh\": \"60000\",\n            \"homepageEmbyAuth\": \"1\",\n            \"homepageEmbyEnabled\": false,\n            \"homepageEmbyLink\": \" http://app.emby.media/#!/item/item.html?id={id}&serverId={serverId}\",\n            \"homepageEmbyLiveTVTrackerAuth\": \"1\",\n            \"homepageEmbyLiveTVTrackerCompactView\": false,\n            \"homepageEmbyLiveTVTrackerDaysShown\": \"7\",\n            \"homepageEmbyLiveTVTrackerEnabled\": false,\n            \"homepageEmbyLiveTVTrackerMaxCompletedItems\": \"5\",\n            \"homepageEmbyLiveTVTrackerMaxItems\": \"10\",\n            \"homepageEmbyLiveTVTrackerRefresh\": \"5\",\n            \"homepageEmbyLiveTVTrackerShowCompleted\": true,\n            \"homepageEmbyLiveTVTrackerShowDuration\": true,\n            \"homepageEmbyLiveTVTrackerShowSeriesInfo\": true,\n            \"homepageEmbyLiveTVTrackerShowUserInfo\": false,\n            \"homepageEmbyRecent\": false,\n            \"homepageEmbyRecentAuth\": \"1\",\n            \"homepageEmbyStreams\": false,\n            \"homepageEmbyStreamsAuth\": \"1\",\n            \"homepageHealthChecksAuth\": \"1\",\n            \"homepageHealthChecksEnabled\": false,\n            \"homepageHealthChecksRefresh\": \"60000\",\n            \"homepageHealthChecksShowDesc\": false,\n            \"homepageHealthChecksShowTags\": false,\n            \"homepageJackettAuth\": \"1\",\n            \"homepageJackettBackholeDownload\": false,\n            \"homepageJackettEnabled\": false,\n            \"homepageJdownloaderAuth\": \"1\",\n            \"homepageJdownloaderEnabled\": false,\n            \"homepageJellyStatAuth\": \"1\",\n            \"homepageJellyStatDays\": \"30\",\n            \"homepageJellyStatDisplayMode\": \"native\",\n            \"homepageJellyStatEnabled\": false,\n            \"homepageJellyStatIframeHeight\": \"800\",\n            \"homepageJellyStatIframeScrolling\": true,\n            \"homepageJellyStatMaxItems\": \"10\",\n            \"homepageJellyStatMostWatchedCount\": \"10\",\n            \"homepageJellyStatRefresh\": \"5\",\n            \"homepageJellyStatShowLibraries\": true,\n            \"homepageJellyStatShowMostListenedMusic\": true,\n            \"homepageJellyStatShowMostWatched\": true,\n            \"homepageJellyStatShowMostWatchedMovies\": true,\n            \"homepageJellyStatShowMostWatchedShows\": true,\n            \"homepageJellyStatShowRecentActivity\": true,\n            \"homepageJellyStatShowUsers\": true,\n            \"homepageJellyStreamsAuth\": \"1\",\n            \"homepageJellyfinAuth\": \"1\",\n            \"homepageJellyfinEnabled\": false,\n            \"homepageJellyfinInstead\": false,\n            \"homepageJellyfinLink\": \"http://hostname:port/jellyfin/web/index.html#!/details?id={id}&serverId={serverId}\",\n            \"homepageJellyfinRecent\": false,\n            \"homepageJellyfinRecentAuth\": \"1\",\n            \"homepageJellyfinStreams\": false,\n            \"homepageLidarrAuth\": \"1\",\n            \"homepageLidarrEnabled\": false,\n            \"homepageMonitorrAuth\": \"1\",\n            \"homepageMonitorrEnabled\": false,\n            \"homepageMonitorrRefresh\": \"60000\",\n            \"homepageNetdataAuth\": \"1\",\n            \"homepageNetdataEnabled\": false,\n            \"homepageNetdataRefresh\": \"10000\",\n            \"homepageNzbgetAuth\": \"1\",\n            \"homepageNzbgetEnabled\": false,\n            \"homepageOctoprintAuth\": \"1\",\n            \"homepageOctoprintEnabled\": false,\n            \"homepageOctoprintRefresh\": \"10000\",\n            \"homepageOmbiAuth\": \"1\",\n            \"homepageOmbiEnabled\": false,\n            \"homepageOmbiRequestAuth\": \"1\",\n            \"homepageOrderAdguard\": \"42\",\n            \"homepageOrderBookmarks\": \"40\",\n            \"homepageOrderDonate\": \"41\",\n            \"homepageOrderEmbyLiveTVTracker\": \"46\",\n            \"homepageOrderJackett\": \"31\",\n            \"homepageOrderJellyStat\": \"48\",\n            \"homepageOrderMonitorr\": \"22\",\n            \"homepageOrderNetdata\": \"25\",\n            \"homepageOrderOctoprint\": \"28\",\n            \"homepageOrderPihole\": \"20\",\n            \"homepageOrderPromPage\": \"45\",\n            \"homepageOrderProwlarr\": \"43\",\n            \"homepageOrderRadarrQueue\": \"27\",\n            \"homepageOrderSonarrQueue\": \"26\",\n            \"homepageOrderSpeedtest\": \"24\",\n            \"homepageOrderUptimeKuma\": \"44\",\n            \"homepageOrderUserWatchStats\": \"47\",\n            \"homepageOrderWeatherAndAir\": \"23\",\n            \"homepageOrdercalendar\": \"14\",\n            \"homepageOrdercustomhtml01\": \"1\",\n            \"homepageOrdercustomhtml02\": \"2\",\n            \"homepageOrdercustomhtml03\": \"32\",\n            \"homepageOrdercustomhtml04\": \"33\",\n            \"homepageOrdercustomhtml05\": \"34\",\n            \"homepageOrdercustomhtml06\": \"35\",\n            \"homepageOrdercustomhtml07\": \"36\",\n            \"homepageOrdercustomhtml08\": \"37\",\n            \"homepageOrderdeluge\": \"5\",\n            \"homepageOrderdownloader\": \"16\",\n            \"homepageOrderembynowplaying\": \"11\",\n            \"homepageOrderembyrecent\": \"12\",\n            \"homepageOrderhealthchecks\": \"17\",\n            \"homepageOrderjdownloader\": \"18\",\n            \"homepageOrderjellyfinnowplaying\": \"29\",\n            \"homepageOrderjellyfinrecent\": \"30\",\n            \"homepageOrdernzbget\": \"6\",\n            \"homepageOrderombi\": \"13\",\n            \"homepageOrderoverseerr\": \"39\",\n            \"homepageOrderplexnowplaying\": \"8\",\n            \"homepageOrderplexplaylist\": \"10\",\n            \"homepageOrderplexrecent\": \"9\",\n            \"homepageOrderqBittorrent\": \"4\",\n            \"homepageOrderrTorrent\": \"15\",\n            \"homepageOrdersabnzbd\": \"7\",\n            \"homepageOrdertautulli\": \"21\",\n            \"homepageOrdertransmission\": \"3\",\n            \"homepageOrderuTorrent\": \"38\",\n            \"homepageOrderunifi\": \"19\",\n            \"homepageOverseerrAuth\": \"1\",\n            \"homepageOverseerrEnabled\": false,\n            \"homepageOverseerrRequestAuth\": \"1\",\n            \"homepagePiholeAuth\": \"1\",\n            \"homepagePiholeCombine\": false,\n            \"homepagePiholeEnabled\": false,\n            \"homepagePiholeRefresh\": \"10000\",\n            \"homepagePlexAuth\": \"1\",\n            \"homepagePlexEnabled\": false,\n            \"homepagePlexPlaylist\": false,\n            \"homepagePlexPlaylistAuth\": \"1\",\n            \"homepagePlexRecent\": false,\n            \"homepagePlexRecentAuth\": \"1\",\n            \"homepagePlexRecentExclude\": \"\",\n            \"homepagePlexRecentlyAddedMethod\": \"legacy\",\n            \"homepagePlexSearchExclude\": \"\",\n            \"homepagePlexStreams\": false,\n            \"homepagePlexStreamsAuth\": \"1\",\n            \"homepagePlexStreamsExclude\": \"\",\n            \"homepagePromPageCompact\": true,\n            \"homepagePromPageEnabled\": false,\n            \"homepagePromPageHeader\": \"Status Page\",\n            \"homepagePromPageHeaderToggle\": true,\n            \"homepagePromPageRefresh\": \"60000\",\n            \"homepagePromPageShowUptime\": true,\n            \"homepageProwlarrAuth\": \"1\",\n            \"homepageProwlarrBackholeDownload\": false,\n            \"homepageProwlarrEnabled\": false,\n            \"homepageRadarrAuth\": \"1\",\n            \"homepageRadarrEnabled\": false,\n            \"homepageRadarrQueueAuth\": \"1\",\n            \"homepageRadarrQueueCombine\": false,\n            \"homepageRadarrQueueEnabled\": false,\n            \"homepageRadarrQueueRefresh\": \"60000\",\n            \"homepageRecentLimit\": \"50\",\n            \"homepageRecentRefresh\": \"60000\",\n            \"homepageSabnzbdAuth\": \"1\",\n            \"homepageSabnzbdEnabled\": false,\n            \"homepageShowStreamNames\": false,\n            \"homepageShowStreamNamesAuth\": \"1\",\n            \"homepageShowStreamNamesWithoutIp\": false,\n            \"homepageShowStreamNamesWithoutIpAuth\": \"1\",\n            \"homepageSickrageAuth\": \"1\",\n            \"homepageSickrageEnabled\": false,\n            \"homepageSonarrAuth\": \"1\",\n            \"homepageSonarrEnabled\": false,\n            \"homepageSonarrQueueAuth\": \"1\",\n            \"homepageSonarrQueueCombine\": false,\n            \"homepageSonarrQueueEnabled\": false,\n            \"homepageSonarrQueueRefresh\": \"60000\",\n            \"homepageSpeedtestAuth\": \"1\",\n            \"homepageSpeedtestEnabled\": false,\n            \"homepageSpeedtestRefresh\": \"1800000\",\n            \"homepageStreamRefresh\": \"60000\",\n            \"homepageTautulliAuth\": \"1\",\n            \"homepageTautulliEnabled\": false,\n            \"homepageTautulliLibraryAuth\": \"1\",\n            \"homepageTautulliLibraryStatsExclude\": \"\",\n            \"homepageTautulliMiscAuth\": \"1\",\n            \"homepageTautulliRefresh\": \"60000\",\n            \"homepageTautulliViewingStatsExclude\": \"\",\n            \"homepageTautulliViewsAuth\": \"1\",\n            \"homepageTraktAuth\": \"1\",\n            \"homepageTraktEnabled\": false,\n            \"homepageTransmissionAuth\": \"1\",\n            \"homepageTransmissionEnabled\": false,\n            \"homepageUnifiAuth\": \"1\",\n            \"homepageUnifiEnabled\": false,\n            \"homepageUnifiRefresh\": \"600000\",\n            \"homepageUptimeKumaAuth\": \"1\",\n            \"homepageUptimeKumaCompact\": true,\n            \"homepageUptimeKumaEnabled\": false,\n            \"homepageUptimeKumaHeader\": \"Uptime Kuma\",\n            \"homepageUptimeKumaHeaderToggle\": true,\n            \"homepageUptimeKumaRefresh\": \"60000\",\n            \"homepageUptimeKumaShowLatency\": true,\n            \"homepageUseCustomStreamNames\": false,\n            \"homepageUserWatchStatsAuth\": \"1\",\n            \"homepageUserWatchStatsCompactView\": false,\n            \"homepageUserWatchStatsDays\": \"30\",\n            \"homepageUserWatchStatsDisableCertCheck\": false,\n            \"homepageUserWatchStatsEnabled\": false,\n            \"homepageUserWatchStatsHeader\": \"User Watch Statistics\",\n            \"homepageUserWatchStatsHeaderToggle\": true,\n            \"homepageUserWatchStatsMaxItems\": \"10\",\n            \"homepageUserWatchStatsRefresh\": \"30\",\n            \"homepageUserWatchStatsService\": \"plex\",\n            \"homepageUserWatchStatsShowMostWatched\": true,\n            \"homepageUserWatchStatsShowRecentActivity\": true,\n            \"homepageUserWatchStatsShowTopUsers\": true,\n            \"homepageUserWatchStatsToken\": \"\",\n            \"homepageUserWatchStatsURL\": \"\",\n            \"homepageUserWatchStatsUseCustomCertificate\": false,\n            \"homepageWeatherAndAirAirQualityEnabled\": false,\n            \"homepageWeatherAndAirAuth\": \"1\",\n            \"homepageWeatherAndAirEnabled\": false,\n            \"homepageWeatherAndAirLatitude\": \"\",\n            \"homepageWeatherAndAirLongitude\": \"\",\n            \"homepageWeatherAndAirPollenEnabled\": false,\n            \"homepageWeatherAndAirRefresh\": \"3600000\",\n            \"homepageWeatherAndAirUnits\": \"imperial\",\n            \"homepageWeatherAndAirWeatherEnabled\": false,\n            \"homepageWeatherAndAirWeatherHeader\": \"\",\n            \"homepageWeatherAndAirWeatherHeaderToggle\": false,\n            \"homepageqBittorrentAuth\": \"1\",\n            \"homepageqBittorrentEnabled\": false,\n            \"homepagerTorrentAuth\": \"1\",\n            \"homepagerTorrentEnabled\": false,\n            \"homepageuTorrentAuth\": \"1\",\n            \"homepageuTorrentEnabled\": false,\n            \"iframeAllow\": \"fullscreen,autoplay,clipboard-read,clipboard-write,camera,microphone,speaker-selection,display-capture,web-share,encrypted-media,picture-in-picture\",\n            \"ignoreTFAIfPlexOAuth\": false,\n            \"ignoreTFALocal\": false,\n            \"ignoredNewsIds\": [],\n            \"includeDatabaseQueriesInDebug\": false,\n            \"installedPlugins\": [],\n            \"installedThemes\": \"\",\n            \"jackettDisableCertCheck\": false,\n            \"jackettToken\": \"\",\n            \"jackettURL\": \"\",\n            \"jackettUseCustomCertificate\": false,\n            \"jdownloaderCombine\": false,\n            \"jdownloaderDisableCertCheck\": false,\n            \"jdownloaderPassword\": \"\",\n            \"jdownloaderRefresh\": \"60000\",\n            \"jdownloaderURL\": \"\",\n            \"jdownloaderUseCustomCertificate\": false,\n            \"jdownloaderUsername\": \"\",\n            \"jellyStatApikey\": \"\",\n            \"jellyStatDisableCertCheck\": false,\n            \"jellyStatInternalURL\": \"\",\n            \"jellyStatURL\": \"\",\n            \"jellyStatUseCustomCertificate\": false,\n            \"jellyfinDisableCertCheck\": false,\n            \"jellyfinSSOURL\": \"\",\n            \"jellyfinTabName\": \"\",\n            \"jellyfinToken\": \"\",\n            \"jellyfinURL\": \"\",\n            \"jellyfinUseCustomCertificate\": false,\n            \"keepBackupsCountCron\": \"20\",\n            \"komgaFallbackPassword\": \"\",\n            \"komgaFallbackUser\": \"\",\n            \"komgaSSOMasterPassword\": \"\",\n            \"komgaURL\": \"\",\n            \"ldapBindPassword\": \"\",\n            \"ldapBindUsername\": \"\",\n            \"ldapSSL\": false,\n            \"ldapTLS\": false,\n            \"ldapType\": \"1\",\n            \"license\": \"personal\",\n            \"lidarrCalendarLink\": \"\",\n            \"lidarrDisableCertCheck\": false,\n            \"lidarrFrameTarget\": \"\",\n            \"lidarrIcon\": true,\n            \"lidarrSocksAuth\": \"999\",\n            \"lidarrSocksEnabled\": false,\n            \"lidarrToken\": \"\",\n            \"lidarrURL\": \"\",\n            \"lidarrUseCustomCertificate\": false,\n            \"localAddress\": \"\",\n            \"localIPFrom\": \"\",\n            \"localIPList\": \"\",\n            \"localIPTo\": \"\",\n            \"localLoginUserId\": \"1\",\n            \"lockScreen\": false,\n            \"lockoutMaxAuth\": \"0\",\n            \"lockoutMinAuth\": \"1\",\n            \"lockoutSystem\": false,\n            \"lockoutTimeout\": \"60\",\n            \"logLevel\": \"INFO\",\n            \"logLiveUpdateRefresh\": \"5000\",\n            \"logPageSize\": \"50\",\n            \"loginAttempts\": \"5\",\n            \"loginLockout\": \"60000\",\n            \"loginLogo\": \"plugins/images/organizr/organizr-logo-h.png\",\n            \"loginWallpaper\": \"\",\n            \"logo\": \"plugins/images/organizr/organizr-logo-h.png\",\n            \"matchUserAgents\": false,\n            \"matchUserIP\": false,\n            \"maxLogFiles\": \"7\",\n            \"maxSocksDebugSize\": 100,\n            \"mediaSearch\": false,\n            \"mediaSearchAuth\": \"1\",\n            \"mediaSearchType\": \"\",\n            \"minimalLoginScreen\": false,\n            \"monitorrCompact\": false,\n            \"monitorrDisableCertCheck\": false,\n            \"monitorrHeader\": \"Monitorr\",\n            \"monitorrHeaderToggle\": true,\n            \"monitorrURL\": \"\",\n            \"monitorrUseCustomCertificate\": false,\n            \"netdata1Chart\": \"\",\n            \"netdata1Colour\": \"\",\n            \"netdata1Data\": \"\",\n            \"netdata1Enabled\": false,\n            \"netdata1Size\": \"\",\n            \"netdata1Title\": \"\",\n            \"netdata1lg\": true,\n            \"netdata1md\": true,\n            \"netdata1sm\": true,\n            \"netdata2Chart\": \"\",\n            \"netdata2Colour\": \"\",\n            \"netdata2Data\": \"\",\n            \"netdata2Enabled\": false,\n            \"netdata2Size\": \"\",\n            \"netdata2Title\": \"\",\n            \"netdata2lg\": true,\n            \"netdata2md\": true,\n            \"netdata2sm\": true,\n            \"netdata3Chart\": \"\",\n            \"netdata3Colour\": \"\",\n            \"netdata3Data\": \"\",\n            \"netdata3Enabled\": false,\n            \"netdata3Size\": \"\",\n            \"netdata3Title\": \"\",\n            \"netdata3lg\": true,\n            \"netdata3md\": true,\n            \"netdata3sm\": true,\n            \"netdata4Chart\": \"\",\n            \"netdata4Colour\": \"\",\n            \"netdata4Data\": \"\",\n            \"netdata4Enabled\": false,\n            \"netdata4Size\": \"\",\n            \"netdata4Title\": \"\",\n            \"netdata4lg\": true,\n            \"netdata4md\": true,\n            \"netdata4sm\": true,\n            \"netdata5Chart\": \"\",\n            \"netdata5Colour\": \"\",\n            \"netdata5Data\": \"\",\n            \"netdata5Enabled\": false,\n            \"netdata5Size\": \"\",\n            \"netdata5Title\": \"\",\n            \"netdata5lg\": true,\n            \"netdata5md\": true,\n            \"netdata5sm\": true,\n            \"netdata6Chart\": \"\",\n            \"netdata6Colour\": \"\",\n            \"netdata6Data\": \"\",\n            \"netdata6Enabled\": false,\n            \"netdata6Size\": \"\",\n            \"netdata6Title\": \"\",\n            \"netdata6lg\": true,\n            \"netdata6md\": true,\n            \"netdata6sm\": true,\n            \"netdata7Chart\": \"\",\n            \"netdata7Colour\": \"\",\n            \"netdata7Data\": \"\",\n            \"netdata7Enabled\": false,\n            \"netdata7Size\": \"\",\n            \"netdata7Title\": \"\",\n            \"netdata7lg\": true,\n            \"netdata7md\": true,\n            \"netdata7sm\": true,\n            \"netdataCustom\": \"{}\",\n            \"netdataDisableCertCheck\": false,\n            \"netdataURL\": \"\",\n            \"netdataUseCustomCertificate\": false,\n            \"notificationBackbone\": \"izi\",\n            \"notificationPosition\": \"br\",\n            \"nzbgetCombine\": false,\n            \"nzbgetDisableCertCheck\": false,\n            \"nzbgetPassword\": \"\",\n            \"nzbgetRefresh\": \"60000\",\n            \"nzbgetSocksAuth\": \"999\",\n            \"nzbgetSocksEnabled\": false,\n            \"nzbgetURL\": \"\",\n            \"nzbgetUseCustomCertificate\": true,\n            \"nzbgetUsername\": \"\",\n            \"octoprintDisableCertCheck\": false,\n            \"octoprintHeader\": \"Octoprint\",\n            \"octoprintHeaderToggle\": true,\n            \"octoprintToken\": \"\",\n            \"octoprintURL\": \"\",\n            \"octoprintUseCustomCertificate\": false,\n            \"oidcAuthentikClientId\": \"\",\n            \"oidcAuthentikClientSecret\": \"\",\n            \"oidcAuthentikDiscoveryUrl\": \"\",\n            \"oidcAuthentikEnabled\": false,\n            \"oidcAuthentikGroupClaim\": \"\",\n            \"oidcAuthentikName\": \"Authentik\",\n            \"oidcAuthentikScopes\": \"openid,profile,email,groups\",\n            \"oidcAutoCreateUsers\": true,\n            \"oidcAutoRedirect\": false,\n            \"oidcAutoRedirectLogoutUrl\": \"\",\n            \"oidcAutoRedirectProvider\": \"\",\n            \"oidcDefaultGroupId\": \"4\",\n            \"oidcEnabled\": false,\n            \"oidcGroupClaimName\": \"groups\",\n            \"oidcGroupMappingMode\": \"first\",\n            \"oidcGroupMappings\": \"{}\",\n            \"oidcKeycloakClientId\": \"\",\n            \"oidcKeycloakClientSecret\": \"\",\n            \"oidcKeycloakDiscoveryUrl\": \"\",\n            \"oidcKeycloakEnabled\": false,\n            \"oidcKeycloakGroupClaim\": \"\",\n            \"oidcKeycloakName\": \"Keycloak\",\n            \"oidcKeycloakScopes\": \"openid,profile,email\",\n            \"oidcLinkExistingUsers\": true,\n            \"oidcPocketidClientId\": \"\",\n            \"oidcPocketidClientSecret\": \"\",\n            \"oidcPocketidDiscoveryUrl\": \"\",\n            \"oidcPocketidEnabled\": false,\n            \"oidcPocketidGroupClaim\": \"\",\n            \"oidcPocketidName\": \"PocketID\",\n            \"oidcPocketidScopes\": \"openid,profile,email\",\n            \"oidcUpdateGroupsOnLogin\": false,\n            \"oidcZitadelClientId\": \"\",\n            \"oidcZitadelClientSecret\": \"\",\n            \"oidcZitadelDiscoveryUrl\": \"\",\n            \"oidcZitadelEnabled\": false,\n            \"oidcZitadelGroupClaim\": \"urn:zitadel:iam:org:project:roles\",\n            \"oidcZitadelName\": \"Zitadel\",\n            \"oidcZitadelScopes\": \"openid,profile,email,urn:zitadel:iam:org:project:roles\",\n            \"ombiAlias\": false,\n            \"ombiDefaultFilterApproved\": true,\n            \"ombiDefaultFilterAvailable\": true,\n            \"ombiDefaultFilterDenied\": true,\n            \"ombiDefaultFilterUnapproved\": true,\n            \"ombiDefaultFilterUnavailable\": true,\n            \"ombiDisableCertCheck\": false,\n            \"ombiFallbackPassword\": \"\",\n            \"ombiFallbackUser\": \"\",\n            \"ombiLimit\": \"50\",\n            \"ombiLimitUser\": false,\n            \"ombiRefresh\": \"600000\",\n            \"ombiToken\": \"\",\n            \"ombiTvDefault\": \"all\",\n            \"ombiURL\": \"\",\n            \"ombiUseCustomCertificate\": false,\n            \"organizrAPI\": \"parityapikey01234567\",\n            \"organizrDocsMenuLink\": true,\n            \"organizrFeatureRequestLink\": true,\n            \"organizrHash\": \"***Secure***\",\n            \"organizrSignoutMenuLink\": true,\n            \"organizrSupportMenuLink\": true,\n            \"otherPingRefresh\": \"600000\",\n            \"overseerrDefaultFilterApproved\": true,\n            \"overseerrDefaultFilterAvailable\": true,\n            \"overseerrDefaultFilterDenied\": true,\n            \"overseerrDefaultFilterUnapproved\": true,\n            \"overseerrDefaultFilterUnavailable\": true,\n            \"overseerrDisableCertCheck\": false,\n            \"overseerrFallbackPassword\": \"\",\n            \"overseerrFallbackUser\": \"\",\n            \"overseerrLimit\": \"50\",\n            \"overseerrLimitUser\": false,\n            \"overseerrPrefer4K\": false,\n            \"overseerrRefresh\": \"600000\",\n            \"overseerrToken\": \"\",\n            \"overseerrTvDefault\": \"all\",\n            \"overseerrURL\": \"\",\n            \"overseerrUseCustomCertificate\": false,\n            \"performanceDisableIconDropdown\": false,\n            \"performanceDisableImageDropdown\": false,\n            \"petioFallbackPassword\": \"\",\n            \"petioFallbackUser\": \"\",\n            \"petioToken\": \"\",\n            \"petioURL\": \"\",\n            \"piholeHeaderToggle\": true,\n            \"piholeToken\": \"\",\n            \"piholeURL\": \"\",\n            \"pingAuth\": \"1\",\n            \"pingAuthMessage\": \"1\",\n            \"pingAuthMs\": \"1\",\n            \"pingMs\": false,\n            \"pingOfflineSound\": \"plugins/sounds/default/open-ended.mp3\",\n            \"pingOnlineSound\": \"plugins/sounds/default/awareness.mp3\",\n            \"plexAdmin\": \"\",\n            \"plexDisableCertCheck\": false,\n            \"plexID\": \"\",\n            \"plexStrictFriends\": true,\n            \"plexTabName\": \"\",\n            \"plexTabURL\": \"\",\n            \"plexToken\": \"\",\n            \"plexURL\": \"\",\n            \"plexUseCustomCertificate\": false,\n            \"plexoAuth\": false,\n            \"promPageURL\": \"\",\n            \"qBittorrentApiVersion\": \"1\",\n            \"qBittorrentCombine\": false,\n            \"qBittorrentDisableCertCheck\": false,\n            \"qBittorrentHideCompleted\": false,\n            \"qBittorrentHideSeeding\": false,\n            \"qBittorrentPassword\": \"\",\n            \"qBittorrentRefresh\": \"60000\",\n            \"qBittorrentReverseSorting\": false,\n            \"qBittorrentSocksAuth\": \"999\",\n            \"qBittorrentSocksEnabled\": false,\n            \"qBittorrentSortOrder\": \"eta\",\n            \"qBittorrentURL\": \"\",\n            \"qBittorrentUseCustomCertificate\": false,\n            \"qBittorrentUsername\": \"\",\n            \"rTorrentCombine\": false,\n            \"rTorrentDisableCertCheck\": false,\n            \"rTorrentHideCompleted\": false,\n            \"rTorrentHideSeeding\": false,\n            \"rTorrentIgnoreLabel\": \"\",\n            \"rTorrentLimit\": \"200\",\n            \"rTorrentPassword\": \"\",\n            \"rTorrentRefresh\": \"60000\",\n            \"rTorrentReverseSorting\": false,\n            \"rTorrentSortOrder\": \"datea\",\n            \"rTorrentURL\": \"\",\n            \"rTorrentURLOverride\": \"\",\n            \"rTorrentUseCustomCertificate\": false,\n            \"rTorrentUsername\": \"\",\n            \"radarrCalendarLink\": \"\",\n            \"radarrCinemaRelease\": false,\n            \"radarrDigitalRelease\": false,\n            \"radarrDisableCertCheck\": false,\n            \"radarrFrameTarget\": \"\",\n            \"radarrIcon\": true,\n            \"radarrPhysicalRelease\": true,\n            \"radarrSocksAuth\": \"999\",\n            \"radarrSocksEnabled\": false,\n            \"radarrToken\": \"\",\n            \"radarrURL\": \"\",\n            \"radarrUnmonitored\": false,\n            \"radarrUseCustomCertificate\": false,\n            \"registrationPassword\": \"E6VMJPh5cNlfuBAgpil+lcbjVe8X40sfms6dqrEXDvM=\",\n            \"rememberMe\": true,\n            \"rememberMeDays\": \"7\",\n            \"sabnzbdCombine\": false,\n            \"sabnzbdDisableCertCheck\": false,\n            \"sabnzbdRefresh\": \"60000\",\n            \"sabnzbdSocksAuth\": \"999\",\n            \"sabnzbdSocksEnabled\": false,\n            \"sabnzbdToken\": \"\",\n            \"sabnzbdURL\": \"\",\n            \"sabnzbdUseCustomCertificate\": false,\n            \"sandbox\": \"allow-presentation,allow-forms,allow-same-origin,allow-pointer-lock,allow-scripts,allow-popups,allow-modals,allow-top-navigation,allow-downloads,allow-orientation-lock,allow-popups-to-escape-sandbox,allow-top-navigation-by-user-activation\",\n            \"selfSignedCert\": \"\",\n            \"sendLogsToSlack\": false,\n            \"sickrageDisableCertCheck\": false,\n            \"sickrageToken\": \"\",\n            \"sickrageURL\": \"\",\n            \"sickrageUseCustomCertificate\": false,\n            \"sideMenuCollapsed\": false,\n            \"sidebarColor\": \"\",\n            \"sidebarTextColor\": \"\",\n            \"slackLogLevel\": \"WARNING\",\n            \"slackLogWebHookChannel\": \"\",\n            \"slackLogWebhook\": \"\",\n            \"socksDebug\": false,\n            \"sonarrCalendarLink\": \"\",\n            \"sonarrDisableCertCheck\": false,\n            \"sonarrFrameTarget\": \"\",\n            \"sonarrIcon\": true,\n            \"sonarrSocksAuth\": \"999\",\n            \"sonarrSocksEnabled\": false,\n            \"sonarrToken\": \"\",\n            \"sonarrURL\": \"\",\n            \"sonarrUnmonitored\": false,\n            \"sonarrUseCustomCertificate\": false,\n            \"speedtestDisableCertCheck\": false,\n            \"speedtestHeader\": \"Speedtest\",\n            \"speedtestHeaderToggle\": true,\n            \"speedtestURL\": \"\",\n            \"speedtestUseCustomCertificate\": false,\n            \"ssoJellyfin\": false,\n            \"ssoKomga\": false,\n            \"ssoKomgaAuth\": \"4\",\n            \"ssoOmbi\": false,\n            \"ssoOverseerr\": false,\n            \"ssoPetio\": false,\n            \"ssoPlex\": false,\n            \"ssoTautulli\": false,\n            \"ssoTautulliAuth\": \"4\",\n            \"statusSounds\": false,\n            \"style\": \"dark\",\n            \"tautulliApikey\": \"\",\n            \"tautulliDisableCertCheck\": false,\n            \"tautulliFriendlyName\": true,\n            \"tautulliHeader\": \"Tautulli\",\n            \"tautulliHeaderToggle\": true,\n            \"tautulliLibraries\": true,\n            \"tautulliPopularMovies\": true,\n            \"tautulliPopularTV\": true,\n            \"tautulliSocksAuth\": \"999\",\n            \"tautulliSocksEnabled\": false,\n            \"tautulliTopMovies\": true,\n            \"tautulliTopPlatforms\": true,\n            \"tautulliTopTV\": true,\n            \"tautulliTopUsers\": true,\n            \"tautulliURL\": \"\",\n            \"tautulliUseCustomCertificate\": false,\n            \"theme\": \"Organizr\",\n            \"themeInstalled\": \"\",\n            \"themeVersion\": \"\",\n            \"title\": \"Organizr V2\",\n            \"traefikAuthEnable\": false,\n            \"traefikDomainOverride\": \"\",\n            \"traktAccessToken\": \"\",\n            \"traktAccessTokenExpires\": \"\",\n            \"traktClientId\": \"\",\n            \"traktClientSecret\": \"\",\n            \"traktRefreshToken\": \"\",\n            \"transmissionCombine\": false,\n            \"transmissionDisableCertCheck\": true,\n            \"transmissionHideCompleted\": false,\n            \"transmissionHideSeeding\": false,\n            \"transmissionPassword\": \"\",\n            \"transmissionRefresh\": \"60000\",\n            \"transmissionURL\": \"\",\n            \"transmissionUseCustomCertificate\": false,\n            \"transmissionUsername\": \"\",\n            \"uTorrentCombine\": false,\n            \"uTorrentCookie\": \"\",\n            \"uTorrentDisableCertCheck\": false,\n            \"uTorrentHideCompleted\": false,\n            \"uTorrentHideSeeding\": false,\n            \"uTorrentPassword\": \"\",\n            \"uTorrentRefresh\": \"60000\",\n            \"uTorrentToken\": \"\",\n            \"uTorrentURL\": \"\",\n            \"uTorrentUseCustomCertificate\": false,\n            \"uTorrentUsername\": \"\",\n            \"unifiCookie\": \"\",\n            \"unifiDisableCertCheck\": true,\n            \"unifiPassword\": \"\",\n            \"unifiSiteName\": \"\",\n            \"unifiURL\": \"\",\n            \"unifiUseCustomCertificate\": false,\n            \"unifiUsername\": \"\",\n            \"unsortedTabs\": \"top\",\n            \"uptimeKumaToken\": \"\",\n            \"uptimeKumaURL\": \"\",\n            \"useLogo\": false,\n            \"useLogoLogin\": false,\n            \"useRandomMediaImage\": false,\n            \"uuid\": \"<uuid>\",\n            \"wanDomain\": \"\",\n            \"youtubeAPI\": \"\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid"
+        ]
+      }
+    },
+    {
+      "name": "item_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/title"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_text",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/title",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for title\",\n        \"data\": \"Organizr V2\"\n    }\n}"
+      }
+    },
+    {
+      "name": "item_number_as_text",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/rememberMeDays",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for rememberMeDays\",\n        \"data\": \"7\"\n    }\n}"
+      }
+    },
+    {
+      "name": "item_switch_that_is_off",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/lockScreen",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for lockScreen\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_switch_that_is_on",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/rememberMe",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for rememberMe\",\n        \"data\": true\n    }\n}"
+      }
+    },
+    {
+      "name": "item_empty_text",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/customCss",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for customCss\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_list",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/ignoredNewsIds",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for ignoredNewsIds\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_number",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/maxSocksDebugSize",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for maxSocksDebugSize\",\n        \"data\": 100\n    }\n}"
+      }
+    },
+    {
+      "name": "item_unknown",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/noSuchSetting",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"noSuchSetting is not defined or is blank\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_in_another_letter_case",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/TITLE",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"TITLE is not defined or is blank\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_with_one_more_part",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/title/more",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for title\",\n        \"data\": \"Organizr V2\"\n    }\n}"
+      }
+    },
+    {
+      "name": "item_with_a_trailing_slash",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/title/",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Endpoint Not Found or Defined\",\n        \"data\": {\n            \"endpoint\": \"/api/v2/config/title/\",\n            \"method\": \"GET\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "search_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/search/remember"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "search",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/search/remember",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Search results for term: remember\",\n        \"data\": {\n            \"rememberMe\": true,\n            \"rememberMeDays\": \"7\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "search_in_another_letter_case",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/search/REMEMBERME",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Search results for term: REMEMBERME\",\n        \"data\": {\n            \"rememberMe\": true,\n            \"rememberMeDays\": \"7\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "search_with_the_word_in_capitals",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/SEARCH/rememberMeDays",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Search results for term: rememberMeDays\",\n        \"data\": {\n            \"rememberMeDays\": \"7\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "search_without_a_match",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/search/zzzz",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Search results for term: zzzz\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "search_for_a_part_with_a_dash",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/search/INVITES-komga",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Search results for term: INVITES-komga\",\n        \"data\": {\n            \"INVITES-komga-api-key\": \"\",\n            \"INVITES-komga-default-user-password\": \"\",\n            \"INVITES-komga-enabled\": false,\n            \"INVITES-komga-libraryIds\": \"\",\n            \"INVITES-komga-roles\": \"\",\n            \"INVITES-komga-uri\": \"\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "change_as_guest",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "title": "Home"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_empty_object",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {},
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"No data submitted\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_text",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "title": "Home"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Config items updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_after_changing_text",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/title",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for title\",\n        \"data\": \"Home\"\n    }\n}"
+      }
+    },
+    {
+      "name": "change_switch",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "lockScreen": true
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Config items updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_after_changing_a_switch",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/lockScreen",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for lockScreen\",\n        \"data\": true\n    }\n}"
+      }
+    },
+    {
+      "name": "change_switch_as_text",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "lockScreen": "false",
+          "hideRegistration": "true"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Config items updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "search_after_changing_switches_as_text",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/search/hideRegistration",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Search results for term: hideRegistration\",\n        \"data\": {\n            \"hideRegistration\": true\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "change_number_as_text",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "rememberMeDays": "30"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Config items updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_after_changing_a_number",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/rememberMeDays",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for rememberMeDays\",\n        \"data\": \"30\"\n    }\n}"
+      }
+    },
+    {
+      "name": "change_text_to_null",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "description": null
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Config items updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "item_after_changing_text_to_null",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/description",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"The value for description\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_with_a_form_key",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "formKey": "anything",
+          "title": "Home again"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Config items updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "search_after_a_form_key",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/search/formkey",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Search results for term: formkey\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_several",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "title": "Third",
+          "loginAttempts": "9",
+          "useLogo": true
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Config items updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "search_after_changing_several",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/search/logo",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Search results for term: logo\",\n        \"data\": {\n            \"PHPMAILER-logo\": \"https://raw.githubusercontent.com/causefx/Organizr/v2-develop/plugins/images/organizr/logo-wide.png\",\n            \"authProxyLogoutURL\": \"\",\n            \"authProxyOverrideLogout\": false,\n            \"loginLogo\": \"plugins/images/organizr/organizr-logo-h.png\",\n            \"logo\": \"plugins/images/organizr/organizr-logo-h.png\",\n            \"oidcAutoRedirectLogoutUrl\": \"\",\n            \"useLogo\": true,\n            \"useLogoLogin\": false\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "clean_up",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "title": "Organizr V2",
+          "lockScreen": false,
+          "hideRegistration": false,
+          "rememberMeDays": "7",
+          "description": "Organizr - Accept no others",
+          "loginAttempts": "5",
+          "useLogo": false
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Config items updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "search_at_the_end",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/config/search/title",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Search results for term: title\",\n        \"data\": {\n            \"netdata1Title\": \"\",\n            \"netdata2Title\": \"\",\n            \"netdata3Title\": \"\",\n            \"netdata4Title\": \"\",\n            \"netdata5Title\": \"\",\n            \"netdata6Title\": \"\",\n            \"netdata7Title\": \"\",\n            \"title\": \"Organizr V2\"\n        }\n    }\n}"
+      }
+    }
+  ]
+}
