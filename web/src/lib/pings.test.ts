@@ -50,6 +50,7 @@ function launch(groupID: number | null, auth: string, admin = '60000', other = '
     plugins: {},
     settings: {
       sso: { plex: { oAuthEnabled: false } },
+      homepage: { refresh: {}, options: { healthChecksTags: '' } },
       misc: { unsortedTabs: 'top', uuid: 'made-up-install-id' },
       ping: { auth, adminRefresh: admin, everyoneRefresh: other },
     },

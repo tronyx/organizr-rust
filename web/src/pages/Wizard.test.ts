@@ -16,6 +16,7 @@ const LAUNCH = {
       plugins: {},
       settings: {
         sso: { plex: { oAuthEnabled: false } },
+        homepage: { refresh: {}, options: { healthChecksTags: '' } },
         misc: { unsortedTabs: 'top', uuid: 'made-up-install-id' },
         ping: { auth: '1', adminRefresh: '60000', everyoneRefresh: '600000' },
       },

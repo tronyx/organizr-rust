@@ -20,7 +20,15 @@ Each item has three settings of its own:
 
 A person sees an item only when all of these are true: the switch is on, the person has the level, and the item has the settings that it needs.
 
-This version has the custom HTML items. The items for other applications come next.
+This version has these items:
+
+- [Custom HTML](#custom-html)
+- [Health checks](#health-checks)
+- [Uptime Kuma](#uptime-kuma)
+
+You set all items up in **Settings**, on the tab **Homepage**.
+
+The homepage loads the data of an item again after the time that the item has in its settings. The shortest time is five seconds.
 
 ## Custom HTML
 
@@ -60,3 +68,47 @@ An import brings the HTML of your items as it is. Look at each item after the im
 - The CSS classes of the PHP interface do not exist here. An item that uses them looks different.
 - The JavaScript functions of the PHP interface do not exist in the frame. A script that calls them fails.
 - A script cannot call the API of Organizr with the session of the person.
+
+## Health checks
+
+This item shows the checks of one or more projects of [Healthchecks](https://healthchecks.io/), the checks that are down first.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageHealthChecksEnabled` |
+| Level | `homepageHealthChecksAuth` |
+| Place | `homepageOrderhealthchecks` |
+| Address of the list of checks | `healthChecksURL` |
+| API keys of the projects | `healthChecksToken` |
+| Only checks with these tags | `healthChecksTags` |
+| Show the notes of a check | `homepageHealthChecksShowDesc` |
+| Show the tags of a check | `homepageHealthChecksShowTags` |
+| Do not check the certificate | `healthChecksDisableCertCheck` |
+| Milliseconds between two loads | `homepageHealthChecksRefresh` |
+
+The address is the address of the list of checks, for example `https://healthchecks.io/api/v1/checks`. For your own install of Healthchecks, replace the host.
+
+Each project has an API key of its own. For more than one project, enter the keys with commas between them. A read-only key is enough.
+
+A project that does not answer is left out. The item then shows the checks of the other projects.
+
+## Uptime Kuma
+
+This item shows the monitors of an install of [Uptime Kuma](https://uptime.kuma.pet/), and whether each one is up.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageUptimeKumaEnabled` |
+| Level | `homepageUptimeKumaAuth` |
+| Place | `homepageOrderUptimeKuma` |
+| Address of Uptime Kuma | `uptimeKumaURL` |
+| API key | `uptimeKumaToken` |
+| Show a title | `homepageUptimeKumaHeaderToggle` |
+| Title | `homepageUptimeKumaHeader` |
+| Small form | `homepageUptimeKumaCompact` |
+| Show the response time | `homepageUptimeKumaShowLatency` |
+| Milliseconds between two loads | `homepageUptimeKumaRefresh` |
+
+Make the API key in the settings of Uptime Kuma, under **API Keys**. Organizr reads the page `/metrics` of Uptime Kuma with the key.
+
+A monitor that Uptime Kuma did not check yet is not shown. A monitor in maintenance is shown as online.

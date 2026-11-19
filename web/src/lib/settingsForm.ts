@@ -408,8 +408,109 @@ export function changedSettings(
 /** The numbers of the custom HTML items of the homepage. */
 const CUSTOM_HTML = ['01', '02', '03', '04', '05', '06', '07', '08'];
 
-/** The settings of the items of the homepage. */
-export const HOMEPAGE: FieldGroup[] = CUSTOM_HTML.map((number) => ({
+/** The three settings that every item of the homepage has. */
+function itemFields(name: string, enabled: string, auth: string, order: string): Field[] {
+  return [
+    { key: enabled, label: `Show ${name}`, kind: 'switch' },
+    { key: auth, label: `${name} is for users of the level`, kind: 'select', options: LEVELS },
+    {
+      key: order,
+      label: `Place of ${name} on the homepage`,
+      kind: 'number',
+      min: 0,
+      help: 'The item with the lowest number stands at the top.',
+    },
+  ];
+}
+
+/** The settings of the items that show data of another application. */
+const SERVICE_ITEMS: FieldGroup[] = [
+  {
+    title: 'Health checks',
+    fields: [
+      ...itemFields(
+        'the health checks',
+        'homepageHealthChecksEnabled',
+        'homepageHealthChecksAuth',
+        'homepageOrderhealthchecks',
+      ),
+      {
+        key: 'healthChecksURL',
+        label: 'Address of the list of checks',
+        kind: 'text',
+        help: 'For example https://healthchecks.io/api/v1/checks',
+      },
+      {
+        key: 'healthChecksToken',
+        label: 'API keys of the projects',
+        kind: 'secret',
+        help: 'One key for each project, with commas between them. A read-only key is enough.',
+      },
+      {
+        key: 'healthChecksTags',
+        label: 'Only checks with these tags',
+        kind: 'text',
+        help: 'Tags with commas between them. Leave the field empty for every check.',
+      },
+      { key: 'homepageHealthChecksShowDesc', label: 'Show the notes of a check', kind: 'switch' },
+      { key: 'homepageHealthChecksShowTags', label: 'Show the tags of a check', kind: 'switch' },
+      {
+        key: 'healthChecksDisableCertCheck',
+        label: 'Do not check the certificate of the service',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageHealthChecksRefresh',
+        label: 'Milliseconds between two loads of the health checks',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'Uptime Kuma',
+    fields: [
+      ...itemFields(
+        'Uptime Kuma',
+        'homepageUptimeKumaEnabled',
+        'homepageUptimeKumaAuth',
+        'homepageOrderUptimeKuma',
+      ),
+      { key: 'uptimeKumaURL', label: 'Address of Uptime Kuma', kind: 'text' },
+      {
+        key: 'uptimeKumaToken',
+        label: 'API key of Uptime Kuma',
+        kind: 'secret',
+        help: 'Make the key in the settings of Uptime Kuma, under "API Keys".',
+      },
+      {
+        key: 'homepageUptimeKumaHeaderToggle',
+        label: 'Show a title above the monitors',
+        kind: 'switch',
+      },
+      { key: 'homepageUptimeKumaHeader', label: 'Title above the monitors', kind: 'text' },
+      {
+        key: 'homepageUptimeKumaCompact',
+        label: 'Show the monitors in the small form',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageUptimeKumaShowLatency',
+        label: 'Show the response time of a monitor',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageUptimeKumaRefresh',
+        label: 'Milliseconds between two loads of Uptime Kuma',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+];
+
+/** The settings of the custom HTML items. */
+const CUSTOM_HTML_ITEMS: FieldGroup[] = CUSTOM_HTML.map((number) => ({
   title: `Custom HTML ${number}`,
   fields: [
     {
@@ -438,3 +539,6 @@ export const HOMEPAGE: FieldGroup[] = CUSTOM_HTML.map((number) => ({
     },
   ],
 }));
+
+/** The settings of the items of the homepage. */
+export const HOMEPAGE: FieldGroup[] = [...CUSTOM_HTML_ITEMS, ...SERVICE_ITEMS];

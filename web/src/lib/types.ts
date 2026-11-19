@@ -93,6 +93,14 @@ export interface Launch {
   plugins: Record<string, unknown>;
   /** The settings that a page needs. Only the ones that the interface reads are listed. */
   settings: {
+    homepage: {
+      /** The time between two loads of each homepage item, in milliseconds as text. */
+      refresh: Record<string, unknown>;
+      options: {
+        /** The tags of the health checks that the homepage shows, with commas between them. */
+        healthChecksTags: string;
+      };
+    };
     /** What the server says about single sign-on. */
     sso: {
       plex: {

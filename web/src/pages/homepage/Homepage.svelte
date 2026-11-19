@@ -6,11 +6,13 @@
   import { api, failureText } from '../../lib/api';
   import type { HomepageItem } from '../../lib/homepage';
   import CustomHtml from './CustomHtml.svelte';
+  import HealthChecks from './HealthChecks.svelte';
+  import UptimeKuma from './UptimeKuma.svelte';
 
   let { title }: { title: string } = $props();
 
   /** The kinds of items that this interface can show. */
-  const KNOWN = new Set(['customhtml']);
+  const KNOWN = new Set(['customhtml', 'healthchecks', 'uptimekuma']);
 
   let items = $state<HomepageItem[] | null>(null);
   let error = $state<string | null>(null);
@@ -43,6 +45,10 @@
       <section data-item={item.key}>
         {#if item.kind === 'customhtml'}
           <CustomHtml id={item.id} />
+        {:else if item.kind === 'healthchecks'}
+          <HealthChecks />
+        {:else if item.kind === 'uptimekuma'}
+          <UptimeKuma />
         {/if}
       </section>
     {/each}
