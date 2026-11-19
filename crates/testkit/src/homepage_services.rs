@@ -133,3 +133,161 @@ async fn kuma_metrics(headers: HeaderMap) -> Response {
 pub async fn uptime_kuma() -> StandIn {
     StandIn::start(Router::new().route("/metrics", get(kuma_metrics))).await
 }
+
+/// The API key of the stand-ins for Sonarr, Radarr and Lidarr.
+pub const ARR_KEY: &str = "made-up-arr-key";
+
+/// The first bytes of a JPEG picture, which is all that the stand-ins send as one.
+pub const JPEG: &[u8] = &[0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, b'J', b'F', b'I', b'F'];
+
+fn has_arr_key(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-api-key")
+        .and_then(|value| value.to_str().ok())
+        == Some(ARR_KEY)
+}
+
+/// The answer of a route of the stand-ins: the given JSON for the right key.
+fn for_arr_key(headers: &HeaderMap, body: Value) -> Response {
+    if has_arr_key(headers) {
+        axum::Json(body).into_response()
+    } else {
+        (
+            StatusCode::UNAUTHORIZED,
+            axum::Json(json!({"error": "Unauthorized"})),
+        )
+            .into_response()
+    }
+}
+
+async fn arr_picture(headers: HeaderMap) -> Response {
+    if has_arr_key(&headers) {
+        ([(header::CONTENT_TYPE, "image/jpeg")], JPEG).into_response()
+    } else {
+        StatusCode::UNAUTHORIZED.into_response()
+    }
+}
+
+async fn sonarr_calendar(headers: HeaderMap) -> Response {
+    for_arr_key(
+        &headers,
+        json!([{
+            "seriesId": 1,
+            "seasonNumber": 2,
+            "episodeNumber": 3,
+            "title": "The One",
+            "airDateUtc": "2020-01-05T20:00:00Z",
+            "overview": "What happens.",
+            "hasFile": false,
+            "monitored": true,
+            "series": {
+                "title": "The Show",
+                "tvdbId": 4711,
+                "status": "continuing",
+                "runtime": 45,
+                "ratings": {"votes": 10, "value": 8.1},
+                "genres": ["Comedy"],
+                "seasons": [{"seasonNumber": 1}, {"seasonNumber": 2}],
+                "images": [{"coverType": "fanart", "url": "/MediaCover/1/fanart.jpg"}],
+            },
+        }]),
+    )
+}
+
+async fn sonarr_queue(headers: HeaderMap) -> Response {
+    for_arr_key(
+        &headers,
+        json!({
+            "page": 1,
+            "pageSize": 1000,
+            "totalRecords": 1,
+            "records": [{
+                "id": 31,
+                "title": "The.Show.S02E03.1080p",
+                "status": "downloading",
+                "size": 1000,
+                "sizeleft": 250,
+                "timeleft": "00:10:00",
+                "series": {"title": "The Show"},
+                "episode": {"seasonNumber": 2, "episodeNumber": 3, "title": "The One"},
+            }],
+        }),
+    )
+}
+
+/// A stand-in for Sonarr: one episode in the calendar whose fan art only Sonarr has,
+/// and one download in the queue.
+pub async fn sonarr() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/api/v3/calendar", get(sonarr_calendar))
+            .route("/api/v3/queue", get(sonarr_queue))
+            .route("/MediaCover/1/fanart.jpg", get(arr_picture)),
+    )
+    .await
+}
+
+async fn radarr_calendar(headers: HeaderMap) -> Response {
+    for_arr_key(
+        &headers,
+        json!([{
+            "title": "The Film",
+            "tmdbId": 815,
+            "status": "released",
+            "overview": "A film.",
+            "runtime": 101,
+            "hasFile": false,
+            "year": 2020,
+            "studio": "Studio",
+            "genres": ["Drama"],
+            "ratings": {"value": 7.2},
+            // At noon, so the day is the same in the time zone of every test machine.
+            "physicalRelease": "2020-01-07T12:00:00Z",
+            "images": [{
+                "coverType": "fanart",
+                "url": "/MediaCover/5/fanart.jpg",
+                "remoteUrl": "https://art.example.net/film.jpg",
+            }],
+        }]),
+    )
+}
+
+async fn radarr_queue(headers: HeaderMap) -> Response {
+    for_arr_key(
+        &headers,
+        json!({"page": 1, "pageSize": 1000, "totalRecords": 0, "records": []}),
+    )
+}
+
+/// A stand-in for Radarr: one film in the calendar, and an empty queue.
+pub async fn radarr() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/api/v3/calendar", get(radarr_calendar))
+            .route("/api/v3/queue", get(radarr_queue)),
+    )
+    .await
+}
+
+async fn lidarr_calendar(headers: HeaderMap) -> Response {
+    for_arr_key(
+        &headers,
+        json!([{
+            "title": "The Album",
+            "releaseDate": "2020-01-06T00:00:00Z",
+            "genres": ["Rock"],
+            "statistics": {"percentOfTracks": 100.0},
+            "artist": {
+                "artistName": "The Band",
+                "foreignArtistId": "abc-123",
+                "ratings": {"value": 9},
+                "images": [{"coverType": "fanart", "url": "http://art.example.net/band.jpg"}],
+            },
+        }]),
+    )
+}
+
+/// A stand-in for Lidarr: one album in the calendar.
+pub async fn lidarr() -> StandIn {
+    StandIn::start(Router::new().route("/api/v1/calendar", get(lidarr_calendar))).await
+}

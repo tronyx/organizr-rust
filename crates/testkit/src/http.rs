@@ -88,7 +88,8 @@ pub async fn send(app: &Router, request: Request<Body>) -> Answer {
         status,
         headers,
         cookies,
-        body: String::from_utf8(body.to_vec()).expect("the body is UTF-8"),
+        // A picture is no text. Its bytes are replaced, and a test reads them elsewhere.
+        body: String::from_utf8_lossy(&body).into_owned(),
     }
 }
 

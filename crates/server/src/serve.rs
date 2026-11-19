@@ -91,7 +91,9 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     let mut state = AppState::new(database.clone(), settings, secrets)
         .with_trusted_proxies(trusted_proxies)
         // The pictures that people upload, at the place of the PHP application.
-        .with_picture_folder(args.storage.data_dir.join("userTabs"));
+        .with_picture_folder(args.storage.data_dir.join("userTabs"))
+        // The pictures of other applications that the server fetches and keeps.
+        .with_picture_cache(args.storage.data_dir.join("cache"));
     let is_set_up = database
         .install()
         .is_done()

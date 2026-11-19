@@ -17,6 +17,7 @@ use thiserror::Error;
 use tokio::sync::Mutex;
 
 use crate::client::TrustedProxies;
+use crate::picture_cache::PictureCache;
 use crate::ping::{Latency, PingTarget, Prober};
 
 /// The shared state of the application.
@@ -30,6 +31,9 @@ pub struct AppState {
     secrets: Arc<SecretBox>,
     /// The folder of the uploaded pictures. Without it, no picture can be uploaded.
     picture_folder: Option<Arc<PathBuf>>,
+    /// The pictures of other applications that the server keeps. Without it, no such
+    /// picture is fetched.
+    picture_cache: Option<PictureCache>,
     /// What probes the address to check of a tab.
     prober: Prober,
     /// What sends the e-mails.
@@ -70,6 +74,7 @@ impl AppState {
             setup_code: None,
             secrets: Arc::new(secrets),
             picture_folder: None,
+            picture_cache: None,
             prober: Prober::network(),
             mailer: Mailer::smtp(),
             outbound: Outbound::new()
@@ -96,6 +101,14 @@ impl AppState {
     #[must_use]
     pub fn with_picture_folder(mut self, folder: PathBuf) -> Self {
         self.picture_folder = Some(Arc::new(folder));
+        self
+    }
+
+    /// The same state, with a folder for the pictures of other applications that the
+    /// server fetches and keeps.
+    #[must_use]
+    pub fn with_picture_cache(mut self, folder: PathBuf) -> Self {
+        self.picture_cache = Some(PictureCache::new(folder));
         self
     }
 
@@ -228,6 +241,12 @@ impl AppState {
     /// Probes a target once.
     pub async fn probe(&self, target: PingTarget) -> Latency {
         self.prober.probe(target).await
+    }
+
+    /// The pictures of other applications that the server keeps, when it has a folder
+    /// for them.
+    pub const fn picture_cache(&self) -> Option<&PictureCache> {
+        self.picture_cache.as_ref()
     }
 
     /// The folder of the uploaded pictures, when the application has one.

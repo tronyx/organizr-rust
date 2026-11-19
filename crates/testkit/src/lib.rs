@@ -96,6 +96,8 @@ pub fn installed_app_in(database: &Database, picture_folder: &std::path::Path) -
     settings
         .set("organizrAPI", &serde_json::Value::from(seed::API_KEY))
         .expect("the API key is a valid setting");
-    let state = state_with(database, settings).with_picture_folder(picture_folder.to_owned());
+    let state = state_with(database, settings)
+        .with_picture_folder(picture_folder.to_owned())
+        .with_picture_cache(picture_folder.join("cache"));
     router(state).expect("the route table is valid")
 }

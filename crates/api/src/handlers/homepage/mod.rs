@@ -5,6 +5,7 @@
 //! builds it. It asks `GET /homepage/items` which items the caller sees and in which
 //! order, and then asks the route of each item for its data.
 
+pub mod arr;
 pub mod health_checks;
 pub mod html;
 pub mod uptime_kuma;
@@ -12,6 +13,7 @@ pub mod uptime_kuma;
 use axum::Extension;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode, header};
+use organizr_integrations::arr::Kind;
 use organizr_settings::Settings;
 use serde::Serialize;
 use serde_json::Value;
@@ -119,6 +121,10 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
     let (kind, permissions) = match key {
         "homepageOrderhealthchecks" => ("healthchecks", health_checks::permissions()),
         "homepageOrderUptimeKuma" => ("uptimekuma", uptime_kuma::permissions()),
+        // The calendar has rules of its own, see `is_seen`.
+        "homepageOrdercalendar" => ("calendar", Permissions::default()),
+        "homepageOrderSonarrQueue" => ("sonarrqueue", arr::queue_permissions(Kind::Sonarr)),
+        "homepageOrderRadarrQueue" => ("radarrqueue", arr::queue_permissions(Kind::Radarr)),
         _ => return None,
     };
     let item = Item {
@@ -168,7 +174,15 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
     placed
         .into_iter()
         .filter_map(|(_, key)| item_of(key))
-        .filter(|(_, permissions)| permissions.allow(settings, caller))
+        .filter(|(item, permissions)| {
+            if item.kind == "calendar" {
+                // The calendar shows when the caller gets the calendar of one
+                // application at least.
+                arr::sees_a_calendar(settings, caller)
+            } else {
+                permissions.allow(settings, caller)
+            }
+        })
         .map(|(item, _)| item)
         .collect()
 }

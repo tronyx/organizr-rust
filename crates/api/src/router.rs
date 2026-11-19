@@ -18,6 +18,7 @@ use crate::handlers::{
     basics, categories, config, fields, forward_auth, groups, homepage, images, launch, login,
     logout, mail, ping, plex, register, tabs, token, two_factor, users, wizard,
 };
+use crate::picture_cache;
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
 use crate::state::AppState;
@@ -148,6 +149,21 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             &get(homepage::health_checks::tagged),
         )?
         .route("/homepage/kuma/data", &get(homepage::uptime_kuma::data))?
+        .route("/homepage/calendar", &get(homepage::arr::calendar))?
+        .route(
+            "/homepage/sonarr/calendar",
+            &get(homepage::arr::sonarr_calendar),
+        )?
+        .route(
+            "/homepage/radarr/calendar",
+            &get(homepage::arr::radarr_calendar),
+        )?
+        .route(
+            "/homepage/lidarr/calendar",
+            &get(homepage::arr::lidarr_calendar),
+        )?
+        .route("/homepage/sonarr/queue", &get(homepage::arr::sonarr_queue))?
+        .route("/homepage/radarr/queue", &get(homepage::arr::radarr_queue))?
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
         .route("/plex/servers", &get(plex::servers))?
@@ -173,7 +189,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
     // the address of the API.
     let routes = routes
         .router
-        .route("/data/userTabs/{name}", get(images::uploaded_picture));
+        .route("/data/userTabs/{name}", get(images::uploaded_picture))
+        .route("/data/cache/{name}", get(picture_cache::cached_picture));
     // A reverse proxy asks these routes with the method and the headers of the request
     // that it holds back. Such a request can come from another site, so the routes are
     // outside the check for requests from other sites. They change nothing.
