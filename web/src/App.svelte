@@ -2,22 +2,21 @@
   import { onMount } from 'svelte';
 
   import { session } from './lib/session.svelte';
+  import Wizard from './pages/Wizard.svelte';
 
   onMount(() => {
     void session.load();
   });
 </script>
 
-{#if session.launch}
+{#if session.launch && session.needsSetUp}
+  <Wizard />
+{:else if session.launch}
   <main class="grid min-h-screen place-items-center p-4">
     <div class="card bg-base-200 w-full max-w-md shadow">
       <div class="card-body">
         <h1 class="card-title">{session.launch.appearance.title || 'Organizr'}</h1>
-        {#if session.needsSetUp}
-          <p>This install is not set up yet.</p>
-        {:else}
-          <p>The server is running.</p>
-        {/if}
+        <p>The server is running.</p>
         <p class="text-sm opacity-70">Version {session.launch.version}</p>
       </div>
     </div>

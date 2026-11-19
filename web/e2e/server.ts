@@ -62,9 +62,20 @@ export default async function startServer(): Promise<() => Promise<void>> {
   });
   process.env[SETUP_CODE_VARIABLE] = setupCode;
 
-  return async () => {
+  const stop = async () => {
     server.kill();
     await exited;
     rmSync(dataFolder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   };
+
+  // A binary that was built without the feature shows a notice, not the interface.
+  const page = await (await fetch(`http://${ADDRESS}/`)).text();
+  if (!page.includes('<div id="app">')) {
+    await stop();
+    throw new Error(
+      'The server binary does not hold the web interface. Build both first: ' +
+        '"npm run build", and then "cargo build -p organizr --features embedded-web".',
+    );
+  }
+  return stop;
 }
