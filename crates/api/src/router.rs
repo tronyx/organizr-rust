@@ -161,6 +161,54 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             &get(homepage::plex::search),
         )?
         .route("/homepage/image", &get(homepage::plex::image))?
+        .route(
+            "/homepage/overseerr/metadata/{type}/{id}",
+            &get(homepage::overseerr::metadata),
+        )?
+        .route(
+            "/homepage/overseerr/requests",
+            &get(homepage::overseerr::requests),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}",
+            &get(homepage::overseerr::requests_of_type),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}/{limit}",
+            &get(homepage::overseerr::requests_limited),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}/{limit}/{offset}",
+            &get(homepage::overseerr::requests_paged),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}/{id}/available",
+            &post(homepage::overseerr::available),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}/{id}/unavailable",
+            &post(homepage::overseerr::unavailable),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}/{id}/pending",
+            &post(homepage::overseerr::pending),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}/{id}/approve",
+            &post(homepage::overseerr::approve),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}/{id}/deny",
+            &put(homepage::overseerr::deny),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}/{id}",
+            &delete(homepage::overseerr::delete).post(homepage::overseerr::add_request),
+        )?
+        .route(
+            "/homepage/overseerr/requests/{type}/{id}/{seasons}",
+            &post(homepage::overseerr::add_request_for_seasons),
+        )?
         .route("/homepage/calendar", &get(homepage::arr::calendar))?
         .route(
             "/homepage/sonarr/calendar",

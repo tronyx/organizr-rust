@@ -658,3 +658,131 @@ async fn plex_server_api(
 pub async fn plex_server() -> StandIn {
     StandIn::start(Router::new().fallback(plex_server_api)).await
 }
+
+/// The API key of the stand-in for the requests of Overseerr.
+pub const OVERSEERR_KEY: &str = "made-up-overseerr-key";
+
+/// The session of the user "robin" at the stand-in for the requests of Overseerr, as
+/// the browser holds it in the `connect.sid` cookie.
+pub const OVERSEERR_SESSION: &str = "s%3Amade-up-session-of-robin.signature";
+
+fn overseerr_request(
+    id: u32,
+    kind: &str,
+    tmdb: u32,
+    user: &str,
+    status: u8,
+    media_status: u8,
+    created: &str,
+) -> Value {
+    json!({
+        "id": id,
+        "status": status,
+        "type": kind,
+        "createdAt": created,
+        "media": {"id": id + 40, "tmdbId": tmdb, "status": media_status},
+        "requestedBy": {"id": 1, "username": null, "plexUsername": user, "displayName": user, "email": format!("{user}@example.com")},
+    })
+}
+
+fn overseerr_reply(
+    method: &str,
+    path: &str,
+    by_key: bool,
+    by_user: bool,
+    body: &Value,
+) -> (StatusCode, Value) {
+    let done = (StatusCode::OK, json!({"ok": true}));
+    match (method, path) {
+        ("GET", "/api/v1/request" | "/api/v1/request/") if by_key => (
+            StatusCode::OK,
+            json!({"pageInfo": {"results": 3}, "results": [
+                overseerr_request(31, "movie", 815, "robin", 2, 5, "2020-01-03T10:00:00.000Z"),
+                overseerr_request(32, "tv", 4711, "pat", 1, 3, "2020-01-05T10:00:00.000Z"),
+                overseerr_request(33, "movie", 999, "pat", 3, 1, "2020-01-04T10:00:00.000Z"),
+            ]}),
+        ),
+        ("GET", "/api/v1/movie/815") if by_key => (
+            StatusCode::OK,
+            json!({"id": 815, "title": "The Film", "releaseDate": "2019-05-01", "overview": "A film.", "posterPath": "/poster815.jpg", "backdropPath": "/back815.jpg"}),
+        ),
+        ("GET", "/api/v1/tv/4711") if by_key => (
+            StatusCode::OK,
+            json!({
+                "id": 4711, "name": "The Show", "firstAirDate": "2018-09-01", "overview": "A show.", "posterPath": "", "backdropPath": null,
+                "externalIds": {"tvdbId": 1234},
+                "seasons": [{"seasonNumber": 0}, {"seasonNumber": 1}, {"seasonNumber": 2}],
+            }),
+        ),
+        ("GET", "/api/v1/request/31") if by_key => {
+            (StatusCode::OK, json!({"id": 31, "media": {"id": 71}}))
+        }
+        (
+            "POST",
+            "/api/v1/request/31/approve"
+            | "/api/v1/request/31/pending"
+            | "/api/v1/request/31/decline"
+            | "/api/v1/media/71/available"
+            | "/api/v1/media/71/pending",
+        ) if by_key => done,
+        ("DELETE", "/api/v1/request/31") if by_key => (StatusCode::NO_CONTENT, Value::Null),
+        ("POST", "/api/v1/request/77/approve") if by_key => (
+            StatusCode::NOT_FOUND,
+            json!({"message": "Request not found."}),
+        ),
+        ("GET", "/api/v1/auth/me") if by_user => {
+            (StatusCode::OK, json!({"id": 7, "plexUsername": "robin"}))
+        }
+        ("GET", "/api/v1/service/sonarr") if by_key => (
+            StatusCode::OK,
+            json!([{"id": 0, "name": "Sonarr", "is4k": false, "isDefault": true, "activeProfileId": 4, "activeDirectory": "/tv", "activeLanguageProfileId": 1}]),
+        ),
+        ("GET", "/api/v1/service/radarr") if by_key => (
+            StatusCode::OK,
+            json!([
+                {"id": 0, "name": "Radarr", "is4k": false, "isDefault": true, "activeProfileId": 6},
+                {"id": 1, "name": "Radarr 4K", "is4k": true, "isDefault": true, "activeProfileId": 9},
+            ]),
+        ),
+        ("POST", "/api/v1/request") if by_user => {
+            if body["mediaId"] == 500 {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({"message": "No seasons available to request"}),
+                )
+            } else {
+                (StatusCode::CREATED, json!({"id": 40}))
+            }
+        }
+        _ if !by_key && !by_user => (
+            StatusCode::FORBIDDEN,
+            json!({"message": "You do not have permission to access this endpoint"}),
+        ),
+        _ => (StatusCode::NOT_FOUND, json!({"message": "Not found"})),
+    }
+}
+
+async fn overseerr_api(
+    headers: HeaderMap,
+    method: axum::http::Method,
+    uri: axum::http::Uri,
+    body: axum::body::Bytes,
+) -> Response {
+    let header_text = |name: &str| headers.get(name).and_then(|value| value.to_str().ok());
+    let by_key = header_text("x-api-key") == Some(OVERSEERR_KEY);
+    let session = format!("connect.sid={OVERSEERR_SESSION}");
+    let by_user = header_text("cookie") == Some(session.as_str());
+    let body = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    let (status, answer) = overseerr_reply(method.as_str(), uri.path(), by_key, by_user, &body);
+    if answer.is_null() {
+        status.into_response()
+    } else {
+        (status, axum::Json(answer)).into_response()
+    }
+}
+
+/// A stand-in for the API of Overseerr that the homepage uses: three requests, of
+/// which one names a film that Overseerr has no details for.
+pub async fn overseerr_requests() -> StandIn {
+    StandIn::start(Router::new().fallback(overseerr_api)).await
+}
