@@ -178,6 +178,23 @@ where
     }
 }
 
+/// A value of any form, kept as it is. The default of the PHP application for such a
+/// setting is an empty text, and a plugin stores a list or a map there later.
+#[derive(Debug)]
+pub struct Anything;
+
+impl Codec for Anything {
+    type Value = Value;
+
+    fn decode(stored: &Value) -> Result<Value, String> {
+        Ok(stored.clone())
+    }
+
+    fn encode(value: &Value) -> Value {
+        value.clone()
+    }
+}
+
 /// A list, stored as a JSON list. The entries are kept as they are.
 #[derive(Debug)]
 pub struct List;

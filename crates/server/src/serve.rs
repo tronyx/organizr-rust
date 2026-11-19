@@ -58,6 +58,11 @@ pub struct StorageArgs {
 }
 
 impl StorageArgs {
+    /// The folder for the data of the application.
+    pub fn data_dir(&self) -> &Path {
+        &self.data_dir
+    }
+
     /// What seals the stored secrets. The key file is made when it is missing.
     pub fn secrets(&self) -> anyhow::Result<SecretBox> {
         let key_file = self

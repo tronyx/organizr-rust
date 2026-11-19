@@ -57,6 +57,19 @@ fn picture_type(name: &str) -> Option<&'static str> {
     }
 }
 
+/// The content type of a file that the application sends from the folder of the uploaded
+/// pictures. That is every picture that can be uploaded, and an SVG drawing: nobody can
+/// upload one, but the import of a PHP install brings the drawings that a person had
+/// put into the picture folders of that install.
+fn shown_type(name: &str) -> Option<&'static str> {
+    picture_type(name).or_else(|| {
+        let (_, ending) = name.rsplit_once('.')?;
+        ending
+            .eq_ignore_ascii_case("svg")
+            .then_some("image/svg+xml")
+    })
+}
+
 /// Whether the content starts as a GIF, a PNG or a JPEG picture does.
 fn is_picture(content: &[u8]) -> bool {
     content.starts_with(b"GIF87a")
@@ -101,7 +114,7 @@ async fn uploaded(folder: Option<&FilePath>) -> std::io::Result<Vec<String>> {
         if let Some(name) = entry.file_name().to_str()
             && is_file
             && is_safe_name(name)
-            && picture_type(name).is_some()
+            && shown_type(name).is_some()
         {
             names.push(name.to_owned());
         }
@@ -368,7 +381,7 @@ pub async fn remove(
     }
     let name = base_name(&image);
     let path = format!("{UPLOADED_PATH}{name}");
-    if picture_type(name).is_none() {
+    if shown_type(name).is_none() {
         return Err(Refusal::conflict(format!(
             "{path} is not approved to be deleted"
         )));
@@ -398,7 +411,7 @@ pub async fn uploaded_picture(
         endpoint: uri.path().to_owned(),
         method: "GET".to_owned(),
     };
-    let content_type = picture_type(&name).ok_or_else(not_found)?;
+    let content_type = shown_type(&name).ok_or_else(not_found)?;
     let file = picture_file(&state, &name).ok_or_else(not_found)?;
     let content = match tokio::fs::read(&file).await {
         Ok(content) => content,
@@ -415,9 +428,16 @@ pub async fn uploaded_picture(
         header::X_CONTENT_TYPE_OPTIONS,
         HeaderValue::from_static("nosniff"),
     );
+    // A drawing can hold styles of its own, and nothing else of it is used: no script
+    // runs and nothing is loaded from elsewhere.
+    let policy = if content_type == "image/svg+xml" {
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+    } else {
+        "default-src 'none'; sandbox"
+    };
     headers.insert(
         header::CONTENT_SECURITY_POLICY,
-        HeaderValue::from_static("default-src 'none'; sandbox"),
+        HeaderValue::from_static(policy),
     );
     Ok(response)
 }

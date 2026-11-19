@@ -10,7 +10,7 @@ use serde_json::Value;
 use thiserror::Error;
 
 use crate::choices::{AuthType, UnsortedTabs};
-use crate::codec::{Choice, Codec, Flag, List, Number, Secret, Text, TextNumber};
+use crate::codec::{Anything, Choice, Codec, Flag, List, Number, Secret, Text, TextNumber};
 
 /// Why a setting cannot be read or changed.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -969,7 +969,8 @@ settings! {
     health_checks_cron_run_schedule: Text = "HEALTHCHECKS-cron-run-schedule", "*/5 * * * *".to_owned();
     health_checks_auth_include: TextNumber<u32> = "HEALTHCHECKS-Auth-include", 1;
     health_checks_option2_include: Text = "HEALTHCHECKS-option2-include", String::new();
-    health_checks_all_items: Text = "HEALTHCHECKS-all-items", String::new();
+    // The plugin stores its checks here, as a map from a name to a check.
+    health_checks_all_items: Anything = "HEALTHCHECKS-all-items", Value::String(String::new());
     health_checks_ping_url: Text = "HEALTHCHECKS-PingURL", "https://hc-ping.com/".to_owned();
     invites_enabled: Flag = "INVITES-enabled", false;
     invites_auth_include: TextNumber<u32> = "INVITES-Auth-include", 1;

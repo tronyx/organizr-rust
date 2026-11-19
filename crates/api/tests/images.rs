@@ -501,3 +501,46 @@ async fn list_holds_only_what_the_application_sends_as_a_picture() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn drawing_that_an_import_brought_is_sent_and_runs_nothing() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let folder = tempfile::tempdir().expect("a folder can be made");
+        let app = installed_app_in(database, folder.path());
+        // Nobody can upload a drawing. The import of a PHP install copies the drawings
+        // that a person had put into the picture folders of that install.
+        let drawing = "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>";
+        std::fs::create_dir_all(folder.path()).expect("the folder can be made");
+        std::fs::write(folder.path().join("Drawing.SVG"), drawing)
+            .expect("the file can be written");
+
+        let sent = get(&app, "/data/userTabs/Drawing.SVG").await;
+        assert_eq!(sent.status, StatusCode::OK);
+        assert_eq!(sent.body, drawing);
+        let header = |name: &str| {
+            sent.headers
+                .get(name)
+                .and_then(|value| value.to_str().ok())
+                .map(str::to_owned)
+        };
+        assert_eq!(header("content-type").as_deref(), Some("image/svg+xml"));
+        assert_eq!(header("x-content-type-options").as_deref(), Some("nosniff"));
+        // No script of the drawing runs, and it loads nothing. Its own styles work.
+        assert_eq!(
+            header("content-security-policy").as_deref(),
+            Some("default-src 'none'; style-src 'unsafe-inline'; sandbox")
+        );
+
+        let listed = pictures(&app).await;
+        assert!(
+            listed.contains(&"data/userTabs/Drawing.SVG".to_owned()),
+            "{listed:?}"
+        );
+
+        let deleted = call(&app, As::Admin, "DELETE", "/image/Drawing.SVG", None).await;
+        assert_eq!(deleted.status, StatusCode::OK, "{}", deleted.body);
+        assert_eq!(files_in(folder.path()), [] as [String; 0]);
+    })
+    .await;
+}

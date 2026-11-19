@@ -26,8 +26,9 @@ use crate::legacy_db::LegacyRow;
 use crate::report::Report;
 
 /// The settings of the PHP application that this application does not need: it gets its
-/// database from `ORGANIZR_DATABASE_URL`, and it seals secrets with a key of its own.
-pub const RETIRED_SETTINGS: [&str; 8] = [
+/// database from `ORGANIZR_DATABASE_URL`, it seals secrets with a key of its own, and it
+/// writes its log to the standard output.
+pub const RETIRED_SETTINGS: [&str; 9] = [
     "configVersion",
     "dbHost",
     "dbLocation",
@@ -35,6 +36,7 @@ pub const RETIRED_SETTINGS: [&str; 8] = [
     "dbPassword",
     "dbUsername",
     "driver",
+    "logLocation",
     "organizrHash",
 ];
 
@@ -661,7 +663,7 @@ fn plan_settings(
             _ => value,
         };
 
-        match settings.set(key, &value) {
+        match set_leniently(&mut settings, key, &value) {
             Ok(()) => {
                 let now = settings.get(key).unwrap_or(value);
                 if defaults.get(key).as_ref() != Some(&now) {
@@ -701,8 +703,42 @@ fn opened(key: &str, value: &Value, hash: Option<&str>) -> Option<Value> {
         Some(plain) => Some(Value::String(plain)),
         // The set-up wizard of PHP stores this one password as it was entered.
         None if key == "registrationPassword" => Some(value.clone()),
-        None => None,
+        None if Settings::is_secret(key) => None,
+        // The key holds the word, but the value is no secret: for example the text of
+        // the e-mail for a new password. PHP stores such a value as it is.
+        None => Some(value.clone()),
     }
+}
+
+/// Sets a setting from a value of the configuration file. A person can edit that file,
+/// and the PHP application reads `'100'` where it wrote `100`. So a value of another
+/// form is also tried in the form that the setting takes: a number written as text, a
+/// switch written as text, or a text written as a number.
+fn set_leniently(settings: &mut Settings, key: &str, value: &Value) -> Result<(), SettingsError> {
+    let first = match settings.set(key, value) {
+        Ok(()) => return Ok(()),
+        Err(error) => error,
+    };
+    let other_forms: Vec<Value> = match value {
+        Value::String(text) => {
+            let text = text.trim();
+            let number = text.parse::<u64>().ok().map(Value::from);
+            let switch = match text {
+                "true" => Some(Value::Bool(true)),
+                "false" => Some(Value::Bool(false)),
+                _ => None,
+            };
+            number.into_iter().chain(switch).collect()
+        }
+        Value::Number(number) => vec![Value::String(number.to_string())],
+        _ => Vec::new(),
+    };
+    for form in other_forms {
+        if settings.set(key, &form).is_ok() {
+            return Ok(());
+        }
+    }
+    Err(first)
 }
 
 /// The text to store for a setting: JSON, with a secret sealed.
@@ -836,6 +872,155 @@ mod tests {
         assert_eq!(plan.report.tables_not_imported, [("invites".to_owned(), 3)]);
         assert_eq!(plan.report.retired_settings, ["driver"]);
         assert_eq!(plan.report.repairs.len(), 5, "{:#?}", plan.report.repairs);
+    }
+
+    #[test]
+    fn values_of_a_file_that_a_person_edited_are_read_as_php_reads_them() {
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let checks = json!({"Plex": {"name": "Plex", "uuid": "made-up"}});
+        let install = LegacyInstall {
+            config: vec![
+                // A number written as text, a switch written as text, a text written
+                // as a number.
+                ("maxSocksDebugSize".to_owned(), json!(" 250 ")),
+                ("homepagePlexStreams".to_owned(), json!("true")),
+                ("loginAttempts".to_owned(), json!(7)),
+                // A plugin stores a map where the default is an empty text.
+                ("HEALTHCHECKS-all-items".to_owned(), checks.clone()),
+                // The key holds the word "password", but the value is no secret and
+                // was never encrypted.
+                (
+                    "PHPMAILER-emailTemplateResetPassword".to_owned(),
+                    json!("Here is your new password."),
+                ),
+                ("logLocation".to_owned(), json!("/config/www/db/log.json")),
+            ],
+            ..LegacyInstall::default()
+        };
+
+        let plan = plan(&install, &secrets).expect("a plan can be made");
+
+        let stored: Vec<(&str, &str)> = plan
+            .data
+            .settings
+            .iter()
+            .map(|setting| (setting.key.as_str(), setting.value.as_str()))
+            .collect();
+        assert_eq!(
+            stored,
+            [
+                ("HEALTHCHECKS-all-items", checks.to_string().as_str()),
+                ("homepagePlexStreams", "true"),
+                ("loginAttempts", "\"7\""),
+                ("maxSocksDebugSize", "250"),
+            ]
+        );
+        assert_eq!(
+            plan.report.legacy_settings,
+            ["PHPMAILER-emailTemplateResetPassword"]
+        );
+        assert_eq!(plan.report.retired_settings, ["logLocation"]);
+        // Only the records that every install needs were added.
+        assert!(
+            plan.report
+                .repairs
+                .iter()
+                .all(|line| !line.contains("setting")),
+            "{:#?}",
+            plan.report.repairs
+        );
+    }
+
+    #[test]
+    fn missing_defaults_are_chosen_and_rows_keep_their_order_and_lock() {
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let group = |id, name, level| {
+            LegacyRow::of([
+                ("id", Some(id)),
+                ("group", Some(name)),
+                ("group_id", Some(level)),
+            ])
+        };
+        let category = |id, name, number, order| {
+            LegacyRow::of([
+                ("id", Some(id)),
+                ("category", Some(name)),
+                ("category_id", Some(number)),
+                ("order", Some(order)),
+            ])
+        };
+        let user = |id, name, locked| {
+            LegacyRow::of([
+                ("id", Some(id)),
+                ("username", Some(name)),
+                ("group_id", Some("0")),
+                ("locked", locked),
+            ])
+        };
+        let install = LegacyInstall {
+            // A text written as a number.
+            config: vec![("title".to_owned(), json!(5))],
+            groups: vec![
+                group("1", "Admin", "0"),
+                group("2", "Co-Admin", "1"),
+                group("3", "Helpers", "2"),
+                group("4", "Members", "5"),
+                group("5", "Guest", "999"),
+            ],
+            categories: vec![
+                category("1", "Later", "3", "9"),
+                category("2", "First", "4", "2"),
+                category("3", "Middle", "5", "5"),
+            ],
+            users: vec![
+                user("1", "open", None),
+                user("2", "shut", Some("1")),
+                user("3", "zero", Some("0")),
+            ],
+            ..LegacyInstall::default()
+        };
+
+        let plan = plan(&install, &secrets).expect("a plan can be made");
+
+        // The group of new users is the one with the least access below the Guest.
+        let default: Vec<&str> = plan
+            .data
+            .groups
+            .iter()
+            .filter(|group| group.is_default)
+            .map(|group| group.name.as_str())
+            .collect();
+        assert_eq!(default, ["Members"]);
+        // The category of new tabs is the first one of the menu.
+        let categories: Vec<(&str, i64, bool)> = plan
+            .data
+            .categories
+            .iter()
+            .map(|category| {
+                (
+                    category.name.as_str(),
+                    category.position,
+                    category.is_default,
+                )
+            })
+            .collect();
+        assert_eq!(
+            categories,
+            [
+                ("Later", 9, false),
+                ("First", 2, true),
+                ("Middle", 5, false)
+            ]
+        );
+        let locked: Vec<(&str, bool)> = plan
+            .data
+            .users
+            .iter()
+            .map(|user| (user.user.username.as_str(), user.user.locked))
+            .collect();
+        assert_eq!(locked, [("open", false), ("shut", true), ("zero", false)]);
+        assert_eq!(plan.data.settings.len(), 1);
+        assert_eq!(plan.data.settings[0].value, "\"5\"");
     }
 
     #[test]

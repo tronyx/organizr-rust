@@ -125,7 +125,7 @@ organizr-rust/
 └── .github/workflows/         ci.yml, build.yml, scan.yml, lint.yml
 ```
 
-Dependency direction: `domain` ← `settings` ← `db` ← `auth`, `integrations`, `plugins` ← `api` ← `server`. `import` uses `domain`, `settings`, `db`. Nothing depends on `api` except `server` and `testkit`.
+Dependency direction: `domain` ← `settings` ← `db` ← `auth`, `integrations`, `plugins` ← `api` ← `server`. `import` uses `domain`, `settings`, `db` and `auth`, which seals the secrets of the old install again. Nothing depends on `api` except `server` and `testkit`.
 
 How the four architectural rules are enforced:
 
@@ -243,7 +243,6 @@ surge-ping = "0.9.1"
 # importer only
 aes = "0.9.4"
 cbc = "0.2.1"
-php-literal-parser = "0.7.1"
 
 # tests
 axum-test = "21.1.0"
@@ -280,18 +279,21 @@ See `deviations.md`. It lists every approved difference from Organizr 2.1.5000, 
 
 ## 8. Importer
 
-`organizr import --from <old /config or web root> [--dry-run]`, run once against an empty new database.
+`organizr import --from <old /config or web root> [--database <file>] [--dry-run]`, run once against an empty new database. [Importing an install of PHP Organizr](importing.md) is the guide for the person who runs it.
 
-1. Parse `data/config/config.php` (PHP array literal) without running PHP.
-2. Open the legacy SQLite file read-only; read by column name; accept both date formats and NULLs. The target can be either engine.
-3. Decrypt legacy AES-256-CBC values with `organizrHash`; re-encrypt with the new master key.
-4. Map config keys through the settings registry. Unknown keys (for example `MB-*`) are stored in a `legacy_settings` table and listed in the report, never dropped.
-5. Users keep their bcrypt hashes and 2FA secrets. Sessions are not imported.
-6. Copy `data/userTabs`, favicons, custom images, installed themes; skip the image cache.
-7. Hash or encrypt the API key so the existing key keeps working.
-8. Write everything in one transaction and print a report: counts per table, repaired rows (orphan tabs, duplicate names by case), skipped items, PHP files found.
+1. Parse `data/config/config.php` (PHP array literal) without running PHP. The parser is a small one of our own in `organizr-import`. It takes arrays, texts, numbers, `true`, `false` and `null`, and refuses everything else, so no code is evaluated.
+2. Open the legacy SQLite file read-only. Ask the file for the columns of each table, read every value as text, and read by column name. Accept both date formats and NULLs. The target can be either engine.
+3. Decrypt legacy AES-256-CBC values with `organizrHash`. Seal them again with the new master key.
+4. Map config keys through the settings registry. Unknown keys (for example `MB-*`) are stored, sealed, in a `legacy_settings` table and listed in the report, never dropped.
+5. Users keep their bcrypt hashes. Their 2FA secrets and Plex tokens are sealed. Sessions are not imported.
+6. Copy `data/userTabs` and `data/favicon`. Copy the pictures that a person added below `plugins/images` to the uploaded pictures, and point the records there. Skip the image cache.
+7. Seal the API key so the existing key keeps working.
+8. Repair records that the new schema cannot hold (orphan tabs, duplicate names by case, more than one default) and list each repair.
+9. Write all records in one transaction and print a report: counts per table, repaired rows, skipped items, tables not imported yet, PHP files found.
 
-Dry-run mode prints the report and writes nothing. Testing uses synthetic legacy fixtures in the repository, plus a local run against a copy of a live install, which never enters the repository.
+Dry-run mode prints the report and writes nothing. Testing uses a synthetic legacy install that the real PHP application wrote (`parity/legacy-install/generate.py`), values that real PHP encrypted (`parity/php-legacy-aes/generate.php`), plus a local run against a copy of a live install, which never enters the repository.
+
+The tables of features that are not built yet (`invites`, `BOOKMARK-*`, `chatroom`, `options`) are not imported yet. The importer gets each of them in the milestone that builds the feature. A legacy install on MySQL or PostgreSQL is refused with a clear message until that reader exists.
 
 ## 9. Parity verification
 

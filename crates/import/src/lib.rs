@@ -2,10 +2,11 @@
 //!
 //! An import has three steps. [`read`] finds the configuration file and the database of
 //! the PHP install and reads them; no PHP code runs. [`plan::plan`] decides what to
-//! store, and repairs records that the new application could not hold. [`run`] does
-//! both and stores the result in one step, so the new database holds the whole install
-//! or nothing.
+//! store, and repairs records that the new application could not hold.
+//! [`files::plan_files`] decides which files to copy. [`run`] does all of it and stores
+//! the records in one step, so the new database holds the whole install or nothing.
 
+pub mod files;
 pub mod legacy_aes;
 pub mod legacy_db;
 pub mod php_config;
@@ -82,6 +83,9 @@ pub enum ImportError {
          so nothing was changed"
     )]
     NotEmpty,
+    /// A file of the PHP install cannot be copied.
+    #[error(transparent)]
+    Files(#[from] files::CopyError),
     /// The new database reported an error.
     #[error("cannot store the import: {0}")]
     Database(#[source] DbError),
@@ -216,28 +220,42 @@ pub async fn dry_run(
     secrets: &SecretBox,
 ) -> Result<Report, ImportError> {
     let source = read(request).await?;
-    let Plan { mut report, .. } = plan::plan(&source.install, secrets)?;
+    let Plan {
+        mut data,
+        mut report,
+    } = plan::plan(&source.install, secrets)?;
+    files::plan_files(
+        &source.web_root,
+        &source.database_file,
+        &mut data,
+        &mut report,
+    );
     report.dry_run = true;
     Ok(report)
 }
 
-/// Imports the PHP install into `target`, which must be empty and have its schema.
-/// Everything is stored, or nothing is.
+/// Imports the PHP install into `target`, which must be empty and have its schema, and
+/// copies its files into `data_dir`. All records are stored, or none is.
 pub async fn run(
     request: ImportRequest<'_>,
     target: &Database,
     secrets: &SecretBox,
+    data_dir: &Path,
 ) -> Result<Report, ImportError> {
     let source = read(request).await?;
-    store(&source, target, secrets).await
+    store(&source, target, secrets, data_dir).await
 }
 
 /// Stores a PHP install that was read in `target`, which must be empty and have its
-/// schema. Everything is stored, or nothing is.
+/// schema, and copies its files into `data_dir`. All records are stored, or none is.
+///
+/// The files are copied first. When the records cannot be stored after that, the copied
+/// files stay, and the next import writes over them.
 pub async fn store(
     source: &Source,
     target: &Database,
     secrets: &SecretBox,
+    data_dir: &Path,
 ) -> Result<Report, ImportError> {
     let is_empty = target
         .import()
@@ -247,7 +265,17 @@ pub async fn store(
     if !is_empty {
         return Err(ImportError::NotEmpty);
     }
-    let Plan { data, report } = plan::plan(&source.install, secrets)?;
+    let Plan {
+        mut data,
+        mut report,
+    } = plan::plan(&source.install, secrets)?;
+    let copies = files::plan_files(
+        &source.web_root,
+        &source.database_file,
+        &mut data,
+        &mut report,
+    );
+    files::copy_files(&copies, data_dir)?;
     target
         .import()
         .run(data)

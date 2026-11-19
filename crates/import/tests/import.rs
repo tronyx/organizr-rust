@@ -59,6 +59,11 @@ impl Legacy {
         self.folder.path()
     }
 
+    /// The data folder of the new install.
+    fn data_dir(&self) -> PathBuf {
+        self.root().join("new-data")
+    }
+
     fn request(&self) -> ImportRequest<'_> {
         ImportRequest {
             from: self.root(),
@@ -118,7 +123,7 @@ async fn install_of_php_is_imported_whole() {
         let legacy = Legacy::with("").await;
         let secrets = seed::secrets();
 
-        let report = run(legacy.request(), database, &secrets)
+        let report = run(legacy.request(), database, &secrets, &legacy.data_dir())
             .await
             .expect("the import runs");
 
@@ -196,7 +201,7 @@ async fn logins_of_users_are_imported_with_sealed_secrets() {
     on_each_engine(async |database| {
         let legacy = Legacy::with("").await;
         let secrets = seed::secrets();
-        run(legacy.request(), database, &secrets)
+        run(legacy.request(), database, &secrets, &legacy.data_dir())
             .await
             .expect("the import runs");
 
@@ -245,9 +250,14 @@ async fn logins_of_users_are_imported_with_sealed_secrets() {
 async fn tabs_and_categories_keep_their_place() {
     on_each_engine(async |database| {
         let legacy = Legacy::with("").await;
-        run(legacy.request(), database, &seed::secrets())
-            .await
-            .expect("the import runs");
+        run(
+            legacy.request(),
+            database,
+            &seed::secrets(),
+            &legacy.data_dir(),
+        )
+        .await
+        .expect("the import runs");
 
         let categories = database.categories().list().await.expect("they load");
         let media = categories
@@ -298,7 +308,7 @@ async fn settings_are_imported_and_secrets_are_sealed_again() {
     on_each_engine(async |database| {
         let legacy = Legacy::with("").await;
         let secrets = seed::secrets();
-        run(legacy.request(), database, &secrets)
+        run(legacy.request(), database, &secrets, &legacy.data_dir())
             .await
             .expect("the import runs");
 
@@ -378,7 +388,7 @@ async fn settings_are_imported_and_secrets_are_sealed_again() {
 async fn imported_install_works_and_new_records_get_new_ids() {
     on_each_engine(async |database| {
         let legacy = Legacy::with("").await;
-        run(legacy.request(), database, &seed::secrets())
+        run(legacy.request(), database, &seed::secrets(), &legacy.data_dir())
             .await
             .expect("the import runs");
         let state = state_with(database, *settings_of(database).await);
@@ -441,9 +451,14 @@ async fn records_that_the_new_application_cannot_hold_are_repaired() {
     on_each_engine(async |database| {
         let legacy = Legacy::with(DAMAGE).await;
 
-        let report = run(legacy.request(), database, &seed::secrets())
-            .await
-            .expect("the import runs");
+        let report = run(
+            legacy.request(),
+            database,
+            &seed::secrets(),
+            &legacy.data_dir(),
+        )
+        .await
+        .expect("the import runs");
 
         let tabs = database.tabs().list().await.expect("they load");
         let named = |name: &str| {
@@ -565,9 +580,14 @@ async fn old_table_layout_is_read_by_the_names_of_its_columns() {
     on_each_engine(async |database| {
         let legacy = Legacy::with(OLD_LAYOUT).await;
 
-        let report = run(legacy.request(), database, &seed::secrets())
-            .await
-            .expect("the import runs");
+        let report = run(
+            legacy.request(),
+            database,
+            &seed::secrets(),
+            &legacy.data_dir(),
+        )
+        .await
+        .expect("the import runs");
 
         let tabs = database.tabs().list().await.expect("they load");
         assert_eq!(tabs.len(), 1);
@@ -678,11 +698,27 @@ async fn dry_run_reports_and_writes_nothing() {
 async fn import_needs_an_empty_database() {
     on_each_engine(async |database| {
         seed::installed(database).await;
-        let legacy = Legacy::with("").await;
+        let legacy = legacy_with_files().await;
 
-        let refused = run(legacy.request(), database, &seed::secrets()).await;
+        let refused = run(
+            legacy.request(),
+            database,
+            &seed::secrets(),
+            &legacy.data_dir(),
+        )
+        .await;
 
         assert!(matches!(refused, Err(ImportError::NotEmpty)), "{refused:?}");
+        assert!(!legacy.data_dir().exists(), "no file was copied");
+        // The database itself refuses too, whoever asks.
+        let refused = database
+            .import()
+            .run(organizr_db::ImportData::default())
+            .await;
+        assert!(
+            matches!(refused, Err(organizr_db::DbError::NotEmpty)),
+            "{refused:?}"
+        );
         let users = database.users().list().await.expect("they load");
         assert_eq!(users.len(), 1, "the install is as it was");
     })
@@ -701,7 +737,13 @@ async fn import_that_fails_stores_nothing() {
         )
         .await;
 
-        let refused = run(legacy.request(), database, &seed::secrets()).await;
+        let refused = run(
+            legacy.request(),
+            database,
+            &seed::secrets(),
+            &legacy.data_dir(),
+        )
+        .await;
 
         assert!(
             matches!(refused, Err(ImportError::Database(_))),
@@ -736,9 +778,14 @@ async fn database_is_found_in_the_volume_of_a_container() {
             from: folder.path(),
             database_file: None,
         };
-        let report = run(request, database, &seed::secrets())
-            .await
-            .expect("the import runs");
+        let report = run(
+            request,
+            database,
+            &seed::secrets(),
+            &folder.path().join("new"),
+        )
+        .await
+        .expect("the import runs");
 
         assert_eq!(report.users, 4);
     })
@@ -822,7 +869,7 @@ async fn value_that_the_hash_does_not_open_is_kept_and_reported() {
         let legacy = Legacy::build(&config, "data/parity-db/parity.db", "").await;
         let secrets = seed::secrets();
 
-        let report = run(legacy.request(), database, &secrets)
+        let report = run(legacy.request(), database, &secrets, &legacy.data_dir())
             .await
             .expect("the import runs");
 
@@ -857,6 +904,230 @@ async fn value_that_the_hash_does_not_open_is_kept_and_reported() {
             password::verify("E6VMJPh5cNlfuBAgpil+lcbjVe8X40sfms6dqrEXDvM=", &hash),
             PasswordCheck::Correct { .. }
         ));
+    })
+    .await;
+}
+
+/// Records that use pictures which a person added to the PHP install.
+const OWN_PICTURES: &str = r#"
+UPDATE tabs SET image = 'plugins/images/tabs/custom.png' WHERE name = 'Docs';
+INSERT INTO tabs (id, "order", category_id, name, url, enabled, group_id, type, image) VALUES
+    (20, 20, 0, 'Clash', 'https://a.example.com/', 1, 1, 1, 'plugins/images/tabs/OWN.PNG'),
+    (21, 21, 0, 'Gone', 'https://b.example.com/', 1, 1, 1, 'plugins/images/tabs/gone.png'),
+    (22, 22, 0, 'Drawing', 'https://c.example.com/', 1, 1, 1, 'plugins/images/tabs/drawing.webp'),
+    (23, 23, 0, 'Outside', 'https://d.example.com/', 1, 1, 1, 'plugins/images/../../outside.png'),
+    (24, 24, 0, 'Same', 'https://e.example.com/', 1, 1, 1, 'plugins/images/tabs/custom.png'),
+    (25, 25, 0, 'Uploaded', 'https://f.example.com/', 1, 1, 1, 'data/userTabs/own.png'),
+    (26, 26, 0, 'Web', 'https://g.example.com/', 1, 1, 1, 'https://example.com/plugins/images/x.png'),
+    (27, 27, 0, 'Vector', 'https://h.example.com/', 1, 1, 1, 'plugins/images/tabs/vector.svg');
+UPDATE categories SET image = 'plugins/images/categories/mine.gif' WHERE category = 'Media';
+UPDATE groups SET image = 'plugins/images/groups/team.jpeg' WHERE "group" = 'Editors';
+"#;
+
+/// Writes a file of the made-up install. The content says which file it is.
+fn write(root: &Path, path: &str) {
+    let file = root.join(path);
+    std::fs::create_dir_all(file.parent().expect("the file is in a folder"))
+        .expect("the folder can be made");
+    std::fs::write(&file, path).expect("the file can be written");
+}
+
+/// The files below a folder, by their path from it, sorted.
+fn files_below(folder: &Path) -> Vec<String> {
+    fn walk(folder: &Path, from: &Path, found: &mut Vec<String>) {
+        for entry in std::fs::read_dir(folder).into_iter().flatten().flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path, from, found);
+            } else if let Ok(inside) = path.strip_prefix(from) {
+                found.push(inside.display().to_string().replace('\\', "/"));
+            }
+        }
+    }
+    let mut found = Vec::new();
+    walk(folder, folder, &mut found);
+    found.sort();
+    found
+}
+
+/// The made-up install with pictures and files that a person added.
+async fn legacy_with_files() -> Legacy {
+    let config = CONFIG.replace(
+        "'logo' => 'plugins/images/organizr/organizr-logo-h.png',",
+        "'logo' => 'plugins/images/own-logo.png',",
+    );
+    assert_ne!(config, CONFIG);
+    let legacy = Legacy::build(&config, "data/parity-db/parity.db", OWN_PICTURES).await;
+    for path in [
+        "data/userTabs/own.png",
+        "data/userTabs/second.JPG",
+        "data/favicon/favicon.ico",
+        "data/favicon/site.webmanifest",
+        "data/cache/poster.jpg",
+        "data/pages/custom.php",
+        "data/pages/help.html",
+        "data/routes/more/extra.PHP",
+        "data/backup-of-mine/old.txt",
+        "plugins/images/tabs/custom.png",
+        "plugins/images/tabs/OWN.PNG",
+        "plugins/images/tabs/drawing.webp",
+        "plugins/images/tabs/vector.svg",
+        "plugins/images/tabs/unused.jpg",
+        "plugins/images/tabs/notes.txt",
+        // A picture that the application ships: it stays where it is.
+        "plugins/images/tabs/plex.png",
+        "plugins/images/categories/mine.gif",
+        "plugins/images/categories/unused.png",
+        "plugins/images/groups/team.jpeg",
+        "plugins/images/own-logo.png",
+        "outside.png",
+    ] {
+        write(legacy.root(), path);
+    }
+    legacy
+}
+
+#[tokio::test]
+async fn pictures_and_files_of_the_install_are_copied() {
+    on_each_engine(async |database| {
+        let legacy = legacy_with_files().await;
+        let data_dir = legacy.data_dir();
+
+        let report = run(legacy.request(), database, &seed::secrets(), &data_dir)
+            .await
+            .expect("the import runs");
+
+        assert_eq!(
+            files_below(&data_dir),
+            [
+                "favicon/favicon.ico",
+                "favicon/site.webmanifest",
+                "userTabs/custom.png",
+                "userTabs/mine.gif",
+                "userTabs/own-logo.png",
+                "userTabs/own.png",
+                "userTabs/second.JPG",
+                // The name `own.png` was taken by an uploaded picture.
+                "userTabs/tabs-OWN.PNG",
+                "userTabs/team.jpeg",
+                "userTabs/unused.jpg",
+                "userTabs/vector.svg",
+            ]
+        );
+        let content = |path: &str| {
+            std::fs::read_to_string(data_dir.join(path)).expect("the file can be read")
+        };
+        assert_eq!(content("userTabs/own.png"), "data/userTabs/own.png");
+        assert_eq!(
+            content("userTabs/tabs-OWN.PNG"),
+            "plugins/images/tabs/OWN.PNG"
+        );
+        assert_eq!(
+            content("userTabs/mine.gif"),
+            "plugins/images/categories/mine.gif"
+        );
+
+        // The records point at the new place of each picture that moved.
+        let tabs = database.tabs().list().await.expect("they load");
+        let picture = |name: &str| {
+            tabs.iter()
+                .find(|tab| tab.name == name)
+                .unwrap_or_else(|| panic!("the tab {name} is there"))
+                .image
+                .clone()
+                .unwrap_or_default()
+        };
+        assert_eq!(picture("Docs"), "data/userTabs/custom.png");
+        assert_eq!(picture("Same"), "data/userTabs/custom.png");
+        assert_eq!(picture("Clash"), "data/userTabs/tabs-OWN.PNG");
+        assert_eq!(picture("Uploaded"), "data/userTabs/own.png");
+        // What does not move stays as it is.
+        assert_eq!(picture("Plex"), "plugins/images/tabs/plex.png");
+        assert_eq!(picture("Gone"), "plugins/images/tabs/gone.png");
+        assert_eq!(picture("Drawing"), "plugins/images/tabs/drawing.webp");
+        assert_eq!(picture("Vector"), "data/userTabs/vector.svg");
+        assert_eq!(picture("Outside"), "plugins/images/../../outside.png");
+        assert_eq!(picture("Web"), "https://example.com/plugins/images/x.png");
+        let categories = database.categories().list().await.expect("they load");
+        let media = categories.iter().find(|category| category.name == "Media");
+        assert_eq!(
+            media.and_then(|category| category.image.as_deref()),
+            Some("data/userTabs/mine.gif")
+        );
+        let groups = database.groups().list().await.expect("they load");
+        let editors = groups.iter().find(|group| group.name == "Editors");
+        assert_eq!(
+            editors.and_then(|group| group.image.as_deref()),
+            Some("data/userTabs/team.jpeg")
+        );
+        let settings = settings_of(database).await;
+        assert_eq!(
+            settings.get("logo"),
+            Some(json!("data/userTabs/own-logo.png"))
+        );
+        assert_eq!(
+            settings.get("loginLogo"),
+            Some(json!("plugins/images/organizr/organizr-logo-h.png"))
+        );
+
+        assert_eq!((report.pictures, report.other_files), (9, 2));
+        assert_eq!(
+            report.php_files,
+            ["data/pages/custom.php", "data/routes/more/extra.PHP"]
+        );
+        assert_eq!(
+            report.notes,
+            [
+                "7 pictures that a person added to the picture folders of the PHP application \
+                 are now with the uploaded pictures. 6 of them are used by a record, which \
+                 points to the new place.",
+                "A record uses the picture plugins/images/tabs/gone.png, which the PHP install \
+                 does not have. Choose another picture for it.",
+                "A record uses the picture plugins/images/tabs/drawing.webp. The application shows \
+                 only GIF, PNG, JPEG and SVG pictures that were added by a person. Choose \
+                 another picture for it.",
+                "The folder data/backup-of-mine of the PHP install is not copied. Look at what \
+                 it holds.",
+            ]
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn dry_run_counts_the_files_and_copies_none() {
+    let legacy = legacy_with_files().await;
+    let before = files_below(legacy.root());
+
+    let report = dry_run(legacy.request(), &seed::secrets())
+        .await
+        .expect("the dry run works");
+
+    assert_eq!((report.pictures, report.other_files), (9, 2));
+    assert_eq!(report.php_files.len(), 2);
+    assert_eq!(report.notes.len(), 4);
+    assert_eq!(files_below(legacy.root()), before);
+    let shown = report.to_string();
+    assert!(shown.contains("     9  uploaded pictures"), "{shown}");
+    assert!(shown.contains("  - data/pages/custom.php"), "{shown}");
+}
+
+#[tokio::test]
+async fn import_runs_again_after_one_that_failed_late() {
+    on_each_engine(async |database| {
+        let legacy = legacy_with_files().await;
+        let data_dir = legacy.data_dir();
+        // A file of an earlier try is in the way.
+        write(&data_dir, "userTabs/own.png");
+
+        run(legacy.request(), database, &seed::secrets(), &data_dir)
+            .await
+            .expect("the import runs");
+
+        assert_eq!(
+            std::fs::read_to_string(data_dir.join("userTabs/own.png")).expect("readable"),
+            "data/userTabs/own.png"
+        );
     })
     .await;
 }

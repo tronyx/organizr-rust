@@ -17,6 +17,7 @@ The script writes:
 - `web/src/lib/iconNames.json`: the names of all icons, for the picture chooser.
 - `crates/api/src/handlers/bundled_tab_images.txt`: the names of the pictures for tabs,
   for the image routes of the API.
+- `crates/import/src/bundled_images.txt`: the paths of all pictures, for the importer.
 
 Run it again only when the reference changes. Its results are committed.
 """
@@ -131,6 +132,16 @@ def import_pictures(container, work):
     names = sorted(file.name for file in (target / "tabs").iterdir())
     listing = REPOSITORY / "crates" / "api" / "src" / "handlers" / "bundled_tab_images.txt"
     listing.write_text("\n".join(names) + "\n", encoding="utf-8", newline="\n")
+
+    # Every picture, by the path that PHP uses, for the importer: it must know which
+    # pictures of an old install the application does not have.
+    paths = sorted(
+        file.relative_to(target.parents[1]).as_posix()
+        for file in target.rglob("*")
+        if file.is_file()
+    )
+    listing = REPOSITORY / "crates" / "import" / "src" / "bundled_images.txt"
+    listing.write_text("\n".join(paths) + "\n", encoding="utf-8", newline="\n")
 
 
 def import_icons(container, work):

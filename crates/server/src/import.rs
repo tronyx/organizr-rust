@@ -49,7 +49,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     let source = organizr_import::read(request).await?;
     let database = open_database(&args.storage).await?;
     let secrets = args.storage.secrets()?;
-    let report = organizr_import::store(&source, &database, &secrets).await?;
+    let report =
+        organizr_import::store(&source, &database, &secrets, args.storage.data_dir()).await?;
     database
         .close()
         .await
