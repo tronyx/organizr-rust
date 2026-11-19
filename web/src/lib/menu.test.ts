@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildMenu, contentFor, pictureOf, shownTab, startTab, type Caller } from './menu';
+import { buildMenu, contentFor, shownTab, startTab, type Caller } from './menu';
 import type { MenuCategory, MenuTab } from './types';
 
 function tab(id: number, name: string, changes: Partial<MenuTab> = {}): MenuTab {
@@ -204,25 +204,5 @@ describe('shownTab', () => {
     expect(shownTab(contentFor(byTab, tabs, ADMIN), byTab, tabs)).toBe(SETTINGS);
     expect(shownTab(contentFor(byPage, tabs, ADMIN), byPage, tabs)).toBeUndefined();
     expect(shownTab({ kind: 'login' }, { page: 'login' }, tabs)).toBeUndefined();
-  });
-});
-
-describe('pictureOf', () => {
-  it('shows a picture that the browser can load', () => {
-    expect(pictureOf('https://example.com/plex.png', 'Plex')).toEqual({
-      kind: 'image',
-      address: 'https://example.com/plex.png',
-    });
-    expect(pictureOf('data:image/png;base64,AAAA', 'Plex').kind).toBe('image');
-  });
-
-  it('shows the first letter of the name for everything else', () => {
-    for (const image of [null, '', 'fontawesome::cog', 'plugins/images/tabs/plex.png']) {
-      expect(pictureOf(image, ' plex')).toEqual({ kind: 'letter', letter: 'P' });
-    }
-    expect(pictureOf(null, 'émile')).toEqual({ kind: 'letter', letter: 'É' });
-    expect(pictureOf(null, '  ')).toEqual({ kind: 'letter', letter: '?' });
-    // A script is no picture.
-    expect(pictureOf('javascript:alert(1)', 'x').kind).toBe('letter');
   });
 });

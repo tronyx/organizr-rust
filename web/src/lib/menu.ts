@@ -145,19 +145,3 @@ export function shownTab(content: Content, route: Route, tabs: MenuTab[]): MenuT
   }
   return undefined;
 }
-
-/** How the picture of a tab or of a category is shown. */
-export type Picture = { kind: 'image'; address: string } | { kind: 'letter'; letter: string };
-
-/**
- * A picture that the browser can load is shown as it is. The names of icons and the
- * paths of pictures of PHP Organizr, such as `fontawesome::cog`, have no file on this
- * server yet. For them, and for no picture, the first letter of the name is shown.
- */
-export function pictureOf(image: string | null, name: string): Picture {
-  if (image && /^(https?:\/\/|data:image\/)/i.test(image)) {
-    return { kind: 'image', address: image };
-  }
-  const letter = [...name.trim()][0]?.toUpperCase() ?? '?';
-  return { kind: 'letter', letter };
-}

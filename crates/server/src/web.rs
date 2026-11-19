@@ -70,8 +70,25 @@ fn content_type(name: &str) -> &'static str {
         "gif" => "image/gif",
         "ico" => "image/x-icon",
         "woff2" => "font/woff2",
+        "woff" => "font/woff",
         "txt" => "text/plain; charset=utf-8",
         _ => "application/octet-stream",
+    }
+}
+
+/// How long a browser can keep a file.
+///
+/// The build gives each file under `assets/` a name that changes with its content, so a
+/// browser can keep such a file for good. The pictures under `plugins/` change only with
+/// a new version of the application, so a browser keeps them for a day. Every other file
+/// is checked again each time.
+fn caching(name: &str) -> &'static str {
+    if name.starts_with("assets/") {
+        "public, max-age=31536000, immutable"
+    } else if name.starts_with("plugins/") {
+        "public, max-age=86400"
+    } else {
+        "no-cache"
     }
 }
 
@@ -117,14 +134,10 @@ pub async fn serve_files(request: Request, next: Next) -> Response {
         header::X_CONTENT_TYPE_OPTIONS,
         HeaderValue::from_static("nosniff"),
     );
-    // The build gives each file under `assets/` a name that changes with its content,
-    // so a browser can keep such a file for good. Every other file is checked again.
-    let caching = if name.starts_with("assets/") {
-        "public, max-age=31536000, immutable"
-    } else {
-        "no-cache"
-    };
-    headers.insert(header::CACHE_CONTROL, HeaderValue::from_static(caching));
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static(caching(&name)),
+    );
     if name == PAGE {
         headers.insert(
             header::CONTENT_SECURITY_POLICY,
@@ -149,7 +162,7 @@ mod tests {
     use http_body_util::BodyExt;
     use tower::ServiceExt;
 
-    use super::{CONTENT_SECURITY_POLICY, content_type, file_name, serve_files};
+    use super::{CONTENT_SECURITY_POLICY, caching, content_type, file_name, serve_files};
 
     /// A stand-in for the API behind the middleware.
     fn app() -> Router {
@@ -210,7 +223,25 @@ mod tests {
     }
 
     #[test]
+    fn browser_keeps_files_whose_name_follows_their_content() {
+        assert_eq!(
+            caching("assets/index-abc.js"),
+            "public, max-age=31536000, immutable"
+        );
+        assert_eq!(
+            caching("plugins/images/tabs/plex.png"),
+            "public, max-age=86400"
+        );
+        assert_eq!(caching("index.html"), "no-cache");
+        assert_eq!(caching("favicon.svg"), "no-cache");
+        assert_eq!(caching("other/assets/file.js"), "no-cache");
+    }
+
+    #[test]
     fn content_type_follows_the_ending_of_the_name() {
+        assert_eq!(content_type("assets/themify-abc.woff"), "font/woff");
+        assert_eq!(content_type("assets/icons-abc.woff2"), "font/woff2");
+        assert_eq!(content_type("plugins/images/tabs/plex.png"), "image/png");
         assert_eq!(content_type("index.html"), "text/html; charset=utf-8");
         assert_eq!(
             content_type("assets/index-abc.js"),

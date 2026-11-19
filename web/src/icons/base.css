@@ -1,0 +1,18 @@
+/*
+ * What every icon of an icon font has in common. An icon is an element with the class
+ * `oi`, the class of its family, such as `oi-fontawesome`, and the class of the icon in
+ * the words of that family, such as `fa-cog`.
+ *
+ * The style sheets of the families are made by web/tools/import-organizr-assets.py.
+ */
+.oi {
+  display: inline-block;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  line-height: 1;
+  text-transform: none;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

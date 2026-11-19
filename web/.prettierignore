@@ -3,3 +3,7 @@ node_modules/
 playwright-report/
 test-results/
 package-lock.json
+src/icons/*.css
+!src/icons/base.css
+src/lib/iconNames.json
+public/plugins/

@@ -234,6 +234,56 @@ test('the Admin adds, changes, hides, moves and deletes a tab in the settings', 
   await expect(page.getByRole('row', { name: /Server Status/ })).toHaveCount(0);
 });
 
+test('a tab shows a picture of Organizr or an icon in the menu', async ({ page }) => {
+  await logIn(page);
+  await page.goto('./#/settings/tabs');
+  const menu = page.getByRole('navigation', { name: 'Tabs' });
+  const status = page.getByRole('status');
+  const add = async (name: string, picture: string) => {
+    await page.getByRole('button', { name: 'Add a tab' }).click();
+    const added = page.getByRole('dialog', { name: 'Add a tab' });
+    await added.getByLabel('Name').fill(name);
+    await added.getByLabel('Address', { exact: true }).fill('/api/v2/ping');
+    await added.getByLabel('Picture').fill(picture);
+    await added.getByRole('button', { name: 'Save' }).click();
+    await expect(status).toHaveText('The tab is added.');
+    await expect(added).toHaveCount(0);
+  };
+  const remove = async (name: string) => {
+    page.once('dialog', (dialog) => void dialog.accept());
+    await page
+      .getByRole('row', { name: new RegExp(name) })
+      .getByRole('button', { name: /Delete/ })
+      .click();
+    await expect(menu.getByRole('link', { name })).toHaveCount(0);
+  };
+
+  // A picture that Organizr ships, at the path that PHP Organizr stores for it.
+  await add('Plex Picture', 'plugins/images/tabs/plex.png');
+  const picture = menu.getByRole('link', { name: 'Plex Picture' }).locator('img');
+  await expect(picture).toHaveAttribute('src', 'plugins/images/tabs/plex.png');
+  await expect
+    .poll(() => picture.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
+
+  // An icon, in the form that PHP Organizr stores for it. Its font comes from this server.
+  await add('Cog Icon', 'fontawesome::cog');
+  const icon = menu.getByRole('link', { name: 'Cog Icon' }).locator('i');
+  await expect(icon).toHaveClass(/fa-cog/);
+  await expect
+    .poll(() => page.evaluate(() => document.fonts.check("16px 'organizr-fontawesome'")))
+    .toBe(true);
+  const drawn = await icon.evaluate((element) => ({
+    font: getComputedStyle(element).fontFamily,
+    glyph: getComputedStyle(element, '::before').content,
+  }));
+  expect(drawn.font).toContain('organizr-fontawesome');
+  expect(drawn.glyph).not.toBe('none');
+
+  await remove('Plex Picture');
+  await remove('Cog Icon');
+});
+
 test('the Admin manages the categories, and one with tabs is not deleted', async ({ page }) => {
   await logIn(page);
   await page.goto('./#/settings/tabs');
