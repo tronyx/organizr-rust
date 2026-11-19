@@ -14,14 +14,12 @@ use crate::caller::Caller;
 use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::error::ApiError;
+use crate::handlers::tabs::{CategoryRow, TabRow};
 use crate::handlers::token::{SessionSummary, UserObject, describe_caller};
 use crate::state::AppState;
 
 /// The version of this application.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-/// The level up to which a caller also sees the tabs that are marked "add to admin".
-const CO_ADMIN: u16 = 1;
 
 /// The PHP extensions and functions that the PHP application lists as present. A client
 /// that reads the list finds what it found before.
@@ -71,43 +69,20 @@ enum ListOrFalse<T> {
     NotSetUp(bool),
 }
 
-/// A category as the API shows it.
+/// A category of the menu: the category as the API shows it, and a count.
 #[derive(Debug, Serialize)]
 struct CategoryObject {
-    id: i64,
-    order: i64,
-    category: String,
-    category_id: i64,
-    image: Option<String>,
-    default: u8,
+    #[serde(flatten)]
+    category: CategoryRow,
     /// How many of the tabs in the answer are in this category.
     count: usize,
 }
 
-/// A tab as the API shows it. Switches are the numbers 0 and 1, as the database of the
-/// PHP application holds them.
+/// A tab of the menu: the tab as the API shows it, and the address to open.
 #[derive(Debug, Serialize)]
 struct TabObject {
-    id: i64,
-    order: i64,
-    /// The number of the category, not its `id`.
-    category_id: Option<i64>,
-    name: String,
-    url: Option<String>,
-    url_local: Option<String>,
-    default: u8,
-    enabled: u8,
-    group_id: u16,
-    group_id_max: u16,
-    add_to_admin: u8,
-    image: Option<String>,
-    r#type: u8,
-    splash: u8,
-    ping: u8,
-    ping_url: Option<String>,
-    timeout: u8,
-    timeout_ms: Option<i64>,
-    preload: u8,
+    #[serde(flatten)]
+    tab: TabRow,
     /// The address the front end opens. Today it is `url`. The local address of a tab,
     /// for callers on the local network, is not used yet.
     access_url: Option<String>,
@@ -165,7 +140,8 @@ struct LaunchStatus {
 /// A tab is shown to the levels from `group_id_max` to `group_id`. A tab that is marked
 /// "add to admin" is also shown to Admins and Co-Admins, whatever its levels.
 fn is_shown(tab: &Tab, level: GroupLevel) -> bool {
-    tab.enabled && (tab.access.contains(level) || (tab.add_to_admin && level.get() <= CO_ADMIN))
+    tab.enabled
+        && (tab.access.contains(level) || (tab.add_to_admin && level <= GroupLevel::CO_ADMIN))
 }
 
 /// The tabs a caller of the given level sees, in the order of the menu.
@@ -182,31 +158,10 @@ fn visible_tabs(mut tabs: Vec<Tab>, level: GroupLevel, unsorted: UnsortedTabs) -
 }
 
 fn tab_object(tab: Tab, categories: &[Category]) -> TabObject {
-    let category = categories
-        .iter()
-        .find(|category| category.id == tab.category)
-        .map(|category| category.number.get());
+    let tab = TabRow::of(tab, categories);
     TabObject {
-        id: tab.id.get(),
-        order: tab.position,
-        category_id: category,
-        name: tab.name,
-        access_url: tab.url.clone(),
-        url: tab.url,
-        url_local: tab.url_local,
-        default: u8::from(tab.is_default),
-        enabled: u8::from(tab.enabled),
-        group_id: tab.access.least_access().get(),
-        group_id_max: tab.access.most_access().get(),
-        add_to_admin: u8::from(tab.add_to_admin),
-        image: tab.image,
-        r#type: tab.kind.code(),
-        splash: u8::from(tab.splash),
-        ping: u8::from(tab.ping),
-        ping_url: tab.ping_url,
-        timeout: u8::from(tab.timeout),
-        timeout_ms: tab.timeout_ms,
-        preload: u8::from(tab.preload),
+        access_url: tab.url().map(str::to_owned),
+        tab,
     }
 }
 
@@ -260,12 +215,7 @@ pub async fn launch(
         let category_objects = categories
             .iter()
             .map(|category| CategoryObject {
-                id: category.id.get(),
-                order: category.position,
-                category: category.name.clone(),
-                category_id: category.number.get(),
-                image: category.image.clone(),
-                default: u8::from(category.is_default),
+                category: CategoryRow::from(category),
                 count: tabs
                     .iter()
                     .filter(|tab| tab.category == category.id)

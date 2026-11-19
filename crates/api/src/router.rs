@@ -1,8 +1,9 @@
 //! The route table of the API.
 
 use axum::extract::State;
+use axum::handler::Handler;
 use axum::http::{HeaderValue, Method, Uri, header};
-use axum::middleware::{from_fn, from_fn_with_state};
+use axum::middleware::{from_fn, from_fn_with_state, map_response};
 use axum::response::Response;
 use axum::routing::{MethodRouter, delete, get, post};
 use axum::{Extension, Router};
@@ -12,7 +13,7 @@ use crate::caller::{Caller, identify_caller};
 use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
-use crate::handlers::{basics, launch, login, logout, register, token, wizard};
+use crate::handlers::{basics, launch, login, logout, register, tabs, token, wizard};
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
 use crate::state::AppState;
@@ -45,7 +46,21 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/token/validate",
             &post(token::validate).delete(|state, caller| revoke_fixed(state, caller, "validate")),
         )?
-        .route("/token/{id}", &delete(token::revoke))?;
+        .route("/token/{id}", &delete(token::revoke))?
+        // The PHP application sends another content type from the routes that change
+        // or delete a tab.
+        .route(
+            "/tabs",
+            &get(tabs::list)
+                .post(tabs::add)
+                .put(tabs::reorder.layer(map_response(tabs::as_plain_json))),
+        )?
+        .route(
+            "/tabs/{id}",
+            &get(tabs::one)
+                .put(tabs::change.layer(map_response(tabs::as_plain_json)))
+                .delete(tabs::remove.layer(map_response(tabs::as_plain_json))),
+        )?;
 
     Ok(finish(routes.router, state))
 }

@@ -15,6 +15,9 @@ impl GroupLevel {
     /// The Admin group: full access.
     pub const ADMIN: Self = Self(0);
 
+    /// The Co-Admin group: the level that the routes for managing the install ask for.
+    pub const CO_ADMIN: Self = Self(1);
+
     /// The Guest group: a caller who is not logged in.
     pub const GUEST: Self = Self(999);
 

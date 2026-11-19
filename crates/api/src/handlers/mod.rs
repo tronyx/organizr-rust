@@ -5,5 +5,6 @@ pub mod launch;
 pub mod login;
 pub mod logout;
 pub mod register;
+pub mod tabs;
 pub mod token;
 pub mod wizard;

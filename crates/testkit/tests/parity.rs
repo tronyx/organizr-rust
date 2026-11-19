@@ -70,15 +70,16 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
         ),
         ("plugins", "the plugins are not built yet"),
         ("sso", "the single sign-on is not built yet"),
-        (
-            "status/userConfigPath",
-            "waits for a decision: PHP sends the path of its configuration file",
-        ),
     ] {
         replay = replay.pending_at(case, &format!("/response/data/{part}"), reason);
     }
-    replay
+    // There is no configuration file whose path could be sent.
+    replay.deviation_without("D-29", case, "/response/data/status/userConfigPath")
 }
+
+/// The switches of a tab that PHP sends as `null` when they were never set. Here a
+/// switch is 0 or 1.
+const TAB_SWITCHES: [&str; 4] = ["splash", "ping", "timeout", "preload"];
 
 /// The cookie difference that every answer has: there is no PHP session.
 fn without_php_session(replay: Replay) -> Replay {
@@ -121,12 +122,13 @@ async fn fresh_install_answers_like_php() {
             .deviation("D-18", launch, &format!("{session}/token"), Value::Null)
             .deviation_adds("D-18", launch, session, "current", json!(true));
         // The one tab an admin sees after the set-up is "Settings". The set-up of PHP
-        // leaves these switches empty (`null`). Here a switch is on or off.
-        for switch in ["splash", "ping", "timeout", "preload"] {
-            replay = replay.pending_at(
+        // leaves its switches empty (`null`). Here a switch is on or off.
+        for switch in TAB_SWITCHES {
+            replay = replay.deviation(
+                "D-28",
                 launch,
                 &format!("/response/data/tabs/0/{switch}"),
-                "waits for a decision: a switch that was never set is `null` in PHP and 0 here",
+                json!(0),
             );
         }
 
@@ -251,6 +253,61 @@ async fn registration_answers_like_php() {
         let replay = without_php_session(Replay::group("register"));
 
         replay.run(&app).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn tab_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let mut replay = without_php_session(Replay::group("tabs"));
+
+        // Every answer that shows a tab whose switches were never set.
+        for case in [
+            "tabs",
+            "tab",
+            "tab_with_a_leading_zero_in_the_id",
+            "added_tab",
+            "tab_with_spaces_cut_off",
+            "tab_with_numbers_as_text",
+            "tab_with_placeholders",
+            "tab_with_true_and_false",
+            "tab_from_a_form",
+            "tab_with_null_for_address_and_image",
+            "tabs_after_adding",
+            "tabs_with_a_komga_cookie",
+            "tab_with_html_in_the_name",
+            "tab_with_changed_texts",
+            "tabs_after_changing_the_default",
+            "tab_changed_to_null",
+            "tabs_after_ordering",
+            "tabs_after_deleting",
+        ] {
+            replay = replay.deviation_for_nulls("D-28", case, &TAB_SWITCHES, json!(0));
+        }
+        replay = replay
+            // PHP asks a guest for the form key first. Here a request that does not come
+            // from another site goes on to the check of the level.
+            .deviation(
+                "D-03",
+                "add_as_guest",
+                "/response/message",
+                json!("Not Authorized"),
+            )
+            // Text is stored as it was sent, not with HTML entities.
+            .deviation(
+                "D-24",
+                "tab_with_html_in_the_name",
+                "/response/data/name",
+                json!("A & <b>"),
+            )
+            .pending_case(
+                "launch_with_tabs",
+                "the launch answer does not yet work out the addresses of a tab",
+            );
+
+        replay.run(&installed_app(database)).await;
     })
     .await;
 }

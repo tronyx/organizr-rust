@@ -68,6 +68,9 @@ const ASPECTS: [Aspect; 4] = [
 pub struct Replay {
     group: String,
     edits: Vec<Edit>,
+    null_edits: Vec<NullEdit>,
+    /// Keys that the answer does not have: case and JSON pointer.
+    removals: Vec<(String, String)>,
     pending_aspects: Vec<(String, Aspect)>,
     pending_cases: Vec<String>,
     /// Parts of a JSON body that are not implemented yet: case and JSON pointer.
@@ -85,12 +88,23 @@ struct Edit {
     value: Value,
 }
 
+/// A value that the answer has wherever the recorded body of a case has `null` under
+/// one of the keys.
+#[derive(Debug)]
+struct NullEdit {
+    case: String,
+    keys: Vec<String>,
+    value: Value,
+}
+
 impl Replay {
     /// Prepares the replay of `parity/cases/<group>.json`.
     pub fn group(group: &str) -> Self {
         Self {
             group: group.to_owned(),
             edits: Vec::new(),
+            null_edits: Vec::new(),
+            removals: Vec::new(),
             pending_aspects: Vec::new(),
             pending_cases: Vec::new(),
             pending_parts: Vec::new(),
@@ -127,6 +141,41 @@ impl Replay {
             case: case.to_owned(),
             pointer: pointer.to_owned(),
             new_key: Some(key.to_owned()),
+            value,
+        });
+        self
+    }
+
+    /// Expects that the body of a case does not have a key that the recording has,
+    /// because of an approved deviation.
+    ///
+    /// `id` must be an entry of `docs/deviations.md`. `pointer` is a JSON pointer to a
+    /// key of an object, for example `/response/data/status/userConfigPath`.
+    #[must_use]
+    pub fn deviation_without(mut self, id: &str, case: &str, pointer: &str) -> Self {
+        assert_approved(id);
+        self.removals.push((case.to_owned(), pointer.to_owned()));
+        self
+    }
+
+    /// Expects `value` wherever the recorded body of a case has `null` under one of
+    /// `keys`, at any depth, because of an approved deviation. Use it for a difference
+    /// that comes back in every record of a list.
+    ///
+    /// `id` must be an entry of `docs/deviations.md`. The recorded body must have at
+    /// least one such `null`.
+    #[must_use]
+    pub fn deviation_for_nulls(
+        mut self,
+        id: &str,
+        case: &str,
+        keys: &[&str],
+        value: Value,
+    ) -> Self {
+        assert_approved(id);
+        self.null_edits.push(NullEdit {
+            case: case.to_owned(),
+            keys: keys.iter().map(|key| (*key).to_owned()).collect(),
             value,
         });
         self
@@ -270,9 +319,29 @@ impl Replay {
             .iter()
             .filter(|edit| edit.case == case.name)
             .collect();
-        if !edits.is_empty() {
+        let null_edits: Vec<&NullEdit> = self
+            .null_edits
+            .iter()
+            .filter(|edit| edit.case == case.name)
+            .collect();
+        let removals: Vec<&str> = self
+            .removals
+            .iter()
+            .filter(|(name, _)| name == &case.name)
+            .map(|(_, pointer)| pointer.as_str())
+            .collect();
+        if !edits.is_empty() || !null_edits.is_empty() || !removals.is_empty() {
             let mut json: Value =
                 serde_json::from_str(&body).expect("a case with edits has a JSON body");
+            for edit in null_edits {
+                let replaced = replace_nulls(&mut json, &edit.keys, &edit.value);
+                assert!(
+                    replaced > 0,
+                    "case `{}`: the recorded body has no `null` under {:?}",
+                    case.name,
+                    edit.keys
+                );
+            }
             for edit in edits {
                 let target = json.pointer_mut(&edit.pointer).unwrap_or_else(|| {
                     panic!(
@@ -298,6 +367,14 @@ impl Replay {
                         );
                     }
                 }
+            }
+            // Last, so that a key can be taken out that an edit above has put in.
+            for pointer in removals {
+                assert!(
+                    take_part(&mut json, pointer).is_some(),
+                    "case `{}`: the recorded body has nothing at `{pointer}`",
+                    case.name
+                );
             }
             let bytes = organizr_api::php_json::to_vec(&json).expect("the body can be written");
             body = String::from_utf8(bytes).expect("the writer produces UTF-8");
@@ -375,6 +452,8 @@ impl Replay {
             .edits
             .iter()
             .map(|edit| &edit.case)
+            .chain(self.null_edits.iter().map(|edit| &edit.case))
+            .chain(self.removals.iter().map(|(case, _)| case))
             .chain(self.pending_aspects.iter().map(|(case, _)| case))
             .chain(self.pending_parts.iter().map(|(case, _)| case))
             .chain(&self.pending_cases);
@@ -385,6 +464,29 @@ impl Replay {
                 self.group
             );
         }
+    }
+}
+
+/// Replaces every `null` that stands under one of `keys`, at any depth, by `value`.
+/// Returns how many were replaced.
+fn replace_nulls(json: &mut Value, keys: &[String], value: &Value) -> usize {
+    match json {
+        Value::Object(object) => object
+            .iter_mut()
+            .map(|(key, member)| {
+                if member.is_null() && keys.contains(key) {
+                    *member = value.clone();
+                    1
+                } else {
+                    replace_nulls(member, keys, value)
+                }
+            })
+            .sum(),
+        Value::Array(entries) => entries
+            .iter_mut()
+            .map(|entry| replace_nulls(entry, keys, value))
+            .sum(),
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => 0,
     }
 }
 

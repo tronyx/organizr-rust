@@ -40,6 +40,8 @@ Status: all entries below were approved by the owner on 2026-11-18. A new deviat
 | D-25 | Response header names are lower-case (HTTP treats names as case-insensitive) |
 | D-26 | Backup archives hold an engine-neutral export of the database instead of the raw SQLite file. The backup routes and their responses are unchanged |
 | D-27 | No `PHPSESSID` cookie. The PHP application starts a PHP session on every request and needs it only during an OIDC login. The OIDC login keeps its state in a short-lived cookie of its own, set only during that login. The three no-cache headers that came with the PHP session are still sent on every answer. Approved on 2026-11-18 |
+| D-28 | The switches `splash`, `ping`, `timeout` and `preload` of a tab are always `0` or `1`. PHP sends `null` for a switch that was never set, for example on the tabs of a new install. A request that sets such a switch to `null` sets it to `0`. Approved on 2026-11-18 |
+| D-29 | `GET /launch` has no `status.userConfigPath`. PHP sends the path of its configuration file there, to every visitor. This application has no such file (D-45). Approved on 2026-11-18 |
 
 **Replacements for PHP-only features** (described in `architecture.md`, section 6)
 

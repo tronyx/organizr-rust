@@ -3,7 +3,8 @@
 //! PHP's `apiData()` decides by the `Content-Type` header:
 //!
 //! - a type that contains `application/json`, in any letter case: the body is JSON. Only
-//!   a JSON object has fields. Any other JSON value, and text that is not JSON, has none.
+//!   a JSON object has fields. A JSON list has entries. Any other JSON value, and text
+//!   that is not JSON, has neither.
 //! - any other type, on a `POST` request only: the body is a form
 //!   (`application/x-www-form-urlencoded`). When a name comes twice, the last one counts.
 //!
@@ -19,15 +20,22 @@ use serde_json::{Map, Value};
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ApiData {
     fields: Map<String, Value>,
+    /// The entries of a body that is a JSON list.
+    list: Vec<Value>,
 }
 
 impl ApiData {
     /// Reads a body.
     pub fn parse(method: &Method, content_type: Option<&str>, body: &[u8]) -> Self {
         let content_type = content_type.unwrap_or_default().to_ascii_lowercase();
+        let mut list = Vec::new();
         let fields = if content_type.contains("application/json") {
             match serde_json::from_slice(body) {
                 Ok(Value::Object(fields)) => fields,
+                Ok(Value::Array(entries)) => {
+                    list = entries;
+                    Map::new()
+                }
                 _ => Map::new(),
             }
         } else if method == Method::POST && content_type.contains("x-www-form-urlencoded") {
@@ -37,7 +45,25 @@ impl ApiData {
         } else {
             Map::new()
         };
-        Self { fields }
+        Self { fields, list }
+    }
+
+    /// Whether the body gave nothing: no field and no entry. This is what PHP takes for
+    /// "no data was sent".
+    pub fn is_empty(&self) -> bool {
+        self.fields.is_empty() && self.list.is_empty()
+    }
+
+    /// A field as it was sent, or `None` when the body does not name it. A field that
+    /// is `null` is named, as with PHP's `array_key_exists()`.
+    pub fn field(&self, name: &str) -> Option<&Value> {
+        self.fields.get(name)
+    }
+
+    /// What PHP's `foreach` goes through: the entries of a list, or the values of the
+    /// fields of an object. The values of an object come in no promised order.
+    pub fn entries(&self) -> impl Iterator<Item = &Value> {
+        self.list.iter().chain(self.fields.values())
     }
 
     /// Whether a field has a value. A field that is `null` has none, as with PHP's
@@ -131,12 +157,39 @@ mod tests {
             "null",
             "\"admin\"",
             "5",
-            r#"["username", "admin"]"#,
+            "[]",
+            "{}",
             r#"{"username": "admin", "#,
             "username=admin",
         ] {
             assert_eq!(json(body), ApiData::default(), "{body:?}");
+            assert!(json(body).is_empty(), "{body:?}");
         }
+    }
+
+    #[test]
+    fn json_list_has_entries_and_no_fields() {
+        let data = json(r#"["username", {"id": 1}]"#);
+
+        assert!(!data.is_empty());
+        assert_eq!(data.text("username"), None);
+        assert_eq!(data.field("0"), None);
+        let entries: Vec<String> = data.entries().map(ToString::to_string).collect();
+        assert_eq!(entries, ["\"username\"", r#"{"id":1}"#]);
+    }
+
+    #[test]
+    fn json_object_gives_its_values_as_entries() {
+        let data = json(r#"{"b": 2, "a": 1, "nothing": null}"#);
+
+        assert!(!data.is_empty());
+        let mut entries: Vec<String> = data.entries().map(ToString::to_string).collect();
+        entries.sort();
+        assert_eq!(entries, ["1", "2", "null"]);
+        // A field that is `null` is named, but it has no value.
+        assert_eq!(data.field("nothing"), Some(&serde_json::Value::Null));
+        assert!(!data.is_set("nothing"));
+        assert_eq!(data.field("missing"), None);
     }
 
     #[test]

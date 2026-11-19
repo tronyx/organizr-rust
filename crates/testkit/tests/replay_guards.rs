@@ -280,3 +280,107 @@ async fn pending_part_of_a_case_that_does_not_exist_is_refused() {
 
     replay.run(&Router::new()).await;
 }
+
+#[tokio::test]
+async fn value_for_every_null_under_a_key_is_expected() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The message of the `ping` answer is `null` in the recording. The application
+        // sends `null` too, so the second edit puts the expected value back.
+        let replay = basics_on(database.engine())
+            .deviation_for_nulls("D-21", "ping", &["message"], json!("a message"))
+            .environment(
+                "put back for the test",
+                "ping",
+                "/response/message",
+                json!(null),
+            );
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "case `ping`: Body differs")]
+async fn answer_that_keeps_the_null_fails_the_replay() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = basics().deviation_for_nulls("D-21", "ping", &["message"], json!(0));
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "case `ping`: the recorded body has no `null` under [\"data\"]")]
+async fn value_for_a_null_that_the_recording_does_not_have_is_refused() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = basics().deviation_for_nulls("D-21", "ping", &["data"], json!(0));
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "D-99 is not an entry of docs/deviations.md")]
+async fn value_for_nulls_needs_an_approved_deviation() {
+    let _ = basics().deviation_for_nulls("D-99", "ping", &["message"], json!(0));
+}
+
+#[tokio::test]
+#[should_panic(expected = "the group `basics` has no case `no_such_case`")]
+async fn value_for_nulls_of_a_case_that_does_not_exist_is_refused() {
+    let replay = basics().deviation_for_nulls("D-21", "no_such_case", &["message"], json!(0));
+
+    replay.run(&Router::new()).await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "case `rox`: Body differs")]
+async fn key_that_the_answer_must_not_have_fails_the_replay_when_it_is_there() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The application sends the message, so the answer has one key too many.
+        let replay = basics().deviation_without("D-21", "rox", "/response/message");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn key_that_the_answer_does_not_have_is_expected_to_be_absent() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The first edit gives the recording a key that the application does not send.
+        // The second one says that the key is not expected.
+        let replay = basics_on(database.engine())
+            .deviation_adds("D-21", "rox", "/response", "extra", json!(1))
+            .deviation_without("D-21", "rox", "/response/extra");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "case `rox`: the recorded body has nothing at `/response/no_such_key`")]
+async fn absent_key_that_the_recording_does_not_have_is_refused() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let replay = basics().deviation_without("D-21", "rox", "/response/no_such_key");
+
+        replay.run(&app(database)).await;
+    })
+    .await;
+}
+
+#[tokio::test]
+#[should_panic(expected = "D-99 is not an entry of docs/deviations.md")]
+async fn absent_key_needs_an_approved_deviation() {
+    let _ = basics().deviation_without("D-99", "rox", "/response/message");
+}

@@ -2,7 +2,8 @@
 
 use organizr_domain::{Category, CategoryId, CategoryNumber, NewCategory};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue, ConnectionTrait, DatabaseConnection, EntityTrait, QueryOrder,
+    ActiveModelTrait, ActiveValue, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
+    QueryFilter, QueryOrder,
 };
 
 use crate::DbError;
@@ -25,6 +26,30 @@ impl<'a> Categories<'a> {
     /// taken, whatever its letter case.
     pub async fn insert(&self, new: NewCategory) -> Result<Category, DbError> {
         insert_in(self.connection, new).await
+    }
+
+    /// The category with the given number, which the API calls `category_id`.
+    pub async fn find_by_number(
+        &self,
+        number: CategoryNumber,
+    ) -> Result<Option<Category>, DbError> {
+        let row = category::Entity::find()
+            .filter(category::Column::Number.eq(number.get()))
+            .one(self.connection)
+            .await?;
+        Ok(row.map(Category::from))
+    }
+
+    /// The category that new tabs join. When several categories are marked as the
+    /// default, it is the first of them in menu order.
+    pub async fn find_default(&self) -> Result<Option<Category>, DbError> {
+        let row = category::Entity::find()
+            .filter(category::Column::IsDefault.eq(true))
+            .order_by_asc(category::Column::Position)
+            .order_by_asc(category::Column::Id)
+            .one(self.connection)
+            .await?;
+        Ok(row.map(Category::from))
     }
 
     /// All categories in menu order.
