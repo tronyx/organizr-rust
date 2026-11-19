@@ -66,3 +66,16 @@ pub fn state_with(database: &Database, settings: Settings) -> AppState {
         SetupCode::parse(seed::SETUP_CODE).expect("the set-up code of the tests is valid");
     AppState::new(database.clone(), settings, seed::secrets()).with_setup_code(setup_code)
 }
+
+/// As [`installed_app`], with a folder for the pictures that people upload.
+pub fn installed_app_in(database: &Database, picture_folder: &std::path::Path) -> Router {
+    let mut settings = Settings::defaults();
+    settings
+        .set("uuid", &serde_json::Value::from(seed::INSTALL_ID))
+        .expect("the install id is a valid setting");
+    settings
+        .set("organizrAPI", &serde_json::Value::from(seed::API_KEY))
+        .expect("the API key is a valid setting");
+    let state = state_with(database, settings).with_picture_folder(picture_folder.to_owned());
+    router(state).expect("the route table is valid")
+}

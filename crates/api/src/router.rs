@@ -1,6 +1,6 @@
 //! The route table of the API.
 
-use axum::extract::State;
+use axum::extract::{DefaultBodyLimit, State};
 use axum::handler::Handler;
 use axum::http::{HeaderValue, Method, Uri, header};
 use axum::middleware::{from_fn, from_fn_with_state, map_response};
@@ -15,8 +15,8 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    basics, categories, config, fields, groups, launch, login, logout, register, tabs, token,
-    users, wizard,
+    basics, categories, config, fields, groups, images, launch, login, logout, register, tabs,
+    token, users, wizard,
 };
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
@@ -100,6 +100,15 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/config", &get(config::all).put(config::change))?
         .route("/config/{item}", &get(config::item))?
         .route("/config/{item}/{term}", &get(config::item_with_term))?
+        // An upload can be larger than the bodies that the other routes take.
+        .route(
+            "/image",
+            &get(images::list).post(
+                images::upload.layer(DefaultBodyLimit::max(images::LARGEST_UPLOAD + UPLOAD_OVERHEAD)),
+            ),
+        )?
+        .route("/image/select", &get(images::select))?
+        .route("/image/{image}", &delete(images::remove))?
         .route("/users", &get(users::list).post(users::add))?
         .route(
             "/users/{id}",
@@ -115,7 +124,12 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
                 .delete(groups::remove.layer(map_response(fields::as_plain_json))),
         )?;
 
-    Ok(finish(routes.router, state))
+    // The uploaded pictures have the address of the PHP application, which is not under
+    // the address of the API.
+    let routes = routes
+        .router
+        .route("/data/userTabs/{name}", get(images::uploaded_picture));
+    Ok(finish(routes, state))
 }
 
 /// `DELETE /token/{id}` for a path that Axum gives to a route without a parameter.
@@ -181,6 +195,9 @@ impl Routes {
         Ok(self)
     }
 }
+
+/// What an upload request holds next to the picture itself: the lines around the parts.
+const UPLOAD_OVERHEAD: usize = 64 * 1024;
 
 /// The answer to a request that no route takes.
 async fn not_found(method: Method, uri: Uri) -> ApiError {

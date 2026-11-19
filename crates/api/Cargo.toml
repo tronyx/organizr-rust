@@ -18,7 +18,7 @@ organizr-domain.workspace = true
 organizr-settings.workspace = true
 
 arc-swap.workspace = true
-axum.workspace = true
+axum = { workspace = true, features = ["multipart"] }
 form_urlencoded.workspace = true
 hex.workspace = true
 ipnet.workspace = true
@@ -27,8 +27,8 @@ md-5.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-# The lock that puts changes of the settings in a row.
-tokio = { workspace = true, features = ["sync"] }
+# The lock that puts changes of the settings in a row, and the files of uploaded pictures.
+tokio = { workspace = true, features = ["fs", "sync"] }
 tower-http.workspace = true
 tracing.workspace = true
 uuid.workspace = true

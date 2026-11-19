@@ -1,0 +1,1034 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>",
+      "password": "<password hash>",
+      "register_date": "<time>"
+    }
+  },
+  "cases": [
+    {
+      "name": "images_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "images",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            \"plugins/images/tabs/AdGuardHome.png\",\n            \"plugins/images/tabs/ajenti.png\",\n            \"plugins/images/tabs/amule.png\",\n            \"plugins/images/tabs/arduino.png\",\n            \"plugins/images/tabs/asusrouter.png\",\n            \"plugins/images/tabs/autobrr.png\",\n            \"plugins/images/tabs/backrest.png\",\n            \"plugins/images/tabs/bazarr.png\",\n            \"plugins/images/tabs/bazarr4k.png\",\n            \"plugins/images/tabs/bitwarden.png\",\n            \"plugins/images/tabs/booksonic.png\",\n            \"plugins/images/tabs/bookstack.png\",\n            \"plugins/images/tabs/calendar.png\",\n            \"plugins/images/tabs/calibre-web.png\",\n            \"plugins/images/tabs/cardigann-white.png\",\n            \"plugins/images/tabs/cardigann.png\",\n            \"plugins/images/tabs/chronograf.png\",\n            \"plugins/images/tabs/cockpit.png\",\n            \"plugins/images/tabs/codiad.png\",\n            \"plugins/images/tabs/cops.png\",\n            \"plugins/images/tabs/copyparty.png\",\n            \"plugins/images/tabs/couchpotato.png\",\n            \"plugins/images/tabs/custom1.png\",\n            \"plugins/images/tabs/custom2.png\",\n            \"plugins/images/tabs/deluge.png\",\n            \"plugins/images/tabs/Docsify.png\",\n            \"plugins/images/tabs/donate.png\",\n            \"plugins/images/tabs/downloader.png\",\n            \"plugins/images/tabs/dozzle.png\",\n            \"plugins/images/tabs/duplicacy.png\",\n            \"plugins/images/tabs/Duplicati.png\",\n            \"plugins/images/tabs/emby.png\",\n            \"plugins/images/tabs/filebrowser.png\",\n            \"plugins/images/tabs/flaresolverr.png\",\n            \"plugins/images/tabs/flood.png\",\n            \"plugins/images/tabs/forgejo.png\",\n            \"plugins/images/tabs/freenas-logo.png\",\n            \"plugins/images/tabs/freenas.png\",\n            \"plugins/images/tabs/fritzbox.png\",\n            \"plugins/images/tabs/gitea.png\",\n            \"plugins/images/tabs/gitlab.png\",\n            \"plugins/images/tabs/gitter.png\",\n            \"plugins/images/tabs/grafana.png\",\n            \"plugins/images/tabs/guacamole.png\",\n            \"plugins/images/tabs/haproxy.png\",\n            \"plugins/images/tabs/headphones.png\",\n            \"plugins/images/tabs/healthchecks.png\",\n            \"plugins/images/tabs/hfs.png\",\n            \"plugins/images/tabs/homeassistant.png\",\n            \"plugins/images/tabs/homebridge.png\",\n            \"plugins/images/tabs/HTML5.png\",\n            \"plugins/images/tabs/hydra.png\",\n            \"plugins/images/tabs/hydra2.png\",\n            \"plugins/images/tabs/immich.png\",\n            \"plugins/images/tabs/influxdb.png\",\n            \"plugins/images/tabs/jackett.png\",\n            \"plugins/images/tabs/jdownloader.png\",\n            \"plugins/images/tabs/jellyfin.png\",\n            \"plugins/images/tabs/jupyter.png\",\n            \"plugins/images/tabs/Kavita.png\",\n            \"plugins/images/tabs/kodi.png\",\n            \"plugins/images/tabs/komga.png\",\n            \"plugins/images/tabs/kuma.png\",\n            \"plugins/images/tabs/lazylibrarian.png\",\n            \"plugins/images/tabs/lidarr.png\",\n            \"plugins/images/tabs/logarr.png\",\n            \"plugins/images/tabs/madsonic.png\",\n            \"plugins/images/tabs/mantis.png\",\n            \"plugins/images/tabs/mcmap.png\",\n            \"plugins/images/tabs/medusa.png\",\n            \"plugins/images/tabs/meraki.png\",\n            \"plugins/images/tabs/monitorr.png\",\n            \"plugins/images/tabs/motherboard.png\",\n            \"plugins/images/tabs/mumble.png\",\n            \"plugins/images/tabs/mylar.png\",\n            \"plugins/images/tabs/navidrome.png\",\n            \"plugins/images/tabs/netdata.png\",\n            \"plugins/images/tabs/netgear.png\",\n            \"plugins/images/tabs/nextcloud.png\",\n            \"plugins/images/tabs/nginxproxymanager.png\",\n            \"plugins/images/tabs/nodered.png\",\n            \"plugins/images/tabs/nzbget.png\",\n            \"plugins/images/tabs/nzbhydra.png\",\n            \"plugins/images/tabs/octoprint.png\",\n            \"plugins/images/tabs/OliveTin.png\",\n            \"plugins/images/tabs/ombi-emby.png\",\n            \"plugins/images/tabs/ombi-plex.png\",\n            \"plugins/images/tabs/ombi.png\",\n            \"plugins/images/tabs/openhab.png\",\n            \"plugins/images/tabs/openvpn.png\",\n            \"plugins/images/tabs/openwrt.png\",\n            \"plugins/images/tabs/opnsense.png\",\n            \"plugins/images/tabs/overseerr.png\",\n            \"plugins/images/tabs/owncloud.png\",\n            \"plugins/images/tabs/petio.png\",\n            \"plugins/images/tabs/pf-blue.png\",\n            \"plugins/images/tabs/pfsense.png\",\n            \"plugins/images/tabs/photoprism.png\",\n            \"plugins/images/tabs/phpsysinfo.png\",\n            \"plugins/images/tabs/pigallery.png\",\n            \"plugins/images/tabs/pihole.png\",\n            \"plugins/images/tabs/pimpmylog.png\",\n            \"plugins/images/tabs/plex.png\",\n            \"plugins/images/tabs/portainer.png\",\n            \"plugins/images/tabs/prometheus.png\",\n            \"plugins/images/tabs/prompage.png\",\n            \"plugins/images/tabs/prowlarr.png\",\n            \"plugins/images/tabs/proxmox.png\",\n            \"plugins/images/tabs/pvr.png\",\n            \"plugins/images/tabs/pydio.png\",\n            \"plugins/images/tabs/pyload.png\",\n            \"plugins/images/tabs/qBittorrent.png\",\n            \"plugins/images/tabs/qnap.png\",\n            \"plugins/images/tabs/radarr.png\",\n            \"plugins/images/tabs/radarr4k.png\",\n            \"plugins/images/tabs/radarr4kNew.png\",\n            \"plugins/images/tabs/radarrNew.png\",\n            \"plugins/images/tabs/readarr.png\",\n            \"plugins/images/tabs/requestrr.png\",\n            \"plugins/images/tabs/resilio.png\",\n            \"plugins/images/tabs/romm.png\",\n            \"plugins/images/tabs/rsscrawler.png\",\n            \"plugins/images/tabs/rTorrent.png\",\n            \"plugins/images/tabs/rustdesk.png\",\n            \"plugins/images/tabs/rutorrent.png\",\n            \"plugins/images/tabs/sabnzbd.png\",\n            \"plugins/images/tabs/sickbeard.png\",\n            \"plugins/images/tabs/sickrage.png\",\n            \"plugins/images/tabs/sonarr.png\",\n            \"plugins/images/tabs/sonarr4k.png\",\n            \"plugins/images/tabs/speed.png\",\n            \"plugins/images/tabs/speedtest-icon.png\",\n            \"plugins/images/tabs/stash.png\",\n            \"plugins/images/tabs/statuscake.png\",\n            \"plugins/images/tabs/subsonic.png\",\n            \"plugins/images/tabs/sugarcrm.png\",\n            \"plugins/images/tabs/synclounge-dark.png\",\n            \"plugins/images/tabs/synclounge-light.png\",\n            \"plugins/images/tabs/syncthing.png\",\n            \"plugins/images/tabs/synology.png\",\n            \"plugins/images/tabs/tachidesk_sorayomi.png\",\n            \"plugins/images/tabs/tautulli.png\",\n            \"plugins/images/tabs/teamspeak.png\",\n            \"plugins/images/tabs/TheLounge.png\",\n            \"plugins/images/tabs/trakt.png\",\n            \"plugins/images/tabs/transmission.png\",\n            \"plugins/images/tabs/trilium.png\",\n            \"plugins/images/tabs/ubnt.png\",\n            \"plugins/images/tabs/ubooquity.png\",\n            \"plugins/images/tabs/unifi-protect.png\",\n            \"plugins/images/tabs/unifi.png\",\n            \"plugins/images/tabs/unraid.png\",\n            \"plugins/images/tabs/utorrent.png\",\n            \"plugins/images/tabs/vera.png\",\n            \"plugins/images/tabs/videochat.png\",\n            \"plugins/images/tabs/vmware.png\",\n            \"plugins/images/tabs/vscode.png\",\n            \"plugins/images/tabs/watcher.png\",\n            \"plugins/images/tabs/webmin.png\",\n            \"plugins/images/tabs/webtools.png\",\n            \"plugins/images/tabs/whisparr.png\",\n            \"plugins/images/tabs/wind.png\",\n            \"plugins/images/tabs/xbackbone.png\",\n            \"plugins/images/tabs/xenorchestra.png\",\n            \"plugins/images/tabs/yacd.png\",\n            \"plugins/images/tabs/zipline.png\",\n            \"plugins/images/tabs/znc.png\",\n            \"plugins/images/tabs/zwavejs.png\"\n        ]\n    }\n}"
+      }
+    },
+    {
+      "name": "select_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image/select"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "select",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image/select",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"results\": [\n                {\n                    \"id\": \"plugins/images/tabs/AdGuardHome.png\",\n                    \"text\": \"AdGuardHome.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/ajenti.png\",\n                    \"text\": \"ajenti.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/amule.png\",\n                    \"text\": \"amule.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/arduino.png\",\n                    \"text\": \"arduino.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/asusrouter.png\",\n                    \"text\": \"asusrouter.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/autobrr.png\",\n                    \"text\": \"autobrr.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/backrest.png\",\n                    \"text\": \"backrest.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/bazarr.png\",\n                    \"text\": \"bazarr.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/bazarr4k.png\",\n                    \"text\": \"bazarr4k.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/bitwarden.png\",\n                    \"text\": \"bitwarden.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/booksonic.png\",\n                    \"text\": \"booksonic.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/bookstack.png\",\n                    \"text\": \"bookstack.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/calendar.png\",\n                    \"text\": \"calendar.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/calibre-web.png\",\n                    \"text\": \"calibre-web.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/cardigann-white.png\",\n                    \"text\": \"cardigann-white.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/cardigann.png\",\n                    \"text\": \"cardigann.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/chronograf.png\",\n                    \"text\": \"chronograf.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/cockpit.png\",\n                    \"text\": \"cockpit.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/codiad.png\",\n                    \"text\": \"codiad.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/cops.png\",\n                    \"text\": \"cops.png\"\n                }\n            ],\n            \"limit\": 20,\n            \"page\": 1,\n            \"term\": null,\n            \"total\": 168,\n            \"pagination\": {\n                \"more\": true\n            }\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "select_with_a_search",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image/select?search=PLEX",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"results\": [\n                {\n                    \"id\": \"plugins/images/tabs/ombi-plex.png\",\n                    \"text\": \"ombi-plex.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/plex.png\",\n                    \"text\": \"plex.png\"\n                }\n            ],\n            \"limit\": 20,\n            \"page\": 1,\n            \"term\": \"PLEX\",\n            \"total\": 2,\n            \"pagination\": {\n                \"more\": false\n            }\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "select_second_page",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image/select?page=2&limit=5",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"results\": [\n                {\n                    \"id\": \"plugins/images/tabs/autobrr.png\",\n                    \"text\": \"autobrr.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/backrest.png\",\n                    \"text\": \"backrest.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/bazarr.png\",\n                    \"text\": \"bazarr.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/bazarr4k.png\",\n                    \"text\": \"bazarr4k.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/bitwarden.png\",\n                    \"text\": \"bitwarden.png\"\n                }\n            ],\n            \"limit\": \"5\",\n            \"page\": \"2\",\n            \"term\": null,\n            \"total\": 168,\n            \"pagination\": {\n                \"more\": true\n            }\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "select_last_page",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image/select?search=sonarr&page=1&limit=50",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"results\": [\n                {\n                    \"id\": \"plugins/images/tabs/sonarr.png\",\n                    \"text\": \"sonarr.png\"\n                },\n                {\n                    \"id\": \"plugins/images/tabs/sonarr4k.png\",\n                    \"text\": \"sonarr4k.png\"\n                }\n            ],\n            \"limit\": \"50\",\n            \"page\": \"1\",\n            \"term\": \"sonarr\",\n            \"total\": 2,\n            \"pagination\": {\n                \"more\": false\n            }\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "select_page_after_the_last",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image/select?page=99",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"results\": [],\n            \"limit\": 20,\n            \"page\": \"99\",\n            \"term\": null,\n            \"total\": 168,\n            \"pagination\": {\n                \"more\": false\n            }\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "select_without_a_match",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image/select?search=zzzz",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"results\": [],\n            \"limit\": 20,\n            \"page\": 1,\n            \"term\": \"zzzz\",\n            \"total\": 0,\n            \"pagination\": {\n                \"more\": false\n            }\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "upload_as_guest",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/image",
+        "body": "--parity-boundary-0123456789\r\nContent-Disposition: form-data; name=\"file\"; filename=\"parity-logo.gif\"\r\nContent-Type: image/gif\r\n\r\nGIF89a\u0001\u0000\u0001\u0000\u0000\u0000\u0000;\r\n--parity-boundary-0123456789--\r\n",
+        "headers": {
+          "Content-Type": "multipart/form-data; boundary=parity-boundary-0123456789"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "upload_without_a_file",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/image",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 500,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"No File was uploaded\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "upload_in_another_field",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/image",
+        "body": "--parity-boundary-0123456789\r\nContent-Disposition: form-data; name=\"picture\"; filename=\"parity-logo.gif\"\r\nContent-Type: image/gif\r\n\r\nGIF89a\u0001\u0000\u0001\u0000\u0000\u0000\u0000;\r\n--parity-boundary-0123456789--\r\n",
+        "headers": {
+          "Content-Type": "multipart/form-data; boundary=parity-boundary-0123456789",
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 500,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"File upload error\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "upload_a_text_file",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/image",
+        "body": "--parity-boundary-0123456789\r\nContent-Disposition: form-data; name=\"file\"; filename=\"note.txt\"\r\nContent-Type: text/plain\r\n\r\njust text\r\n--parity-boundary-0123456789--\r\n",
+        "headers": {
+          "Content-Type": "multipart/form-data; boundary=parity-boundary-0123456789",
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"File Type not image\",\n        \"data\": \"text/plain\"\n    }\n}"
+      }
+    },
+    {
+      "name": "upload_with_an_ending_that_is_not_allowed",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/image",
+        "body": "--parity-boundary-0123456789\r\nContent-Disposition: form-data; name=\"file\"; filename=\"parity-logo.bmp\"\r\nContent-Type: image/gif\r\n\r\nGIF89a\u0001\u0000\u0001\u0000\u0000\u0000\u0000;\r\n--parity-boundary-0123456789--\r\n",
+        "headers": {
+          "Content-Type": "multipart/form-data; boundary=parity-boundary-0123456789",
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"File Extension not approved\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "upload",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/image",
+        "body": "--parity-boundary-0123456789\r\nContent-Disposition: form-data; name=\"file\"; filename=\"parity-logo.gif\"\r\nContent-Type: image/gif\r\n\r\nGIF89a\u0001\u0000\u0001\u0000\u0000\u0000\u0000;\r\n--parity-boundary-0123456789--\r\n",
+        "headers": {
+          "Content-Type": "multipart/form-data; boundary=parity-boundary-0123456789",
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"parity-logo.gif has been uploaded\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "images_after_uploading",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            \"plugins/images/tabs/AdGuardHome.png\",\n            \"plugins/images/tabs/ajenti.png\",\n            \"plugins/images/tabs/amule.png\",\n            \"plugins/images/tabs/arduino.png\",\n            \"plugins/images/tabs/asusrouter.png\",\n            \"plugins/images/tabs/autobrr.png\",\n            \"plugins/images/tabs/backrest.png\",\n            \"plugins/images/tabs/bazarr.png\",\n            \"plugins/images/tabs/bazarr4k.png\",\n            \"plugins/images/tabs/bitwarden.png\",\n            \"plugins/images/tabs/booksonic.png\",\n            \"plugins/images/tabs/bookstack.png\",\n            \"plugins/images/tabs/calendar.png\",\n            \"plugins/images/tabs/calibre-web.png\",\n            \"plugins/images/tabs/cardigann-white.png\",\n            \"plugins/images/tabs/cardigann.png\",\n            \"plugins/images/tabs/chronograf.png\",\n            \"plugins/images/tabs/cockpit.png\",\n            \"plugins/images/tabs/codiad.png\",\n            \"plugins/images/tabs/cops.png\",\n            \"plugins/images/tabs/copyparty.png\",\n            \"plugins/images/tabs/couchpotato.png\",\n            \"plugins/images/tabs/custom1.png\",\n            \"plugins/images/tabs/custom2.png\",\n            \"plugins/images/tabs/deluge.png\",\n            \"plugins/images/tabs/Docsify.png\",\n            \"plugins/images/tabs/donate.png\",\n            \"plugins/images/tabs/downloader.png\",\n            \"plugins/images/tabs/dozzle.png\",\n            \"plugins/images/tabs/duplicacy.png\",\n            \"plugins/images/tabs/Duplicati.png\",\n            \"plugins/images/tabs/emby.png\",\n            \"plugins/images/tabs/filebrowser.png\",\n            \"plugins/images/tabs/flaresolverr.png\",\n            \"plugins/images/tabs/flood.png\",\n            \"plugins/images/tabs/forgejo.png\",\n            \"plugins/images/tabs/freenas-logo.png\",\n            \"plugins/images/tabs/freenas.png\",\n            \"plugins/images/tabs/fritzbox.png\",\n            \"plugins/images/tabs/gitea.png\",\n            \"plugins/images/tabs/gitlab.png\",\n            \"plugins/images/tabs/gitter.png\",\n            \"plugins/images/tabs/grafana.png\",\n            \"plugins/images/tabs/guacamole.png\",\n            \"plugins/images/tabs/haproxy.png\",\n            \"plugins/images/tabs/headphones.png\",\n            \"plugins/images/tabs/healthchecks.png\",\n            \"plugins/images/tabs/hfs.png\",\n            \"plugins/images/tabs/homeassistant.png\",\n            \"plugins/images/tabs/homebridge.png\",\n            \"plugins/images/tabs/HTML5.png\",\n            \"plugins/images/tabs/hydra.png\",\n            \"plugins/images/tabs/hydra2.png\",\n            \"plugins/images/tabs/immich.png\",\n            \"plugins/images/tabs/influxdb.png\",\n            \"plugins/images/tabs/jackett.png\",\n            \"plugins/images/tabs/jdownloader.png\",\n            \"plugins/images/tabs/jellyfin.png\",\n            \"plugins/images/tabs/jupyter.png\",\n            \"plugins/images/tabs/Kavita.png\",\n            \"plugins/images/tabs/kodi.png\",\n            \"plugins/images/tabs/komga.png\",\n            \"plugins/images/tabs/kuma.png\",\n            \"plugins/images/tabs/lazylibrarian.png\",\n            \"plugins/images/tabs/lidarr.png\",\n            \"plugins/images/tabs/logarr.png\",\n            \"plugins/images/tabs/madsonic.png\",\n            \"plugins/images/tabs/mantis.png\",\n            \"plugins/images/tabs/mcmap.png\",\n            \"plugins/images/tabs/medusa.png\",\n            \"plugins/images/tabs/meraki.png\",\n            \"plugins/images/tabs/monitorr.png\",\n            \"plugins/images/tabs/motherboard.png\",\n            \"plugins/images/tabs/mumble.png\",\n            \"plugins/images/tabs/mylar.png\",\n            \"plugins/images/tabs/navidrome.png\",\n            \"plugins/images/tabs/netdata.png\",\n            \"plugins/images/tabs/netgear.png\",\n            \"plugins/images/tabs/nextcloud.png\",\n            \"plugins/images/tabs/nginxproxymanager.png\",\n            \"plugins/images/tabs/nodered.png\",\n            \"plugins/images/tabs/nzbget.png\",\n            \"plugins/images/tabs/nzbhydra.png\",\n            \"plugins/images/tabs/octoprint.png\",\n            \"plugins/images/tabs/OliveTin.png\",\n            \"plugins/images/tabs/ombi-emby.png\",\n            \"plugins/images/tabs/ombi-plex.png\",\n            \"plugins/images/tabs/ombi.png\",\n            \"plugins/images/tabs/openhab.png\",\n            \"plugins/images/tabs/openvpn.png\",\n            \"plugins/images/tabs/openwrt.png\",\n            \"plugins/images/tabs/opnsense.png\",\n            \"plugins/images/tabs/overseerr.png\",\n            \"plugins/images/tabs/owncloud.png\",\n            \"data/userTabs/parity-logo.gif\",\n            \"plugins/images/tabs/petio.png\",\n            \"plugins/images/tabs/pf-blue.png\",\n            \"plugins/images/tabs/pfsense.png\",\n            \"plugins/images/tabs/photoprism.png\",\n            \"plugins/images/tabs/phpsysinfo.png\",\n            \"plugins/images/tabs/pigallery.png\",\n            \"plugins/images/tabs/pihole.png\",\n            \"plugins/images/tabs/pimpmylog.png\",\n            \"plugins/images/tabs/plex.png\",\n            \"plugins/images/tabs/portainer.png\",\n            \"plugins/images/tabs/prometheus.png\",\n            \"plugins/images/tabs/prompage.png\",\n            \"plugins/images/tabs/prowlarr.png\",\n            \"plugins/images/tabs/proxmox.png\",\n            \"plugins/images/tabs/pvr.png\",\n            \"plugins/images/tabs/pydio.png\",\n            \"plugins/images/tabs/pyload.png\",\n            \"plugins/images/tabs/qBittorrent.png\",\n            \"plugins/images/tabs/qnap.png\",\n            \"plugins/images/tabs/radarr.png\",\n            \"plugins/images/tabs/radarr4k.png\",\n            \"plugins/images/tabs/radarr4kNew.png\",\n            \"plugins/images/tabs/radarrNew.png\",\n            \"plugins/images/tabs/readarr.png\",\n            \"plugins/images/tabs/requestrr.png\",\n            \"plugins/images/tabs/resilio.png\",\n            \"plugins/images/tabs/romm.png\",\n            \"plugins/images/tabs/rsscrawler.png\",\n            \"plugins/images/tabs/rTorrent.png\",\n            \"plugins/images/tabs/rustdesk.png\",\n            \"plugins/images/tabs/rutorrent.png\",\n            \"plugins/images/tabs/sabnzbd.png\",\n            \"plugins/images/tabs/sickbeard.png\",\n            \"plugins/images/tabs/sickrage.png\",\n            \"plugins/images/tabs/sonarr.png\",\n            \"plugins/images/tabs/sonarr4k.png\",\n            \"plugins/images/tabs/speed.png\",\n            \"plugins/images/tabs/speedtest-icon.png\",\n            \"plugins/images/tabs/stash.png\",\n            \"plugins/images/tabs/statuscake.png\",\n            \"plugins/images/tabs/subsonic.png\",\n            \"plugins/images/tabs/sugarcrm.png\",\n            \"plugins/images/tabs/synclounge-dark.png\",\n            \"plugins/images/tabs/synclounge-light.png\",\n            \"plugins/images/tabs/syncthing.png\",\n            \"plugins/images/tabs/synology.png\",\n            \"plugins/images/tabs/tachidesk_sorayomi.png\",\n            \"plugins/images/tabs/tautulli.png\",\n            \"plugins/images/tabs/teamspeak.png\",\n            \"plugins/images/tabs/TheLounge.png\",\n            \"plugins/images/tabs/trakt.png\",\n            \"plugins/images/tabs/transmission.png\",\n            \"plugins/images/tabs/trilium.png\",\n            \"plugins/images/tabs/ubnt.png\",\n            \"plugins/images/tabs/ubooquity.png\",\n            \"plugins/images/tabs/unifi-protect.png\",\n            \"plugins/images/tabs/unifi.png\",\n            \"plugins/images/tabs/unraid.png\",\n            \"plugins/images/tabs/utorrent.png\",\n            \"plugins/images/tabs/vera.png\",\n            \"plugins/images/tabs/videochat.png\",\n            \"plugins/images/tabs/vmware.png\",\n            \"plugins/images/tabs/vscode.png\",\n            \"plugins/images/tabs/watcher.png\",\n            \"plugins/images/tabs/webmin.png\",\n            \"plugins/images/tabs/webtools.png\",\n            \"plugins/images/tabs/whisparr.png\",\n            \"plugins/images/tabs/wind.png\",\n            \"plugins/images/tabs/xbackbone.png\",\n            \"plugins/images/tabs/xenorchestra.png\",\n            \"plugins/images/tabs/yacd.png\",\n            \"plugins/images/tabs/zipline.png\",\n            \"plugins/images/tabs/znc.png\",\n            \"plugins/images/tabs/zwavejs.png\"\n        ]\n    }\n}"
+      }
+    },
+    {
+      "name": "select_the_uploaded_picture",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image/select?search=parity",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"results\": [\n                {\n                    \"id\": \"data/userTabs/parity-logo.gif\",\n                    \"text\": \"parity-logo.gif\"\n                }\n            ],\n            \"limit\": 20,\n            \"page\": 1,\n            \"term\": \"parity\",\n            \"total\": 1,\n            \"pagination\": {\n                \"more\": false\n            }\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "upload_again",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/image",
+        "body": "--parity-boundary-0123456789\r\nContent-Disposition: form-data; name=\"file\"; filename=\"parity-logo.gif\"\r\nContent-Type: image/gif\r\n\r\nGIF89a\u0001\u0000\u0001\u0000\u0000\u0000\u0000;\r\n--parity-boundary-0123456789--\r\n",
+        "headers": {
+          "Content-Type": "multipart/form-data; boundary=parity-boundary-0123456789",
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"parity-logo.gif has been uploaded\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_as_guest",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/image/parity-logo.gif"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_unknown",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/image/no-such-picture.gif",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"data/userTabs/no-such-picture.gif does not exist\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_with_an_ending_that_is_not_allowed",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/image/note.txt",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"data/userTabs/note.txt is not approved to be deleted\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_a_picture_of_organizr",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/image/plex.png",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"data/userTabs/plex.png does not exist\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/image/parity-logo.gif",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"parity-logo.gif has been deleted\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_again",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/image/parity-logo.gif",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"data/userTabs/parity-logo.gif does not exist\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "images_at_the_end",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/image",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": [\n            \"plugins/images/tabs/AdGuardHome.png\",\n            \"plugins/images/tabs/ajenti.png\",\n            \"plugins/images/tabs/amule.png\",\n            \"plugins/images/tabs/arduino.png\",\n            \"plugins/images/tabs/asusrouter.png\",\n            \"plugins/images/tabs/autobrr.png\",\n            \"plugins/images/tabs/backrest.png\",\n            \"plugins/images/tabs/bazarr.png\",\n            \"plugins/images/tabs/bazarr4k.png\",\n            \"plugins/images/tabs/bitwarden.png\",\n            \"plugins/images/tabs/booksonic.png\",\n            \"plugins/images/tabs/bookstack.png\",\n            \"plugins/images/tabs/calendar.png\",\n            \"plugins/images/tabs/calibre-web.png\",\n            \"plugins/images/tabs/cardigann-white.png\",\n            \"plugins/images/tabs/cardigann.png\",\n            \"plugins/images/tabs/chronograf.png\",\n            \"plugins/images/tabs/cockpit.png\",\n            \"plugins/images/tabs/codiad.png\",\n            \"plugins/images/tabs/cops.png\",\n            \"plugins/images/tabs/copyparty.png\",\n            \"plugins/images/tabs/couchpotato.png\",\n            \"plugins/images/tabs/custom1.png\",\n            \"plugins/images/tabs/custom2.png\",\n            \"plugins/images/tabs/deluge.png\",\n            \"plugins/images/tabs/Docsify.png\",\n            \"plugins/images/tabs/donate.png\",\n            \"plugins/images/tabs/downloader.png\",\n            \"plugins/images/tabs/dozzle.png\",\n            \"plugins/images/tabs/duplicacy.png\",\n            \"plugins/images/tabs/Duplicati.png\",\n            \"plugins/images/tabs/emby.png\",\n            \"plugins/images/tabs/filebrowser.png\",\n            \"plugins/images/tabs/flaresolverr.png\",\n            \"plugins/images/tabs/flood.png\",\n            \"plugins/images/tabs/forgejo.png\",\n            \"plugins/images/tabs/freenas-logo.png\",\n            \"plugins/images/tabs/freenas.png\",\n            \"plugins/images/tabs/fritzbox.png\",\n            \"plugins/images/tabs/gitea.png\",\n            \"plugins/images/tabs/gitlab.png\",\n            \"plugins/images/tabs/gitter.png\",\n            \"plugins/images/tabs/grafana.png\",\n            \"plugins/images/tabs/guacamole.png\",\n            \"plugins/images/tabs/haproxy.png\",\n            \"plugins/images/tabs/headphones.png\",\n            \"plugins/images/tabs/healthchecks.png\",\n            \"plugins/images/tabs/hfs.png\",\n            \"plugins/images/tabs/homeassistant.png\",\n            \"plugins/images/tabs/homebridge.png\",\n            \"plugins/images/tabs/HTML5.png\",\n            \"plugins/images/tabs/hydra.png\",\n            \"plugins/images/tabs/hydra2.png\",\n            \"plugins/images/tabs/immich.png\",\n            \"plugins/images/tabs/influxdb.png\",\n            \"plugins/images/tabs/jackett.png\",\n            \"plugins/images/tabs/jdownloader.png\",\n            \"plugins/images/tabs/jellyfin.png\",\n            \"plugins/images/tabs/jupyter.png\",\n            \"plugins/images/tabs/Kavita.png\",\n            \"plugins/images/tabs/kodi.png\",\n            \"plugins/images/tabs/komga.png\",\n            \"plugins/images/tabs/kuma.png\",\n            \"plugins/images/tabs/lazylibrarian.png\",\n            \"plugins/images/tabs/lidarr.png\",\n            \"plugins/images/tabs/logarr.png\",\n            \"plugins/images/tabs/madsonic.png\",\n            \"plugins/images/tabs/mantis.png\",\n            \"plugins/images/tabs/mcmap.png\",\n            \"plugins/images/tabs/medusa.png\",\n            \"plugins/images/tabs/meraki.png\",\n            \"plugins/images/tabs/monitorr.png\",\n            \"plugins/images/tabs/motherboard.png\",\n            \"plugins/images/tabs/mumble.png\",\n            \"plugins/images/tabs/mylar.png\",\n            \"plugins/images/tabs/navidrome.png\",\n            \"plugins/images/tabs/netdata.png\",\n            \"plugins/images/tabs/netgear.png\",\n            \"plugins/images/tabs/nextcloud.png\",\n            \"plugins/images/tabs/nginxproxymanager.png\",\n            \"plugins/images/tabs/nodered.png\",\n            \"plugins/images/tabs/nzbget.png\",\n            \"plugins/images/tabs/nzbhydra.png\",\n            \"plugins/images/tabs/octoprint.png\",\n            \"plugins/images/tabs/OliveTin.png\",\n            \"plugins/images/tabs/ombi-emby.png\",\n            \"plugins/images/tabs/ombi-plex.png\",\n            \"plugins/images/tabs/ombi.png\",\n            \"plugins/images/tabs/openhab.png\",\n            \"plugins/images/tabs/openvpn.png\",\n            \"plugins/images/tabs/openwrt.png\",\n            \"plugins/images/tabs/opnsense.png\",\n            \"plugins/images/tabs/overseerr.png\",\n            \"plugins/images/tabs/owncloud.png\",\n            \"plugins/images/tabs/petio.png\",\n            \"plugins/images/tabs/pf-blue.png\",\n            \"plugins/images/tabs/pfsense.png\",\n            \"plugins/images/tabs/photoprism.png\",\n            \"plugins/images/tabs/phpsysinfo.png\",\n            \"plugins/images/tabs/pigallery.png\",\n            \"plugins/images/tabs/pihole.png\",\n            \"plugins/images/tabs/pimpmylog.png\",\n            \"plugins/images/tabs/plex.png\",\n            \"plugins/images/tabs/portainer.png\",\n            \"plugins/images/tabs/prometheus.png\",\n            \"plugins/images/tabs/prompage.png\",\n            \"plugins/images/tabs/prowlarr.png\",\n            \"plugins/images/tabs/proxmox.png\",\n            \"plugins/images/tabs/pvr.png\",\n            \"plugins/images/tabs/pydio.png\",\n            \"plugins/images/tabs/pyload.png\",\n            \"plugins/images/tabs/qBittorrent.png\",\n            \"plugins/images/tabs/qnap.png\",\n            \"plugins/images/tabs/radarr.png\",\n            \"plugins/images/tabs/radarr4k.png\",\n            \"plugins/images/tabs/radarr4kNew.png\",\n            \"plugins/images/tabs/radarrNew.png\",\n            \"plugins/images/tabs/readarr.png\",\n            \"plugins/images/tabs/requestrr.png\",\n            \"plugins/images/tabs/resilio.png\",\n            \"plugins/images/tabs/romm.png\",\n            \"plugins/images/tabs/rsscrawler.png\",\n            \"plugins/images/tabs/rTorrent.png\",\n            \"plugins/images/tabs/rustdesk.png\",\n            \"plugins/images/tabs/rutorrent.png\",\n            \"plugins/images/tabs/sabnzbd.png\",\n            \"plugins/images/tabs/sickbeard.png\",\n            \"plugins/images/tabs/sickrage.png\",\n            \"plugins/images/tabs/sonarr.png\",\n            \"plugins/images/tabs/sonarr4k.png\",\n            \"plugins/images/tabs/speed.png\",\n            \"plugins/images/tabs/speedtest-icon.png\",\n            \"plugins/images/tabs/stash.png\",\n            \"plugins/images/tabs/statuscake.png\",\n            \"plugins/images/tabs/subsonic.png\",\n            \"plugins/images/tabs/sugarcrm.png\",\n            \"plugins/images/tabs/synclounge-dark.png\",\n            \"plugins/images/tabs/synclounge-light.png\",\n            \"plugins/images/tabs/syncthing.png\",\n            \"plugins/images/tabs/synology.png\",\n            \"plugins/images/tabs/tachidesk_sorayomi.png\",\n            \"plugins/images/tabs/tautulli.png\",\n            \"plugins/images/tabs/teamspeak.png\",\n            \"plugins/images/tabs/TheLounge.png\",\n            \"plugins/images/tabs/trakt.png\",\n            \"plugins/images/tabs/transmission.png\",\n            \"plugins/images/tabs/trilium.png\",\n            \"plugins/images/tabs/ubnt.png\",\n            \"plugins/images/tabs/ubooquity.png\",\n            \"plugins/images/tabs/unifi-protect.png\",\n            \"plugins/images/tabs/unifi.png\",\n            \"plugins/images/tabs/unraid.png\",\n            \"plugins/images/tabs/utorrent.png\",\n            \"plugins/images/tabs/vera.png\",\n            \"plugins/images/tabs/videochat.png\",\n            \"plugins/images/tabs/vmware.png\",\n            \"plugins/images/tabs/vscode.png\",\n            \"plugins/images/tabs/watcher.png\",\n            \"plugins/images/tabs/webmin.png\",\n            \"plugins/images/tabs/webtools.png\",\n            \"plugins/images/tabs/whisparr.png\",\n            \"plugins/images/tabs/wind.png\",\n            \"plugins/images/tabs/xbackbone.png\",\n            \"plugins/images/tabs/xenorchestra.png\",\n            \"plugins/images/tabs/yacd.png\",\n            \"plugins/images/tabs/zipline.png\",\n            \"plugins/images/tabs/znc.png\",\n            \"plugins/images/tabs/zwavejs.png\"\n        ]\n    }\n}"
+      }
+    }
+  ]
+}

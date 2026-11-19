@@ -69,8 +69,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     if trusted_proxies == TrustedProxies::default() {
         tracing::info!("no reverse proxy is trusted; forwarding headers are ignored");
     }
-    let mut state =
-        AppState::new(database.clone(), settings, secrets).with_trusted_proxies(trusted_proxies);
+    let mut state = AppState::new(database.clone(), settings, secrets)
+        .with_trusted_proxies(trusted_proxies)
+        // The pictures that people upload, at the place of the PHP application.
+        .with_picture_folder(args.data_dir.join("userTabs"));
     let is_set_up = database
         .install()
         .is_done()

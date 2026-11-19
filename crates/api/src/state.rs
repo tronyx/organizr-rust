@@ -1,5 +1,6 @@
 //! What every request handler can reach. It is built once, at start-up.
 
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
@@ -23,6 +24,8 @@ pub struct AppState {
     login_limiter: Arc<LoginLimiter>,
     setup_code: Option<Arc<SetupCode>>,
     secrets: Arc<SecretBox>,
+    /// The folder of the uploaded pictures. Without it, no picture can be uploaded.
+    picture_folder: Option<Arc<PathBuf>>,
     /// Held while settings are changed, so that two changes do not overwrite each other.
     settings_change: Arc<Mutex<()>>,
 }
@@ -54,6 +57,7 @@ impl AppState {
             login_limiter: Arc::new(LoginLimiter::new()),
             setup_code: None,
             secrets: Arc::new(secrets),
+            picture_folder: None,
             settings_change: Arc::new(Mutex::new(())),
         }
     }
@@ -67,6 +71,14 @@ impl AppState {
 
     /// Sets the code that the set-up wizard asks for. Without a code, the wizard takes
     /// no set-up at all.
+    /// The same state, with a folder for the pictures that people upload. The folder is
+    /// made when the first picture is stored.
+    #[must_use]
+    pub fn with_picture_folder(mut self, folder: PathBuf) -> Self {
+        self.picture_folder = Some(Arc::new(folder));
+        self
+    }
+
     #[must_use]
     pub fn with_setup_code(mut self, setup_code: SetupCode) -> Self {
         self.setup_code = Some(Arc::new(setup_code));
@@ -152,6 +164,11 @@ impl AppState {
             }
             other => Ok(other.to_string()),
         }
+    }
+
+    /// The folder of the uploaded pictures, when the application has one.
+    pub fn picture_folder(&self) -> Option<&Path> {
+        self.picture_folder.as_deref().map(PathBuf::as_path)
     }
 
     /// What seals the secrets that the install stores, and opens them again.

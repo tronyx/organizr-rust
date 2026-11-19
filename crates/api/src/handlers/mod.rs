@@ -5,6 +5,7 @@ pub mod categories;
 pub mod config;
 pub mod fields;
 pub mod groups;
+pub mod images;
 pub mod launch;
 pub mod launch_settings;
 pub mod login;

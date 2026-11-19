@@ -72,6 +72,11 @@ pub enum ApiError {
     #[error(transparent)]
     Database(#[from] DbError),
 
+    /// The folder of the uploaded pictures could not be read or written. The caller
+    /// gets no details; the log does.
+    #[error("the folder of the uploaded pictures failed: {0}")]
+    PictureFolder(#[source] std::io::Error),
+
     /// A change of settings could not be stored. The caller gets no details; the log
     /// does.
     #[error(transparent)]
@@ -145,6 +150,9 @@ impl IntoResponse for ApiError {
             Self::Cookie(error) => internal_error(&error, "a cookie could not be written"),
             Self::Database(error) => internal_error(&error, "a request failed in the database"),
             Self::Settings(error) => internal_error(&error, "settings could not be changed"),
+            Self::PictureFolder(_) => {
+                internal_error(&self, "a picture could not be read or written")
+            }
         }
     }
 }

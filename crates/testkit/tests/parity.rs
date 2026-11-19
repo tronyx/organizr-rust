@@ -582,3 +582,17 @@ async fn config_routes_answer_like_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn picture_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let folder = tempfile::tempdir().expect("a temporary folder can be created");
+        let replay = without_php_session(Replay::group("images"));
+
+        replay
+            .run(&organizr_testkit::installed_app_in(database, folder.path()))
+            .await;
+    })
+    .await;
+}

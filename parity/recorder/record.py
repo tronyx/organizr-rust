@@ -1187,6 +1187,67 @@ CONFIG = [
     admin_case("search_at_the_end", "GET", CONFIG_PATH + "/search/title"),
 ]
 
+# The picture routes. The cases upload one picture and delete it again, so that the
+# install is as the cases found it.
+#
+# The uploaded file itself is not asked for: the web server of the reference sends it,
+# not the PHP application.
+IMAGE_PATH = "/api/v2/image"
+BOUNDARY = "parity-boundary-0123456789"
+MULTIPART = {"Content-Type": f"multipart/form-data; boundary={BOUNDARY}"}
+# The smallest picture that PHP takes for a GIF. All its bytes are plain text characters,
+# so a case file can hold it.
+TINY_GIF = "GIF89a\x01\x00\x01\x00\x00\x00\x00;"
+
+
+def upload(name, content_type, content, field="file"):
+    """The body of a request that uploads one file."""
+    return (
+        f"--{BOUNDARY}\r\n"
+        f'Content-Disposition: form-data; name="{field}"; filename="{name}"\r\n'
+        f"Content-Type: {content_type}\r\n\r\n"
+        f"{content}\r\n"
+        f"--{BOUNDARY}--\r\n"
+    )
+
+
+def upload_case(name, body, **options):
+    """A case that uploads a file with the API key."""
+    return admin_case(name, "POST", IMAGE_PATH, body=body, headers=dict(MULTIPART), **options)
+
+
+IMAGES = [
+    # Reading.
+    ("images_as_guest", "GET", IMAGE_PATH),
+    admin_case("images", "GET", IMAGE_PATH),
+    ("select_as_guest", "GET", IMAGE_PATH + "/select"),
+    admin_case("select", "GET", IMAGE_PATH + "/select"),
+    admin_case("select_with_a_search", "GET", IMAGE_PATH + "/select?search=PLEX"),
+    admin_case("select_second_page", "GET", IMAGE_PATH + "/select?page=2&limit=5"),
+    admin_case("select_last_page", "GET", IMAGE_PATH + "/select?search=sonarr&page=1&limit=50"),
+    admin_case("select_page_after_the_last", "GET", IMAGE_PATH + "/select?page=99"),
+    admin_case("select_without_a_match", "GET", IMAGE_PATH + "/select?search=zzzz"),
+    # Uploading: what is refused.
+    ("upload_as_guest", "POST", IMAGE_PATH, {"body": upload("parity-logo.gif", "image/gif", TINY_GIF), "headers": dict(MULTIPART)}),
+    admin_case("upload_without_a_file", "POST", IMAGE_PATH),
+    upload_case("upload_in_another_field", upload("parity-logo.gif", "image/gif", TINY_GIF, field="picture")),
+    upload_case("upload_a_text_file", upload("note.txt", "text/plain", "just text")),
+    upload_case("upload_with_an_ending_that_is_not_allowed", upload("parity-logo.bmp", "image/gif", TINY_GIF)),
+    # Uploading a picture, and what follows from it.
+    upload_case("upload", upload("parity-logo.gif", "image/gif", TINY_GIF)),
+    admin_case("images_after_uploading", "GET", IMAGE_PATH),
+    admin_case("select_the_uploaded_picture", "GET", IMAGE_PATH + "/select?search=parity"),
+    upload_case("upload_again", upload("parity-logo.gif", "image/gif", TINY_GIF)),
+    # Deleting.
+    ("delete_as_guest", "DELETE", IMAGE_PATH + "/parity-logo.gif"),
+    admin_case("delete_unknown", "DELETE", IMAGE_PATH + "/no-such-picture.gif"),
+    admin_case("delete_with_an_ending_that_is_not_allowed", "DELETE", IMAGE_PATH + "/note.txt"),
+    admin_case("delete_a_picture_of_organizr", "DELETE", IMAGE_PATH + "/plex.png"),
+    admin_case("delete", "DELETE", IMAGE_PATH + "/parity-logo.gif"),
+    admin_case("delete_again", "DELETE", IMAGE_PATH + "/parity-logo.gif"),
+    admin_case("images_at_the_end", "GET", IMAGE_PATH),
+]
+
 ROUTING = [
     ("GET", "/api/v2"),
     ("GET", "/api/v2/"),
@@ -1476,6 +1537,7 @@ def main():
     record("categories", named(CATEGORIES), php_version)
     record("groups", named(GROUPS), php_version)
     record("users", named(USERS), php_version)
+    record("images", named(IMAGES), php_version)
     record("tabs", named(TABS), php_version)
     # After the tab group, whose launch cases show the settings.
     record("config", named(CONFIG), php_version)
