@@ -12,6 +12,7 @@ function launch(changes: Record<string, unknown>) {
         user: null,
         version: '0.1.0',
         appearance: { title: 'My Server' },
+        plugins: {},
         settings: {
           misc: { unsortedTabs: 'top' },
           ping: { auth: '1', adminRefresh: '60000', everyoneRefresh: '600000' },

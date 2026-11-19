@@ -1,5 +1,6 @@
 <script lang="ts">
-  // The general settings of the install: one form, saved with one request.
+  // A form for a part of the settings of the install, saved with one request.
+  import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
@@ -8,17 +9,23 @@
   import {
     changedSettings,
     formValues,
-    GENERAL,
     hasSecret,
     SECURE,
+    type FieldGroup,
     type FormValue,
   } from '../../lib/settingsForm';
 
   let {
+    groups,
     ondone,
+    children,
   }: {
+    /** The settings of the form, in the groups of the page. */
+    groups: FieldGroup[];
     /** Called with a sentence about what was saved. */
     ondone: (message: string) => void;
+    /** What stands below the form, for example a button that tries the settings out. */
+    children?: Snippet;
   } = $props();
 
   let config = $state<Record<string, unknown> | null>(null);
@@ -27,14 +34,14 @@
   let error = $state<string | null>(null);
   let busy = $state(false);
 
-  const changed = $derived(config ? changedSettings(GENERAL, config, form) : {});
+  const changed = $derived(config ? changedSettings(groups, config, form) : {});
   const hasChanges = $derived(Object.keys(changed).length > 0);
 
   async function load() {
     try {
       const loaded = (await api<Record<string, unknown>>('GET', 'config')).data;
       config = loaded;
-      form = formValues(GENERAL, loaded);
+      form = formValues(groups, loaded);
       loadError = null;
     } catch (failure) {
       loadError = failureText(failure);
@@ -68,7 +75,7 @@
 
 {#if config}
   <form class="max-w-2xl" onsubmit={save}>
-    {#each GENERAL as group (group.title)}
+    {#each groups as group (group.title)}
       <fieldset class="fieldset mb-6">
         <legend class="fieldset-legend text-base">{group.title}</legend>
         {#each group.fields as field (field.key)}
@@ -118,6 +125,14 @@
                   </button>
                 {/if}
               </div>
+            {:else if field.kind === 'textarea'}
+              <textarea
+                {id}
+                class="textarea w-full font-mono text-sm"
+                rows="7"
+                value={form[field.key] as string}
+                aria-describedby={hint}
+                oninput={(event) => (form[field.key] = event.currentTarget.value)}></textarea>
             {:else}
               <input
                 {id}
@@ -150,6 +165,7 @@
       Save
     </button>
   </form>
+  {@render children?.()}
 {:else if loadError}
   <div role="alert" class="alert alert-error">
     <span>{loadError}</span>

@@ -13,6 +13,7 @@ const LAUNCH = {
       user: { username: 'zoe', group: 'User', groupID: 4, loggedin: true },
       version: '0.1.0',
       appearance: { title: 'Organizr' },
+      plugins: {},
       settings: {
         misc: { unsortedTabs: 'top' },
         ping: { auth: '1', adminRefresh: '60000', everyoneRefresh: '600000' },

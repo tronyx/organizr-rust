@@ -5,12 +5,16 @@
 import type { MenuTab } from './types';
 
 /** The parts of the settings. */
-export type SettingsSection = 'general' | 'tabs' | 'categories' | 'groups' | 'users';
+export type SettingsSection = 'general' | 'tabs' | 'categories' | 'groups' | 'users' | 'mail';
 
 export type Route =
   | { page: 'home' }
   | { page: 'login' }
   | { page: 'register' }
+  /** The page for a person who forgot the password. */
+  | { page: 'recover' }
+  /** The page of the own account. */
+  | { page: 'account' }
   | { page: 'settings'; section: SettingsSection }
   /** A tab, by its name as the address writes it. */
   | { page: 'tab'; name: string };
@@ -20,11 +24,14 @@ export const PAGES = {
   home: '#/',
   login: '#/login',
   register: '#/register',
+  recover: '#/recover',
+  account: '#/account',
   generalSettings: '#/settings/general',
   tabSettings: '#/settings/tabs',
   categorySettings: '#/settings/categories',
   groupSettings: '#/settings/groups',
   userSettings: '#/settings/users',
+  mailSettings: '#/settings/mail',
 } as const;
 
 /** Reads the part of an address from the `#` on. */
@@ -47,6 +54,10 @@ export function parseRoute(hash: string): Route {
       return { page: 'login' };
     case '/register':
       return { page: 'register' };
+    case '/recover':
+      return { page: 'recover' };
+    case '/account':
+      return { page: 'account' };
     case '/settings':
     case '/settings/tabs':
       return { page: 'settings', section: 'tabs' };
@@ -58,6 +69,8 @@ export function parseRoute(hash: string): Route {
       return { page: 'settings', section: 'groups' };
     case '/settings/users':
       return { page: 'settings', section: 'users' };
+    case '/settings/mail':
+      return { page: 'settings', section: 'mail' };
     default:
       return { page: 'home' };
   }

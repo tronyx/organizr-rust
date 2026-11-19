@@ -156,6 +156,14 @@ describe('contentFor', () => {
     expect(contentFor({ page: 'register' }, tabs, GUEST)).toEqual({ kind: 'register' });
   });
 
+  it('shows the page for a new password to a guest, and the account page to a user', () => {
+    expect(contentFor({ page: 'recover' }, tabs, GUEST)).toEqual({ kind: 'recover' });
+    expect(contentFor({ page: 'recover' }, [plex], USER)).toEqual({ kind: 'frame', tab: plex });
+    expect(contentFor({ page: 'account' }, tabs, USER)).toEqual({ kind: 'account' });
+    // A guest has no account, and logs in first.
+    expect(contentFor({ page: 'account' }, tabs, GUEST)).toEqual({ kind: 'login' });
+  });
+
   it('does not show the login page to a user who is logged in', () => {
     expect(contentFor({ page: 'login' }, [plex], USER)).toEqual({ kind: 'frame', tab: plex });
     expect(contentFor({ page: 'register' }, [plex], USER)).toEqual({

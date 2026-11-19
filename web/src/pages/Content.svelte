@@ -4,7 +4,9 @@
   import type { Content } from '../lib/menu';
   import { PAGES } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
+  import Account from './Account.svelte';
   import Login from './Login.svelte';
+  import Recover from './Recover.svelte';
   import Register from './Register.svelte';
   import Settings from './settings/Settings.svelte';
 
@@ -15,6 +17,10 @@
   <Login />
 {:else if content.kind === 'register'}
   <Register />
+{:else if content.kind === 'recover'}
+  <Recover />
+{:else if content.kind === 'account'}
+  <Account />
 {:else if content.kind === 'settings'}
   <Settings section={content.section} />
 {:else if content.kind === 'notAllowed'}

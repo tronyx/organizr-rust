@@ -69,6 +69,8 @@ export function startTab(tabs: MenuTab[]): MenuTab | undefined {
 export type Content =
   | { kind: 'login' }
   | { kind: 'register' }
+  | { kind: 'recover' }
+  | { kind: 'account' }
   | { kind: 'settings'; section: SettingsSection }
   /** The settings, for a caller who may not manage the install. */
   | { kind: 'notAllowed' }
@@ -111,6 +113,10 @@ export function contentFor(route: Route, tabs: MenuTab[], caller: Caller): Conte
       return caller.loggedIn ? contentFor({ page: 'home' }, tabs, caller) : { kind: 'login' };
     case 'register':
       return caller.loggedIn ? contentFor({ page: 'home' }, tabs, caller) : { kind: 'register' };
+    case 'recover':
+      return caller.loggedIn ? contentFor({ page: 'home' }, tabs, caller) : { kind: 'recover' };
+    case 'account':
+      return caller.loggedIn ? { kind: 'account' } : { kind: 'login' };
     case 'settings':
       if (caller.canManage) {
         return { kind: 'settings', section: route.section };

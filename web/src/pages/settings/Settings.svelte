@@ -1,6 +1,6 @@
 <script lang="ts">
-  // The settings: the general settings, and the editors for tabs, categories, groups and
-  // users.
+  // The settings: the general settings, the editors for tabs, categories, groups and
+  // users, and the settings of the e-mails.
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
@@ -10,6 +10,7 @@
   import CategoriesEditor from './CategoriesEditor.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
+  import MailSettings from './MailSettings.svelte';
   import TabsEditor from './TabsEditor.svelte';
   import UsersEditor from './UsersEditor.svelte';
 
@@ -102,12 +103,23 @@
     >
       Users
     </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'mail'}
+      aria-selected={section === 'mail'}
+      href={PAGES.mailSettings}
+    >
+      E-mail
+    </a>
   </div>
 
   <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
 
   {#if section === 'general'}
     <GeneralSettings ondone={(message) => (done = message)} />
+  {:else if section === 'mail'}
+    <MailSettings ondone={(message) => (done = message)} />
   {:else if data}
     {#if section === 'tabs'}
       <TabsEditor {data} {change} />

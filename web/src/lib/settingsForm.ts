@@ -1,5 +1,5 @@
-// The form of the general settings: which settings it shows, and how the values of the
-// form go to the server and come from it.
+// The forms of the settings: which settings each one shows, and how the values of a form
+// go to the server and come from it.
 
 /** What the server sends for a secret that has a value. The value itself stays there. */
 export const SECURE = '***Secure***';
@@ -14,6 +14,8 @@ interface FieldBase {
 
 export type Field =
   | (FieldBase & { kind: 'text' })
+  /** A text of several lines, for example the HTML of an e-mail. */
+  | (FieldBase & { kind: 'textarea' })
   /** A whole number. The server stores it as text, as the PHP application does. */
   | (FieldBase & { kind: 'number'; min: number })
   | (FieldBase & { kind: 'switch' })
@@ -111,6 +113,110 @@ export const GENERAL: FieldGroup[] = [
         kind: 'secret',
         generate: true,
         help: 'A script that sends this key has the access of an Admin. The key has 20 characters.',
+      },
+    ],
+  },
+];
+
+const PLACEHOLDERS =
+  'You can write {user}, {title} and {domain}. Each one stands for a value of the e-mail.';
+
+/** The settings of the e-mails that the install sends. */
+export const MAIL: FieldGroup[] = [
+  {
+    title: 'Sending',
+    fields: [
+      {
+        key: 'PHPMAILER-enabled',
+        label: 'Send e-mails',
+        kind: 'switch',
+        help: 'With this on, a person who forgot the password can ask for a new one by e-mail.',
+      },
+      { key: 'PHPMAILER-smtpHost', label: 'SMTP server', kind: 'text' },
+      {
+        key: 'PHPMAILER-smtpHostPort',
+        label: 'Port',
+        kind: 'text',
+        help: 'Usual ports are 587 for STARTTLS, 465 for TLS and 25 for no encryption.',
+      },
+      {
+        key: 'PHPMAILER-smtpHostType',
+        label: 'Encryption',
+        kind: 'select',
+        options: [
+          { value: 'tls', label: 'STARTTLS' },
+          { value: 'ssl', label: 'TLS from the start' },
+          { value: 'n/a', label: 'Only when the server offers it' },
+        ],
+      },
+      {
+        key: 'PHPMAILER-verifyCert',
+        label: 'The certificate of the server must be valid',
+        kind: 'switch',
+        help: 'Switch this off only for a server with a certificate that it signed itself.',
+      },
+      { key: 'PHPMAILER-smtpHostAuth', label: 'The server asks for a login', kind: 'switch' },
+      { key: 'PHPMAILER-smtpHostUsername', label: 'User name', kind: 'text' },
+      { key: 'PHPMAILER-smtpHostPassword', label: 'Password', kind: 'secret' },
+    ],
+  },
+  {
+    title: 'Sender and look',
+    fields: [
+      { key: 'PHPMAILER-smtpHostSenderName', label: 'Name of the sender', kind: 'text' },
+      { key: 'PHPMAILER-smtpHostSenderEmail', label: 'Address of the sender', kind: 'text' },
+      {
+        key: 'PHPMAILER-domain',
+        label: 'Address of this site in e-mails',
+        kind: 'text',
+        help: 'For example https://organizr.example.com/. Without it, an e-mail names the address of the request that caused it.',
+      },
+      {
+        key: 'PHPMAILER-template',
+        label: 'Layout',
+        kind: 'select',
+        options: [
+          { value: 'default', label: 'Default' },
+          { value: 'dark', label: 'Dark' },
+          { value: 'light', label: 'Light' },
+          { value: 'gray', label: 'Gray' },
+          { value: 'plehex', label: 'Plehex' },
+        ],
+      },
+      {
+        key: 'PHPMAILER-logo',
+        label: 'Picture at the top',
+        kind: 'text',
+        help: 'The address of a picture that mail programs can load.',
+      },
+    ],
+  },
+  {
+    title: 'E-mail with a new password',
+    fields: [
+      { key: 'PHPMAILER-emailTemplateResetSubject', label: 'Subject', kind: 'text' },
+      {
+        key: 'PHPMAILER-emailTemplateReset',
+        label: 'Text, as HTML',
+        kind: 'textarea',
+        help: `${PLACEHOLDERS} {password} stands for the new password.`,
+      },
+    ],
+  },
+  {
+    title: 'E-mail for a new account',
+    fields: [
+      {
+        key: 'PHPMAILER-emailTemplateRegisterUserEnabled',
+        label: 'Welcome each new account with an e-mail',
+        kind: 'switch',
+      },
+      { key: 'PHPMAILER-emailTemplateRegisterUserSubject', label: 'Subject', kind: 'text' },
+      {
+        key: 'PHPMAILER-emailTemplateRegisterUser',
+        label: 'Text, as HTML',
+        kind: 'textarea',
+        help: PLACEHOLDERS,
       },
     ],
   },

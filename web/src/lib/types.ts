@@ -90,6 +90,8 @@ export interface Launch {
   version: string;
   appearance: Appearance;
   /** The settings that a page needs. Only the ones that the interface reads are listed. */
+  /** The switch of each plugin, for example `PHPMAILER-enabled`, and what plugins add. */
+  plugins: Record<string, unknown>;
   settings: {
     misc: {
       /** Whether the tabs without a heading stand above the categories or below them. */

@@ -95,6 +95,7 @@
             {#if session.canManage}
               <li><a href={PAGES.tabSettings} onclick={closeUserMenu}>Settings</a></li>
             {/if}
+            <li><a href={PAGES.account} onclick={closeUserMenu}>Account</a></li>
             <li><button onclick={logOut}>Log out</button></li>
           </ul>
         </details>

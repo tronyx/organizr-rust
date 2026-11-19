@@ -47,6 +47,7 @@ function launch(groupID: number | null, auth: string, admin = '60000', other = '
           },
     version: '0.1.0',
     appearance: { title: 'Organizr' },
+    plugins: {},
     settings: {
       misc: { unsortedTabs: 'top' },
       ping: { auth, adminRefresh: admin, everyoneRefresh: other },

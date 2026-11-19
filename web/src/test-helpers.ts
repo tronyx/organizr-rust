@@ -13,7 +13,7 @@ export interface SentRequest {
 /** What the stand-in for the API answers to one route. */
 export interface CannedAnswer {
   status?: number;
-  result?: 'success' | 'error';
+  result?: 'success' | 'error' | 'warning';
   message?: string | null;
   data?: unknown;
 }

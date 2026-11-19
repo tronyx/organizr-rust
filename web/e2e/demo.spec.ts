@@ -1,6 +1,8 @@
 // One walk through the interface on a new install, from the first page on. The tests
 // run in order and share the install.
 
+import { createHmac } from 'node:crypto';
+
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './fixtures';
@@ -574,4 +576,108 @@ test('the menu shows whether the application behind a tab answers', async ({ pag
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByLabel('Checked whether it answers')).toBeChecked();
   await expect(dialog.getByLabel('Address to check')).toHaveValue('127.0.0.1:1');
+});
+
+/** The code of an authenticator app for a secret: RFC 6238 with SHA-1 and six digits. */
+function authenticatorCode(secret: string): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = '';
+  for (const character of secret.replace(/=+$/, '').toUpperCase()) {
+    bits += alphabet.indexOf(character).toString(2).padStart(5, '0');
+  }
+  const key = Buffer.from((bits.match(/.{8}/g) ?? []).map((byte) => Number.parseInt(byte, 2)));
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 30_000)));
+  const digest = createHmac('sha1', key).update(counter).digest();
+  const offset = (digest.at(-1) ?? 0) & 0x0f;
+  const number = digest.readUInt32BE(offset) & 0x7fffffff;
+  return String(number % 1_000_000).padStart(6, '0');
+}
+
+test('a user sets a second factor up, and the login asks for its code', async ({ page }) => {
+  await logIn(page);
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('banner').getByRole('link', { name: 'Account' }).click();
+  await expect(page.getByRole('heading', { name: 'Second factor' })).toBeVisible();
+  await expect(page.getByText('Your account has no second factor.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Set a second factor up' }).click();
+  // The QR code is a picture inside the page. Nothing is loaded from another site.
+  const picture = page.getByAltText('QR code for the authenticator app');
+  await expect(picture).toHaveAttribute('src', /^data:image\/png;base64,/);
+  await expect
+    .poll(() => picture.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0);
+  const secret = (await page.locator('code').innerText()).trim();
+  expect(secret).toMatch(/^[A-Z2-7]{32}$/);
+
+  await page.getByLabel('Enter the code that the app shows.').fill(authenticatorCode(secret));
+  await page.getByRole('button', { name: 'Switch the second factor on' }).click();
+  await expect(page.getByRole('status')).toHaveText(/The second factor is on\./);
+  await expect(page.getByText('Your account has a second factor.')).toBeVisible();
+
+  // The next login needs the code.
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('button', { name: 'Log out' }).click();
+  // The logout is done when the login page shows.
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await expect(page.getByLabel('Menu of the user')).toHaveCount(0);
+  await page.getByLabel('User name or e-mail address').fill(ADMIN.username);
+  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('button', { name: 'Log in' }).click();
+  const code = page.getByLabel('Code from your authenticator app');
+  await expect(code).toBeVisible();
+  await expect(page.getByLabel('Menu of the user')).toHaveCount(0);
+  await code.fill(authenticatorCode(secret));
+  await page.getByRole('button', { name: 'Log in' }).click();
+  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+
+  // Off again, so that the tests after this one log in with the password alone.
+  await page.goto('./#/account');
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page.getByRole('button', { name: 'Switch the second factor off' }).click();
+  await expect(page.getByRole('status')).toHaveText('The second factor is off.');
+  await expect(page.getByText('Your account has no second factor.')).toBeVisible();
+});
+
+test('a new password by e-mail is offered only when the install sends e-mails', async ({
+  page,
+}) => {
+  // The mail plugin is off: the login page has no link, and the server says why.
+  await page.goto('./#/login');
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Forgot your password?' })).toHaveCount(0);
+  await page.goto('./#/recover');
+  await expect(page.getByRole('heading', { name: 'Get a new password' })).toBeVisible();
+  await page.getByLabel('E-mail address', { exact: true }).fill(ADMIN.email);
+  await page.getByRole('button', { name: 'Send the e-mail' }).click();
+  await expect(page.getByRole('alert')).toHaveText('Email functionality is not enabled');
+
+  // The Admin switches it on. No mail server listens at the address of the test.
+  await logIn(page);
+  await page.goto('./#/settings/mail');
+  await page.getByLabel('Send e-mails').check();
+  await page.getByLabel('SMTP server').fill('127.0.0.1');
+  await page.getByLabel('Port').fill('1');
+  await page.getByLabel('Encryption').selectOption('n/a');
+  await page.getByLabel('The server asks for a login').uncheck();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  await page.getByRole('button', { name: 'Send a test e-mail' }).click();
+  await expect(page.getByRole('alert')).toContainText('The test e-mail was not sent');
+
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('button', { name: 'Log out' }).click();
+  // The logout is done when the login page shows.
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await expect(page.getByLabel('Menu of the user')).toHaveCount(0);
+  await page.getByRole('link', { name: 'Forgot your password?' }).click();
+  await expect(page).toHaveURL(/#\/recover$/);
+  // The login page has a field with a similar label, so the test waits for this page.
+  await expect(page.getByRole('heading', { name: 'Get a new password' })).toBeVisible();
+  await page.getByLabel('E-mail address', { exact: true }).fill('nobody@example.com');
+  await page.getByRole('button', { name: 'Send the e-mail' }).click();
+  await expect(page.getByRole('status')).toContainText('If an account has this address');
+  await page.getByRole('link', { name: 'Back to the login' }).click();
+  await expect(page).toHaveURL(/#\/login$/);
 });

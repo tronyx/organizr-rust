@@ -5,6 +5,7 @@ import {
   formValues,
   GENERAL,
   hasSecret,
+  MAIL,
   SECURE,
   type FieldGroup,
 } from './settingsForm';
@@ -101,10 +102,21 @@ describe('hasSecret', () => {
   });
 });
 
-describe('GENERAL', () => {
-  it('names each setting once', () => {
-    const keys = GENERAL.flatMap((group) => group.fields.map((field) => field.key));
+describe('GENERAL and MAIL', () => {
+  it('name each setting once', () => {
+    for (const groups of [GENERAL, MAIL]) {
+      const keys = groups.flatMap((group) => group.fields.map((field) => field.key));
 
-    expect(new Set(keys).size).toBe(keys.length);
+      expect(new Set(keys).size).toBe(keys.length);
+    }
+  });
+
+  it('keep the password of the mail server a secret, and the texts of e-mails long', () => {
+    const fields = MAIL.flatMap((group) => group.fields);
+    const kind = (key: string) => fields.find((field) => field.key === key)?.kind;
+
+    expect(kind('PHPMAILER-smtpHostPassword')).toBe('secret');
+    expect(kind('PHPMAILER-emailTemplateReset')).toBe('textarea');
+    expect(kind('PHPMAILER-enabled')).toBe('switch');
   });
 });

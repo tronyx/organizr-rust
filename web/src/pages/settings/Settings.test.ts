@@ -76,6 +76,7 @@ const LAUNCH: CannedAnswer = {
     user: null,
     version: '0.1.0',
     appearance: { title: 'Organizr' },
+    plugins: {},
     settings: {
       misc: { unsortedTabs: 'top' },
       ping: { auth: '1', adminRefresh: '60000', everyoneRefresh: '600000' },
@@ -741,5 +742,96 @@ describe('Settings', () => {
     render(Settings, { section: 'tabs' });
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Not Authorized');
+  });
+});
+
+describe('Settings, e-mail', () => {
+  const CONFIG = {
+    'PHPMAILER-enabled': false,
+    'PHPMAILER-smtpHost': '',
+    'PHPMAILER-smtpHostPort': '',
+    'PHPMAILER-smtpHostType': 'tls',
+    'PHPMAILER-verifyCert': true,
+    'PHPMAILER-smtpHostAuth': true,
+    'PHPMAILER-smtpHostUsername': '',
+    'PHPMAILER-smtpHostPassword': '',
+    'PHPMAILER-smtpHostSenderName': 'Organizr',
+    'PHPMAILER-smtpHostSenderEmail': 'no-reply@Organizr.tld',
+    'PHPMAILER-domain': '',
+    'PHPMAILER-template': 'default',
+    'PHPMAILER-logo': 'https://example.com/logo.png',
+    'PHPMAILER-emailTemplateResetSubject': 'Password Reset',
+    'PHPMAILER-emailTemplateReset': '<h2>Hey there {user}!</h2>',
+    'PHPMAILER-emailTemplateRegisterUserEnabled': true,
+    'PHPMAILER-emailTemplateRegisterUserSubject': 'Thank you For Registering',
+    'PHPMAILER-emailTemplateRegisterUser': '<h2>Welcome {user}!</h2>',
+  };
+
+  async function showMail(answers: Answers = {}) {
+    const sent = stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET launch': LAUNCH,
+      'GET config': { data: CONFIG },
+      ...answers,
+    });
+    render(Settings, { section: 'mail' });
+    await screen.findByLabelText('SMTP server');
+    return sent;
+  }
+
+  it('saves the server, its password and the text of an e-mail', async () => {
+    const sent = await showMail({ 'PUT config': {} });
+    expect(screen.getByRole('tab', { name: 'E-mail' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText('Password')).toHaveAttribute('placeholder', 'No value is stored');
+    const texts = screen.getAllByLabelText('Text, as HTML');
+    expect(texts[0]).toHaveValue('<h2>Hey there {user}!</h2>');
+
+    await fireEvent.click(screen.getByLabelText('Send e-mails'));
+    await fireEvent.input(screen.getByLabelText('SMTP server'), {
+      target: { value: 'smtp.example.com' },
+    });
+    await fireEvent.change(screen.getByLabelText('Encryption'), { target: { value: 'ssl' } });
+    await fireEvent.input(screen.getByLabelText('Password'), {
+      target: { value: 'the password of the mailbox' },
+    });
+    await fireEvent.input(texts[0] as HTMLElement, { target: { value: '<p>New: {password}</p>' } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([
+      [
+        'PUT config',
+        {
+          'PHPMAILER-enabled': true,
+          'PHPMAILER-smtpHost': 'smtp.example.com',
+          'PHPMAILER-smtpHostType': 'ssl',
+          'PHPMAILER-smtpHostPassword': 'the password of the mailbox',
+          'PHPMAILER-emailTemplateReset': '<p>New: {password}</p>',
+        },
+      ],
+    ]);
+  });
+
+  it('sends a test e-mail and says where it went, or why it was not sent', async () => {
+    let works = false;
+    const sent = await showMail({
+      'GET plugins/php-mailer/email/test': () =>
+        works
+          ? { message: 'Email sent' }
+          : { status: 500, message: 'the SMTP server did not take the e-mail: refused' },
+    });
+    const button = screen.getByRole('button', { name: 'Send a test e-mail' });
+
+    await fireEvent.click(button);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The test e-mail was not sent: the SMTP server did not take the e-mail: refused',
+    );
+
+    works = true;
+    await fireEvent.click(button);
+    await statusSays('The test e-mail was sent to the address of your account.');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(sent.filter((request) => request.path.endsWith('email/test'))).toHaveLength(2);
   });
 });
