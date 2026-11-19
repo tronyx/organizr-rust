@@ -158,9 +158,9 @@ mod tests {
     #[test]
     fn debug_output_shows_no_secret() {
         let request = SetUp {
-            username: "chris".to_owned(),
+            username: "robin".to_owned(),
             password: "the-password".to_owned(),
-            email: "chris@example.com".to_owned(),
+            email: "robin@example.com".to_owned(),
             api_key: "the-api-key".to_owned(),
             license: "personal".to_owned(),
             registration_password: "the-registration-password".to_owned(),
@@ -168,7 +168,7 @@ mod tests {
 
         let shown = format!("{request:?}");
 
-        assert!(shown.contains("chris"), "{shown}");
+        assert!(shown.contains("robin"), "{shown}");
         for secret in ["the-password", "the-api-key", "the-registration-password"] {
             assert!(!shown.contains(secret), "{shown}");
         }

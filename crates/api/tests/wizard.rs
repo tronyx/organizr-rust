@@ -30,9 +30,9 @@ fn set_up(code: &str) -> Value {
         "license": "personal",
         "api": API_KEY,
         "registrationPassword": "let me in",
-        "username": "Chris",
-        "password": "the password of chris",
-        "email": "chris@example.com",
+        "username": "Robin",
+        "password": "the password of robin",
+        "email": "robin@example.com",
     })
 }
 
@@ -272,12 +272,12 @@ async fn running_application_uses_what_the_set_up_wrote() {
         )
         .await;
         let data = me.data();
-        assert_eq!(data["username"], json!("Chris"));
+        assert_eq!(data["username"], json!("Robin"));
         assert_eq!(data["groupID"], json!(0));
-        assert_eq!(data["email"], json!("chris@example.com"));
+        assert_eq!(data["email"], json!("robin@example.com"));
         assert_eq!(
             data["image"],
-            json!("https://www.gravatar.com/avatar/9655f78d38f380d17931f8dd9a227b9f?s=100&d=mm")
+            json!("https://www.gravatar.com/avatar/d3c17ef52c397921a87c1de66f2311c2?s=100&d=mm")
         );
         assert_eq!(data["tokenList"].as_array().map(Vec::len), Some(1));
 
@@ -290,7 +290,7 @@ async fn running_application_uses_what_the_set_up_wrote() {
         assert_eq!(with_key.data()["username"], json!("Organizr API"));
 
         // The admin can log in with the password, which is stored as a current hash.
-        let login = json!({"username": "chris", "password": "the password of chris"});
+        let login = json!({"username": "robin", "password": "the password of robin"});
         let logged_in = send(
             &app,
             request(

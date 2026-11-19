@@ -41,8 +41,8 @@ async fn logged_in_user(database: &Database, user_agent: Option<&str>) -> Logged
     database
         .users()
         .insert(NewUser {
-            username: "chris".to_owned(),
-            email: Some("chris@example.com".to_owned()),
+            username: "robin".to_owned(),
+            email: Some("robin@example.com".to_owned()),
             password_hash: password::hash(PASSWORD).expect("the password can be hashed"),
             group: group.id,
             image: None,
@@ -54,7 +54,7 @@ async fn logged_in_user(database: &Database, user_agent: Option<&str>) -> Logged
         ip: IpAddr::from([192, 0, 2, 7]),
         user_agent: user_agent.map(str::to_owned),
     };
-    login::with_password(database, "chris", PASSWORD, device, NOW, ONE_DAY)
+    login::with_password(database, "robin", PASSWORD, device, NOW, ONE_DAY)
         .await
         .expect("the login succeeds")
 }

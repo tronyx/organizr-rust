@@ -89,9 +89,9 @@ async fn session_count(database: &Database, user: UserId) -> usize {
 #[tokio::test]
 async fn correct_password_gives_a_stored_session_and_its_token() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "chris", argon2_hash()).await;
+        let user = insert_user(database, "robin", argon2_hash()).await;
 
-        let logged_in = log_in(database, "chris", PASSWORD)
+        let logged_in = log_in(database, "robin", PASSWORD)
             .await
             .expect("the login succeeds");
 
@@ -119,14 +119,14 @@ async fn correct_password_gives_a_stored_session_and_its_token() {
 #[tokio::test]
 async fn name_and_address_work_in_any_letter_case() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "Chris", argon2_hash()).await;
+        let user = insert_user(database, "Robin", argon2_hash()).await;
 
         for name in [
-            "Chris",
-            "chris",
-            "CHRIS",
-            "chris@example.com",
-            "Chris@Example.COM",
+            "Robin",
+            "robin",
+            "ROBIN",
+            "robin@example.com",
+            "Robin@Example.COM",
         ] {
             let logged_in = log_in(database, name, PASSWORD)
                 .await
@@ -140,15 +140,15 @@ async fn name_and_address_work_in_any_letter_case() {
 #[tokio::test]
 async fn wrong_password_and_unknown_name_fail_in_the_same_way_and_store_nothing() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "chris", argon2_hash()).await;
+        let user = insert_user(database, "robin", argon2_hash()).await;
         let attempts = [
-            ("chris", "not the password"),
-            ("chris", ""),
-            ("chris", "correct horse battery stapl"),
+            ("robin", "not the password"),
+            ("robin", ""),
+            ("robin", "correct horse battery stapl"),
             ("nobody", PASSWORD),
             ("", PASSWORD),
             ("", ""),
-            (" chris", PASSWORD),
+            (" robin", PASSWORD),
         ];
 
         for (name, password) in attempts {
@@ -167,12 +167,12 @@ async fn wrong_password_and_unknown_name_fail_in_the_same_way_and_store_nothing(
 #[tokio::test]
 async fn every_login_gets_a_session_and_a_token_of_its_own() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "chris", argon2_hash()).await;
+        let user = insert_user(database, "robin", argon2_hash()).await;
 
-        let first = log_in(database, "chris", PASSWORD)
+        let first = log_in(database, "robin", PASSWORD)
             .await
             .expect("the login succeeds");
-        let second = log_in(database, "chris", PASSWORD)
+        let second = log_in(database, "robin", PASSWORD)
             .await
             .expect("the login succeeds");
 
@@ -186,10 +186,10 @@ async fn every_login_gets_a_session_and_a_token_of_its_own() {
 #[tokio::test]
 async fn session_lasts_as_long_as_the_caller_says() {
     on_each_engine(async |database| {
-        insert_user(database, "chris", argon2_hash()).await;
+        insert_user(database, "robin", argon2_hash()).await;
         let week = Duration::from_hours(7 * 24);
 
-        let logged_in = login::with_password(database, "chris", PASSWORD, device(), NOW, week)
+        let logged_in = login::with_password(database, "robin", PASSWORD, device(), NOW, week)
             .await
             .expect("the login succeeds");
 
@@ -205,13 +205,13 @@ async fn session_lasts_as_long_as_the_caller_says() {
 async fn login_with_a_bcrypt_hash_replaces_it_by_an_argon2_hash() {
     on_each_engine(async |database| {
         let old_hash = bcrypt_hash();
-        insert_user(database, "chris", old_hash.clone()).await;
+        insert_user(database, "robin", old_hash.clone()).await;
 
-        log_in(database, "chris", PASSWORD)
+        log_in(database, "robin", PASSWORD)
             .await
             .expect("the login with the bcrypt hash succeeds");
 
-        let renewed = stored_hash(database, "chris").await;
+        let renewed = stored_hash(database, "robin").await;
         assert!(
             renewed.expose().starts_with("$argon2id$"),
             "the stored hash was not renewed"
@@ -222,10 +222,10 @@ async fn login_with_a_bcrypt_hash_replaces_it_by_an_argon2_hash() {
         );
 
         // The next login finds a current hash and leaves it as it is.
-        log_in(database, "chris", PASSWORD)
+        log_in(database, "robin", PASSWORD)
             .await
             .expect("the login with the new hash succeeds");
-        assert_eq!(stored_hash(database, "chris").await, renewed);
+        assert_eq!(stored_hash(database, "robin").await, renewed);
     })
     .await;
 }
@@ -234,15 +234,15 @@ async fn login_with_a_bcrypt_hash_replaces_it_by_an_argon2_hash() {
 async fn wrong_password_does_not_touch_a_bcrypt_hash() {
     on_each_engine(async |database| {
         let old_hash = bcrypt_hash();
-        insert_user(database, "chris", old_hash.clone()).await;
+        insert_user(database, "robin", old_hash.clone()).await;
 
-        let result = log_in(database, "chris", "not the password").await;
+        let result = log_in(database, "robin", "not the password").await;
 
         assert!(
             matches!(result, Err(LoginError::WrongCredentials)),
             "{result:?}"
         );
-        assert_eq!(stored_hash(database, "chris").await, old_hash);
+        assert_eq!(stored_hash(database, "robin").await, old_hash);
     })
     .await;
 }
@@ -251,10 +251,10 @@ async fn wrong_password_does_not_touch_a_bcrypt_hash() {
 async fn user_with_a_stored_value_that_is_no_hash_cannot_log_in() {
     on_each_engine(async |database| {
         // The value is the password itself, as a broken import could leave it.
-        let user = insert_user(database, "chris", PasswordHash::new(PASSWORD.to_owned())).await;
+        let user = insert_user(database, "robin", PasswordHash::new(PASSWORD.to_owned())).await;
 
         for password in [PASSWORD, ""] {
-            let result = log_in(database, "chris", password).await;
+            let result = log_in(database, "robin", password).await;
 
             assert!(
                 matches!(result, Err(LoginError::WrongCredentials)),

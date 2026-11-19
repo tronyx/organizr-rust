@@ -217,7 +217,7 @@ mod tests {
     fn failures_below_the_limit_lock_nobody() {
         let limiter = LoginLimiter::new();
         let now = Instant::now();
-        let attempt = attempt("192.0.2.7", "chris");
+        let attempt = attempt("192.0.2.7", "robin");
 
         assert_eq!(fail(&limiter, &attempt, 2, now), None);
         assert_eq!(limiter.locked_for(&attempt, now), None);
@@ -227,7 +227,7 @@ mod tests {
     fn failure_that_reaches_the_limit_locks_for_the_lockout_time() {
         let limiter = LoginLimiter::new();
         let now = Instant::now();
-        let attempt = attempt("192.0.2.7", "chris");
+        let attempt = attempt("192.0.2.7", "robin");
 
         assert_eq!(fail(&limiter, &attempt, 3, now), Some(POLICY.lockout));
 
@@ -243,7 +243,7 @@ mod tests {
     fn asking_does_not_count_as_an_attempt() {
         let limiter = LoginLimiter::new();
         let now = Instant::now();
-        let attempt = attempt("192.0.2.7", "chris");
+        let attempt = attempt("192.0.2.7", "robin");
         fail(&limiter, &attempt, 2, now);
 
         for _ in 0..10 {
@@ -256,7 +256,7 @@ mod tests {
     fn lock_ends_and_the_count_starts_again() {
         let limiter = LoginLimiter::new();
         let now = Instant::now();
-        let attempt = attempt("192.0.2.7", "chris");
+        let attempt = attempt("192.0.2.7", "robin");
         fail(&limiter, &attempt, 3, now);
 
         let after = now + POLICY.lockout;
@@ -269,7 +269,7 @@ mod tests {
     fn one_client_cannot_try_many_names() {
         let limiter = LoginLimiter::new();
         let now = Instant::now();
-        for name in ["anna", "ben", "chris"] {
+        for name in ["anna", "ben", "robin"] {
             fail(&limiter, &attempt("192.0.2.7", name), 1, now);
         }
 
@@ -288,18 +288,18 @@ mod tests {
         let limiter = LoginLimiter::new();
         let now = Instant::now();
         for client in ["192.0.2.1", "192.0.2.2", "192.0.2.3"] {
-            fail(&limiter, &attempt(client, "Chris"), 1, now);
+            fail(&limiter, &attempt(client, "Robin"), 1, now);
         }
 
         // The name is locked from every client, in any letter case.
         assert!(
             limiter
-                .locked_for(&attempt("198.51.100.9", "chris"), now)
+                .locked_for(&attempt("198.51.100.9", "robin"), now)
                 .is_some()
         );
         assert!(
             limiter
-                .locked_for(&attempt("198.51.100.9", "CHRIS"), now)
+                .locked_for(&attempt("198.51.100.9", "ROBIN"), now)
                 .is_some()
         );
         // The clients themselves are not: each failed once.
@@ -313,7 +313,7 @@ mod tests {
         for (client, name) in [
             ("2001:db8:1:2::1", "anna"),
             ("2001:db8:1:2::2", "ben"),
-            ("2001:db8:1:2:ffff:ffff:ffff:ffff", "chris"),
+            ("2001:db8:1:2:ffff:ffff:ffff:ffff", "robin"),
         ] {
             fail(&limiter, &attempt(client, name), 1, now);
         }
@@ -334,7 +334,7 @@ mod tests {
     fn failure_is_forgotten_after_a_while() {
         let limiter = LoginLimiter::new();
         let now = Instant::now();
-        let attempt = attempt("192.0.2.7", "chris");
+        let attempt = attempt("192.0.2.7", "robin");
         fail(&limiter, &attempt, 2, now);
 
         let still_counted = now + FAILURE_MEMORY.saturating_sub(Duration::from_secs(1));
@@ -358,7 +358,7 @@ mod tests {
             failures: 2,
             lockout: Duration::from_hours(2),
         };
-        let attempt = attempt("192.0.2.7", "chris");
+        let attempt = attempt("192.0.2.7", "robin");
         limiter.record_failure(&attempt, long, now);
 
         let much_later = now + Duration::from_mins(90);
@@ -372,7 +372,7 @@ mod tests {
     fn success_forgets_the_client_and_the_name() {
         let limiter = LoginLimiter::new();
         let now = Instant::now();
-        let own = attempt("192.0.2.7", "chris");
+        let own = attempt("192.0.2.7", "robin");
         fail(&limiter, &own, 2, now);
         // A failure of the same client for another name, which the success leaves alone.
         fail(&limiter, &attempt("192.0.2.9", "anna"), 2, now);
@@ -380,7 +380,7 @@ mod tests {
         limiter.record_success(&own);
 
         // The name starts again: two more failures from another client lock nobody.
-        assert_eq!(fail(&limiter, &attempt("192.0.2.8", "chris"), 2, now), None);
+        assert_eq!(fail(&limiter, &attempt("192.0.2.8", "robin"), 2, now), None);
         // The client starts again too.
         assert_eq!(fail(&limiter, &attempt("192.0.2.7", "ben"), 2, now), None);
         // The count for the other name is still there: its next failure is the third.
@@ -398,7 +398,7 @@ mod tests {
             lockout: Duration::from_secs(30),
         };
 
-        let locked = limiter.record_failure(&attempt("192.0.2.7", "chris"), strict, Instant::now());
+        let locked = limiter.record_failure(&attempt("192.0.2.7", "robin"), strict, Instant::now());
 
         assert_eq!(locked, Some(Duration::from_secs(30)));
     }
@@ -435,7 +435,7 @@ mod tests {
         let before = limiter.entries.lock().expect("the lock is free").len();
 
         let later = now + FAILURE_MEMORY;
-        limiter.record_failure(&attempt("192.0.2.7", "chris"), POLICY, later);
+        limiter.record_failure(&attempt("192.0.2.7", "robin"), POLICY, later);
 
         let after = limiter.entries.lock().expect("the lock is free").len();
         assert!(before > SWEEP_ABOVE, "{before}");

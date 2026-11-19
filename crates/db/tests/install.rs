@@ -13,10 +13,10 @@ const NOW: Timestamp = Timestamp::from_unix_seconds(1_800_000_000);
 
 fn new_install() -> NewInstall {
     NewInstall {
-        admin_username: "Chris".to_owned(),
-        admin_email: "chris@example.com".to_owned(),
+        admin_username: "Robin".to_owned(),
+        admin_email: "robin@example.com".to_owned(),
         admin_password_hash: PasswordHash::new("$argon2id$v=19$not.a.real.hash".to_owned()),
-        admin_image: Some("https://example.com/chris.png".to_owned()),
+        admin_image: Some("https://example.com/robin.png".to_owned()),
         created_at: NOW,
         settings: vec![
             StoredSetting {
@@ -77,22 +77,22 @@ async fn set_up_stores_what_a_new_install_starts_with() {
             Some("plugins/images/groups/guest.png")
         );
 
-        assert_eq!(admin.username, "Chris");
-        assert_eq!(admin.email.as_deref(), Some("chris@example.com"));
+        assert_eq!(admin.username, "Robin");
+        assert_eq!(admin.email.as_deref(), Some("robin@example.com"));
         assert_eq!(
             admin.password_hash.expose(),
             "$argon2id$v=19$not.a.real.hash"
         );
         assert_eq!(
             admin.image.as_deref(),
-            Some("https://example.com/chris.png")
+            Some("https://example.com/robin.png")
         );
         assert_eq!(admin.group, groups[0].id, "the first account is an Admin");
         assert_eq!(admin.created_at, NOW);
         assert!(!admin.locked);
         let found = database
             .users()
-            .find_by_login("CHRIS@example.com")
+            .find_by_login("ROBIN@example.com")
             .await
             .expect("the lookup works");
         assert_eq!(found, Some(admin));

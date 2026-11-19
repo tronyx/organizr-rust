@@ -89,7 +89,7 @@ async fn valid_ids(database: &Database, user: UserId) -> Vec<SessionId> {
 #[tokio::test]
 async fn session_comes_back_as_it_was_stored() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "chris").await;
+        let user = insert_user(database, "robin").await;
         // Dates after 2038 do not fit a 32-bit column.
         let created_at = Timestamp::from_unix_seconds(4_102_444_800);
         let expires_at = Timestamp::from_unix_seconds(4_103_049_600);
@@ -132,7 +132,7 @@ async fn session_comes_back_as_it_was_stored() {
 #[tokio::test]
 async fn session_without_a_user_agent_can_be_stored() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "chris").await;
+        let user = insert_user(database, "robin").await;
 
         let stored = database
             .sessions()
@@ -151,7 +151,7 @@ async fn session_without_a_user_agent_can_be_stored() {
 #[tokio::test]
 async fn unknown_token_finds_no_session() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "chris").await;
+        let user = insert_user(database, "robin").await;
         insert_session(database, 1, user.id).await;
 
         let found = database
@@ -168,7 +168,7 @@ async fn unknown_token_finds_no_session() {
 #[tokio::test]
 async fn session_is_valid_until_the_moment_it_expires() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "chris").await;
+        let user = insert_user(database, "robin").await;
         let session = insert_session(database, 1, user.id).await;
         let expiry = session.expires_at.unix_seconds();
 
@@ -201,7 +201,7 @@ async fn session_is_valid_until_the_moment_it_expires() {
 #[tokio::test]
 async fn two_sessions_cannot_share_a_token() {
     on_each_engine(async |database| {
-        let first = insert_user(database, "chris").await;
+        let first = insert_user(database, "robin").await;
         let second = insert_user(database, "zoe").await;
         insert_session(database, 1, first.id).await;
 
@@ -231,23 +231,23 @@ async fn session_cannot_belong_to_a_user_that_does_not_exist() {
 #[tokio::test]
 async fn valid_sessions_of_a_user_are_listed_oldest_first() {
     on_each_engine(async |database| {
-        let chris = insert_user(database, "chris").await;
+        let robin = insert_user(database, "robin").await;
         let zoe = insert_user(database, "zoe").await;
-        let first = insert_session(database, 1, chris.id).await;
+        let first = insert_session(database, 1, robin.id).await;
         insert_session(database, 2, zoe.id).await;
         let expired = database
             .sessions()
             .insert(NewSession {
                 expires_at: NOW,
-                ..new_session(3, chris.id)
+                ..new_session(3, robin.id)
             })
             .await
             .expect("the session can be stored");
-        let last = insert_session(database, 4, chris.id).await;
+        let last = insert_session(database, 4, robin.id).await;
 
         let listed = database
             .sessions()
-            .list_valid_of_user(chris.id, NOW)
+            .list_valid_of_user(robin.id, NOW)
             .await
             .expect("the sessions can be read");
 
@@ -260,7 +260,7 @@ async fn valid_sessions_of_a_user_are_listed_oldest_first() {
 #[tokio::test]
 async fn session_is_deleted_by_its_token_once() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "chris").await;
+        let user = insert_user(database, "robin").await;
         insert_session(database, 1, user.id).await;
         let other = insert_session(database, 2, user.id).await;
 
@@ -285,31 +285,31 @@ async fn session_is_deleted_by_its_token_once() {
 #[tokio::test]
 async fn user_can_delete_only_a_session_of_their_own() {
     on_each_engine(async |database| {
-        let chris = insert_user(database, "chris").await;
+        let robin = insert_user(database, "robin").await;
         let zoe = insert_user(database, "zoe").await;
-        let of_chris = insert_session(database, 1, chris.id).await;
+        let of_robin = insert_session(database, 1, robin.id).await;
         let of_zoe = insert_session(database, 2, zoe.id).await;
 
         let foreign = database
             .sessions()
-            .delete_one_of_user(chris.id, of_zoe.id)
+            .delete_one_of_user(robin.id, of_zoe.id)
             .await
             .expect("the delete works");
         let own = database
             .sessions()
-            .delete_one_of_user(chris.id, of_chris.id)
+            .delete_one_of_user(robin.id, of_robin.id)
             .await
             .expect("the delete works");
         let again = database
             .sessions()
-            .delete_one_of_user(chris.id, of_chris.id)
+            .delete_one_of_user(robin.id, of_robin.id)
             .await
             .expect("the delete works");
 
         assert!(!foreign, "the session of another user stays");
         assert!(own, "the own session existed");
         assert!(!again, "the own session is gone");
-        assert_eq!(valid_ids(database, chris.id).await, []);
+        assert_eq!(valid_ids(database, robin.id).await, []);
         assert_eq!(valid_ids(database, zoe.id).await, [of_zoe.id]);
     })
     .await;
@@ -318,25 +318,25 @@ async fn user_can_delete_only_a_session_of_their_own() {
 #[tokio::test]
 async fn all_sessions_of_a_user_are_deleted_at_once() {
     on_each_engine(async |database| {
-        let chris = insert_user(database, "chris").await;
+        let robin = insert_user(database, "robin").await;
         let zoe = insert_user(database, "zoe").await;
-        insert_session(database, 1, chris.id).await;
-        insert_session(database, 2, chris.id).await;
+        insert_session(database, 1, robin.id).await;
+        insert_session(database, 2, robin.id).await;
         let of_zoe = insert_session(database, 3, zoe.id).await;
 
         let deleted = database
             .sessions()
-            .delete_all_of_user(chris.id)
+            .delete_all_of_user(robin.id)
             .await
             .expect("the delete works");
         let again = database
             .sessions()
-            .delete_all_of_user(chris.id)
+            .delete_all_of_user(robin.id)
             .await
             .expect("the delete works");
 
         assert_eq!((deleted, again), (2, 0));
-        assert_eq!(valid_ids(database, chris.id).await, []);
+        assert_eq!(valid_ids(database, robin.id).await, []);
         assert_eq!(valid_ids(database, zoe.id).await, [of_zoe.id]);
     })
     .await;
@@ -345,7 +345,7 @@ async fn all_sessions_of_a_user_are_deleted_at_once() {
 #[tokio::test]
 async fn expired_sessions_are_purged_and_valid_ones_stay() {
     on_each_engine(async |database| {
-        let user = insert_user(database, "chris").await;
+        let user = insert_user(database, "robin").await;
         for (number, expires_at) in [(1, after(-86_400)), (2, after(-1)), (3, NOW)] {
             database
                 .sessions()
@@ -391,20 +391,20 @@ async fn expired_sessions_are_purged_and_valid_ones_stay() {
 #[tokio::test]
 async fn deleting_a_user_deletes_their_sessions() {
     on_each_engine(async |database| {
-        let chris = insert_user(database, "chris").await;
+        let robin = insert_user(database, "robin").await;
         let zoe = insert_user(database, "zoe").await;
-        insert_session(database, 1, chris.id).await;
-        insert_session(database, 2, chris.id).await;
+        insert_session(database, 1, robin.id).await;
+        insert_session(database, 2, robin.id).await;
         let of_zoe = insert_session(database, 3, zoe.id).await;
 
         let first = database
             .users()
-            .delete(chris.id)
+            .delete(robin.id)
             .await
             .expect("the delete works");
         let second = database
             .users()
-            .delete(chris.id)
+            .delete(robin.id)
             .await
             .expect("the delete works");
 

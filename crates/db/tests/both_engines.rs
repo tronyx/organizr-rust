@@ -256,11 +256,11 @@ async fn user_is_found_whatever_the_letter_case_of_the_name() {
         let group = insert_group(database, 4, "User").await;
         let stored = database
             .users()
-            .insert(new_user("Chris", group.id))
+            .insert(new_user("Robin", group.id))
             .await
             .expect("the user can be stored");
 
-        for name in ["chris", "CHRIS", "cHrIs"] {
+        for name in ["robin", "ROBIN", "rObIn"] {
             let found = database
                 .users()
                 .find_by_username(name)
@@ -271,7 +271,7 @@ async fn user_is_found_whatever_the_letter_case_of_the_name() {
 
         let missing = database
             .users()
-            .find_by_username("christine")
+            .find_by_username("robintine")
             .await
             .expect("the lookup works");
         assert_eq!(missing, None);
@@ -453,9 +453,9 @@ async fn default_group_is_the_group_that_new_users_join() {
 async fn password_hash_of_a_user_can_be_replaced() {
     on_each_engine(async |database| {
         let group = insert_group(database, 4, "User").await;
-        let chris = database
+        let robin = database
             .users()
-            .insert(new_user("chris", group.id))
+            .insert(new_user("robin", group.id))
             .await
             .expect("the user can be stored");
         let zoe = database
@@ -467,7 +467,7 @@ async fn password_hash_of_a_user_can_be_replaced() {
 
         let changed = database
             .users()
-            .set_password_hash(chris.id, &new_hash)
+            .set_password_hash(robin.id, &new_hash)
             .await
             .expect("the update works");
         let unknown = database
@@ -486,7 +486,7 @@ async fn password_hash_of_a_user_can_be_replaced() {
                 .expect("the lookup works")
                 .expect("the user exists")
         };
-        assert_eq!(stored("chris").await.password_hash, new_hash);
+        assert_eq!(stored("robin").await.password_hash, new_hash);
         assert_eq!(stored("zoe").await, zoe, "another user is not touched");
     })
     .await;
@@ -498,11 +498,11 @@ async fn two_users_cannot_share_a_name_whatever_the_letter_case() {
         let group = insert_group(database, 4, "User").await;
         database
             .users()
-            .insert(new_user("chris", group.id))
+            .insert(new_user("robin", group.id))
             .await
             .expect("the first user can be stored");
 
-        let result = database.users().insert(new_user("Chris", group.id)).await;
+        let result = database.users().insert(new_user("Robin", group.id)).await;
 
         assert!(matches!(result, Err(DbError::Duplicate)), "{result:?}");
     })
@@ -514,7 +514,7 @@ async fn user_cannot_join_a_group_that_does_not_exist() {
     on_each_engine(async |database| {
         let result = database
             .users()
-            .insert(new_user("chris", GroupId::new(12_345)))
+            .insert(new_user("robin", GroupId::new(12_345)))
             .await;
 
         assert!(
@@ -531,7 +531,7 @@ async fn group_with_users_cannot_be_deleted() {
         let group = insert_group(database, 4, "User").await;
         database
             .users()
-            .insert(new_user("chris", group.id))
+            .insert(new_user("robin", group.id))
             .await
             .expect("the user can be stored");
 
