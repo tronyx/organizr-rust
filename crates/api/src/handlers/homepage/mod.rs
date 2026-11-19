@@ -16,7 +16,7 @@ use axum::http::{HeaderMap, StatusCode, header};
 use organizr_integrations::arr::Kind;
 use organizr_settings::Settings;
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use crate::caller::Caller;
 use crate::client::Client;
@@ -95,7 +95,7 @@ impl Permissions {
 }
 
 /// One item of the homepage that the caller sees.
-#[derive(Debug, Serialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct Item {
     /// The key of the setting that holds the place of the item, for example
     /// `homepageOrdercustomhtml01`.
@@ -104,6 +104,9 @@ pub struct Item {
     kind: &'static str,
     /// Which one of several items of a kind, for example `01` for custom HTML.
     id: String,
+    /// Settings that say how the interface shows the item. Most items have none.
+    #[serde(skip_serializing_if = "Value::is_null")]
+    options: Value,
 }
 
 /// The kind and the permissions of the item behind an order key, or nothing for an
@@ -115,6 +118,7 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
             key,
             kind: "customhtml",
             id: number.to_owned(),
+            options: Value::Null,
         };
         return Some((item, permissions));
     }
@@ -131,6 +135,7 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         key,
         kind,
         id: String::new(),
+        options: Value::Null,
     };
     Some((item, permissions))
 }
@@ -183,7 +188,16 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
                 permissions.allow(settings, caller)
             }
         })
-        .map(|(item, _)| item)
+        .map(|(mut item, _)| {
+            if item.kind == "calendar" {
+                item.options = json!({
+                    "defaultView": settings.calendar_default,
+                    "firstDay": settings.calendar_first_day,
+                    "limit": settings.calendar_limit,
+                });
+            }
+            item
+        })
         .collect()
 }
 
