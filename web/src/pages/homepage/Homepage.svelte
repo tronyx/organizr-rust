@@ -4,7 +4,10 @@
 
   import Notice from '../../components/Notice.svelte';
   import { api, failureText } from '../../lib/api';
+  import type { CalendarOptions } from '../../lib/calendar';
   import type { HomepageItem } from '../../lib/homepage';
+  import ArrQueue from './ArrQueue.svelte';
+  import Calendar from './Calendar.svelte';
   import CustomHtml from './CustomHtml.svelte';
   import HealthChecks from './HealthChecks.svelte';
   import UptimeKuma from './UptimeKuma.svelte';
@@ -12,7 +15,26 @@
   let { title }: { title: string } = $props();
 
   /** The kinds of items that this interface can show. */
-  const KNOWN = new Set(['customhtml', 'healthchecks', 'uptimekuma']);
+  const KNOWN = new Set([
+    'customhtml',
+    'healthchecks',
+    'uptimekuma',
+    'calendar',
+    'sonarrqueue',
+    'radarrqueue',
+  ]);
+
+  /** How the calendar shows, from the options of its item. */
+  function calendarOptions(item: HomepageItem): CalendarOptions {
+    const options = item.options ?? {};
+    const firstDay = Number(options.firstDay);
+    const limit = Number(options.limit);
+    return {
+      defaultView: typeof options.defaultView === 'string' ? options.defaultView : 'month',
+      firstDay: Number.isInteger(firstDay) && firstDay >= 0 && firstDay <= 6 ? firstDay : 1,
+      limit: Number.isInteger(limit) && limit > 0 ? limit : 1000,
+    };
+  }
 
   let items = $state<HomepageItem[] | null>(null);
   let error = $state<string | null>(null);
@@ -49,6 +71,12 @@
           <HealthChecks />
         {:else if item.kind === 'uptimekuma'}
           <UptimeKuma />
+        {:else if item.kind === 'calendar'}
+          <Calendar options={calendarOptions(item)} />
+        {:else if item.kind === 'sonarrqueue'}
+          <ArrQueue application="sonarr" />
+        {:else if item.kind === 'radarrqueue'}
+          <ArrQueue application="radarr" />
         {/if}
       </section>
     {/each}

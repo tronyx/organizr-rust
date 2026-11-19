@@ -25,6 +25,8 @@ This version has these items:
 - [Custom HTML](#custom-html)
 - [Health checks](#health-checks)
 - [Uptime Kuma](#uptime-kuma)
+- [Calendar](#calendar), with Sonarr, Radarr and Lidarr
+- [Downloads of Sonarr and Radarr](#downloads-of-sonarr-and-radarr)
 
 You set all items up in **Settings**, on the tab **Homepage**.
 
@@ -112,3 +114,67 @@ This item shows the monitors of an install of [Uptime Kuma](https://uptime.kuma.
 Make the API key in the settings of Uptime Kuma, under **API Keys**. Organizr reads the page `/metrics` of Uptime Kuma with the key.
 
 A monitor that Uptime Kuma did not check yet is not shown. A monitor in maintenance is shown as online.
+
+## Calendar
+
+The calendar shows the episodes of Sonarr, the films of Radarr and the albums of Lidarr for the days around today.
+
+The calendar has no switch of its own. It shows when a person can see one of the three applications at least. Each application has these settings, here with the keys of Sonarr:
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageSonarrEnabled` |
+| Level | `homepageSonarrAuth` |
+| Address | `sonarrURL` |
+| API key | `sonarrToken` |
+| Do not check the certificate | `sonarrDisableCertCheck` |
+| Address that the link of an event opens | `sonarrCalendarLink` |
+| Show the link in an event | `sonarrIcon` |
+| Show what Sonarr does not monitor | `sonarrUnmonitored` |
+
+For more than one install of an application, enter the addresses with commas between them. Enter one API key for each address, in the same order.
+
+Radarr has three more switches: `radarrPhysicalRelease`, `radarrDigitalRelease` and `radarrCinemaRelease`. A film has one event for each release that is switched on. Releases on the same day are one event.
+
+The calendar itself has these settings:
+
+| Setting | Key |
+|---|---|
+| Place | `homepageOrdercalendar` |
+| View at the start: month or list | `calendarDefault` |
+| First day of a week | `calendarFirstDay` |
+| Days before today that are loaded | `calendarStart` |
+| Days after today that are loaded | `calendarEnd` |
+| Most events that a day of the month shows | `calendarLimit` |
+| Milliseconds between two loads | `calendarRefresh` |
+
+An event has a colour for its state:
+
+| State | Meaning |
+|---|---|
+| Downloaded | The file is there. |
+| Not released yet | The release is in the future. |
+| Premiere | The first episode of a season, which was not aired yet. |
+| Not monitored | An episode that was not aired yet, and that Sonarr does not monitor. |
+| Missing | The release is in the past, and there is no file. |
+
+The day of a film is a day of the time zone of the server. Set the environment variable `TZ` of the container to your time zone, for example `TZ=Europe/Berlin`.
+
+### Pictures of events
+
+An event shows the fan art of its series or film. When only Sonarr or Radarr has the picture, a browser cannot load it without the API key. The server then fetches the picture, keeps it in the folder `cache` of the data folder, and sends it from `data/cache/`. The first time, the event shows without its picture for a moment.
+
+You can delete the folder `cache` at any time. The server fetches the pictures again.
+
+## Downloads of Sonarr and Radarr
+
+These two items show the downloads in the queue of Sonarr and of Radarr. Each one needs the switch of its application and a switch of its own.
+
+| Setting | Key for Sonarr |
+|---|---|
+| Switch | `homepageSonarrQueueEnabled` |
+| Level | `homepageSonarrQueueAuth` |
+| Place | `homepageOrderSonarrQueue` |
+| Milliseconds between two loads | `homepageSonarrQueueRefresh` |
+
+A person needs the level of the application and the level of its downloads.

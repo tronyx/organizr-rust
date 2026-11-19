@@ -509,6 +509,222 @@ const SERVICE_ITEMS: FieldGroup[] = [
   },
 ];
 
+/** The settings of the calendar, and of the applications that fill it. */
+const CALENDAR_ITEMS: FieldGroup[] = [
+  {
+    title: 'Calendar',
+    fields: [
+      {
+        key: 'homepageOrdercalendar',
+        label: 'Place of the calendar on the homepage',
+        kind: 'number',
+        min: 0,
+        help: 'The calendar shows when one application below is switched on.',
+      },
+      {
+        key: 'calendarDefault',
+        label: 'The calendar starts with',
+        kind: 'select',
+        options: [
+          { value: 'month', label: 'The month' },
+          { value: 'list', label: 'The list' },
+        ],
+      },
+      {
+        key: 'calendarFirstDay',
+        label: 'A week starts on',
+        kind: 'select',
+        options: [
+          { value: '0', label: 'Sunday' },
+          { value: '1', label: 'Monday' },
+          { value: '6', label: 'Saturday' },
+        ],
+      },
+      { key: 'calendarStart', label: 'Days before today that are loaded', kind: 'number', min: 0 },
+      { key: 'calendarEnd', label: 'Days after today that are loaded', kind: 'number', min: 0 },
+      {
+        key: 'calendarLimit',
+        label: 'Most events that a day of the month shows',
+        kind: 'number',
+        min: 1,
+      },
+      {
+        key: 'calendarRefresh',
+        label: 'Milliseconds between two loads of the calendar',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'Sonarr',
+    fields: [
+      { key: 'homepageSonarrEnabled', label: 'Show Sonarr in the calendar', kind: 'switch' },
+      {
+        key: 'homepageSonarrAuth',
+        label: 'Sonarr is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'sonarrURL',
+        label: 'Address of Sonarr',
+        kind: 'text',
+        help: 'For more than one install, enter the addresses with commas between them.',
+      },
+      {
+        key: 'sonarrToken',
+        label: 'API key of Sonarr',
+        kind: 'secret',
+        help: 'One key for each address, in the same order, with commas between them.',
+      },
+      {
+        key: 'sonarrDisableCertCheck',
+        label: 'Do not check the certificate of Sonarr',
+        kind: 'switch',
+      },
+      {
+        key: 'sonarrCalendarLink',
+        label: 'Address that the link of an event opens',
+        kind: 'text',
+        help: 'Leave the field empty to use the first address of Sonarr.',
+      },
+      { key: 'sonarrIcon', label: 'Show the link to Sonarr in an event', kind: 'switch' },
+      {
+        key: 'sonarrUnmonitored',
+        label: 'Show what Sonarr does not monitor',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageSonarrQueueEnabled',
+        label: 'Show the downloads of Sonarr',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageSonarrQueueAuth',
+        label: 'The downloads of Sonarr are for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'homepageOrderSonarrQueue',
+        label: 'Place of the downloads of Sonarr on the homepage',
+        kind: 'number',
+        min: 0,
+      },
+      {
+        key: 'homepageSonarrQueueRefresh',
+        label: 'Milliseconds between two loads of the downloads of Sonarr',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'Radarr',
+    fields: [
+      { key: 'homepageRadarrEnabled', label: 'Show Radarr in the calendar', kind: 'switch' },
+      {
+        key: 'homepageRadarrAuth',
+        label: 'Radarr is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'radarrURL',
+        label: 'Address of Radarr',
+        kind: 'text',
+        help: 'For more than one install, enter the addresses with commas between them.',
+      },
+      {
+        key: 'radarrToken',
+        label: 'API key of Radarr',
+        kind: 'secret',
+        help: 'One key for each address, in the same order, with commas between them.',
+      },
+      {
+        key: 'radarrDisableCertCheck',
+        label: 'Do not check the certificate of Radarr',
+        kind: 'switch',
+      },
+      {
+        key: 'radarrCalendarLink',
+        label: 'Address that the link of an event opens',
+        kind: 'text',
+        help: 'Leave the field empty to use the first address of Radarr.',
+      },
+      { key: 'radarrIcon', label: 'Show the link to Radarr in an event', kind: 'switch' },
+      {
+        key: 'radarrUnmonitored',
+        label: 'Show what Radarr does not monitor',
+        kind: 'switch',
+      },
+      { key: 'radarrPhysicalRelease', label: 'Show the release on a disc', kind: 'switch' },
+      { key: 'radarrDigitalRelease', label: 'Show the release for download', kind: 'switch' },
+      { key: 'radarrCinemaRelease', label: 'Show the release in cinemas', kind: 'switch' },
+      {
+        key: 'homepageRadarrQueueEnabled',
+        label: 'Show the downloads of Radarr',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageRadarrQueueAuth',
+        label: 'The downloads of Radarr are for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'homepageOrderRadarrQueue',
+        label: 'Place of the downloads of Radarr on the homepage',
+        kind: 'number',
+        min: 0,
+      },
+      {
+        key: 'homepageRadarrQueueRefresh',
+        label: 'Milliseconds between two loads of the downloads of Radarr',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'Lidarr',
+    fields: [
+      { key: 'homepageLidarrEnabled', label: 'Show Lidarr in the calendar', kind: 'switch' },
+      {
+        key: 'homepageLidarrAuth',
+        label: 'Lidarr is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'lidarrURL',
+        label: 'Address of Lidarr',
+        kind: 'text',
+        help: 'For more than one install, enter the addresses with commas between them.',
+      },
+      {
+        key: 'lidarrToken',
+        label: 'API key of Lidarr',
+        kind: 'secret',
+        help: 'One key for each address, in the same order, with commas between them.',
+      },
+      {
+        key: 'lidarrDisableCertCheck',
+        label: 'Do not check the certificate of Lidarr',
+        kind: 'switch',
+      },
+      {
+        key: 'lidarrCalendarLink',
+        label: 'Address that the link of an event opens',
+        kind: 'text',
+        help: 'Leave the field empty to use the first address of Lidarr.',
+      },
+      { key: 'lidarrIcon', label: 'Show the link to Lidarr in an event', kind: 'switch' },
+    ],
+  },
+];
+
 /** The settings of the custom HTML items. */
 const CUSTOM_HTML_ITEMS: FieldGroup[] = CUSTOM_HTML.map((number) => ({
   title: `Custom HTML ${number}`,
@@ -541,4 +757,4 @@ const CUSTOM_HTML_ITEMS: FieldGroup[] = CUSTOM_HTML.map((number) => ({
 }));
 
 /** The settings of the items of the homepage. */
-export const HOMEPAGE: FieldGroup[] = [...CUSTOM_HTML_ITEMS, ...SERVICE_ITEMS];
+export const HOMEPAGE: FieldGroup[] = [...CUSTOM_HTML_ITEMS, ...SERVICE_ITEMS, ...CALENDAR_ITEMS];

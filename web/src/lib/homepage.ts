@@ -10,6 +10,8 @@ export interface HomepageItem {
   kind: string;
   /** Which one of several items of a kind, for example `01` for custom HTML. */
   id: string;
+  /** Settings that say how the item shows. Most items have none. */
+  options?: Record<string, unknown>;
 }
 
 /**
