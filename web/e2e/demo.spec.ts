@@ -1,6 +1,8 @@
 // One walk through the interface on a new install, from the first page on. The tests
 // run in order and share the install.
 
+import type { Page } from '@playwright/test';
+
 import { expect, test } from './fixtures';
 import { SETUP_CODE_VARIABLE } from './server';
 
@@ -66,13 +68,17 @@ test('the wizard refuses a wrong set-up code and takes the right one', async ({ 
   await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
 });
 
-test('the Admin logs out and sees the login page', async ({ page }) => {
-  await page.goto('./');
-  // The set-up logged the Admin in. This test has a browser of its own, so it logs in.
+/** Logs the Admin in. Each test has a browser of its own, without the cookies of the others. */
+async function logIn(page: Page) {
+  await page.goto('./#/login');
   await page.getByLabel('User name or e-mail address').fill(ADMIN.username);
   await page.getByLabel('Password').fill(ADMIN.password);
   await page.getByRole('button', { name: 'Log in' }).click();
   await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+}
+
+test('the Admin logs out and sees the login page', async ({ page }) => {
+  await logIn(page);
 
   await page.getByLabel('Menu of the user').click();
   await page.getByRole('button', { name: 'Log out' }).click();
@@ -95,4 +101,65 @@ test('the login refuses a wrong password and takes the right one', async ({ page
   // The login lasts: the cookie of the session is sent again after a reload.
   await page.reload();
   await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+});
+
+test('the menu shows the tabs under their categories and opens them in frames', async ({
+  page,
+}) => {
+  await logIn(page);
+  // The tabs point at answers of the server itself, so the test needs no other site.
+  const added = [
+    await page.request.post('./api/v2/categories', {
+      data: { category: 'Media', image: 'fontawesome::film', category_id: 7 },
+    }),
+    await page.request.post('./api/v2/tabs', {
+      data: { name: 'Ping', url: '/api/v2/ping', image: 'fontawesome::heart', enabled: 1 },
+    }),
+    await page.request.post('./api/v2/tabs', {
+      data: { name: 'Rox Page', url: '/api/v2/rox', image: '', enabled: 1, category_id: 7 },
+    }),
+    await page.request.post('./api/v2/tabs', {
+      data: { name: 'Docs', url: 'https://example.com/docs', image: '', enabled: 1, type: 2 },
+    }),
+  ];
+  expect(added.map((response) => response.status())).toEqual([200, 200, 200, 200]);
+  await page.reload();
+
+  const menu = page.getByRole('navigation', { name: 'Tabs' });
+  await expect(menu.getByRole('link', { name: 'Ping' })).toBeVisible();
+  await expect(menu.getByText('Media')).toBeVisible();
+  const docs = menu.getByRole('link', { name: 'Docs' });
+  await expect(docs).toHaveAttribute('href', 'https://example.com/docs');
+  await expect(docs).toHaveAttribute('target', '_blank');
+
+  // A tab opens in a frame, and the address names it as PHP Organizr does.
+  await menu.getByRole('link', { name: 'Ping' }).click();
+  await expect(page).toHaveURL(/#Ping$/);
+  await expect(page.frameLocator('iframe[title="Ping"]').locator('body')).toContainText('pong');
+
+  await menu.getByRole('link', { name: 'Rox Page' }).click();
+  await expect(page).toHaveURL(/#Rox-Page$/);
+  await expect(page.frameLocator('iframe[title="Rox Page"]').locator('body')).toContainText(
+    'rox in socks!',
+  );
+  // The first frame stays loaded behind the second one.
+  await expect(page.locator('iframe[title="Ping"]')).toBeHidden();
+  await expect(page.locator('iframe')).toHaveCount(2);
+
+  // The address leads back to the tab after a reload.
+  await page.reload();
+  await expect(page.locator('iframe[title="Rox Page"]')).toBeVisible();
+  await expect(page.locator('iframe')).toHaveCount(1);
+  await expect(menu.getByRole('link', { name: 'Rox Page' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+});
+
+test('a guest sees no tab of the Admin and gets the login page', async ({ page }) => {
+  await page.goto('./#Ping');
+
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Tabs' }).getByRole('link')).toHaveCount(0);
+  await expect(page.locator('iframe')).toHaveCount(0);
 });

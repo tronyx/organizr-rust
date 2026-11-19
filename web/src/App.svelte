@@ -1,18 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
+  import { contentFor, shownTab } from './lib/menu';
   import { router } from './lib/route.svelte';
   import { session } from './lib/session.svelte';
-  import Login from './pages/Login.svelte';
+  import Content from './pages/Content.svelte';
   import Shell from './pages/Shell.svelte';
+  import TabFrames from './pages/TabFrames.svelte';
   import Wizard from './pages/Wizard.svelte';
 
-  // A guest who sees no tab has nothing to do but to log in.
-  const showLogin = $derived(
-    !session.loggedIn &&
-      (router.route.page === 'login' ||
-        (router.route.page === 'home' && session.tabs.length === 0)),
+  const content = $derived(
+    contentFor(router.route, session.tabs, {
+      loggedIn: session.loggedIn,
+      canManage: session.canManage,
+    }),
   );
+  const shown = $derived(shownTab(content, router.route, session.tabs));
 
   onMount(() => {
     void session.load();
@@ -22,18 +25,13 @@
 {#if session.launch && session.needsSetUp}
   <Wizard />
 {:else if session.launch}
-  <Shell>
-    {#if showLogin}
-      <Login />
-    {:else}
-      <main class="grid flex-1 place-items-center p-4">
-        <div class="card bg-base-200 w-full max-w-md shadow">
-          <div class="card-body">
-            <p>The server is running.</p>
-            <p class="text-sm opacity-70">Version {session.launch.version}</p>
-          </div>
-        </div>
-      </main>
+  <Shell shown={shown?.id}>
+    <!-- The frames stay loaded below every other page. -->
+    <TabFrames tabs={session.tabs} shown={content.kind === 'frame' ? content.tab.id : undefined} />
+    {#if content.kind !== 'frame'}
+      <div class="bg-base-100 absolute inset-0 overflow-auto">
+        <Content {content} />
+      </div>
     {/if}
   </Shell>
 {:else if session.error}
