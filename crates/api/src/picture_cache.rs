@@ -15,7 +15,7 @@ use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::{HeaderValue, header};
 use axum::response::Response;
-use organizr_integrations::http::Outbound;
+use organizr_integrations::http::{Outbound, without_address};
 
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -123,12 +123,13 @@ impl PictureCache {
         if let Some(key) = &source.key {
             request = request.header("X-Api-Key", key);
         }
-        let mut response = request.send().await.map_err(|error| error.to_string())?;
+        // The address can hold an API key, so the error names no address.
+        let mut response = request.send().await.map_err(without_address)?;
         if !response.status().is_success() {
             return Err(format!("the source answered {}", response.status()));
         }
         let mut content = Vec::new();
-        while let Some(chunk) = response.chunk().await.map_err(|error| error.to_string())? {
+        while let Some(chunk) = response.chunk().await.map_err(without_address)? {
             if content.len() + chunk.len() > SIZE_LIMIT {
                 return Err("the picture is too large".to_owned());
             }

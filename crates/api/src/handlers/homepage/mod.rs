@@ -9,6 +9,7 @@ pub mod arr;
 pub mod downloaders;
 pub mod health_checks;
 pub mod html;
+pub mod tautulli;
 pub mod uptime_kuma;
 pub mod weather;
 
@@ -134,6 +135,7 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrdersabnzbd" => ("sabnzbd", downloaders::sabnzbd_permissions()),
         "homepageOrderqBittorrent" => ("qbittorrent", downloaders::qbittorrent_permissions()),
         "homepageOrderWeatherAndAir" => ("weather", weather::permissions()),
+        "homepageOrdertautulli" => ("tautulli", tautulli::permissions()),
         _ => return None,
     };
     let item = Item {

@@ -518,3 +518,61 @@ pub async fn breezometer() -> StandIn {
     )
     .await
 }
+
+/// The API key of the stand-in for the statistics of Tautulli.
+pub const TAUTULLI_KEY: &str = "made-up-tautulli-key";
+
+async fn tautulli_api(RawQuery(query): RawQuery) -> Response {
+    let query = query.as_deref();
+    if query_field(query, "apikey") != Some(TAUTULLI_KEY) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            axum::Json(
+                json!({"response": {"result": "error", "message": "Invalid apikey", "data": {}}}),
+            ),
+        )
+            .into_response();
+    }
+    let data = match query_field(query, "cmd") {
+        Some("get_home_stats") => json!([
+            {"stat_id": "top_movies", "stat_title": "Most Watched Movies", "rows": [
+                {"title": "The Film", "total_plays": 12, "section_id": 1, "rating_key": 815,
+                 "art": "/library/metadata/815/art/1", "thumb": "/library/metadata/815/thumb/1"},
+                {"title": "A Film For Children", "total_plays": 9, "section_id": 3, "rating_key": 816,
+                 "art": "/library/metadata/816/art/1", "thumb": "/library/metadata/816/thumb/1"},
+            ]},
+            {"stat_id": "popular_tv", "stat_title": "Most Popular TV Shows", "rows": [
+                {"title": "The Show", "users_watched": 4, "section_id": 2, "rating_key": 4711,
+                 "art": "/library/metadata/4711/art/1", "thumb": "/library/metadata/4711/thumb/1"},
+            ]},
+            {"stat_id": "top_users", "stat_title": "Most Active Users", "rows": [
+                {"user": "robin", "friendly_name": "Robin", "total_plays": 30},
+            ]},
+            {"stat_id": "top_platforms", "stat_title": "Most Active Platforms", "rows": [
+                {"platform": "Chrome", "platform_name": "chrome", "total_plays": 20},
+            ]},
+            {"stat_id": "last_watched", "stat_title": "Recently Watched", "rows": [
+                {"title": "The Film", "user": "robin"},
+            ]},
+            {"stat_id": "most_concurrent", "stat_title": "Most Concurrent Streams", "rows": []},
+        ]),
+        Some("get_libraries_table") => json!({
+            "recordsTotal": 2,
+            "data": [
+                {"section_id": 1, "section_name": "Films", "section_type": "movie", "count": 120, "plays": 300},
+                {"section_id": 3, "section_name": "Films for children", "section_type": "movie", "count": 20, "plays": 40},
+            ],
+        }),
+        Some("pms_image_proxy") => {
+            return ([(header::CONTENT_TYPE, "image/jpeg")], JPEG).into_response();
+        }
+        _ => json!({}),
+    };
+    axum::Json(json!({"response": {"result": "success", "message": null, "data": data}}))
+        .into_response()
+}
+
+/// A stand-in for the API of Tautulli that the homepage reads.
+pub async fn tautulli_statistics() -> StandIn {
+    StandIn::start(Router::new().route("/api/v2", get(tautulli_api))).await
+}

@@ -68,6 +68,12 @@ impl Outbound {
     }
 }
 
+/// The text of an error of a request without the address of the request. The address
+/// of some services holds their API key, which must not go into a log or an answer.
+pub fn without_address(error: reqwest::Error) -> String {
+    error.without_url().to_string()
+}
+
 /// The time limit of a request from a setting of the PHP application, which is the
 /// time between two refreshes of a homepage item: a number of 1000 or more is in
 /// milliseconds, a smaller one is in seconds. A text that is no number is no limit.
