@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
 
   import { contentFor, shownTab } from './lib/menu';
+  import { rememberReturn } from './lib/returnTo';
   import { router } from './lib/route.svelte';
   import { session } from './lib/session.svelte';
   import Content from './pages/Content.svelte';
@@ -18,7 +19,10 @@
   const shown = $derived(shownTab(content, router.route, session.tabs));
 
   onMount(() => {
-    void session.load();
+    void session.load().then(() => {
+      // A reverse proxy may have sent the person here, with the address to go back to.
+      rememberReturn(window.location.search, window.location.host, session.loggedIn);
+    });
   });
 </script>
 

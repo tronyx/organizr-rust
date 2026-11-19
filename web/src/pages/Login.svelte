@@ -1,6 +1,7 @@
 <script lang="ts">
   // The login page.
   import { api, ApiError, failureText } from '../lib/api';
+  import { takeReturn } from '../lib/returnTo';
   import { PAGES, router } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
 
@@ -33,6 +34,12 @@
         ...(needsCode ? { tfaCode: code } : {}),
       });
       await session.load();
+      // A reverse proxy sent the person here. The login is done, so back to that page.
+      const back = takeReturn(window.location.host);
+      if (back !== null) {
+        window.location.assign(back);
+        return;
+      }
       router.go(PAGES.home);
     } catch (failure) {
       if (failure instanceof ApiError && failure.message === CODE_NEEDED) {

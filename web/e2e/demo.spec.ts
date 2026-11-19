@@ -22,6 +22,9 @@ test('the server hands out the page with a strict security policy', async ({ pag
   await expect(page).toHaveTitle('Organizr V2');
 });
 
+/** The address of the server of the tests. */
+const ADDRESS_URL = `http://${ADDRESS}/`;
+
 /** What the set-up of the tests fills in. These values protect nothing. */
 const ADMIN = {
   username: 'admin',
@@ -680,4 +683,34 @@ test('a new password by e-mail is offered only when the install sends e-mails', 
   await expect(page.getByRole('status')).toContainText('If an account has this address');
   await page.getByRole('link', { name: 'Back to the login' }).click();
   await expect(page).toHaveURL(/#\/login$/);
+});
+
+test('after a login the browser goes back to the page that a proxy held back', async ({
+  page,
+  baseURL,
+}) => {
+  // A reverse proxy sends a person who is not logged in here, with the address that the
+  // person wanted. Here that address is a page of this server itself.
+  const wanted = `${baseURL}api/v2/ping`;
+  await page.goto(`./?return=${wanted}#/login`);
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await page.getByLabel('User name or e-mail address').fill(ADMIN.username);
+  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('button', { name: 'Log in' }).click();
+
+  await expect(page).toHaveURL(wanted);
+  await expect(page.locator('body')).toContainText('pong');
+});
+
+test('an address of another site in the link is not followed', async ({ page, context }) => {
+  await context.clearCookies();
+  await page.goto('./?return=https://evil.example.net/#/login');
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await page.getByLabel('User name or e-mail address').fill(ADMIN.username);
+  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('button', { name: 'Log in' }).click();
+
+  // The person is logged in and stays in Organizr.
+  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+  expect(new URL(page.url()).host).toBe(new URL(ADDRESS_URL).host);
 });
