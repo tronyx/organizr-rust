@@ -2298,6 +2298,7 @@ dependencies = [
 name = "organizr-integrations"
 version = "0.1.0"
 dependencies = [
+ "jiff",
  "organizr-testkit",
  "reqwest",
  "roxmltree",

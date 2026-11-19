@@ -12,6 +12,7 @@ publish.workspace = true
 workspace = true
 
 [dependencies]
+jiff.workspace = true
 reqwest.workspace = true
 roxmltree.workspace = true
 rustls.workspace = true
