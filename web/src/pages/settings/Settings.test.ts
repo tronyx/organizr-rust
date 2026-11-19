@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { EditorData, Tab } from '../../lib/types';
+import { session } from '../../lib/session.svelte';
+import type { Account, EditorData, Tab } from '../../lib/types';
 import { stubApi, type CannedAnswer, type SentRequest } from '../../test-helpers';
 import Settings from './Settings.svelte';
 
@@ -30,7 +31,7 @@ function tab(id: number, name: string, changes: Partial<Tab> = {}): Tab {
   };
 }
 
-const DATA: EditorData = {
+const DATA: Omit<EditorData, 'users'> = {
   tabs: [
     tab(3, 'Plex', { category_id: 7, order: 5 }),
     tab(1, 'Settings', { type: 0, url: 'api/v2/page/settings', group_id: 1, order: 2 }),
@@ -48,6 +49,26 @@ const DATA: EditorData = {
   ],
 };
 
+function account(id: number, username: string, changes: Partial<Account> = {}): Account {
+  return {
+    id,
+    username,
+    email: `${username.toLowerCase()}@example.com`,
+    group: 'User',
+    group_id: 4,
+    locked: 0,
+    image: null,
+    register_date: '2026-11-18 19:02:06',
+    ...changes,
+  };
+}
+
+const USERS: Account[] = [
+  account(1, 'admin', { group: 'Admin', group_id: 0 }),
+  account(3, 'zoe'),
+  account(4, 'Yan', { locked: 1, register_date: '2026-12-01 08:00:00' }),
+];
+
 const LAUNCH: CannedAnswer = {
   data: {
     categories: [],
@@ -63,8 +84,13 @@ const LAUNCH: CannedAnswer = {
 type Answers = Record<string, CannedAnswer | ((request: SentRequest) => CannedAnswer)>;
 
 /** Shows the settings on a stand-in for the API, and waits for the table. */
-async function show(section: 'tabs' | 'categories' | 'groups', answers: Answers = {}) {
-  const sent = stubApi({ 'GET tabs': { data: DATA }, 'GET launch': LAUNCH, ...answers });
+async function show(section: 'tabs' | 'categories' | 'groups' | 'users', answers: Answers = {}) {
+  const sent = stubApi({
+    'GET tabs': { data: DATA },
+    'GET users': { data: USERS },
+    'GET launch': LAUNCH,
+    ...answers,
+  });
   render(Settings, { section });
   await screen.findByRole('table');
   return sent;
@@ -113,12 +139,13 @@ describe('Settings, tabs', () => {
 
     await statusSays('The tab is changed.');
     expect(changes(sent)).toEqual([['PUT tabs/3', { enabled: 0 }]]);
+    // After the change: the two lists of the settings, and the menu.
     expect(
       sent
-        .slice(-2)
+        .slice(-3)
         .map((request) => request.path)
         .sort(),
-    ).toEqual(['launch', 'tabs']);
+    ).toEqual(['launch', 'tabs', 'users']);
   });
 
   it('makes a tab the one that opens at the start', async () => {
@@ -421,9 +448,154 @@ describe('Settings, groups', () => {
   });
 });
 
+describe('Settings, users', () => {
+  /** The launch answer for the Admin of the list, who looks at the page. */
+  const AS_ADMIN: CannedAnswer = {
+    data: {
+      ...(LAUNCH.data as object),
+      user: { username: 'admin', group: 'Admin', groupID: 0, userID: 1, loggedin: true },
+    },
+  };
+
+  it('lists the users with their group and the day they were stored', async () => {
+    await show('users');
+
+    const rows = screen.getAllByRole('row').slice(1);
+    expect(rows.map((row) => within(row).getByRole('rowheader').textContent?.trim())).toEqual([
+      'A admin',
+      'Z zoe',
+      'Y Yan',
+    ]);
+    const yan = rowOf('Yan');
+    expect(within(yan).getByText('yan@example.com')).toBeInTheDocument();
+    expect(within(yan).getByText('User')).toBeInTheDocument();
+    expect(within(yan).getByText('2026-12-01')).toBeInTheDocument();
+    expect(screen.getByLabelText('Lock Yan')).toBeChecked();
+    expect(screen.getByLabelText('Lock zoe')).not.toBeChecked();
+  });
+
+  it('does not offer a person to lock or to delete the own account', async () => {
+    stubApi({ 'GET launch': AS_ADMIN });
+    await session.load();
+    await show('users', { 'GET launch': AS_ADMIN });
+
+    expect(screen.getByLabelText('Lock admin')).toBeDisabled();
+    expect(within(rowOf('admin')).getByRole('button', { name: /Delete/ })).toBeDisabled();
+    expect(within(rowOf('admin')).getByRole('button', { name: /Change/ })).toBeEnabled();
+    expect(screen.getByLabelText('Lock zoe')).toBeEnabled();
+    expect(within(rowOf('zoe')).getByRole('button', { name: /Delete/ })).toBeEnabled();
+  });
+
+  it('adds a user with a name, an address and a password', async () => {
+    const sent = await show('users', { 'POST users': { message: 'User created' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add a user' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Add a user' });
+    // The group and the picture of a user are set after the user exists.
+    expect(within(dialog).queryByLabelText('Group')).not.toBeInTheDocument();
+    const fill = (label: string, value: string) =>
+      fireEvent.input(within(dialog).getByLabelText(label), { target: { value } });
+    await fill('User name', 'Abe');
+    await fill('E-mail address', 'abe@example.com');
+    await fill('Password', 'the password of abe');
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await statusSays('The user is added.');
+    expect(changes(sent)).toEqual([
+      [
+        'POST users',
+        { username: 'Abe', email: 'abe@example.com', password: 'the password of abe' },
+      ],
+    ]);
+  });
+
+  it('sends only what the form changed', async () => {
+    const sent = await show('users', { 'PUT users/3': { message: 'User info updated' } });
+
+    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: /Change/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
+    expect(within(dialog).getByLabelText('User name')).toHaveValue('zoe');
+    expect(within(dialog).getByLabelText('E-mail address')).toHaveValue('zoe@example.com');
+    // Nobody is put into the group of guests.
+    const group = within(dialog).getByLabelText('Group');
+    expect(
+      within(group)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Admin', 'Co-Admin', 'User']);
+    await fireEvent.change(group, { target: { value: '1' } });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await statusSays('The user is changed.');
+    expect(changes(sent)).toEqual([['PUT users/3', { group_id: 1 }]]);
+  });
+
+  it('sends a new password only when one was entered, and shows a refusal', async () => {
+    const sent = await show('users', {
+      'PUT users/3': { status: 409, message: 'Username: Yan is already taken' },
+    });
+
+    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: /Change/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
+    await fireEvent.input(within(dialog).getByLabelText('User name'), { target: { value: 'Yan' } });
+    await fireEvent.input(within(dialog).getByLabelText('New password'), {
+      target: { value: 'a new password' },
+    });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'Username: Yan is already taken',
+    );
+    expect(changes(sent)).toEqual([
+      ['PUT users/3', { username: 'Yan', password: 'a new password' }],
+    ]);
+  });
+
+  it('closes the form without a request when nothing was changed', async () => {
+    const sent = await show('users');
+
+    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: /Change/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(changes(sent)).toEqual([]);
+  });
+
+  it('locks and unlocks a user', async () => {
+    const sent = await show('users', { 'PUT users/3': {}, 'PUT users/4': {} });
+
+    await fireEvent.click(screen.getByLabelText('Lock zoe'));
+    await statusSays('The user is locked.');
+    await fireEvent.click(screen.getByLabelText('Lock Yan'));
+    await statusSays('The user is unlocked.');
+
+    expect(changes(sent)).toEqual([
+      ['PUT users/3', { locked: 1 }],
+      ['PUT users/4', { locked: 0 }],
+    ]);
+  });
+
+  it('deletes a user only after the person said yes, and shows a refusal', async () => {
+    const sent = await show('users', {
+      'DELETE users/1': { status: 409, message: 'Cannot delete the last admin' },
+    });
+    const ask = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+
+    await fireEvent.click(within(rowOf('admin')).getByRole('button', { name: /Delete/ }));
+    expect(changes(sent)).toEqual([]);
+    await fireEvent.click(within(rowOf('admin')).getByRole('button', { name: /Delete/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cannot delete the last admin');
+    expect(ask).toHaveBeenCalledWith('Delete the user admin?');
+    expect(changes(sent)).toEqual([['DELETE users/1', undefined]]);
+  });
+});
+
 describe('Settings', () => {
   it('says so when the data cannot be loaded', async () => {
-    stubApi({ 'GET tabs': { status: 401, message: 'Not Authorized' } });
+    const refused = { status: 401, message: 'Not Authorized' };
+    stubApi({ 'GET tabs': refused, 'GET users': refused });
     render(Settings, { section: 'tabs' });
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Not Authorized');

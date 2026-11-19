@@ -1,14 +1,15 @@
 <script lang="ts">
-  // The settings: the editors for tabs, for categories and for groups.
+  // The settings: the editors for tabs, categories, groups and users.
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
-  import type { EditorData } from '../../lib/types';
+  import type { Account, EditorData } from '../../lib/types';
   import CategoriesEditor from './CategoriesEditor.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
   import TabsEditor from './TabsEditor.svelte';
+  import UsersEditor from './UsersEditor.svelte';
 
   let { section }: { section: SettingsSection } = $props();
 
@@ -19,7 +20,11 @@
 
   async function load() {
     try {
-      data = (await api<EditorData>('GET', 'tabs')).data;
+      const [editor, users] = await Promise.all([
+        api<Omit<EditorData, 'users'>>('GET', 'tabs'),
+        api<Account[]>('GET', 'users'),
+      ]);
+      data = { ...editor.data, users: users.data };
       loadError = null;
     } catch (failure) {
       loadError = failureText(failure);
@@ -77,6 +82,15 @@
     >
       Groups
     </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'users'}
+      aria-selected={section === 'users'}
+      href={PAGES.userSettings}
+    >
+      Users
+    </a>
   </div>
 
   <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
@@ -86,8 +100,10 @@
       <TabsEditor {data} {change} />
     {:else if section === 'categories'}
       <CategoriesEditor {data} {change} />
-    {:else}
+    {:else if section === 'groups'}
       <GroupsEditor {data} {change} />
+    {:else}
+      <UsersEditor {data} {change} />
     {/if}
   {:else if loadError}
     <div role="alert" class="alert alert-error">

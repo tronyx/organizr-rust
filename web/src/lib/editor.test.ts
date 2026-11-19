@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { asSwitch, inMenuOrder, isFixedGroup, placesAfterMove } from './editor';
+import { asSwitch, changedFields, inMenuOrder, isFixedGroup, placesAfterMove } from './editor';
 
 describe('inMenuOrder', () => {
   it('sorts by place, and by id for the same place', () => {
@@ -57,5 +57,19 @@ describe('isFixedGroup', () => {
     expect(isFixedGroup({ group_id: 999 })).toBe(true);
     expect(isFixedGroup({ group_id: 1 })).toBe(false);
     expect(isFixedGroup({ group_id: 998 })).toBe(false);
+  });
+});
+
+describe('changedFields', () => {
+  it('holds the fields with another value, and nothing else', () => {
+    const stored = { username: 'zoe', email: 'zoe@example.com', group_id: 4, image: '' };
+
+    expect(changedFields(stored, { ...stored })).toEqual({});
+    expect(changedFields(stored, { ...stored, username: 'Zoe', group_id: 0 })).toEqual({
+      username: 'Zoe',
+      group_id: 0,
+    });
+    // A value that was emptied is a change.
+    expect(changedFields({ ...stored, image: 'z.png' }, stored)).toEqual({ image: '' });
   });
 });

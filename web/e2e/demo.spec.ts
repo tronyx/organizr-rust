@@ -318,6 +318,44 @@ test('the Admin manages the groups, and the group for new users is not deleted',
   await expect(page.getByRole('row', { name: /Writers/ })).toHaveCount(0);
 });
 
+test('the Admin manages the users, and cannot delete the own account', async ({ page }) => {
+  await logIn(page);
+  await page.goto('./#/settings/tabs');
+  await page.getByRole('tab', { name: 'Users' }).click();
+  await expect(page).toHaveURL(/#\/settings\/users$/);
+  const status = page.getByRole('status');
+  const own = page.getByRole('row', { name: new RegExp(ADMIN.username) });
+  await expect(own.getByRole('button', { name: /Delete/ })).toBeDisabled();
+  await expect(page.getByLabel(`Lock ${ADMIN.username}`)).toBeDisabled();
+
+  await page.getByRole('button', { name: 'Add a user' }).click();
+  const added = page.getByRole('dialog', { name: 'Add a user' });
+  await added.getByLabel('User name').fill('abe');
+  await added.getByLabel('E-mail address').fill('abe@example.com');
+  await added.getByLabel('Password').fill('the password of abe');
+  await added.getByRole('button', { name: 'Save' }).click();
+  await expect(status).toHaveText('The user is added.');
+  // A new user joins the group for new users.
+  const abe = page.getByRole('row', { name: /abe@example\.com/ });
+  await expect(abe.getByRole('cell', { name: 'User', exact: true })).toBeVisible();
+
+  await abe.getByRole('button', { name: /Change/ }).click();
+  const changed = page.getByRole('dialog', { name: 'Change the user abe' });
+  await changed.getByLabel('Group').selectOption({ label: 'Co-Admin' });
+  await changed.getByRole('button', { name: 'Save' }).click();
+  await expect(status).toHaveText('The user is changed.');
+  await expect(abe.getByRole('cell', { name: 'Co-Admin', exact: true })).toBeVisible();
+
+  await page.getByLabel('Lock abe').check();
+  await expect(status).toHaveText('The user is locked.');
+  await expect(page.getByLabel('Lock abe')).toBeChecked();
+
+  page.once('dialog', (dialog) => void dialog.accept());
+  await abe.getByRole('button', { name: /Delete/ }).click();
+  await expect(status).toHaveText('The user is deleted.');
+  await expect(page.getByRole('row', { name: /abe@example\.com/ })).toHaveCount(0);
+});
+
 test('a guest cannot open the settings', async ({ page }) => {
   await page.goto('./#/settings/tabs');
 

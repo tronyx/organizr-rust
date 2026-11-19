@@ -107,10 +107,27 @@ export interface Status {
 }
 
 /** The answer of `GET /tabs` and `GET /categories`: what the editors show. */
+/** A user as the user routes show it. */
+export interface Account {
+  id: number;
+  username: string;
+  email: string | null;
+  /** The name of the group of the user. */
+  group: string | null;
+  /** The level of the group of the user. */
+  group_id: number | null;
+  locked: Switch;
+  image: string | null;
+  /** When the user was stored: `2026-11-18 19:02:06`, in UTC. */
+  register_date: string;
+}
+
+/** What the settings pages show: the answers of `GET /tabs` and `GET /users`. */
 export interface EditorData {
   tabs: Tab[];
   categories: Category[];
   groups: Group[];
+  users: Account[];
 }
 
 /** The level of a Co-Admin. Callers of this level, or one with more access, manage the install. */

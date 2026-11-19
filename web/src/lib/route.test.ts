@@ -20,6 +20,7 @@ describe('parseRoute', () => {
       section: 'categories',
     });
     expect(parseRoute(PAGES.groupSettings)).toEqual({ page: 'settings', section: 'groups' });
+    expect(parseRoute(PAGES.userSettings)).toEqual({ page: 'settings', section: 'users' });
   });
 
   it('takes a page that it does not know for the start', () => {

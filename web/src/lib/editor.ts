@@ -1,4 +1,4 @@
-// Helpers for the editors of tabs, categories and groups.
+// Helpers for the editors of tabs, categories, groups and users.
 
 /** A record with a place in the menu. */
 export interface Placed {
@@ -36,7 +36,7 @@ export function asSwitch(on: boolean): 0 | 1 {
 
 /** The levels of the two groups that every install has and keeps. */
 const ADMIN_LEVEL = 0;
-const GUEST_LEVEL = 999;
+export const GUEST_LEVEL = 999;
 
 /**
  * Whether a group is one of the two that every install keeps: the group of the Admin and
@@ -44,4 +44,21 @@ const GUEST_LEVEL = 999;
  */
 export function isFixedGroup(group: { group_id: number }): boolean {
   return group.group_id === ADMIN_LEVEL || group.group_id === GUEST_LEVEL;
+}
+
+/**
+ * The fields of a form whose value differs from the stored one. A change request then
+ * holds what the person changed, and nothing else.
+ */
+export function changedFields<T extends Record<string, unknown>>(
+  stored: T,
+  form: T,
+): Record<string, unknown> {
+  const changed: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(form)) {
+    if (stored[name] !== value) {
+      changed[name] = value;
+    }
+  }
+  return changed;
 }
