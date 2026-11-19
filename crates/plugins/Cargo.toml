@@ -10,3 +10,16 @@ publish.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+organizr-settings.workspace = true
+
+lettre.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+organizr-testkit.workspace = true
+
+tokio = { workspace = true, features = ["time"] }

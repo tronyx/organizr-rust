@@ -18,6 +18,7 @@ version = 2
 confidence-threshold = 0.8
 # Licences that may be combined with this GPL-3.0 project.
 allow = [
+    "0BSD",
     "MIT",
     "Apache-2.0",
     "BSD-3-Clause",

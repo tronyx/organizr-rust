@@ -26,6 +26,7 @@ serde.workspace = true
 # The replay must keep key order and parse floats bit for bit.
 serde_json = { workspace = true, features = ["preserve_order", "float_roundtrip"] }
 tempfile.workspace = true
+tokio = { workspace = true, features = ["io-util", "net"] }
 tower.workspace = true
 
 [dev-dependencies]
