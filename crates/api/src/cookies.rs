@@ -1,5 +1,6 @@
 //! Reading the cookies of a request and writing cookies as the PHP application does.
 
+use std::fmt::Write as _;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use axum::http::{HeaderMap, HeaderValue, header};
@@ -67,12 +68,46 @@ impl CookieScope {
         self.render(name, value, expires, true)
     }
 
+    /// The two `Set-Cookie` values for a cookie that another application reads: the
+    /// session that a single sign-on got from it. The value is written with `%xx` for
+    /// every character that is no letter, digit, `-`, `_`, `.` or `~`, as PHP writes it.
+    /// `path` is the path of the application on its host.
+    pub fn set_for_application(
+        &self,
+        name: &str,
+        value: &str,
+        expires: SystemTime,
+        http_only: bool,
+        path: &str,
+    ) -> Result<[HeaderValue; 2], CookieError> {
+        let mut encoded = String::with_capacity(value.len());
+        for byte in value.bytes() {
+            if byte.is_ascii_alphanumeric() || b"-_.~".contains(&byte) {
+                encoded.push(char::from(byte));
+            } else {
+                let _ = write!(encoded, "%{byte:02X}");
+            }
+        }
+        self.render_at(name, &encoded, expires, http_only && self.secure, path)
+    }
+
     fn render(
         &self,
         name: &str,
         value: &str,
         expires: SystemTime,
         http_only: bool,
+    ) -> Result<[HeaderValue; 2], CookieError> {
+        self.render_at(name, value, expires, http_only, "/")
+    }
+
+    fn render_at(
+        &self,
+        name: &str,
+        value: &str,
+        expires: SystemTime,
+        http_only: bool,
+        path: &str,
     ) -> Result<[HeaderValue; 2], CookieError> {
         let since_epoch = expires
             .duration_since(UNIX_EPOCH)
@@ -84,7 +119,7 @@ impl CookieScope {
 
         let domains = cookie_domains(&self.host);
         let render = |domain: &str| {
-            let mut cookie = format!("{name}={value}; expires={expires}; path=/");
+            let mut cookie = format!("{name}={value}; expires={expires}; path={path}");
             if !domains.wide.is_empty() {
                 cookie.push_str("; domain=");
                 cookie.push_str(domain);
@@ -183,6 +218,41 @@ mod tests {
             host: host.to_owned(),
             secure,
         }
+    }
+
+    #[test]
+    fn cookie_of_another_application_has_its_path_and_an_encoded_value() {
+        let over_https = text(
+            scope("organizr.example.com", true)
+                .set_for_application("connect.sid", "s:abc.def+g/h=", expiry(), true, "/tautulli")
+                .expect("the cookie can be written"),
+        );
+
+        assert_eq!(
+            over_https[0],
+            "connect.sid=s%3Aabc.def%2Bg%2Fh%3D; expires=Wed, 25-Nov-2026 17:16:08 GMT; path=/tautulli; domain=.example.com; SameSite=Lax; Secure; HttpOnly"
+        );
+        assert!(over_https[1].contains("; domain=organizr.example.com;"));
+
+        // Not hidden from scripts when the application did not ask for that, and never
+        // over plain HTTP, as in the PHP application.
+        let readable = text(
+            scope("organizr.example.com", true)
+                .set_for_application("mpt", "token-1_2~3", expiry(), false, "/")
+                .expect("the cookie can be written"),
+        );
+        assert!(readable[0].starts_with("mpt=token-1_2~3; "));
+        assert!(!readable[0].contains("HttpOnly"));
+        let plain = text(
+            scope("organizr.example.com", false)
+                .set_for_application("tautulli_token_x", "v", expiry(), true, "/")
+                .expect("the cookie can be written"),
+        );
+        assert!(
+            !plain[0].contains("HttpOnly") && !plain[0].contains("Secure"),
+            "{}",
+            plain[0]
+        );
     }
 
     fn text(values: [HeaderValue; 2]) -> [String; 2] {

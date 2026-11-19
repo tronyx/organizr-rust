@@ -3,6 +3,7 @@
 pub mod basics;
 pub mod categories;
 pub mod config;
+pub mod external_login;
 pub mod fields;
 pub mod forward_auth;
 pub mod groups;
@@ -13,6 +14,7 @@ pub mod login;
 pub mod logout;
 pub mod mail;
 pub mod ping;
+pub mod plex;
 pub mod register;
 pub mod tabs;
 pub mod token;

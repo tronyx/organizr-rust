@@ -246,6 +246,20 @@ impl<'a> Users<'a> {
             .collect())
     }
 
+    /// Sets or removes the sealed Plex token of a user. Returns whether the user exists.
+    pub async fn set_plex_token(
+        &self,
+        id: UserId,
+        sealed_token: Option<String>,
+    ) -> Result<bool, DbError> {
+        let result = user::Entity::update_many()
+            .col_expr(user::Column::PlexToken, Expr::value(sealed_token))
+            .filter(user::Column::Id.eq(id.get()))
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected > 0)
+    }
+
     /// Sets or removes the second factor of a user. Returns whether the user exists.
     pub async fn set_two_factor(
         &self,

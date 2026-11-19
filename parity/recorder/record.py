@@ -213,6 +213,10 @@ FORM = {"Content-Type": "application/x-www-form-urlencoded"}
 
 # Logging in with a local password. No case shares cookies with another one.
 LOGIN = [
+    # A login with a token of Plex. The reference has that kind of login switched off,
+    # and needs no Plex account to say so.
+    ("plex_token_while_that_login_is_off", "POST", "/api/v2/login", {"json": {"oAuth": "made-up-token", "oAuthType": "plex"}}),
+    ("empty_token_is_a_password_login", "POST", "/api/v2/login", {"json": {**ADMIN, "oAuth": "", "oAuthType": "plex"}}),
     ("wrong_password", "POST", "/api/v2/login", {"json": {**ADMIN, "password": "not-it"}}),
     ("unknown_user", "POST", "/api/v2/login", {"json": {**ADMIN, "username": "nobody"}}),
     ("correct_password", "POST", "/api/v2/login", {"json": ADMIN}),

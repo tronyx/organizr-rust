@@ -9,8 +9,9 @@ use organizr_domain::{NewSession, PasswordHash, Session, Timestamp, User};
 use thiserror::Error;
 
 use crate::password::{self, HashError, PasswordCheck};
-use crate::recovery;
-use crate::secrets::{SecretBox, two_factor_name};
+use crate::recovery::{self, RecoveryError};
+use crate::registration::RegistrationError;
+use crate::secrets::{SecretBox, SecretError, two_factor_name};
 use crate::session_token::{SessionToken, TokenError};
 use crate::two_factor;
 
@@ -52,6 +53,26 @@ pub enum LoginError {
     /// The code of the second factor is wrong.
     #[error("the code of the second factor is wrong")]
     WrongSecondFactor,
+
+    /// The login came with a token of a kind that the application does not know.
+    #[error("the kind of the login token is not known")]
+    UnknownTokenKind,
+
+    /// The login came with a Plex token, and the `plexoAuth` setting is off.
+    #[error("the login with a Plex token is switched off")]
+    TokenLoginIsOff,
+
+    /// The account for a user of another service could not be made.
+    #[error("the account could not be made: {0}")]
+    Account(#[source] Box<RegistrationError>),
+
+    /// The password or the address for a new account could not be made.
+    #[error(transparent)]
+    NewAccount(RecoveryError),
+
+    /// A secret of the user could not be sealed.
+    #[error(transparent)]
+    Secret(SecretError),
 
     /// The database failed.
     #[error(transparent)]
@@ -95,7 +116,7 @@ impl<'a> SecondFactor<'a> {
 
 /// Checks the second factor of a user whose password was correct. Returns whether a
 /// code was checked.
-async fn check_second_factor(
+pub(crate) async fn check_second_factor(
     database: &Database,
     user: &User,
     second_factor: SecondFactor<'_>,

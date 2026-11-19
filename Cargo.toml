@@ -41,6 +41,7 @@ organizr-auth = { path = "crates/auth" }
 organizr-db = { path = "crates/db" }
 organizr-domain = { path = "crates/domain" }
 organizr-import = { path = "crates/import" }
+organizr-integrations = { path = "crates/integrations" }
 organizr-plugins = { path = "crates/plugins" }
 organizr-settings = { path = "crates/settings" }
 organizr-testkit = { path = "crates/testkit" }

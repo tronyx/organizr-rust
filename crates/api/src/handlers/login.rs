@@ -4,11 +4,13 @@ use std::time::{Duration, Instant, SystemTime};
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, header};
+use axum::http::{HeaderMap, HeaderValue, header};
 use axum::response::{IntoResponse, Response};
+use organizr_auth::external::{self, ExternalAccount};
 use organizr_auth::login::{self, Device, LoggedIn, LoginError, SecondFactor};
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
-use organizr_domain::Timestamp;
+use organizr_domain::{GroupLevel, Timestamp};
+use organizr_settings::{AuthType, Settings};
 
 use crate::api_data::ApiData;
 use crate::caller::{now_stamp, session_cookie_name};
@@ -16,6 +18,7 @@ use crate::client::{Client, LocalNetworks};
 use crate::cookies::{self, CookieScope};
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
+use crate::handlers::external_login::{self, HandOff};
 use crate::handlers::mail;
 use crate::state::AppState;
 
@@ -71,18 +74,19 @@ pub async fn login(
         skip: settings.ignore_tfa_local
             && LocalNetworks::from_setting(&settings.local_ip_list).contains(&client),
     };
-    let result = login::with_password(
-        state.database(),
-        &name,
-        &password,
+    let request = Attempted {
+        name: &name,
+        password: &password,
+        plex_token: data.text("oAuth").filter(|token| !token.is_empty()),
+        kind_of_token: data.text("oAuthType"),
         second_factor,
         device,
-        now_stamp(now),
+        now: now_stamp(now),
         lifetime,
-    )
-    .await;
-    let logged_in = match result {
-        Ok(logged_in) => logged_in,
+    };
+    let result = check_login(&state, &settings, request).await;
+    let outcome = match result {
+        Ok(outcome) => outcome,
         // A wrong code counts as a failed login, as a wrong password does.
         Err(error @ (LoginError::WrongCredentials | LoginError::WrongSecondFactor)) => {
             tracing::warn!(name = %name, client = %client.address, %error, "a login failed");
@@ -109,9 +113,15 @@ pub async fn login(
         Err(error) => return Err(error.into()),
     };
     limiter.record_success(&attempt);
+    let logged_in = &outcome.logged_in;
     tracing::info!(user = %logged_in.user.username, client = %client.address, "a user logged in");
+    if outcome.created {
+        let site = mail::site_address(&settings, &headers, &client);
+        let user = &logged_in.user;
+        mail::welcome(&state, &site, &user.username, user.email.as_deref());
+    }
 
-    tell_about_a_new_device(&state, &headers, &client, &logged_in, now_stamp(now)).await?;
+    tell_about_a_new_device(&state, &headers, &client, logged_in, now_stamp(now)).await?;
 
     let session_cookie = CookieScope::of(&headers, client.https).set_hidden(
         &session_cookie_name(&settings),
@@ -126,7 +136,148 @@ pub async fn login(
     };
     let mut response = answer.into_response();
     cookies::append(&mut response, session_cookie);
+    let scope = CookieScope::of(&headers, client.https);
+    if outcome.with_plex_token {
+        // The PHP application marks a login with a Plex token for its interface.
+        cookies::append(&mut response, scope.set("oAuth", "true", now + lifetime)?);
+    }
+
+    let expires = now + ONE_DAY * settings.remember_me_days.min(MOST_DAYS);
+    let sessions = single_sign_on(&state, &headers, &client, &outcome, &password, expires).await?;
+    cookies::append(&mut response, sessions);
     Ok(response)
+}
+
+/// Gets the user a session of each application of single sign-on, and returns the
+/// cookies for the browser. They last as long as a login with "remember me" does.
+async fn single_sign_on(
+    state: &AppState,
+    headers: &HeaderMap,
+    client: &Client,
+    outcome: &Outcome,
+    password: &str,
+    expires: SystemTime,
+) -> Result<Vec<HeaderValue>, ApiError> {
+    let user = &outcome.logged_in.user;
+    let level = state
+        .database()
+        .groups()
+        .find(user.group)
+        .await?
+        .map_or(GroupLevel::GUEST, |group| group.level);
+    let hand_off = HandOff {
+        user,
+        level,
+        password,
+        plex_token: outcome.plex_token.as_deref(),
+        expires,
+    };
+    Ok(external_login::hand_off(state, headers, client, hand_off).await)
+}
+
+/// What a login brings.
+struct Attempted<'a> {
+    name: &'a str,
+    password: &'a str,
+    /// The token of the field `oAuth`.
+    plex_token: Option<String>,
+    /// The field `oAuthType`.
+    kind_of_token: Option<String>,
+    second_factor: SecondFactor<'a>,
+    device: Device,
+    now: Timestamp,
+    lifetime: Duration,
+}
+
+/// A login that passed.
+struct Outcome {
+    logged_in: LoggedIn,
+    /// Whether the login made the account.
+    created: bool,
+    /// The Plex token of the user, when Plex checked the login.
+    plex_token: Option<String>,
+    /// Whether the login came with a Plex token and no password.
+    with_plex_token: bool,
+}
+
+/// Checks a login: with Plex when the request or the settings ask for that, and with
+/// the stored password when the settings allow it.
+async fn check_login(
+    state: &AppState,
+    settings: &Settings,
+    request: Attempted<'_>,
+) -> Result<Outcome, LoginError> {
+    let database = state.database();
+    let with_plex_token = request.plex_token.is_some();
+    let account = if let Some(token) = &request.plex_token {
+        if request.kind_of_token.as_deref() != Some(external_login::PLEX_BACKEND) {
+            return Err(LoginError::UnknownTokenKind);
+        }
+        if !settings.plex_oauth {
+            return Err(LoginError::TokenLoginIsOff);
+        }
+        match external_login::by_plex_token(state, settings, token).await {
+            Some(account) => Some(account),
+            None => return Err(LoginError::WrongCredentials),
+        }
+    } else if settings.auth_type != AuthType::Internal
+        && settings.auth_backend == external_login::PLEX_BACKEND
+    {
+        external_login::by_plex_password(state, settings, request.name, request.password).await
+    } else {
+        None
+    };
+
+    let Some(account) = account else {
+        // Only the service counts with `external`. Every other setting takes the stored
+        // password, also after the service said no.
+        if settings.auth_type == AuthType::External {
+            return Err(LoginError::WrongCredentials);
+        }
+        let logged_in = login::with_password(
+            database,
+            request.name,
+            request.password,
+            request.second_factor,
+            request.device,
+            request.now,
+            request.lifetime,
+        )
+        .await?;
+        return Ok(Outcome {
+            logged_in,
+            created: false,
+            plex_token: None,
+            with_plex_token: false,
+        });
+    };
+
+    let second_factor = SecondFactor {
+        // With the `ignoreTFAIfPlexOAuth` setting, Plex is the second factor.
+        skip: request.second_factor.skip || (with_plex_token && settings.ignore_tfa_if_plex_o_auth),
+        ..request.second_factor
+    };
+    let vouched = ExternalAccount {
+        username: &account.username,
+        email: &account.email,
+        password: (!with_plex_token).then_some(request.password),
+        plex_token: Some(&account.token),
+    };
+    let done = external::log_in(
+        database,
+        vouched,
+        second_factor,
+        request.device,
+        request.now,
+        request.lifetime,
+    )
+    .await?;
+    Ok(Outcome {
+        logged_in: done.logged_in,
+        created: done.created,
+        plex_token: Some(account.token),
+        with_plex_token,
+    })
 }
 
 /// The device that a request comes from: the address of the client and the name that

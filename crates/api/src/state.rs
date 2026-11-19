@@ -8,6 +8,8 @@ use organizr_auth::login_limit::LoginLimiter;
 use organizr_auth::secrets::{SecretBox, SecretError};
 use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, DbError, StoredSetting};
+use organizr_integrations::http::Outbound;
+use organizr_integrations::plex::{PLEX_TV, PlexTv};
 use organizr_plugins::mail::Mailer;
 use organizr_settings::{Settings, SettingsError};
 use serde_json::Value;
@@ -32,6 +34,10 @@ pub struct AppState {
     prober: Prober,
     /// What sends the e-mails.
     mailer: Mailer,
+    /// The client for requests to other services. `None` when it could not be built.
+    outbound: Option<Outbound>,
+    /// The address of the account service of Plex.
+    plex_tv: Arc<str>,
     /// Held while settings are changed, so that two changes do not overwrite each other.
     settings_change: Arc<Mutex<()>>,
 }
@@ -66,6 +72,12 @@ impl AppState {
             picture_folder: None,
             prober: Prober::network(),
             mailer: Mailer::smtp(),
+            outbound: Outbound::new()
+                .inspect_err(|error| {
+                    tracing::error!(%error, "the client for other services could not be built");
+                })
+                .ok(),
+            plex_tv: Arc::from(PLEX_TV),
             settings_change: Arc::new(Mutex::new(())),
         }
     }
@@ -188,6 +200,24 @@ impl AppState {
     pub fn with_mailer(mut self, mailer: Mailer) -> Self {
         self.mailer = mailer;
         self
+    }
+
+    /// The same state, with another address for the account service of Plex. A test
+    /// uses it to put a stand-in in the place of `plex.tv`.
+    #[must_use]
+    pub fn with_plex_tv(mut self, address: &str) -> Self {
+        self.plex_tv = Arc::from(address);
+        self
+    }
+
+    /// The client for requests to other services.
+    pub const fn outbound(&self) -> Option<&Outbound> {
+        self.outbound.as_ref()
+    }
+
+    /// The client for the account service of Plex.
+    pub fn plex(&self) -> Option<PlexTv> {
+        Some(PlexTv::new(self.outbound.clone()?, &self.plex_tv))
     }
 
     /// What sends the e-mails.

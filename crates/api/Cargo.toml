@@ -15,6 +15,7 @@ workspace = true
 organizr-auth.workspace = true
 organizr-db.workspace = true
 organizr-domain.workspace = true
+organizr-integrations.workspace = true
 organizr-plugins.workspace = true
 organizr-settings.workspace = true
 

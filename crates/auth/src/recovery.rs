@@ -69,7 +69,7 @@ fn seconds(duration: Duration) -> i64 {
 }
 
 /// A new random password.
-fn new_password() -> Result<String, RecoveryError> {
+pub(crate) fn new_password() -> Result<String, RecoveryError> {
     // Bytes above this would make the first characters of the alphabet more likely.
     let limit = u8::try_from(256 - 256 % ALPHABET.len()).unwrap_or(u8::MAX);
     let mut password = String::with_capacity(LENGTH);

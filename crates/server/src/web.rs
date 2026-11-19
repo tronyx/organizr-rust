@@ -21,9 +21,12 @@ use axum::response::Response;
 /// and none of them is written into the page, so a text that an attacker gets into the
 /// page cannot run as a script. Pictures and frames come from anywhere, because the
 /// tabs are other web applications.
+///
+/// The page talks to the server itself and to `plex.tv`: for the login with a Plex
+/// account, the browser gets a token from Plex directly.
 const CONTENT_SECURITY_POLICY: &str = "default-src 'self'; script-src 'self'; \
     style-src 'self'; img-src 'self' data: http: https:; font-src 'self'; \
-    connect-src 'self'; frame-src http: https:; frame-ancestors 'self'; base-uri 'none'; \
+    connect-src 'self' https://plex.tv; frame-src http: https:; frame-ancestors 'self'; base-uri 'none'; \
     form-action 'self'; object-src 'none'";
 
 /// The name of the file that is the page.
@@ -292,6 +295,8 @@ mod tests {
             "; object-src 'none';",
             "; base-uri 'none';",
             "; frame-ancestors 'self';",
+            // The browser asks plex.tv for the token of the button "Log in with Plex".
+            "; connect-src 'self' https://plex.tv;",
         ] {
             assert!(policy.contains(rule), "{rule}");
         }

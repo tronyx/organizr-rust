@@ -151,6 +151,18 @@ impl IntoResponse for ApiError {
                 Envelope::error(StatusCode::UNPROCESSABLE_ENTITY, "Wrong 2FA", NoData)
                     .into_response()
             }
+            Self::Login(LoginError::TokenLoginIsOff) => Envelope::error(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Plex oAuth is not setup",
+                NoData,
+            )
+            .into_response(),
+            Self::Login(LoginError::UnknownTokenKind) => Envelope::error(
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "No oAuthType defined",
+                NoData,
+            )
+            .into_response(),
             Self::Login(error) => internal_error(&error, "a login could not be completed"),
             Self::Install(error) => internal_error(&error, "the set-up could not be completed"),
             Self::Registration(error) => {

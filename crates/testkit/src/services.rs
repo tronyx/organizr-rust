@@ -191,8 +191,9 @@ pub const OWNER_TOKEN: &str = "made-up-token-of-the-owner";
 /// The id of the Plex server of the owner.
 pub const SERVER_ID: &str = "made-up-server-one";
 
-/// The accounts of the stand-in: the owner, two friends, and a stranger.
-pub const PLEX_USERS: [PlexUser; 4] = [
+/// The accounts of the stand-in: the owner, two friends, a stranger, and a stranger
+/// whose account has no e-mail address.
+pub const PLEX_USERS: [PlexUser; 5] = [
     PlexUser {
         username: "Owner",
         email: "owner@example.com",
@@ -219,6 +220,13 @@ pub const PLEX_USERS: [PlexUser; 4] = [
         email: "stranger@example.com",
         password: "the plex password of a stranger",
         token: "made-up-token-of-a-stranger",
+        shared_servers: &[],
+    },
+    PlexUser {
+        username: "nomail",
+        email: "",
+        password: "the plex password of nomail",
+        token: "made-up-token-of-nomail",
         shared_servers: &[],
     },
 ];
