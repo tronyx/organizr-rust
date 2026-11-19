@@ -136,6 +136,8 @@ async fn me_shows_the_account_and_the_sessions_but_no_token() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let app = installed_app(database);
+        // A login takes long on a slow machine, so the test notes the time around both.
+        let start = now();
         let this_browser = log_in_as_admin(&app, "Browser/1").await;
         let other_browser = log_in_as_admin(&app, "Browser/2").await;
         let before = now();
@@ -176,7 +178,7 @@ async fn me_shows_the_account_and_the_sessions_but_no_token() {
         // The times are those of the session, in the two forms of the PHP application.
         let stored = sessions_of(database, admin(database).await.id).await;
         let created = stored[0].created_at.unix_seconds();
-        assert!((before - 5..=before + 5).contains(&created));
+        assert!((start..=before).contains(&created));
         let text = |seconds: i64| {
             jiff::Timestamp::from_second(seconds)
                 .expect("the time is valid")
