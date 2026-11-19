@@ -23,6 +23,19 @@ pub struct Args {
     #[arg(long, env = "ORGANIZR_LISTEN", default_value = "0.0.0.0:8080")]
     listen: SocketAddr,
 
+    /// The reverse proxies in front of the application: addresses and networks, separated
+    /// by commas, for example `172.18.0.0/16`. The headers `X-Forwarded-For` and
+    /// `X-Forwarded-Proto` are believed only from these. Without it, no proxy is trusted.
+    #[arg(long, env = "ORGANIZR_TRUSTED_PROXIES", default_value = "")]
+    trusted_proxies: String,
+
+    #[command(flatten)]
+    storage: StorageArgs,
+}
+
+/// Where the application keeps its data. `serve` and `import` share these options.
+#[derive(Debug, clap::Args)]
+pub struct StorageArgs {
     /// The folder for the data of the application.
     #[arg(long, env = "ORGANIZR_DATA_DIR", default_value = "data")]
     data_dir: PathBuf,
@@ -31,12 +44,6 @@ pub struct Args {
     /// Without it, the application uses the SQLite file `organizr.db` in the data folder.
     #[arg(long, env = "ORGANIZR_DATABASE_URL", hide_env_values = true)]
     database_url: Option<String>,
-
-    /// The reverse proxies in front of the application: addresses and networks, separated
-    /// by commas, for example `172.18.0.0/16`. The headers `X-Forwarded-For` and
-    /// `X-Forwarded-Proto` are believed only from these. Without it, no proxy is trusted.
-    #[arg(long, env = "ORGANIZR_TRUSTED_PROXIES", default_value = "")]
-    trusted_proxies: String,
 
     /// The key that protects the stored secrets: 64 hex digits. Without it, the
     /// application uses the key file.
@@ -50,17 +57,24 @@ pub struct Args {
     secret_key_file: Option<PathBuf>,
 }
 
+impl StorageArgs {
+    /// What seals the stored secrets. The key file is made when it is missing.
+    pub fn secrets(&self) -> anyhow::Result<SecretBox> {
+        let key_file = self
+            .secret_key_file
+            .clone()
+            .unwrap_or_else(|| self.data_dir.join(crate::secret_key::FILE_NAME));
+        let key = crate::secret_key::load_or_create(self.secret_key.as_deref(), &key_file)?;
+        SecretBox::new(&key).context("cannot use the key for the stored secrets")
+    }
+}
+
 /// Runs the server until the process is asked to stop.
 pub async fn run(args: Args) -> anyhow::Result<()> {
     start_logging();
 
-    let database = open_database(&args).await?;
-    let key_file = args
-        .secret_key_file
-        .clone()
-        .unwrap_or_else(|| args.data_dir.join(crate::secret_key::FILE_NAME));
-    let key = crate::secret_key::load_or_create(args.secret_key.as_deref(), &key_file)?;
-    let secrets = SecretBox::new(&key).context("cannot use the key for the stored secrets")?;
+    let database = open_database(&args.storage).await?;
+    let secrets = args.storage.secrets()?;
     let settings = load_settings(&database, &secrets).await?;
     let trusted_proxies: TrustedProxies = args
         .trusted_proxies
@@ -72,7 +86,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     let mut state = AppState::new(database.clone(), settings, secrets)
         .with_trusted_proxies(trusted_proxies)
         // The pictures that people upload, at the place of the PHP application.
-        .with_picture_folder(args.data_dir.join("userTabs"));
+        .with_picture_folder(args.storage.data_dir.join("userTabs"));
     let is_set_up = database
         .install()
         .is_done()
@@ -122,7 +136,7 @@ fn start_logging() {
 }
 
 /// Opens the database and brings its schema up to date.
-async fn open_database(args: &Args) -> anyhow::Result<Database> {
+pub async fn open_database(args: &StorageArgs) -> anyhow::Result<Database> {
     let url = if let Some(url) = &args.database_url {
         url.clone()
     } else {

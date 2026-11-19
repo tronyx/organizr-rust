@@ -14,6 +14,7 @@ use std::fmt;
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
 use chacha20poly1305::{XChaCha20Poly1305, XNonce};
 use hkdf::Hkdf;
+use organizr_domain::UserId;
 use sha2::Sha256;
 use thiserror::Error;
 use zeroize::Zeroizing;
@@ -94,6 +95,21 @@ impl fmt::Debug for MasterKey {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("MasterKey(<hidden>)")
     }
+}
+
+/// The name under which the token of the Plex account of a user is sealed.
+pub fn plex_token_name(user: UserId) -> String {
+    format!("users/{}/plex_token", user.get())
+}
+
+/// The name under which the secret of the second factor of a user is sealed.
+pub fn two_factor_name(user: UserId) -> String {
+    format!("users/{}/two_factor_secret", user.get())
+}
+
+/// The name under which a setting that this application does not know is sealed.
+pub fn legacy_setting_name(key: &str) -> String {
+    format!("legacy_settings/{key}")
 }
 
 /// Seals secrets for storing and opens stored secrets.

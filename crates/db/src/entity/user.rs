@@ -24,6 +24,11 @@ pub struct Model {
     pub image: Option<String>,
     /// Seconds since the Unix epoch.
     pub created_at: i64,
+    pub auth_service: String,
+    pub auth_provider: Option<String>,
+    pub two_factor_kind: Option<String>,
+    pub two_factor_secret: Option<String>,
+    pub plex_token: Option<String>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

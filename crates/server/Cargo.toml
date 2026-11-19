@@ -20,6 +20,7 @@ embedded-web = ["dep:rust-embed"]
 organizr-api.workspace = true
 organizr-auth.workspace = true
 organizr-db.workspace = true
+organizr-import.workspace = true
 organizr-settings.workspace = true
 
 anyhow.workspace = true
@@ -32,5 +33,6 @@ tracing-subscriber.workspace = true
 
 [dev-dependencies]
 http-body-util.workspace = true
+sea-orm.workspace = true
 tempfile.workspace = true
 tower.workspace = true

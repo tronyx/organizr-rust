@@ -1,6 +1,7 @@
 //! The `organizr` binary: start-up, scheduler, embedded web assets and subcommands.
 
 mod healthcheck;
+mod import;
 mod secret_key;
 mod serve;
 mod web;
@@ -21,6 +22,9 @@ enum Command {
     Serve(serve::Args),
     /// Check that a running server answers. Exits with an error when it does not.
     Healthcheck(healthcheck::Args),
+    /// Move an install of PHP Organizr into this application. Run it once, before the
+    /// first start of the server.
+    Import(import::Args),
 }
 
 #[tokio::main]
@@ -28,6 +32,7 @@ async fn main() -> anyhow::Result<()> {
     match Cli::parse().command {
         Command::Serve(args) => serve::run(args).await,
         Command::Healthcheck(args) => healthcheck::run(&args).await,
+        Command::Import(args) => import::run(args).await,
     }
 }
 

@@ -25,6 +25,10 @@ pub enum DbError {
     #[error("the install has been set up already")]
     AlreadySetUp,
 
+    /// An import needs an empty database, and this one holds records.
+    #[error("the database is not empty")]
+    NotEmpty,
+
     /// A stored record cannot be turned into its domain type.
     #[error("a stored {record} is not valid: {reason}")]
     InvalidRecord {

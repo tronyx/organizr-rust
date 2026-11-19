@@ -8,6 +8,7 @@ mod categories;
 mod entity;
 mod error;
 mod groups;
+mod import;
 mod install;
 mod migration;
 mod sessions;
@@ -24,11 +25,12 @@ use sea_orm_migration::MigratorTrait;
 pub use crate::categories::Categories;
 pub use crate::error::DbError;
 pub use crate::groups::Groups;
+pub use crate::import::{Import, ImportData, ImportedUser};
 pub use crate::install::{Install, NewInstall};
 pub use crate::sessions::Sessions;
 pub use crate::stored_settings::{StoredSetting, StoredSettings};
 pub use crate::tabs::Tabs;
-pub use crate::users::Users;
+pub use crate::users::{SealedTwoFactor, UserLogin, Users};
 
 /// How long a connection waits for another writer on SQLite before it gives up.
 const SQLITE_BUSY_TIMEOUT: Duration = Duration::from_secs(5);
@@ -114,6 +116,11 @@ impl Database {
     /// The groups.
     pub const fn groups(&self) -> Groups<'_> {
         Groups::new(&self.connection)
+    }
+
+    /// The import of another install.
+    pub const fn import(&self) -> Import<'_> {
+        Import::new(&self.connection, self.engine)
     }
 
     /// The set-up of a new install.

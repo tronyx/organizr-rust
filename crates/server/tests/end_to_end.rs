@@ -370,3 +370,126 @@ fn serve_refuses_a_key_that_is_no_key() {
         "{message}"
     );
 }
+
+/// The made-up PHP install of the importer tests: its configuration file and its
+/// database as SQL text.
+const LEGACY_CONFIG: &str = include_str!("../../import/tests/fixtures/legacy/config.php");
+const LEGACY_DATABASE: &str = include_str!("../../import/tests/fixtures/legacy/organizr.sql");
+
+/// Writes the PHP install into a folder, as the PHP application lays it out.
+fn write_legacy_install(folder: &Path) {
+    use sea_orm::ConnectionTrait;
+
+    let config = folder.join("data/config/config.php");
+    let database = folder.join("data/parity-db/parity.db");
+    for file in [&config, &database] {
+        std::fs::create_dir_all(file.parent().expect("the file is in a folder"))
+            .expect("the folder can be made");
+    }
+    std::fs::write(&config, LEGACY_CONFIG).expect("the configuration file can be written");
+    let url = format!(
+        "sqlite:{}?mode=rwc",
+        database.display().to_string().replace('\\', "/")
+    );
+    tokio::runtime::Runtime::new()
+        .expect("a runtime can be made")
+        .block_on(async {
+            let connection = sea_orm::Database::connect(url)
+                .await
+                .expect("the file can be made");
+            connection
+                .execute_unprepared(LEGACY_DATABASE)
+                .await
+                .expect("the statements run");
+            connection.close().await.expect("the file can be closed");
+        });
+}
+
+/// Runs `organizr import` and returns whether it succeeded, its output and its errors.
+fn import(arguments: &[&str], from: &Path, data_dir: &Path) -> (bool, String, String) {
+    let output = Command::new(ORGANIZR)
+        .arg("import")
+        .args(arguments)
+        .arg("--from")
+        .arg(from)
+        .arg("--data-dir")
+        .arg(data_dir)
+        .env_remove("ORGANIZR_DATABASE_URL")
+        .env_remove("ORGANIZR_SECRET_KEY")
+        .env_remove("ORGANIZR_SECRET_KEY_FILE")
+        .env("NO_COLOR", "1")
+        .output()
+        .expect("the command can be run");
+    (
+        output.status.success(),
+        String::from_utf8_lossy(&output.stdout).into_owned(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
+}
+
+#[test]
+fn import_moves_a_php_install_into_a_new_data_folder() {
+    let legacy = tempfile::tempdir().expect("a temporary folder can be made");
+    write_legacy_install(legacy.path());
+    let home = tempfile::tempdir().expect("a temporary folder can be made");
+    let data_dir = home.path().join("data");
+
+    // A dry run prints the report and creates nothing.
+    let (succeeded, output, errors) = import(&["--dry-run"], legacy.path(), &data_dir);
+    assert!(succeeded, "{errors}");
+    assert!(
+        output.starts_with("Dry run: nothing was written."),
+        "{output}"
+    );
+    assert!(output.contains("     4  users"), "{output}");
+    assert!(!data_dir.exists(), "a dry run made the data folder");
+
+    let (succeeded, output, errors) = import(&[], legacy.path(), &data_dir);
+    assert!(succeeded, "{errors}");
+    assert!(output.starts_with("The import is complete."), "{output}");
+    assert!(data_dir.join("organizr.db").is_file());
+    assert!(data_dir.join("secret.key").is_file());
+    // The secrets of the PHP install are sealed in the new database.
+    for file in ["organizr.db", "organizr.db-wal"] {
+        assert!(!file_holds(
+            &data_dir.join(file),
+            "made-up torrent password"
+        ));
+    }
+
+    // The server starts on the imported install: it is set up, the API key of the PHP
+    // install works, and the users are there.
+    let address = free_address();
+    let log = home.path().join("server.log");
+    let mut server = Server::start_logging_to(address, &data_dir, &log);
+    assert!(server.wait_until_healthy(address, Duration::from_secs(30)));
+    let users = get_with_key(address, "/api/v2/users", "parityapikey01234567");
+    assert!(users.starts_with("HTTP/1.1 200"), "{users}");
+    for name in ["admin", "robin", "pat", "Sam"] {
+        assert!(
+            users.contains(&format!("\"username\": \"{name}\"")),
+            "{users}"
+        );
+    }
+    assert_eq!(set_up_code_in(&log), None, "an imported install is set up");
+    drop(server);
+
+    // A second import into the same data folder is refused.
+    let (succeeded, _, errors) = import(&[], legacy.path(), &data_dir);
+    assert!(!succeeded);
+    assert!(errors.contains("the new database is not empty"), "{errors}");
+}
+
+#[test]
+fn import_from_a_folder_without_an_install_creates_nothing() {
+    let empty = tempfile::tempdir().expect("a temporary folder can be made");
+    let home = tempfile::tempdir().expect("a temporary folder can be made");
+    let data_dir = home.path().join("data");
+
+    let (succeeded, output, errors) = import(&[], empty.path(), &data_dir);
+
+    assert!(!succeeded);
+    assert_eq!(output, "");
+    assert!(errors.contains("no Organizr install was found"), "{errors}");
+    assert!(!data_dir.exists(), "the failed import made the data folder");
+}

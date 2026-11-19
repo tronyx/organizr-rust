@@ -1,0 +1,215 @@
+{
+    "source": "PHP 8.5.12, OpenSSL 3.5.7 9 Jun 2026",
+    "cases": [
+        {
+            "key": "k",
+            "plain": "p",
+            "encrypted": "rioA9CnIJURmdFFUGZxLFA=="
+        },
+        {
+            "key": "k",
+            "plain": "made-up password",
+            "encrypted": "2+R7r1iNhkdOzOjkeFBq6Ocv05JZWZWs3LRTXnLXlT4="
+        },
+        {
+            "key": "k",
+            "plain": "exactly 16 bytes",
+            "encrypted": "5tdMJPDmaApsGr6xKxt8WVDS8c8AFENdWiaOUs0OqVI="
+        },
+        {
+            "key": "k",
+            "plain": "a value that is longer than one block of the cipher",
+            "encrypted": "xzcR2tTrVtqCEJkwsrIuxPLaCcW204489DDPsin9dwS4wCBEw00xNRB+o8zd6GfzDyP1pSOSWRpf1rheoVvI+w=="
+        },
+        {
+            "key": "k",
+            "plain": "pässwörd ✓",
+            "encrypted": "kHKDTYnER/wN/ibQMK4Nrg=="
+        },
+        {
+            "key": "k",
+            "plain": "two\nlines",
+            "encrypted": "CzhEdSnJAftmCWum0q4nbw=="
+        },
+        {
+            "key": "short-key",
+            "plain": "p",
+            "encrypted": "O5BUNZEecmYanEsfM7rnsw=="
+        },
+        {
+            "key": "short-key",
+            "plain": "made-up password",
+            "encrypted": "V4JTL7GdDXzhsuLBJN/AyFozDbyEc6O/4CddTHkjzEE="
+        },
+        {
+            "key": "short-key",
+            "plain": "exactly 16 bytes",
+            "encrypted": "qbXnwXDSKTJXtqbw/ng3uJq+FXiP8N1ZX7xu6/VtIhs="
+        },
+        {
+            "key": "short-key",
+            "plain": "a value that is longer than one block of the cipher",
+            "encrypted": "4h14pOKMmsL8AnNpdGX+92kKZbfp1xzcXXo/hvFOQks1Coco1TwzEc3n25qKAK4QZf+aJnGGT/t/DPJiZrVYPA=="
+        },
+        {
+            "key": "short-key",
+            "plain": "pässwörd ✓",
+            "encrypted": "eByL+MSKNA05OG3HK2J81Q=="
+        },
+        {
+            "key": "short-key",
+            "plain": "two\nlines",
+            "encrypted": "xrBR1UTflX/1QgycwIIm4Q=="
+        },
+        {
+            "key": "exactly-16-bytes",
+            "plain": "p",
+            "encrypted": "TZU3iBf6G8JHqKbsURw0vw=="
+        },
+        {
+            "key": "exactly-16-bytes",
+            "plain": "made-up password",
+            "encrypted": "OHgGHkjQdiU2MV7YNVl+HEzLS4ypC842qLPO6k1AtYE="
+        },
+        {
+            "key": "exactly-16-bytes",
+            "plain": "exactly 16 bytes",
+            "encrypted": "iz19kXdEYWxXZ6EWpj+UdVrikkmw+AlSOnMO8IuZuZQ="
+        },
+        {
+            "key": "exactly-16-bytes",
+            "plain": "a value that is longer than one block of the cipher",
+            "encrypted": "ijDAkVrfSSaPi+InOomMeqY3h5EJgzOcJ/bPjIPeVrsW+g5iFJyUzNMMfZKgacVHBFkz+bA/SD/hxiuhtMtxdA=="
+        },
+        {
+            "key": "exactly-16-bytes",
+            "plain": "pässwörd ✓",
+            "encrypted": "8dFFqMJzVN9ZMqBiipg+cw=="
+        },
+        {
+            "key": "exactly-16-bytes",
+            "plain": "two\nlines",
+            "encrypted": "8JwPz/M5Nn6I0XwKQLostA=="
+        },
+        {
+            "key": "parity-hash-key-0123456789",
+            "plain": "p",
+            "encrypted": "T8E/eiNis3PKsURB4P1MEA=="
+        },
+        {
+            "key": "parity-hash-key-0123456789",
+            "plain": "made-up password",
+            "encrypted": "x+zCheNrgIxZE7Oq2fnCzpkX7WwyATBfMuknqStJZPQ="
+        },
+        {
+            "key": "parity-hash-key-0123456789",
+            "plain": "exactly 16 bytes",
+            "encrypted": "/pL9lGOOUYfYO93JzDWDVKLwMwoaAa1xhtgwyCW8Euo="
+        },
+        {
+            "key": "parity-hash-key-0123456789",
+            "plain": "a value that is longer than one block of the cipher",
+            "encrypted": "MEkPFF/ejv1xVZ9yeFJt0ET8zVwCrjw93phF9tATpn3/uoggdpDtj76zqEjBMlEJXkpwqTmNGt/82CJAR1q7Qg=="
+        },
+        {
+            "key": "parity-hash-key-0123456789",
+            "plain": "pässwörd ✓",
+            "encrypted": "jESNHmgLcPf5DMVvuIiPBQ=="
+        },
+        {
+            "key": "parity-hash-key-0123456789",
+            "plain": "two\nlines",
+            "encrypted": "3WTJ/ImmhcRZllQcO+rDwg=="
+        },
+        {
+            "key": "a-key-of-32-bytes-is-used-whole!",
+            "plain": "p",
+            "encrypted": "8PbLfR2pQvEBhsQRozut7w=="
+        },
+        {
+            "key": "a-key-of-32-bytes-is-used-whole!",
+            "plain": "made-up password",
+            "encrypted": "OXsfO6nl0RO4gaeCgBJuut2j20t9zXj0fAggqwA2TfA="
+        },
+        {
+            "key": "a-key-of-32-bytes-is-used-whole!",
+            "plain": "exactly 16 bytes",
+            "encrypted": "wIJJvdZoIPP3m7nJyl76LwqGOBj7/HH/iipTmGlfeJ0="
+        },
+        {
+            "key": "a-key-of-32-bytes-is-used-whole!",
+            "plain": "a value that is longer than one block of the cipher",
+            "encrypted": "i+RUr2qo1ejpilOPH+4bifuVQ4KGXxvRy3E1EZc6CnvolEL6u7hQGHD833N9jR6KT9KNsLgO0Mk7Grt60FwqgA=="
+        },
+        {
+            "key": "a-key-of-32-bytes-is-used-whole!",
+            "plain": "pässwörd ✓",
+            "encrypted": "R+ANULr0CqVnPxqYwnPG4w=="
+        },
+        {
+            "key": "a-key-of-32-bytes-is-used-whole!",
+            "plain": "two\nlines",
+            "encrypted": "xhemiWuQiqC6hqxYmYY27g=="
+        },
+        {
+            "key": "a key that is longer than the 32 bytes that the cipher takes, so it is cut",
+            "plain": "p",
+            "encrypted": "WovThUm92qvN36G+Phh5mw=="
+        },
+        {
+            "key": "a key that is longer than the 32 bytes that the cipher takes, so it is cut",
+            "plain": "made-up password",
+            "encrypted": "qLcfmwxTCoCq8Zm8ahG2XnhYG1nsBnuPf3jqEUkFsSA="
+        },
+        {
+            "key": "a key that is longer than the 32 bytes that the cipher takes, so it is cut",
+            "plain": "exactly 16 bytes",
+            "encrypted": "KkKHIQf516iKXemmgb2Oi3yl8hs6Xl14eG3na5xEseY="
+        },
+        {
+            "key": "a key that is longer than the 32 bytes that the cipher takes, so it is cut",
+            "plain": "a value that is longer than one block of the cipher",
+            "encrypted": "8pOzmHLe52bisPOq8W6pH8xRWSUkPPvDaPJBRHBtqHNQpp6w1PQsDhpRhHrrGNJB+5D9H3RTS1c+PtqFV6PylQ=="
+        },
+        {
+            "key": "a key that is longer than the 32 bytes that the cipher takes, so it is cut",
+            "plain": "pässwörd ✓",
+            "encrypted": "0ljGqh7/RC2WRA+Fh/OOkA=="
+        },
+        {
+            "key": "a key that is longer than the 32 bytes that the cipher takes, so it is cut",
+            "plain": "two\nlines",
+            "encrypted": "tLNdHvorzpbkeHNUykn/ng=="
+        },
+        {
+            "key": "schlüssel-mit-ümlaut",
+            "plain": "p",
+            "encrypted": "cRxhIPqIBD5Dw9hSaun9hQ=="
+        },
+        {
+            "key": "schlüssel-mit-ümlaut",
+            "plain": "made-up password",
+            "encrypted": "KETzSHP7mMTF+eiuQm2RYwk/l67hdgxfatHhxZrp9wQ="
+        },
+        {
+            "key": "schlüssel-mit-ümlaut",
+            "plain": "exactly 16 bytes",
+            "encrypted": "KrHTt7/wzvqYpS4HzEy9qKF2t+AwNQPad0oxEWxHlqQ="
+        },
+        {
+            "key": "schlüssel-mit-ümlaut",
+            "plain": "a value that is longer than one block of the cipher",
+            "encrypted": "x4S173P1aJZTTt4BT0qoJiylWGGqvwR+z2TrDafxOIxs+6/M9X3oiAJBehal3jkXILdwo3GhtmwtxYupdYnQEg=="
+        },
+        {
+            "key": "schlüssel-mit-ümlaut",
+            "plain": "pässwörd ✓",
+            "encrypted": "yBSvu/ihT1OhZBfcupa3Ow=="
+        },
+        {
+            "key": "schlüssel-mit-ümlaut",
+            "plain": "two\nlines",
+            "encrypted": "2/qz3swl1f1XDnLaqah2Zg=="
+        }
+    ]
+}

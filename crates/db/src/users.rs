@@ -167,6 +167,24 @@ impl<'a> Users<'a> {
         Ok(result.rows_affected > 0)
     }
 
+    /// How a user logs in. `None` when there is no such user.
+    pub async fn login_of(&self, id: UserId) -> Result<Option<UserLogin>, DbError> {
+        let row = user::Entity::find_by_id(id.get())
+            .one(self.connection)
+            .await?;
+        Ok(row.map(|row| UserLogin {
+            auth_service: row.auth_service,
+            auth_provider: row.auth_provider,
+            two_factor: row.two_factor_kind.zip(row.two_factor_secret).map(
+                |(kind, sealed_secret)| SealedTwoFactor {
+                    kind,
+                    sealed_secret,
+                },
+            ),
+            sealed_plex_token: row.plex_token,
+        }))
+    }
+
     /// Deletes a user and the sessions of that user. Returns whether the user existed.
     pub async fn delete(&self, id: UserId) -> Result<bool, DbError> {
         let result = user::Entity::delete_by_id(id.get())
@@ -174,6 +192,29 @@ impl<'a> Users<'a> {
             .await?;
         Ok(result.rows_affected > 0)
     }
+}
+
+/// The second factor of a login.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SealedTwoFactor {
+    /// The kind, for example `google`.
+    pub kind: String,
+    /// The secret, sealed.
+    pub sealed_secret: String,
+}
+
+/// How a user logs in, as the PHP application keeps it in `auth_service` and
+/// `plex_token`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UserLogin {
+    /// The service that checks the password: `internal` for this application.
+    pub auth_service: String,
+    /// The provider of an `oidc` login.
+    pub auth_provider: Option<String>,
+    /// The second factor, when the user has one.
+    pub two_factor: Option<SealedTwoFactor>,
+    /// The token of the Plex account, sealed.
+    pub sealed_plex_token: Option<String>,
 }
 
 /// Stores a new record through any connection: the pool, or a transaction.
@@ -192,6 +233,11 @@ pub(crate) async fn insert_in<C: ConnectionTrait>(
         locked: ActiveValue::Set(false),
         image: ActiveValue::Set(new.image),
         created_at: ActiveValue::Set(new.created_at.unix_seconds()),
+        auth_service: ActiveValue::Set("internal".to_owned()),
+        auth_provider: ActiveValue::Set(None),
+        two_factor_kind: ActiveValue::Set(None),
+        two_factor_secret: ActiveValue::Set(None),
+        plex_token: ActiveValue::Set(None),
     };
     Ok(row.insert(connection).await?.into())
 }
