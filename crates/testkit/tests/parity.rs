@@ -758,3 +758,24 @@ async fn mail_routes_answer_like_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn forward_auth_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The recorder runs this group after the group that registers users.
+        seed::registered_users(database).await;
+        let replay = without_php_session(Replay::group("forward_auth"));
+        // Some cases carry the headers of a reverse proxy. PHP believes every sender of
+        // such headers. This application believes a proxy that is listed as trusted
+        // (D-01), so for the replay the address of the recorder is one.
+        let proxy = std::net::IpAddr::from(organizr_testkit::replay::RECORDER_ADDRESS.0);
+        let state =
+            organizr_testkit::state_with(database, organizr_testkit::installed_settings(&[]))
+                .with_trusted_proxies(proxy.to_string().parse().expect("the address is valid"));
+        let app = organizr_api::router(state).expect("the route table is valid");
+
+        replay.run(&app).await;
+    })
+    .await;
+}

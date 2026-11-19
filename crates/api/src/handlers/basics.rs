@@ -1,20 +1,48 @@
 //! Routes that need no login and no data: the API root, `status`, `ping` and `rox`.
 
-use axum::extract::State;
-use axum::http::{StatusCode, header};
+use axum::Extension;
+use axum::extract::{RawQuery, State};
+use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
+use crate::caller::Caller;
+use crate::client::Client;
 use crate::envelope::{Envelope, JsonContentType};
 use crate::error::ApiError;
+use crate::handlers::forward_auth;
 use crate::handlers::wizard::engine_name;
 use crate::state::AppState;
 
 /// `GET /`: sends the caller to the status route.
 ///
 /// The target is a fixed path, as in the PHP application.
-pub async fn root() -> Response {
-    redirect(StatusCode::FOUND, "/api/v2/status")
+///
+/// With `group=` in the query, the request is a question of a reverse proxy instead:
+/// the PHP application reads every such request as the short form of forward auth.
+pub async fn root(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    Extension(client): Extension<Client>,
+    headers: HeaderMap,
+    RawQuery(query): RawQuery,
+) -> Result<Response, ApiError> {
+    let asks = query
+        .as_deref()
+        .is_some_and(|query| query.to_ascii_lowercase().contains("group="));
+    if asks {
+        return forward_auth::answer(
+            &state,
+            &caller,
+            &client,
+            &headers,
+            false,
+            &[],
+            query.as_deref(),
+        )
+        .await;
+    }
+    Ok(redirect(StatusCode::FOUND, "/api/v2/status"))
 }
 
 /// `GET /ping`: answers `pong`.

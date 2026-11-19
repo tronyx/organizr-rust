@@ -109,6 +109,16 @@ impl<'a> Tabs<'a> {
             .transpose()
     }
 
+    /// The tab with the given name, whatever the letter case.
+    pub async fn find_by_name(&self, name: &str) -> Result<Option<Tab>, DbError> {
+        tab::Entity::find()
+            .filter(tab::Column::NameKey.eq(name.to_lowercase()))
+            .one(self.connection)
+            .await?
+            .map(Tab::try_from)
+            .transpose()
+    }
+
     /// All tabs in menu order.
     pub async fn list(&self) -> Result<Vec<Tab>, DbError> {
         tab::Entity::find()

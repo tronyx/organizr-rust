@@ -5,7 +5,7 @@ use axum::handler::Handler;
 use axum::http::{HeaderValue, Method, Uri, header};
 use axum::middleware::{from_fn, from_fn_with_state, map_response};
 use axum::response::Response;
-use axum::routing::{MethodRouter, delete, get, post, put};
+use axum::routing::{MethodRouter, any, delete, get, post, put};
 use axum::{Extension, Router};
 use tower_http::set_header::SetResponseHeaderLayer;
 
@@ -15,8 +15,8 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    basics, categories, config, fields, groups, images, launch, login, logout, mail, ping,
-    register, tabs, token, two_factor, users, wizard,
+    basics, categories, config, fields, forward_auth, groups, images, launch, login, logout, mail,
+    ping, register, tabs, token, two_factor, users, wizard,
 };
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
@@ -165,7 +165,20 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
     let routes = routes
         .router
         .route("/data/userTabs/{name}", get(images::uploaded_picture));
-    Ok(finish(routes, state))
+    // A reverse proxy asks these routes with the method and the headers of the request
+    // that it holds back. Such a request can come from another site, so the routes are
+    // outside the check for requests from other sites. They change nothing.
+    let open = Routes::default()
+        .route("/auth-[{group}[/]]", &any(forward_auth::check))?
+        .route(
+            "/auth[/[{group}[/{type}[/{ips}]]]]",
+            &any(forward_auth::check),
+        )?
+        .route(
+            "/organizr-auth[/[{group}[/{type}[/{ips}]]]]",
+            &any(forward_auth::check),
+        )?;
+    Ok(finish(routes, open.router, state))
 }
 
 /// `DELETE /token/{id}` for a path that Axum gives to a route without a parameter.
@@ -178,13 +191,15 @@ async fn revoke_fixed(
 }
 
 /// Adds what every route gets, and the answer for a request that no route takes.
-fn finish(routes: Router<AppState>, state: AppState) -> Router {
+fn finish(routes: Router<AppState>, open: Router<AppState>, state: AppState) -> Router {
     routes
         // Route layers run only when a route takes the request, so a path that is not a
         // route, or not one for the method, stays "not found" whoever asks, as in the PHP
         // application.
         .route_layer(same_origin::layer())
         .route_layer(from_fn(same_origin::answer_refusal))
+        // Added after the route layers, so the layers do not cover these routes.
+        .merge(open)
         .fallback(not_found)
         .method_not_allowed_fallback(not_found)
         .layer(from_fn(ensure_device_cookie))
@@ -282,7 +297,7 @@ mod tests {
             Settings::defaults(),
             organizr_testkit::seed::secrets(),
         );
-        (finish(routes.router, state), directory)
+        (finish(routes.router, Router::new(), state), directory)
     }
 
     async fn send(app: &Router, method: Method, headers: &[(&str, &str)]) -> (StatusCode, String) {

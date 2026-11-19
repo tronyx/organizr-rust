@@ -37,15 +37,22 @@ const RECOVERY_ANSWER: &str =
 /// `PHPMAILER-domain` setting, or else the address that the browser of this request
 /// used.
 pub fn site_address(settings: &Settings, headers: &HeaderMap, client: &Client) -> String {
-    if !settings.mailer_domain.is_empty() {
-        return settings.mailer_domain.clone();
+    if settings.mailer_domain.is_empty() {
+        request_site(headers, client)
+    } else {
+        settings.mailer_domain.clone()
     }
+}
+
+/// The address that the browser of a request used for this site, for example
+/// `https://organizr.example.com/`. Empty when the request names no host.
+pub fn request_site(headers: &HeaderMap, client: &Client) -> String {
     let host = headers
         .get(header::HOST)
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
     // Only what the name of a host can hold. Anything else could put markup into an
-    // e-mail.
+    // e-mail, or another address into a redirect.
     let is_host = !host.is_empty()
         && host
             .chars()
@@ -425,6 +432,7 @@ mod tests {
             address: IpAddr::from([203, 0, 113, 9]),
             https,
             source: AddressSource::Connection,
+            via_trusted_proxy: false,
         }
     }
 

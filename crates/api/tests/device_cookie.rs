@@ -28,6 +28,7 @@ fn app_behind_https_proxy() -> Router {
         address: IpAddr::V4(Ipv4Addr::new(203, 0, 113, 7)),
         source: AddressSource::TrustedProxy,
         https: true,
+        via_trusted_proxy: true,
     }))
 }
 

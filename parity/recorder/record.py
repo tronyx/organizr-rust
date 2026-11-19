@@ -618,6 +618,91 @@ def two_factor_cases():
     ]
 
 
+# Forward auth: a reverse proxy asks these routes whether the caller may open another
+# application. The last part of the path is the group that the application needs, or
+# the name of a tab.
+def forward_auth_cases():
+    base = "/api/v2/auth"
+    zoe = {"username": ZOE["username"], "password": ZOE["password"]}
+    # What Traefik sends with its question.
+    traefik = {
+        "X-Forwarded-Server": "traefik",
+        "X-Forwarded-Proto": "https",
+        "X-Forwarded-Host": "sonarr.organizr.test",
+        "X-Forwarded-Uri": "/series?sort=title",
+    }
+
+    def as_zoe(name, path, **options):
+        return (name, "GET", path, {"jar": "zoe", **options})
+
+    return [
+        # A guest. The level of a guest is 999.
+        ("guest_without_a_group", "GET", base),
+        ("guest_with_a_slash", "GET", base + "/"),
+        ("guest_for_guests", "GET", base + "/999"),
+        ("guest_for_users", "GET", base + "/4"),
+        ("guest_for_admins", "GET", base + "/0"),
+        ("guest_short_form", "GET", base + "-999"),
+        ("guest_short_form_with_a_slash", "GET", base + "-999/"),
+        ("guest_short_form_for_users", "GET", base + "-4"),
+        ("guest_short_form_without_a_group", "GET", base + "-"),
+        ("guest_other_name_of_the_route", "GET", "/api/v2/organizr-auth/999"),
+        ("guest_other_name_without_a_group", "GET", "/api/v2/organizr-auth"),
+        # The group in the query does not count for the long form.
+        ("guest_group_in_the_query", "GET", base + "?group=999"),
+        ("guest_short_form_group_in_the_query", "GET", base + "-4?group=999"),
+        # Every method asks the same question.
+        ("guest_post", "POST", base + "/999"),
+        ("guest_put", "PUT", base + "/999"),
+        ("guest_delete", "DELETE", base + "/999"),
+        ("guest_post_refused", "POST", base + "/4"),
+        # The group as a number in other forms, and as the name of a tab.
+        ("group_with_a_fraction", "GET", base + "/998.9"),
+        ("group_with_an_exponent", "GET", base + "/1e3"),
+        ("group_below_zero", "GET", base + "/-1"),
+        ("group_by_tab_name", "GET", base + "/Homepage"),
+        ("group_by_tab_name_in_other_letter_case", "GET", base + "/homepage"),
+        ("group_by_unknown_tab_name", "GET", base + "/NoSuchTab"),
+        # The API key is the Admin.
+        admin_case("key_for_admins", "GET", base + "/0"),
+        admin_case("key_short_form", "GET", base + "-1"),
+        # A user of the group "User", whose level is 4.
+        ("login_as_a_user", "POST", "/api/v2/login", {"json": zoe, "jar": "zoe"}),
+        as_zoe("user_for_users", base + "/4"),
+        as_zoe("user_for_guests", base + "/999"),
+        as_zoe("user_for_a_higher_group", base + "/3"),
+        as_zoe("user_for_admins", base + "/0"),
+        as_zoe("user_without_a_group", base),
+        as_zoe("user_by_tab_name", base + "/Homepage"),
+        as_zoe("user_by_tab_name_of_admins", base + "/Settings"),
+        # Lists of addresses. An address on the allow list passes whatever the group.
+        ("allow_this_address", "GET", base + "/0/allow/{client_ip}"),
+        ("allow_this_address_in_a_list", "GET", base + "/0/whitelist/10.9.8.7,{client_ip}"),
+        ("allow_another_address", "GET", base + "/0/allow/10.9.8.7"),
+        ("allow_another_address_for_guests", "GET", base + "/999/w/10.9.8.7"),
+        ("deny_this_address", "GET", base + "/999/deny/{client_ip}"),
+        ("deny_this_address_in_a_list", "GET", base + "/999/blacklist/10.9.8.7,{client_ip}"),
+        ("deny_another_address", "GET", base + "/999/bl/10.9.8.7"),
+        ("unknown_kind_of_list", "GET", base + "/999/other/10.9.8.7"),
+        ("kind_of_list_without_addresses", "GET", base + "/999/allow"),
+        as_zoe("deny_this_address_for_a_user", base + "/999/deny/{client_ip}"),
+        # The short form takes the lists from the query.
+        ("short_form_allow_in_the_query", "GET", base + "-0?whitelist={client_ip}"),
+        ("short_form_deny_in_the_query", "GET", base + "-999?blacklist={client_ip}"),
+        ("short_form_kind_in_the_query", "GET", base + "-0?type=allow&ips={client_ip}"),
+        ("short_form_unknown_kind_in_the_query", "GET", base + "-999?type=other&ips={client_ip}"),
+        ("long_form_allow_in_the_query", "GET", base + "/0?whitelist={client_ip}"),
+        # Traefik: a caller who is refused is sent to the login page.
+        ("traefik_guest_refused", "GET", base + "/4", {"headers": traefik}),
+        ("traefik_guest_passes", "GET", base + "/999", {"headers": traefik}),
+        ("traefik_denied_address", "GET", base + "/999/deny/{client_ip}", {"headers": traefik}),
+        ("traefik_without_the_address_headers", "GET", base + "/4", {"headers": {"X-Forwarded-Server": "traefik"}}),
+        ("traefik_other_proxy_name", "GET", base + "/4", {"headers": {**traefik, "X-Forwarded-Server": "nginx"}}),
+        as_zoe("traefik_user_passes", base + "/4", headers=traefik),
+        as_zoe("traefik_user_refused", base + "/1", headers=traefik),
+    ]
+
+
 # The mail plugin. The reference sends to the mail catcher, which needs no login and
 # offers no encryption.
 MAIL_ON = {
@@ -1509,10 +1594,20 @@ def fill_in_two_factor(text):
     return TWO_FACTOR_PLACEHOLDER.sub(value_of, text)
 
 
+# The address under which the reference sees the recorder: the gateway of the container
+# network. An answer of the forward-auth routes names it. A case writes `{client_ip}`.
+client_ip = None
+CLIENT_IP_PLACEHOLDER = "{client_ip}"
+
+
 def fill_in(text):
     """Replace each `{session_token:<jar>}` with the session token of that jar, and each
     placeholder of the second factor with its value."""
     text = fill_in_two_factor(text)
+    if CLIENT_IP_PLACEHOLDER in text:
+        if client_ip is None:
+            sys.exit("No answer has named the address of the recorder yet.")
+        text = text.replace(CLIENT_IP_PLACEHOLDER, client_ip)
 
     def token_of(match):
         jar = JARS.get(match.group(1), {})
@@ -1574,6 +1669,7 @@ def send(method, path, json_body=None, body=None, headers=None, cookies=None, ja
         payload = fill_in(body).encode("utf-8")
     all_headers.update(headers or {})
     sent_cookies = {}
+    all_headers = {name: fill_in(value) for name, value in all_headers.items()}
     for name, value in (cookies or {}).items():
         if name == SESSION_COOKIE_PLACEHOLDER:
             if session_cookie_name is None:
@@ -1606,6 +1702,15 @@ def send(method, path, json_body=None, body=None, headers=None, cookies=None, ja
         status = response.status
     finally:
         connection.close()
+
+    # An answer that names the address of the caller: later cases use the address.
+    try:
+        seen = json.loads(text)["response"]["data"]["user_ip"]
+    except (ValueError, KeyError, TypeError):
+        seen = None
+    if isinstance(seen, str) and seen:
+        global client_ip
+        client_ip = seen
 
     # An answer that holds the secret of a second factor: later cases use the secret.
     # The secret is also inside an address of the answer, so every copy is replaced.
@@ -1761,6 +1866,8 @@ def main():
     # Last, because these groups change the tabs and categories that other groups see.
     # The category group and the group for groups leave the install as they found it,
     # for the tab group.
+    # Before the groups that change tabs, users and groups.
+    record("forward_auth", named(forward_auth_cases()), php_version)
     record("categories", named(CATEGORIES), php_version)
     record("groups", named(GROUPS), php_version)
     record("users", named(USERS), php_version)

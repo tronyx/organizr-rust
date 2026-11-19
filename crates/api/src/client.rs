@@ -134,6 +134,9 @@ pub struct Client {
     /// Whether the browser reached the application over HTTPS, as a trusted proxy reports
     /// it. The application itself speaks plain HTTP.
     pub https: bool,
+    /// Whether the connection comes from a trusted proxy. Only then are the other
+    /// forwarding headers of the request believed.
+    pub via_trusted_proxy: bool,
 }
 
 /// Works out the sender of a request from the address of the connection and the
@@ -156,6 +159,7 @@ pub fn resolve(peer: IpAddr, headers: &HeaderMap, trusted: &TrustedProxies) -> C
             address: peer,
             source,
             https: false,
+            via_trusted_proxy: false,
         };
     }
 
@@ -186,6 +190,7 @@ pub fn resolve(peer: IpAddr, headers: &HeaderMap, trusted: &TrustedProxies) -> C
         address,
         source,
         https,
+        via_trusted_proxy: true,
     }
 }
 
@@ -246,6 +251,7 @@ mod local_network_tests {
             address: address.parse::<IpAddr>().expect("the address is valid"),
             source,
             https: false,
+            via_trusted_proxy: false,
         }
     }
 
@@ -543,6 +549,7 @@ mod tests {
                 address: ip("203.0.113.9"),
                 source: AddressSource::UnverifiedForwarding,
                 https: false,
+                via_trusted_proxy: false,
             }
         );
     }

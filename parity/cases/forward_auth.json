@@ -1,0 +1,2209 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>",
+      "password": "<password hash>",
+      "register_date": "<time>",
+      "secret": "<secret>"
+    }
+  },
+  "cases": [
+    {
+      "name": "guest_without_a_group",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_with_a_slash",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_for_guests",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_for_users",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/4"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 4,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_for_admins",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/0"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_short_form",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-999"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_short_form_with_a_slash",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-999/"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_short_form_for_users",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-4"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 4,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_short_form_without_a_group",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_other_name_of_the_route",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/organizr-auth/999"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_other_name_without_a_group",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/organizr-auth"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_group_in_the_query",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth?group=999"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_short_form_group_in_the_query",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-4?group=999"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_post",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/auth/999"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_put",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/auth/999"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/auth/999"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "guest_post_refused",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/auth/4"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 4,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "group_with_a_fraction",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/998.9"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 998,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "group_with_an_exponent",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/1e3"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 1000,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "group_below_zero",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/-1"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": -1,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "group_by_tab_name",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/Homepage"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 4,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "group_by_tab_name_in_other_letter_case",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/homepage"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 4,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "group_by_unknown_tab_name",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/NoSuchTab"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "key_for_admins",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/0",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Organizr API",
+          "x-organizr-email": "",
+          "x-organizr-group": "0"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Organizr API\",\n            \"group\": 0,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "key_short_form",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-1",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Organizr API",
+          "x-organizr-email": "",
+          "x-organizr-group": "0"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Organizr API\",\n            \"group\": 0,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 1,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "login_as_a_user",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "zoe",
+          "password": "the-password-of-zoe"
+        },
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "user_for_users",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/4",
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "zoe",
+          "x-organizr-email": "zoe@example.com",
+          "x-organizr-group": "4"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"zoe\",\n            \"group\": 4,\n            \"email\": \"zoe@example.com\",\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 4,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "user_for_guests",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999",
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "zoe",
+          "x-organizr-email": "zoe@example.com",
+          "x-organizr-group": "4"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"zoe\",\n            \"group\": 4,\n            \"email\": \"zoe@example.com\",\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "user_for_a_higher_group",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/3",
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"zoe\",\n            \"group\": 4,\n            \"email\": \"zoe@example.com\",\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 3,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "user_for_admins",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/0",
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"zoe\",\n            \"group\": 4,\n            \"email\": \"zoe@example.com\",\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "user_without_a_group",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth",
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"zoe\",\n            \"group\": 4,\n            \"email\": \"zoe@example.com\",\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "user_by_tab_name",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/Homepage",
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "zoe",
+          "x-organizr-email": "zoe@example.com",
+          "x-organizr-group": "4"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"zoe\",\n            \"group\": 4,\n            \"email\": \"zoe@example.com\",\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 4,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "user_by_tab_name_of_admins",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/Settings",
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"zoe\",\n            \"group\": 4,\n            \"email\": \"zoe@example.com\",\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 1,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "allow_this_address",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/0/allow/{client_ip}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is whitelisted\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "allow_this_address_in_a_list",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/0/whitelist/10.9.8.7,{client_ip}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is whitelisted\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "allow_another_address",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/0/allow/10.9.8.7"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "allow_another_address_for_guests",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999/w/10.9.8.7"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "deny_this_address",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999/deny/{client_ip}"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is blacklisted\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "deny_this_address_in_a_list",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999/blacklist/10.9.8.7,{client_ip}"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is blacklisted\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "deny_another_address",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999/bl/10.9.8.7"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "unknown_kind_of_list",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999/other/10.9.8.7"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"other is not a valid type\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "kind_of_list_without_addresses",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999/allow"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "deny_this_address_for_a_user",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999/deny/{client_ip}",
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is blacklisted\",\n        \"data\": {\n            \"user\": \"zoe\",\n            \"group\": 4,\n            \"email\": \"zoe@example.com\",\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "short_form_allow_in_the_query",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-0?whitelist={client_ip}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is whitelisted\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "short_form_deny_in_the_query",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-999?blacklist={client_ip}"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is blacklisted\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "short_form_kind_in_the_query",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-0?type=allow&ips={client_ip}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is whitelisted\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "short_form_unknown_kind_in_the_query",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth-999?type=other&ips={client_ip}"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"other is not a valid type\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "long_form_allow_in_the_query",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/0?whitelist={client_ip}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is whitelisted\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 0,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "traefik_guest_refused",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/4",
+        "headers": {
+          "X-Forwarded-Server": "traefik",
+          "X-Forwarded-Proto": "https",
+          "X-Forwarded-Host": "sonarr.organizr.test",
+          "X-Forwarded-Uri": "/series?sort=title"
+        }
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "location": "https://organizr.test/?return=https://sonarr.organizr.test/series?sort=title"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "200"
+      }
+    },
+    {
+      "name": "traefik_guest_passes",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999",
+        "headers": {
+          "X-Forwarded-Server": "traefik",
+          "X-Forwarded-Proto": "https",
+          "X-Forwarded-Host": "sonarr.organizr.test",
+          "X-Forwarded-Uri": "/series?sort=title"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "Guest",
+          "x-organizr-email": "",
+          "x-organizr-group": "999"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "traefik_denied_address",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/999/deny/{client_ip}",
+        "headers": {
+          "X-Forwarded-Server": "traefik",
+          "X-Forwarded-Proto": "https",
+          "X-Forwarded-Host": "sonarr.organizr.test",
+          "X-Forwarded-Uri": "/series?sort=title"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is blacklisted\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 999,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "traefik_without_the_address_headers",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/4",
+        "headers": {
+          "X-Forwarded-Server": "traefik"
+        }
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "location": "http://organizr.test/"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "200"
+      }
+    },
+    {
+      "name": "traefik_other_proxy_name",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/4",
+        "headers": {
+          "X-Forwarded-Server": "nginx",
+          "X-Forwarded-Proto": "https",
+          "X-Forwarded-Host": "sonarr.organizr.test",
+          "X-Forwarded-Uri": "/series?sort=title"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"User is not Authorized or User is locked\",\n        \"data\": {\n            \"user\": \"Guest\",\n            \"group\": 999,\n            \"email\": null,\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 4,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "traefik_user_passes",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/4",
+        "headers": {
+          "X-Forwarded-Server": "traefik",
+          "X-Forwarded-Proto": "https",
+          "X-Forwarded-Host": "sonarr.organizr.test",
+          "X-Forwarded-Uri": "/series?sort=title"
+        },
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "x-organizr-user": "zoe",
+          "x-organizr-email": "zoe@example.com",
+          "x-organizr-group": "4"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User is authorized\",\n        \"data\": {\n            \"user\": \"zoe\",\n            \"group\": 4,\n            \"email\": \"zoe@example.com\",\n            \"user_ip\": \"<ip>\",\n            \"requested_group\": 4,\n            \"uuid\": \"<uuid>\"\n        }\n    }\n}",
+        "redacted": [
+          "uuid",
+          "user_ip"
+        ]
+      }
+    },
+    {
+      "name": "traefik_user_refused",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/auth/1",
+        "headers": {
+          "X-Forwarded-Server": "traefik",
+          "X-Forwarded-Proto": "https",
+          "X-Forwarded-Host": "sonarr.organizr.test",
+          "X-Forwarded-Uri": "/series?sort=title"
+        },
+        "jar": "zoe"
+      },
+      "response": {
+        "status": 302,
+        "headers": {
+          "content-type": "text/html; charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache",
+          "location": "https://organizr.test/?return=https://sonarr.organizr.test/series?sort=title"
+        },
+        "cookies_set": [],
+        "body": "200"
+      }
+    }
+  ]
+}

@@ -30,7 +30,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write as _;
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 
 use axum::Router;
@@ -44,7 +44,7 @@ use tower::ServiceExt;
 
 /// The address that the requests of a replay come from: the gateway of a container
 /// network, as for the recorder. The port is of no interest.
-const RECORDER_ADDRESS: ([u8; 4], u16) = ([172, 18, 0, 1], 40_000);
+pub const RECORDER_ADDRESS: ([u8; 4], u16) = ([172, 18, 0, 1], 40_000);
 
 /// A marker that stands for every case of the group.
 pub const EVERY_CASE: &str = "*";
@@ -654,7 +654,10 @@ impl Browsers {
     /// Replaces each `{session_token:<jar>}` by the session token of that jar, and each
     /// placeholder of the second factor by its value.
     fn fill_in(&self, text: &str) -> String {
-        let text = self.fill_in_second_factor(text);
+        // `{client_ip}` is the address that the reference saw the recorder at.
+        let text = self
+            .fill_in_second_factor(text)
+            .replace("{client_ip}", &IpAddr::from(RECORDER_ADDRESS.0).to_string());
         let mut filled = String::new();
         let mut rest = text.as_str();
         while let Some((before, after)) = rest.split_once(Self::SESSION_TOKEN) {
@@ -735,7 +738,7 @@ impl Answer {
             (None, None) => Body::empty(),
         };
         for (name, value) in &case.request.headers {
-            request = request.header(name.as_str(), value.as_str());
+            request = request.header(name.as_str(), browsers.fill_in(value));
         }
         let mut sent_cookies = BTreeMap::new();
         for (name, value) in &case.request.cookies {
