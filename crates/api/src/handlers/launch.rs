@@ -145,7 +145,7 @@ struct LaunchStatus {
 ///
 /// A tab is shown to the levels from `group_id_max` to `group_id`. A tab that is marked
 /// "add to admin" is also shown to Admins and Co-Admins, whatever its levels.
-fn is_shown(tab: &Tab, level: GroupLevel) -> bool {
+pub(crate) fn is_shown(tab: &Tab, level: GroupLevel) -> bool {
     tab.enabled
         && (tab.access.contains(level) || (tab.add_to_admin && level <= GroupLevel::CO_ADMIN))
 }

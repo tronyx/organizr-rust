@@ -20,7 +20,7 @@ use crate::api_data::ApiData;
 use crate::caller::Caller;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
-use crate::handlers::fields::Refusal;
+use crate::handlers::fields::{Refusal, is_nothing_in_php};
 use crate::state::AppState;
 
 /// The level a caller needs for the configuration routes.
@@ -57,19 +57,6 @@ fn shown(key: &str, value: Value, level: GroupLevel) -> Value {
         Value::String(SECURE.to_owned())
     } else {
         value
-    }
-}
-
-/// Whether PHP takes a value for "nothing". The PHP application sends `null` for such a
-/// value where it sends one value alone.
-fn is_nothing_in_php(value: &Value) -> bool {
-    match value {
-        Value::Null => true,
-        Value::Bool(on) => !on,
-        Value::Number(number) => number.as_f64() == Some(0.0),
-        Value::String(text) => text.is_empty() || text == "0",
-        Value::Array(entries) => entries.is_empty(),
-        Value::Object(members) => members.is_empty(),
     }
 }
 
@@ -256,34 +243,7 @@ pub async fn change(
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
-    use super::{is_for_admins_only, is_nothing_in_php};
-
-    #[test]
-    fn what_php_takes_for_nothing() {
-        for nothing in [
-            json!(null),
-            json!(false),
-            json!(""),
-            json!("0"),
-            json!(0),
-            json!([]),
-            json!({}),
-        ] {
-            assert!(is_nothing_in_php(&nothing), "{nothing}");
-        }
-        for something in [
-            json!(true),
-            json!("false"),
-            json!("00"),
-            json!(" "),
-            json!(100),
-            json!([0]),
-        ] {
-            assert!(!is_nothing_in_php(&something), "{something}");
-        }
-    }
+    use super::is_for_admins_only;
 
     #[test]
     fn settings_for_admins_only() {

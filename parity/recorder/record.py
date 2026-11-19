@@ -1248,6 +1248,28 @@ IMAGES = [
     admin_case("images_at_the_end", "GET", IMAGE_PATH),
 ]
 
+# The ping routes. The cases name only targets that do not answer: a port on which
+# nothing listens, and a host that does not exist. The time of an answer differs from run
+# to run, so a case with a target that answers cannot be compared.
+PING_PATH = "/api/v2/ping"
+CLOSED_PORT = "127.0.0.1:1"
+NO_SUCH_HOST = "no-such-host.invalid:80"
+PINGS = [
+    ("ping_many_as_guest", "POST", PING_PATH, {"json": {"list": [CLOSED_PORT]}}),
+    ("ping_one_as_guest", "GET", f"{PING_PATH}/{CLOSED_PORT}"),
+    admin_case("ping_without_a_body", "POST", PING_PATH),
+    admin_case("ping_empty_object", "POST", PING_PATH, {}),
+    admin_case("ping_empty_list", "POST", PING_PATH, {"list": []}),
+    admin_case("ping_empty_text", "POST", PING_PATH, {"list": ""}),
+    admin_case("ping_the_text_zero", "POST", PING_PATH, {"list": "0"}),
+    admin_case("ping_a_list", "POST", PING_PATH, {"list": [CLOSED_PORT, NO_SUCH_HOST]}),
+    admin_case("ping_a_list_of_one", "POST", PING_PATH, {"list": [CLOSED_PORT]}),
+    admin_case("ping_one_as_text", "POST", PING_PATH, {"list": CLOSED_PORT}),
+    admin_case("ping_one", "GET", f"{PING_PATH}/{CLOSED_PORT}"),
+    admin_case("ping_one_that_is_zero", "GET", f"{PING_PATH}/0"),
+    admin_case("ping_a_whole_address", "GET", f"{PING_PATH}/http:%2F%2F{CLOSED_PORT}%2Fweb"),
+]
+
 ROUTING = [
     ("GET", "/api/v2"),
     ("GET", "/api/v2/"),
@@ -1538,6 +1560,7 @@ def main():
     record("groups", named(GROUPS), php_version)
     record("users", named(USERS), php_version)
     record("images", named(IMAGES), php_version)
+    record("ping", named(PINGS), php_version)
     record("tabs", named(TABS), php_version)
     # After the tab group, whose launch cases show the settings.
     record("config", named(CONFIG), php_version)

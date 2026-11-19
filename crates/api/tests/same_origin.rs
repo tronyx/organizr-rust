@@ -64,7 +64,7 @@ async fn request_from_the_application_itself_is_let_through() {
         ];
 
         for headers in from_here {
-            let (status, body) = send(&app, Method::POST, "/api/v2/ping", headers).await;
+            let (status, body) = send(&app, Method::POST, "/api/v2/rox", headers).await;
 
             // The check lets the request through. No route takes a POST here, so the
             // answer is the ordinary "not found".

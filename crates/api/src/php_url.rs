@@ -288,6 +288,18 @@ fn parse(address: &str) -> Option<Parts> {
     Some(parts)
 }
 
+/// The host and the port of an address to check, as `formatPingHost()` of the PHP
+/// application reads them. Text without a scheme and without a port is a host, up to
+/// its first slash. Returns `None` for text that names no host.
+pub fn host_and_port(address: &str) -> Option<(String, Option<u16>)> {
+    let parts = parse(address)?;
+    let host = match parts.host {
+        Some(host) => host,
+        None => parts.path?.split('/').next()?.to_owned(),
+    };
+    (!host.is_empty()).then_some((host, parts.port))
+}
+
 /// Completes the address of a tab as the PHP application does before it sends the
 /// address to the browser (`qualifyURL`).
 ///

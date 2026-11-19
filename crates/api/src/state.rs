@@ -14,6 +14,7 @@ use thiserror::Error;
 use tokio::sync::Mutex;
 
 use crate::client::TrustedProxies;
+use crate::ping::{Latency, PingTarget, Prober};
 
 /// The shared state of the application.
 #[derive(Debug, Clone)]
@@ -26,6 +27,8 @@ pub struct AppState {
     secrets: Arc<SecretBox>,
     /// The folder of the uploaded pictures. Without it, no picture can be uploaded.
     picture_folder: Option<Arc<PathBuf>>,
+    /// What probes the address to check of a tab.
+    prober: Prober,
     /// Held while settings are changed, so that two changes do not overwrite each other.
     settings_change: Arc<Mutex<()>>,
 }
@@ -58,6 +61,7 @@ impl AppState {
             setup_code: None,
             secrets: Arc::new(secrets),
             picture_folder: None,
+            prober: Prober::network(),
             settings_change: Arc::new(Mutex::new(())),
         }
     }
@@ -164,6 +168,19 @@ impl AppState {
             }
             other => Ok(other.to_string()),
         }
+    }
+
+    /// The same state, with another way to probe the address to check of a tab. A test
+    /// uses it to stand in for the network.
+    #[must_use]
+    pub fn with_prober(mut self, prober: Prober) -> Self {
+        self.prober = prober;
+        self
+    }
+
+    /// Probes a target once.
+    pub async fn probe(&self, target: PingTarget) -> Latency {
+        self.prober.probe(target).await
     }
 
     /// The folder of the uploaded pictures, when the application has one.

@@ -596,3 +596,16 @@ async fn picture_routes_answer_like_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn ping_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // No recorded target answers, and none is the address to check of a tab. PHP
+        // probes each one and gets no answer. Here none is probed (D-08).
+        let replay = without_php_session(Replay::group("ping"));
+
+        replay.run(&installed_app(database)).await;
+    })
+    .await;
+}

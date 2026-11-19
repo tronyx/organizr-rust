@@ -128,6 +128,19 @@ pub fn has_key(query: Option<&str>, key: &str) -> bool {
     query.is_some_and(|query| form_urlencoded::parse(query.as_bytes()).any(|(name, _)| name == key))
 }
 
+/// Whether PHP takes a value for "nothing": `null`, `false`, 0, the empty text, the text
+/// `0`, and an empty list or object.
+pub fn is_nothing_in_php(value: &Value) -> bool {
+    match value {
+        Value::Null => true,
+        Value::Bool(on) => !on,
+        Value::Number(number) => number.as_f64() == Some(0.0),
+        Value::String(text) => text.is_empty() || text == "0",
+        Value::Array(entries) => entries.is_empty(),
+        Value::Object(members) => members.is_empty(),
+    }
+}
+
 /// A whole number as a request can send it: a JSON number, or its digits as text.
 pub fn whole_number(value: &Value) -> Option<i64> {
     match value {
@@ -262,6 +275,31 @@ impl<'a> Fields<'a> {
 #[cfg(test)]
 mod tests {
     use serde_json::{Value, json};
+
+    #[test]
+    fn what_php_takes_for_nothing() {
+        for nothing in [
+            serde_json::json!(null),
+            serde_json::json!(false),
+            serde_json::json!(""),
+            serde_json::json!("0"),
+            serde_json::json!(0),
+            serde_json::json!([]),
+            serde_json::json!({}),
+        ] {
+            assert!(super::is_nothing_in_php(&nothing), "{nothing}");
+        }
+        for something in [
+            serde_json::json!(true),
+            serde_json::json!("false"),
+            serde_json::json!("00"),
+            serde_json::json!(" "),
+            serde_json::json!(100),
+            serde_json::json!([0]),
+        ] {
+            assert!(!super::is_nothing_in_php(&something), "{something}");
+        }
+    }
 
     #[test]
     fn key_of_a_query_counts_with_or_without_a_value() {

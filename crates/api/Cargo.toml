@@ -26,9 +26,11 @@ jiff.workspace = true
 md-5.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+surge-ping.workspace = true
 thiserror.workspace = true
-# The lock that puts changes of the settings in a row, and the files of uploaded pictures.
-tokio = { workspace = true, features = ["fs", "sync"] }
+# The lock that puts changes of the settings in a row, the files of uploaded pictures,
+# and the connections and the time limit of a ping.
+tokio = { workspace = true, features = ["fs", "net", "sync", "time"] }
 tower-http.workspace = true
 tracing.workspace = true
 uuid.workspace = true
