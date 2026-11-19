@@ -30,6 +30,7 @@ This version has these items:
 - [SABnzbd](#sabnzbd)
 - [qBittorrent](#qbittorrent)
 - [Weather and air](#weather-and-air)
+- [Plex](#plex): what plays now, new items and playlists
 - [Tautulli](#tautulli)
 
 You set all items up in **Settings**, on the tab **Homepage**.
@@ -284,3 +285,64 @@ A person without the level of a group does not get the data of that group from t
 To leave libraries out, enter their ids in Tautulli with commas between them: `homepageTautulliViewingStatsExclude` for what is watched, and `homepageTautulliLibraryStatsExclude` for the table.
 
 The poster of the first row of a statistic comes through the picture cache of the server, as the [pictures of events](#pictures-of-events) do.
+
+## Plex
+
+Three items show your Plex server: what plays now, what was added last, and the video playlists.
+
+All three need these settings:
+
+| Setting | Key |
+|---|---|
+| Switch for Plex on the homepage | `homepagePlexEnabled` |
+| Level for Plex on the homepage | `homepagePlexAuth` |
+| Address of the Plex server | `plexURL` |
+| Plex token | `plexToken` |
+| Id of the Plex server | `plexID` |
+| Do not check the certificate | `plexDisableCertCheck` |
+
+The token and the id are the ones of [the login through Plex](plex-login.md), on the tab **Login**. The address is the address of the Plex server itself, for example `http://192.168.1.10:32400`.
+
+Each item has a switch, a level and a place of its own:
+
+| Item | Switch | Level | Place |
+|---|---|---|---|
+| Playing now | `homepagePlexStreams` | `homepagePlexStreamsAuth` | `homepageOrderplexnowplaying` |
+| New items | `homepagePlexRecent` | `homepagePlexRecentAuth` | `homepageOrderplexrecent` |
+| Playlists | `homepagePlexPlaylist` | `homepagePlexPlaylistAuth` | `homepageOrderplexplaylist` |
+
+A person needs the level of Plex on the homepage and the level of the item.
+
+### Playing now
+
+Each stream shows its picture, how much was watched, and how it reaches its player.
+
+Who plays is shown only when you switch it on:
+
+| Setting | Key |
+|---|---|
+| Show who plays, and from which address | `homepageShowStreamNames`, with the level `homepageShowStreamNamesAuth` |
+| Show who plays, without the address | `homepageShowStreamNamesWithoutIp`, with the level `homepageShowStreamNamesWithoutIpAuth` |
+| Show the names that Tautulli has for the users | `homepageUseCustomStreamNames` |
+
+A person without these levels does not get the names and the addresses from the server.
+
+`homepagePlexStreamsExclude` leaves libraries out. Enter the ids of the libraries in Plex with commas between them.
+
+### New items and playlists
+
+The new items are the films, the series and the music that were added last, the newest first. `homepageRecentLimit` is the largest number for each of the three kinds. `homepagePlexRecentExclude` leaves libraries out.
+
+The playlists are the video playlists of the owner of the token. A playlist with the word "private" in its title is not shown.
+
+A poster opens the details of its item, with a link to the item in Plex Web. The link goes to `app.plex.tv`, or to the address in `plexTabURL` when that setting has one.
+
+### Pictures
+
+The server fetches the pictures of the Plex server in the size that the homepage shows, and keeps each one for a week in the folder `cache` of the data folder. `cacheImageSize` sets the size.
+
+A person needs the level of Plex on the homepage to load a picture.
+
+### Not built yet
+
+PHP Organizr has a search of the Plex server in its top bar. The server of this application has the route for it. The interface does not show the search yet.

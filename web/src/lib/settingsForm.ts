@@ -509,6 +509,129 @@ const SERVICE_ITEMS: FieldGroup[] = [
   },
 ];
 
+/** The settings of Plex on the homepage. */
+const PLEX_ITEMS: FieldGroup[] = [
+  {
+    title: 'Plex',
+    fields: [
+      { key: 'homepagePlexEnabled', label: 'Show Plex on the homepage', kind: 'switch' },
+      {
+        key: 'homepagePlexAuth',
+        label: 'Plex is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'plexURL',
+        label: 'Address of the Plex server',
+        kind: 'text',
+        help: 'For example http://192.168.1.10:32400. The token and the id of the server are on the tab "Login".',
+      },
+      {
+        key: 'plexDisableCertCheck',
+        label: 'Do not check the certificate of the Plex server',
+        kind: 'switch',
+      },
+      {
+        key: 'plexTabURL',
+        label: 'Address of Plex Web for the links of items',
+        kind: 'text',
+        help: 'Leave the field empty to open items at app.plex.tv.',
+      },
+      {
+        key: 'cacheImageSize',
+        label: 'Size of the pictures',
+        kind: 'select',
+        options: [
+          { value: '1', label: 'Small' },
+          { value: '2', label: 'Medium' },
+          { value: '3', label: 'Large' },
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Plex: playing now',
+    fields: [
+      ...itemFields(
+        'what plays now',
+        'homepagePlexStreams',
+        'homepagePlexStreamsAuth',
+        'homepageOrderplexnowplaying',
+      ),
+      {
+        key: 'homepagePlexStreamsExclude',
+        label: 'Libraries that are left out',
+        kind: 'text',
+        help: 'The ids of the libraries in Plex, with commas between them.',
+      },
+      {
+        key: 'homepageShowStreamNames',
+        label: 'Show who plays, and from which address',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageShowStreamNamesAuth',
+        label: 'Names and addresses are for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'homepageShowStreamNamesWithoutIp',
+        label: 'Show who plays, without the address',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageShowStreamNamesWithoutIpAuth',
+        label: 'Names without addresses are for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'homepageUseCustomStreamNames',
+        label: 'Show the names that Tautulli has for the users',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageStreamRefresh',
+        label: 'Milliseconds between two loads of what plays',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'Plex: new items and playlists',
+    fields: [
+      ...itemFields(
+        'the new items of Plex',
+        'homepagePlexRecent',
+        'homepagePlexRecentAuth',
+        'homepageOrderplexrecent',
+      ),
+      { key: 'homepageRecentLimit', label: 'Most new items of each kind', kind: 'number', min: 1 },
+      {
+        key: 'homepagePlexRecentExclude',
+        label: 'Libraries that the new items leave out',
+        kind: 'text',
+        help: 'The ids of the libraries in Plex, with commas between them.',
+      },
+      {
+        key: 'homepageRecentRefresh',
+        label: 'Milliseconds between two loads of the new items',
+        kind: 'number',
+        min: 5000,
+      },
+      ...itemFields(
+        'the playlists of Plex',
+        'homepagePlexPlaylist',
+        'homepagePlexPlaylistAuth',
+        'homepageOrderplexplaylist',
+      ),
+    ],
+  },
+];
+
 /** The settings of the Tautulli item. */
 const TAUTULLI_ITEMS: FieldGroup[] = [
   {
@@ -986,5 +1109,6 @@ export const HOMEPAGE: FieldGroup[] = [
   ...CALENDAR_ITEMS,
   ...DOWNLOAD_ITEMS,
   ...WEATHER_ITEMS,
+  ...PLEX_ITEMS,
   ...TAUTULLI_ITEMS,
 ];
