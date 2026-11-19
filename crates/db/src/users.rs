@@ -1,6 +1,8 @@
 //! Storage of users.
 
-use organizr_domain::{GroupId, NewUser, PasswordHash, Timestamp, User, UserId};
+use organizr_domain::{
+    Change, GroupId, NewUser, PasswordHash, Timestamp, User, UserChanges, UserId,
+};
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
@@ -88,6 +90,64 @@ impl<'a> Users<'a> {
             .count(self.connection)
             .await?;
         Ok(found > 0)
+    }
+
+    /// Whether another user than `except` has the text as name or as e-mail address,
+    /// whatever the letter case. A user cannot take such a text as name or as address,
+    /// because a person logs in with either.
+    pub async fn is_taken_by_another(&self, text: &str, except: UserId) -> Result<bool, DbError> {
+        let key = text.to_lowercase();
+        let found = user::Entity::find()
+            .filter(user::Column::Id.ne(except.get()))
+            .filter(
+                Condition::any()
+                    .add(user::Column::UsernameKey.eq(key.as_str()))
+                    .add(user::Column::EmailKey.eq(key.as_str())),
+            )
+            .count(self.connection)
+            .await?;
+        Ok(found > 0)
+    }
+
+    /// Changes a user and returns the user as it is afterwards, or `None` when there is
+    /// no user with the id.
+    ///
+    /// Fails with [`DbError::Duplicate`] when the new name is taken, whatever its letter
+    /// case, and with [`DbError::ReferenceViolation`] when the new group does not exist.
+    pub async fn update(&self, id: UserId, changes: UserChanges) -> Result<Option<User>, DbError> {
+        let Some(current) = user::Entity::find_by_id(id.get())
+            .one(self.connection)
+            .await?
+        else {
+            return Ok(None);
+        };
+        let mut row: user::ActiveModel = current.clone().into();
+        if let Change::Set(username) = changes.username {
+            row.username_key = ActiveValue::Set(username.to_lowercase());
+            row.username = ActiveValue::Set(username);
+        }
+        if let Change::Set(email) = changes.email {
+            row.email_key = ActiveValue::Set(Some(email.to_lowercase()));
+            row.email = ActiveValue::Set(Some(email));
+        }
+        if let Change::Set(password_hash) = changes.password_hash {
+            row.password_hash = ActiveValue::Set(password_hash.expose().to_owned());
+        }
+        if let Change::Set(group) = changes.group {
+            row.group_id = ActiveValue::Set(group.get());
+        }
+        if let Change::Set(locked) = changes.locked {
+            row.locked = ActiveValue::Set(locked);
+        }
+        if let Change::Set(image) = changes.image {
+            row.image = ActiveValue::Set(image);
+        }
+        let user = if row.is_changed() {
+            row.update(self.connection).await?
+        } else {
+            current
+        };
+        Ok(Some(user.into()))
     }
 
     /// Replaces the stored password hash of a user. Returns whether the user existed.

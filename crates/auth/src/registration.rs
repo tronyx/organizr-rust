@@ -94,9 +94,7 @@ pub enum RegistrationError {
 /// `registration_hash` is the stored hash of the registration password. An empty value
 /// means that the install has no registration password, so nobody can register.
 ///
-/// The checks run in the order of the PHP application: the registration password, the
-/// name, the address, whether name or address are taken, then the lengths. The account
-/// joins the default group and gets the Gravatar picture of its address.
+/// The registration password is checked first. Then [`create_account`] makes the account.
 pub async fn register(
     database: &Database,
     request: Registration,
@@ -119,6 +117,53 @@ pub async fn register(
         return Err(RegistrationError::WrongRegistrationPassword);
     }
 
+    create_account(
+        database,
+        NewAccount {
+            username,
+            password,
+            email,
+        },
+        now,
+    )
+    .await
+}
+
+/// The name, the password and the e-mail address for a new account.
+#[derive(Clone, PartialEq, Eq)]
+pub struct NewAccount {
+    /// The name of the new account.
+    pub username: String,
+    /// The password of the new account.
+    pub password: String,
+    /// The e-mail address of the new account.
+    pub email: String,
+}
+
+/// The password is a secret, so `Debug` shows the name only.
+impl std::fmt::Debug for NewAccount {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("NewAccount")
+            .field("username", &self.username)
+            .finish_non_exhaustive()
+    }
+}
+
+/// Creates an account in the default group, with the Gravatar picture of its address.
+///
+/// The checks run in the order of the PHP application: the name, the address, whether
+/// name or address are taken, then the lengths.
+pub async fn create_account(
+    database: &Database,
+    account: NewAccount,
+    now: Timestamp,
+) -> Result<User, RegistrationError> {
+    let NewAccount {
+        username,
+        password,
+        email,
+    } = account;
     // The PHP application cuts the space off after it has looked for an empty name, and
     // so creates an account without a name for a name of spaces. Here that is refused.
     let username = email::php_trim(&username).to_owned();
@@ -152,9 +197,7 @@ pub async fn register(
         .find_default()
         .await?
         .ok_or(RegistrationError::NoDefaultGroup)?;
-    let password_hash = tokio::task::spawn_blocking(move || password::hash(&password))
-        .await
-        .map_err(RegistrationError::Task)??;
+    let password_hash = hash_password(password).await?;
 
     let stored = database
         .users()
@@ -173,4 +216,13 @@ pub async fn register(
         Err(DbError::Duplicate) => Err(taken()),
         Err(error) => Err(error.into()),
     }
+}
+
+/// Hashes a password for storing. The work runs away from the tasks that serve requests,
+/// because it takes long on purpose.
+pub async fn hash_password(password: String) -> Result<PasswordHash, RegistrationError> {
+    let hash = tokio::task::spawn_blocking(move || password::hash(&password))
+        .await
+        .map_err(RegistrationError::Task)??;
+    Ok(hash)
 }

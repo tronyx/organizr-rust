@@ -15,12 +15,15 @@ use serde_json::Value;
 use crate::api_data::ApiData;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
+use organizr_auth::registration::RegistrationError;
 
 /// Why a request to add or change a record is refused.
 #[derive(Debug)]
 pub enum Refusal {
     /// The request is at fault. The caller gets the status and the text.
     Request(StatusCode, String),
+    /// The request is at fault, and the answer has `data` that says more.
+    RequestWithData(StatusCode, String, Value),
     /// Any other failure.
     Api(ApiError),
 }
@@ -47,6 +50,21 @@ impl Refusal {
         Self::unprocessable(&format!("{record} {field} is not valid"))
     }
 
+    /// A text that is not an e-mail address. The answer repeats the text, as the PHP
+    /// application does.
+    pub fn invalid_email(email: &str) -> Self {
+        Self::RequestWithData(
+            StatusCode::CONFLICT,
+            "Email is not a valid email".to_owned(),
+            serde_json::json!({ "email": email }),
+        )
+    }
+
+    /// `401` with the given text: the caller may not do this.
+    pub fn not_authorized(message: &str) -> Self {
+        Self::Request(StatusCode::UNAUTHORIZED, message.to_owned())
+    }
+
     /// A name that is longer than the limit, in the words of the PHP application.
     pub fn over_limit(limit: usize) -> Self {
         Self::conflict(format!("String is over limit of: {limit}"))
@@ -56,6 +74,21 @@ impl Refusal {
 impl From<ApiError> for Refusal {
     fn from(error: ApiError) -> Self {
         Self::Api(error)
+    }
+}
+
+/// What is wrong with the values for a new account, in the words of the PHP application.
+impl From<RegistrationError> for Refusal {
+    fn from(error: RegistrationError) -> Self {
+        match error {
+            RegistrationError::EmptyUsername => Self::conflict("Username was set but empty"),
+            RegistrationError::InvalidEmail { email } => Self::invalid_email(&email),
+            RegistrationError::Taken { username, email } => Self::conflict(format!(
+                "Username: {username} or Email: {email} is already taken"
+            )),
+            RegistrationError::TooLong { limit } => Self::over_limit(limit),
+            other => Self::Api(other.into()),
+        }
     }
 }
 
@@ -71,6 +104,9 @@ impl IntoResponse for Refusal {
             Self::Request(status, message) => {
                 Envelope::error(status, message, NoData).into_response()
             }
+            Self::RequestWithData(status, message, data) => {
+                Envelope::error(status, message, data).into_response()
+            }
             Self::Api(error) => error.into_response(),
         }
     }
@@ -85,6 +121,11 @@ pub async fn as_plain_json(mut response: Response) -> Response {
         HeaderValue::from_static("application/json"),
     );
     response
+}
+
+/// Whether the query of a request has the given key, with or without a value.
+pub fn has_key(query: Option<&str>, key: &str) -> bool {
+    query.is_some_and(|query| form_urlencoded::parse(query.as_bytes()).any(|(name, _)| name == key))
 }
 
 /// A whole number as a request can send it: a JSON number, or its digits as text.
@@ -221,6 +262,20 @@ impl<'a> Fields<'a> {
 #[cfg(test)]
 mod tests {
     use serde_json::{Value, json};
+
+    #[test]
+    fn key_of_a_query_counts_with_or_without_a_value() {
+        assert!(super::has_key(Some("includeUsers"), "includeUsers"));
+        assert!(super::has_key(
+            Some("a=1&includeUsers=&b=2"),
+            "includeUsers"
+        ));
+        assert!(super::has_key(Some("includeUsers=0"), "includeUsers"));
+        assert!(!super::has_key(Some("includeusers"), "includeUsers"));
+        assert!(!super::has_key(Some("a=includeUsers"), "includeUsers"));
+        assert!(!super::has_key(Some(""), "includeUsers"));
+        assert!(!super::has_key(None, "includeUsers"));
+    }
 
     use super::{php_text, place_of, record_id, whole_number};
 

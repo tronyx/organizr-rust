@@ -19,4 +19,4 @@ pub use menu_name::{InvalidMenuName, MENU_NAME_LIMIT, menu_name};
 pub use session::{NewSession, Session, SessionTokenHash};
 pub use tab::{InvalidLevelRange, InvalidTabKind, LevelRange, NewTab, Tab, TabChanges, TabKind};
 pub use time::Timestamp;
-pub use user::{NewUser, PasswordHash, User};
+pub use user::{NewUser, PasswordHash, User, UserChanges};

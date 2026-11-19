@@ -997,6 +997,125 @@ GROUPS = [
     admin_case("groups_at_the_end", "GET", GROUPS_PATH),
 ]
 
+# The user routes. When the cases start, the install has the admin (id 1) and the users
+# that the group `register` made: ids 2 to 5, with "zoe" as id 3. The users that the cases
+# add get the ids from 6 on. The last cases delete them and give "zoe" her values back.
+#
+# Requests that PHP takes and the Rust application refuses are not recorded, because the
+# two installs would differ from there on. `docs/deviations.md` describes them.
+USERS_PATH = "/api/v2/users"
+ABE = {"username": "Abe", "password": "the password of abe", "email": "abe@example.com"}
+ZOE_IMAGE = "https://www.gravatar.com/avatar/76cec4168e20ad317a8afb3a81ae3fce?s=100&d=mm"
+
+
+def as_user(jar, name, method, path, json_body=None):
+    """A case that a logged-in user sends, with the cookies of the jar."""
+    options = {"jar": jar}
+    if json_body is not None:
+        options["json"] = json_body
+    return (name, method, path, options)
+
+
+USERS = [
+    # Reading.
+    ("users_as_guest", "GET", USERS_PATH),
+    admin_case("users", "GET", USERS_PATH),
+    admin_case("users_with_groups", "GET", USERS_PATH + "?includeGroups"),
+    ("user_as_guest", "GET", USERS_PATH + "/3"),
+    admin_case("user", "GET", USERS_PATH + "/3"),
+    admin_case("user_unknown", "GET", USERS_PATH + "/99"),
+    admin_case("user_with_an_id_that_is_no_number", "GET", USERS_PATH + "/abc"),
+    ("log_in_zoe", "POST", "/api/v2/login", {"json": {"username": "zoe", "password": ZOE["password"]}, "jar": "zoe"}),
+    as_user("zoe", "users_as_user", "GET", USERS_PATH),
+    as_user("zoe", "user_as_the_user", "GET", USERS_PATH + "/3"),
+    # Adding: what is refused.
+    ("add_as_guest", "POST", USERS_PATH, {"json": ABE}),
+    as_user("zoe", "add_as_user", "POST", USERS_PATH, ABE),
+    admin_case("add_without_a_body", "POST", USERS_PATH),
+    admin_case("add_without_username", "POST", USERS_PATH, {"password": "pw", "email": "new@example.com"}),
+    admin_case("add_without_password", "POST", USERS_PATH, {"username": "New", "email": "new@example.com"}),
+    admin_case("add_without_email", "POST", USERS_PATH, {"username": "New", "password": "pw"}),
+    admin_case("add_with_empty_email", "POST", USERS_PATH, {"username": "New", "password": "pw", "email": ""}),
+    admin_case("add_with_invalid_email", "POST", USERS_PATH, {"username": "New", "password": "pw", "email": "not an address"}),
+    admin_case("add_name_too_long", "POST", USERS_PATH, {**ABE, "username": "x" * 51}),
+    admin_case("add_email_too_long", "POST", USERS_PATH, {**ABE, "email": "x" * 39 + "@example.com"}),
+    admin_case("add_password_too_long", "POST", USERS_PATH, {**ABE, "password": "x" * 201}),
+    admin_case("add_name_taken", "POST", USERS_PATH, {**ABE, "username": "ZOE"}),
+    admin_case("add_email_taken", "POST", USERS_PATH, {**ABE, "email": "Zoe@Example.com"}),
+    # Adding: id 6, and what follows from it.
+    admin_case("add", "POST", USERS_PATH, ABE),
+    admin_case("add_again", "POST", USERS_PATH, ABE),
+    admin_case("user_added", "GET", USERS_PATH + "/6"),
+    ("log_in_abe", "POST", "/api/v2/login", {"json": {"username": "abe", "password": ABE["password"]}, "jar": "abe"}),
+    # Fields that are no part of a new user are ignored (id 7).
+    admin_case(
+        "add_with_more_fields",
+        "POST",
+        USERS_PATH,
+        {"username": "Bea", "password": "pw", "email": "bea@example.com", "group_id": 0, "locked": 1, "image": "bea.png"},
+    ),
+    admin_case("user_added_with_more_fields", "GET", USERS_PATH + "/7"),
+    admin_case("add_password_of_200_characters", "POST", USERS_PATH, {"username": "Cy", "password": "y" * 200, "email": "cy@example.com"}),
+    admin_case("users_after_adding", "GET", USERS_PATH),
+    # Changing: who may change whom.
+    ("change_as_guest", "PUT", USERS_PATH + "/6", {"json": {"image": "x.png"}}),
+    as_user("zoe", "change_another_user_as_user", "PUT", USERS_PATH + "/6", {"image": "x.png"}),
+    as_user("zoe", "change_own_image", "PUT", USERS_PATH + "/3", {"image": "  zoe.png "}),
+    as_user("zoe", "change_own_group", "PUT", USERS_PATH + "/3", {"group_id": 1}),
+    as_user("zoe", "change_own_register_date", "PUT", USERS_PATH + "/3", {"register_date": "2020-01-01 00:00:00"}),
+    as_user("zoe", "change_own_name_to_empty", "PUT", USERS_PATH + "/3", {"username": ""}),
+    as_user("zoe", "change_own_password_to_empty", "PUT", USERS_PATH + "/3", {"password": ""}),
+    as_user("zoe", "change_own_password", "PUT", USERS_PATH + "/3", {"password": "another password of zoe"}),
+    ("log_in_zoe_with_the_old_password", "POST", "/api/v2/login", {"json": {"username": "zoe", "password": ZOE["password"]}}),
+    ("log_in_zoe_with_the_new_password", "POST", "/api/v2/login", {"json": {"username": "zoe", "password": "another password of zoe"}}),
+    admin_case("user_after_own_changes", "GET", USERS_PATH + "/3"),
+    # Changing: the fields, with the API key.
+    admin_case("change_id_zero", "PUT", USERS_PATH + "/0", {"image": "x.png"}),
+    admin_case("change_unknown", "PUT", USERS_PATH + "/99", {"image": "x.png"}),
+    admin_case("change_unknown_fields_only", "PUT", USERS_PATH + "/6", {"nothing": 1}),
+    admin_case("change_name", "PUT", USERS_PATH + "/6", {"username": "  Abel "}),
+    admin_case("change_name_taken", "PUT", USERS_PATH + "/6", {"username": "ZOE"}),
+    admin_case("change_name_to_the_email_of_another_user", "PUT", USERS_PATH + "/6", {"username": "zoe@example.com"}),
+    admin_case("change_name_to_its_own_in_another_letter_case", "PUT", USERS_PATH + "/6", {"username": "ABEL"}),
+    admin_case("change_name_too_long", "PUT", USERS_PATH + "/6", {"username": "x" * 51}),
+    admin_case("change_email", "PUT", USERS_PATH + "/6", {"email": "Abel@Example.com"}),
+    admin_case("change_email_to_empty", "PUT", USERS_PATH + "/6", {"email": ""}),
+    admin_case("change_email_invalid", "PUT", USERS_PATH + "/6", {"email": "not an address"}),
+    admin_case("change_email_taken", "PUT", USERS_PATH + "/6", {"email": "ZOE@example.com"}),
+    admin_case("change_email_too_long", "PUT", USERS_PATH + "/6", {"email": "x" * 39 + "@example.com"}),
+    admin_case("change_group", "PUT", USERS_PATH + "/6", {"group_id": 2}),
+    admin_case("change_group_unknown", "PUT", USERS_PATH + "/6", {"group_id": 77}),
+    admin_case("change_group_as_text", "PUT", USERS_PATH + "/6", {"group_id": "1"}),
+    admin_case("change_password", "PUT", USERS_PATH + "/6", {"password": "a new password of abe"}),
+    ("log_in_abe_with_the_new_password", "POST", "/api/v2/login", {"json": {"username": "abel", "password": "a new password of abe"}}),
+    admin_case("change_locked", "PUT", USERS_PATH + "/6", {"locked": 1}),
+    admin_case("user_locked", "GET", USERS_PATH + "/6"),
+    admin_case("change_unlocked", "PUT", USERS_PATH + "/6", {"locked": 0}),
+    admin_case("change_register_date", "PUT", USERS_PATH + "/6", {"register_date": "2020-01-01 00:00:00"}),
+    admin_case("change_several_fields", "PUT", USERS_PATH + "/7", {"username": "Bea B", "email": "bea.b@example.com", "image": "<b>.png"}),
+    admin_case("users_after_changing", "GET", USERS_PATH),
+    # A Co-Admin (id 6 has the level 1 now) and the Admin.
+    as_user("abe", "co_admin_changes_the_admin", "PUT", USERS_PATH + "/1", {"image": "x.png"}),
+    as_user("abe", "co_admin_changes_a_user", "PUT", USERS_PATH + "/7", {"group_id": 3}),
+    as_user("abe", "co_admin_lists_the_users", "GET", USERS_PATH),
+    # Deleting.
+    ("delete_as_guest", "DELETE", USERS_PATH + "/7"),
+    as_user("zoe", "delete_as_user", "DELETE", USERS_PATH + "/7"),
+    as_user("abe", "delete_yourself", "DELETE", USERS_PATH + "/6"),
+    admin_case("delete_unknown", "DELETE", USERS_PATH + "/99"),
+    admin_case("delete_with_an_id_that_is_no_number", "DELETE", USERS_PATH + "/abc"),
+    as_user("abe", "delete_as_co_admin", "DELETE", USERS_PATH + "/7"),
+    admin_case("delete_again", "DELETE", USERS_PATH + "/7"),
+    admin_case("user_deleted", "GET", USERS_PATH + "/7"),
+    # A deleted user is logged out everywhere.
+    admin_case("delete_a_user_with_a_session", "DELETE", USERS_PATH + "/6"),
+    as_user("abe", "users_as_the_deleted_user", "GET", USERS_PATH),
+    # Clean-up: the other new users go, and "zoe" has her values again.
+    *[admin_case(f"clean_up_user_{id}", "DELETE", f"{USERS_PATH}/{id}") for id in range(8, 10)],
+    admin_case("clean_up_zoe", "PUT", USERS_PATH + "/3", {"image": ZOE_IMAGE, "password": ZOE["password"]}),
+    admin_case("users_at_the_end", "GET", USERS_PATH),
+]
+
 ROUTING = [
     ("GET", "/api/v2"),
     ("GET", "/api/v2/"),
@@ -1279,6 +1398,7 @@ def main():
     # for the tab group.
     record("categories", named(CATEGORIES), php_version)
     record("groups", named(GROUPS), php_version)
+    record("users", named(USERS), php_version)
     record("tabs", named(TABS), php_version)
 
 

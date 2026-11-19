@@ -89,6 +89,9 @@ pub async fn installed(database: &Database) {
         .expect("the install can be set up");
 }
 
+/// The password of the user "zoe" of [`REGISTERED_USERS`], as the recorder has it.
+pub const ZOE_PASSWORD: &str = "the-password-of-zoe";
+
 /// The users that the recorded group `register` leaves behind, with the name and the
 /// e-mail address of each: the ids 2 to 5, all in the group "User".
 pub const REGISTERED_USERS: [(&str, &str); 4] = [
@@ -102,7 +105,8 @@ pub const REGISTERED_USERS: [(&str, &str); 4] = [
 ];
 
 /// Stores [`REGISTERED_USERS`]. Call it after [`installed`], for the replay of a group
-/// that the recorder runs after the group `register`.
+/// that the recorder runs after the group `register`. Every user has the password
+/// [`ZOE_PASSWORD`]: the recorded cases log in as "zoe" only.
 pub async fn registered_users(database: &Database) {
     let group = database
         .groups()
@@ -110,14 +114,15 @@ pub async fn registered_users(database: &Database) {
         .await
         .expect("the lookup works")
         .expect("the install has a default group");
+    let password_hash =
+        organizr_auth::password::hash(ZOE_PASSWORD).expect("the password can be hashed");
     for (username, email) in REGISTERED_USERS {
         database
             .users()
             .insert(NewUser {
                 username: username.to_owned(),
                 email: Some(email.to_owned()),
-                // Nobody logs in as one of these users.
-                password_hash: PasswordHash::new(ADMIN_PASSWORD_HASH.to_owned()),
+                password_hash: password_hash.clone(),
                 group: group.id,
                 image: Some(gravatar(email)),
                 created_at: Timestamp::from_unix_seconds(1_700_000_100),

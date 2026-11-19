@@ -75,6 +75,8 @@ pub struct Replay {
     group: String,
     edits: Vec<Edit>,
     null_edits: Vec<NullEdit>,
+    /// Keys whose values the answer has as `null`: case and keys.
+    hidden: Vec<(String, Vec<String>)>,
     /// Keys that the answer does not have: case and JSON pointer.
     removals: Vec<(String, String)>,
     /// Objects whose keys the answer has in sorted order: case and JSON pointer.
@@ -112,6 +114,7 @@ impl Replay {
             group: group.to_owned(),
             edits: Vec::new(),
             null_edits: Vec::new(),
+            hidden: Vec::new(),
             removals: Vec::new(),
             sorted_objects: Vec::new(),
             pending_aspects: Vec::new(),
@@ -187,6 +190,22 @@ impl Replay {
             keys: keys.iter().map(|key| (*key).to_owned()).collect(),
             value,
         });
+        self
+    }
+
+    /// Expects `null` wherever the recorded body of a case has a value under one of
+    /// `keys`, at any depth, because of an approved deviation. This is for a value that
+    /// the application never shows, in every record of a list.
+    ///
+    /// `id` must be an entry of `docs/deviations.md`. The recorded body must have at
+    /// least one such value.
+    #[must_use]
+    pub fn deviation_hides(mut self, id: &str, case: &str, keys: &[&str]) -> Self {
+        assert_approved(id);
+        self.hidden.push((
+            case.to_owned(),
+            keys.iter().map(|key| (*key).to_owned()).collect(),
+        ));
         self
     }
 
@@ -356,8 +375,15 @@ impl Replay {
             .filter(|(name, _)| name == &case.name)
             .map(|(_, pointer)| pointer.as_str())
             .collect();
+        let hidden: Vec<&[String]> = self
+            .hidden
+            .iter()
+            .filter(|(name, _)| name == &case.name)
+            .map(|(_, keys)| keys.as_slice())
+            .collect();
         if !edits.is_empty()
             || !null_edits.is_empty()
+            || !hidden.is_empty()
             || !removals.is_empty()
             || !sorted_objects.is_empty()
         {
@@ -370,6 +396,13 @@ impl Replay {
                     "case `{}`: the recorded body has no `null` under {:?}",
                     case.name,
                     edit.keys
+                );
+            }
+            for keys in hidden {
+                assert!(
+                    hide_values(&mut json, keys) > 0,
+                    "case `{}`: the recorded body has no value under {keys:?}",
+                    case.name
                 );
             }
             for edit in edits {
@@ -495,6 +528,29 @@ fn replace_nulls(json: &mut Value, keys: &[String], value: &Value) -> usize {
         Value::Array(entries) => entries
             .iter_mut()
             .map(|entry| replace_nulls(entry, keys, value))
+            .sum(),
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => 0,
+    }
+}
+
+/// Replaces every value but `null` that stands under one of `keys`, at any depth, by
+/// `null`. Returns how many were replaced.
+fn hide_values(json: &mut Value, keys: &[String]) -> usize {
+    match json {
+        Value::Object(object) => object
+            .iter_mut()
+            .map(|(key, member)| {
+                if !member.is_null() && keys.contains(key) {
+                    *member = Value::Null;
+                    1
+                } else {
+                    hide_values(member, keys)
+                }
+            })
+            .sum(),
+        Value::Array(entries) => entries
+            .iter_mut()
+            .map(|entry| hide_values(entry, keys))
             .sum(),
         Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => 0,
     }

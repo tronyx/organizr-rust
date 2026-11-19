@@ -444,7 +444,7 @@ async fn group_routes_answer_like_php() {
                 json!("Not Authorized"),
             )
             // A user that was never locked has `null` in PHP.
-            .deviation_for_nulls("D-51", "groups_with_users", &["locked"], json!(0))
+            .deviation_for_nulls("D-52", "groups_with_users", &["locked"], json!(0))
             // In PHP a new default group leaves the old one as a second default group.
             .deviation(
                 "D-51",
@@ -453,14 +453,7 @@ async fn group_routes_answer_like_php() {
                 json!(0),
             );
         // The hash of a password does not leave the server.
-        for user in 0..=seed::REGISTERED_USERS.len() {
-            replay = replay.deviation(
-                "D-05",
-                "groups_with_users",
-                &format!("/response/data/users/{user}/password"),
-                Value::Null,
-            );
-        }
+        replay = replay.deviation_hides("D-05", "groups_with_users", &["password"]);
         // Text is stored as it was sent, not with HTML entities.
         for (case, place) in [
             ("groups_after_adding", 10),
@@ -475,6 +468,64 @@ async fn group_routes_answer_like_php() {
                 .deviation("D-24", case, &format!("{group}/group"), json!(MARKUP_NAME))
                 .deviation("D-24", case, &format!("{group}/image"), json!(MARKUP_IMAGE));
         }
+
+        replay.run(&installed_app(database)).await;
+    })
+    .await;
+}
+
+/// The cases of the group `users` whose answer shows users.
+const CASES_WITH_USERS: [&str; 12] = [
+    "users",
+    "users_with_groups",
+    "user",
+    "user_added",
+    "user_added_with_more_fields",
+    "users_after_adding",
+    "user_after_own_changes",
+    "user_locked",
+    "users_after_changing",
+    "co_admin_lists_the_users",
+    "users_at_the_end",
+    "user_deleted",
+];
+
+/// The picture of "zoe" after the clean-up of the recorder, which PHP stores with an
+/// HTML entity.
+const ZOE_IMAGE: &str =
+    "https://www.gravatar.com/avatar/76cec4168e20ad317a8afb3a81ae3fce?s=100&d=mm";
+
+#[tokio::test]
+async fn user_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The recorder runs this group after the group `register`.
+        seed::registered_users(database).await;
+        let mut replay = without_php_session(Replay::group("users"));
+        for case in CASES_WITH_USERS {
+            // The answer for a user that does not exist has no user in it.
+            if case == "user_deleted" {
+                continue;
+            }
+            replay = replay
+                // The hash of a password does not leave the server.
+                .deviation_hides("D-05", case, &["password"]);
+            // A user that was never locked has `null` in PHP. One case shows a locked user
+            // alone.
+            if case != "user_locked" {
+                replay = replay.deviation_for_nulls("D-52", case, &["locked"], json!(0));
+            }
+        }
+        // Text is stored as it was sent, not with HTML entities.
+        for case in ["users_after_changing", "co_admin_lists_the_users"] {
+            replay = replay.deviation("D-24", case, "/response/data/6/image", json!("<b>.png"));
+        }
+        replay = replay.deviation(
+            "D-24",
+            "users_at_the_end",
+            "/response/data/2/image",
+            json!(ZOE_IMAGE),
+        );
 
         replay.run(&installed_app(database)).await;
     })

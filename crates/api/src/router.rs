@@ -9,12 +9,13 @@ use axum::routing::{MethodRouter, delete, get, post, put};
 use axum::{Extension, Router};
 use tower_http::set_header::SetResponseHeaderLayer;
 
+use crate::api_data::ApiData;
 use crate::caller::{Caller, identify_caller};
 use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    basics, categories, fields, groups, launch, login, logout, register, tabs, token, wizard,
+    basics, categories, fields, groups, launch, login, logout, register, tabs, token, users, wizard,
 };
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
@@ -38,7 +39,27 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/wizard", &post(wizard::wizard))?
         .route("/login", &post(login::login))?
         .route("/logout", &get(logout::logout))?
-        .route("/users/register", &post(register::register))?
+        // The PHP router tries `/users/{id}` for the other methods of this fixed path.
+        .route(
+            "/users/register",
+            &post(register::register)
+                .get(|State(state): State<AppState>, Extension(caller): Extension<Caller>| async move {
+                    users::one_by_text(&state, &caller, "register").await
+                })
+                .put(
+                    |State(state): State<AppState>,
+                     Extension(caller): Extension<Caller>,
+                     data: ApiData| async move {
+                        users::change_by_text(&state, &caller, "register", &data).await
+                    },
+                )
+                .delete(
+                    (|State(state): State<AppState>, Extension(caller): Extension<Caller>| async move {
+                        users::remove_by_text(&state, &caller, "register").await
+                    })
+                    .layer(map_response(fields::as_plain_json)),
+                ),
+        )?
         // The PHP router tries `/token/{id}` for a DELETE of the two fixed paths too.
         .route(
             "/token/me",
@@ -74,6 +95,13 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/categories/{id}",
             &put(categories::change.layer(map_response(fields::as_plain_json)))
                 .delete(categories::remove.layer(map_response(fields::as_plain_json))),
+        )?
+        .route("/users", &get(users::list).post(users::add))?
+        .route(
+            "/users/{id}",
+            &get(users::one)
+                .put(users::change)
+                .delete(users::remove.layer(map_response(fields::as_plain_json))),
         )?
         .route("/groups", &get(groups::list).post(groups::add))?
         .route(

@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use crate::{GroupId, Timestamp, UserId};
+use crate::{Change, GroupId, Timestamp, UserId};
 
 /// A password in hashed form, as stored. Never the password itself.
 ///
@@ -64,6 +64,38 @@ pub struct NewUser {
     pub image: Option<String>,
     /// When the account was created.
     pub created_at: Timestamp,
+}
+
+/// Changes to a user. A field that is [`Change::Keep`] stays as it is.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UserChanges {
+    /// The name to log in with.
+    pub username: Change<String>,
+    /// The e-mail address.
+    pub email: Change<String>,
+    /// The hashed password.
+    pub password_hash: Change<PasswordHash>,
+    /// The group the user belongs to.
+    pub group: Change<GroupId>,
+    /// Whether the account is locked.
+    pub locked: Change<bool>,
+    /// The picture: a path or a URL.
+    pub image: Change<Option<String>>,
+}
+
+impl UserChanges {
+    /// Changes that keep every field.
+    #[must_use]
+    pub const fn none() -> Self {
+        Self {
+            username: Change::Keep,
+            email: Change::Keep,
+            password_hash: Change::Keep,
+            group: Change::Keep,
+            locked: Change::Keep,
+            image: Change::Keep,
+        }
+    }
 }
 
 #[cfg(test)]

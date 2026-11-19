@@ -21,6 +21,10 @@ impl GroupLevel {
     /// The Guest group: a caller who is not logged in.
     pub const GUEST: Self = Self(999);
 
+    /// The level that every logged-in user has or passes. A route for this level is for
+    /// everybody but guests.
+    pub const LOGGED_IN: Self = Self(998);
+
     /// Creates a level. Levels run from 0 to 999.
     pub fn new(value: u16) -> Result<Self, InvalidGroupLevel> {
         if value <= Self::GUEST.0 {

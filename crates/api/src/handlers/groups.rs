@@ -22,7 +22,7 @@ use serde_json::Value;
 use crate::api_data::ApiData;
 use crate::caller::Caller;
 use crate::envelope::{Envelope, NoContent, NoData};
-use crate::handlers::fields::{Fields, Refusal, php_text, record_id};
+use crate::handlers::fields::{Fields, Refusal, has_key, php_text, record_id};
 use crate::handlers::users::UserRow;
 use crate::state::AppState;
 
@@ -87,11 +87,6 @@ async fn group_at(database: &Database, id: &str) -> Result<Option<Group>, DbErro
         Some(id) => database.groups().find(id).await,
         None => Ok(None),
     }
-}
-
-/// Whether the query of a request has the given key, with or without a value.
-fn has_key(query: Option<&str>, key: &str) -> bool {
-    query.is_some_and(|query| form_urlencoded::parse(query.as_bytes()).any(|(name, _)| name == key))
 }
 
 /// The name for a group from the field `group`, checked as the PHP application checks
@@ -334,21 +329,5 @@ pub async fn remove(
         // Another request put a user in the group after the count above.
         Err(DbError::ReferenceViolation) => Err(has_users()),
         Err(error) => Err(error.into()),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::has_key;
-
-    #[test]
-    fn key_of_a_query_counts_with_or_without_a_value() {
-        assert!(has_key(Some("includeUsers"), "includeUsers"));
-        assert!(has_key(Some("a=1&includeUsers=&b=2"), "includeUsers"));
-        assert!(has_key(Some("includeUsers=0"), "includeUsers"));
-        assert!(!has_key(Some("includeusers"), "includeUsers"));
-        assert!(!has_key(Some("a=includeUsers"), "includeUsers"));
-        assert!(!has_key(Some(""), "includeUsers"));
-        assert!(!has_key(None, "includeUsers"));
     }
 }

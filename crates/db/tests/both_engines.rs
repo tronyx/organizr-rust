@@ -12,7 +12,7 @@
 use organizr_db::{Database, DbError};
 use organizr_domain::{
     Change, Group, GroupChanges, GroupId, GroupLevel, NewGroup, NewUser, PasswordHash, Timestamp,
-    UserId,
+    User, UserChanges, UserId,
 };
 use organizr_testkit::engines::{self, on_each_engine};
 
@@ -810,6 +810,211 @@ async fn users_of_a_group_are_counted() {
                 .expect("the count works"),
             0
         );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn user_is_changed_field_by_field() {
+    on_each_engine(async |database| {
+        let user_group = insert_group(database, 4, "User").await;
+        let editors = insert_group(database, 5, "Editors").await;
+        let users = database.users();
+        let zoe = users
+            .insert(new_user("zoe", user_group.id))
+            .await
+            .expect("the user can be stored");
+
+        let unchanged = users
+            .update(zoe.id, UserChanges::none())
+            .await
+            .expect("the update works");
+        assert_eq!(unchanged.as_ref(), Some(&zoe));
+
+        let new_hash = PasswordHash::new("$argon2id$another.hash".to_owned());
+        let changed = users
+            .update(
+                zoe.id,
+                UserChanges {
+                    username: Change::Set("Zoë".to_owned()),
+                    email: Change::Set("Zoe@Example.com".to_owned()),
+                    password_hash: Change::Set(new_hash.clone()),
+                    group: Change::Set(editors.id),
+                    locked: Change::Set(true),
+                    image: Change::Set(Some("zoe.png".to_owned())),
+                },
+            )
+            .await
+            .expect("the update works")
+            .expect("the user exists");
+        assert_eq!(
+            changed,
+            User {
+                username: "Zoë".to_owned(),
+                email: Some("Zoe@Example.com".to_owned()),
+                password_hash: new_hash,
+                group: editors.id,
+                locked: true,
+                image: Some("zoe.png".to_owned()),
+                ..zoe.clone()
+            }
+        );
+        assert_eq!(
+            users.find(zoe.id).await.expect("the lookup works"),
+            Some(changed.clone())
+        );
+        // The user is found by the new name and the new address, in any letter case.
+        for login in ["ZOË", "zoe@example.com"] {
+            let found = users.find_by_login(login).await.expect("the lookup works");
+            assert_eq!(found.as_ref(), Some(&changed), "{login}");
+        }
+        assert_eq!(
+            users
+                .find_by_username("zoe")
+                .await
+                .expect("the lookup works"),
+            None
+        );
+
+        // A picture can be taken away, and a lock can be opened.
+        let plain = users
+            .update(
+                zoe.id,
+                UserChanges {
+                    locked: Change::Set(false),
+                    image: Change::Set(None),
+                    ..UserChanges::none()
+                },
+            )
+            .await
+            .expect("the update works")
+            .expect("the user exists");
+        assert!(!plain.locked);
+        assert_eq!(plain.image, None);
+        assert_eq!(plain.username, "Zoë");
+
+        let missing = users
+            .update(UserId::new(zoe.id.get() + 100), UserChanges::none())
+            .await
+            .expect("the update works");
+        assert_eq!(missing, None);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn changed_user_cannot_take_a_name_or_a_group_that_is_not_free() {
+    on_each_engine(async |database| {
+        let group = insert_group(database, 4, "User").await;
+        let users = database.users();
+        users
+            .insert(new_user("zoe", group.id))
+            .await
+            .expect("the user can be stored");
+        let yan = users
+            .insert(new_user("yan", group.id))
+            .await
+            .expect("the user can be stored");
+
+        let taken = users
+            .update(
+                yan.id,
+                UserChanges {
+                    username: Change::Set("ZOE".to_owned()),
+                    ..UserChanges::none()
+                },
+            )
+            .await;
+        assert!(matches!(taken, Err(DbError::Duplicate)), "{taken:?}");
+        let no_group = users
+            .update(
+                yan.id,
+                UserChanges {
+                    group: Change::Set(GroupId::new(group.id.get() + 100)),
+                    ..UserChanges::none()
+                },
+            )
+            .await;
+        assert!(
+            matches!(no_group, Err(DbError::ReferenceViolation)),
+            "{no_group:?}"
+        );
+        // A user can take the own name in another letter case.
+        let renamed = users
+            .update(
+                yan.id,
+                UserChanges {
+                    username: Change::Set("YAN".to_owned()),
+                    ..UserChanges::none()
+                },
+            )
+            .await
+            .expect("the update works")
+            .expect("the user exists");
+        assert_eq!(renamed.username, "YAN");
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn name_or_address_of_another_user_is_taken_for_both_uses() {
+    on_each_engine(async |database| {
+        let group = insert_group(database, 4, "User").await;
+        let users = database.users();
+        let zoe = users
+            .insert(NewUser {
+                email: Some("Zoe@Example.com".to_owned()),
+                ..new_user("zoe", group.id)
+            })
+            .await
+            .expect("the user can be stored");
+        let yan = users
+            .insert(new_user("yan", group.id))
+            .await
+            .expect("the user can be stored");
+        let taken = async |text: &str, except: UserId| {
+            users
+                .is_taken_by_another(text, except)
+                .await
+                .expect("the lookup works")
+        };
+
+        // A person logs in with a name or an address, so neither can be both.
+        assert!(taken("ZOE", yan.id).await, "the name of another user");
+        assert!(
+            taken("zoe@example.com", yan.id).await,
+            "the address of another user"
+        );
+        assert!(!taken("zoe", zoe.id).await, "the own name");
+        assert!(!taken("ZOE@EXAMPLE.COM", zoe.id).await, "the own address");
+        assert!(!taken("nobody", yan.id).await);
+        assert!(!taken("", yan.id).await);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn users_are_listed_in_the_order_in_which_they_were_stored() {
+    on_each_engine(async |database| {
+        let group = insert_group(database, 4, "User").await;
+        let users = database.users();
+        assert_eq!(users.list().await.expect("the list works"), []);
+
+        for name in ["zoe", "abe", "yan"] {
+            users
+                .insert(new_user(name, group.id))
+                .await
+                .expect("the user can be stored");
+        }
+
+        let names: Vec<String> = users
+            .list()
+            .await
+            .expect("the list works")
+            .into_iter()
+            .map(|user| user.username)
+            .collect();
+        assert_eq!(names, ["zoe", "abe", "yan"]);
     })
     .await;
 }
