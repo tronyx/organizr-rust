@@ -91,3 +91,12 @@ zeroize = "1.9.2"
 [profile.release]
 lto = "thin"
 strip = true
+
+# The test binaries are many, and each one links every dependency. With the full debug
+# information they fill the disk of a build machine, and the linker then crashes. Line
+# numbers for our own code are enough for a backtrace.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
