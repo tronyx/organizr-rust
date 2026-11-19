@@ -82,7 +82,12 @@ async fn weather_air_and_pollen_come_for_the_kinds_that_are_switched_on() {
         );
         assert_eq!(
             call(&all, As::Guest, "GET", "/homepage/items", None).await.data(),
-            json!([{"key": "homepageOrderWeatherAndAir", "kind": "weather", "id": ""}])
+            json!([{
+                "key": "homepageOrderWeatherAndAir",
+                "kind": "weather",
+                "id": "",
+                "options": {"title": ""},
+            }])
         );
     })
     .await;

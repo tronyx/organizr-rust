@@ -13,6 +13,7 @@
   import Qbittorrent from './Qbittorrent.svelte';
   import Sabnzbd from './Sabnzbd.svelte';
   import UptimeKuma from './UptimeKuma.svelte';
+  import Weather from './Weather.svelte';
 
   let { title }: { title: string } = $props();
 
@@ -26,6 +27,7 @@
     'radarrqueue',
     'sabnzbd',
     'qbittorrent',
+    'weather',
   ]);
 
   /** How the calendar shows, from the options of its item. */
@@ -85,6 +87,8 @@
           <Sabnzbd />
         {:else if item.kind === 'qbittorrent'}
           <Qbittorrent />
+        {:else if item.kind === 'weather'}
+          <Weather title={typeof item.options?.title === 'string' ? item.options.title : ''} />
         {/if}
       </section>
     {/each}

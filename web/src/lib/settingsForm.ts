@@ -509,6 +509,67 @@ const SERVICE_ITEMS: FieldGroup[] = [
   },
 ];
 
+/** The settings of the weather and air item. */
+const WEATHER_ITEMS: FieldGroup[] = [
+  {
+    title: 'Weather and air',
+    fields: [
+      ...itemFields(
+        'the weather',
+        'homepageWeatherAndAirEnabled',
+        'homepageWeatherAndAirAuth',
+        'homepageOrderWeatherAndAir',
+      ),
+      {
+        key: 'homepageWeatherAndAirLatitude',
+        label: 'Latitude of the place',
+        kind: 'text',
+        help: 'With a minus sign for a place south of the equator, for example -33.87',
+      },
+      {
+        key: 'homepageWeatherAndAirLongitude',
+        label: 'Longitude of the place',
+        kind: 'text',
+        help: 'With a minus sign for a place west of Greenwich, for example -73.99',
+      },
+      {
+        key: 'breezometerToken',
+        label: 'API key of BreezoMeter',
+        kind: 'secret',
+        help: 'The weather comes from the API of BreezoMeter, which needs a key.',
+      },
+      {
+        key: 'homepageWeatherAndAirUnits',
+        label: 'Units',
+        kind: 'select',
+        options: [
+          { value: 'imperial', label: 'Imperial' },
+          { value: 'metric', label: 'Metric' },
+        ],
+      },
+      { key: 'homepageWeatherAndAirWeatherEnabled', label: 'Show the weather', kind: 'switch' },
+      {
+        key: 'homepageWeatherAndAirAirQualityEnabled',
+        label: 'Show the air quality',
+        kind: 'switch',
+      },
+      { key: 'homepageWeatherAndAirPollenEnabled', label: 'Show the pollen', kind: 'switch' },
+      {
+        key: 'homepageWeatherAndAirWeatherHeaderToggle',
+        label: 'Show a title above the weather',
+        kind: 'switch',
+      },
+      { key: 'homepageWeatherAndAirWeatherHeader', label: 'Title above the weather', kind: 'text' },
+      {
+        key: 'homepageWeatherAndAirRefresh',
+        label: 'Milliseconds between two loads of the weather',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+];
+
 /** The settings of the download clients. */
 const DOWNLOAD_ITEMS: FieldGroup[] = [
   {
@@ -848,4 +909,5 @@ export const HOMEPAGE: FieldGroup[] = [
   ...SERVICE_ITEMS,
   ...CALENDAR_ITEMS,
   ...DOWNLOAD_ITEMS,
+  ...WEATHER_ITEMS,
 ];

@@ -201,6 +201,15 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
                     "limit": settings.calendar_limit,
                 });
             }
+            if item.kind == "weather" {
+                // The title shows only when its switch is on.
+                let title = if settings.homepage_weather_and_air_weather_header_toggle {
+                    settings.homepage_weather_and_air_weather_header.as_str()
+                } else {
+                    ""
+                };
+                item.options = json!({ "title": title });
+            }
             item
         })
         .collect()

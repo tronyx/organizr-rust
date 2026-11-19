@@ -29,6 +29,7 @@ This version has these items:
 - [Downloads of Sonarr and Radarr](#downloads-of-sonarr-and-radarr)
 - [SABnzbd](#sabnzbd)
 - [qBittorrent](#qbittorrent)
+- [Weather and air](#weather-and-air)
 
 You set all items up in **Settings**, on the tab **Homepage**.
 
@@ -222,3 +223,31 @@ This item shows the torrents of qBittorrent and how far each one is.
 Select version 2 of the API for qBittorrent 4.1 and later. The default of the setting is version 1, as in PHP Organizr.
 
 Organizr logs in to qBittorrent with the user name and the password each time it loads the torrents. If qBittorrent blocks an address after wrong logins, a wrong password in this setting blocks the address of Organizr.
+
+## Weather and air
+
+This item shows the weather of the next hours, the air quality and the pollen for one place. The data comes from the API of BreezoMeter.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageWeatherAndAirEnabled` |
+| Level | `homepageWeatherAndAirAuth` |
+| Place on the homepage | `homepageOrderWeatherAndAir` |
+| Latitude | `homepageWeatherAndAirLatitude` |
+| Longitude | `homepageWeatherAndAirLongitude` |
+| API key | `breezometerToken` |
+| Units: `imperial` or `metric` | `homepageWeatherAndAirUnits` |
+| Show the weather | `homepageWeatherAndAirWeatherEnabled` |
+| Show the air quality | `homepageWeatherAndAirAirQualityEnabled` |
+| Show the pollen | `homepageWeatherAndAirPollenEnabled` |
+| Show a title | `homepageWeatherAndAirWeatherHeaderToggle` |
+| Title | `homepageWeatherAndAirWeatherHeader` |
+| Milliseconds between two loads | `homepageWeatherAndAirRefresh` |
+
+Enter the latitude and the longitude as numbers, for example `52.52` and `13.40`. A map service shows them for an address.
+
+The item needs an API key of BreezoMeter. PHP Organizr comes with a key of its author. This application comes with no key. An import brings the key that your PHP install used.
+
+A kind of data that the API refuses is not shown. If the API gives nothing at all, the item says so.
+
+PHP Organizr can search the latitude and the longitude of a city. This application does not have that search yet.
