@@ -628,3 +628,133 @@ async fn second_factor_routes_answer_like_php() {
     })
     .await;
 }
+
+/// One e-mail that the PHP application sent while the group `mail` was recorded.
+#[derive(serde::Deserialize)]
+struct RecordedMail {
+    to: Vec<RecordedAddress>,
+    bcc: Vec<RecordedAddress>,
+    subject: String,
+    html: String,
+}
+
+#[derive(serde::Deserialize)]
+struct RecordedAddress {
+    #[serde(rename = "Name")]
+    name: String,
+    #[serde(rename = "Address")]
+    address: String,
+}
+
+#[derive(serde::Deserialize)]
+struct RecordedMails {
+    mails: Vec<RecordedMail>,
+}
+
+/// The HTML of an e-mail in the form that can be compared: the mail program of PHP ends
+/// each line with a carriage return and a line feed and adds a line break at the end,
+/// and the new password is random.
+fn comparable(html: &str, password: Option<&str>) -> String {
+    let html = html.trim_end().replace("\r\n", "\n");
+    match password {
+        Some(password) => html.replace(password, "<password>"),
+        None => html,
+    }
+}
+
+#[tokio::test]
+async fn mail_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The recorder runs this group last, after the group that registers users.
+        seed::registered_users(database).await;
+        let mut replay = without_php_session(Replay::group("mail"))
+            // PHP asks this one route for the form key before it looks at the caller.
+            .deviation(
+                "D-03",
+                "send_as_guest",
+                "/response/message",
+                json!("Not Authorized"),
+            );
+        // PHP gives no reason for an e-mail that it did not send.
+        for case in ["send_without_a_body", "send_without_recipients"] {
+            replay = replay.deviation(
+                "D-58",
+                case,
+                "/response/message",
+                json!("the e-mail has no recipient"),
+            );
+        }
+        // The address of the site in an e-mail comes from the request, as in PHP. The
+        // second request for a new password comes too soon after the first one (D-58).
+        let (app, outbox) = organizr_testkit::installed_app_with_outbox(database, &[]);
+
+        replay.run(&app).await;
+
+        // The e-mails are those of PHP: the same recipients, subjects and HTML.
+        let recorded: RecordedMails =
+            serde_json::from_str(include_str!("../../../parity/cases/mail_messages.json"))
+                .expect("the recorded e-mails are JSON");
+        // PHP sent a second new password at once, which this application does not.
+        let expected: Vec<&RecordedMail> = recorded
+            .mails
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| *index != 1)
+            .map(|(_, mail)| mail)
+            .collect();
+        let sent = outbox.wait_for(expected.len()).await;
+        assert_eq!(sent.len(), expected.len());
+        for (mail, expected) in sent.iter().zip(expected) {
+            let to: Vec<(String, String)> = mail
+                .to
+                .iter()
+                .map(|to| (to.name.clone().unwrap_or_default(), to.address.clone()))
+                .collect();
+            let expected_to: Vec<(String, String)> = expected
+                .to
+                .iter()
+                .map(|to| (to.name.clone(), to.address.clone()))
+                .collect();
+            assert_eq!(to, expected_to, "{}", expected.subject);
+            let expected_bcc: Vec<&str> = expected
+                .bcc
+                .iter()
+                .map(|bcc| bcc.address.as_str())
+                .collect();
+            assert_eq!(mail.bcc, expected_bcc, "{}", expected.subject);
+            assert_eq!(mail.subject, expected.subject);
+            // The new password stands after these words in the e-mail.
+            let password = mail
+                .html
+                .split_once("Here is your new password: ")
+                .and_then(|(_, rest)| rest.split_once('<'))
+                .map(|(password, _)| password);
+            let (ours, theirs) = (
+                comparable(&mail.html, password),
+                comparable(&expected.html, None),
+            );
+            let differs_at = ours
+                .bytes()
+                .zip(theirs.bytes())
+                .position(|(ours, theirs)| ours != theirs)
+                .unwrap_or_else(|| ours.len().min(theirs.len()));
+            let from = differs_at.saturating_sub(60);
+            assert!(
+                ours == theirs,
+                "the e-mail `{}` differs at byte {differs_at}:
+  PHP:  {:?}
+  Rust: {:?}",
+                expected.subject,
+                theirs.get(from..(differs_at + 80).min(theirs.len())),
+                ours.get(from..(differs_at + 80).min(ours.len())),
+            );
+        }
+        let server = &outbox.servers()[0];
+        assert_eq!((server.host.as_str(), server.port), ("mailpit", 1025));
+        assert_eq!(server.sender_name, "Parity Organizr");
+        assert_eq!(server.sender_address, "organizr@example.com");
+        assert_eq!(server.credentials, None);
+    })
+    .await;
+}

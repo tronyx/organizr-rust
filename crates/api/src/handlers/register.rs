@@ -4,9 +4,9 @@ use std::time::{Duration, Instant, SystemTime};
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode, header};
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
-use organizr_auth::login::{self, Device};
+use organizr_auth::login;
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
 use organizr_auth::registration::{self, Registration, RegistrationError};
 use organizr_domain::PasswordHash;
@@ -18,6 +18,7 @@ use crate::client::Client;
 use crate::cookies::{self, CookieScope};
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
+use crate::handlers::mail;
 use crate::state::AppState;
 
 const ONE_DAY: Duration = Duration::from_hours(24);
@@ -138,16 +139,12 @@ pub async fn register(
         Err(error) => return Err(error.into()),
     };
     tracing::info!(user = %user.username, client = %client.address, "a user registered");
+    let site = mail::site_address(&settings, &headers, &client);
+    mail::welcome(&state, &site, &user.username, user.email.as_deref());
 
     // A new account stays logged in as a login with "remember me" does.
     let lifetime = ONE_DAY * settings.remember_me_days.min(MOST_DAYS);
-    let device = Device {
-        ip: client.address,
-        user_agent: headers
-            .get(header::USER_AGENT)
-            .and_then(|value| value.to_str().ok())
-            .map(str::to_owned),
-    };
+    let device = super::login::device_of(&client, &headers);
     let logged_in =
         login::start_session(state.database(), user, device, now_stamp(now), lifetime).await?;
     let session_cookie = CookieScope::of(&headers, client.https).set_hidden(

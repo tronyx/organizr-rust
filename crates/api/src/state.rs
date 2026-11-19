@@ -8,6 +8,7 @@ use organizr_auth::login_limit::LoginLimiter;
 use organizr_auth::secrets::{SecretBox, SecretError};
 use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, DbError, StoredSetting};
+use organizr_plugins::mail::Mailer;
 use organizr_settings::{Settings, SettingsError};
 use serde_json::Value;
 use thiserror::Error;
@@ -29,6 +30,8 @@ pub struct AppState {
     picture_folder: Option<Arc<PathBuf>>,
     /// What probes the address to check of a tab.
     prober: Prober,
+    /// What sends the e-mails.
+    mailer: Mailer,
     /// Held while settings are changed, so that two changes do not overwrite each other.
     settings_change: Arc<Mutex<()>>,
 }
@@ -62,6 +65,7 @@ impl AppState {
             secrets: Arc::new(secrets),
             picture_folder: None,
             prober: Prober::network(),
+            mailer: Mailer::smtp(),
             settings_change: Arc::new(Mutex::new(())),
         }
     }
@@ -176,6 +180,19 @@ impl AppState {
     pub fn with_prober(mut self, prober: Prober) -> Self {
         self.prober = prober;
         self
+    }
+
+    /// The same state, with another way to send e-mails. A test uses it to keep the
+    /// e-mails.
+    #[must_use]
+    pub fn with_mailer(mut self, mailer: Mailer) -> Self {
+        self.mailer = mailer;
+        self
+    }
+
+    /// What sends the e-mails.
+    pub const fn mailer(&self) -> &Mailer {
+        &self.mailer
     }
 
     /// Probes a target once.

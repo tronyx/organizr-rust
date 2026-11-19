@@ -52,8 +52,11 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import urlsplit
+from urllib.request import urlopen
 
 ORACLE_URL = os.environ.get("ORGANIZR_ORACLE_URL", "http://127.0.0.1:8098")
+# The mail catcher of parity/oracle/compose.yml: it keeps the e-mails of the reference.
+MAIL_CATCHER_URL = os.environ.get("ORGANIZR_MAIL_CATCHER_URL", "http://127.0.0.1:8099")
 CASES_DIRECTORY = Path(__file__).resolve().parent.parent / "cases"
 
 # What the reference runs. Keep in step with parity/oracle/Dockerfile.
@@ -613,6 +616,91 @@ def two_factor_cases():
         as_user("remove_again", "DELETE", path),
         ("login_after_the_removal", "POST", "/api/v2/login", {"json": login, "jar": "third"}),
     ]
+
+
+# The mail plugin. The reference sends to the mail catcher, which needs no login and
+# offers no encryption.
+MAIL_ON = {
+    "PHPMAILER-enabled": True,
+    "PHPMAILER-smtpHost": "mailpit",
+    "PHPMAILER-smtpHostPort": "1025",
+    "PHPMAILER-smtpHostType": "n/a",
+    "PHPMAILER-smtpHostAuth": False,
+    "PHPMAILER-smtpHostSenderName": "Parity Organizr",
+    "PHPMAILER-smtpHostSenderEmail": "organizr@example.com",
+    "PHPMAILER-template": "dark",
+    "PHPMAILER-logo": "https://example.com/logo.png",
+}
+MAIL_PATH = "/api/v2/plugins/php-mailer/email"
+JO = {"username": "jo", "email": "jo@example.com", "password": "the-password-of-jo"}
+LETTER = {
+    "bcc": "first@example.com,second@example.com",
+    "subject": "News from {title}",
+    "body": "<p>Come to {domain} soon.</p>",
+}
+
+
+def mail_cases():
+    """Password recovery and the routes of the mail plugin."""
+    recover = "/api/v2/users/recover"
+    return [
+        # While the plugin is off.
+        ("recover_without_an_address", "POST", recover, {"json": {}}),
+        ("recover_while_mail_is_off", "POST", recover, {"json": {"email": JO["email"]}}),
+        ("test_as_guest", "GET", MAIL_PATH + "/test"),
+        ("send_as_guest", "POST", MAIL_PATH + "/send", {"json": LETTER}),
+        ("list_as_guest", "GET", MAIL_PATH + "/list"),
+        admin_case("send_while_mail_is_off", "POST", MAIL_PATH + "/send", LETTER),
+        admin_case("list", "GET", MAIL_PATH + "/list"),
+        admin_case("add_a_user", "POST", "/api/v2/users", JO),
+        admin_case("switch_mail_on", "PUT", "/api/v2/config", MAIL_ON, settle=True),
+        # Recovery: the answer does not tell whether the address is known.
+        ("recover_an_unknown_address", "POST", recover, {"json": {"email": "nobody@example.com"}}),
+        ("recover", "POST", recover, {"json": {"email": JO["email"]}}),
+        ("recover_in_other_letter_case", "POST", recover, {"json": {"email": "JO@Example.COM"}}),
+        # The plugin routes.
+        ("login", "POST", "/api/v2/login", {"json": ADMIN, "jar": "admin"}),
+        ("test", "GET", MAIL_PATH + "/test", {"jar": "admin"}),
+        admin_case("send", "POST", MAIL_PATH + "/send", LETTER),
+        admin_case("send_to_one_address", "POST", MAIL_PATH + "/send", {**LETTER, "bcc": "only@example.com"}),
+        admin_case("send_without_a_body", "POST", MAIL_PATH + "/send"),
+        admin_case("send_without_recipients", "POST", MAIL_PATH + "/send", {"subject": "S", "body": "B"}),
+        admin_case("list_with_the_new_user", "GET", MAIL_PATH + "/list"),
+    ]
+
+
+# The new password in an e-mail of the recovery, which is random.
+NEW_PASSWORD = re.compile(r"(Here is your new password: )[^<\s]+")
+
+
+def record_mails():
+    """Write the e-mails that the mail catcher got to parity/cases/mail_messages.json."""
+    with urlopen(MAIL_CATCHER_URL + "/api/v1/messages?limit=100", timeout=30) as answer:
+        listed = json.load(answer)["messages"]
+    mails = []
+    # The catcher lists the newest e-mail first.
+    for entry in reversed(listed):
+        with urlopen(f"{MAIL_CATCHER_URL}/api/v1/message/{entry['ID']}", timeout=30) as answer:
+            mail = json.load(answer)
+        mails.append(
+            {
+                "from": mail["From"],
+                "reply_to": mail["ReplyTo"],
+                "to": mail["To"],
+                "bcc": mail["Bcc"],
+                "subject": mail["Subject"],
+                "html": NEW_PASSWORD.sub(r"\1<password>", mail["HTML"]),
+            }
+        )
+    path = CASES_DIRECTORY / "mail_messages.json"
+    document = {
+        "source": "The e-mails that Organizr %s sent during the group `mail`, in order" % ORGANIZR_VERSION,
+        "mails": mails,
+    }
+    with path.open("w", encoding="utf-8", newline="\n") as file:
+        json.dump(document, file, indent=2, ensure_ascii=False)
+        file.write("\n")
+    print(f"{path.relative_to(CASES_DIRECTORY.parent.parent)}: {len(mails)} e-mails")
 
 
 def admin_case(name, method, path, json_body=None, **options):
@@ -1682,6 +1770,9 @@ def main():
     record("tabs", named(TABS), php_version)
     # After the tab group, whose launch cases show the settings.
     record("config", named(CONFIG), php_version)
+    # Last of all: it switches the mail plugin on, which the other groups would show.
+    record("mail", named(mail_cases()), php_version)
+    record_mails()
 
 
 if __name__ == "__main__":

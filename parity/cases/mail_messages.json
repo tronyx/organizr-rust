@@ -1,0 +1,114 @@
+{
+  "source": "The e-mails that Organizr 2.1.5000 sent during the group `mail`, in order",
+  "mails": [
+    {
+      "from": {
+        "Name": "Parity Organizr",
+        "Address": "organizr@example.com"
+      },
+      "reply_to": [
+        {
+          "Name": "Parity Organizr",
+          "Address": "organizr@example.com"
+        }
+      ],
+      "to": [
+        {
+          "Name": "jo",
+          "Address": "jo@example.com"
+        }
+      ],
+      "bcc": [],
+      "subject": "Password Reset",
+      "html": "\r\n <!DOCTYPE html>\r\n <html>\r\n <head>\r\n \t<meta content=\"width=device-width\" name=\"viewport\">\r\n \t<meta content=\"text/html; charset=utf-8\" http-equiv=\"Content-Type\">\r\n \t<title>Email</title>\r\n </head>\r\n <body style=\"margin: 0px; background: rgb(35, 35, 35);\">\r\n \t<div style=\"background: #232323; padding: 0px 0px; font-family:arial; line-height:28px; height:100%; width: 100%; color: #514d6a;\">\r\n \t\t<div style=\"max-width: 700px;margin: 0px auto;font-size: 14px;\">\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%; margin-bottom: 20px\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td align=\"center\" style=\"vertical-align: top; padding-bottom:30px;\"><a href=\"javascript:void(0)\" target=\"_blank\"><br>\r\n \t\t\t\t\t\t<img alt=\"admin Responsive web app kit\" src=\"https://example.com/logo.png\" style=\"border:none;width: 100%;\"></a></td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td style=\"background: #1b1a1a;padding:20px;color:#fff;text-align:center;\">Password Reset</td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<div style=\"padding: 40px; background: #fff;\">\r\n \t\t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t\t<tbody>\r\n \t\t\t\t\t\t<tr>\r\n \t\t\t\t\t\t\t<td>\r\n \t\t\t\t\t\t\t\t<p>\r\n\t<h2>Hey there jo!</h2><br />\r\n\tLooks like you forgot your password.  Well, I got you...  Here is your new password: <password><br />\r\n\tIf you want to change it once you log in, you can.  Head over to my website: http://organizr.test/<br />\r\n\t</p>\r\n \t\t\t\t\t\t\t\t\r\n\t\t<center>\r\n\t\t\t<a href=\"http://organizr.test/\" style=\"display: inline-block; padding: 11px 30px; margin: 20px 0px 30px; font-size: 15px; color: #fff; background: #1e88e5; border-radius: 60px; text-decoration:none;\">Goto My Site</a>\r\n\t\t</center>\r\n        \r\n \t\t\t\t\t\t\t</td>\r\n \t\t\t\t\t\t</tr>\r\n \t\t\t\t\t</tbody>\r\n \t\t\t\t</table>\r\n \t\t\t</div>\r\n \t\t</div>\r\n \t</div>\r\n </body>\r\n </html>\r\n\r\n"
+    },
+    {
+      "from": {
+        "Name": "Parity Organizr",
+        "Address": "organizr@example.com"
+      },
+      "reply_to": [
+        {
+          "Name": "Parity Organizr",
+          "Address": "organizr@example.com"
+        }
+      ],
+      "to": [
+        {
+          "Name": "jo",
+          "Address": "JO@Example.COM"
+        }
+      ],
+      "bcc": [],
+      "subject": "Password Reset",
+      "html": "\r\n <!DOCTYPE html>\r\n <html>\r\n <head>\r\n \t<meta content=\"width=device-width\" name=\"viewport\">\r\n \t<meta content=\"text/html; charset=utf-8\" http-equiv=\"Content-Type\">\r\n \t<title>Email</title>\r\n </head>\r\n <body style=\"margin: 0px; background: rgb(35, 35, 35);\">\r\n \t<div style=\"background: #232323; padding: 0px 0px; font-family:arial; line-height:28px; height:100%; width: 100%; color: #514d6a;\">\r\n \t\t<div style=\"max-width: 700px;margin: 0px auto;font-size: 14px;\">\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%; margin-bottom: 20px\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td align=\"center\" style=\"vertical-align: top; padding-bottom:30px;\"><a href=\"javascript:void(0)\" target=\"_blank\"><br>\r\n \t\t\t\t\t\t<img alt=\"admin Responsive web app kit\" src=\"https://example.com/logo.png\" style=\"border:none;width: 100%;\"></a></td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td style=\"background: #1b1a1a;padding:20px;color:#fff;text-align:center;\">Password Reset</td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<div style=\"padding: 40px; background: #fff;\">\r\n \t\t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t\t<tbody>\r\n \t\t\t\t\t\t<tr>\r\n \t\t\t\t\t\t\t<td>\r\n \t\t\t\t\t\t\t\t<p>\r\n\t<h2>Hey there jo!</h2><br />\r\n\tLooks like you forgot your password.  Well, I got you...  Here is your new password: <password><br />\r\n\tIf you want to change it once you log in, you can.  Head over to my website: http://organizr.test/<br />\r\n\t</p>\r\n \t\t\t\t\t\t\t\t\r\n\t\t<center>\r\n\t\t\t<a href=\"http://organizr.test/\" style=\"display: inline-block; padding: 11px 30px; margin: 20px 0px 30px; font-size: 15px; color: #fff; background: #1e88e5; border-radius: 60px; text-decoration:none;\">Goto My Site</a>\r\n\t\t</center>\r\n        \r\n \t\t\t\t\t\t\t</td>\r\n \t\t\t\t\t\t</tr>\r\n \t\t\t\t\t</tbody>\r\n \t\t\t\t</table>\r\n \t\t\t</div>\r\n \t\t</div>\r\n \t</div>\r\n </body>\r\n </html>\r\n\r\n"
+    },
+    {
+      "from": {
+        "Name": "Parity Organizr",
+        "Address": "organizr@example.com"
+      },
+      "reply_to": [
+        {
+          "Name": "Parity Organizr",
+          "Address": "organizr@example.com"
+        }
+      ],
+      "to": [
+        {
+          "Name": "admin",
+          "Address": "admin@example.com"
+        }
+      ],
+      "bcc": [],
+      "subject": "Test E-Mail",
+      "html": "\r\n <!DOCTYPE html>\r\n <html>\r\n <head>\r\n \t<meta content=\"width=device-width\" name=\"viewport\">\r\n \t<meta content=\"text/html; charset=utf-8\" http-equiv=\"Content-Type\">\r\n \t<title>Email</title>\r\n </head>\r\n <body style=\"margin: 0px; background: rgb(35, 35, 35);\">\r\n \t<div style=\"background: #232323; padding: 0px 0px; font-family:arial; line-height:28px; height:100%; width: 100%; color: #514d6a;\">\r\n \t\t<div style=\"max-width: 700px;margin: 0px auto;font-size: 14px;\">\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%; margin-bottom: 20px\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td align=\"center\" style=\"vertical-align: top; padding-bottom:30px;\"><a href=\"javascript:void(0)\" target=\"_blank\"><br>\r\n \t\t\t\t\t\t<img alt=\"admin Responsive web app kit\" src=\"https://example.com/logo.png\" style=\"border:none;width: 100%;\"></a></td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td style=\"background: #1b1a1a;padding:20px;color:#fff;text-align:center;\">Test E-Mail</td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<div style=\"padding: 40px; background: #fff;\">\r\n \t\t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t\t<tbody>\r\n \t\t\t\t\t\t<tr>\r\n \t\t\t\t\t\t\t<td>\r\n \t\t\t\t\t\t\t\t<p>This is just a test email.</p>\r\n \t\t\t\t\t\t\t\t\r\n \t\t\t\t\t\t\t</td>\r\n \t\t\t\t\t\t</tr>\r\n \t\t\t\t\t</tbody>\r\n \t\t\t\t</table>\r\n \t\t\t</div>\r\n \t\t</div>\r\n \t</div>\r\n </body>\r\n </html>\r\n\r\n"
+    },
+    {
+      "from": {
+        "Name": "Parity Organizr",
+        "Address": "organizr@example.com"
+      },
+      "reply_to": [
+        {
+          "Name": "Parity Organizr",
+          "Address": "organizr@example.com"
+        }
+      ],
+      "to": [],
+      "bcc": [
+        {
+          "Name": "",
+          "Address": "first@example.com"
+        },
+        {
+          "Name": "",
+          "Address": "second@example.com"
+        }
+      ],
+      "subject": "News from Organizr V2",
+      "html": "\r\n <!DOCTYPE html>\r\n <html>\r\n <head>\r\n \t<meta content=\"width=device-width\" name=\"viewport\">\r\n \t<meta content=\"text/html; charset=utf-8\" http-equiv=\"Content-Type\">\r\n \t<title>Email</title>\r\n </head>\r\n <body style=\"margin: 0px; background: rgb(35, 35, 35);\">\r\n \t<div style=\"background: #232323; padding: 0px 0px; font-family:arial; line-height:28px; height:100%; width: 100%; color: #514d6a;\">\r\n \t\t<div style=\"max-width: 700px;margin: 0px auto;font-size: 14px;\">\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%; margin-bottom: 20px\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td align=\"center\" style=\"vertical-align: top; padding-bottom:30px;\"><a href=\"javascript:void(0)\" target=\"_blank\"><br>\r\n \t\t\t\t\t\t<img alt=\"admin Responsive web app kit\" src=\"https://example.com/logo.png\" style=\"border:none;width: 100%;\"></a></td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td style=\"background: #1b1a1a;padding:20px;color:#fff;text-align:center;\">News from Organizr V2</td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<div style=\"padding: 40px; background: #fff;\">\r\n \t\t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t\t<tbody>\r\n \t\t\t\t\t\t<tr>\r\n \t\t\t\t\t\t\t<td>\r\n \t\t\t\t\t\t\t\t<p><p>Come to http://organizr.test/ soon.</p></p>\r\n \t\t\t\t\t\t\t\t\r\n \t\t\t\t\t\t\t</td>\r\n \t\t\t\t\t\t</tr>\r\n \t\t\t\t\t</tbody>\r\n \t\t\t\t</table>\r\n \t\t\t</div>\r\n \t\t</div>\r\n \t</div>\r\n </body>\r\n </html>\r\n\r\n"
+    },
+    {
+      "from": {
+        "Name": "Parity Organizr",
+        "Address": "organizr@example.com"
+      },
+      "reply_to": [
+        {
+          "Name": "Parity Organizr",
+          "Address": "organizr@example.com"
+        }
+      ],
+      "to": [],
+      "bcc": [
+        {
+          "Name": "",
+          "Address": "only@example.com"
+        }
+      ],
+      "subject": "News from Organizr V2",
+      "html": "\r\n <!DOCTYPE html>\r\n <html>\r\n <head>\r\n \t<meta content=\"width=device-width\" name=\"viewport\">\r\n \t<meta content=\"text/html; charset=utf-8\" http-equiv=\"Content-Type\">\r\n \t<title>Email</title>\r\n </head>\r\n <body style=\"margin: 0px; background: rgb(35, 35, 35);\">\r\n \t<div style=\"background: #232323; padding: 0px 0px; font-family:arial; line-height:28px; height:100%; width: 100%; color: #514d6a;\">\r\n \t\t<div style=\"max-width: 700px;margin: 0px auto;font-size: 14px;\">\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%; margin-bottom: 20px\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td align=\"center\" style=\"vertical-align: top; padding-bottom:30px;\"><a href=\"javascript:void(0)\" target=\"_blank\"><br>\r\n \t\t\t\t\t\t<img alt=\"admin Responsive web app kit\" src=\"https://example.com/logo.png\" style=\"border:none;width: 100%;\"></a></td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t<tbody>\r\n \t\t\t\t\t<tr>\r\n \t\t\t\t\t\t<td style=\"background: #1b1a1a;padding:20px;color:#fff;text-align:center;\">News from Organizr V2</td>\r\n \t\t\t\t\t</tr>\r\n \t\t\t\t</tbody>\r\n \t\t\t</table>\r\n \t\t\t<div style=\"padding: 40px; background: #fff;\">\r\n \t\t\t\t<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" style=\"width: 100%;\">\r\n \t\t\t\t\t<tbody>\r\n \t\t\t\t\t\t<tr>\r\n \t\t\t\t\t\t\t<td>\r\n \t\t\t\t\t\t\t\t<p><p>Come to http://organizr.test/ soon.</p></p>\r\n \t\t\t\t\t\t\t\t\r\n \t\t\t\t\t\t\t</td>\r\n \t\t\t\t\t\t</tr>\r\n \t\t\t\t\t</tbody>\r\n \t\t\t\t</table>\r\n \t\t\t</div>\r\n \t\t</div>\r\n \t</div>\r\n </body>\r\n </html>\r\n\r\n"
+    }
+  ]
+}

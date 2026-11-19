@@ -6,8 +6,9 @@ use axum::Extension;
 use axum::extract::State;
 use axum::http::{HeaderMap, header};
 use axum::response::{IntoResponse, Response};
-use organizr_auth::login::{self, Device, LoginError, SecondFactor};
+use organizr_auth::login::{self, Device, LoggedIn, LoginError, SecondFactor};
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
+use organizr_domain::Timestamp;
 
 use crate::api_data::ApiData;
 use crate::caller::{now_stamp, session_cookie_name};
@@ -15,6 +16,7 @@ use crate::client::{Client, LocalNetworks};
 use crate::cookies::{self, CookieScope};
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
+use crate::handlers::mail;
 use crate::state::AppState;
 
 /// How long a login lasts when the user did not ask to be remembered.
@@ -58,13 +60,7 @@ pub async fn login(
     }
 
     let now = SystemTime::now();
-    let device = Device {
-        ip: client.address,
-        user_agent: headers
-            .get(header::USER_AGENT)
-            .and_then(|value| value.to_str().ok())
-            .map(str::to_owned),
-    };
+    let device = device_of(&client, &headers);
 
     // The code of the second factor. With the `ignoreTFALocal` setting, a login from
     // the local network needs none.
@@ -115,6 +111,8 @@ pub async fn login(
     limiter.record_success(&attempt);
     tracing::info!(user = %logged_in.user.username, client = %client.address, "a user logged in");
 
+    tell_about_a_new_device(&state, &headers, &client, &logged_in, now_stamp(now)).await?;
+
     let session_cookie = CookieScope::of(&headers, client.https).set_hidden(
         &session_cookie_name(&settings),
         logged_in.token.expose(),
@@ -129,4 +127,57 @@ pub async fn login(
     let mut response = answer.into_response();
     cookies::append(&mut response, session_cookie);
     Ok(response)
+}
+
+/// The device that a request comes from: the address of the client and the name that
+/// the browser gives itself.
+pub fn device_of(client: &Client, headers: &HeaderMap) -> Device {
+    Device {
+        ip: client.address,
+        user_agent: headers
+            .get(header::USER_AGENT)
+            .and_then(|value| value.to_str().ok())
+            .map(str::to_owned),
+    }
+}
+
+/// Sends the user an e-mail when this login is the first session of the account from
+/// this browser. The mail plugin must be on, and the account must have an address.
+async fn tell_about_a_new_device(
+    state: &AppState,
+    headers: &HeaderMap,
+    client: &Client,
+    logged_in: &LoggedIn,
+    now: Timestamp,
+) -> Result<(), ApiError> {
+    let settings = state.settings();
+    if !settings.mailer_enabled {
+        return Ok(());
+    }
+    let (Some(address), Some(browser)) = (
+        logged_in.user.email.as_deref(),
+        logged_in.session.user_agent.as_deref(),
+    ) else {
+        return Ok(());
+    };
+    let sessions = state
+        .database()
+        .sessions()
+        .list_valid_of_user(logged_in.user.id, now)
+        .await?;
+    let from_this_browser = sessions
+        .iter()
+        .filter(|session| session.user_agent.as_deref() == Some(browser))
+        .count();
+    if from_this_browser <= 1 {
+        let site = mail::site_address(&settings, headers, client);
+        let device = mail::NewDevice {
+            username: &logged_in.user.username,
+            address,
+            ip: client.address,
+            browser,
+        };
+        mail::new_device(state, &site, device);
+    }
+    Ok(())
 }

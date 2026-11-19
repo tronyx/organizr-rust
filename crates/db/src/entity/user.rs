@@ -29,6 +29,8 @@ pub struct Model {
     pub two_factor_kind: Option<String>,
     pub two_factor_secret: Option<String>,
     pub plex_token: Option<String>,
+    pub recovery_hash: Option<String>,
+    pub recovery_expires_at: Option<i64>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

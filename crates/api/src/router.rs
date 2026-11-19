@@ -15,8 +15,8 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    basics, categories, config, fields, groups, images, launch, login, logout, ping, register,
-    tabs, token, two_factor, users, wizard,
+    basics, categories, config, fields, groups, images, launch, login, logout, mail, ping,
+    register, tabs, token, two_factor, users, wizard,
 };
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
@@ -29,6 +29,10 @@ pub const API_BASE: &str = "/api/v2";
 ///
 /// Routes are written as the patterns of the PHP source and expanded for Axum. A request
 /// that matches no route, or a route with another method, gets the "not found" answer.
+#[expect(
+    clippy::too_many_lines,
+    reason = "the route table is one list, and it reads best in one piece"
+)]
 pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
     let routes = Routes::default()
         .route("/", &get(basics::root))?
@@ -65,6 +69,27 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
                 .delete(
                     (|State(state): State<AppState>, Extension(caller): Extension<Caller>| async move {
                         users::remove_by_text(&state, &caller, "register").await
+                    })
+                    .layer(map_response(fields::as_plain_json)),
+                ),
+        )?
+        // The same for this fixed path.
+        .route(
+            "/users/recover",
+            &post(mail::recover)
+                .get(|State(state): State<AppState>, Extension(caller): Extension<Caller>| async move {
+                    users::one_by_text(&state, &caller, "recover").await
+                })
+                .put(
+                    |State(state): State<AppState>,
+                     Extension(caller): Extension<Caller>,
+                     data: ApiData| async move {
+                        users::change_by_text(&state, &caller, "recover", &data).await
+                    },
+                )
+                .delete(
+                    (|State(state): State<AppState>, Extension(caller): Extension<Caller>| async move {
+                        users::remove_by_text(&state, &caller, "recover").await
                     })
                     .layer(map_response(fields::as_plain_json)),
                 ),
@@ -117,6 +142,9 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         )?
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
+        .route("/plugins/php-mailer/email/list", &get(mail::list))?
+        .route("/plugins/php-mailer/email/send", &post(mail::send))?
+        .route("/plugins/php-mailer/email/test", &get(mail::test))?
         .route("/users", &get(users::list).post(users::add))?
         .route(
             "/users/{id}",

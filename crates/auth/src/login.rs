@@ -9,6 +9,7 @@ use organizr_domain::{NewSession, PasswordHash, Session, Timestamp, User};
 use thiserror::Error;
 
 use crate::password::{self, HashError, PasswordCheck};
+use crate::recovery;
 use crate::secrets::{SecretBox, two_factor_name};
 use crate::session_token::{SessionToken, TokenError};
 use crate::two_factor;
@@ -166,6 +167,8 @@ pub async fn with_password(
 
     let (user, outdated) = match (user, check) {
         (Some(user), PasswordCheck::Correct { outdated }) => (user, outdated),
+        // A person who forgot the password logs in with the password from the e-mail.
+        (Some(user), _) if recovery::accept(database, &user, password, now).await? => (user, false),
         (Some(user), PasswordCheck::Unusable) => {
             tracing::warn!(
                 user = %user.username,

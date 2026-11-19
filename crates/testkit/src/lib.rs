@@ -13,6 +13,7 @@
 
 pub mod engines;
 pub mod http;
+pub mod outbox;
 pub mod replay;
 pub mod seed;
 pub mod smtp;
@@ -36,6 +37,11 @@ pub fn installed_app(database: &Database) -> Router {
 
 /// As [`installed_app`], with other values for some settings: key and stored value.
 pub fn installed_app_with(database: &Database, changed: &[(&str, serde_json::Value)]) -> Router {
+    app_with(database, installed_settings(changed))
+}
+
+/// The settings of [`installed_app_with`].
+pub fn installed_settings(changed: &[(&str, serde_json::Value)]) -> Settings {
     let mut settings = Settings::defaults();
     settings
         .set("uuid", &serde_json::Value::from(seed::INSTALL_ID))
@@ -48,7 +54,18 @@ pub fn installed_app_with(database: &Database, changed: &[(&str, serde_json::Val
             .set(key, value)
             .unwrap_or_else(|error| panic!("the setting `{key}` cannot be set: {error}"));
     }
-    app_with(database, settings)
+    settings
+}
+
+/// As [`installed_app_with`], with a stand-in for the mailer. The outbox gets every
+/// e-mail that the application sends.
+pub fn installed_app_with_outbox(
+    database: &Database,
+    changed: &[(&str, serde_json::Value)],
+) -> (Router, outbox::Outbox) {
+    let (mailer, outbox) = outbox::Outbox::new();
+    let state = state_with(database, installed_settings(changed)).with_mailer(mailer);
+    (router(state).expect("the route table is valid"), outbox)
 }
 
 /// A value for the `loginAttempts` setting that no test reaches. For tests that fail

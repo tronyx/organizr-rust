@@ -30,7 +30,7 @@ pub use crate::install::{Install, NewInstall};
 pub use crate::sessions::Sessions;
 pub use crate::stored_settings::{StoredSetting, StoredSettings};
 pub use crate::tabs::Tabs;
-pub use crate::users::{SealedTwoFactor, UserLogin, Users};
+pub use crate::users::{Recovery, SealedTwoFactor, UserLogin, Users};
 
 /// How long a connection waits for another writer on SQLite before it gives up.
 const SQLITE_BUSY_TIMEOUT: Duration = Duration::from_secs(5);

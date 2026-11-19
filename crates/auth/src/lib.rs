@@ -5,6 +5,7 @@ pub mod install;
 pub mod login;
 pub mod login_limit;
 pub mod password;
+pub mod recovery;
 pub mod registration;
 pub mod secrets;
 pub mod session;

@@ -1,0 +1,815 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>",
+      "password": "<password hash>",
+      "register_date": "<time>",
+      "secret": "<secret>"
+    }
+  },
+  "cases": [
+    {
+      "name": "recover_without_an_address",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/users/recover",
+        "json": {}
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Email was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "recover_while_mail_is_off",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/users/recover",
+        "json": {
+          "email": "jo@example.com"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Email functionality is not enabled\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "test_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/plugins/php-mailer/email/test"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "send_as_guest",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/plugins/php-mailer/email/send",
+        "json": {
+          "bcc": "first@example.com,second@example.com",
+          "subject": "News from {title}",
+          "body": "<p>Come to {domain} soon.</p>"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not authorized for current Route: /api/v2/plugins/php-mailer/email/send\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "list_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/plugins/php-mailer/email/list"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "send_while_mail_is_off",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/plugins/php-mailer/email/send",
+        "json": {
+          "bcc": "first@example.com,second@example.com",
+          "subject": "News from {title}",
+          "body": "<p>Come to {domain} soon.</p>"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"PHP-Mailer is not enabled\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "list",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/plugins/php-mailer/email/list",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"admin\": \"admin@example.com\",\n            \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy@example.com\",\n            \"zoe\": \"zoe@example.com\",\n            \"Yan\": \"Yan@Example.com\",\n            \"form\": \"form@example.com\"\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "add_a_user",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/users",
+        "json": {
+          "username": "jo",
+          "email": "jo@example.com",
+          "password": "the-password-of-jo"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"User created\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "switch_mail_on",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/config",
+        "json": {
+          "PHPMAILER-enabled": true,
+          "PHPMAILER-smtpHost": "mailpit",
+          "PHPMAILER-smtpHostPort": "1025",
+          "PHPMAILER-smtpHostType": "n/a",
+          "PHPMAILER-smtpHostAuth": false,
+          "PHPMAILER-smtpHostSenderName": "Parity Organizr",
+          "PHPMAILER-smtpHostSenderEmail": "organizr@example.com",
+          "PHPMAILER-template": "dark",
+          "PHPMAILER-logo": "https://example.com/logo.png"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Config items updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "recover_an_unknown_address",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/users/recover",
+        "json": {
+          "email": "nobody@example.com"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"If the email exists in our system, a password reset has been sent to the user\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "recover",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/users/recover",
+        "json": {
+          "email": "jo@example.com"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"If the email exists in our system, a password reset has been sent to the user\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "recover_in_other_letter_case",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/users/recover",
+        "json": {
+          "email": "JO@Example.COM"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"If the email exists in our system, a password reset has been sent to the user\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "login",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/login",
+        "json": {
+          "username": "admin",
+          "password": "parity-admin-password"
+        },
+        "jar": "admin"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          },
+          {
+            "name": "organizr_token_<uuid>",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "86400s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "test",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/plugins/php-mailer/email/test",
+        "jar": "admin"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Email sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "send",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/plugins/php-mailer/email/send",
+        "json": {
+          "bcc": "first@example.com,second@example.com",
+          "subject": "News from {title}",
+          "body": "<p>Come to {domain} soon.</p>"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Email sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "send_to_one_address",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/plugins/php-mailer/email/send",
+        "json": {
+          "bcc": "only@example.com",
+          "subject": "News from {title}",
+          "body": "<p>Come to {domain} soon.</p>"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Email sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "send_without_a_body",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/plugins/php-mailer/email/send",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "send_without_recipients",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/plugins/php-mailer/email/send",
+        "json": {
+          "subject": "S",
+          "body": "B"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": null,\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "list_with_the_new_user",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/plugins/php-mailer/email/list",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"admin\": \"admin@example.com\",\n            \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy@example.com\",\n            \"zoe\": \"zoe@example.com\",\n            \"Yan\": \"Yan@Example.com\",\n            \"form\": \"form@example.com\",\n            \"jo\": \"jo@example.com\"\n        }\n    }\n}"
+      }
+    }
+  ]
+}

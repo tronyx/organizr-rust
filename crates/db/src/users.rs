@@ -169,6 +169,65 @@ impl<'a> Users<'a> {
         Ok(result.rows_affected > 0)
     }
 
+    /// The first user, by id, with the given e-mail address, whatever the letter case.
+    pub async fn find_by_email(&self, email: &str) -> Result<Option<User>, DbError> {
+        let row = user::Entity::find()
+            .filter(user::Column::EmailKey.eq(email.to_lowercase()))
+            .order_by_asc(user::Column::Id)
+            .one(self.connection)
+            .await?;
+        Ok(row.map(User::from))
+    }
+
+    /// The recovery password of a user: its hash, and until when it works. `None` when
+    /// the user has none.
+    pub async fn recovery_of(&self, id: UserId) -> Result<Option<Recovery>, DbError> {
+        let row = user::Entity::find_by_id(id.get())
+            .one(self.connection)
+            .await?;
+        Ok(row.and_then(|row| {
+            Some(Recovery {
+                password_hash: PasswordHash::new(row.recovery_hash?),
+                expires_at: Timestamp::from_unix_seconds(row.recovery_expires_at?),
+            })
+        }))
+    }
+
+    /// Stores a recovery password for a user, in place of an older one. The password of
+    /// the account stays. Returns whether the user exists.
+    pub async fn set_recovery(&self, id: UserId, recovery: &Recovery) -> Result<bool, DbError> {
+        let result = user::Entity::update_many()
+            .col_expr(
+                user::Column::RecoveryHash,
+                Expr::value(Some(recovery.password_hash.expose().to_owned())),
+            )
+            .col_expr(
+                user::Column::RecoveryExpiresAt,
+                Expr::value(Some(recovery.expires_at.unix_seconds())),
+            )
+            .filter(user::Column::Id.eq(id.get()))
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected > 0)
+    }
+
+    /// Makes the recovery password of a user the password of the account. Returns
+    /// whether the user had a recovery password.
+    pub async fn use_recovery(&self, id: UserId) -> Result<bool, DbError> {
+        let result = user::Entity::update_many()
+            .col_expr(
+                user::Column::PasswordHash,
+                Expr::col(user::Column::RecoveryHash),
+            )
+            .col_expr(user::Column::RecoveryHash, Expr::value(None::<String>))
+            .col_expr(user::Column::RecoveryExpiresAt, Expr::value(None::<i64>))
+            .filter(user::Column::Id.eq(id.get()))
+            .filter(user::Column::RecoveryHash.is_not_null())
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected > 0)
+    }
+
     /// How a user logs in. `None` when there is no such user.
     pub async fn login_of(&self, id: UserId) -> Result<Option<UserLogin>, DbError> {
         let row = user::Entity::find_by_id(id.get())
@@ -212,6 +271,15 @@ impl<'a> Users<'a> {
             .await?;
         Ok(result.rows_affected > 0)
     }
+}
+
+/// A password from an e-mail to a person who forgot the password of the account.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Recovery {
+    /// The hash of the password.
+    pub password_hash: PasswordHash,
+    /// Until when the password works.
+    pub expires_at: Timestamp,
 }
 
 /// The second factor of a login.
@@ -287,6 +355,8 @@ pub(crate) async fn insert_in<C: ConnectionTrait>(
         two_factor_kind: ActiveValue::Set(None),
         two_factor_secret: ActiveValue::Set(None),
         plex_token: ActiveValue::Set(None),
+        recovery_hash: ActiveValue::Set(None),
+        recovery_expires_at: ActiveValue::Set(None),
     };
     Ok(row.insert(connection).await?.into())
 }

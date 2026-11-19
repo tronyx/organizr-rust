@@ -15,6 +15,7 @@ workspace = true
 organizr-auth.workspace = true
 organizr-db.workspace = true
 organizr-domain.workspace = true
+organizr-plugins.workspace = true
 organizr-settings.workspace = true
 
 arc-swap.workspace = true
@@ -29,8 +30,8 @@ serde_json.workspace = true
 surge-ping.workspace = true
 thiserror.workspace = true
 # The lock that puts changes of the settings in a row, the files of uploaded pictures,
-# and the connections and the time limit of a ping.
-tokio = { workspace = true, features = ["fs", "net", "sync", "time"] }
+# the connections and the time limit of a ping, and the tasks that send e-mails.
+tokio = { workspace = true, features = ["fs", "net", "rt", "sync", "time"] }
 tower-http.workspace = true
 tracing.workspace = true
 uuid.workspace = true

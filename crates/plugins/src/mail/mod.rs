@@ -86,7 +86,7 @@ pub enum TextForm {
 }
 
 /// Writes a value so that HTML shows it as text.
-fn escaped(value: &str) -> String {
+pub fn escaped(value: &str) -> String {
     let mut escaped = String::with_capacity(value.len());
     for character in value.chars() {
         match character {
@@ -159,7 +159,7 @@ pub struct Frame<'a> {
 }
 
 /// Wraps the subject and the body of an e-mail in a layout and returns the HTML of the
-/// whole e-mail. A name that is no layout gives the default layout.
+/// whole e-mail. `subject` is plain text, and `body` is HTML. A name that is no layout gives the default layout.
 pub fn lay_out(frame: Frame<'_>, subject: &str, body: &str) -> String {
     let layouts = layouts();
     let Some(layout) = layouts
@@ -174,7 +174,8 @@ pub fn lay_out(frame: Frame<'_>, subject: &str, body: &str) -> String {
         MailKind::Plain => &layout.plain,
     };
     let markers = [
-        ("[[subject]]", subject.to_owned()),
+        // The subject is plain text. Inside the layout it is shown as text.
+        ("[[subject]]", escaped(subject)),
         ("[[body]]", body.to_owned()),
         ("[[site]]", frame.site.to_owned()),
         (

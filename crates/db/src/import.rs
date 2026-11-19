@@ -143,6 +143,8 @@ async fn store<C: ConnectionTrait>(connection: &C, data: ImportData) -> Result<(
             two_factor_kind: ActiveValue::Set(two_factor_kind),
             two_factor_secret: ActiveValue::Set(two_factor_secret),
             plex_token: ActiveValue::Set(login.sealed_plex_token),
+            recovery_hash: ActiveValue::Set(None),
+            recovery_expires_at: ActiveValue::Set(None),
         }
         .insert(connection)
         .await?;

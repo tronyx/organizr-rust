@@ -10,6 +10,7 @@ pub mod launch;
 pub mod launch_settings;
 pub mod login;
 pub mod logout;
+pub mod mail;
 pub mod ping;
 pub mod register;
 pub mod tabs;
