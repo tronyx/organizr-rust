@@ -1,5 +1,6 @@
 <script lang="ts">
-  // The settings: the editors for tabs, categories, groups and users.
+  // The settings: the general settings, and the editors for tabs, categories, groups and
+  // users.
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
@@ -7,6 +8,7 @@
   import { session } from '../../lib/session.svelte';
   import type { Account, EditorData } from '../../lib/types';
   import CategoriesEditor from './CategoriesEditor.svelte';
+  import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
   import TabsEditor from './TabsEditor.svelte';
   import UsersEditor from './UsersEditor.svelte';
@@ -58,6 +60,15 @@
     <a
       role="tab"
       class="tab"
+      class:tab-active={section === 'general'}
+      aria-selected={section === 'general'}
+      href={PAGES.generalSettings}
+    >
+      General
+    </a>
+    <a
+      role="tab"
+      class="tab"
       class:tab-active={section === 'tabs'}
       aria-selected={section === 'tabs'}
       href={PAGES.tabSettings}
@@ -95,7 +106,9 @@
 
   <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
 
-  {#if data}
+  {#if section === 'general'}
+    <GeneralSettings ondone={(message) => (done = message)} />
+  {:else if data}
     {#if section === 'tabs'}
       <TabsEditor {data} {change} />
     {:else if section === 'categories'}

@@ -592,6 +592,131 @@ describe('Settings, users', () => {
   });
 });
 
+describe('Settings, general', () => {
+  const CONFIG = {
+    title: 'Home',
+    description: 'My server',
+    logo: 'plugins/images/organizr/organizr-logo-h.png',
+    useLogo: false,
+    unsortedTabs: 'top',
+    rememberMeDays: '7',
+    loginAttempts: '5',
+    loginLockout: '60000',
+    localIPList: '',
+    hideRegistration: false,
+    registrationPassword: '***Secure***',
+    organizrAPI: 'abcdefghij0123456789',
+    plexToken: '',
+  };
+
+  /** Shows the general settings on a stand-in for the API, and waits for the form. */
+  async function showGeneral(answers: Answers = {}) {
+    const sent = stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET launch': LAUNCH,
+      'GET config': { data: CONFIG },
+      ...answers,
+    });
+    render(Settings, { section: 'general' });
+    await screen.findByLabelText('Name of this install');
+    return sent;
+  }
+
+  it('shows the stored values, and a secret only as stored or not stored', async () => {
+    await showGeneral();
+
+    expect(screen.getByLabelText('Name of this install')).toHaveValue('Home');
+    expect(screen.getByLabelText(/Days that a login lasts/)).toHaveValue(7);
+    expect(screen.getByLabelText(/Show the picture in the menu/)).not.toBeChecked();
+    expect(screen.getByLabelText('Tabs without a heading stand')).toHaveValue('top');
+    const registration = screen.getByLabelText('Registration password');
+    expect(registration).toHaveValue('');
+    expect(registration).toHaveAttribute('placeholder', 'A value is stored');
+    expect(registration).toHaveAttribute('type', 'password');
+    // The server shows the API key to an Admin.
+    expect(screen.getByLabelText('API key')).toHaveAttribute('placeholder', 'abcdefghij0123456789');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('sends only the settings that the form changed', async () => {
+    const sent = await showGeneral({ 'PUT config': { message: 'Config items updated' } });
+
+    await fireEvent.input(screen.getByLabelText('Name of this install'), {
+      target: { value: 'Media' },
+    });
+    await fireEvent.input(screen.getByLabelText(/Days that a login lasts/), {
+      target: { value: '30' },
+    });
+    await fireEvent.click(screen.getByLabelText('Hide the link to make an account'));
+    await fireEvent.change(screen.getByLabelText('Tabs without a heading stand'), {
+      target: { value: 'bottom' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([
+      [
+        'PUT config',
+        { title: 'Media', unsortedTabs: 'bottom', rememberMeDays: '30', hideRegistration: true },
+      ],
+    ]);
+    // The form and the menu load their data again.
+    expect(
+      sent
+        .slice(-2)
+        .map((request) => request.path)
+        .sort(),
+    ).toEqual(['config', 'launch']);
+  });
+
+  it('sends a new registration password, and a new API key of 20 characters', async () => {
+    const sent = await showGeneral({ 'PUT config': {} });
+
+    await fireEvent.input(screen.getByLabelText('Registration password'), {
+      target: { value: 'let them in' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Make a new key' }));
+    const key = (screen.getByLabelText('API key') as HTMLInputElement).value;
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(key).toMatch(/^[A-Za-z0-9]{20}$/);
+    expect(key).not.toBe(CONFIG.organizrAPI);
+    expect(changes(sent)).toEqual([
+      ['PUT config', { registrationPassword: 'let them in', organizrAPI: key }],
+    ]);
+  });
+
+  it('shows why the server refused, and keeps what was entered', async () => {
+    await showGeneral({
+      'PUT config': { status: 422, message: 'Config item: rememberMeDays is not valid' },
+    });
+
+    await fireEvent.input(screen.getByLabelText(/Days that a login lasts/), {
+      target: { value: '99999' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Config item: rememberMeDays is not valid',
+    );
+    expect(screen.getByLabelText(/Days that a login lasts/)).toHaveValue(99999);
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+
+  it('says so when the settings cannot be loaded', async () => {
+    stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET config': { status: 401, message: 'Not Authorized' },
+    });
+    render(Settings, { section: 'general' });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not Authorized');
+  });
+});
+
 describe('Settings', () => {
   it('says so when the data cannot be loaded', async () => {
     const refused = { status: 401, message: 'Not Authorized' };

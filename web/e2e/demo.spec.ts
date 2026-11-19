@@ -30,6 +30,9 @@ const ADMIN = {
 /** The password that lets a person make an account. The set-up stores it. */
 const REGISTRATION_PASSWORD = 'registration of the browser tests';
 
+/** The password that the Admin sets on the settings page later. */
+const NEW_REGISTRATION_PASSWORD = 'a second registration password';
+
 function setupCode(): string {
   const code = process.env[SETUP_CODE_VARIABLE];
   if (!code) {
@@ -356,6 +359,36 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
   await expect(page.getByRole('row', { name: /abe@example\.com/ })).toHaveCount(0);
 });
 
+test('the Admin changes the name of the install and the registration password', async ({
+  page,
+}) => {
+  await logIn(page);
+  await page.goto('./#/settings/tabs');
+  await page.getByRole('tab', { name: 'General' }).click();
+  await expect(page).toHaveURL(/#\/settings\/general$/);
+  const name = page.getByLabel('Name of this install');
+  await expect(name).toHaveValue('Organizr V2');
+  const save = page.getByRole('button', { name: 'Save' });
+  await expect(save).toBeDisabled();
+
+  await name.fill('Media at home');
+  await page.getByLabel('Registration password').fill(NEW_REGISTRATION_PASSWORD);
+  await save.click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  // The bar and the title of the page follow at once.
+  await expect(page).toHaveTitle('Media at home');
+  await expect(page.getByRole('banner')).toContainText('Media at home');
+
+  // The server stored both. It shows the name, and for the password only that it has one.
+  await page.reload();
+  await expect(page.getByLabel('Name of this install')).toHaveValue('Media at home');
+  await expect(page.getByLabel('Registration password')).toHaveValue('');
+  await expect(page.getByLabel('Registration password')).toHaveAttribute(
+    'placeholder',
+    'A value is stored',
+  );
+});
+
 test('a guest cannot open the settings', async ({ page }) => {
   await page.goto('./#/settings/tabs');
 
@@ -377,11 +410,12 @@ test('a person with the registration password makes an account and sees the tabs
   await page.getByLabel('Password', { exact: true }).fill('the password of zoe');
   await page.getByLabel('Password, once more').fill('the password of zoe');
 
-  await page.getByLabel('Registration password').fill('not the registration password');
+  // The password of the set-up was replaced on the settings page.
+  await page.getByLabel('Registration password').fill(REGISTRATION_PASSWORD);
   await page.getByRole('button', { name: 'Make the account' }).click();
   await expect(page.getByRole('alert')).toHaveText('Registration Password was incorrect');
 
-  await page.getByLabel('Registration password').fill(REGISTRATION_PASSWORD);
+  await page.getByLabel('Registration password').fill(NEW_REGISTRATION_PASSWORD);
   await page.getByRole('button', { name: 'Make the account' }).click();
 
   // The new user is logged in, in the default group, and sees the tabs of that group.
