@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use organizr_api::client::TrustedProxies;
 use organizr_api::{AppState, router};
+use organizr_auth::secrets::SecretBox;
 use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, Engine};
 use organizr_settings::Settings;
@@ -36,6 +37,17 @@ pub struct Args {
     /// `X-Forwarded-Proto` are believed only from these. Without it, no proxy is trusted.
     #[arg(long, env = "ORGANIZR_TRUSTED_PROXIES", default_value = "")]
     trusted_proxies: String,
+
+    /// The key that protects the stored secrets: 64 hex digits. Without it, the
+    /// application uses the key file.
+    #[arg(long, env = "ORGANIZR_SECRET_KEY", hide_env_values = true)]
+    secret_key: Option<String>,
+
+    /// The file that holds the key for the stored secrets. The application makes
+    /// the file on its first start. Without this option, the file is `secret.key` in
+    /// the data folder.
+    #[arg(long, env = "ORGANIZR_SECRET_KEY_FILE")]
+    secret_key_file: Option<PathBuf>,
 }
 
 /// Runs the server until the process is asked to stop.
@@ -43,7 +55,13 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     start_logging();
 
     let database = open_database(&args).await?;
-    let settings = load_settings(&database).await?;
+    let key_file = args
+        .secret_key_file
+        .clone()
+        .unwrap_or_else(|| args.data_dir.join(crate::secret_key::FILE_NAME));
+    let key = crate::secret_key::load_or_create(args.secret_key.as_deref(), &key_file)?;
+    let secrets = SecretBox::new(&key).context("cannot use the key for the stored secrets")?;
+    let settings = load_settings(&database, &secrets).await?;
     let trusted_proxies: TrustedProxies = args
         .trusted_proxies
         .parse()
@@ -51,7 +69,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     if trusted_proxies == TrustedProxies::default() {
         tracing::info!("no reverse proxy is trusted; forwarding headers are ignored");
     }
-    let mut state = AppState::new(database.clone(), settings).with_trusted_proxies(trusted_proxies);
+    let mut state =
+        AppState::new(database.clone(), settings, secrets).with_trusted_proxies(trusted_proxies);
     let is_set_up = database
         .install()
         .is_done()
@@ -135,8 +154,8 @@ fn default_database_url(data_dir: &Path) -> String {
 }
 
 /// Reads the settings. A stored entry that cannot be used is logged and left at its default.
-async fn load_settings(database: &Database) -> anyhow::Result<Settings> {
-    let (settings, problems) = organizr_api::stored_settings(database)
+async fn load_settings(database: &Database, secrets: &SecretBox) -> anyhow::Result<Settings> {
+    let (settings, problems) = organizr_api::stored_settings(database, secrets)
         .await
         .context("cannot read the settings")?;
     for problem in &problems {

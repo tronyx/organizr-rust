@@ -64,5 +64,5 @@ pub fn app_with(database: &Database, settings: Settings) -> Router {
 pub fn state_with(database: &Database, settings: Settings) -> AppState {
     let setup_code =
         SetupCode::parse(seed::SETUP_CODE).expect("the set-up code of the tests is valid");
-    AppState::new(database.clone(), settings).with_setup_code(setup_code)
+    AppState::new(database.clone(), settings, seed::secrets()).with_setup_code(setup_code)
 }

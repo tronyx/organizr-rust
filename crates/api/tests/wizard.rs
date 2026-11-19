@@ -129,7 +129,7 @@ async fn set_up_needs_the_code_from_the_server_log() {
 async fn server_without_a_set_up_code_takes_no_set_up() {
     on_each_engine(async |database| {
         // A state as the server makes it for an install that is set up: without a code.
-        let state = AppState::new(database.clone(), Settings::defaults());
+        let state = AppState::new(database.clone(), Settings::defaults(), seed::secrets());
         let app = router(state).expect("the route table is valid");
 
         for code in [seed::SETUP_CODE, "", "AAAA-AAAA-AAAA"] {
@@ -304,8 +304,14 @@ async fn running_application_uses_what_the_set_up_wrote() {
         assert_eq!(logged_in.status, 200, "{}", logged_in.body);
         assert_eq!(logged_in.cookies_named(&cookie_name).len(), 2);
 
-        // The registration password is stored as a hash.
-        let hash = PasswordHash::new(stored["registrationPassword"].clone());
+        // The registration password is stored as a hash, and the hash is sealed.
+        let sealed = &stored["registrationPassword"];
+        let hash = PasswordHash::new(
+            seed::secrets()
+                .open("registrationPassword", sealed)
+                .expect("the key of the install opens the hash"),
+        );
+        assert!(!sealed.contains("$argon2"), "{sealed}");
         assert_eq!(
             password::verify("let me in", &hash),
             PasswordCheck::Correct { outdated: false }

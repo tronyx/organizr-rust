@@ -220,7 +220,11 @@ mod tests {
                     .delete(|| async { "changed" }),
             )
             .expect("the pattern is valid");
-        let state = AppState::new(database, Settings::defaults());
+        let state = AppState::new(
+            database,
+            Settings::defaults(),
+            organizr_testkit::seed::secrets(),
+        );
         (finish(routes.router, state), directory)
     }
 

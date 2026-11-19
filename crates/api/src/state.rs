@@ -4,9 +4,11 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use organizr_auth::login_limit::LoginLimiter;
+use organizr_auth::secrets::SecretBox;
 use organizr_auth::setup_code::SetupCode;
-use organizr_db::{Database, DbError};
+use organizr_db::{Database, DbError, StoredSetting};
 use organizr_settings::{Settings, SettingsError};
+use serde_json::Value;
 
 use crate::client::TrustedProxies;
 
@@ -18,18 +20,20 @@ pub struct AppState {
     trusted_proxies: Arc<TrustedProxies>,
     login_limiter: Arc<LoginLimiter>,
     setup_code: Option<Arc<SetupCode>>,
+    secrets: Arc<SecretBox>,
 }
 
 impl AppState {
     /// Creates the state around an open, migrated database and the settings read from it.
     /// No proxy is trusted until [`AppState::with_trusted_proxies`] names some.
-    pub fn new(database: Database, settings: Settings) -> Self {
+    pub fn new(database: Database, settings: Settings, secrets: SecretBox) -> Self {
         Self {
             database,
             settings: Arc::new(ArcSwap::from_pointee(settings)),
             trusted_proxies: Arc::new(TrustedProxies::default()),
             login_limiter: Arc::new(LoginLimiter::new()),
             setup_code: None,
+            secrets: Arc::new(secrets),
         }
     }
 
@@ -71,7 +75,7 @@ impl AppState {
     /// ones. Returns the stored entries that cannot be used; each of those settings has
     /// its default.
     pub async fn reload_settings(&self) -> Result<Vec<SettingsError>, DbError> {
-        let (settings, problems) = stored_settings(&self.database).await?;
+        let (settings, problems) = stored_settings(&self.database, &self.secrets).await?;
         self.replace_settings(settings);
         Ok(problems)
     }
@@ -90,16 +94,53 @@ impl AppState {
     pub fn login_limiter(&self) -> &LoginLimiter {
         &self.login_limiter
     }
+
+    /// What seals the secrets that the install stores, and opens them again.
+    pub fn secrets(&self) -> &SecretBox {
+        &self.secrets
+    }
 }
 
-/// Reads the settings that the database holds: the defaults, with each stored value on
-/// top. Also returns the stored entries that cannot be used; each of those settings has
-/// its default.
+/// Reads the settings from the database: the defaults, with each stored value on top.
+/// Stored secrets are opened with `secrets`.
+///
+/// A stored entry that cannot be used is left out and reported, and its setting keeps
+/// the default. That includes a secret that the key of the install does not open, for
+/// example after the key file was lost.
 pub async fn stored_settings(
     database: &Database,
+    secrets: &SecretBox,
 ) -> Result<(Settings, Vec<SettingsError>), DbError> {
-    let stored = database.settings().all().await?;
-    Ok(Settings::from_stored(stored.iter().map(|setting| {
-        (setting.key.as_str(), setting.value.as_str())
-    })))
+    let mut problems = Vec::new();
+    let mut readable = Vec::new();
+    for setting in database.settings().all().await? {
+        if !Settings::is_secret(&setting.key) {
+            readable.push(setting);
+        } else if let Some(value) = opened(secrets, &setting) {
+            readable.push(StoredSetting {
+                key: setting.key,
+                value,
+            });
+        } else {
+            problems.push(SettingsError::UnreadableSecret { key: setting.key });
+        }
+    }
+    let (settings, more) = Settings::from_stored(
+        readable
+            .iter()
+            .map(|setting| (setting.key.as_str(), setting.value.as_str())),
+    );
+    problems.extend(more);
+    Ok((settings, problems))
+}
+
+/// The stored form of a secret with the secret in plain text, or `None` when the secret
+/// cannot be opened. A stored value that is no JSON text comes back as it is, and the
+/// settings registry reports it.
+fn opened(secrets: &SecretBox, setting: &StoredSetting) -> Option<String> {
+    let Ok(Value::String(sealed)) = serde_json::from_str::<Value>(&setting.value) else {
+        return Some(setting.value.clone());
+    };
+    let secret = secrets.open(&setting.key, &sealed).ok()?;
+    Some(Value::String(secret).to_string())
 }

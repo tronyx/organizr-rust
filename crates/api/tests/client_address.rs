@@ -27,7 +27,12 @@ async fn device_cookies(trusted: &str, peer: &str, forwarded_proto: &str) -> Vec
     database.migrate().await.expect("the migrations apply");
 
     let trusted: TrustedProxies = trusted.parse().expect("the proxy list is valid");
-    let state = AppState::new(database.clone(), Settings::defaults()).with_trusted_proxies(trusted);
+    let state = AppState::new(
+        database.clone(),
+        Settings::defaults(),
+        organizr_testkit::seed::secrets(),
+    )
+    .with_trusted_proxies(trusted);
     let app = router(state).expect("the route table is valid");
 
     let peer: SocketAddr = peer.parse().expect("the peer address is valid");

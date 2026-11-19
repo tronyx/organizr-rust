@@ -12,17 +12,19 @@ use std::time::Duration;
 use organizr_auth::install::{self, InstallError, SetUp};
 use organizr_auth::login::{self, Device};
 use organizr_auth::password::{self, PasswordCheck};
+use organizr_auth::secrets::PREFIX;
 use organizr_db::Database;
 use organizr_domain::{GroupLevel, PasswordHash, Timestamp};
 use organizr_testkit::engines::on_each_engine;
+use organizr_testkit::seed;
 
 const NOW: Timestamp = Timestamp::from_unix_seconds(1_800_000_000);
 
 fn request() -> SetUp {
     SetUp {
-        username: "Chris".to_owned(),
-        password: "the password of chris".to_owned(),
-        email: "Chris@Example.com".to_owned(),
+        username: "Robin".to_owned(),
+        password: "the password of robin".to_owned(),
+        email: "Robin@Example.com".to_owned(),
         api_key: "abcdefghij0123456789".to_owned(),
         license: "personal".to_owned(),
         registration_password: "let me in".to_owned(),
@@ -48,17 +50,17 @@ async fn settings(database: &Database) -> BTreeMap<String, String> {
 #[tokio::test]
 async fn set_up_creates_an_admin_who_can_log_in() {
     on_each_engine(async |database| {
-        let admin = install::set_up(database, request(), NOW)
+        let admin = install::set_up(database, request(), &seed::secrets(), NOW)
             .await
             .expect("the set-up works");
 
-        assert_eq!(admin.username, "Chris");
-        assert_eq!(admin.email.as_deref(), Some("Chris@Example.com"));
+        assert_eq!(admin.username, "Robin");
+        assert_eq!(admin.email.as_deref(), Some("Robin@Example.com"));
         assert_eq!(admin.created_at, NOW);
         // The picture is found by the address in lower case.
         assert_eq!(
             admin.image.as_deref(),
-            Some("https://www.gravatar.com/avatar/9655f78d38f380d17931f8dd9a227b9f?s=100&d=mm")
+            Some("https://www.gravatar.com/avatar/d3c17ef52c397921a87c1de66f2311c2?s=100&d=mm")
         );
         let group = database
             .groups()
@@ -76,8 +78,8 @@ async fn set_up_creates_an_admin_who_can_log_in() {
         };
         let logged_in = login::with_password(
             database,
-            "chris",
-            "the password of chris",
+            "robin",
+            "the password of robin",
             device,
             NOW,
             Duration::from_hours(24),
@@ -92,7 +94,7 @@ async fn set_up_creates_an_admin_who_can_log_in() {
 #[tokio::test]
 async fn set_up_writes_the_settings_of_the_install() {
     on_each_engine(async |database| {
-        install::set_up(database, request(), NOW)
+        install::set_up(database, request(), &seed::secrets(), NOW)
             .await
             .expect("the set-up works");
 
@@ -103,7 +105,16 @@ async fn set_up_writes_the_settings_of_the_install() {
             ["license", "organizrAPI", "registrationPassword", "uuid"]
         );
         assert_eq!(settings["license"], "personal");
-        assert_eq!(settings["organizrAPI"], "abcdefghij0123456789");
+
+        // The API key is a secret: it is stored sealed, and the key of the install opens it.
+        let secrets = seed::secrets();
+        let api_key = &settings["organizrAPI"];
+        assert!(api_key.starts_with(PREFIX), "{api_key}");
+        assert!(!api_key.contains("abcdefghij0123456789"));
+        assert_eq!(
+            secrets.open("organizrAPI", api_key).expect("the key opens"),
+            "abcdefghij0123456789"
+        );
 
         // A new random id, in the form of a UUID.
         let id = &settings["uuid"];
@@ -111,7 +122,13 @@ async fn set_up_writes_the_settings_of_the_install() {
         assert_eq!(id.matches('-').count(), 4, "{id}");
 
         // The registration password is stored as a hash, never as it was entered.
-        let hash = PasswordHash::new(settings["registrationPassword"].clone());
+        let sealed = &settings["registrationPassword"];
+        assert!(sealed.starts_with(PREFIX), "{sealed}");
+        let hash = PasswordHash::new(
+            secrets
+                .open("registrationPassword", sealed)
+                .expect("the hash opens"),
+        );
         assert!(hash.expose().starts_with("$argon2id$"));
         assert_eq!(
             password::verify("let me in", &hash),
@@ -125,13 +142,13 @@ async fn set_up_writes_the_settings_of_the_install() {
 #[tokio::test]
 async fn every_install_gets_an_id_of_its_own() {
     on_each_engine(async |first| {
-        install::set_up(first, request(), NOW)
+        install::set_up(first, request(), &seed::secrets(), NOW)
             .await
             .expect("the set-up works");
         let first_id = settings(first).await["uuid"].clone();
 
         on_each_engine(async |second| {
-            install::set_up(second, request(), NOW)
+            install::set_up(second, request(), &seed::secrets(), NOW)
                 .await
                 .expect("the set-up works");
 
@@ -145,7 +162,7 @@ async fn every_install_gets_an_id_of_its_own() {
 #[tokio::test]
 async fn install_cannot_be_set_up_twice() {
     on_each_engine(async |database| {
-        install::set_up(database, request(), NOW)
+        install::set_up(database, request(), &seed::secrets(), NOW)
             .await
             .expect("the first set-up works");
         let before = settings(database).await;
@@ -156,6 +173,7 @@ async fn install_cannot_be_set_up_twice() {
                 username: "intruder".to_owned(),
                 ..request()
             },
+            &seed::secrets(),
             NOW,
         )
         .await;

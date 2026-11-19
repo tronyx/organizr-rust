@@ -133,7 +133,7 @@ pub async fn wizard(
         license: field("license"),
         registration_password: field("registrationPassword"),
     };
-    let admin = match install::set_up(database, request, now_stamp(now)).await {
+    let admin = match install::set_up(database, request, state.secrets(), now_stamp(now)).await {
         Ok(admin) => admin,
         // Another set-up finished while this one was under way.
         Err(InstallError::AlreadySetUp) => return Ok(already_set_up()),

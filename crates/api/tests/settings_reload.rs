@@ -50,7 +50,7 @@ fn settings_with_id(id: &str) -> Settings {
 async fn replaced_settings_are_used_by_the_next_request() {
     on_each_engine(async |database| {
         seed::installed(database).await;
-        let state = AppState::new(database.clone(), Settings::defaults());
+        let state = AppState::new(database.clone(), Settings::defaults(), seed::secrets());
         let app = router(state.clone()).expect("the route table is valid");
         assert_eq!(session_cookie_of_a_login(&app).await, "organizr_token_temp");
 
@@ -72,7 +72,11 @@ async fn replaced_settings_are_used_by_the_next_request() {
 #[tokio::test]
 async fn settings_someone_already_holds_do_not_change() {
     on_each_engine(async |database| {
-        let state = AppState::new(database.clone(), settings_with_id(FIRST_ID));
+        let state = AppState::new(
+            database.clone(),
+            settings_with_id(FIRST_ID),
+            seed::secrets(),
+        );
 
         // A request that is under way keeps what it got.
         let held = state.settings();
@@ -90,7 +94,7 @@ async fn settings_someone_already_holds_do_not_change() {
 async fn reload_reads_what_the_database_holds_now() {
     on_each_engine(async |database| {
         seed::installed(database).await;
-        let state = AppState::new(database.clone(), Settings::defaults());
+        let state = AppState::new(database.clone(), Settings::defaults(), seed::secrets());
         let app = router(state.clone()).expect("the route table is valid");
         database
             .settings()
@@ -124,8 +128,96 @@ async fn reload_reads_what_the_database_holds_now() {
         );
         assert_eq!(state.settings().remember_me_days, 7);
 
-        let (read_again, _) = stored_settings(database).await.expect("the read works");
+        let (read_again, _) = stored_settings(database, &seed::secrets())
+            .await
+            .expect("the read works");
         assert_eq!(read_again.install_id, FIRST_ID);
+    })
+    .await;
+}
+
+/// Stores a setting as the database holds it: the value as JSON text.
+async fn store(database: &organizr_db::Database, key: &str, value: &str) {
+    database
+        .settings()
+        .put(key, &serde_json::Value::from(value).to_string())
+        .await
+        .expect("the setting can be stored");
+}
+
+#[tokio::test]
+async fn stored_secret_is_opened_with_the_key_of_the_install() {
+    on_each_engine(async |database| {
+        let secrets = seed::secrets();
+        let sealed = secrets
+            .seal("plexToken", "a-token")
+            .expect("the secret can be sealed");
+        store(database, "plexToken", &sealed).await;
+        // A secret that a person wrote into the database in plain text is read too.
+        store(database, "embyToken", "a plain token").await;
+
+        let (settings, problems) = stored_settings(database, &secrets)
+            .await
+            .expect("the read works");
+
+        assert_eq!(problems, []);
+        assert_eq!(settings.plex_token, "a-token");
+        assert_eq!(settings.emby_token, "a plain token");
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn secret_of_another_key_is_reported_and_left_at_its_default() {
+    on_each_engine(async |database| {
+        let other =
+            organizr_auth::secrets::SecretBox::with_random_key().expect("a key can be made");
+        let sealed = other
+            .seal("plexToken", "a-token")
+            .expect("the secret can be sealed");
+        store(database, "plexToken", &sealed).await;
+        // A secret that was moved to another name does not open either.
+        let moved = seed::secrets()
+            .seal("embyToken", "another token")
+            .expect("the secret can be sealed");
+        store(database, "jellyfinToken", &moved).await;
+        store(database, "title", "Home").await;
+
+        let (settings, problems) = stored_settings(database, &seed::secrets())
+            .await
+            .expect("the read works");
+
+        let unreadable: Vec<String> = problems.iter().map(ToString::to_string).collect();
+        assert_eq!(
+            unreadable,
+            [
+                "the stored secret `jellyfinToken` cannot be opened with the key of this install",
+                "the stored secret `plexToken` cannot be opened with the key of this install",
+            ]
+        );
+        assert_eq!(settings.plex_token, "");
+        assert_eq!(settings.jellyfin_token, "");
+        // The other settings are read as usual.
+        assert_eq!(settings.title, "Home");
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn setting_that_is_no_secret_is_not_opened() {
+    on_each_engine(async |database| {
+        let secrets = seed::secrets();
+        let sealed = secrets
+            .seal("title", "Home")
+            .expect("the text can be sealed");
+        store(database, "title", &sealed).await;
+
+        let (settings, problems) = stored_settings(database, &secrets)
+            .await
+            .expect("the read works");
+
+        assert_eq!(problems, []);
+        assert_eq!(settings.title, sealed);
     })
     .await;
 }

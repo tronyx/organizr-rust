@@ -7,6 +7,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::password::{self, HashError};
+use crate::secrets::{SecretBox, SecretError};
 
 /// What the person who sets an install up enters.
 #[derive(Clone, PartialEq, Eq)]
@@ -46,6 +47,10 @@ pub enum InstallError {
     #[error(transparent)]
     Database(DbError),
 
+    /// A secret could not be sealed for storing.
+    #[error(transparent)]
+    Secret(#[from] SecretError),
+
     /// A password could not be hashed.
     #[error(transparent)]
     Hash(#[from] HashError),
@@ -82,11 +87,13 @@ fn stored(key: &str, value: &str) -> StoredSetting {
 /// Sets up a new install and returns its first Admin account.
 ///
 /// The install gets a new random id. The password of the account and the registration
-/// password are stored as hashes. Everything is stored, or nothing is. Fails with
+/// password are stored as hashes, and the API key is sealed with `secrets`. Everything
+/// is stored, or nothing is. Fails with
 /// [`InstallError::AlreadySetUp`] when the install has a user.
 pub async fn set_up(
     database: &Database,
     request: SetUp,
+    secrets: &SecretBox,
     now: Timestamp,
 ) -> Result<User, InstallError> {
     // Hashing takes a while. Do not start it for an install that is set up.
@@ -122,9 +129,12 @@ pub async fn set_up(
             created_at: now,
             settings: vec![
                 stored("uuid", &install_id),
-                stored("organizrAPI", &api_key),
+                stored("organizrAPI", &secrets.seal("organizrAPI", &api_key)?),
                 stored("license", &license),
-                stored("registrationPassword", registration_hash.expose()),
+                stored(
+                    "registrationPassword",
+                    &secrets.seal("registrationPassword", registration_hash.expose())?,
+                ),
             ],
         })
         .await?;

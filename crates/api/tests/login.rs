@@ -333,7 +333,7 @@ async fn login_behind_a_trusted_https_proxy_gets_a_protected_cookie_and_the_real
         settings
             .set("uuid", &json!(seed::INSTALL_ID))
             .expect("the value is valid");
-        let state = AppState::new(database.clone(), settings)
+        let state = AppState::new(database.clone(), settings, seed::secrets())
             .with_trusted_proxies("10.0.0.0/8".parse().expect("the list is valid"));
         let app = router(state).expect("the route table is valid");
         let forwarded = [

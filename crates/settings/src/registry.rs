@@ -28,6 +28,13 @@ pub enum SettingsError {
         reason: String,
     },
 
+    /// A stored secret cannot be opened with the key of the install.
+    #[error("the stored secret `{key}` cannot be opened with the key of this install")]
+    UnreadableSecret {
+        /// The key the secret is stored under.
+        key: String,
+    },
+
     /// A stored value is not JSON.
     #[error("the stored value of `{key}` is not JSON: {reason}")]
     InvalidJson {

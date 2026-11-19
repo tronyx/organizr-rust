@@ -168,3 +168,13 @@ pub async fn logged_in(database: &Database, app: &axum::Router, name: &str, leve
         .unwrap_or_else(|| panic!("the login sets the session cookie: {}", answer.body))
         .to_owned()
 }
+
+/// The master key of the installs of tests. It is no key of any real install.
+pub const SECRET_KEY: &str = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
+
+/// The box that seals and opens the stored secrets of a test install. Every call gives
+/// a box with the same key, so two applications on one database read the same secrets.
+pub fn secrets() -> organizr_auth::secrets::SecretBox {
+    let key = organizr_auth::secrets::MasterKey::from_hex(SECRET_KEY).expect("the key is valid");
+    organizr_auth::secrets::SecretBox::new(&key).expect("a box can be made")
+}

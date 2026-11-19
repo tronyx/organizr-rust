@@ -55,6 +55,8 @@ impl Server {
             .env_remove("ORGANIZR_DATABASE_URL")
             .env_remove("ORGANIZR_TRUSTED_PROXIES")
             .env_remove("ORGANIZR_LOG")
+            .env_remove("ORGANIZR_SECRET_KEY")
+            .env_remove("ORGANIZR_SECRET_KEY_FILE")
             // Plain text in the log, without colour codes.
             .env("NO_COLOR", "1")
             .stdout(output)
@@ -177,6 +179,93 @@ fn post_json(address: SocketAddr, path: &str, body: &str) -> String {
     answer
 }
 
+/// Sends a GET request with the API key and returns the whole answer as text.
+fn get_with_key(address: SocketAddr, path: &str, key: &str) -> String {
+    let mut stream = TcpStream::connect(address).expect("the server accepts a connection");
+    let head = [
+        format!("GET {path} HTTP/1.1"),
+        format!("Host: {address}"),
+        format!("Token: {key}"),
+        "Connection: close".to_owned(),
+    ]
+    .join("\r\n");
+    write!(stream, "{head}\r\n\r\n").expect("the request can be sent");
+    let mut answer = String::new();
+    stream
+        .read_to_string(&mut answer)
+        .expect("the answer can be read");
+    answer
+}
+
+/// Whether a file of the data folder holds the text. A missing file holds nothing.
+fn file_holds(file: &Path, text: &str) -> bool {
+    std::fs::read(file).is_ok_and(|bytes| {
+        bytes
+            .windows(text.len())
+            .any(|window| window == text.as_bytes())
+    })
+}
+
+#[test]
+fn stored_secrets_need_the_key_file_of_the_install() {
+    const API_KEY: &str = "abcdefghij0123456789";
+    let data_dir = tempfile::tempdir().expect("a temporary folder can be created");
+    let key_file = data_dir.path().join("secret.key");
+    let log = data_dir.path().join("first.log");
+
+    // The first start makes the key file. The set-up stores the API key, which is a secret.
+    let address = free_address();
+    let mut server = Server::start_logging_to(address, data_dir.path(), &log);
+    assert!(server.wait_until_healthy(address, Duration::from_secs(30)));
+    let key = std::fs::read_to_string(&key_file).expect("the first start writes the key file");
+    assert_eq!(key.trim().len(), 64, "the key file holds 64 hex digits");
+    let code = set_up_code_in(&log).expect("the log of a new install has a code");
+    let body = format!(
+        r#"{{"setupCode":"{code}","license":"personal","api":"{API_KEY}","registrationPassword":"let me in","username":"robin","password":"the password of robin","email":"robin@example.com"}}"#
+    );
+    let accepted = post_json(address, "/api/v2/wizard", &body);
+    assert!(accepted.starts_with("HTTP/1.1 200"), "{accepted}");
+    let with_key = get_with_key(address, "/api/v2/tabs", API_KEY);
+    assert!(with_key.starts_with("HTTP/1.1 200"), "{with_key}");
+    drop(server);
+
+    // Neither the database nor its journal holds the API key as it was entered.
+    for name in ["organizr.db", "organizr.db-wal"] {
+        assert!(
+            !file_holds(&data_dir.path().join(name), API_KEY),
+            "{name} holds the API key in plain text"
+        );
+    }
+
+    // The next start reads the same key file, so the stored API key still works.
+    let address = free_address();
+    let mut server = Server::start(address, data_dir.path());
+    assert!(server.wait_until_healthy(address, Duration::from_secs(30)));
+    assert_eq!(
+        std::fs::read_to_string(&key_file).expect("the key file is still there"),
+        key
+    );
+    let with_key = get_with_key(address, "/api/v2/tabs", API_KEY);
+    assert!(with_key.starts_with("HTTP/1.1 200"), "{with_key}");
+    drop(server);
+
+    // Without the key file, the server makes a new key. The stored secrets cannot be
+    // opened with it: the server says so in its log, and the API key does not work.
+    std::fs::remove_file(&key_file).expect("the key file can be removed");
+    let log = data_dir.path().join("third.log");
+    let address = free_address();
+    let mut server = Server::start_logging_to(address, data_dir.path(), &log);
+    assert!(server.wait_until_healthy(address, Duration::from_secs(30)));
+    let with_key = get_with_key(address, "/api/v2/tabs", API_KEY);
+    assert!(with_key.starts_with("HTTP/1.1 401"), "{with_key}");
+    let text = std::fs::read_to_string(&log).expect("the log can be read");
+    assert!(
+        text.contains("the stored secret `organizrAPI` cannot be opened"),
+        "{text}"
+    );
+    assert!(!text.contains(API_KEY), "the log holds the API key");
+}
+
 #[test]
 fn new_install_is_set_up_with_the_code_from_the_log() {
     let data_dir = tempfile::tempdir().expect("a temporary folder can be created");
@@ -185,7 +274,7 @@ fn new_install_is_set_up_with_the_code_from_the_log() {
     let third_log = data_dir.path().join("third.log");
     let set_up = |code: &str| {
         format!(
-            r#"{{"setupCode":"{code}","license":"personal","api":"abcdefghij0123456789","registrationPassword":"let me in","username":"chris","password":"the password of chris","email":"chris@example.com"}}"#
+            r#"{{"setupCode":"{code}","license":"personal","api":"abcdefghij0123456789","registrationPassword":"let me in","username":"robin","password":"the password of robin","email":"robin@example.com"}}"#
         )
     };
 
@@ -222,4 +311,62 @@ fn new_install_is_set_up_with_the_code_from_the_log() {
     assert_eq!(set_up_code_in(&third_log), None);
     let closed = post_json(address, "/api/v2/wizard", &set_up(&second_code));
     assert!(closed.starts_with("HTTP/1.1 401"), "{closed}");
+}
+
+#[test]
+fn serve_with_a_key_from_the_environment_writes_no_key_file() {
+    let data_dir = tempfile::tempdir().expect("a temporary folder can be created");
+    let address = free_address();
+    let child = Command::new(ORGANIZR)
+        .args(["serve", "--listen", &address.to_string(), "--data-dir"])
+        .arg(data_dir.path())
+        .env_remove("ORGANIZR_DATABASE_URL")
+        .env_remove("ORGANIZR_SECRET_KEY_FILE")
+        .env("ORGANIZR_SECRET_KEY", "ab".repeat(32))
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("the server can be started");
+    let mut server = Server(child);
+
+    assert!(server.wait_until_healthy(address, Duration::from_secs(30)));
+    assert!(data_dir.path().join("organizr.db").is_file());
+    assert!(!data_dir.path().join("secret.key").exists());
+}
+
+#[test]
+fn serve_refuses_a_key_that_is_no_key() {
+    let data_dir = tempfile::tempdir().expect("a temporary folder can be created");
+    let errors = data_dir.path().join("errors.log");
+    let file = File::create(&errors).expect("the file can be created");
+    let child = Command::new(ORGANIZR)
+        .args(["serve", "--listen", "127.0.0.1:0", "--data-dir"])
+        .arg(data_dir.path())
+        .env_remove("ORGANIZR_DATABASE_URL")
+        .env("ORGANIZR_SECRET_KEY", "not a key")
+        .stdout(Stdio::null())
+        .stderr(Stdio::from(file))
+        .spawn()
+        .expect("the binary can be run");
+    // The server is stopped at the end, also when it did not stop by itself.
+    let mut server = Server(child);
+
+    let start = Instant::now();
+    let status = loop {
+        if let Some(status) = server.0.try_wait().expect("the server can be checked") {
+            break status;
+        }
+        assert!(
+            start.elapsed() < Duration::from_secs(30),
+            "the server did not stop"
+        );
+        std::thread::sleep(Duration::from_millis(100));
+    };
+
+    assert!(!status.success());
+    let message = std::fs::read_to_string(&errors).expect("the errors can be read");
+    assert!(
+        message.contains("ORGANIZR_SECRET_KEY is not a key"),
+        "{message}"
+    );
 }
