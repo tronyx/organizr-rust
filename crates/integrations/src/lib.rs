@@ -3,6 +3,7 @@
 //! homepage shows.
 
 pub mod arr;
+pub mod downloaders;
 pub mod health_checks;
 pub mod http;
 pub mod plex;

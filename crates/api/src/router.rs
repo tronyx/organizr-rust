@@ -164,6 +164,22 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         )?
         .route("/homepage/sonarr/queue", &get(homepage::arr::sonarr_queue))?
         .route("/homepage/radarr/queue", &get(homepage::arr::radarr_queue))?
+        .route(
+            "/homepage/sabnzbd/queue",
+            &get(homepage::downloaders::sabnzbd_queue),
+        )?
+        .route(
+            "/homepage/sabnzbd/queue/pause",
+            &post(homepage::downloaders::sabnzbd_pause),
+        )?
+        .route(
+            "/homepage/sabnzbd/queue/resume",
+            &post(homepage::downloaders::sabnzbd_resume),
+        )?
+        .route(
+            "/homepage/qbittorrent/queue",
+            &get(homepage::downloaders::qbittorrent_queue),
+        )?
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
         .route("/plex/servers", &get(plex::servers))?

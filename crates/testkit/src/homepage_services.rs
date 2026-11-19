@@ -291,3 +291,127 @@ async fn lidarr_calendar(headers: HeaderMap) -> Response {
 pub async fn lidarr() -> StandIn {
     StandIn::start(Router::new().route("/api/v1/calendar", get(lidarr_calendar))).await
 }
+
+/// The API key of the SABnzbd stand-in.
+pub const SABNZBD_KEY: &str = "made-up-sabnzbd-key";
+
+fn query_field<'a>(query: Option<&'a str>, name: &str) -> Option<&'a str> {
+    query?
+        .split('&')
+        .filter_map(|pair| pair.split_once('='))
+        .find(|(key, _)| *key == name)
+        .map(|(_, value)| value)
+}
+
+async fn sabnzbd_api(RawQuery(query): RawQuery) -> Response {
+    let query = query.as_deref();
+    if query_field(query, "apikey") != Some(SABNZBD_KEY) {
+        return (
+            StatusCode::FORBIDDEN,
+            axum::Json(json!({"status": false, "error": "API Key Incorrect"})),
+        )
+            .into_response();
+    }
+    let body = match (query_field(query, "mode"), query_field(query, "name")) {
+        (Some("queue"), None) => json!({"queue": {
+            "paused": false,
+            "speed": "1.2 M",
+            "timeleft": "0:10:00",
+            "slots": [{
+                "nzo_id": "SABnzbd_nzo_one",
+                "filename": "The.Show.S02E03.1080p",
+                "status": "Downloading",
+                "percentage": "40",
+                "timeleft": "0:10:00",
+                "mb": "1000.00",
+                "mbleft": "600.00",
+                "cat": "tv",
+            }],
+        }}),
+        (Some("history"), None) => json!({"history": {
+            "slots": [{
+                "nzo_id": "SABnzbd_nzo_old",
+                "name": "The.Film.2020.1080p",
+                "status": "Completed",
+                "size": "4.1 GB",
+                "category": "movies",
+                "completed": 1_577_900_000,
+            }],
+        }}),
+        (Some("pause" | "resume"), None) | (Some("queue"), Some("pause" | "resume")) => {
+            json!({"status": true})
+        }
+        _ => json!({"status": false, "error": "not implemented"}),
+    };
+    axum::Json(body).into_response()
+}
+
+/// A stand-in for SABnzbd: one download in the queue and one in the history.
+pub async fn sabnzbd() -> StandIn {
+    StandIn::start(Router::new().route("/api", get(sabnzbd_api))).await
+}
+
+/// The user name and the password of the qBittorrent stand-in.
+pub const QBITTORRENT_LOGIN: (&str, &str) = ("admin", "the password of qBittorrent");
+
+const QBITTORRENT_SESSION: &str = "SID=made-up-qbittorrent-session";
+
+async fn qbittorrent_login(body: axum::body::Bytes) -> Response {
+    let body = String::from_utf8_lossy(&body).into_owned();
+    // The password comes as a field of a form, with `+` for a space.
+    let field = |name: &str| {
+        query_field(Some(&body), name)
+            .unwrap_or_default()
+            .replace('+', " ")
+    };
+    if field("username") == QBITTORRENT_LOGIN.0 && field("password") == QBITTORRENT_LOGIN.1 {
+        (
+            [(
+                header::SET_COOKIE,
+                format!("{QBITTORRENT_SESSION}; HttpOnly; SameSite=Strict; path=/"),
+            )],
+            "Ok.",
+        )
+            .into_response()
+    } else {
+        "Fails.".into_response()
+    }
+}
+
+async fn qbittorrent_torrents(headers: HeaderMap) -> Response {
+    let cookie = headers
+        .get(header::COOKIE)
+        .and_then(|value| value.to_str().ok());
+    if cookie != Some(QBITTORRENT_SESSION) {
+        return (StatusCode::FORBIDDEN, "Forbidden").into_response();
+    }
+    let torrent = |name: &str, state: &str, progress: f64| {
+        json!({
+            "name": name,
+            "state": state,
+            "progress": progress,
+            "eta": 600,
+            "size": 1_000_000,
+            "dlspeed": 1000,
+            "upspeed": 10,
+            "category": "tv",
+        })
+    };
+    axum::Json(json!([
+        torrent("The.Show.S02E03", "downloading", 0.4),
+        torrent("An.Old.Film", "stalledUP", 1.0),
+        torrent("A.Finished.Film", "pausedUP", 1.0),
+    ]))
+    .into_response()
+}
+
+/// A stand-in for qBittorrent with the second version of its API: one torrent that
+/// downloads, one that uploads, and one that is complete and paused.
+pub async fn qbittorrent() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/api/v2/auth/login", axum::routing::post(qbittorrent_login))
+            .route("/api/v2/torrents/info", get(qbittorrent_torrents)),
+    )
+    .await
+}

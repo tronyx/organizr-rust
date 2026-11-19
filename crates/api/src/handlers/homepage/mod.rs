@@ -6,6 +6,7 @@
 //! order, and then asks the route of each item for its data.
 
 pub mod arr;
+pub mod downloaders;
 pub mod health_checks;
 pub mod html;
 pub mod uptime_kuma;
@@ -129,6 +130,8 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrdercalendar" => ("calendar", Permissions::default()),
         "homepageOrderSonarrQueue" => ("sonarrqueue", arr::queue_permissions(Kind::Sonarr)),
         "homepageOrderRadarrQueue" => ("radarrqueue", arr::queue_permissions(Kind::Radarr)),
+        "homepageOrdersabnzbd" => ("sabnzbd", downloaders::sabnzbd_permissions()),
+        "homepageOrderqBittorrent" => ("qbittorrent", downloaders::qbittorrent_permissions()),
         _ => return None,
     };
     let item = Item {
