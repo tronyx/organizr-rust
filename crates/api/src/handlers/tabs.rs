@@ -7,13 +7,13 @@
 
 use axum::Extension;
 use axum::extract::{Path, State};
-use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use organizr_db::{Database, DbError};
 use organizr_domain::email::php_trim;
 use organizr_domain::{
-    Category, CategoryNumber, Change, Group, GroupLevel, InvalidTabName, LevelRange, NewTab, Tab,
-    TabChanges, TabId, TabKind, tab_name,
+    Category, CategoryNumber, Change, Group, GroupLevel, InvalidMenuName, LevelRange,
+    MENU_NAME_LIMIT, NewTab, Tab, TabChanges, TabId, TabKind, menu_name,
 };
 use serde::Serialize;
 use serde_json::Value;
@@ -23,6 +23,7 @@ use crate::caller::{Caller, Identity};
 use crate::cookies::cookie_value;
 use crate::envelope::{Envelope, NoContent, NoData};
 use crate::error::ApiError;
+use crate::handlers::fields::{Fields, Refusal, chosen, php_text, place_of, record_id};
 use crate::state::AppState;
 
 /// The level a caller needs for the tab routes.
@@ -238,179 +239,26 @@ pub struct TabEditorData {
     groups: Vec<GroupRow>,
 }
 
-/// Why a tab request is refused.
-#[derive(Debug)]
-pub enum Refusal {
-    /// The request is at fault. The caller gets the status and the text.
-    Request(StatusCode, String),
-    /// Any other failure.
-    Api(ApiError),
-}
-
-impl Refusal {
-    fn unprocessable(message: &str) -> Self {
-        Self::Request(StatusCode::UNPROCESSABLE_ENTITY, message.to_owned())
-    }
-
-    /// A value that is not of the kind the field takes.
-    fn not_valid(field: &str) -> Self {
-        Self::unprocessable(&format!("Tab {field} is not valid"))
-    }
-
-    fn name_taken(name: &str) -> Self {
-        Self::Request(
-            StatusCode::CONFLICT,
-            format!("Tab name: {name} is already taken"),
-        )
-    }
-}
-
-impl From<ApiError> for Refusal {
-    fn from(error: ApiError) -> Self {
-        Self::Api(error)
-    }
-}
-
-impl From<DbError> for Refusal {
-    fn from(error: DbError) -> Self {
-        Self::Api(error.into())
-    }
-}
-
-impl IntoResponse for Refusal {
-    fn into_response(self) -> Response {
-        match self {
-            Self::Request(status, message) => {
-                Envelope::error(status, message, NoData).into_response()
-            }
-            Self::Api(error) => error.into_response(),
-        }
-    }
-}
-
-/// Gives an answer the content type `application/json`, without a character set. The
-/// PHP application sends this form from the routes that change or delete a tab.
-pub async fn as_plain_json(mut response: Response) -> Response {
-    response.headers_mut().insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("application/json"),
-    );
-    response
-}
-
-/// A whole number as a request can send it: a JSON number, or its digits as text.
-fn whole_number(value: &Value) -> Option<i64> {
-    match value {
-        Value::Number(number) => number.as_i64(),
-        Value::String(text) => php_trim(text).parse().ok(),
-        Value::Null | Value::Bool(_) | Value::Array(_) | Value::Object(_) => None,
-    }
-}
-
-/// The whole number in a field. `null` and the empty text stand for "nothing".
-fn number_of(data: &ApiData, name: &str) -> Result<Change<Option<i64>>, Refusal> {
-    match data.field(name) {
-        None => Ok(Change::Keep),
-        Some(Value::Null) => Ok(Change::Set(None)),
-        Some(Value::String(text)) if php_trim(text).is_empty() => Ok(Change::Set(None)),
-        Some(value) => whole_number(value)
-            .map(|number| Change::Set(Some(number)))
-            .ok_or_else(|| Refusal::not_valid(name)),
-    }
-}
-
-/// The switch in a field: `true` or `false`, 1 or 0, or one of these as text. `null`
-/// stands for "off".
-fn switch_of(data: &ApiData, name: &str) -> Result<Change<bool>, Refusal> {
-    let on = match data.field(name) {
-        None => return Ok(Change::Keep),
-        Some(Value::Null) => Some(false),
-        Some(Value::Bool(on)) => Some(*on),
-        Some(Value::Number(number)) => match number.as_i64() {
-            Some(0) => Some(false),
-            Some(1) => Some(true),
-            _ => None,
-        },
-        Some(Value::String(text)) => match text.as_str() {
-            "0" | "false" => Some(false),
-            "1" | "true" => Some(true),
-            _ => None,
-        },
-        Some(Value::Array(_) | Value::Object(_)) => None,
-    };
-    on.map(Change::Set).ok_or_else(|| Refusal::not_valid(name))
-}
-
-/// A value as text, as PHP makes text from it: a number becomes its digits, `true`
-/// becomes `1`, and `false` and `null` become the empty text. A list or an object is no
-/// text.
-fn php_text(value: &Value) -> Option<String> {
-    match value {
-        Value::String(text) => Some(text.clone()),
-        Value::Number(number) => Some(number.to_string()),
-        Value::Bool(true) => Some("1".to_owned()),
-        Value::Bool(false) | Value::Null => Some(String::new()),
-        Value::Array(_) | Value::Object(_) => None,
-    }
-}
-
-/// The text in a field, as it was sent. `null` stands for "nothing".
-fn text_of(data: &ApiData, name: &str) -> Result<Change<Option<String>>, Refusal> {
-    match data.field(name) {
-        None => Ok(Change::Keep),
-        Some(Value::Null) => Ok(Change::Set(None)),
-        Some(value) => php_text(value)
-            .map(|text| Change::Set(Some(text)))
-            .ok_or_else(|| Refusal::not_valid(name)),
-    }
-}
-
-/// The picture in the field `image`: the text without the space around it. PHP stores
-/// the empty text for `null`.
-fn image_of(data: &ApiData) -> Result<Change<Option<String>>, Refusal> {
-    match data.field("image") {
-        None => Ok(Change::Keep),
-        Some(value) => php_text(value)
-            .map(|text| Change::Set(Some(php_trim(&text).to_owned())))
-            .ok_or_else(|| Refusal::not_valid("image")),
-    }
-}
-
 /// The group level in a field.
-fn level_of(data: &ApiData, name: &str) -> Result<Change<Option<GroupLevel>>, Refusal> {
-    Ok(match number_of(data, name)? {
+fn level_of(fields: &Fields<'_>, name: &str) -> Result<Change<Option<GroupLevel>>, Refusal> {
+    Ok(match fields.number(name)? {
         Change::Keep => Change::Keep,
         Change::Set(None) => Change::Set(None),
         Change::Set(Some(number)) => Change::Set(Some(
-            GroupLevel::try_from(number).map_err(|_| Refusal::not_valid(name))?,
+            GroupLevel::try_from(number).map_err(|_| fields.not_valid(name))?,
         )),
     })
 }
 
 /// How the tab opens, from the field `type`.
-fn kind_of(data: &ApiData) -> Result<Change<Option<TabKind>>, Refusal> {
-    Ok(match number_of(data, "type")? {
+fn kind_of(fields: &Fields<'_>) -> Result<Change<Option<TabKind>>, Refusal> {
+    Ok(match fields.number("type")? {
         Change::Keep => Change::Keep,
         Change::Set(None) => Change::Set(None),
         Change::Set(Some(number)) => Change::Set(Some(
-            TabKind::try_from(number).map_err(|_| Refusal::not_valid("type"))?,
+            TabKind::try_from(number).map_err(|_| fields.not_valid("type"))?,
         )),
     })
-}
-
-/// A change to a field that cannot be empty: "nothing" is no value for it.
-fn required<T>(change: Change<Option<T>>, name: &str) -> Result<Change<T>, Refusal> {
-    match change {
-        Change::Keep => Ok(Change::Keep),
-        Change::Set(Some(value)) => Ok(Change::Set(value)),
-        Change::Set(None) => Err(Refusal::not_valid(name)),
-    }
-}
-
-/// The value a new record gets from a field, or `None` when the request leaves the
-/// choice to the application: the field is missing or "nothing".
-fn chosen<T>(change: Change<Option<T>>) -> Option<T> {
-    change.into_option().flatten()
 }
 
 /// The name for a tab from the field `name`, checked as the PHP application checks it:
@@ -423,32 +271,24 @@ async fn name_of(
     value: &Value,
     except: Option<TabId>,
 ) -> Result<String, Refusal> {
-    let text = php_text(value).ok_or_else(|| Refusal::not_valid("name"))?;
-    let name = tab_name(&text);
-    if name == Err(InvalidTabName::Empty) {
+    let text = php_text(value).ok_or_else(|| Refusal::not_valid("Tab", "name"))?;
+    let name = menu_name(&text);
+    if name == Err(InvalidMenuName::Empty) {
         return Err(Refusal::unprocessable("Tab name was not supplied"));
     }
     let trimmed = php_trim(&text);
     if database.tabs().is_name_taken(trimmed, except).await? {
-        return Err(Refusal::name_taken(trimmed));
+        return Err(name_taken(trimmed));
     }
-    name.map_err(|_| {
-        Refusal::Request(
-            StatusCode::CONFLICT,
-            format!(
-                "String is over limit of: {}",
-                organizr_domain::TAB_NAME_LIMIT
-            ),
-        )
-    })
+    name.map_err(|_| Refusal::over_limit(MENU_NAME_LIMIT))
 }
 
 /// The category that the field `category_id` names by its number.
 async fn category_of(
     database: &Database,
-    data: &ApiData,
+    fields: &Fields<'_>,
 ) -> Result<Change<Option<Category>>, Refusal> {
-    Ok(match number_of(data, "category_id")? {
+    Ok(match fields.number("category_id")? {
         Change::Keep => Change::Keep,
         Change::Set(None) => Change::Set(None),
         Change::Set(Some(number)) => Change::Set(Some(
@@ -456,14 +296,19 @@ async fn category_of(
                 .categories()
                 .find_by_number(CategoryNumber::new(number))
                 .await?
-                .ok_or_else(|| Refusal::not_valid("category_id"))?,
+                .ok_or_else(|| fields.not_valid("category_id"))?,
         )),
     })
 }
 
 /// The id of a tab from the path. Text that is no whole number names no tab.
 fn tab_id(text: &str) -> Option<TabId> {
-    text.parse().ok().map(TabId::new)
+    record_id(text).map(TabId::new)
+}
+
+/// The refusal for a name that another tab has.
+fn name_taken(name: &str) -> Refusal {
+    Refusal::conflict(format!("Tab name: {name} is already taken"))
 }
 
 /// `GET /tabs`: all tabs, all categories and all groups, for the tab editor.
@@ -535,6 +380,7 @@ pub async fn add(
         return Err(Refusal::unprocessable("no data was sent"));
     }
     let database = state.database();
+    let fields = Fields::new(&data, "Tab");
 
     // The checks of the PHP application, in its order.
     let Some(name) = data.field("name") else {
@@ -546,11 +392,11 @@ pub async fn add(
             "Tab url or url_local was not supplied",
         ));
     }
-    let Change::Set(image) = image_of(&data)? else {
+    let Change::Set(image) = fields.image()? else {
         return Err(Refusal::unprocessable("Tab image was not supplied"));
     };
 
-    let least_access = match chosen(level_of(&data, "group_id")?) {
+    let least_access = match chosen(level_of(&fields, "group_id")?) {
         Some(level) => level,
         // Without a default group, only Admins see the tab.
         None => database
@@ -559,44 +405,44 @@ pub async fn add(
             .await?
             .map_or(GroupLevel::ADMIN, |group| group.level),
     };
-    let most_access = chosen(level_of(&data, "group_id_max")?).unwrap_or(GroupLevel::ADMIN);
+    let most_access = chosen(level_of(&fields, "group_id_max")?).unwrap_or(GroupLevel::ADMIN);
     let access = LevelRange::new(least_access, most_access).map_err(|_| {
         Refusal::Request(
             StatusCode::CONFLICT,
             format!("Tab name: {name} cannot have a lower Group Id Max than Group Id Min"),
         )
     })?;
-    let category = match chosen(category_of(database, &data).await?) {
+    let category = match chosen(category_of(database, &fields).await?) {
         Some(category) => category,
         None => database
             .categories()
             .find_default()
             .await?
-            .ok_or_else(|| Refusal::not_valid("category_id"))?,
+            .ok_or_else(|| fields.not_valid("category_id"))?,
     };
-    let position = match chosen(number_of(&data, "order")?) {
+    let position = match chosen(fields.number("order")?) {
         Some(position) => position,
         None => database.tabs().next_position().await?,
     };
-    let switch = |name| switch_of(&data, name).map(|change| change.or(false));
+    let switch = |name| fields.switch(name).map(|change| change.or(false));
 
     let new = NewTab {
         position,
         category: category.id,
         name: name.clone(),
-        url: chosen(text_of(&data, "url")?),
-        url_local: chosen(text_of(&data, "url_local")?),
+        url: chosen(fields.text("url")?),
+        url_local: chosen(fields.text("url_local")?),
         is_default: switch("default")?,
         enabled: switch("enabled")?,
         access,
         add_to_admin: switch("add_to_admin")?,
         image,
-        kind: chosen(kind_of(&data)?).unwrap_or(TabKind::Iframe),
+        kind: chosen(kind_of(&fields)?).unwrap_or(TabKind::Iframe),
         splash: switch("splash")?,
         ping: switch("ping")?,
-        ping_url: chosen(text_of(&data, "ping_url")?),
+        ping_url: chosen(fields.text("ping_url")?),
         timeout: switch("timeout")?,
-        timeout_ms: chosen(number_of(&data, "timeout_ms")?),
+        timeout_ms: chosen(fields.number("timeout_ms")?),
         preload: switch("preload")?,
     };
     match database.tabs().insert(new).await {
@@ -607,16 +453,16 @@ pub async fn add(
                 .into_response())
         }
         // Another request took the name after the check above.
-        Err(DbError::Duplicate) => Err(Refusal::name_taken(&name)),
+        Err(DbError::Duplicate) => Err(name_taken(&name)),
         Err(error) => Err(error.into()),
     }
 }
 
 /// The new range of levels of a tab, from the fields `group_id` and `group_id_max`. The
 /// checks and their texts are those of the PHP application.
-fn access_of(data: &ApiData, tab: &Tab) -> Result<Change<LevelRange>, Refusal> {
-    let least_access = required(level_of(data, "group_id")?, "group_id")?;
-    let most_access = required(level_of(data, "group_id_max")?, "group_id_max")?;
+fn access_of(fields: &Fields<'_>, tab: &Tab) -> Result<Change<LevelRange>, Refusal> {
+    let least_access = fields.required(level_of(fields, "group_id")?, "group_id")?;
+    let most_access = fields.required(level_of(fields, "group_id_max")?, "group_id_max")?;
     let conflict = |what: &str| {
         Refusal::Request(
             StatusCode::CONFLICT,
@@ -665,7 +511,8 @@ pub async fn change(
         return Err(Refusal::unprocessable("no data was sent"));
     }
     let database = state.database();
-    let not_found = || Refusal::Request(StatusCode::NOT_FOUND, "No tab info found".to_owned());
+    let fields = Fields::new(&data, "Tab");
+    let not_found = || Refusal::not_found("No tab info found");
     let tab = match tab_id(&id) {
         Some(id) => database.tabs().find(id).await?,
         None => None,
@@ -676,28 +523,28 @@ pub async fn change(
         Some(name) => Change::Set(name_of(database, name, Some(tab.id)).await?),
         None => Change::Keep,
     };
-    let category = required(category_of(database, &data).await?, "category_id")?;
+    let category = fields.required(category_of(database, &fields).await?, "category_id")?;
     let changes = TabChanges {
-        position: required(number_of(&data, "order")?, "order")?,
+        position: fields.required(fields.number("order")?, "order")?,
         category: match category {
             Change::Set(category) => Change::Set(category.id),
             Change::Keep => Change::Keep,
         },
         name: name.clone(),
-        url: text_of(&data, "url")?,
-        url_local: text_of(&data, "url_local")?,
-        is_default: switch_of(&data, "default")?,
-        enabled: switch_of(&data, "enabled")?,
-        access: access_of(&data, &tab)?,
-        add_to_admin: switch_of(&data, "add_to_admin")?,
-        image: image_of(&data)?,
-        kind: required(kind_of(&data)?, "type")?,
-        splash: switch_of(&data, "splash")?,
-        ping: switch_of(&data, "ping")?,
-        ping_url: text_of(&data, "ping_url")?,
-        timeout: switch_of(&data, "timeout")?,
-        timeout_ms: number_of(&data, "timeout_ms")?,
-        preload: switch_of(&data, "preload")?,
+        url: fields.text("url")?,
+        url_local: fields.text("url_local")?,
+        is_default: fields.switch("default")?,
+        enabled: fields.switch("enabled")?,
+        access: access_of(&fields, &tab)?,
+        add_to_admin: fields.switch("add_to_admin")?,
+        image: fields.image()?,
+        kind: fields.required(kind_of(&fields)?, "type")?,
+        splash: fields.switch("splash")?,
+        ping: fields.switch("ping")?,
+        ping_url: fields.text("ping_url")?,
+        timeout: fields.switch("timeout")?,
+        timeout_ms: fields.number("timeout_ms")?,
+        preload: fields.switch("preload")?,
     };
 
     match database.tabs().update(tab.id, changes).await {
@@ -710,21 +557,9 @@ pub async fn change(
         // Another request deleted the tab after the lookup above.
         Ok(None) => Err(not_found()),
         // Another request took the name after the check above.
-        Err(DbError::Duplicate) => Err(Refusal::name_taken(&name.or(tab.name))),
+        Err(DbError::Duplicate) => Err(name_taken(&name.or(tab.name))),
         Err(error) => Err(error.into()),
     }
-}
-
-/// One entry of the body of `PUT /tabs`: an object with exactly the keys `id` and
-/// `order`. PHP takes 0 for "no value", so neither can be 0.
-fn place_of(entry: &Value) -> Option<(TabId, i64)> {
-    let entry = entry.as_object()?;
-    if entry.len() != 2 {
-        return None;
-    }
-    let id = whole_number(entry.get("id")?)?;
-    let order = whole_number(entry.get("order")?)?;
-    (id != 0 && order != 0).then_some((TabId::new(id), order))
 }
 
 /// `PUT /tabs`: gives tabs new places in the menu.
@@ -743,7 +578,7 @@ pub async fn reorder(
     }
     let places: Vec<(TabId, i64)> = data
         .entries()
-        .map(place_of)
+        .map(|entry| place_of(entry).map(|(id, order)| (TabId::new(id), order)))
         .collect::<Option<_>>()
         .ok_or_else(|| Refusal::unprocessable("data is malformed"))?;
     state.database().tabs().set_positions(&places).await?;
@@ -768,19 +603,13 @@ pub async fn remove(
         tracing::info!(id = %id, "a tab was deleted");
         Ok(NoContent.into_response())
     } else {
-        Err(Refusal::Request(
-            StatusCode::NOT_FOUND,
-            "id not found".to_owned(),
-        ))
+        Err(Refusal::not_found("id not found"))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use organizr_domain::TabId;
-    use serde_json::{Value, json};
-
-    use super::{TabVariables, php_text, place_of, tab_id, whole_number};
+    use super::TabVariables;
 
     fn variables() -> TabVariables {
         TabVariables {
@@ -841,71 +670,5 @@ mod tests {
     fn empty_address_becomes_none() {
         assert_eq!(variables().fill_in(Some("")), None);
         assert_eq!(variables().fill_in(None), None);
-    }
-
-    #[test]
-    fn whole_number_is_a_json_number_or_its_digits_as_text() {
-        assert_eq!(whole_number(&json!(5)), Some(5));
-        assert_eq!(whole_number(&json!(-3)), Some(-3));
-        assert_eq!(whole_number(&json!("12")), Some(12));
-        assert_eq!(whole_number(&json!(" 12 ")), Some(12));
-        for other in [
-            json!(1.5),
-            json!("1.5"),
-            json!("abc"),
-            json!(""),
-            json!(true),
-            Value::Null,
-            json!([1]),
-            json!({"a": 1}),
-        ] {
-            assert_eq!(whole_number(&other), None, "{other}");
-        }
-    }
-
-    #[test]
-    fn text_is_made_from_a_value_as_php_makes_it() {
-        assert_eq!(php_text(&json!(" a ")).as_deref(), Some(" a "));
-        assert_eq!(php_text(&json!(5)).as_deref(), Some("5"));
-        assert_eq!(php_text(&json!(true)).as_deref(), Some("1"));
-        assert_eq!(php_text(&json!(false)).as_deref(), Some(""));
-        assert_eq!(php_text(&Value::Null).as_deref(), Some(""));
-        assert_eq!(php_text(&json!(["a"])), None);
-        assert_eq!(php_text(&json!({"a": 1})), None);
-    }
-
-    #[test]
-    fn id_in_a_path_is_a_whole_number() {
-        assert_eq!(tab_id("3"), Some(TabId::new(3)));
-        // SQLite, which the PHP application uses, reads these as 1 too.
-        assert_eq!(tab_id("01"), Some(TabId::new(1)));
-        for other in ["", "abc", "1abc", "1.5", " 1"] {
-            assert_eq!(tab_id(other), None, "{other:?}");
-        }
-    }
-
-    #[test]
-    fn place_is_an_object_with_an_id_and_an_order() {
-        let place = |entry: Value| place_of(&entry).map(|(id, order)| (id.get(), order));
-
-        assert_eq!(place(json!({"id": 1, "order": 5})), Some((1, 5)));
-        assert_eq!(place(json!({"order": "6", "id": "2"})), Some((2, 6)));
-        assert_eq!(place(json!({"id": 1, "order": -2})), Some((1, -2)));
-        for malformed in [
-            json!({"id": 1}),
-            json!({"id": 1, "order": 5, "name": "x"}),
-            json!({"id": 1, "place": 5}),
-            // PHP takes 0 for "no value".
-            json!({"id": 1, "order": 0}),
-            json!({"id": 0, "order": 5}),
-            json!({"id": 1, "order": "first"}),
-            json!({"id": 1, "order": null}),
-            json!([1, 5]),
-            json!(1),
-            json!("1"),
-            Value::Null,
-        ] {
-            assert_eq!(place(malformed.clone()), None, "{malformed}");
-        }
     }
 }

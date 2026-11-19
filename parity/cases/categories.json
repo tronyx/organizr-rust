@@ -1,0 +1,2959 @@
+{
+  "source": {
+    "organizr_version": "2.1.5000",
+    "organizr_commit": "2c1d41997f6ed61b5a760412efef8a7386a68e62",
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "recorded_headers": [
+      "content-type",
+      "location",
+      "cache-control",
+      "pragma",
+      "expires",
+      "x-organizr-user",
+      "x-organizr-email",
+      "x-organizr-group"
+    ],
+    "redacted_keys": {
+      "uuid": "<uuid>",
+      "ip": "<ip>",
+      "user_ip": "<ip>",
+      "uid": "<uid>",
+      "token": "<token>",
+      "date": "<time>",
+      "created": "<time>",
+      "expires": "<time>"
+    }
+  },
+  "cases": [
+    {
+      "name": "categories_as_guest",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/categories"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "categories",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/categories",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"tabs\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category_id\": 0,\n                    \"name\": \"Settings\",\n                    \"url\": \"api/v2/page/settings\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 1,\n                    \"group_id\": 1,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::cog\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category_id\": 0,\n                    \"name\": \"Homepage\",\n                    \"url\": \"api/v2/page/homepage\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 0,\n                    \"group_id\": 4,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::home\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                }\n            ],\n            \"categories\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category\": \"Unsorted\",\n                    \"category_id\": 0,\n                    \"image\": \"fontawesome::question\",\n                    \"default\": 1\n                }\n            ],\n            \"groups\": [\n                {\n                    \"id\": 1,\n                    \"group\": \"Admin\",\n                    \"group_id\": 0,\n                    \"image\": \"plugins/images/groups/admin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"group\": \"Co-Admin\",\n                    \"group_id\": 1,\n                    \"image\": \"plugins/images/groups/coadmin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"group\": \"Super User\",\n                    \"group_id\": 2,\n                    \"image\": \"plugins/images/groups/superuser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"group\": \"Power User\",\n                    \"group_id\": 3,\n                    \"image\": \"plugins/images/groups/poweruser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"image\": \"plugins/images/groups/user.png\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 6,\n                    \"group\": \"Guest\",\n                    \"group_id\": 999,\n                    \"image\": \"plugins/images/groups/guest.png\",\n                    \"default\": 0\n                }\n            ]\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "add_as_guest",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "Media",
+          "image": "fontawesome::film"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not authorized for current Route: /api/v2/categories\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_without_a_body",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"no data was sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_empty_object",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {},
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"no data was sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_json_list",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": [
+          "Media"
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Category name was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_unknown_fields_only",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "nothing": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Category name was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_without_name",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "image": "i"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Category name was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_without_image",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "Media"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Category image was not supplied\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "Media",
+          "image": "fontawesome::film"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_taken",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "Media",
+          "image": "fontawesome::film"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Category name: Media is already taken\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_taken_in_another_letter_case",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "MEDIA",
+          "image": "fontawesome::film"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Category name: MEDIA is already taken\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_taken_without_image",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "media"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Category name: media is already taken\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_too_long",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "image": "fontawesome::film"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"String is over limit of: 50\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_name_of_50_characters",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+          "image": "fontawesome::film"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_spaces_around_name_and_image",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "  Spaced  ",
+          "image": "  fontawesome::star  "
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_every_field",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "Full",
+          "image": "fontawesome::music",
+          "order": 9,
+          "category_id": 20,
+          "default": 0
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_numbers_as_text",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "Texts",
+          "image": "i",
+          "order": "12",
+          "category_id": "30",
+          "default": "0"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_null_fields",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "Nulls",
+          "image": null,
+          "order": null,
+          "category_id": null,
+          "default": null
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "add_as_form",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "body": "category=Form&image=fontawesome%3A%3Abook",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "categories_after_adding",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/categories",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"tabs\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category_id\": 0,\n                    \"name\": \"Settings\",\n                    \"url\": \"api/v2/page/settings\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 1,\n                    \"group_id\": 1,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::cog\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category_id\": 0,\n                    \"name\": \"Homepage\",\n                    \"url\": \"api/v2/page/homepage\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 0,\n                    \"group_id\": 4,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::home\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                }\n            ],\n            \"categories\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category\": \"Unsorted\",\n                    \"category_id\": 0,\n                    \"image\": \"fontawesome::question\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category\": \"Media\",\n                    \"category_id\": 1,\n                    \"image\": \"fontawesome::film\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"order\": 3,\n                    \"category\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                    \"category_id\": 2,\n                    \"image\": \"fontawesome::film\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"order\": 4,\n                    \"category\": \"Spaced\",\n                    \"category_id\": 3,\n                    \"image\": \"fontawesome::star\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"order\": 9,\n                    \"category\": \"Full\",\n                    \"category_id\": 20,\n                    \"image\": \"fontawesome::music\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 6,\n                    \"order\": 12,\n                    \"category\": \"Texts\",\n                    \"category_id\": 30,\n                    \"image\": \"i\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 7,\n                    \"order\": 13,\n                    \"category\": \"Nulls\",\n                    \"category_id\": 31,\n                    \"image\": \"\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 8,\n                    \"order\": 14,\n                    \"category\": \"Form\",\n                    \"category_id\": 32,\n                    \"image\": \"fontawesome::book\",\n                    \"default\": 0\n                }\n            ],\n            \"groups\": [\n                {\n                    \"id\": 1,\n                    \"group\": \"Admin\",\n                    \"group_id\": 0,\n                    \"image\": \"plugins/images/groups/admin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"group\": \"Co-Admin\",\n                    \"group_id\": 1,\n                    \"image\": \"plugins/images/groups/coadmin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"group\": \"Super User\",\n                    \"group_id\": 2,\n                    \"image\": \"plugins/images/groups/superuser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"group\": \"Power User\",\n                    \"group_id\": 3,\n                    \"image\": \"plugins/images/groups/poweruser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"image\": \"plugins/images/groups/user.png\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 6,\n                    \"group\": \"Guest\",\n                    \"group_id\": 999,\n                    \"image\": \"plugins/images/groups/guest.png\",\n                    \"default\": 0\n                }\n            ]\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "add_with_html_in_the_name",
+      "request": {
+        "method": "POST",
+        "path": "/api/v2/categories",
+        "json": {
+          "category": "A & <b>",
+          "image": "fontawesome::film"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category added\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "categories_with_html_in_a_name",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/categories",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"tabs\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category_id\": 0,\n                    \"name\": \"Settings\",\n                    \"url\": \"api/v2/page/settings\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 1,\n                    \"group_id\": 1,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::cog\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category_id\": 0,\n                    \"name\": \"Homepage\",\n                    \"url\": \"api/v2/page/homepage\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 0,\n                    \"group_id\": 4,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::home\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                }\n            ],\n            \"categories\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category\": \"Unsorted\",\n                    \"category_id\": 0,\n                    \"image\": \"fontawesome::question\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category\": \"Media\",\n                    \"category_id\": 1,\n                    \"image\": \"fontawesome::film\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"order\": 3,\n                    \"category\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                    \"category_id\": 2,\n                    \"image\": \"fontawesome::film\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"order\": 4,\n                    \"category\": \"Spaced\",\n                    \"category_id\": 3,\n                    \"image\": \"fontawesome::star\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"order\": 9,\n                    \"category\": \"Full\",\n                    \"category_id\": 20,\n                    \"image\": \"fontawesome::music\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 6,\n                    \"order\": 12,\n                    \"category\": \"Texts\",\n                    \"category_id\": 30,\n                    \"image\": \"i\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 7,\n                    \"order\": 13,\n                    \"category\": \"Nulls\",\n                    \"category_id\": 31,\n                    \"image\": \"\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 8,\n                    \"order\": 14,\n                    \"category\": \"Form\",\n                    \"category_id\": 32,\n                    \"image\": \"fontawesome::book\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 9,\n                    \"order\": 15,\n                    \"category\": \"A &amp; &lt;b&gt;\",\n                    \"category_id\": 33,\n                    \"image\": \"fontawesome::film\",\n                    \"default\": 0\n                }\n            ],\n            \"groups\": [\n                {\n                    \"id\": 1,\n                    \"group\": \"Admin\",\n                    \"group_id\": 0,\n                    \"image\": \"plugins/images/groups/admin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"group\": \"Co-Admin\",\n                    \"group_id\": 1,\n                    \"image\": \"plugins/images/groups/coadmin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"group\": \"Super User\",\n                    \"group_id\": 2,\n                    \"image\": \"plugins/images/groups/superuser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"group\": \"Power User\",\n                    \"group_id\": 3,\n                    \"image\": \"plugins/images/groups/poweruser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"image\": \"plugins/images/groups/user.png\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 6,\n                    \"group\": \"Guest\",\n                    \"group_id\": 999,\n                    \"image\": \"plugins/images/groups/guest.png\",\n                    \"default\": 0\n                }\n            ]\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_as_guest",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/9"
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/9",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "delete_again",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/9",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"id not found\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_unknown",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/999",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"id not found\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "delete_id_not_a_number",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/abc",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"id not found\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_as_guest",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {
+          "category": "Guest"
+        }
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_without_a_body",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"no data was sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_empty_object",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {},
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"no data was sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_as_form",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "body": "category=Form2",
+        "headers": {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"no data was sent\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_unknown_category",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/999",
+        "json": {
+          "category": "Nobody"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"No category info found\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_id_not_a_number",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/abc",
+        "json": {
+          "category": "Nobody"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"No category info found\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_id_zero",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/0",
+        "json": {
+          "category": "Nobody"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"id was not set\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_taken",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {
+          "category": "unsorted"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Category name: unsorted is already taken\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_too_long",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {
+          "category": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"String is over limit of: 50\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_unknown_fields_only",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {
+          "nothing": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_json_list",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": [
+          "Media"
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_to_the_same",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {
+          "category": "Media"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_name_to_another_letter_case",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {
+          "category": "MEDIA"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_texts",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {
+          "category": " Films ",
+          "image": " fontawesome::play "
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_default",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {
+          "default": 1
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "categories_after_changing_the_default",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/categories",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"tabs\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category_id\": 0,\n                    \"name\": \"Settings\",\n                    \"url\": \"api/v2/page/settings\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 1,\n                    \"group_id\": 1,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::cog\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category_id\": 0,\n                    \"name\": \"Homepage\",\n                    \"url\": \"api/v2/page/homepage\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 0,\n                    \"group_id\": 4,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::home\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                }\n            ],\n            \"categories\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category\": \"Unsorted\",\n                    \"category_id\": 0,\n                    \"image\": \"fontawesome::question\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category\": \"Films\",\n                    \"category_id\": 1,\n                    \"image\": \"fontawesome::play\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 3,\n                    \"order\": 3,\n                    \"category\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                    \"category_id\": 2,\n                    \"image\": \"fontawesome::film\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"order\": 4,\n                    \"category\": \"Spaced\",\n                    \"category_id\": 3,\n                    \"image\": \"fontawesome::star\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"order\": 9,\n                    \"category\": \"Full\",\n                    \"category_id\": 20,\n                    \"image\": \"fontawesome::music\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 6,\n                    \"order\": 12,\n                    \"category\": \"Texts\",\n                    \"category_id\": 30,\n                    \"image\": \"i\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 7,\n                    \"order\": 13,\n                    \"category\": \"Nulls\",\n                    \"category_id\": 31,\n                    \"image\": \"\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 8,\n                    \"order\": 14,\n                    \"category\": \"Form\",\n                    \"category_id\": 32,\n                    \"image\": \"fontawesome::book\",\n                    \"default\": 0\n                }\n            ],\n            \"groups\": [\n                {\n                    \"id\": 1,\n                    \"group\": \"Admin\",\n                    \"group_id\": 0,\n                    \"image\": \"plugins/images/groups/admin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"group\": \"Co-Admin\",\n                    \"group_id\": 1,\n                    \"image\": \"plugins/images/groups/coadmin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"group\": \"Super User\",\n                    \"group_id\": 2,\n                    \"image\": \"plugins/images/groups/superuser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"group\": \"Power User\",\n                    \"group_id\": 3,\n                    \"image\": \"plugins/images/groups/poweruser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"image\": \"plugins/images/groups/user.png\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 6,\n                    \"group\": \"Guest\",\n                    \"group_id\": 999,\n                    \"image\": \"plugins/images/groups/guest.png\",\n                    \"default\": 0\n                }\n            ]\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "change_default_back",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/1",
+        "json": {
+          "default": "1"
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "change_order_and_number",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories/2",
+        "json": {
+          "order": 40,
+          "category_id": 7
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "move_a_tab_into_the_category",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/tabs/2",
+        "json": {
+          "category_id": 7
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Tab info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "categories_after_changing",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/categories",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"tabs\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category_id\": 0,\n                    \"name\": \"Settings\",\n                    \"url\": \"api/v2/page/settings\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 1,\n                    \"group_id\": 1,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::cog\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category_id\": 7,\n                    \"name\": \"Homepage\",\n                    \"url\": \"api/v2/page/homepage\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 0,\n                    \"group_id\": 4,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::home\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                }\n            ],\n            \"categories\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category\": \"Unsorted\",\n                    \"category_id\": 0,\n                    \"image\": \"fontawesome::question\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 3,\n                    \"order\": 3,\n                    \"category\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                    \"category_id\": 2,\n                    \"image\": \"fontawesome::film\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"order\": 4,\n                    \"category\": \"Spaced\",\n                    \"category_id\": 3,\n                    \"image\": \"fontawesome::star\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"order\": 9,\n                    \"category\": \"Full\",\n                    \"category_id\": 20,\n                    \"image\": \"fontawesome::music\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 6,\n                    \"order\": 12,\n                    \"category\": \"Texts\",\n                    \"category_id\": 30,\n                    \"image\": \"i\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 7,\n                    \"order\": 13,\n                    \"category\": \"Nulls\",\n                    \"category_id\": 31,\n                    \"image\": \"\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 8,\n                    \"order\": 14,\n                    \"category\": \"Form\",\n                    \"category_id\": 32,\n                    \"image\": \"fontawesome::book\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 40,\n                    \"category\": \"Films\",\n                    \"category_id\": 7,\n                    \"image\": \"fontawesome::play\",\n                    \"default\": 0\n                }\n            ],\n            \"groups\": [\n                {\n                    \"id\": 1,\n                    \"group\": \"Admin\",\n                    \"group_id\": 0,\n                    \"image\": \"plugins/images/groups/admin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"group\": \"Co-Admin\",\n                    \"group_id\": 1,\n                    \"image\": \"plugins/images/groups/coadmin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"group\": \"Super User\",\n                    \"group_id\": 2,\n                    \"image\": \"plugins/images/groups/superuser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"group\": \"Power User\",\n                    \"group_id\": 3,\n                    \"image\": \"plugins/images/groups/poweruser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"image\": \"plugins/images/groups/user.png\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 6,\n                    \"group\": \"Guest\",\n                    \"group_id\": 999,\n                    \"image\": \"plugins/images/groups/guest.png\",\n                    \"default\": 0\n                }\n            ]\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "move_the_tab_back",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/tabs/2",
+        "json": {
+          "category_id": 0
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Tab info updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order_as_guest",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": [
+          {
+            "id": 1,
+            "order": 5
+          }
+        ]
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"Not Authorized\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order_empty_list",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": [],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"data is empty or not in array\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order_empty_object",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": {},
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"data is empty or not in array\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order_entry_with_three_keys",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": [
+          {
+            "id": 1,
+            "order": 7,
+            "name": "x"
+          }
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"data is malformed\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order_entry_with_one_key",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": [
+          {
+            "id": 1
+          }
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"data is malformed\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order_entry_with_order_zero",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": [
+          {
+            "id": 1,
+            "order": 0
+          }
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"error\",\n        \"message\": \"data is malformed\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": [
+          {
+            "id": 1,
+            "order": 50
+          },
+          {
+            "id": 3,
+            "order": 49
+          }
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category Order updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order_with_numbers_as_text",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": [
+          {
+            "id": "4",
+            "order": "51"
+          }
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category Order updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order_of_an_unknown_category",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": [
+          {
+            "id": 999,
+            "order": 3
+          }
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category Order updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "order_as_object_of_entries",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": {
+          "first": {
+            "id": 5,
+            "order": 52
+          }
+        },
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category Order updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "categories_after_ordering",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/categories",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"tabs\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category_id\": 0,\n                    \"name\": \"Settings\",\n                    \"url\": \"api/v2/page/settings\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 1,\n                    \"group_id\": 1,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::cog\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category_id\": 0,\n                    \"name\": \"Homepage\",\n                    \"url\": \"api/v2/page/homepage\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 0,\n                    \"group_id\": 4,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::home\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                }\n            ],\n            \"categories\": [\n                {\n                    \"id\": 6,\n                    \"order\": 12,\n                    \"category\": \"Texts\",\n                    \"category_id\": 30,\n                    \"image\": \"i\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 7,\n                    \"order\": 13,\n                    \"category\": \"Nulls\",\n                    \"category_id\": 31,\n                    \"image\": \"\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 8,\n                    \"order\": 14,\n                    \"category\": \"Form\",\n                    \"category_id\": 32,\n                    \"image\": \"fontawesome::book\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 40,\n                    \"category\": \"Films\",\n                    \"category_id\": 7,\n                    \"image\": \"fontawesome::play\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"order\": 49,\n                    \"category\": \"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\",\n                    \"category_id\": 2,\n                    \"image\": \"fontawesome::film\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 1,\n                    \"order\": 50,\n                    \"category\": \"Unsorted\",\n                    \"category_id\": 0,\n                    \"image\": \"fontawesome::question\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 4,\n                    \"order\": 51,\n                    \"category\": \"Spaced\",\n                    \"category_id\": 3,\n                    \"image\": \"fontawesome::star\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"order\": 52,\n                    \"category\": \"Full\",\n                    \"category_id\": 20,\n                    \"image\": \"fontawesome::music\",\n                    \"default\": 0\n                }\n            ],\n            \"groups\": [\n                {\n                    \"id\": 1,\n                    \"group\": \"Admin\",\n                    \"group_id\": 0,\n                    \"image\": \"plugins/images/groups/admin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"group\": \"Co-Admin\",\n                    \"group_id\": 1,\n                    \"image\": \"plugins/images/groups/coadmin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"group\": \"Super User\",\n                    \"group_id\": 2,\n                    \"image\": \"plugins/images/groups/superuser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"group\": \"Power User\",\n                    \"group_id\": 3,\n                    \"image\": \"plugins/images/groups/poweruser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"image\": \"plugins/images/groups/user.png\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 6,\n                    \"group\": \"Guest\",\n                    \"group_id\": 999,\n                    \"image\": \"plugins/images/groups/guest.png\",\n                    \"default\": 0\n                }\n            ]\n        }\n    }\n}"
+      }
+    },
+    {
+      "name": "clean_up_order",
+      "request": {
+        "method": "PUT",
+        "path": "/api/v2/categories",
+        "json": [
+          {
+            "id": 1,
+            "order": 1
+          }
+        ],
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": \"Category Order updated\",\n        \"data\": null\n    }\n}"
+      }
+    },
+    {
+      "name": "clean_up_delete_2",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/2",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_delete_3",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/3",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_delete_4",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/4",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_delete_5",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/5",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_delete_6",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/6",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_delete_7",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/7",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "clean_up_delete_8",
+      "request": {
+        "method": "DELETE",
+        "path": "/api/v2/categories/8",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 204,
+        "headers": {
+          "content-type": "application/json",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": ""
+      }
+    },
+    {
+      "name": "categories_after_cleaning_up",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/categories",
+        "headers": {
+          "Token": "parityapikey01234567"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json;charset=UTF-8",
+          "expires": "Thu, 19 Nov 1981 08:52:00 GMT",
+          "cache-control": "no-store, no-cache, must-revalidate",
+          "pragma": "no-cache"
+        },
+        "cookies_set": [
+          {
+            "name": "PHPSESSID",
+            "domain": null,
+            "path": "/",
+            "lifetime": "600s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": ".organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          },
+          {
+            "name": "organizr_user_uuid",
+            "domain": "organizr.test",
+            "path": "/",
+            "lifetime": "604800s"
+          }
+        ],
+        "body": "{\n    \"response\": {\n        \"result\": \"success\",\n        \"message\": null,\n        \"data\": {\n            \"tabs\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category_id\": 0,\n                    \"name\": \"Settings\",\n                    \"url\": \"api/v2/page/settings\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 1,\n                    \"group_id\": 1,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::cog\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                },\n                {\n                    \"id\": 2,\n                    \"order\": 2,\n                    \"category_id\": 0,\n                    \"name\": \"Homepage\",\n                    \"url\": \"api/v2/page/homepage\",\n                    \"url_local\": null,\n                    \"default\": 0,\n                    \"enabled\": 0,\n                    \"group_id\": 4,\n                    \"group_id_max\": 0,\n                    \"add_to_admin\": 0,\n                    \"image\": \"fontawesome::home\",\n                    \"type\": 0,\n                    \"splash\": null,\n                    \"ping\": null,\n                    \"ping_url\": null,\n                    \"timeout\": null,\n                    \"timeout_ms\": null,\n                    \"preload\": null\n                }\n            ],\n            \"categories\": [\n                {\n                    \"id\": 1,\n                    \"order\": 1,\n                    \"category\": \"Unsorted\",\n                    \"category_id\": 0,\n                    \"image\": \"fontawesome::question\",\n                    \"default\": 1\n                }\n            ],\n            \"groups\": [\n                {\n                    \"id\": 1,\n                    \"group\": \"Admin\",\n                    \"group_id\": 0,\n                    \"image\": \"plugins/images/groups/admin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 2,\n                    \"group\": \"Co-Admin\",\n                    \"group_id\": 1,\n                    \"image\": \"plugins/images/groups/coadmin.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 3,\n                    \"group\": \"Super User\",\n                    \"group_id\": 2,\n                    \"image\": \"plugins/images/groups/superuser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 4,\n                    \"group\": \"Power User\",\n                    \"group_id\": 3,\n                    \"image\": \"plugins/images/groups/poweruser.png\",\n                    \"default\": 0\n                },\n                {\n                    \"id\": 5,\n                    \"group\": \"User\",\n                    \"group_id\": 4,\n                    \"image\": \"plugins/images/groups/user.png\",\n                    \"default\": 1\n                },\n                {\n                    \"id\": 6,\n                    \"group\": \"Guest\",\n                    \"group_id\": 999,\n                    \"image\": \"plugins/images/groups/guest.png\",\n                    \"default\": 0\n                }\n            ]\n        }\n    }\n}"
+      }
+    }
+  ]
+}

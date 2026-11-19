@@ -526,8 +526,8 @@ AS_ADMIN = {"Token": KEY}
 PLEX = {"name": "Plex", "url": "https://plex.example.com/", "image": "plugins/images/tabs/plex.png"}
 
 
-def tab_case(name, method, path, json_body=None, **options):
-    """A case of the tab routes that carries the API key."""
+def admin_case(name, method, path, json_body=None, **options):
+    """A case that carries the API key, which counts as the Admin."""
     if json_body is not None:
         options["json"] = json_body
     options["headers"] = {**options.get("headers", {}), **AS_ADMIN}
@@ -537,41 +537,41 @@ def tab_case(name, method, path, json_body=None, **options):
 TABS = [
     # Reading.
     ("tabs_as_guest", "GET", "/api/v2/tabs"),
-    tab_case("tabs", "GET", "/api/v2/tabs"),
+    admin_case("tabs", "GET", "/api/v2/tabs"),
     ("tab_as_guest", "GET", "/api/v2/tabs/1"),
-    tab_case("tab", "GET", "/api/v2/tabs/1"),
-    tab_case("tab_with_a_leading_zero_in_the_id", "GET", "/api/v2/tabs/01"),
-    tab_case("tab_unknown", "GET", "/api/v2/tabs/999"),
-    tab_case("tab_id_not_a_number", "GET", "/api/v2/tabs/abc"),
+    admin_case("tab", "GET", "/api/v2/tabs/1"),
+    admin_case("tab_with_a_leading_zero_in_the_id", "GET", "/api/v2/tabs/01"),
+    admin_case("tab_unknown", "GET", "/api/v2/tabs/999"),
+    admin_case("tab_id_not_a_number", "GET", "/api/v2/tabs/abc"),
     # Adding: what is refused.
     ("add_as_guest", "POST", "/api/v2/tabs", {"json": PLEX}),
-    tab_case("add_without_a_body", "POST", "/api/v2/tabs"),
-    tab_case("add_empty_object", "POST", "/api/v2/tabs", {}),
-    tab_case("add_json_list", "POST", "/api/v2/tabs", ["Plex"]),
-    tab_case("add_unknown_fields_only", "POST", "/api/v2/tabs", {"nothing": 1}),
-    tab_case("add_without_name", "POST", "/api/v2/tabs", {"url": "u", "image": "i"}),
-    tab_case("add_without_address", "POST", "/api/v2/tabs", {"name": "A", "image": "i"}),
-    tab_case("add_without_image", "POST", "/api/v2/tabs", {"name": "A", "url": "u"}),
+    admin_case("add_without_a_body", "POST", "/api/v2/tabs"),
+    admin_case("add_empty_object", "POST", "/api/v2/tabs", {}),
+    admin_case("add_json_list", "POST", "/api/v2/tabs", ["Plex"]),
+    admin_case("add_unknown_fields_only", "POST", "/api/v2/tabs", {"nothing": 1}),
+    admin_case("add_without_name", "POST", "/api/v2/tabs", {"url": "u", "image": "i"}),
+    admin_case("add_without_address", "POST", "/api/v2/tabs", {"name": "A", "image": "i"}),
+    admin_case("add_without_image", "POST", "/api/v2/tabs", {"name": "A", "url": "u"}),
     # Adding: the least a tab needs (id 3), and names.
-    tab_case("add", "POST", "/api/v2/tabs", PLEX),
-    tab_case("added_tab", "GET", "/api/v2/tabs/3"),
-    tab_case("add_name_taken", "POST", "/api/v2/tabs", PLEX),
-    tab_case("add_name_taken_in_another_letter_case", "POST", "/api/v2/tabs", {**PLEX, "name": "PLEX"}),
+    admin_case("add", "POST", "/api/v2/tabs", PLEX),
+    admin_case("added_tab", "GET", "/api/v2/tabs/3"),
+    admin_case("add_name_taken", "POST", "/api/v2/tabs", PLEX),
+    admin_case("add_name_taken_in_another_letter_case", "POST", "/api/v2/tabs", {**PLEX, "name": "PLEX"}),
     # The name is checked before the address.
-    tab_case("add_name_taken_without_address", "POST", "/api/v2/tabs", {"name": "plex"}),
-    tab_case("add_name_too_long", "POST", "/api/v2/tabs", {**PLEX, "name": "x" * 51}),
-    tab_case("add_name_of_50_characters", "POST", "/api/v2/tabs", {**PLEX, "name": "y" * 50}),
-    tab_case(
+    admin_case("add_name_taken_without_address", "POST", "/api/v2/tabs", {"name": "plex"}),
+    admin_case("add_name_too_long", "POST", "/api/v2/tabs", {**PLEX, "name": "x" * 51}),
+    admin_case("add_name_of_50_characters", "POST", "/api/v2/tabs", {**PLEX, "name": "y" * 50}),
+    admin_case(
         "add_with_spaces_around_name_and_image",
         "POST",
         "/api/v2/tabs",
         {**PLEX, "name": "  Spaced  ", "image": "  plugins/images/tabs/sonarr.png  "},
     ),
-    tab_case("tab_with_spaces_cut_off", "GET", "/api/v2/tabs/5"),
-    tab_case("add_with_a_number_as_name", "POST", "/api/v2/tabs", {**PLEX, "name": 5}),
+    admin_case("tab_with_spaces_cut_off", "GET", "/api/v2/tabs/5"),
+    admin_case("add_with_a_number_as_name", "POST", "/api/v2/tabs", {**PLEX, "name": 5}),
     # The list of tabs fills in the placeholders of an address. One tab alone shows the
     # address as it is stored.
-    tab_case(
+    admin_case(
         "add_with_a_local_address_only",
         "POST",
         "/api/v2/tabs",
@@ -581,9 +581,9 @@ TABS = [
             "image": "fontawesome::home",
         },
     ),
-    tab_case("tab_with_placeholders", "GET", "/api/v2/tabs/7"),
+    admin_case("tab_with_placeholders", "GET", "/api/v2/tabs/7"),
     # Adding: every field (id 8). The place 7 is taken by the tab before it.
-    tab_case(
+    admin_case(
         "add_with_every_field",
         "POST",
         "/api/v2/tabs",
@@ -608,86 +608,86 @@ TABS = [
             "preload": 1,
         },
     ),
-    tab_case("tab_with_every_field", "GET", "/api/v2/tabs/8"),
+    admin_case("tab_with_every_field", "GET", "/api/v2/tabs/8"),
     # Adding: other ways to write a value (ids 9 to 12).
-    tab_case(
+    admin_case(
         "add_with_numbers_as_text",
         "POST",
         "/api/v2/tabs",
         {**PLEX, "name": "Texts", "enabled": "1", "group_id": "3", "type": "2", "order": "12", "splash": "0"},
     ),
-    tab_case("tab_with_numbers_as_text", "GET", "/api/v2/tabs/9"),
-    tab_case(
+    admin_case("tab_with_numbers_as_text", "GET", "/api/v2/tabs/9"),
+    admin_case(
         "add_with_true_and_false",
         "POST",
         "/api/v2/tabs",
         {**PLEX, "name": "Switches", "enabled": True, "splash": False, "ping": True, "preload": False},
     ),
-    tab_case("tab_with_true_and_false", "GET", "/api/v2/tabs/10"),
-    tab_case(
+    admin_case("tab_with_true_and_false", "GET", "/api/v2/tabs/10"),
+    admin_case(
         "add_as_form",
         "POST",
         "/api/v2/tabs",
         **{"body": "name=Form&url=https%3A%2F%2Fform.example.com%2F&image=i&enabled=1", "headers": FORM},
     ),
-    tab_case("tab_from_a_form", "GET", "/api/v2/tabs/11"),
-    tab_case(
+    admin_case("tab_from_a_form", "GET", "/api/v2/tabs/11"),
+    admin_case(
         "add_with_null_for_address_and_image",
         "POST",
         "/api/v2/tabs",
         {"name": "Nulls", "url": None, "image": None, "enabled": None, "group_id": None, "order": None},
     ),
-    tab_case("tab_with_null_for_address_and_image", "GET", "/api/v2/tabs/12"),
-    tab_case("tabs_after_adding", "GET", "/api/v2/tabs"),
-    tab_case("tabs_with_a_komga_cookie", "GET", "/api/v2/tabs", cookies={"komga_token": "komga-value"}),
+    admin_case("tab_with_null_for_address_and_image", "GET", "/api/v2/tabs/12"),
+    admin_case("tabs_after_adding", "GET", "/api/v2/tabs"),
+    admin_case("tabs_with_a_komga_cookie", "GET", "/api/v2/tabs", cookies={"komga_token": "komga-value"}),
     # A name with characters that HTML gives a meaning (id 13). The tab is deleted again.
-    tab_case("add_with_html_in_the_name", "POST", "/api/v2/tabs", {**PLEX, "name": "A & <b>"}),
-    tab_case("tab_with_html_in_the_name", "GET", "/api/v2/tabs/13"),
+    admin_case("add_with_html_in_the_name", "POST", "/api/v2/tabs", {**PLEX, "name": "A & <b>"}),
+    admin_case("tab_with_html_in_the_name", "GET", "/api/v2/tabs/13"),
     ("delete_as_guest", "DELETE", "/api/v2/tabs/13"),
-    tab_case("delete", "DELETE", "/api/v2/tabs/13"),
-    tab_case("delete_again", "DELETE", "/api/v2/tabs/13"),
-    tab_case("delete_unknown", "DELETE", "/api/v2/tabs/999"),
-    tab_case("delete_id_not_a_number", "DELETE", "/api/v2/tabs/abc"),
-    tab_case("deleted_tab", "GET", "/api/v2/tabs/13"),
+    admin_case("delete", "DELETE", "/api/v2/tabs/13"),
+    admin_case("delete_again", "DELETE", "/api/v2/tabs/13"),
+    admin_case("delete_unknown", "DELETE", "/api/v2/tabs/999"),
+    admin_case("delete_id_not_a_number", "DELETE", "/api/v2/tabs/abc"),
+    admin_case("deleted_tab", "GET", "/api/v2/tabs/13"),
     # Changing: what is refused.
     ("change_as_guest", "PUT", "/api/v2/tabs/3", {"json": {"name": "Guest"}}),
-    tab_case("change_without_a_body", "PUT", "/api/v2/tabs/3"),
-    tab_case("change_empty_object", "PUT", "/api/v2/tabs/3", {}),
-    tab_case(
+    admin_case("change_without_a_body", "PUT", "/api/v2/tabs/3"),
+    admin_case("change_empty_object", "PUT", "/api/v2/tabs/3", {}),
+    admin_case(
         "change_as_form",
         "PUT",
         "/api/v2/tabs/3",
         **{"body": "enabled=1", "headers": FORM},
     ),
-    tab_case("change_unknown_tab", "PUT", "/api/v2/tabs/999", {"name": "Nobody"}),
-    tab_case("change_id_not_a_number", "PUT", "/api/v2/tabs/abc", {"name": "Nobody"}),
-    tab_case("change_id_zero", "PUT", "/api/v2/tabs/0", {"name": "Nobody"}),
-    tab_case("change_name_taken", "PUT", "/api/v2/tabs/3", {"name": "settings"}),
-    tab_case("change_name_too_long", "PUT", "/api/v2/tabs/3", {"name": "x" * 51}),
+    admin_case("change_unknown_tab", "PUT", "/api/v2/tabs/999", {"name": "Nobody"}),
+    admin_case("change_id_not_a_number", "PUT", "/api/v2/tabs/abc", {"name": "Nobody"}),
+    admin_case("change_id_zero", "PUT", "/api/v2/tabs/0", {"name": "Nobody"}),
+    admin_case("change_name_taken", "PUT", "/api/v2/tabs/3", {"name": "settings"}),
+    admin_case("change_name_too_long", "PUT", "/api/v2/tabs/3", {"name": "x" * 51}),
     # Changing: what passes.
-    tab_case("change_unknown_fields_only", "PUT", "/api/v2/tabs/3", {"nothing": 1}),
-    tab_case("change_json_list", "PUT", "/api/v2/tabs/3", ["Plex"]),
-    tab_case("change_name_to_the_same", "PUT", "/api/v2/tabs/3", {"name": "Plex"}),
-    tab_case("change_name_to_another_letter_case", "PUT", "/api/v2/tabs/3", {"name": "PLEX"}),
-    tab_case(
+    admin_case("change_unknown_fields_only", "PUT", "/api/v2/tabs/3", {"nothing": 1}),
+    admin_case("change_json_list", "PUT", "/api/v2/tabs/3", ["Plex"]),
+    admin_case("change_name_to_the_same", "PUT", "/api/v2/tabs/3", {"name": "Plex"}),
+    admin_case("change_name_to_another_letter_case", "PUT", "/api/v2/tabs/3", {"name": "PLEX"}),
+    admin_case(
         "change_texts",
         "PUT",
         "/api/v2/tabs/3",
         {"name": " Plex 2 ", "image": " fontawesome::play ", "url": "https://plex2.example.com/", "url_local": ""},
     ),
-    tab_case("tab_with_changed_texts", "GET", "/api/v2/tabs/3"),
+    admin_case("tab_with_changed_texts", "GET", "/api/v2/tabs/3"),
     # The levels of the tab "Full" are 4 (least access) and 1 (most access).
-    tab_case("change_least_access_past_most_access", "PUT", "/api/v2/tabs/8", {"group_id": 0}),
-    tab_case("change_most_access_past_least_access", "PUT", "/api/v2/tabs/8", {"group_id_max": 5}),
-    tab_case("change_both_levels_swapped", "PUT", "/api/v2/tabs/8", {"group_id": 1, "group_id_max": 4}),
-    tab_case("change_both_levels_to_guest", "PUT", "/api/v2/tabs/8", {"group_id": 999, "group_id_max": 999}),
-    tab_case("change_both_levels_as_text", "PUT", "/api/v2/tabs/8", {"group_id": "4", "group_id_max": "2"}),
-    tab_case("tab_with_changed_levels", "GET", "/api/v2/tabs/8"),
+    admin_case("change_least_access_past_most_access", "PUT", "/api/v2/tabs/8", {"group_id": 0}),
+    admin_case("change_most_access_past_least_access", "PUT", "/api/v2/tabs/8", {"group_id_max": 5}),
+    admin_case("change_both_levels_swapped", "PUT", "/api/v2/tabs/8", {"group_id": 1, "group_id_max": 4}),
+    admin_case("change_both_levels_to_guest", "PUT", "/api/v2/tabs/8", {"group_id": 999, "group_id_max": 999}),
+    admin_case("change_both_levels_as_text", "PUT", "/api/v2/tabs/8", {"group_id": "4", "group_id_max": "2"}),
+    admin_case("tab_with_changed_levels", "GET", "/api/v2/tabs/8"),
     # "Full" is the default tab. Making "Plex 2" the default takes the mark from it.
-    tab_case("change_default", "PUT", "/api/v2/tabs/3", {"default": 1}),
-    tab_case("tabs_after_changing_the_default", "GET", "/api/v2/tabs"),
-    tab_case("change_default_off", "PUT", "/api/v2/tabs/3", {"default": 0}),
-    tab_case(
+    admin_case("change_default", "PUT", "/api/v2/tabs/3", {"default": 1}),
+    admin_case("tabs_after_changing_the_default", "GET", "/api/v2/tabs"),
+    admin_case("change_default_off", "PUT", "/api/v2/tabs/3", {"default": 0}),
+    admin_case(
         "change_every_other_field",
         "PUT",
         "/api/v2/tabs/3",
@@ -705,32 +705,149 @@ TABS = [
             "category_id": 0,
         },
     ),
-    tab_case("tab_with_every_other_field_changed", "GET", "/api/v2/tabs/3"),
-    tab_case(
+    admin_case("tab_with_every_other_field_changed", "GET", "/api/v2/tabs/3"),
+    admin_case(
         "change_to_null",
         "PUT",
         "/api/v2/tabs/3",
         {"url": None, "ping_url": None, "timeout_ms": None, "splash": None},
     ),
-    tab_case("tab_changed_to_null", "GET", "/api/v2/tabs/3"),
+    admin_case("tab_changed_to_null", "GET", "/api/v2/tabs/3"),
     # The order.
     ("order_as_guest", "PUT", "/api/v2/tabs", {"json": [{"id": 1, "order": 5}]}),
-    tab_case("order_empty_list", "PUT", "/api/v2/tabs", []),
-    tab_case("order_empty_object", "PUT", "/api/v2/tabs", {}),
-    tab_case("order_entry_with_three_keys", "PUT", "/api/v2/tabs", [{"id": 1, "order": 7, "name": "x"}]),
-    tab_case("order_entry_with_one_key", "PUT", "/api/v2/tabs", [{"id": 1}]),
-    tab_case("order_entry_with_other_keys", "PUT", "/api/v2/tabs", [{"id": 1, "place": 8}]),
-    tab_case("order_entry_with_order_zero", "PUT", "/api/v2/tabs", [{"id": 1, "order": 0}]),
-    tab_case("order", "PUT", "/api/v2/tabs", [{"id": 1, "order": 20}, {"id": 2, "order": 19}]),
-    tab_case("order_with_numbers_as_text", "PUT", "/api/v2/tabs", [{"id": "4", "order": "21"}]),
-    tab_case("order_of_an_unknown_tab", "PUT", "/api/v2/tabs", [{"id": 999, "order": 3}]),
-    tab_case("order_as_object_of_entries", "PUT", "/api/v2/tabs", {"first": {"id": 5, "order": 22}}),
-    tab_case("tabs_after_ordering", "GET", "/api/v2/tabs"),
+    admin_case("order_empty_list", "PUT", "/api/v2/tabs", []),
+    admin_case("order_empty_object", "PUT", "/api/v2/tabs", {}),
+    admin_case("order_entry_with_three_keys", "PUT", "/api/v2/tabs", [{"id": 1, "order": 7, "name": "x"}]),
+    admin_case("order_entry_with_one_key", "PUT", "/api/v2/tabs", [{"id": 1}]),
+    admin_case("order_entry_with_other_keys", "PUT", "/api/v2/tabs", [{"id": 1, "place": 8}]),
+    admin_case("order_entry_with_order_zero", "PUT", "/api/v2/tabs", [{"id": 1, "order": 0}]),
+    admin_case("order", "PUT", "/api/v2/tabs", [{"id": 1, "order": 20}, {"id": 2, "order": 19}]),
+    admin_case("order_with_numbers_as_text", "PUT", "/api/v2/tabs", [{"id": "4", "order": "21"}]),
+    admin_case("order_of_an_unknown_tab", "PUT", "/api/v2/tabs", [{"id": 999, "order": 3}]),
+    admin_case("order_as_object_of_entries", "PUT", "/api/v2/tabs", {"first": {"id": 5, "order": 22}}),
+    admin_case("tabs_after_ordering", "GET", "/api/v2/tabs"),
     # Deleting the tab "Settings" is allowed.
-    tab_case("delete_settings_tab", "DELETE", "/api/v2/tabs/1"),
-    tab_case("tabs_after_deleting", "GET", "/api/v2/tabs"),
+    admin_case("delete_settings_tab", "DELETE", "/api/v2/tabs/1"),
+    admin_case("tabs_after_deleting", "GET", "/api/v2/tabs"),
     # The menu of the front end, with the tabs of this group.
-    tab_case("launch_with_tabs", "GET", "/api/v2/launch"),
+    admin_case("launch_with_tabs", "GET", "/api/v2/launch"),
+]
+
+# The category routes. A fresh install has the category "Unsorted" (id 1, number 0). The
+# categories that the cases add get the ids from 2 on, in the order of the cases.
+#
+# The list of categories is the list of the tab editor, so it shows the tabs too. The
+# group ends with the install as it found it, because the tab group is recorded after it
+# and its lists show the categories.
+CATEGORIES_PATH = "/api/v2/categories"
+MEDIA = {"category": "Media", "image": "fontawesome::film"}
+
+CATEGORIES = [
+    # Reading.
+    ("categories_as_guest", "GET", CATEGORIES_PATH),
+    admin_case("categories", "GET", CATEGORIES_PATH),
+    # Adding: what is refused.
+    ("add_as_guest", "POST", CATEGORIES_PATH, {"json": MEDIA}),
+    admin_case("add_without_a_body", "POST", CATEGORIES_PATH),
+    admin_case("add_empty_object", "POST", CATEGORIES_PATH, {}),
+    admin_case("add_json_list", "POST", CATEGORIES_PATH, ["Media"]),
+    admin_case("add_unknown_fields_only", "POST", CATEGORIES_PATH, {"nothing": 1}),
+    admin_case("add_without_name", "POST", CATEGORIES_PATH, {"image": "i"}),
+    admin_case("add_without_image", "POST", CATEGORIES_PATH, {"category": "Media"}),
+    # Adding: the least a category needs (id 2), and names.
+    admin_case("add", "POST", CATEGORIES_PATH, MEDIA),
+    admin_case("add_name_taken", "POST", CATEGORIES_PATH, MEDIA),
+    admin_case("add_name_taken_in_another_letter_case", "POST", CATEGORIES_PATH, {**MEDIA, "category": "MEDIA"}),
+    # The name is checked before the image.
+    admin_case("add_name_taken_without_image", "POST", CATEGORIES_PATH, {"category": "media"}),
+    admin_case("add_name_too_long", "POST", CATEGORIES_PATH, {**MEDIA, "category": "x" * 51}),
+    admin_case("add_name_of_50_characters", "POST", CATEGORIES_PATH, {**MEDIA, "category": "y" * 50}),
+    admin_case(
+        "add_with_spaces_around_name_and_image",
+        "POST",
+        CATEGORIES_PATH,
+        {"category": "  Spaced  ", "image": "  fontawesome::star  "},
+    ),
+    # Adding: every field (id 5), and other ways to write a value (ids 6 to 8).
+    admin_case(
+        "add_with_every_field",
+        "POST",
+        CATEGORIES_PATH,
+        {"category": "Full", "image": "fontawesome::music", "order": 9, "category_id": 20, "default": 0},
+    ),
+    admin_case(
+        "add_with_numbers_as_text",
+        "POST",
+        CATEGORIES_PATH,
+        {"category": "Texts", "image": "i", "order": "12", "category_id": "30", "default": "0"},
+    ),
+    admin_case(
+        "add_with_null_fields",
+        "POST",
+        CATEGORIES_PATH,
+        {"category": "Nulls", "image": None, "order": None, "category_id": None, "default": None},
+    ),
+    admin_case(
+        "add_as_form",
+        "POST",
+        CATEGORIES_PATH,
+        **{"body": "category=Form&image=fontawesome%3A%3Abook", "headers": FORM},
+    ),
+    admin_case("categories_after_adding", "GET", CATEGORIES_PATH),
+    # A name with characters that HTML gives a meaning (id 9). It is deleted again.
+    admin_case("add_with_html_in_the_name", "POST", CATEGORIES_PATH, {**MEDIA, "category": "A & <b>"}),
+    admin_case("categories_with_html_in_a_name", "GET", CATEGORIES_PATH),
+    ("delete_as_guest", "DELETE", CATEGORIES_PATH + "/9"),
+    admin_case("delete", "DELETE", CATEGORIES_PATH + "/9"),
+    admin_case("delete_again", "DELETE", CATEGORIES_PATH + "/9"),
+    admin_case("delete_unknown", "DELETE", CATEGORIES_PATH + "/999"),
+    admin_case("delete_id_not_a_number", "DELETE", CATEGORIES_PATH + "/abc"),
+    # Changing: what is refused.
+    ("change_as_guest", "PUT", CATEGORIES_PATH + "/2", {"json": {"category": "Guest"}}),
+    admin_case("change_without_a_body", "PUT", CATEGORIES_PATH + "/2"),
+    admin_case("change_empty_object", "PUT", CATEGORIES_PATH + "/2", {}),
+    admin_case("change_as_form", "PUT", CATEGORIES_PATH + "/2", **{"body": "category=Form2", "headers": FORM}),
+    admin_case("change_unknown_category", "PUT", CATEGORIES_PATH + "/999", {"category": "Nobody"}),
+    admin_case("change_id_not_a_number", "PUT", CATEGORIES_PATH + "/abc", {"category": "Nobody"}),
+    admin_case("change_id_zero", "PUT", CATEGORIES_PATH + "/0", {"category": "Nobody"}),
+    admin_case("change_name_taken", "PUT", CATEGORIES_PATH + "/2", {"category": "unsorted"}),
+    admin_case("change_name_too_long", "PUT", CATEGORIES_PATH + "/2", {"category": "x" * 51}),
+    # Changing: what passes.
+    admin_case("change_unknown_fields_only", "PUT", CATEGORIES_PATH + "/2", {"nothing": 1}),
+    admin_case("change_json_list", "PUT", CATEGORIES_PATH + "/2", ["Media"]),
+    admin_case("change_name_to_the_same", "PUT", CATEGORIES_PATH + "/2", {"category": "Media"}),
+    admin_case("change_name_to_another_letter_case", "PUT", CATEGORIES_PATH + "/2", {"category": "MEDIA"}),
+    admin_case(
+        "change_texts",
+        "PUT",
+        CATEGORIES_PATH + "/2",
+        {"category": " Films ", "image": " fontawesome::play "},
+    ),
+    # "Unsorted" is the default category. Making "Films" the default takes the mark from it.
+    admin_case("change_default", "PUT", CATEGORIES_PATH + "/2", {"default": 1}),
+    admin_case("categories_after_changing_the_default", "GET", CATEGORIES_PATH),
+    admin_case("change_default_back", "PUT", CATEGORIES_PATH + "/1", {"default": "1"}),
+    admin_case("change_order_and_number", "PUT", CATEGORIES_PATH + "/2", {"order": 40, "category_id": 7}),
+    # A tab names its category by the number of the category.
+    admin_case("move_a_tab_into_the_category", "PUT", "/api/v2/tabs/2", {"category_id": 7}),
+    admin_case("categories_after_changing", "GET", CATEGORIES_PATH),
+    admin_case("move_the_tab_back", "PUT", "/api/v2/tabs/2", {"category_id": 0}),
+    # The order.
+    ("order_as_guest", "PUT", CATEGORIES_PATH, {"json": [{"id": 1, "order": 5}]}),
+    admin_case("order_empty_list", "PUT", CATEGORIES_PATH, []),
+    admin_case("order_empty_object", "PUT", CATEGORIES_PATH, {}),
+    admin_case("order_entry_with_three_keys", "PUT", CATEGORIES_PATH, [{"id": 1, "order": 7, "name": "x"}]),
+    admin_case("order_entry_with_one_key", "PUT", CATEGORIES_PATH, [{"id": 1}]),
+    admin_case("order_entry_with_order_zero", "PUT", CATEGORIES_PATH, [{"id": 1, "order": 0}]),
+    admin_case("order", "PUT", CATEGORIES_PATH, [{"id": 1, "order": 50}, {"id": 3, "order": 49}]),
+    admin_case("order_with_numbers_as_text", "PUT", CATEGORIES_PATH, [{"id": "4", "order": "51"}]),
+    admin_case("order_of_an_unknown_category", "PUT", CATEGORIES_PATH, [{"id": 999, "order": 3}]),
+    admin_case("order_as_object_of_entries", "PUT", CATEGORIES_PATH, {"first": {"id": 5, "order": 52}}),
+    admin_case("categories_after_ordering", "GET", CATEGORIES_PATH),
+    # Back to the install as the group found it.
+    admin_case("clean_up_order", "PUT", CATEGORIES_PATH, [{"id": 1, "order": 1}]),
+    *[admin_case(f"clean_up_delete_{number}", "DELETE", f"{CATEGORIES_PATH}/{number}") for number in range(2, 9)],
+    admin_case("categories_after_cleaning_up", "GET", CATEGORIES_PATH),
 ]
 
 # Requests that show which route the PHP router chooses. The Rust router must choose the
@@ -1012,7 +1129,9 @@ def main():
         routing.append(case)
     record("routing", routing, php_version)
 
-    # Last, because this group changes and deletes the tabs that other groups see.
+    # Last, because these groups change the tabs and categories that other groups see.
+    # The category group leaves the install as it found it, for the tab group.
+    record("categories", named(CATEGORIES), php_version)
     record("tabs", named(TABS), php_version)
 
 

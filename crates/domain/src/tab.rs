@@ -2,7 +2,6 @@
 
 use thiserror::Error;
 
-use crate::email::php_trim;
 use crate::{CategoryId, Change, GroupLevel, TabId};
 
 /// How a tab opens. The API calls this `type` and sends the number.
@@ -241,37 +240,9 @@ pub struct TabChanges {
     pub preload: Change<bool>,
 }
 
-/// The most bytes the name of a tab can have.
-pub const TAB_NAME_LIMIT: usize = 50;
-
-/// Why a text cannot be the name of a tab.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
-pub enum InvalidTabName {
-    /// Nothing is left when the space around the text is cut off.
-    #[error("the name of a tab cannot be empty")]
-    Empty,
-    /// The text is longer than [`TAB_NAME_LIMIT`] bytes.
-    #[error("the name of a tab cannot be longer than {TAB_NAME_LIMIT} bytes")]
-    TooLong,
-}
-
-/// Makes the name of a tab from what a caller sent: the space around it is cut off, as
-/// PHP's `trim` does it. The name must not be empty or longer than [`TAB_NAME_LIMIT`]
-/// bytes.
-pub fn tab_name(text: &str) -> Result<String, InvalidTabName> {
-    let name = php_trim(text);
-    if name.is_empty() {
-        Err(InvalidTabName::Empty)
-    } else if name.len() > TAB_NAME_LIMIT {
-        Err(InvalidTabName::TooLong)
-    } else {
-        Ok(name.to_owned())
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{InvalidTabKind, InvalidTabName, LevelRange, TabKind, tab_name};
+    use super::{InvalidTabKind, LevelRange, TabKind};
     use crate::GroupLevel;
 
     fn level(value: u16) -> GroupLevel {
@@ -330,37 +301,6 @@ mod tests {
         assert_eq!(range.least_access(), level(4));
         assert!(range.contains(GroupLevel::ADMIN));
         assert!(!range.contains(GroupLevel::GUEST));
-    }
-
-    #[test]
-    fn name_loses_the_space_around_it() {
-        assert_eq!(
-            tab_name(
-                "  Plex 	
-"
-            )
-            .as_deref(),
-            Ok("Plex")
-        );
-        assert_eq!(tab_name("My Plex").as_deref(), Ok("My Plex"));
-    }
-
-    #[test]
-    fn name_cannot_be_empty_or_only_space() {
-        assert_eq!(tab_name(""), Err(InvalidTabName::Empty));
-        assert_eq!(tab_name(" 	 "), Err(InvalidTabName::Empty));
-    }
-
-    #[test]
-    fn name_is_limited_to_50_bytes() {
-        assert_eq!(tab_name(&"x".repeat(50)), Ok("x".repeat(50)));
-        assert_eq!(tab_name(&"x".repeat(51)), Err(InvalidTabName::TooLong));
-        // 26 letters of two bytes each. The space around the name does not count.
-        assert_eq!(tab_name(&"é".repeat(26)), Err(InvalidTabName::TooLong));
-        assert_eq!(
-            tab_name(&format!("  {}  ", "é".repeat(25))),
-            Ok("é".repeat(25))
-        );
     }
 
     #[test]

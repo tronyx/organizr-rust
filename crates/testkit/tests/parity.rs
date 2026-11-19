@@ -351,3 +351,44 @@ async fn tab_routes_answer_like_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn category_routes_answer_like_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let mut replay = without_php_session(Replay::group("categories"));
+
+        // The list of categories is the list of the tab editor. It shows the two tabs of
+        // the set-up, whose switches were never set.
+        for case in [
+            "categories",
+            "categories_after_adding",
+            "categories_with_html_in_a_name",
+            "categories_after_changing_the_default",
+            "categories_after_changing",
+            "categories_after_ordering",
+            "categories_after_cleaning_up",
+        ] {
+            replay = replay.deviation_for_nulls("D-28", case, &TAB_SWITCHES, json!(0));
+        }
+        replay = replay
+            // PHP asks a guest for the form key first. Here a request that does not come
+            // from another site goes on to the check of the level.
+            .deviation(
+                "D-03",
+                "add_as_guest",
+                "/response/message",
+                json!("Not Authorized"),
+            )
+            // Text is stored as it was sent, not with HTML entities.
+            .deviation(
+                "D-24",
+                "categories_with_html_in_a_name",
+                "/response/data/categories/8/category",
+                json!("A & <b>"),
+            );
+
+        replay.run(&installed_app(database)).await;
+    })
+    .await;
+}

@@ -5,7 +5,7 @@ use axum::handler::Handler;
 use axum::http::{HeaderValue, Method, Uri, header};
 use axum::middleware::{from_fn, from_fn_with_state, map_response};
 use axum::response::Response;
-use axum::routing::{MethodRouter, delete, get, post};
+use axum::routing::{MethodRouter, delete, get, post, put};
 use axum::{Extension, Router};
 use tower_http::set_header::SetResponseHeaderLayer;
 
@@ -13,7 +13,9 @@ use crate::caller::{Caller, identify_caller};
 use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
-use crate::handlers::{basics, launch, login, logout, register, tabs, token, wizard};
+use crate::handlers::{
+    basics, categories, fields, launch, login, logout, register, tabs, token, wizard,
+};
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
 use crate::state::AppState;
@@ -53,13 +55,25 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/tabs",
             &get(tabs::list)
                 .post(tabs::add)
-                .put(tabs::reorder.layer(map_response(tabs::as_plain_json))),
+                .put(tabs::reorder.layer(map_response(fields::as_plain_json))),
         )?
         .route(
             "/tabs/{id}",
             &get(tabs::one)
-                .put(tabs::change.layer(map_response(tabs::as_plain_json)))
-                .delete(tabs::remove.layer(map_response(tabs::as_plain_json))),
+                .put(tabs::change.layer(map_response(fields::as_plain_json)))
+                .delete(tabs::remove.layer(map_response(fields::as_plain_json))),
+        )?
+        // The list of categories is the list of the tab editor.
+        .route(
+            "/categories",
+            &get(tabs::list)
+                .post(categories::add)
+                .put(categories::reorder.layer(map_response(fields::as_plain_json))),
+        )?
+        .route(
+            "/categories/{id}",
+            &put(categories::change.layer(map_response(fields::as_plain_json)))
+                .delete(categories::remove.layer(map_response(fields::as_plain_json))),
         )?;
 
     Ok(finish(routes.router, state))
