@@ -175,7 +175,7 @@ fn default_database_url(data_dir: &Path) -> String {
 }
 
 /// Reads the settings. A stored entry that cannot be used is logged and left at its default.
-async fn load_settings(database: &Database, secrets: &SecretBox) -> anyhow::Result<Settings> {
+pub async fn load_settings(database: &Database, secrets: &SecretBox) -> anyhow::Result<Settings> {
     let (settings, problems) = organizr_api::stored_settings(database, secrets)
         .await
         .context("cannot read the settings")?;

@@ -21,6 +21,7 @@ organizr-api.workspace = true
 organizr-auth.workspace = true
 organizr-db.workspace = true
 organizr-import.workspace = true
+organizr-integrations.workspace = true
 organizr-settings.workspace = true
 
 anyhow.workspace = true
@@ -32,6 +33,8 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 
 [dev-dependencies]
+organizr-testkit.workspace = true
+serde_json.workspace = true
 http-body-util.workspace = true
 sea-orm.workspace = true
 tempfile.workspace = true

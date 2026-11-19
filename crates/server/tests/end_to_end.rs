@@ -493,3 +493,25 @@ fn import_from_a_folder_without_an_install_creates_nothing() {
     assert!(errors.contains("no Organizr install was found"), "{errors}");
     assert!(!data_dir.exists(), "the failed import made the data folder");
 }
+
+#[test]
+fn check_of_an_install_without_a_plex_token_asks_nothing_and_succeeds() {
+    let data_dir = tempfile::tempdir().expect("a temporary folder can be made");
+
+    let output = Command::new(ORGANIZR)
+        .args(["check", "--data-dir"])
+        .arg(data_dir.path())
+        .env_remove("ORGANIZR_DATABASE_URL")
+        .env_remove("ORGANIZR_LOG")
+        .env_remove("ORGANIZR_SECRET_KEY")
+        .env_remove("ORGANIZR_SECRET_KEY_FILE")
+        .output()
+        .expect("the binary can be run");
+
+    let report = String::from_utf8_lossy(&output.stdout);
+    assert!(output.status.success(), "{report}");
+    assert_eq!(
+        report.trim_end(),
+        "skipped  plex.tv knows the stored Plex token: the settings hold no Plex token"
+    );
+}

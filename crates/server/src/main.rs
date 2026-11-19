@@ -1,5 +1,6 @@
 //! The `organizr` binary: start-up, scheduler, embedded web assets and subcommands.
 
+mod check;
 mod healthcheck;
 mod import;
 mod secret_key;
@@ -25,6 +26,9 @@ enum Command {
     /// Move an install of PHP Organizr into this application. Run it once, before the
     /// first start of the server.
     Import(import::Args),
+    /// Ask plex.tv, Ombi, Overseerr and Tautulli what a login asks them, with the
+    /// stored settings. Prints for each one whether the answer was usable.
+    Check(check::Args),
 }
 
 #[tokio::main]
@@ -33,6 +37,7 @@ async fn main() -> anyhow::Result<()> {
         Command::Serve(args) => serve::run(args).await,
         Command::Healthcheck(args) => healthcheck::run(&args).await,
         Command::Import(args) => import::run(args).await,
+        Command::Check(args) => check::run(args).await,
     }
 }
 
