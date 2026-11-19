@@ -88,6 +88,31 @@ describe('Menu', () => {
     expect(screen.getByRole('link', { name: /Status/ })).not.toHaveAttribute('aria-current');
   });
 
+  it('shows a dot for the answer of the application behind a tab', () => {
+    const checked = [
+      tab(1, 'Up', { ping: 1, ping_url: 'up.example.com:80' }),
+      tab(2, 'Down', { ping: 1, ping_url: 'down.example.com' }),
+      tab(3, 'Unknown', { ping: 1, ping_url: 'unknown.example.com' }),
+      tab(4, 'Window', { type: 2, ping: 1, ping_url: 'up.example.com:80' }),
+      tab(5, 'Unchecked', { ping_url: 'up.example.com:80' }),
+    ];
+    render(Menu, {
+      tabs: checked,
+      categories: CATEGORIES,
+      shown: undefined,
+      unsortedPlace: 'top',
+      pings: { 'up.example.com:80': 3.2, 'down.example.com': false },
+    });
+
+    const dot = (name: RegExp) =>
+      within(screen.getByRole('link', { name })).queryByRole('img')?.getAttribute('aria-label');
+    expect(dot(/Up/)).toBe('answers');
+    expect(dot(/Down/)).toBe('does not answer');
+    expect(dot(/Unknown/)).toBeUndefined();
+    expect(dot(/Window/)).toBe('answers');
+    expect(dot(/Unchecked/)).toBeUndefined();
+  });
+
   it('opens a tab of the kind "new window" in a new window, without a way back', () => {
     render(Menu, { tabs, categories: CATEGORIES, shown: undefined, unsortedPlace: 'top' });
 

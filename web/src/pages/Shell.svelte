@@ -6,6 +6,7 @@
   import { api, failureText } from '../lib/api';
   import { PAGES, router } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
+  import { pingInterval, pingList, type PingResult } from '../lib/pings';
   import Menu from './Menu.svelte';
 
   let {
@@ -23,6 +24,31 @@
   let userMenu = $state<HTMLDetailsElement>();
 
   const hasMenu = $derived(session.tabs.length > 0);
+
+  // Whether the applications behind the tabs answer. The server is asked at once, and
+  // then again and again, as long as the menu has a tab with the check switched on.
+  let pings = $state<Record<string, PingResult>>({});
+  const pingAddresses = $derived(pingList(session.tabs));
+  const pingEvery = $derived(session.launch ? pingInterval(session.launch) : null);
+
+  $effect(() => {
+    const list = pingAddresses;
+    if (list.length === 0 || pingEvery === null) {
+      pings = {};
+      return;
+    }
+    const check = async () => {
+      try {
+        pings = (await api<Record<string, PingResult>>('POST', 'ping', { list })).data;
+      } catch {
+        // Without an answer of the server, nothing is known about the tabs.
+        pings = {};
+      }
+    };
+    void check();
+    const timer = setInterval(() => void check(), pingEvery);
+    return () => clearInterval(timer);
+  });
 
   async function logOut() {
     error = null;
@@ -95,6 +121,7 @@
         tabs={session.tabs}
         categories={session.categories}
         unsortedPlace={session.unsortedPlace}
+        {pings}
         {shown}
         onpick={() => (menuOpen = false)}
       />

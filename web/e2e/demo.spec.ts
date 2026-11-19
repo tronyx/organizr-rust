@@ -4,7 +4,7 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './fixtures';
-import { SETUP_CODE_VARIABLE } from './server';
+import { ADDRESS, SETUP_CODE_VARIABLE } from './server';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -525,4 +525,53 @@ test('a person with the registration password makes an account and sees the tabs
   await expect(page.getByText('Only an Admin or a Co-Admin can open the settings.')).toBeVisible();
   const refused = await page.request.get('./api/v2/tabs');
   expect(refused.status()).toBe(401);
+});
+
+test('the menu shows whether the application behind a tab answers', async ({ page }) => {
+  await logIn(page);
+  // The first address is the server of the tests itself. Nothing listens on the second.
+  const added = [
+    await page.request.post('./api/v2/tabs', {
+      data: {
+        name: 'Answers',
+        url: '/api/v2/ping',
+        image: '',
+        enabled: 1,
+        ping: 1,
+        ping_url: ADDRESS,
+      },
+    }),
+    await page.request.post('./api/v2/tabs', {
+      data: {
+        name: 'Silent',
+        url: '/api/v2/rox',
+        image: '',
+        enabled: 1,
+        ping: 1,
+        ping_url: '127.0.0.1:1',
+      },
+    }),
+  ];
+  expect(added.map((response) => response.status())).toEqual([200, 200]);
+  await page.reload();
+
+  const menu = page.getByRole('navigation', { name: 'Tabs' });
+  await expect(menu.getByRole('link', { name: 'Answers' }).getByRole('img')).toHaveAccessibleName(
+    'answers',
+  );
+  await expect(menu.getByRole('link', { name: 'Silent' }).getByRole('img')).toHaveAccessibleName(
+    'does not answer',
+  );
+  // A tab without the check has no dot.
+  await expect(menu.getByRole('link', { name: 'Ping' }).getByRole('img')).toHaveCount(0);
+
+  // The form of the tab shows the stored check.
+  await page.goto('./#/settings/tabs');
+  await page
+    .getByRole('row', { name: /Silent/ })
+    .getByRole('button', { name: /Change/ })
+    .click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByLabel('Checked whether it answers')).toBeChecked();
+  await expect(dialog.getByLabel('Address to check')).toHaveValue('127.0.0.1:1');
 });

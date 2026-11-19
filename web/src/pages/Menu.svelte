@@ -2,6 +2,7 @@
   // The menu at the left: the tabs that the caller sees, under their categories.
   import Picture from '../components/Picture.svelte';
   import { buildMenu, opensNewWindow } from '../lib/menu';
+  import { pingStatus, type PingResult } from '../lib/pings';
   import { tabHash } from '../lib/route.svelte';
   import type { MenuCategory, MenuTab, UnsortedPlace } from '../lib/types';
 
@@ -9,6 +10,7 @@
     tabs,
     categories,
     unsortedPlace,
+    pings = {},
     shown,
     onpick,
   }: {
@@ -16,6 +18,8 @@
     categories: MenuCategory[];
     /** Whether the tabs without a heading stand above the categories or below them. */
     unsortedPlace: UnsortedPlace;
+    /** What the server answered for the addresses to check of the tabs. */
+    pings?: Record<string, PingResult>;
     /** The id of the tab that the main area shows. */
     shown: number | undefined;
     /** Called when the user picks a tab. */
@@ -25,6 +29,15 @@
   const menu = $derived(buildMenu(tabs, categories, unsortedPlace));
 </script>
 
+{#snippet status(tab: MenuTab)}
+  {@const answer = pingStatus(tab, pings)}
+  {#if answer === 'up'}
+    <span class="status status-success ml-auto" role="img" aria-label="answers"></span>
+  {:else if answer === 'down'}
+    <span class="status status-error ml-auto" role="img" aria-label="does not answer"></span>
+  {/if}
+{/snippet}
+
 {#snippet entry(tab: MenuTab)}
   <li>
     {#if opensNewWindow(tab) && tab.access_url}
@@ -32,6 +45,7 @@
         <Picture image={tab.image} name={tab.name} />
         <span class="truncate">{tab.name}</span>
         <span class="badge badge-ghost badge-sm" title="Opens in a new window">new window</span>
+        {@render status(tab)}
       </a>
     {:else}
       <a
@@ -42,6 +56,7 @@
       >
         <Picture image={tab.image} name={tab.name} />
         <span class="truncate">{tab.name}</span>
+        {@render status(tab)}
       </a>
     {/if}
   </li>

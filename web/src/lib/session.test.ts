@@ -12,7 +12,10 @@ function launch(changes: Record<string, unknown>) {
         user: null,
         version: '0.1.0',
         appearance: { title: 'My Server' },
-        settings: { misc: { unsortedTabs: 'top' } },
+        settings: {
+          misc: { unsortedTabs: 'top' },
+          ping: { auth: '1', adminRefresh: '60000', everyoneRefresh: '600000' },
+        },
         status: { status: 'ok' },
         ...changes,
       },

@@ -51,6 +51,10 @@
   let addToAdmin = $state(tab?.add_to_admin === 1);
   // svelte-ignore state_referenced_locally
   let preload = $state(tab?.preload === 1);
+  // svelte-ignore state_referenced_locally
+  let ping = $state(tab?.ping === 1);
+  // svelte-ignore state_referenced_locally
+  let pingUrl = $state(tab?.ping_url ?? '');
 
   let error = $state<string | null>(null);
   let busy = $state(false);
@@ -72,6 +76,7 @@
       default: asSwitch(isDefault),
       add_to_admin: asSwitch(addToAdmin),
       preload: asSwitch(preload),
+      ...(isInternal ? {} : { ping: asSwitch(ping), ping_url: pingUrl }),
     });
     busy = false;
   }
@@ -166,8 +171,28 @@
             <input type="checkbox" class="toggle" bind:checked={preload} />
             Loaded at the start
           </label>
+          <label class="label">
+            <input type="checkbox" class="toggle" bind:checked={ping} />
+            Checked whether it answers
+          </label>
         {/if}
       </div>
+
+      {#if ping && !isInternal}
+        <label class="label" for="tab-ping-url">Address to check</label>
+        <input
+          id="tab-ping-url"
+          class="input w-full"
+          bind:value={pingUrl}
+          required
+          placeholder="plex.example.com:32400"
+          aria-describedby="tab-ping-url-hint"
+        />
+        <p id="tab-ping-url-hint" class="label whitespace-normal">
+          A host with a port is checked with a connection to that port. A host without a port is
+          checked with a ping. The menu shows a dot for the answer.
+        </p>
+      {/if}
     </fieldset>
 
     {#if error}

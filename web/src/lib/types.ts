@@ -95,6 +95,14 @@ export interface Launch {
       /** Whether the tabs without a heading stand above the categories or below them. */
       unsortedTabs: UnsortedPlace;
     };
+    ping: {
+      /** The level that may ask the server to check tabs, as text. */
+      auth: string;
+      /** The time between two checks for Admins and Co-Admins, in milliseconds as text. */
+      adminRefresh: string;
+      /** The time between two checks for everybody else, in milliseconds as text. */
+      everyoneRefresh: string;
+    };
   };
   status: { status: 'ok' | 'wizard' };
 }

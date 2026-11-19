@@ -76,7 +76,10 @@ const LAUNCH: CannedAnswer = {
     user: null,
     version: '0.1.0',
     appearance: { title: 'Organizr' },
-    settings: { misc: { unsortedTabs: 'top' } },
+    settings: {
+      misc: { unsortedTabs: 'top' },
+      ping: { auth: '1', adminRefresh: '60000', everyoneRefresh: '600000' },
+    },
     status: { status: 'ok' },
   },
 };
@@ -201,6 +204,12 @@ describe('Settings, tabs', () => {
       target: { value: 'https://radarr.example.com/' },
     });
     await fireEvent.change(within(dialog).getByLabelText('Category'), { target: { value: '7' } });
+    // The address to check shows only with the check switched on.
+    expect(within(dialog).queryByLabelText('Address to check')).not.toBeInTheDocument();
+    await fireEvent.click(within(dialog).getByLabelText('Checked whether it answers'));
+    await fireEvent.input(within(dialog).getByLabelText('Address to check'), {
+      target: { value: 'radarr.example.com:7878' },
+    });
     await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     await statusSays('The tab is added.');
@@ -221,6 +230,8 @@ describe('Settings, tabs', () => {
           default: 0,
           add_to_admin: 0,
           preload: 0,
+          ping: 1,
+          ping_url: 'radarr.example.com:7878',
         },
       ],
     ]);
@@ -233,6 +244,7 @@ describe('Settings, tabs', () => {
       url: 'https://{domain}/plex',
       url_local: 'http://10.0.0.6/',
       add_to_admin: 1,
+      ping_url: 'plex.example.com:32400',
     });
     const sent = await show('tabs', {
       'GET tabs/3': { data: stored },
@@ -265,6 +277,9 @@ describe('Settings, tabs', () => {
           default: 0,
           add_to_admin: 1,
           preload: 0,
+          // The check is off. The stored address to check stays as it is.
+          ping: 0,
+          ping_url: 'plex.example.com:32400',
         },
       ],
     ]);
@@ -283,6 +298,8 @@ describe('Settings, tabs', () => {
     await waitFor(() => expect(changes(sent)).toHaveLength(1));
     const body = changes(sent)[0]?.[1];
     expect(body).not.toHaveProperty('url');
+    expect(body).not.toHaveProperty('ping');
+    expect(body).not.toHaveProperty('ping_url');
     expect(body).not.toHaveProperty('type');
     expect(body).toMatchObject({ name: 'Settings', group_id: 1 });
   });
