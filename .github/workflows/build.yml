@@ -1,25 +1,14 @@
 name: build
 
-# Builds the image for both architectures and tests that it starts. Nothing is pushed yet.
-# It runs only when a file that changes the image changes (the Dockerfile, the source code
-# of the server or of the web interface, or the dependencies), and on request.
+# Builds the image for both architectures, tests that it starts, and publishes it.
+# It runs once a day when the branch has commits that no earlier run built, on request,
+# and for a pull request to main that changes a file of the image.
+# Only a run for the branch develop publishes: ghcr.io/<owner>/<repository>:develop.
 on:
-  push:
-    branches:
-      - develop
-      - main
-    paths:
-      - docker/**
-      - crates/**
-      - web/**
-      - .dockerignore
-      - Cargo.toml
-      - Cargo.lock
-      - rust-toolchain.toml
-      - .github/workflows/build.yml
+  schedule:
+    - cron: "7 12 * * *"
   pull_request:
     branches:
-      - develop
       - main
     paths:
       - docker/**
@@ -40,8 +29,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Look for commits that no run built
+    runs-on: ubuntu-26.04
+    permissions:
+      actions: read
+    outputs:
+      build: ${{ steps.look.outputs.build }}
+    steps:
+      - name: Compare the commit with the last run that built the branch
+        id: look
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          build=true
+          if [[ "${GITHUB_EVENT_NAME}" == schedule ]]; then
+            # A run for a pull request has the same branch name and publishes nothing.
+            built=$(gh run list --repo "${GITHUB_REPOSITORY}" --workflow build.yml \
+              --branch "${GITHUB_REF_NAME}" --status success --limit 30 \
+              --json headSha,event \
+              --jq '[.[] | select(.event != "pull_request")][0].headSha // ""') || built=""
+            echo "This commit:      ${GITHUB_SHA}"
+            echo "Last one built:   ${built:-none}"
+            if [[ "${built}" == "${GITHUB_SHA}" ]]; then
+              build=false
+            fi
+          fi
+          echo "build=${build}" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build and test the image (${{ matrix.architecture }})
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         include:
@@ -84,8 +106,16 @@ jobs:
           else
             CACHE_REF_NAME="${GITHUB_REF_NAME}"
           fi
+          # Only a run for the branch develop publishes, and never a run for a pull request
+          if [[ "${GITHUB_REF}" == refs/heads/develop && "${GITHUB_EVENT_NAME}" != pull_request ]]; then
+            PUBLISH=true
+          else
+            PUBLISH=false
+          fi
           ARCHITECTURE=${{ matrix.architecture }}
           {
+            echo "publish=${PUBLISH}"
+            echo "registry_image=ghcr.io/${GITHUB_REPOSITORY,,}"
             echo "platform=${ARCHITECTURE//-/\/}"
             echo "cache=type=gha,scope=${CACHE_REF_NAME}-${ARCHITECTURE}"
             echo "version=$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)"
@@ -148,3 +178,62 @@ jobs:
           docker stop --time 10 organizr-smoke
           [[ "$(docker inspect --format '{{.State.ExitCode}}' organizr-smoke)" == "0" ]]
           docker rm organizr-smoke
+
+      - name: Log in to the registry
+        if: steps.prep.outputs.publish == 'true'
+        uses: docker/login-action@v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The layers come from the cache of the build above, so this is the image that was tested.
+      # The software list and the build record come with the release pipeline.
+      - name: Push the tested image
+        if: steps.prep.outputs.publish == 'true'
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          push: true
+          provenance: false
+          sbom: false
+          platforms: ${{ steps.prep.outputs.platform }}
+          cache-from: ${{ steps.prep.outputs.cache }}
+          tags: ${{ steps.prep.outputs.registry_image }}:develop-${{ matrix.architecture }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  publish:
+    name: Publish the image for both architectures
+    needs: build
+    if: github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+    runs-on: ubuntu-26.04
+    permissions:
+      packages: write
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.4.1
+        with:
+          version: v0.39.0
+          driver-opts: image=moby/buildkit:v0.35.0
+
+      - name: Log in to the registry
+        uses: docker/login-action@v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Join the two images under one name
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          docker buildx imagetools create --tag "${image}:develop" \
+            "${image}:develop-linux-amd64" "${image}:develop-linux-arm64"
+
+          platforms=$(docker buildx imagetools inspect "${image}:develop" \
+            --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
+          echo "${platforms}"
+          [[ "${platforms}" == *linux/amd64* && "${platforms}" == *linux/arm64* ]]
