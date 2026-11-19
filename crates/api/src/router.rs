@@ -15,8 +15,8 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    basics, categories, config, fields, forward_auth, groups, images, launch, login, logout, mail,
-    ping, plex, register, tabs, token, two_factor, users, wizard,
+    basics, categories, config, fields, forward_auth, groups, homepage, images, launch, login,
+    logout, mail, ping, plex, register, tabs, token, two_factor, users, wizard,
 };
 use crate::same_origin;
 use crate::slim_route::{RoutePatternError, expand};
@@ -140,6 +140,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
                 images::upload.layer(DefaultBodyLimit::max(images::LARGEST_UPLOAD + UPLOAD_OVERHEAD)),
             ),
         )?
+        .route("/homepage/items", &get(homepage::items))?
+        .route("/homepage/html/{number}", &get(homepage::html::show))?
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
         .route("/plex/servers", &get(plex::servers))?

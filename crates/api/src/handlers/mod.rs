@@ -7,6 +7,7 @@ pub mod external_login;
 pub mod fields;
 pub mod forward_auth;
 pub mod groups;
+pub mod homepage;
 pub mod images;
 pub mod launch;
 pub mod launch_settings;

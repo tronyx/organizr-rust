@@ -79,6 +79,11 @@ fn content_type(name: &str) -> &'static str {
     }
 }
 
+/// Whether the file is a font.
+fn is_font(name: &str) -> bool {
+    content_type(name).starts_with("font/")
+}
+
 /// How long a browser can keep a file.
 ///
 /// The build gives each file under `assets/` a name that changes with its content, so a
@@ -141,6 +146,14 @@ pub async fn serve_files(request: Request, next: Next) -> Response {
         header::CACHE_CONTROL,
         HeaderValue::from_static(caching(&name)),
     );
+    if is_font(&name) {
+        // A custom HTML item of the homepage is a page of no site. Its frame can use
+        // the icon fonts only when every site may load them.
+        headers.insert(
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+            HeaderValue::from_static("*"),
+        );
+    }
     if name == PAGE {
         headers.insert(
             header::CONTENT_SECURITY_POLICY,
