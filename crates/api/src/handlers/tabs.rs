@@ -24,6 +24,7 @@ use crate::cookies::cookie_value;
 use crate::envelope::{Envelope, NoContent, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::{Fields, Refusal, chosen, php_text, place_of, record_id};
+use crate::php_url;
 use crate::state::AppState;
 
 /// The level a caller needs for the tab routes.
@@ -85,9 +86,33 @@ impl TabRow {
         }
     }
 
-    /// The address of the tab.
-    pub fn url(&self) -> Option<&str> {
-        self.url.as_deref()
+    /// The tab as the menu shows it, and the address that the front end opens.
+    ///
+    /// The two addresses of a tab that is no page of Organizr itself are completed as
+    /// the PHP application completes them (see [`php_url::qualify`]), and an address
+    /// that is empty, or the text `null`, is the empty text. The address to open is the
+    /// local address for a caller on the local network, when the tab has one, and else
+    /// the address.
+    #[must_use]
+    pub fn for_menu(mut self, page: &PageAddress<'_>) -> (Self, Option<String>) {
+        if self.r#type == TabKind::Internal.code() {
+            let address = self.url.clone();
+            return (self, address);
+        }
+        let complete = |address: Option<String>| match address.as_deref() {
+            None | Some("" | "null") => String::new(),
+            Some(address) => php_url::qualify(address, page.https, page.host),
+        };
+        let url = complete(self.url.take());
+        let url_local = complete(self.url_local.take());
+        let address = if page.caller_is_local && !url_local.is_empty() {
+            url_local.clone()
+        } else {
+            url.clone()
+        };
+        self.url = Some(url);
+        self.url_local = Some(url_local);
+        (self, Some(address))
     }
 
     /// The tab with the placeholders of its two addresses filled in.
@@ -97,6 +122,17 @@ impl TabRow {
         self.url_local = variables.fill_in(self.url_local.as_deref());
         self
     }
+}
+
+/// What the menu needs to know about a request to complete the addresses of tabs.
+#[derive(Debug, Clone, Copy)]
+pub struct PageAddress<'a> {
+    /// Whether the browser reached Organizr over HTTPS.
+    pub https: bool,
+    /// The host of Organizr as the browser named it.
+    pub host: &'a str,
+    /// Whether the caller is on the local network.
+    pub caller_is_local: bool,
 }
 
 /// What stands for the placeholders in the address of a tab. An address such as

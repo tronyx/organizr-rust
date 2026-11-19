@@ -11,15 +11,19 @@
     reason = "helper functions of a test file may panic; the lint settings only exempt test functions"
 )]
 
+use std::net::SocketAddr;
+
 use axum::Router;
+use axum::extract::ConnectInfo;
 use organizr_auth::password;
 use organizr_db::Database;
 use organizr_domain::{
     CategoryNumber, GroupLevel, LevelRange, NewCategory, NewTab, NewUser, TabKind, Timestamp,
 };
+use organizr_settings::Settings;
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::http::{Answer, request, send};
-use organizr_testkit::{installed_app, installed_app_with, seed};
+use organizr_testkit::{installed_app, installed_app_with, seed, state_with};
 use serde_json::json;
 
 const USER_PASSWORD: &str = "the password of zoe";
@@ -228,7 +232,8 @@ async fn tab_is_sent_with_the_fields_of_the_php_application() {
                 "category_id": 7,
                 "name": "Plex",
                 "url": "https://plex.example.com/",
-                "url_local": null,
+                // A tab without a local address has the empty text there, as in PHP.
+                "url_local": "",
                 "default": 0,
                 "enabled": 1,
                 "group_id": 4,
@@ -315,6 +320,302 @@ async fn caller_with_the_api_key_gets_the_menu_of_an_admin() {
         assert_eq!(
             tab_names(&answer),
             ["Welcome", "Status", "Plex", "Settings"]
+        );
+    })
+    .await;
+}
+
+/// The address of a caller on a home network, and one on the internet.
+const AT_HOME: &str = "192.168.1.20:50000";
+const ELSEWHERE: &str = "203.0.113.7:50000";
+
+/// The launch answer for the script with the API key, sent from the given address of a
+/// connection, with more headers.
+async fn launch_from(app: &Router, peer: &str, more_headers: &[(&str, &str)]) -> Answer {
+    let mut headers = vec![("token", seed::API_KEY)];
+    headers.extend_from_slice(more_headers);
+    let mut request = request("GET", "/api/v2/launch", &headers, "");
+    let peer: SocketAddr = peer.parse().expect("the address is valid");
+    request.extensions_mut().insert(ConnectInfo(peer));
+    send(app, request).await
+}
+
+/// The tab with the given name in a launch answer.
+fn tab_named(answer: &Answer, name: &str) -> serde_json::Value {
+    answer.data()["tabs"]
+        .as_array()
+        .expect("the tabs are a list")
+        .iter()
+        .find(|tab| tab["name"] == json!(name))
+        .cloned()
+        .unwrap_or_else(|| panic!("the answer has no tab `{name}`: {}", answer.body))
+}
+
+/// Stores an enabled tab for every level, with the two addresses.
+async fn store_tab(database: &Database, name: &str, url: Option<&str>, url_local: Option<&str>) {
+    let category = database
+        .categories()
+        .list()
+        .await
+        .expect("the categories can be read")
+        .into_iter()
+        .next()
+        .expect("the seed has a category");
+    database
+        .tabs()
+        .insert(NewTab {
+            position: 10,
+            category: category.id,
+            name: name.to_owned(),
+            url: url.map(str::to_owned),
+            url_local: url_local.map(str::to_owned),
+            is_default: false,
+            enabled: true,
+            access: LevelRange::up_to(GroupLevel::GUEST),
+            add_to_admin: false,
+            image: None,
+            kind: TabKind::Iframe,
+            splash: false,
+            ping: false,
+            ping_url: None,
+            timeout: false,
+            timeout_ms: None,
+            preload: false,
+        })
+        .await
+        .expect("the tab can be stored");
+}
+
+#[tokio::test]
+async fn caller_on_the_local_network_opens_the_local_address_of_a_tab() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        store_tab(
+            database,
+            "Plex",
+            Some("https://plex.example.com/"),
+            Some("http://10.0.0.6:32400/web"),
+        )
+        .await;
+        store_tab(
+            database,
+            "Sonarr",
+            Some("https://sonarr.example.com/"),
+            None,
+        )
+        .await;
+        let app = installed_app(database);
+
+        let at_home = launch_from(&app, AT_HOME, &[]).await;
+        let elsewhere = launch_from(&app, ELSEWHERE, &[]).await;
+
+        // Both callers get both addresses. Which one to open depends on the caller.
+        for answer in [&at_home, &elsewhere] {
+            let plex = tab_named(answer, "Plex");
+            assert_eq!(plex["url"], json!("https://plex.example.com/"));
+            assert_eq!(plex["url_local"], json!("http://10.0.0.6:32400/web"));
+        }
+        assert_eq!(
+            tab_named(&at_home, "Plex")["access_url"],
+            json!("http://10.0.0.6:32400/web")
+        );
+        assert_eq!(
+            tab_named(&elsewhere, "Plex")["access_url"],
+            json!("https://plex.example.com/")
+        );
+        // A tab without a local address opens its address for everyone.
+        assert_eq!(
+            tab_named(&at_home, "Sonarr")["access_url"],
+            json!("https://sonarr.example.com/")
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn setting_names_more_local_networks() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        store_tab(
+            database,
+            "Plex",
+            Some("https://plex.example.com/"),
+            Some("http://10.0.0.6/"),
+        )
+        .await;
+        let app = installed_app_with(
+            database,
+            &[("localIPList", json!("198.51.100.4, 203.0.113.0/24"))],
+        );
+
+        let listed = launch_from(&app, ELSEWHERE, &[]).await;
+        let not_listed = launch_from(&app, "198.51.100.5:50000", &[]).await;
+
+        assert_eq!(
+            tab_named(&listed, "Plex")["access_url"],
+            json!("http://10.0.0.6/")
+        );
+        assert_eq!(
+            tab_named(&not_listed, "Plex")["access_url"],
+            json!("https://plex.example.com/")
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn caller_behind_a_proxy_that_is_not_trusted_is_not_local() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        store_tab(
+            database,
+            "Plex",
+            Some("https://plex.example.com/"),
+            Some("http://10.0.0.6/"),
+        )
+        .await;
+        let public = "https://plex.example.com/";
+        let local = "http://10.0.0.6/";
+
+        // The connection comes from a proxy on the home network. Without the proxy in
+        // the list of trusted proxies, the true caller is not known.
+        let app = installed_app(database);
+        let forwarded = [("x-forwarded-for", "192.168.1.30")];
+        let answer = launch_from(&app, AT_HOME, &forwarded).await;
+        assert_eq!(tab_named(&answer, "Plex")["access_url"], json!(public));
+
+        // With the proxy trusted, the address that it reports counts.
+        let mut settings = Settings::defaults();
+        settings
+            .set("organizrAPI", &json!(seed::API_KEY))
+            .expect("the API key is a valid setting");
+        let state = state_with(database, settings)
+            .with_trusted_proxies("192.168.1.20".parse().expect("the list is valid"));
+        let app = organizr_api::router(state).expect("the route table is valid");
+        let answer = launch_from(&app, AT_HOME, &forwarded).await;
+        assert_eq!(tab_named(&answer, "Plex")["access_url"], json!(local));
+        let from_outside = [("x-forwarded-for", "203.0.113.7")];
+        let answer = launch_from(&app, AT_HOME, &from_outside).await;
+        assert_eq!(tab_named(&answer, "Plex")["access_url"], json!(public));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn addresses_of_a_tab_are_completed() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        store_tab(
+            database,
+            "Path",
+            Some("/plex/{username_lower}"),
+            Some("null"),
+        )
+        .await;
+        store_tab(
+            database,
+            "Bare",
+            Some("plex.example.com:32400/web"),
+            Some(""),
+        )
+        .await;
+        store_tab(
+            database,
+            "Secret",
+            Some("https://user:secret@plex.example.com/"),
+            None,
+        )
+        .await;
+        store_tab(database, "Empty", None, None).await;
+        let mut settings = Settings::defaults();
+        settings
+            .set("organizrAPI", &json!(seed::API_KEY))
+            .expect("the API key is a valid setting");
+        let state = state_with(database, settings)
+            .with_trusted_proxies("192.168.1.20".parse().expect("the list is valid"));
+        let app = organizr_api::router(state).expect("the route table is valid");
+        let addresses = |answer: &Answer, name: &str| {
+            let tab = tab_named(answer, name);
+            (
+                tab["url"].clone(),
+                tab["url_local"].clone(),
+                tab["access_url"].clone(),
+            )
+        };
+
+        let answer = launch_from(&app, AT_HOME, &[]).await;
+
+        // A path gets the host of the request in front, after the placeholders.
+        let path = "http://organizr.example.com/plex/organizr api";
+        assert_eq!(
+            addresses(&answer, "Path"),
+            (json!(path), json!(""), json!(path))
+        );
+        // An address without a scheme gets `http://`.
+        let bare = "http://plex.example.com:32400/web";
+        assert_eq!(
+            addresses(&answer, "Bare"),
+            (json!(bare), json!(""), json!(bare))
+        );
+        // A user name and a password do not reach the browser.
+        let secret = "https://plex.example.com/";
+        assert_eq!(
+            addresses(&answer, "Secret"),
+            (json!(secret), json!(""), json!(secret))
+        );
+        assert_eq!(
+            addresses(&answer, "Empty"),
+            (json!(""), json!(""), json!(""))
+        );
+        // The tab "Settings" is a page of Organizr itself. Its addresses stay as they are.
+        assert_eq!(
+            addresses(&answer, "Settings"),
+            (
+                json!("api/v2/page/settings"),
+                serde_json::Value::Null,
+                json!("api/v2/page/settings")
+            )
+        );
+
+        // Behind a trusted proxy that reports HTTPS, a path gets `https://`.
+        let over_https = [
+            ("x-forwarded-for", "192.168.1.30"),
+            ("x-forwarded-proto", "https"),
+        ];
+        let answer = launch_from(&app, AT_HOME, &over_https).await;
+        assert_eq!(
+            tab_named(&answer, "Path")["url"],
+            json!("https://organizr.example.com/plex/organizr api")
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn placeholders_are_filled_in_for_the_user_who_asks() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        add_tabs_and_a_user(database).await;
+        store_tab(
+            database,
+            "Mine",
+            Some("https://{domain}/{username}/{group}/{group_id}"),
+            None,
+        )
+        .await;
+        let app = installed_app(database);
+        let zoe = log_in(&app, "zoe", USER_PASSWORD).await;
+
+        let for_zoe = launch(&app, &zoe).await;
+        let for_a_guest = launch(&app, "").await;
+
+        assert_eq!(
+            tab_named(&for_zoe, "Mine")["url"],
+            json!("https://organizr.example.com/zoe/User/4")
+        );
+        assert_eq!(
+            tab_named(&for_a_guest, "Mine")["url"],
+            json!("https://organizr.example.com/Guest/Guest/999")
         );
     })
     .await;

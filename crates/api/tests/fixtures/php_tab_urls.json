@@ -1,0 +1,686 @@
+{
+    "php_version": "8.5.12",
+    "host": "organizr.test",
+    "cases": [
+        {
+            "input": "https://plex.example.com/",
+            "https": false,
+            "qualified": "https://plex.example.com/"
+        },
+        {
+            "input": "http://plex.example.com",
+            "https": false,
+            "qualified": "http://plex.example.com"
+        },
+        {
+            "input": "https://plex.example.com:32400/web/index.html?x=1&y=2#frag",
+            "https": false,
+            "qualified": "https://plex.example.com:32400/web/index.html?x=1&y=2#frag"
+        },
+        {
+            "input": "HTTPS://EXAMPLE.COM/Path",
+            "https": false,
+            "qualified": "HTTPS://EXAMPLE.COM/Path"
+        },
+        {
+            "input": "ftp://files.example.com:21/pub",
+            "https": false,
+            "qualified": "ftp://files.example.com:21/pub"
+        },
+        {
+            "input": "https://plex.example.com?x=1",
+            "https": false,
+            "qualified": "https://plex.example.com?x=1"
+        },
+        {
+            "input": "https://plex.example.com#top",
+            "https": false,
+            "qualified": "https://plex.example.com#top"
+        },
+        {
+            "input": "https://plex.example.com/?",
+            "https": false,
+            "qualified": "https://plex.example.com/?"
+        },
+        {
+            "input": "https://plex.example.com/#",
+            "https": false,
+            "qualified": "https://plex.example.com/#"
+        },
+        {
+            "input": "https://plex.example.com/?#",
+            "https": false,
+            "qualified": "https://plex.example.com/?#"
+        },
+        {
+            "input": "https://example.com/a?b?c#d#e",
+            "https": false,
+            "qualified": "https://example.com/a?b?c#d#e"
+        },
+        {
+            "input": "https://example.com/a#b?c",
+            "https": false,
+            "qualified": "https://example.com/a#b?c"
+        },
+        {
+            "input": "https://example.com/ä",
+            "https": false,
+            "qualified": "https://example.com/ä"
+        },
+        {
+            "input": "https://münchen.example/",
+            "https": false,
+            "qualified": "https://münchen.example/"
+        },
+        {
+            "input": "https://example.com/a%20b?c=%2F",
+            "https": false,
+            "qualified": "https://example.com/a%20b?c=%2F"
+        },
+        {
+            "input": "https://user:pass@plex.example.com/",
+            "https": false,
+            "qualified": "https://plex.example.com/"
+        },
+        {
+            "input": "https://user@plex.example.com:8443/x",
+            "https": false,
+            "qualified": "https://plex.example.com:8443/x"
+        },
+        {
+            "input": "https://a@b@c/",
+            "https": false,
+            "qualified": "https://c/"
+        },
+        {
+            "input": "https://user:pa:ss@host/",
+            "https": false,
+            "qualified": "https://host/"
+        },
+        {
+            "input": "user:pass@host/x",
+            "https": false,
+            "qualified": "user://pass@host/x"
+        },
+        {
+            "input": "user@host",
+            "https": false,
+            "qualified": "http://user@host"
+        },
+        {
+            "input": "plex.example.com",
+            "https": false,
+            "qualified": "http://plex.example.com"
+        },
+        {
+            "input": "plex.example.com/web",
+            "https": false,
+            "qualified": "http://plex.example.com/web"
+        },
+        {
+            "input": "plex.example.com:8080",
+            "https": false,
+            "qualified": "http://plex.example.com:8080"
+        },
+        {
+            "input": "plex.example.com:8080/web",
+            "https": false,
+            "qualified": "http://plex.example.com:8080/web"
+        },
+        {
+            "input": "localhost:8080",
+            "https": false,
+            "qualified": "http://localhost:8080"
+        },
+        {
+            "input": "10.0.0.5:32400/web",
+            "https": false,
+            "qualified": "http://10.0.0.5:32400/web"
+        },
+        {
+            "input": "plex?x=1#y",
+            "https": false,
+            "qualified": "http://plex?x=1#y"
+        },
+        {
+            "input": "plex/app?x=1",
+            "https": false,
+            "qualified": "http://plex/app?x=1"
+        },
+        {
+            "input": "?x=1",
+            "https": false,
+            "qualified": "http://?x=1"
+        },
+        {
+            "input": "#frag",
+            "https": false,
+            "qualified": "http://#frag"
+        },
+        {
+            "input": "a",
+            "https": false,
+            "qualified": "http://a"
+        },
+        {
+            "input": "0",
+            "https": false,
+            "qualified": "http://0"
+        },
+        {
+            "input": "null",
+            "https": false,
+            "qualified": "http://null"
+        },
+        {
+            "input": "/plex",
+            "https": false,
+            "qualified": "http://organizr.test/plex"
+        },
+        {
+            "input": "/plex",
+            "https": true,
+            "qualified": "https://organizr.test/plex"
+        },
+        {
+            "input": "/plex/",
+            "https": false,
+            "qualified": "http://organizr.test/plex/"
+        },
+        {
+            "input": "/plex/",
+            "https": true,
+            "qualified": "https://organizr.test/plex/"
+        },
+        {
+            "input": "/",
+            "https": false,
+            "qualified": "http://organizr.test/"
+        },
+        {
+            "input": "/",
+            "https": true,
+            "qualified": "https://organizr.test/"
+        },
+        {
+            "input": "/plex?x=1#y",
+            "https": false,
+            "qualified": "http://organizr.test/plex?x=1#y"
+        },
+        {
+            "input": "/plex?x=1#y",
+            "https": true,
+            "qualified": "https://organizr.test/plex?x=1#y"
+        },
+        {
+            "input": "/x:80",
+            "https": false,
+            "qualified": "http://organizr.test/x:80"
+        },
+        {
+            "input": "/x:80",
+            "https": true,
+            "qualified": "https://organizr.test/x:80"
+        },
+        {
+            "input": "//plex.example.com/web",
+            "https": false,
+            "qualified": "http://organizr.test//plex.example.com/web"
+        },
+        {
+            "input": "//plex.example.com/web",
+            "https": true,
+            "qualified": "https://organizr.test//plex.example.com/web"
+        },
+        {
+            "input": "//plex.example.com:8080",
+            "https": false,
+            "qualified": "http://organizr.test//plex.example.com:8080"
+        },
+        {
+            "input": "//plex.example.com:8080",
+            "https": true,
+            "qualified": "https://organizr.test//plex.example.com:8080"
+        },
+        {
+            "input": "//",
+            "https": false,
+            "qualified": "http://organizr.test//"
+        },
+        {
+            "input": "//",
+            "https": true,
+            "qualified": "https://organizr.test//"
+        },
+        {
+            "input": "///x",
+            "https": false,
+            "qualified": "http://organizr.test///x"
+        },
+        {
+            "input": "///x",
+            "https": true,
+            "qualified": "https://organizr.test///x"
+        },
+        {
+            "input": "////",
+            "https": false,
+            "qualified": "http://organizr.test////"
+        },
+        {
+            "input": "////",
+            "https": true,
+            "qualified": "https://organizr.test////"
+        },
+        {
+            "input": "http://[::1]:8080/x",
+            "https": false,
+            "qualified": "http://[::1]:8080/x"
+        },
+        {
+            "input": "http://[fe80::1]/",
+            "https": false,
+            "qualified": "http://[fe80::1]/"
+        },
+        {
+            "input": "http://[::1]",
+            "https": false,
+            "qualified": "http://[::1]"
+        },
+        {
+            "input": "[::1]:8080",
+            "https": false,
+            "qualified": "http://[::1]:8080"
+        },
+        {
+            "input": "[::1]",
+            "https": false,
+            "qualified": "http://[::1]"
+        },
+        {
+            "input": "http://[::1/x",
+            "https": false,
+            "qualified": "http://[::1/x"
+        },
+        {
+            "input": "a.com:80",
+            "https": false,
+            "qualified": "http://a.com:80"
+        },
+        {
+            "input": "a.com:0",
+            "https": false,
+            "qualified": "http://a.com:0"
+        },
+        {
+            "input": "a.com:65535",
+            "https": false,
+            "qualified": "http://a.com:65535"
+        },
+        {
+            "input": "a.com:65536",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "a.com:99999",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "a.com:123456",
+            "https": false,
+            "qualified": "a.com://123456"
+        },
+        {
+            "input": "a.com:1234567",
+            "https": false,
+            "qualified": "a.com://1234567"
+        },
+        {
+            "input": "a.com:abc",
+            "https": false,
+            "qualified": "a.com://abc"
+        },
+        {
+            "input": "a.com:80abc/x",
+            "https": false,
+            "qualified": "a.com://80abc/x"
+        },
+        {
+            "input": "a.com:80?x=1",
+            "https": false,
+            "qualified": "a.com://80?x=1"
+        },
+        {
+            "input": "a.com:80#f",
+            "https": false,
+            "qualified": "a.com://80#f"
+        },
+        {
+            "input": "a.com?x:80",
+            "https": false,
+            "qualified": "http://a.com?x:80"
+        },
+        {
+            "input": "a.com:",
+            "https": false,
+            "qualified": "a.com://"
+        },
+        {
+            "input": "a.com:/x",
+            "https": false,
+            "qualified": "a.com:///x"
+        },
+        {
+            "input": "a:80/b:90",
+            "https": false,
+            "qualified": "http://a:80/b:90"
+        },
+        {
+            "input": "x/y:80",
+            "https": false,
+            "qualified": "http://x:80/y:80"
+        },
+        {
+            "input": "example.com:080/x",
+            "https": false,
+            "qualified": "http://example.com:80/x"
+        },
+        {
+            "input": "example.com:00080",
+            "https": false,
+            "qualified": "http://example.com:80"
+        },
+        {
+            "input": "example.com:-80",
+            "https": false,
+            "qualified": "example.com://-80"
+        },
+        {
+            "input": "example.com:+80",
+            "https": false,
+            "qualified": "example.com://+80"
+        },
+        {
+            "input": "example.com: 80",
+            "https": false,
+            "qualified": "example.com:// 80"
+        },
+        {
+            "input": "http://a.com:80?x",
+            "https": false,
+            "qualified": "http://a.com:80?x"
+        },
+        {
+            "input": "https://plex.example.com:/x",
+            "https": false,
+            "qualified": "https://plex.example.com/x"
+        },
+        {
+            "input": "https://plex.example.com:0/x",
+            "https": false,
+            "qualified": "https://plex.example.com:0/x"
+        },
+        {
+            "input": "https://plex.example.com:65535",
+            "https": false,
+            "qualified": "https://plex.example.com:65535"
+        },
+        {
+            "input": "https://plex.example.com:65536/",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "https://a:99999/",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "https://a:123456/",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "https://example.com:8080:9090/",
+            "https": false,
+            "qualified": "https://example.com:8080:9090/"
+        },
+        {
+            "input": "https://example.com:80a/",
+            "https": false,
+            "qualified": "https://example.com:80/"
+        },
+        {
+            "input": "https://example.com:-1/",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": ":80",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": ":80/x",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": ":",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": ":/x",
+            "https": false,
+            "qualified": "http://:/x"
+        },
+        {
+            "input": ":x",
+            "https": false,
+            "qualified": "http://:x"
+        },
+        {
+            "input": "mailto:someone@example.com",
+            "https": false,
+            "qualified": "mailto://someone@example.com"
+        },
+        {
+            "input": "tel:12345",
+            "https": false,
+            "qualified": "http://tel:12345"
+        },
+        {
+            "input": "tel:1234567",
+            "https": false,
+            "qualified": "tel://1234567"
+        },
+        {
+            "input": "javascript:alert(1)",
+            "https": false,
+            "qualified": "javascript://alert(1)"
+        },
+        {
+            "input": "about:blank",
+            "https": false,
+            "qualified": "about://blank"
+        },
+        {
+            "input": "data:text/html,hi",
+            "https": false,
+            "qualified": "data://text/html,hi"
+        },
+        {
+            "input": "plex://x",
+            "https": false,
+            "qualified": "plex://x"
+        },
+        {
+            "input": "x-scheme+1.2://host/path",
+            "https": false,
+            "qualified": "x-scheme+1.2://host/path"
+        },
+        {
+            "input": "1http://x",
+            "https": false,
+            "qualified": "1http://x"
+        },
+        {
+            "input": "ht_tp://x/",
+            "https": false,
+            "qualified": "http://ht_tp://x/"
+        },
+        {
+            "input": "ht_tp:x",
+            "https": false,
+            "qualified": "http://ht_tp:x"
+        },
+        {
+            "input": "ht_tp:80",
+            "https": false,
+            "qualified": "http://ht_tp:80"
+        },
+        {
+            "input": "http:",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "http:/",
+            "https": false,
+            "qualified": "http:///"
+        },
+        {
+            "input": "http:/x",
+            "https": false,
+            "qualified": "http:///x"
+        },
+        {
+            "input": "http://",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "http:///x",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "https:///",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "http://?x",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "http://#x",
+            "https": false,
+            "qualified": "http://"
+        },
+        {
+            "input": "://x",
+            "https": false,
+            "qualified": "http://://x"
+        },
+        {
+            "input": "x:",
+            "https": false,
+            "qualified": "x://"
+        },
+        {
+            "input": "x:/y",
+            "https": false,
+            "qualified": "x:///y"
+        },
+        {
+            "input": "x:y",
+            "https": false,
+            "qualified": "x://y"
+        },
+        {
+            "input": "x:1",
+            "https": false,
+            "qualified": "http://x:1"
+        },
+        {
+            "input": "x:1/y",
+            "https": false,
+            "qualified": "http://x:1/y"
+        },
+        {
+            "input": "file:///c:/dir/file.txt",
+            "https": false,
+            "qualified": "file://c:/dir/file.txt"
+        },
+        {
+            "input": "file:///etc/passwd",
+            "https": false,
+            "qualified": "file:///etc/passwd"
+        },
+        {
+            "input": "file://host/share",
+            "https": false,
+            "qualified": "file://host/share"
+        },
+        {
+            "input": "file:///",
+            "https": false,
+            "qualified": "file:///"
+        },
+        {
+            "input": "FILE:///c:/x",
+            "https": false,
+            "qualified": "FILE://c:/x"
+        },
+        {
+            "input": "file:///c|/x",
+            "https": false,
+            "qualified": "file:///c|/x"
+        },
+        {
+            "input": "  https://spaces.example.com/  ",
+            "https": false,
+            "qualified": "http://  https://spaces.example.com/  "
+        },
+        {
+            "input": " ",
+            "https": false,
+            "qualified": "http:// "
+        },
+        {
+            "input": "https://exa mple.com/a b",
+            "https": false,
+            "qualified": "https://exa mple.com/a b"
+        },
+        {
+            "input": "https://example.com/a\tb",
+            "https": false,
+            "qualified": "https://example.com/a_b"
+        },
+        {
+            "input": "https://example.com/\u0001x",
+            "https": false,
+            "qualified": "https://example.com/_x"
+        },
+        {
+            "input": "https://exam\nple.com/",
+            "https": false,
+            "qualified": "https://exam_ple.com/"
+        },
+        {
+            "input": "ht\ttp://example.com/",
+            "https": false,
+            "qualified": "http://ht_tp://example.com/"
+        },
+        {
+            "input": "https://example.com/?a=",
+            "https": false,
+            "qualified": "https://example.com/?a=_"
+        }
+    ]
+}

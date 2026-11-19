@@ -10,6 +10,7 @@ pub mod envelope;
 pub mod error;
 mod handlers;
 pub mod php_json;
+pub mod php_url;
 mod router;
 mod same_origin;
 pub mod slim_route;

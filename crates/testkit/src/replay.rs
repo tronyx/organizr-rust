@@ -30,15 +30,21 @@
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write as _;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use axum::Router;
 use axum::body::Body;
+use axum::extract::ConnectInfo;
 use axum::http::{Request, header};
 use http_body_util::BodyExt;
 use serde::Deserialize;
 use serde_json::Value;
 use tower::ServiceExt;
+
+/// The address that the requests of a replay come from: the gateway of a container
+/// network, as for the recorder. The port is of no interest.
+const RECORDER_ADDRESS: ([u8; 4], u16) = ([172, 18, 0, 1], 40_000);
 
 /// A marker that stands for every case of the group.
 pub const EVERY_CASE: &str = "*";
@@ -620,9 +626,16 @@ impl Answer {
                 .collect();
             request = request.header(header::COOKIE, cookies.join("; "));
         }
+        let mut request = request.body(body).expect("the recorded request is valid");
+        // The recorder reaches the reference through the gateway of the container
+        // network, which is a private address. So the reference takes the recorder for
+        // a caller on the local network, and the replay must look like one too.
+        request
+            .extensions_mut()
+            .insert(ConnectInfo(SocketAddr::from(RECORDER_ADDRESS)));
         let response = app
             .clone()
-            .oneshot(request.body(body).expect("the recorded request is valid"))
+            .oneshot(request)
             .await
             .expect("the router answers");
 

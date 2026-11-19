@@ -6,15 +6,16 @@
 
 use axum::Extension;
 use axum::extract::State;
+use axum::http::{HeaderMap, header};
 use organizr_domain::{Category, GroupLevel, Tab};
 use organizr_settings::{Settings, UnsortedTabs};
 use serde::Serialize;
 
 use crate::caller::Caller;
-use crate::client::Client;
+use crate::client::{Client, LocalNetworks};
 use crate::envelope::Envelope;
 use crate::error::ApiError;
-use crate::handlers::tabs::{CategoryRow, TabRow};
+use crate::handlers::tabs::{CategoryRow, PageAddress, TabRow, TabVariables};
 use crate::handlers::token::{SessionSummary, UserObject, describe_caller};
 use crate::state::AppState;
 
@@ -83,8 +84,8 @@ struct CategoryObject {
 struct TabObject {
     #[serde(flatten)]
     tab: TabRow,
-    /// The address the front end opens. Today it is `url`. The local address of a tab,
-    /// for callers on the local network, is not used yet.
+    /// The address the front end opens: the local address of the tab for a caller on
+    /// the local network, when the tab has one, and else the address.
     access_url: Option<String>,
 }
 
@@ -147,22 +148,34 @@ fn is_shown(tab: &Tab, level: GroupLevel) -> bool {
 /// The tabs a caller of the given level sees, in the order of the menu.
 ///
 /// The PHP application sorts by `order`, downwards when the `unsortedTabs` setting is
-/// `top` and upwards when it is `bottom`. Tabs with the same `order` follow their id.
+/// `top` and upwards when it is `bottom`. Tabs with the same `order` follow their id,
+/// in both directions. Among them, the tabs that an admin sees only because they are
+/// marked "add to admin" come last. This is the order that the two queries of the PHP
+/// application and its sort give.
 fn visible_tabs(mut tabs: Vec<Tab>, level: GroupLevel, unsorted: UnsortedTabs) -> Vec<Tab> {
     tabs.retain(|tab| is_shown(tab, level));
-    tabs.sort_by_key(|tab| (tab.position, tab.id));
-    if unsorted == UnsortedTabs::Top {
-        tabs.reverse();
+    tabs.sort_by_key(|tab| tab.id);
+    let (mut shown, for_admins_only): (Vec<Tab>, Vec<Tab>) =
+        tabs.into_iter().partition(|tab| tab.access.contains(level));
+    shown.extend(for_admins_only);
+    // The sort keeps the order above for tabs with the same place.
+    match unsorted {
+        UnsortedTabs::Top => shown.sort_by_key(|tab| std::cmp::Reverse(tab.position)),
+        UnsortedTabs::Bottom => shown.sort_by_key(|tab| tab.position),
     }
-    tabs
+    shown
 }
 
-fn tab_object(tab: Tab, categories: &[Category]) -> TabObject {
-    let tab = TabRow::of(tab, categories);
-    TabObject {
-        access_url: tab.url().map(str::to_owned),
-        tab,
-    }
+fn tab_object(
+    tab: Tab,
+    categories: &[Category],
+    variables: &TabVariables,
+    page: &PageAddress<'_>,
+) -> TabObject {
+    let (tab, access_url) = TabRow::of(tab, categories)
+        .filled_in(variables)
+        .for_menu(page);
+    TabObject { tab, access_url }
 }
 
 fn appearance(settings: &Settings) -> Appearance {
@@ -200,10 +213,20 @@ pub async fn launch(
     State(state): State<AppState>,
     Extension(client): Extension<Client>,
     Extension(caller): Extension<Caller>,
+    headers: HeaderMap,
 ) -> Result<Envelope<LaunchData>, ApiError> {
     let settings = state.settings();
     let database = state.database();
     let is_set_up = database.install().is_done().await?;
+    let variables = TabVariables::of(&caller, &headers);
+    let page = PageAddress {
+        https: client.https,
+        host: headers
+            .get(header::HOST)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default(),
+        caller_is_local: LocalNetworks::from_setting(&settings.local_ip_list).contains(&client),
+    };
 
     let (categories, tabs) = if is_set_up {
         let categories = database.categories().list().await?;
@@ -224,7 +247,7 @@ pub async fn launch(
             .collect();
         let tab_objects = tabs
             .into_iter()
-            .map(|tab| tab_object(tab, &categories))
+            .map(|tab| tab_object(tab, &categories, &variables, &page))
             .collect();
         (
             ListOrFalse::List(category_objects),
@@ -355,8 +378,38 @@ mod tests {
                 .collect()
         };
 
-        // Tab 3 is for Admins only. Tabs 1 and 4 have the same place and follow their id.
+        // Tab 3 is for Admins only. Tabs 1 and 4 have the same place and follow their
+        // id, in both directions.
         assert_eq!(ids(UnsortedTabs::Bottom), [2, 1, 4]);
-        assert_eq!(ids(UnsortedTabs::Top), [4, 1, 2]);
+        assert_eq!(ids(UnsortedTabs::Top), [1, 4, 2]);
+    }
+
+    #[test]
+    fn tab_that_an_admin_sees_only_by_its_mark_comes_last_among_tabs_of_one_place() {
+        let mut for_guests_only = tab(1, 5, 999, 999);
+        for_guests_only.add_to_admin = true;
+        let mut for_users = tab(2, 5, 4, 2);
+        for_users.add_to_admin = true;
+        let tabs = || {
+            vec![
+                for_guests_only.clone(),
+                for_users.clone(),
+                tab(3, 5, 999, 0),
+                tab(4, 6, 999, 0),
+                tab(5, 5, 4, 0),
+            ]
+        };
+        let ids = |level_of_caller, unsorted| -> Vec<i64> {
+            visible_tabs(tabs(), level(level_of_caller), unsorted)
+                .iter()
+                .map(|tab| tab.id.get())
+                .collect()
+        };
+
+        // An Admin is outside the levels of tabs 1 and 2, and sees them by their mark.
+        assert_eq!(ids(0, UnsortedTabs::Top), [4, 3, 5, 1, 2]);
+        assert_eq!(ids(0, UnsortedTabs::Bottom), [3, 5, 1, 2, 4]);
+        // A user of level 4 is inside the levels of tab 2.
+        assert_eq!(ids(4, UnsortedTabs::Top), [4, 2, 3, 5]);
     }
 }

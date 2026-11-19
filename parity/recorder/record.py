@@ -729,7 +729,35 @@ TABS = [
     # Deleting the tab "Settings" is allowed.
     admin_case("delete_settings_tab", "DELETE", "/api/v2/tabs/1"),
     admin_case("tabs_after_deleting", "GET", "/api/v2/tabs"),
-    # The menu of the front end, with the tabs of this group.
+    # The menu of the front end, with the tabs of this group. First some tabs get
+    # addresses that the menu completes, and three tabs get the same place.
+    admin_case("enable_the_tab_with_placeholders", "PUT", "/api/v2/tabs/7", {"enabled": 1}),
+    admin_case(
+        "change_to_addresses_without_a_scheme",
+        "PUT",
+        "/api/v2/tabs/9",
+        {"url": "plex.example.com:32400/web", "url_local": "/local/{username}"},
+    ),
+    admin_case(
+        "change_to_an_address_with_a_password",
+        "PUT",
+        "/api/v2/tabs/10",
+        {"url": "https://user:secret@switches.example.com/x?y=1#z", "url_local": "null"},
+    ),
+    admin_case(
+        "change_the_tab_of_organizr_itself",
+        "PUT",
+        "/api/v2/tabs/2",
+        {"enabled": 1, "url_local": "/internal/{username}"},
+    ),
+    admin_case("change_a_tab_for_guests", "PUT", "/api/v2/tabs/11", {"group_id": 999, "order": 7}),
+    admin_case(
+        "change_a_tab_for_guests_only_and_admins",
+        "PUT",
+        "/api/v2/tabs/12",
+        {"enabled": 1, "group_id": 999, "group_id_max": 999, "add_to_admin": 1, "order": 7},
+    ),
+    ("launch_with_tabs_as_guest", "GET", "/api/v2/launch"),
     admin_case("launch_with_tabs", "GET", "/api/v2/launch"),
 ]
 

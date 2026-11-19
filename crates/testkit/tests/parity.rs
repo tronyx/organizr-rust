@@ -342,10 +342,27 @@ async fn tab_routes_answer_like_php() {
                 "/response/data/tabs/1/url_local",
                 json!(placeholders_filled_in("")),
             )
-            .pending_case(
+            // The same tab in the menu of the script with the API key.
+            .deviation(
+                "D-47",
                 "launch_with_tabs",
-                "the launch answer does not yet work out the addresses of a tab",
+                "/response/data/tabs/4/url_local",
+                json!(placeholders_filled_in("")),
+            )
+            .deviation(
+                "D-47",
+                "launch_with_tabs",
+                "/response/data/tabs/4/access_url",
+                json!(placeholders_filled_in("")),
             );
+        for case in ["launch_with_tabs_as_guest", "launch_with_tabs"] {
+            replay = launch_differences(replay, case).deviation_for_nulls(
+                "D-28",
+                case,
+                &TAB_SWITCHES,
+                json!(0),
+            );
+        }
 
         replay.run(&installed_app(database)).await;
     })

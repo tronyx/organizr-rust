@@ -61,6 +61,55 @@ impl TrustedProxies {
     }
 }
 
+/// The networks whose callers count as local: on the network of the server itself.
+///
+/// The PHP application uses this for the local address of a tab, among other things.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalNetworks(Vec<IpNet>);
+
+impl LocalNetworks {
+    /// The networks that are always local: the private ranges of IPv4, and the machine
+    /// itself.
+    const ALWAYS: [&str; 5] = [
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "127.0.0.0/8",
+        "::1/128",
+    ];
+
+    /// The networks that are always local, and those of the `localIPList` setting: a
+    /// list of addresses and networks separated by commas, for example
+    /// `203.0.113.7, 198.51.100.0/24`. An entry that is neither is left out. An entry
+    /// such as `192.168.1.7/24` stands for its network.
+    pub fn from_setting(list: &str) -> Self {
+        let networks = Self::ALWAYS
+            .into_iter()
+            .chain(list.split(','))
+            .map(str::trim)
+            .filter_map(|entry| {
+                entry
+                    .parse::<IpNet>()
+                    .or_else(|_| entry.parse::<IpAddr>().map(IpNet::from))
+                    .ok()
+            })
+            .collect();
+        Self(networks)
+    }
+
+    /// Whether a client is on a local network.
+    ///
+    /// A client behind a proxy that is not listed as trusted is never local: its true
+    /// address is not known, and the address of the proxy itself is usually a local one.
+    pub fn contains(&self, client: &Client) -> bool {
+        client.source != AddressSource::UnverifiedForwarding
+            && self
+                .0
+                .iter()
+                .any(|network| network.contains(&client.address))
+    }
+}
+
 /// How the address of a client is known.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AddressSource {
@@ -183,6 +232,93 @@ fn warn_once_about_unlisted_proxy(peer: IpAddr) {
              trusted proxy, so the header was ignored. If this address is your reverse \
              proxy, add it to ORGANIZR_TRUSTED_PROXIES."
         );
+    }
+}
+
+#[cfg(test)]
+mod local_network_tests {
+    use std::net::IpAddr;
+
+    use super::{AddressSource, Client, LocalNetworks};
+
+    fn client(address: &str, source: AddressSource) -> Client {
+        Client {
+            address: address.parse::<IpAddr>().expect("the address is valid"),
+            source,
+            https: false,
+        }
+    }
+
+    fn is_local(list: &str, address: &str) -> bool {
+        LocalNetworks::from_setting(list).contains(&client(address, AddressSource::Connection))
+    }
+
+    #[test]
+    fn private_and_loopback_addresses_are_always_local() {
+        for address in [
+            "10.0.0.1",
+            "10.255.255.255",
+            "172.16.0.1",
+            "172.31.255.255",
+            "192.168.0.1",
+            "192.168.255.255",
+            "127.0.0.1",
+            "127.255.255.255",
+            "::1",
+        ] {
+            assert!(is_local("", address), "{address}");
+        }
+    }
+
+    #[test]
+    fn other_addresses_are_not_local() {
+        for address in [
+            "9.255.255.255",
+            "11.0.0.0",
+            "172.15.255.255",
+            "172.32.0.0",
+            "192.167.255.255",
+            "192.169.0.0",
+            "203.0.113.7",
+            "0.0.0.0",
+            "::",
+            "fd00::1",
+            "2001:db8::1",
+        ] {
+            assert!(!is_local("", address), "{address}");
+        }
+    }
+
+    #[test]
+    fn setting_adds_addresses_and_networks() {
+        let list =
+            " 203.0.113.7 , 198.51.100.0/24,fd00::/8, not-an-address, 300.1.1.1,, 192.0.2.99/28";
+
+        for address in [
+            "203.0.113.7",
+            "198.51.100.0",
+            "198.51.100.255",
+            "fd00::1",
+            // 192.0.2.99/28 stands for the network 192.0.2.96/28.
+            "192.0.2.96",
+            "192.0.2.111",
+            // The networks that are always local stay local.
+            "10.0.0.1",
+        ] {
+            assert!(is_local(list, address), "{address}");
+        }
+        for address in ["203.0.113.8", "198.51.101.0", "192.0.2.95", "192.0.2.112"] {
+            assert!(!is_local(list, address), "{address}");
+        }
+    }
+
+    #[test]
+    fn client_behind_a_proxy_that_is_not_trusted_is_never_local() {
+        let networks = LocalNetworks::from_setting("");
+
+        assert!(networks.contains(&client("192.168.1.5", AddressSource::Connection)));
+        assert!(networks.contains(&client("192.168.1.5", AddressSource::TrustedProxy)));
+        assert!(!networks.contains(&client("192.168.1.5", AddressSource::UnverifiedForwarding)));
     }
 }
 
