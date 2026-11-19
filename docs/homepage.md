@@ -32,6 +32,7 @@ This version has these items:
 - [Weather and air](#weather-and-air)
 - [Plex](#plex): what plays now, new items and playlists
 - [Tautulli](#tautulli)
+- [Overseerr](#overseerr)
 
 You set all items up in **Settings**, on the tab **Homepage**.
 
@@ -346,3 +347,39 @@ A person needs the level of Plex on the homepage to load a picture.
 ### Not built yet
 
 PHP Organizr has a search of the Plex server in its top bar. The server of this application has the route for it. The interface does not show the search yet.
+
+## Overseerr
+
+This item shows the requests for films and series in Overseerr, the newest first.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageOverseerrEnabled` |
+| Level | `homepageOverseerrAuth` |
+| Place | `homepageOrderoverseerr` |
+| Address of Overseerr | `overseerrURL` |
+| API key | `overseerrToken` |
+| Do not check the certificate | `overseerrDisableCertCheck` |
+| Show a user only the own requests | `overseerrLimitUser` |
+| Most requests that are loaded | `overseerrLimit` |
+| Milliseconds between two loads | `overseerrRefresh` |
+
+The address of Overseerr is the one of [single sign-on](single-sign-on.md), on the tab **Login** of the settings.
+
+With `overseerrLimitUser`, a user sees the requests that the user made, and the requests of the fallback user of single sign-on. Organizr compares the user name in Organizr with the user name in Overseerr. An Admin and a Co-Admin see all requests.
+
+A request opens its details. There, an Admin or a Co-Admin can approve, deny and delete the request, and mark it as available or not available. PHP Organizr lets every person who sees the requests do that.
+
+### New requests
+
+The server can make a new request for a person:
+
+| Setting | Key |
+|---|---|
+| Level for a new request | `homepageOverseerrRequestAuth` |
+| Seasons of a new request for a series | `overseerrTvDefault`: `all`, `first`, `last` or `user` |
+| Send new requests to the 4K service | `overseerrPrefer4K` |
+
+The request is made as the person, with the session of Overseerr that single sign-on gave the browser. So a person needs single sign-on for Overseerr to make a request.
+
+The interface of this application does not have the search for a film or a series to request yet. Until then, make new requests in Overseerr.

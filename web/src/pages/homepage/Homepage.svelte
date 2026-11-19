@@ -10,6 +10,7 @@
   import Calendar from './Calendar.svelte';
   import CustomHtml from './CustomHtml.svelte';
   import HealthChecks from './HealthChecks.svelte';
+  import Overseerr from './Overseerr.svelte';
   import Plex from './Plex.svelte';
   import Qbittorrent from './Qbittorrent.svelte';
   import Sabnzbd from './Sabnzbd.svelte';
@@ -34,6 +35,7 @@
     'plexstreams',
     'plexrecent',
     'plexplaylists',
+    'overseerr',
   ]);
 
   /** How the calendar shows, from the options of its item. */
@@ -99,6 +101,8 @@
           <Plex part="recent" />
         {:else if item.kind === 'plexplaylists'}
           <Plex part="playlists" />
+        {:else if item.kind === 'overseerr'}
+          <Overseerr />
         {:else if item.kind === 'tautulli'}
           <Tautulli />
         {:else if item.kind === 'weather'}

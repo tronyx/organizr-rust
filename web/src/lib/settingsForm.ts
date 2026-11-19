@@ -632,6 +632,63 @@ const PLEX_ITEMS: FieldGroup[] = [
   },
 ];
 
+/** The settings of the Overseerr item. */
+const OVERSEERR_ITEMS: FieldGroup[] = [
+  {
+    title: 'Overseerr',
+    fields: [
+      ...itemFields(
+        'the requests of Overseerr',
+        'homepageOverseerrEnabled',
+        'homepageOverseerrAuth',
+        'homepageOrderoverseerr',
+      ),
+      {
+        key: 'overseerrToken',
+        label: 'API key of Overseerr',
+        kind: 'secret',
+        help: 'The address of Overseerr is on the tab "Login", with single sign-on.',
+      },
+      {
+        key: 'overseerrDisableCertCheck',
+        label: 'Do not check the certificate of Overseerr',
+        kind: 'switch',
+      },
+      {
+        key: 'overseerrLimitUser',
+        label: 'Show a user only the own requests',
+        kind: 'switch',
+        help: 'An Admin and a Co-Admin see all requests.',
+      },
+      { key: 'overseerrLimit', label: 'Most requests that are loaded', kind: 'number', min: 1 },
+      {
+        key: 'homepageOverseerrRequestAuth',
+        label: 'A new request is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'overseerrTvDefault',
+        label: 'A new request for a series asks for',
+        kind: 'select',
+        options: [
+          { value: 'all', label: 'All seasons' },
+          { value: 'first', label: 'The first season' },
+          { value: 'last', label: 'The last season' },
+          { value: 'user', label: 'The seasons that the person selects' },
+        ],
+      },
+      { key: 'overseerrPrefer4K', label: 'Send new requests to the 4K service', kind: 'switch' },
+      {
+        key: 'overseerrRefresh',
+        label: 'Milliseconds between two loads of the requests',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+];
+
 /** The settings of the Tautulli item. */
 const TAUTULLI_ITEMS: FieldGroup[] = [
   {
@@ -1111,4 +1168,5 @@ export const HOMEPAGE: FieldGroup[] = [
   ...WEATHER_ITEMS,
   ...PLEX_ITEMS,
   ...TAUTULLI_ITEMS,
+  ...OVERSEERR_ITEMS,
 ];
