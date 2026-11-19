@@ -509,6 +509,92 @@ const SERVICE_ITEMS: FieldGroup[] = [
   },
 ];
 
+/** The settings of the download clients. */
+const DOWNLOAD_ITEMS: FieldGroup[] = [
+  {
+    title: 'SABnzbd',
+    fields: [
+      ...itemFields(
+        'the downloads of SABnzbd',
+        'homepageSabnzbdEnabled',
+        'homepageSabnzbdAuth',
+        'homepageOrdersabnzbd',
+      ),
+      { key: 'sabnzbdURL', label: 'Address of SABnzbd', kind: 'text' },
+      { key: 'sabnzbdToken', label: 'API key of SABnzbd', kind: 'secret' },
+      {
+        key: 'sabnzbdDisableCertCheck',
+        label: 'Do not check the certificate of SABnzbd',
+        kind: 'switch',
+      },
+      {
+        key: 'sabnzbdRefresh',
+        label: 'Milliseconds between two loads of SABnzbd',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'qBittorrent',
+    fields: [
+      ...itemFields(
+        'the torrents of qBittorrent',
+        'homepageqBittorrentEnabled',
+        'homepageqBittorrentAuth',
+        'homepageOrderqBittorrent',
+      ),
+      { key: 'qBittorrentURL', label: 'Address of qBittorrent', kind: 'text' },
+      { key: 'qBittorrentUsername', label: 'User name of qBittorrent', kind: 'text' },
+      { key: 'qBittorrentPassword', label: 'Password of qBittorrent', kind: 'secret' },
+      {
+        key: 'qBittorrentApiVersion',
+        label: 'Version of the API of qBittorrent',
+        kind: 'select',
+        options: [
+          { value: '1', label: 'Version 1, before qBittorrent 4.1' },
+          { value: '2', label: 'Version 2, from qBittorrent 4.1' },
+        ],
+      },
+      {
+        key: 'qBittorrentSortOrder',
+        label: 'The torrents are sorted by',
+        kind: 'select',
+        options: [
+          { value: 'eta', label: 'The time that is left' },
+          { value: 'name', label: 'The name' },
+          { value: 'added_on', label: 'The time that they were added' },
+          { value: 'progress', label: 'How far they are' },
+          { value: 'state', label: 'The state' },
+          { value: 'size', label: 'The size' },
+        ],
+      },
+      { key: 'qBittorrentReverseSorting', label: 'Turn the order around', kind: 'switch' },
+      {
+        key: 'qBittorrentHideSeeding',
+        label: 'Leave out the torrents that only upload',
+        kind: 'switch',
+      },
+      {
+        key: 'qBittorrentHideCompleted',
+        label: 'Leave out the torrents that are complete and paused',
+        kind: 'switch',
+      },
+      {
+        key: 'qBittorrentDisableCertCheck',
+        label: 'Do not check the certificate of qBittorrent',
+        kind: 'switch',
+      },
+      {
+        key: 'qBittorrentRefresh',
+        label: 'Milliseconds between two loads of qBittorrent',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+];
+
 /** The settings of the calendar, and of the applications that fill it. */
 const CALENDAR_ITEMS: FieldGroup[] = [
   {
@@ -757,4 +843,9 @@ const CUSTOM_HTML_ITEMS: FieldGroup[] = CUSTOM_HTML.map((number) => ({
 }));
 
 /** The settings of the items of the homepage. */
-export const HOMEPAGE: FieldGroup[] = [...CUSTOM_HTML_ITEMS, ...SERVICE_ITEMS, ...CALENDAR_ITEMS];
+export const HOMEPAGE: FieldGroup[] = [
+  ...CUSTOM_HTML_ITEMS,
+  ...SERVICE_ITEMS,
+  ...CALENDAR_ITEMS,
+  ...DOWNLOAD_ITEMS,
+];

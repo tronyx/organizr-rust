@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_REFRESH, refreshTime, SHORTEST_REFRESH } from './itemData.svelte';
-import { fromNow } from './time';
+import { durationText, fromNow } from './time';
 
 describe('refreshTime', () => {
   it('is the setting, which the server sends as text', () => {
@@ -36,5 +36,16 @@ describe('fromNow', () => {
     expect(fromNow(null, now)).toBeNull();
     expect(fromNow('', now)).toBeNull();
     expect(fromNow('soon', now)).toBeNull();
+  });
+});
+
+describe('durationText', () => {
+  it('says a number of seconds in its two largest units', () => {
+    expect(durationText(45)).toBe('45 s');
+    expect(durationText(720)).toBe('12 min');
+    expect(durationText(3720)).toBe('1 h 2 min');
+    expect(durationText(183600)).toBe('2 d 3 h');
+    expect(durationText(-1)).toBe('');
+    expect(durationText(Number.NaN)).toBe('');
   });
 });

@@ -27,6 +27,8 @@ This version has these items:
 - [Uptime Kuma](#uptime-kuma)
 - [Calendar](#calendar), with Sonarr, Radarr and Lidarr
 - [Downloads of Sonarr and Radarr](#downloads-of-sonarr-and-radarr)
+- [SABnzbd](#sabnzbd)
+- [qBittorrent](#qbittorrent)
 
 You set all items up in **Settings**, on the tab **Homepage**.
 
@@ -178,3 +180,45 @@ These two items show the downloads in the queue of Sonarr and of Radarr. Each on
 | Milliseconds between two loads | `homepageSonarrQueueRefresh` |
 
 A person needs the level of the application and the level of its downloads.
+
+## SABnzbd
+
+This item shows the downloads in the queue of SABnzbd, and the last downloads that are done.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageSabnzbdEnabled` |
+| Level | `homepageSabnzbdAuth` |
+| Place | `homepageOrdersabnzbd` |
+| Address | `sabnzbdURL` |
+| API key | `sabnzbdToken` |
+| Do not check the certificate | `sabnzbdDisableCertCheck` |
+| Milliseconds between two loads | `sabnzbdRefresh` |
+
+An Admin or a Co-Admin can pause and resume the whole queue, or one download. Other users see the queue only.
+
+Use the full API key of SABnzbd. The NZB key cannot read the queue.
+
+## qBittorrent
+
+This item shows the torrents of qBittorrent and how far each one is.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageqBittorrentEnabled` |
+| Level | `homepageqBittorrentAuth` |
+| Place | `homepageOrderqBittorrent` |
+| Address | `qBittorrentURL` |
+| User name | `qBittorrentUsername` |
+| Password | `qBittorrentPassword` |
+| Version of the API | `qBittorrentApiVersion` |
+| Sorted by | `qBittorrentSortOrder` |
+| Turn the order around | `qBittorrentReverseSorting` |
+| Leave out the torrents that only upload | `qBittorrentHideSeeding` |
+| Leave out the torrents that are complete and paused | `qBittorrentHideCompleted` |
+| Do not check the certificate | `qBittorrentDisableCertCheck` |
+| Milliseconds between two loads | `qBittorrentRefresh` |
+
+Select version 2 of the API for qBittorrent 4.1 and later. The default of the setting is version 1, as in PHP Organizr.
+
+Organizr logs in to qBittorrent with the user name and the password each time it loads the torrents. If qBittorrent blocks an address after wrong logins, a wrong password in this setting blocks the address of Organizr.

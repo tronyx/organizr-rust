@@ -10,6 +10,8 @@
   import Calendar from './Calendar.svelte';
   import CustomHtml from './CustomHtml.svelte';
   import HealthChecks from './HealthChecks.svelte';
+  import Qbittorrent from './Qbittorrent.svelte';
+  import Sabnzbd from './Sabnzbd.svelte';
   import UptimeKuma from './UptimeKuma.svelte';
 
   let { title }: { title: string } = $props();
@@ -22,6 +24,8 @@
     'calendar',
     'sonarrqueue',
     'radarrqueue',
+    'sabnzbd',
+    'qbittorrent',
   ]);
 
   /** How the calendar shows, from the options of its item. */
@@ -77,6 +81,10 @@
           <ArrQueue application="sonarr" />
         {:else if item.kind === 'radarrqueue'}
           <ArrQueue application="radarr" />
+        {:else if item.kind === 'sabnzbd'}
+          <Sabnzbd />
+        {:else if item.kind === 'qbittorrent'}
+          <Qbittorrent />
         {/if}
       </section>
     {/each}

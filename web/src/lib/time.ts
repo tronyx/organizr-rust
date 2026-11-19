@@ -27,3 +27,23 @@ export function fromNow(time: string | null | undefined, now: number = Date.now(
   }
   return format.format(seconds, 'second');
 }
+
+/** A number of seconds as people say it: "45 s", "12 min", "1 h 2 min", "2 d 3 h". */
+export function durationText(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return '';
+  }
+  const whole = Math.round(seconds);
+  if (whole < 60) {
+    return `${whole} s`;
+  }
+  const minutes = Math.floor(whole / 60);
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours} h ${minutes % 60} min`;
+  }
+  return `${Math.floor(hours / 24)} d ${hours % 24} h`;
+}
