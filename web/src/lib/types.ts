@@ -77,6 +77,9 @@ export interface Appearance {
   title: string;
 }
 
+/** Where the tabs without a heading stand in the menu. */
+export type UnsortedPlace = 'top' | 'bottom';
+
 /** The answer of `GET /launch`: what the interface loads first. */
 export interface Launch {
   /** `false` on an install that is not set up. */
@@ -86,6 +89,13 @@ export interface Launch {
   user: User | null;
   version: string;
   appearance: Appearance;
+  /** The settings that a page needs. Only the ones that the interface reads are listed. */
+  settings: {
+    misc: {
+      /** Whether the tabs without a heading stand above the categories or below them. */
+      unsortedTabs: UnsortedPlace;
+    };
+  };
   status: { status: 'ok' | 'wizard' };
 }
 

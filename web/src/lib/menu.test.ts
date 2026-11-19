@@ -58,7 +58,7 @@ describe('buildMenu', () => {
       tab(1, 'Welcome', { order: 1 }),
     ];
 
-    const menu = buildMenu(tabs, categories);
+    const menu = buildMenu(tabs, categories, 'top');
 
     expect(menu.unsorted.map((entry) => entry.name)).toEqual(['Welcome', 'Status']);
     expect(menu.unsortedPlace).toBe('top');
@@ -72,18 +72,17 @@ describe('buildMenu', () => {
     ]);
   });
 
-  it('puts the tabs without a heading below when the server sends the tabs upwards', () => {
+  it('puts the tabs without a heading where the setting says', () => {
     const tabs = [tab(1, 'Welcome'), tab(4, 'Plex', { category_id: 7 })];
 
-    expect(buildMenu(tabs, categories).unsortedPlace).toBe('bottom');
-    expect(buildMenu([tab(1, 'Welcome')], categories).unsortedPlace).toBe('top');
-    expect(buildMenu([], categories).unsortedPlace).toBe('top');
+    expect(buildMenu(tabs, categories, 'bottom').unsortedPlace).toBe('bottom');
+    expect(buildMenu(tabs, categories, 'top').unsortedPlace).toBe('top');
   });
 
   it('keeps a tab whose category does not exist', () => {
     const tabs = [tab(1, 'Lost', { category_id: 55 }), tab(2, 'None', { category_id: null })];
 
-    const menu = buildMenu(tabs, categories);
+    const menu = buildMenu(tabs, categories, 'top');
 
     expect(menu.unsorted.map((entry) => entry.name)).toEqual(['Lost', 'None']);
     expect(menu.groups).toEqual([]);

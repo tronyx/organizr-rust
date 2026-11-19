@@ -3,23 +3,26 @@
   import Picture from '../components/Picture.svelte';
   import { buildMenu, opensNewWindow } from '../lib/menu';
   import { tabHash } from '../lib/route.svelte';
-  import type { MenuCategory, MenuTab } from '../lib/types';
+  import type { MenuCategory, MenuTab, UnsortedPlace } from '../lib/types';
 
   let {
     tabs,
     categories,
+    unsortedPlace,
     shown,
     onpick,
   }: {
     tabs: MenuTab[];
     categories: MenuCategory[];
+    /** Whether the tabs without a heading stand above the categories or below them. */
+    unsortedPlace: UnsortedPlace;
     /** The id of the tab that the main area shows. */
     shown: number | undefined;
     /** Called when the user picks a tab. */
     onpick?: () => void;
   } = $props();
 
-  const menu = $derived(buildMenu(tabs, categories));
+  const menu = $derived(buildMenu(tabs, categories, unsortedPlace));
 </script>
 
 {#snippet entry(tab: MenuTab)}

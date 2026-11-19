@@ -94,6 +94,7 @@
       <Menu
         tabs={session.tabs}
         categories={session.categories}
+        unsortedPlace={session.unsortedPlace}
         {shown}
         onpick={() => (menuOpen = false)}
       />

@@ -1,7 +1,13 @@
 // What the interface knows about the install and the caller: the answer of `GET /launch`.
 
 import { api, failureText } from './api';
-import { CO_ADMIN, type Launch, type MenuCategory, type MenuTab } from './types';
+import {
+  CO_ADMIN,
+  type Launch,
+  type MenuCategory,
+  type MenuTab,
+  type UnsortedPlace,
+} from './types';
 
 class Session {
   /** The last answer of `GET /launch`. `null` until the first one arrives. */
@@ -17,6 +23,7 @@ class Session {
   canManage = $derived(this.loggedIn && (this.launch?.user?.groupID ?? 999) <= CO_ADMIN);
   tabs = $derived<MenuTab[]>(this.launch?.tabs || []);
   categories = $derived<MenuCategory[]>(this.launch?.categories || []);
+  unsortedPlace = $derived<UnsortedPlace>(this.launch?.settings.misc.unsortedTabs ?? 'top');
 
   /** Asks the server again. Call it at the start and after a login, a logout or a change. */
   async load(): Promise<void> {

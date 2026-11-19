@@ -44,7 +44,7 @@ describe('Menu', () => {
   ];
 
   it('shows each tab as a link to its address, under its category', () => {
-    render(Menu, { tabs, categories: CATEGORIES, shown: undefined });
+    render(Menu, { tabs, categories: CATEGORIES, shown: undefined, unsortedPlace: 'top' });
 
     expect(screen.getByRole('link', { name: /Status/ })).toHaveAttribute('href', '#Status');
     const media = screen.getByText('Media').closest('details');
@@ -55,8 +55,31 @@ describe('Menu', () => {
     expect(screen.queryByText('Unsorted')).not.toBeInTheDocument();
   });
 
+  it('puts the tabs without a heading below the categories when the setting says so', () => {
+    const names = (place: 'top' | 'bottom') => {
+      const { container, unmount } = render(Menu, {
+        tabs,
+        categories: CATEGORIES,
+        shown: undefined,
+        unsortedPlace: place,
+      });
+      const links = [...container.querySelectorAll('a')].map((link) => link.textContent.trim());
+      unmount();
+      return links;
+    };
+
+    const top = names('top');
+    const bottom = names('bottom');
+
+    const place = (links: string[], name: string) => links.findIndex((link) => link.includes(name));
+    // "Status" has no heading, and "Plex Server" is in a category.
+    expect(place(top, 'Status')).toBeLessThan(place(top, 'Plex Server'));
+    expect(place(bottom, 'Status')).toBeGreaterThan(place(bottom, 'Plex Server'));
+    expect([...bottom].sort()).toEqual([...top].sort());
+  });
+
   it('marks the tab that the main area shows', () => {
-    render(Menu, { tabs, categories: CATEGORIES, shown: 2 });
+    render(Menu, { tabs, categories: CATEGORIES, shown: 2, unsortedPlace: 'top' });
 
     expect(screen.getByRole('link', { name: /Plex Server/ })).toHaveAttribute(
       'aria-current',
@@ -66,7 +89,7 @@ describe('Menu', () => {
   });
 
   it('opens a tab of the kind "new window" in a new window, without a way back', () => {
-    render(Menu, { tabs, categories: CATEGORIES, shown: undefined });
+    render(Menu, { tabs, categories: CATEGORIES, shown: undefined, unsortedPlace: 'top' });
 
     const docs = screen.getByRole('link', { name: /Docs/ });
     expect(docs).toHaveAttribute('href', 'https://3.example.com/');
@@ -75,7 +98,12 @@ describe('Menu', () => {
   });
 
   it('shows a picture that can be loaded, and else the first letter', () => {
-    const { container } = render(Menu, { tabs, categories: CATEGORIES, shown: undefined });
+    const { container } = render(Menu, {
+      tabs,
+      categories: CATEGORIES,
+      shown: undefined,
+      unsortedPlace: 'top',
+    });
 
     const pictures = [...container.querySelectorAll('img')].map((image) => image.src);
     expect(pictures).toEqual(['https://example.com/plex.png']);
@@ -125,7 +153,10 @@ describe('TabFrames', () => {
   it('loads a tab that is marked "preload" at once', () => {
     const preloaded = [tab(1, 'Status'), tab(2, 'Plex', { preload: 1 })];
 
-    const { container } = render(TabFrames, { tabs: preloaded, shown: undefined });
+    const { container } = render(TabFrames, {
+      tabs: preloaded,
+      shown: undefined,
+    });
 
     expect(frames(container)).toEqual([
       { title: 'Plex', address: 'https://2.example.com/', hidden: true },

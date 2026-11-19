@@ -12,6 +12,7 @@ function launch(changes: Record<string, unknown>) {
         user: null,
         version: '0.1.0',
         appearance: { title: 'My Server' },
+        settings: { misc: { unsortedTabs: 'top' } },
         status: { status: 'ok' },
         ...changes,
       },

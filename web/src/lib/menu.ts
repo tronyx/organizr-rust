@@ -1,7 +1,7 @@
 // The menu of tabs and categories, and what the main area shows for an address.
 
 import { findTab, type Route } from './route.svelte';
-import type { MenuCategory, MenuTab } from './types';
+import type { MenuCategory, MenuTab, UnsortedPlace } from './types';
 
 /** The number of the category whose tabs stand in the menu without a heading. */
 export const UNSORTED = 0;
@@ -15,7 +15,7 @@ export interface Menu {
   /** The tabs without a heading: those of the category "Unsorted". */
   unsorted: MenuTab[];
   /** Whether the tabs without a heading stand above the categories or below them. */
-  unsortedPlace: 'top' | 'bottom';
+  unsortedPlace: UnsortedPlace;
   /** The categories that have a tab for this caller, in their order. */
   groups: MenuGroup[];
 }
@@ -25,19 +25,14 @@ function byPlace<T extends { order: number; id: number }>(first: T, second: T): 
 }
 
 /**
- * Where the tabs without a heading stand. This is the `unsortedTabs` setting, which the
- * launch answer does not hold yet. But the server sends the tabs in downward order for
- * `top` and in upward order for `bottom`, so the order of the list tells.
+ * Puts the tabs of a launch answer under their categories. `unsortedPlace` is the
+ * `unsortedTabs` setting.
  */
-function unsortedPlace(tabs: MenuTab[]): 'top' | 'bottom' {
-  const places = tabs.map((tab) => tab.order);
-  const first = places[0];
-  const last = places[places.length - 1];
-  return first !== undefined && last !== undefined && first < last ? 'bottom' : 'top';
-}
-
-/** Puts the tabs of a launch answer under their categories. */
-export function buildMenu(tabs: MenuTab[], categories: MenuCategory[]): Menu {
+export function buildMenu(
+  tabs: MenuTab[],
+  categories: MenuCategory[],
+  unsortedPlace: UnsortedPlace,
+): Menu {
   const sorted = [...tabs].sort(byPlace);
   const numbers = new Set(categories.map((category) => category.category_id));
   const groups = [...categories]
@@ -53,7 +48,7 @@ export function buildMenu(tabs: MenuTab[], categories: MenuCategory[]): Menu {
     (tab) =>
       tab.category_id === UNSORTED || tab.category_id === null || !numbers.has(tab.category_id),
   );
-  return { unsorted, unsortedPlace: unsortedPlace(tabs), groups };
+  return { unsorted, unsortedPlace, groups };
 }
 
 /** Whether a tab opens in a new browser window and not inside the interface. */
