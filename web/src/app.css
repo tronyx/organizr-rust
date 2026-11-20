@@ -620,7 +620,7 @@
     /* The closed strip shows the pictures only. */
     .org-sidebar:not(:hover, :focus-within) .org-wide,
     .org-sidebar:not(:hover, :focus-within) details > ul {
-      display: none;
+      display: none !important;
     }
   }
 }

@@ -1,8 +1,10 @@
-/* The base of a custom HTML item: the dark page of the interface, and the classes of
-   the PHP interface that such items use most: the grid of Bootstrap 3, a button, a box
-   and a few helpers. The interface is dark, so the document is dark too. Without this,
-   a browser paints a white page behind an item that sets no background. */
-:root { color-scheme: dark; }
+/* The base of a custom HTML item: a page that lets the dark interface show through, and
+   the classes of the PHP interface that such items use most: the grid of Bootstrap 3, a
+   button, a box and a few helpers. The document has the light colour scheme, as a page
+   of PHP Organizr has, and so has the frame around it. A browser paints a white page
+   behind a document whose scheme is another one than the scheme of its frame, so a
+   page that the item embeds shows through only with this scheme. */
+:root { color-scheme: light; }
 html, body { margin: 0; background: transparent; }
 body { font-family: 'Rubik Variable', Rubik, sans-serif; font-size: 14px; font-weight: 300;
   line-height: 1.43; color: #96a2b4; }

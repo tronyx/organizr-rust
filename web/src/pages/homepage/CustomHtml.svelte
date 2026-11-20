@@ -24,7 +24,7 @@
 
 <iframe
   bind:this={frame}
-  class="block w-full border-0"
+  class="block w-full border-0 scheme-light"
   style:height="{height}px"
   title="Custom HTML {id}"
   src={customHtmlAddress(id)}

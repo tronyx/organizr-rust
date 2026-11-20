@@ -32,9 +32,9 @@ const BASE_STYLE: &str = include_str!("custom_html.css");
 /// Tells the page of Organizr how high the content is, so the frame can fit it.
 const SIZE_SCRIPT: &str = "<script>(function () {\
     function tell() {\
-        parent.postMessage({ organizrFrameHeight: document.documentElement.scrollHeight }, '*');\
+        parent.postMessage({ organizrFrameHeight: Math.ceil(document.body.getBoundingClientRect().height) }, '*');\
     }\
-    new ResizeObserver(tell).observe(document.documentElement);\
+    new ResizeObserver(tell).observe(document.body);\
     addEventListener('load', tell);\
     tell();\
 })();</script>";
