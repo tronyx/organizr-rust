@@ -21,6 +21,8 @@ allow = [
     "0BSD",
     "MIT",
     "Apache-2.0",
+    # The runtime for extensions. The exception lets its code be linked into other work.
+    "Apache-2.0 WITH LLVM-exception",
     "BSD-3-Clause",
     "CDLA-Permissive-2.0",
     "ISC",

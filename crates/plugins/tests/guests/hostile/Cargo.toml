@@ -1,0 +1,20 @@
+[package]
+name = "hostile-extension"
+description = "An extension that tries what an extension must not be able to do. The tests of the host run it."
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = "0.63.0"
+
+[profile.release]
+opt-level = "s"
+strip = true
+
+# This folder is no part of the workspace of Organizr.
+[workspace]

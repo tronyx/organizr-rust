@@ -35,3 +35,7 @@ Thumbs.db
 
 # Python byte code, from running the recorder
 __pycache__/
+
+# The example extension and the test extension have a build folder of their own.
+/examples/*/target/
+/crates/plugins/tests/guests/*/target/

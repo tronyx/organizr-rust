@@ -1,0 +1,64 @@
+// The interface between Organizr and an extension.
+//
+// An extension is a WebAssembly component that exports the world `extension`. Organizr
+// calls `handle` for each request to a route of the extension. The extension can call
+// the functions of `host`, and nothing else: it has no files, no network and no clock
+// of its own.
+package organizr:extension@0.1.0;
+
+interface host {
+    enum log-level {
+        debug,
+        info,
+        warn,
+        error,
+    }
+
+    /// Writes a line to the log of Organizr.
+    log: func(level: log-level, message: string);
+
+    /// Reads a value that the extension stored. Gives nothing when there is no such
+    /// value, or when the extension has no permission to store values.
+    get-value: func(key: string) -> option<string>;
+
+    /// Stores a value under a key. The values stay when Organizr starts again. Fails
+    /// when the extension has no permission to store values, or when the values get
+    /// too large.
+    set-value: func(key: string, value: string) -> result<_, string>;
+
+    /// Deletes a value.
+    delete-value: func(key: string);
+}
+
+world extension {
+    import host;
+
+    /// The person who sent a request.
+    record caller {
+        /// The user name. A guest has none.
+        username: option<string>,
+        /// The access level of the group of the caller: 0 is the Admin, 999 is a guest.
+        level: u16,
+    }
+
+    record request {
+        /// The method in capital letters, for example `GET`.
+        method: string,
+        /// The path below the route of the extension. It starts with `/`.
+        path: string,
+        /// The query without the question mark.
+        query: string,
+        headers: list<tuple<string, string>>,
+        body: list<u8>,
+        caller: caller,
+    }
+
+    record response {
+        status: u16,
+        headers: list<tuple<string, string>>,
+        body: list<u8>,
+    }
+
+    /// Answers a request to a route of the extension.
+    export handle: func(request: request) -> response;
+}

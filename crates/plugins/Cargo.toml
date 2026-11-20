@@ -11,6 +11,10 @@ publish.workspace = true
 [lints]
 workspace = true
 
+[features]
+# The host of extensions: WebAssembly components that answer requests.
+wasm-plugins = ["dep:wasmtime", "dep:wasmtime-wasi"]
+
 [dependencies]
 organizr-integrations.workspace = true
 organizr-settings.workspace = true
@@ -20,6 +24,8 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+wasmtime = { workspace = true, optional = true }
+wasmtime-wasi = { workspace = true, optional = true }
 
 [dev-dependencies]
 organizr-testkit.workspace = true

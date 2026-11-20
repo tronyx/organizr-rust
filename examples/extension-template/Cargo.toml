@@ -1,0 +1,21 @@
+[package]
+name = "extension-template"
+description = "A small extension for Organizr. Copy it to start an extension of your own."
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = "0.63.0"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
+
+# This folder is no part of the workspace of Organizr.
+[workspace]

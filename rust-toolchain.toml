@@ -2,3 +2,5 @@
 channel = "1.100.0"
 profile = "minimal"
 components = ["rustfmt", "clippy"]
+# The tests of the extension host build two extensions for WebAssembly.
+targets = ["wasm32-wasip2"]
