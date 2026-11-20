@@ -11,6 +11,7 @@ Each test is a route below `/api/v2`. A script can send the request with the API
 | A cron schedule | **Test the schedule**, next to the schedule of the backups and next to the schedule of the health checks plugin. The test uses the schedule in the field, also before you save. |
 | The scheduler | **Check that the scheduler runs**, below the settings of the backups and of the health checks plugin. |
 | The webhook for the logs | **Test the connection of Slack or Discord**, in the group "Slack or Discord" of the general settings. Save the settings before you test. |
+| The LDAP server | **Test the connection of LDAP** and **Test a login**, in the group "LDAP" of the login settings. Save the settings before you test. See [Logging in with LDAP, FTP, Emby or Jellyfin](login-services.md#the-two-tests). |
 
 The routes and their bodies:
 
@@ -21,6 +22,8 @@ The routes and their bodies:
 | Whether a cron schedule can be read | `POST /test/cron` | The schedule as one JSON text, for example `"*/5 * * * *"` |
 | Whether the scheduler runs | `GET /test/cron` | None |
 | The webhook for the logs | `POST /test/slack-logs` | None |
+| The LDAP server: a bind with the bind account | `POST /test/ldap` | None |
+| The LDAP server: a login | `POST /test/ldap/login` | `{"username": "robin", "password": "..."}` |
 
 ## A page in a frame
 

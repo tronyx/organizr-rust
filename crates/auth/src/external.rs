@@ -32,6 +32,11 @@ pub struct ExternalAccount<'a> {
     pub password: Option<&'a str>,
     /// The Plex token of the account, when the service is Plex.
     pub plex_token: Option<&'a str>,
+    /// The name that the person typed. When it is given, the account is the one with
+    /// this user name or this e-mail address, as PHP finds it after a login with a
+    /// password; `username` and `email` are then only those of a new account. Without
+    /// it, the account is the one with `username`, or else with `email`.
+    pub found_by: Option<&'a str>,
 }
 
 /// What a login through another service did.
@@ -43,8 +48,9 @@ pub struct ExternalLogin {
 }
 
 /// Logs in the Organizr account of a person whom another service has checked. The
-/// account is the one with the user name or the e-mail address of the service, in any
-/// letter case. When there is none, an account is made in the group of new users.
+/// account is the one that [`ExternalAccount::found_by`] names, or else the one with
+/// the user name or the e-mail address of the service, in any letter case. When there
+/// is none, an account is made in the group of new users.
 ///
 /// The second factor of an Organizr account is asked for as in every login, unless
 /// `second_factor.skip` says that this login needs none.
@@ -57,8 +63,10 @@ pub async fn log_in(
     lifetime: Duration,
 ) -> Result<ExternalLogin, LoginError> {
     let users = database.users();
-    let mut user = users.find_by_login(account.username).await?;
-    if user.is_none() && !account.email.is_empty() {
+    let mut user = users
+        .find_by_login(account.found_by.unwrap_or(account.username))
+        .await?;
+    if user.is_none() && account.found_by.is_none() && !account.email.is_empty() {
         user = users.find_by_email(account.email).await?;
     }
     let password = account.password.filter(|password| !password.is_empty());

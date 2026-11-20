@@ -11,6 +11,7 @@
     formValues,
     hasSecret,
     SECURE,
+    shownGroups,
     siteList,
     valueTestBody,
     type FieldGroup,
@@ -41,6 +42,9 @@
   let testing = $state<string | null>(null);
 
   const changed = $derived(config ? changedSettings(groups, config, form) : {});
+  const shown = $derived(shownGroups(groups, form));
+  /** The user name and the password of each login test, as the Admin typed them. */
+  let logins = $state<Record<string, { username: string; password: string }>>({});
   const hasChanges = $derived(Object.keys(changed).length > 0);
 
   async function load() {
@@ -89,6 +93,21 @@
   /** Asks the server to try the stored settings of a service. */
   function test(service: string) {
     return run(service, 'POST', `test/${service}`);
+  }
+
+  /** Asks the server to try a login with the name and the password that the Admin typed. */
+  function testLogin(name: string) {
+    const typed = logins[name] ?? { username: '', password: '' };
+    return run(name, 'POST', `test/${name}`, {
+      username: typed.username,
+      password: typed.password,
+    });
+  }
+
+  /** The typed values of a login test, made when the Admin first types. */
+  function typed(name: string) {
+    logins[name] ??= { username: '', password: '' };
+    return logins[name];
   }
 
   /** Asks the server to try the value of a field, as it stands in the form. */
@@ -140,7 +159,7 @@
 
 {#if config}
   <form class="max-w-2xl" onsubmit={save}>
-    {#each groups as group (group.title)}
+    {#each shown as group (group.title)}
       <fieldset class="fieldset mb-6">
         <legend class="fieldset-legend text-base">{group.title}</legend>
         {#each group.fields as field (field.key)}
@@ -235,8 +254,54 @@
             <p id={hint} class="label whitespace-normal">{field.help}</p>
           {/if}
         {/each}
+        {#if group.preview}
+          <p class="label mt-2 whitespace-normal">
+            {group.preview.label}: <code class="break-all">{group.preview.text(form)}</code>
+          </p>
+        {/if}
         {#if group.test}
           {@render tester(group.test, `Test the connection of ${group.title}`)}
+        {/if}
+        {#if group.loginTest}
+          {@const login = group.loginTest}
+          {@const id = `login-test-${login.test.replaceAll('/', '-')}`}
+          <div class="mt-4 grid gap-2">
+            <label class="label" for={`${id}-name`}>User name for the test</label>
+            <input
+              id={`${id}-name`}
+              class="input w-full"
+              autocomplete="off"
+              value={logins[login.test]?.username ?? ''}
+              oninput={(event) => (typed(login.test).username = event.currentTarget.value)}
+            />
+            <label class="label" for={`${id}-password`}>Password for the test</label>
+            <input
+              id={`${id}-password`}
+              class="input w-full"
+              type="password"
+              autocomplete="off"
+              value={logins[login.test]?.password ?? ''}
+              oninput={(event) => (typed(login.test).password = event.currentTarget.value)}
+            />
+            <div class="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                class="btn btn-sm"
+                disabled={hasChanges || testing !== null}
+                onclick={() => testLogin(login.test)}
+              >
+                {#if testing === login.test}
+                  <span class="loading loading-spinner loading-xs"></span>
+                {/if}
+                {login.label}
+              </button>
+              {#if hasChanges}
+                <span class="text-sm">Save the settings before you test.</span>
+              {:else}
+                {@render answer(login.test)}
+              {/if}
+            </div>
+          </div>
         {/if}
         {#if group.scheduler}
           <div class="mt-2 flex flex-wrap items-center gap-3">

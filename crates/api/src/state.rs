@@ -11,6 +11,7 @@ use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, DbError, StoredSetting};
 use organizr_integrations::http::Outbound;
 use organizr_integrations::ipinfo::IPINFO;
+use organizr_integrations::media_login::EMBY_CONNECT;
 use organizr_integrations::organizr_app::ORGANIZR_API;
 use organizr_integrations::plex::{PLEX_TV, PlexTv};
 use organizr_integrations::sponsors::{GITHUB_SPONSORS, OPEN_COLLECTIVE};
@@ -63,6 +64,8 @@ pub struct AppState {
     outbound: Option<Outbound>,
     /// The address of the account service of Plex.
     plex_tv: Arc<str>,
+    /// The address of the API of Emby Connect.
+    emby_connect: Arc<str>,
     /// The address of the weather API.
     breezometer: Arc<str>,
     /// The addresses of the API and of the pages of Trakt.
@@ -148,6 +151,7 @@ impl AppState {
                 })
                 .ok(),
             plex_tv: Arc::from(PLEX_TV),
+            emby_connect: Arc::from(EMBY_CONNECT),
             breezometer: Arc::from(BREEZOMETER),
             trakt: Arc::new((TRAKT_API.to_owned(), TRAKT_SITE.to_owned())),
             stripe: Arc::from(STRIPE_API),
@@ -350,6 +354,19 @@ impl AppState {
     pub fn with_plex_tv(mut self, address: &str) -> Self {
         self.plex_tv = Arc::from(address);
         self
+    }
+
+    /// The same state, with another address for the API of Emby Connect. A test puts a
+    /// stand-in there.
+    #[must_use]
+    pub fn with_emby_connect(mut self, address: &str) -> Self {
+        self.emby_connect = Arc::from(address);
+        self
+    }
+
+    /// The address of the API of Emby Connect.
+    pub fn emby_connect(&self) -> &str {
+        &self.emby_connect
     }
 
     /// The same state, with another address for the weather API. A test puts a

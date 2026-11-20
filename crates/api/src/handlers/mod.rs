@@ -25,6 +25,7 @@ pub mod launch_settings;
 pub mod lock;
 pub mod log;
 pub mod login;
+pub mod login_backends;
 pub mod logout;
 pub mod mail;
 pub mod media_register;

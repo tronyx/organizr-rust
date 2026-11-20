@@ -10,6 +10,7 @@ use organizr_auth::external::{self, ExternalAccount};
 use organizr_auth::login::{self, Device, LoggedIn, LoginError, SecondFactor};
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
 use organizr_domain::{GroupLevel, Timestamp};
+use organizr_integrations::plex::PlexAccount;
 use organizr_settings::{AuthType, Settings};
 
 use crate::api_data::ApiData;
@@ -19,6 +20,7 @@ use crate::cookies::{self, CookieScope};
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::external_login::{self, HandOff};
+use crate::handlers::login_backends;
 use crate::handlers::mail;
 use crate::state::AppState;
 
@@ -75,6 +77,8 @@ pub async fn login(
             && LocalNetworks::from_setting(&settings.local_ip_list).contains(&client),
     };
     let request = Attempted {
+        headers: &headers,
+        client: &client,
         name: &name,
         password: &password,
         plex_token: data.text("oAuth").filter(|token| !token.is_empty()),
@@ -177,6 +181,9 @@ async fn single_sign_on(
 
 /// What a login brings.
 struct Attempted<'a> {
+    /// The request, for the addresses of services that are paths on this host.
+    headers: &'a HeaderMap,
+    client: &'a Client,
     name: &'a str,
     password: &'a str,
     /// The token of the field `oAuth`.
@@ -200,8 +207,16 @@ struct Outcome {
     with_plex_token: bool,
 }
 
-/// Checks a login: with Plex when the request or the settings ask for that, and with
-/// the stored password when the settings allow it.
+/// Who vouched for a login.
+enum Vouched {
+    /// Plex, with the account that it describes.
+    Plex(PlexAccount),
+    /// One of the other back ends of `authBackend`.
+    Server(login_backends::Vouched),
+}
+
+/// Checks a login: with Plex or the other back end of `authBackend` when the request or
+/// the settings ask for that, and with the stored password when the settings allow it.
 async fn check_login(
     state: &AppState,
     settings: &Settings,
@@ -209,7 +224,7 @@ async fn check_login(
 ) -> Result<Outcome, LoginError> {
     let database = state.database();
     let with_plex_token = request.plex_token.is_some();
-    let account = if let Some(token) = &request.plex_token {
+    let vouched = if let Some(token) = &request.plex_token {
         if request.kind_of_token.as_deref() != Some(external_login::PLEX_BACKEND) {
             return Err(LoginError::UnknownTokenKind);
         }
@@ -217,20 +232,27 @@ async fn check_login(
             return Err(LoginError::TokenLoginIsOff);
         }
         match external_login::by_plex_token(state, settings, token).await {
-            Some(account) => Some(account),
+            Some(account) => Some(Vouched::Plex(account)),
             None => return Err(LoginError::WrongCredentials),
         }
-    } else if settings.auth_type != AuthType::Internal
-        && settings.auth_backend == external_login::PLEX_BACKEND
-    {
-        external_login::by_plex_password(state, settings, request.name, request.password).await
+    } else if settings.auth_type == AuthType::Internal {
+        None
+    } else if settings.auth_backend == external_login::PLEX_BACKEND {
+        external_login::by_plex_password(state, settings, request.name, request.password)
+            .await
+            .map(Vouched::Plex)
+    } else if login_backends::is_password_backend(&settings.auth_backend) {
+        let site = (request.headers, request.client);
+        login_backends::check(state, settings, site, request.name, request.password)
+            .await
+            .map(Vouched::Server)
     } else {
         None
     };
 
-    let Some(account) = account else {
+    let Some(vouched) = vouched else {
         // Only the service counts with `external`. Every other setting takes the stored
-        // password, also after the service said no.
+        // password, also after the service said no or could not be reached.
         if settings.auth_type == AuthType::External {
             return Err(LoginError::WrongCredentials);
         }
@@ -257,15 +279,25 @@ async fn check_login(
         skip: request.second_factor.skip || (with_plex_token && settings.ignore_tfa_if_plex_o_auth),
         ..request.second_factor
     };
-    let vouched = ExternalAccount {
-        username: &account.username,
-        email: &account.email,
-        password: (!with_plex_token).then_some(request.password),
-        plex_token: Some(&account.token),
+    let account = match &vouched {
+        Vouched::Plex(account) => ExternalAccount {
+            username: &account.username,
+            email: &account.email,
+            password: (!with_plex_token).then_some(request.password),
+            plex_token: Some(&account.token),
+            found_by: None,
+        },
+        Vouched::Server(account) => ExternalAccount {
+            username: &account.username,
+            email: &account.email,
+            password: Some(request.password),
+            plex_token: None,
+            found_by: Some(&account.typed),
+        },
     };
     let done = external::log_in(
         database,
-        vouched,
+        account,
         second_factor,
         request.device,
         request.now,
@@ -275,7 +307,10 @@ async fn check_login(
     Ok(Outcome {
         logged_in: done.logged_in,
         created: done.created,
-        plex_token: Some(account.token),
+        plex_token: match vouched {
+            Vouched::Plex(account) => Some(account.token),
+            Vouched::Server(_) => None,
+        },
         with_plex_token,
     })
 }

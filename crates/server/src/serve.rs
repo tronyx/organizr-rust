@@ -13,7 +13,7 @@ use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, Engine};
 use organizr_settings::Settings;
 use tokio::net::TcpListener;
-use tracing_subscriber::filter::filter_fn;
+use tracing_subscriber::filter::{FilterExt as _, filter_fn};
 use tracing_subscriber::layer::SubscriberExt as _;
 use tracing_subscriber::util::SubscriberInitExt as _;
 use tracing_subscriber::{EnvFilter, Layer as _};
@@ -181,7 +181,10 @@ fn start_logging(data_dir: &Path) -> FileLog {
     let filter = EnvFilter::try_from_env("ORGANIZR_LOG").unwrap_or_else(|_| EnvFilter::new("info"));
     let (log_file, file_layer) = FileLog::start(log_files::folder(data_dir));
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::layer().with_filter(filter))
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_filter(filter.and(filter_fn(crate::log_file::may_reach_the_output))),
+        )
         .with(file_layer.with_filter(filter_fn(crate::log_file::may_reach_the_file)))
         .init();
     log_file

@@ -64,4 +64,4 @@ The page of Organizr is allowed to connect to `https://plex.tv` and to no other 
 
 ## Other services
 
-PHP Organizr can also check passwords with Emby, Jellyfin, LDAP and FTP. This application does not have these yet.
+Organizr can also check passwords with LDAP, FTP, Emby, Emby Connect and Jellyfin. See [Logging in with LDAP, FTP, Emby or Jellyfin](login-services.md).

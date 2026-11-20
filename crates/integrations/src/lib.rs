@@ -1,4 +1,5 @@
 //! Clients for the services that Organizr talks to: the account service of Plex, the
+//! servers that check the password of a login (LDAP, FTP, Emby and Jellyfin), the
 //! applications that take part in single sign-on, and the applications whose data the
 //! homepage shows.
 
@@ -11,12 +12,15 @@ pub mod emby;
 pub mod emby_join;
 pub mod emby_live_tv;
 pub mod frames;
+pub mod ftp;
 pub mod health_checks;
 pub mod http;
 pub mod ical;
 pub mod indexers;
 pub mod ipinfo;
 pub mod jellystat;
+pub mod ldap;
+pub mod media_login;
 pub mod monitorr;
 pub mod netdata;
 pub mod octoprint;
@@ -36,6 +40,7 @@ pub mod sponsors;
 pub mod sso;
 pub mod stripe;
 pub mod tautulli;
+pub mod tls;
 pub mod trakt;
 pub mod unifi;
 pub mod uptime_kuma;

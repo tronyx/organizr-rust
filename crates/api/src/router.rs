@@ -17,9 +17,9 @@ use crate::error::ApiError;
 use crate::handlers::{
     backups, basics, bookmarks, categories, config, connection_tests,
     connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
-    homepage, icon, images, invites, ip, launch, lock, log, login, logout, mail, media_register,
-    news, pages, ping, plex, register, speed_test, sponsors, tabs, token, two_factor, users,
-    users_import, wizard,
+    homepage, icon, images, invites, ip, launch, lock, log, login, login_backends, logout, mail,
+    media_register, news, pages, ping, plex, register, speed_test, sponsors, tabs, token,
+    two_factor, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -450,6 +450,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
                 .post(invites::use_code)
                 .delete(invites::remove),
         )?
+        .route("/test/ldap", &post(login_backends::test_ldap))?
+        .route("/test/ldap/login", &post(login_backends::test_ldap_login))?
         .route("/test/plex", &post(connection_tests::test_plex))?
         .route("/test/sonarr", &post(connection_tests::test_sonarr))?
         .route("/test/radarr", &post(connection_tests::test_radarr))?

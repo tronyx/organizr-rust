@@ -116,7 +116,14 @@ describe('GENERAL and MAIL', () => {
     const fields = LOGIN.flatMap((group) => group.fields);
     const secrets = fields.filter((field) => field.kind === 'secret').map((field) => field.key);
 
-    expect(secrets).toEqual(['plexToken', 'ombiFallbackPassword', 'overseerrFallbackPassword']);
+    expect(secrets).toEqual([
+      'ldapBindPassword',
+      'embyToken',
+      'jellyfinToken',
+      'plexToken',
+      'ombiFallbackPassword',
+      'overseerrFallbackPassword',
+    ]);
   });
 
   it('keep the password of the mail server a secret, and the texts of e-mails long', () => {

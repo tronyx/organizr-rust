@@ -129,6 +129,13 @@ pub fn may_reach_the_file(metadata: &Metadata<'_>) -> bool {
     metadata.target().starts_with("organizr") && *metadata.level() <= Level::DEBUG
 }
 
+/// Which lines may reach the standard output, on top of `ORGANIZR_LOG`: all but the
+/// `TRACE` lines of the FTP library, which write each command to the FTP server, with
+/// the password of a login.
+pub fn may_reach_the_output(metadata: &Metadata<'_>) -> bool {
+    !(metadata.target().starts_with("suppaftp") && *metadata.level() == Level::TRACE)
+}
+
 /// The layer of `tracing` that makes a record of each line and hands it to the writer.
 pub struct FileLayer {
     sender: SyncSender<Message>,
@@ -412,7 +419,40 @@ mod tests {
     use tracing_subscriber::filter::filter_fn;
     use tracing_subscriber::layer::SubscriberExt as _;
 
-    use super::{FileLog, Limits, Writer, channel_of, may_reach_the_file};
+    use super::{FileLog, Limits, Writer, channel_of, may_reach_the_file, may_reach_the_output};
+
+    /// A writer of the standard output for a test: it keeps what it gets.
+    #[derive(Clone, Default)]
+    struct Kept(Arc<std::sync::Mutex<Vec<u8>>>);
+
+    impl std::io::Write for Kept {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0.lock().expect("it locks").extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn the_trace_lines_of_the_ftp_library_never_reach_the_output() {
+        let kept = Kept::default();
+        let writer = kept.clone();
+        let layer = tracing_subscriber::fmt::layer()
+            .with_writer(move || writer.clone())
+            .with_filter(filter_fn(may_reach_the_output));
+        let subscriber = tracing_subscriber::registry().with(layer);
+        tracing::subscriber::with_default(subscriber, || {
+            tracing::trace!(target: "suppaftp::async_ftp", "CC OUT: PASS the-secret");
+            tracing::debug!(target: "suppaftp::async_ftp", "Login OK");
+            tracing::trace!(target: "organizr_api", "a line of this application");
+        });
+        let output = String::from_utf8(kept.0.lock().expect("it locks").clone()).expect("text");
+        assert!(!output.contains("the-secret"), "{output}");
+        assert!(output.contains("Login OK"), "{output}");
+        assert!(output.contains("a line of this application"), "{output}");
+    }
 
     /// Limits that a test can change while the writer runs.
     #[derive(Clone)]

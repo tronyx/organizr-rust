@@ -50,6 +50,29 @@ export interface FieldGroup {
   link?: { path: string; label: string };
   /** The group has a button that asks whether the scheduler of the server runs. */
   scheduler?: boolean;
+  /**
+   * A test with a user name and a password that the Admin types: the name in
+   * `POST /test/<test>`, and the text of the button. The two values are not saved.
+   */
+  loginTest?: { test: string; label: string };
+  /** A line that shows a value made from the fields, as they stand in the form. */
+  preview?: { label: string; text: (form: Record<string, FormValue>) => string };
+  /** Whether the form shows the group, from the values as they stand in the form. */
+  when?: (form: Record<string, FormValue>) => boolean;
+}
+
+/**
+ * Whether the settings of a back end of the login show: the password is not checked by
+ * Organizr alone, and `authBackend` is one of `backends`. PHP Organizr shows them so.
+ */
+function forBackend(...backends: string[]): (form: Record<string, FormValue>) => boolean {
+  return (form) =>
+    form.authType !== 'internal' && backends.includes(String(form.authBackend ?? ''));
+}
+
+/** The groups of the form that show, with the values as they stand in the form. */
+export function shownGroups(groups: FieldGroup[], form: Record<string, FormValue>): FieldGroup[] {
+  return groups.filter((group) => !group.when || group.when(form));
 }
 
 /** The general settings, in the groups of the page. */
@@ -198,8 +221,117 @@ export const LOGIN: FieldGroup[] = [
         options: [
           { value: '', label: 'None' },
           { value: 'plex', label: 'Plex' },
+          { value: 'ldap', label: 'LDAP' },
+          { value: 'ftp', label: 'FTP' },
+          { value: 'emby_local', label: 'Emby: the Emby server' },
+          { value: 'jellyfin', label: 'Jellyfin' },
+          { value: 'emby_connect', label: 'Emby: Emby Connect' },
+          { value: 'emby_all', label: 'Emby: the Emby server, then Emby Connect' },
         ],
       },
+    ],
+  },
+  {
+    title: 'Server of the login',
+    when: forBackend('ldap', 'ftp'),
+    fields: [
+      {
+        key: 'authBackendHost',
+        label: 'Address of the server',
+        kind: 'text',
+        help: 'For example ldap://ldap.example.com:389 or ftps://ftp.example.com:21. For LDAP, write more servers with commas between them. FTP without a scheme uses FTPS.',
+      },
+    ],
+  },
+  {
+    title: 'LDAP',
+    when: forBackend('ldap'),
+    test: 'ldap',
+    loginTest: { test: 'ldap/login', label: 'Test a login' },
+    preview: {
+      label: 'Name of an account named TestAcct',
+      text: (form) =>
+        `${String(form.authBackendHostPrefix ?? '')}TestAcct${String(form.authBackendHostSuffix ?? '')}`,
+    },
+    fields: [
+      {
+        key: 'authBaseDN',
+        label: 'Base DN',
+        kind: 'text',
+        help: 'For example dc=example,dc=com.',
+      },
+      {
+        key: 'authBackendHostPrefix',
+        label: 'Account prefix',
+        kind: 'text',
+        help: 'The text before the user name: for example uid= for OpenLDAP, or DOMAIN\\ for Active Directory.',
+      },
+      {
+        key: 'authBackendHostSuffix',
+        label: 'Account suffix',
+        kind: 'text',
+        help: 'The text after the user name: for example ,ou=people,dc=example,dc=com, or @example.com for Active Directory.',
+      },
+      {
+        key: 'ldapBindUsername',
+        label: 'Bind user name',
+        kind: 'text',
+        help: 'The account with which Organizr connects first. Leave it empty to connect without a name.',
+      },
+      { key: 'ldapBindPassword', label: 'Bind password', kind: 'secret' },
+      {
+        key: 'ldapType',
+        label: 'Type of the LDAP server',
+        kind: 'select',
+        options: [
+          { value: '1', label: 'Active Directory' },
+          { value: '2', label: 'OpenLDAP' },
+          { value: '3', label: 'FreeIPA' },
+        ],
+      },
+      {
+        key: 'ldapSSL',
+        label: 'Use LDAP over TLS (ldaps)',
+        kind: 'switch',
+        help: 'The certificate of the server must be valid.',
+      },
+      {
+        key: 'ldapTLS',
+        label: 'Turn the connection to TLS (StartTLS)',
+        kind: 'switch',
+        help: 'The certificate of the server must be valid.',
+      },
+    ],
+  },
+  {
+    title: 'Emby',
+    when: forBackend('emby_local', 'emby_connect', 'emby_all'),
+    fields: [
+      {
+        key: 'embyURL',
+        label: 'Address of Emby',
+        kind: 'text',
+        help: 'Use the local address and port of the server, or its local name.',
+      },
+      {
+        key: 'embyToken',
+        label: 'API key of Emby',
+        kind: 'secret',
+        help: 'With it, Organizr finds the Emby user of an account of Emby Connect.',
+      },
+    ],
+  },
+  {
+    title: 'Jellyfin',
+    when: forBackend('jellyfin'),
+    fields: [
+      {
+        key: 'jellyfinURL',
+        label: 'Address of Jellyfin',
+        kind: 'text',
+        help: 'Use the local address and port of the server, or its local name.',
+      },
+      { key: 'jellyfinToken', label: 'API key of Jellyfin', kind: 'secret' },
     ],
   },
   {

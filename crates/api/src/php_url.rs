@@ -288,6 +288,33 @@ fn parse(address: &str) -> Option<Parts> {
     Some(parts)
 }
 
+/// The scheme, the host, the port and the path of an address, as PHP's `parse_url()`
+/// finds them.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ServerParts {
+    /// The scheme, as it is written.
+    pub scheme: Option<String>,
+    /// The host.
+    pub host: Option<String>,
+    /// The port.
+    pub port: Option<u16>,
+    /// The path. For text without a scheme and without a host, such as `ldap.lan`, the
+    /// whole text is the path.
+    pub path: Option<String>,
+}
+
+/// Takes the address of a server apart as PHP's `parse_url()` does. `None` stands for
+/// the `false` that PHP returns for text it does not take for an address.
+pub fn server_parts(address: &str) -> Option<ServerParts> {
+    let parts = parse(address)?;
+    Some(ServerParts {
+        scheme: parts.scheme,
+        host: parts.host,
+        port: parts.port,
+        path: parts.path,
+    })
+}
+
 /// The host and the port of an address to check, as `formatPingHost()` of the PHP
 /// application reads them. Text without a scheme and without a port is a host, up to
 /// its first slash. Returns `None` for text that names no host.

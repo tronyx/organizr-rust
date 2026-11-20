@@ -14,16 +14,25 @@ workspace = true
 [dependencies]
 base64.workspace = true
 jiff.workspace = true
+ldap3.workspace = true
 md-5.workspace = true
 reqwest.workspace = true
 roxmltree.workspace = true
 rustls.workspace = true
+rustls-native-certs.workspace = true
 serde.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
+sha1.workspace = true
+suppaftp.workspace = true
 thiserror.workspace = true
+# The time limits of the LDAP and FTP back ends.
+tokio = { workspace = true, features = ["time"] }
+tokio-rustls.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
 organizr-testkit.workspace = true
 
-tokio = { workspace = true, features = ["time"] }
+# The stand-ins of the media servers in the tests of the login back ends.
+axum = { workspace = true, features = ["json"] }
+tokio = { workspace = true, features = ["macros", "net", "io-util"] }

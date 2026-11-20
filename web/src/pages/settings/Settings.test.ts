@@ -886,14 +886,27 @@ describe('Settings, login', () => {
     ssoTautulli: false,
     tautulliURL: '',
     ssoTautulliAuth: '4',
+    authBackendHost: '',
+    authBaseDN: '',
+    authBackendHostPrefix: '',
+    authBackendHostSuffix: '',
+    ldapBindUsername: '',
+    ldapBindPassword: '',
+    ldapType: '1',
+    ldapSSL: false,
+    ldapTLS: false,
+    embyURL: '',
+    embyToken: '',
+    jellyfinURL: '',
+    jellyfinToken: '',
   };
 
-  async function showLogin(answers: Answers = {}) {
+  async function showLogin(answers: Answers = {}, config: Record<string, unknown> = CONFIG) {
     const sent = stubApi({
       'GET tabs': { data: DATA },
       'GET users': { data: USERS },
       'GET launch': LAUNCH,
-      'GET config': { data: CONFIG },
+      'GET config': { data: config },
       ...answers,
     });
     render(Settings, { section: 'login' });
@@ -937,6 +950,125 @@ describe('Settings, login', () => {
         },
       ],
     ]);
+  });
+
+  it('shows the settings of the chosen back end only, and none when Organizr checks alone', async () => {
+    await showLogin();
+    const shown = (label: string) => screen.queryByLabelText(label) !== null;
+    expect(shown('Address of the server')).toBe(false);
+    expect(shown('Base DN')).toBe(false);
+
+    // The back end alone does not show its settings while Organizr checks alone.
+    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'ldap' } });
+    expect(shown('Base DN')).toBe(false);
+
+    await fireEvent.change(screen.getByLabelText('A password is checked by'), {
+      target: { value: 'both' },
+    });
+    expect(shown('Address of the server')).toBe(true);
+    expect(shown('Base DN')).toBe(true);
+    expect(shown('Bind password')).toBe(true);
+    expect(shown('Address of Emby')).toBe(false);
+
+    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'ftp' } });
+    expect(shown('Address of the server')).toBe(true);
+    expect(shown('Base DN')).toBe(false);
+
+    for (const emby of ['emby_local', 'emby_connect', 'emby_all']) {
+      await fireEvent.change(screen.getByLabelText('Service'), { target: { value: emby } });
+      expect(shown('Address of Emby')).toBe(true);
+      expect(shown('API key of Emby')).toBe(true);
+      expect(shown('Address of Jellyfin')).toBe(false);
+      expect(shown('Address of the server')).toBe(false);
+    }
+
+    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'jellyfin' } });
+    expect(shown('Address of Jellyfin')).toBe(true);
+    expect(shown('Address of Emby')).toBe(false);
+  });
+
+  it('saves the LDAP settings and shows the name of an account', async () => {
+    const sent = await showLogin({ 'PUT config': {} });
+    await fireEvent.change(screen.getByLabelText('A password is checked by'), {
+      target: { value: 'external' },
+    });
+    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'ldap' } });
+    const type = (label: string, value: string) =>
+      fireEvent.input(screen.getByLabelText(label), { target: { value } });
+    await type('Address of the server', 'ldap://ldap.example.com');
+    await type('Base DN', 'dc=example,dc=com');
+    await type('Account prefix', 'uid=');
+    await type('Account suffix', ',ou=people,dc=example,dc=com');
+    await type('Bind user name', 'cn=organizr,dc=example,dc=com');
+    await type('Bind password', 'made-up-bind-password');
+    await fireEvent.change(screen.getByLabelText('Type of the LDAP server'), {
+      target: { value: '2' },
+    });
+    await fireEvent.click(screen.getByLabelText('Turn the connection to TLS (StartTLS)'));
+    expect(screen.getByText('uid=TestAcct,ou=people,dc=example,dc=com')).toBeInTheDocument();
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([
+      [
+        'PUT config',
+        {
+          authType: 'external',
+          authBackend: 'ldap',
+          authBackendHost: 'ldap://ldap.example.com',
+          authBaseDN: 'dc=example,dc=com',
+          authBackendHostPrefix: 'uid=',
+          authBackendHostSuffix: ',ou=people,dc=example,dc=com',
+          ldapBindUsername: 'cn=organizr,dc=example,dc=com',
+          ldapBindPassword: 'made-up-bind-password',
+          ldapType: '2',
+          ldapTLS: true,
+        },
+      ],
+    ]);
+  });
+
+  it('tests the LDAP connection, and a login with a name and a password', async () => {
+    const sent = await showLogin(
+      {
+        'POST test/ldap': { message: 'LDAP connection successful' },
+        'POST test/ldap/login': (request) =>
+          (request.body as { password?: string }).password === 'right'
+            ? { message: 'LDAP connection successful' }
+            : { status: 401, message: 'Username/Password Failed to authenticate' },
+      },
+      { ...CONFIG, authType: 'both', authBackend: 'ldap', authBaseDN: 'dc=example,dc=com' },
+    );
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Test the connection of LDAP' }));
+    expect(await screen.findByText('LDAP connection successful')).toBeInTheDocument();
+
+    await fireEvent.input(screen.getByLabelText('User name for the test'), {
+      target: { value: 'robin' },
+    });
+    await fireEvent.input(screen.getByLabelText('Password for the test'), {
+      target: { value: 'wrong' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Test a login' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Username/Password Failed to authenticate',
+    );
+
+    await fireEvent.input(screen.getByLabelText('Password for the test'), {
+      target: { value: 'right' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Test a login' }));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+
+    const tests = sent.filter((request) => request.path.startsWith('test/'));
+    expect(tests.map((request) => [request.path, request.body])).toEqual([
+      ['test/ldap', undefined],
+      ['test/ldap/login', { username: 'robin', password: 'wrong' }],
+      ['test/ldap/login', { username: 'robin', password: 'right' }],
+    ]);
+    // The typed values are no settings, so nothing waits to be saved.
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
   it('lists the Plex servers of the token with their ids, or says why not', async () => {

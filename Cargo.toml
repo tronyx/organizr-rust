@@ -66,18 +66,24 @@ hkdf = "0.13.0"
 http-body-util = "0.1.5"
 ipnet = "2.12.2"
 jiff = "1.0.1"
+# The LDAP back end of the login. TLS through rustls with the ring provider.
+ldap3 = { version = "0.12.1", default-features = false, features = ["tls-rustls-ring"] }
 lettre = { version = "0.11.24", default-features = false, features = ["smtp-transport", "builder", "hostname", "tokio1-rustls", "ring", "rustls-native-certs"] }
 md-5 = "0.11.0"
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider", "json", "form", "query"] }
 roxmltree = "0.21.2"
 rust-embed = "8.14.0"
 rustls = { version = "0.23.46", default-features = false, features = ["ring", "std"] }
+rustls-native-certs = "0.8.5"
 sea-orm = { version = "2.0.4", default-features = false, features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls", "macros"] }
 sea-orm-migration = { version = "2.0.4", default-features = false, features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
+sha1 = "0.11.0"
 sha2 = "0.11.1"
 subtle = "2.6.1"
+# The FTP back end of the login: asynchronous, with TLS through rustls and ring.
+suppaftp = { version = "13.0.0", default-features = false, features = ["tokio-rustls-ring"] }
 surge-ping = "0.9.1"
 tempfile = "3.27"
 # The runtime for extensions. It is the line with long support.
@@ -86,6 +92,7 @@ wasmtime-wasi = { version = "48.0.10", default-features = false, features = ["p2
 zip = { version = "9.8.1", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 thiserror = "2.0.21"
 tokio = { version = "1.54", features = ["macros", "rt"] }
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring"] }
 totp-rs = { version = "6.0.0", features = ["otpauth", "qr", "gen_secret", "zeroize"] }
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.7.1", features = ["csrf", "set-header"] }
