@@ -42,6 +42,12 @@ docker run --rm \
   import --from /old --data-dir /config
 ```
 
+The container runs the import as the user with the UID 65532. That user must be able to enter the folders of the old install and to read its files. In an install of PHP Organizr, only the owner can often enter the folder `www/db`. The import then stops with `permission denied` and names the path. To let the user in, run this command on the host:
+
+```sh
+sudo chmod o+rx /path/to/old/config/www/db
+```
+
 If the import fails, it stores no records. Correct the cause and run the import again. Files that a failed import copied stay in the data folder, and the next import writes over them.
 
 If the new database holds records, the import stops and changes nothing. To import again, start with a new data folder or a new, empty database.
