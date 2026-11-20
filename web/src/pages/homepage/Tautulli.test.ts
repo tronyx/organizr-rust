@@ -33,7 +33,14 @@ const STATISTICS = [
 
 const LIBRARIES = [
   { section_name: 'Old Films', section_type: 'movie', count: 20, plays: 30 },
-  { section_name: 'Films', section_type: 'movie', count: 120, plays: 300 },
+  {
+    section_name: 'Films',
+    section_type: 'movie',
+    count: 120,
+    parent_count: null,
+    child_count: '',
+    plays: 300,
+  },
   {
     section_name: 'Series',
     section_type: 'show',

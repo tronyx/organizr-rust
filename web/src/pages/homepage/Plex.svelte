@@ -54,32 +54,41 @@
         Active Plex Streams<span aria-hidden="true">:</span>
         <span class="org-count">{items.length}</span>
       </h2>
-      <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" aria-label="Active Plex Streams">
+      <ul class="org-cards" aria-label="Active Plex Streams">
         {#each items as stream, index (index)}
           {@const picture = pictureAddress(stream.nowPlayingImageURL)}
-          <li class="card bg-base-200 overflow-hidden">
+          <li class="org-stream">
             {#if picture}
               <img class="aspect-video w-full object-cover" src={picture} alt="" loading="lazy" />
             {/if}
-            <div class="card-body gap-1 p-3">
-              <span class="font-medium">{stream.nowPlayingTitle || stream.title}</span>
-              <span class="text-sm opacity-70">{stream.nowPlayingBottom ?? ''}</span>
-              <progress
-                class="progress w-full"
-                value={stream.watched}
-                max="100"
-                aria-label="{stream.watched} percent watched"
-              ></progress>
-              <span class="flex flex-wrap items-center gap-1 text-sm">
-                <span class="badge {stream.state === 'pause' ? 'badge-warning' : 'badge-success'}">
-                  {stream.state === 'pause' ? 'Paused' : 'Playing'}
-                </span>
-                {#if stream.user}
-                  <span class="badge badge-outline">{stream.user}</span>
-                {/if}
-                <span class="opacity-70">{streamText(stream)}</span>
+            <progress
+              class="org-stream-progress"
+              value={stream.watched}
+              max="100"
+              aria-label="{stream.watched} percent watched"
+            ></progress>
+            <div class="flex items-center gap-2 px-2.5 pt-2">
+              <span class="flex-1 truncate text-center font-medium text-white">
+                {stream.nowPlayingTitle || stream.title}
               </span>
+              <i
+                class="oi oi-simpleline {stream.state === 'pause'
+                  ? 'icon-control-pause'
+                  : 'icon-control-play'} text-info"
+                aria-hidden="true"
+              ></i>
+              <span class="sr-only">{stream.state === 'pause' ? 'Paused' : 'Playing'}</span>
             </div>
+            <div class="flex items-center justify-between gap-2 px-2.5 pb-2 text-xs">
+              <span class="truncate">{stream.nowPlayingBottom ?? ''}</span>
+              {#if stream.user}
+                <span class="shrink-0">
+                  {stream.user}
+                  <i class="oi oi-simpleline icon-user" aria-hidden="true"></i>
+                </span>
+              {/if}
+            </div>
+            <p class="truncate px-2.5 pb-2 text-xs opacity-60">{streamText(stream)}</p>
           </li>
         {/each}
       </ul>

@@ -24,9 +24,9 @@
     section_type?: string;
     count?: number | string;
     /** The seasons of a library of series, or the albums of a library of music. */
-    parent_count?: number | string;
+    parent_count?: number | string | null;
     /** The episodes of a library of series, or the tracks of a library of music. */
-    child_count?: number | string;
+    child_count?: number | string | null;
     plays?: number | string;
   }
 
@@ -113,8 +113,9 @@
 
   /** The numbers of a library: one for films, three for series and for music. */
   function sizeOf(library: Library): string {
+    // Tautulli sends nothing, or an empty text, for a number that a library has not.
     const numbers = [library.count, library.parent_count, library.child_count].filter(
-      (number) => number !== undefined && number !== '',
+      (number) => String(number ?? '').trim() !== '',
     );
     return numbers.join(' / ');
   }

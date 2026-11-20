@@ -598,6 +598,32 @@
     color: var(--color-accent);
   }
 
+  /* A stream of Plex: a small card with a thin line for how much is watched. */
+  .org-stream {
+    background: var(--color-base-200);
+  }
+
+  .org-stream-progress {
+    display: block;
+    width: 100%;
+    height: 4px;
+    appearance: none;
+    border: 0;
+    background: var(--color-neutral);
+  }
+
+  .org-stream-progress::-webkit-progress-bar {
+    background: var(--color-neutral);
+  }
+
+  .org-stream-progress::-webkit-progress-value {
+    background: var(--color-info);
+  }
+
+  .org-stream-progress::-moz-progress-bar {
+    background: var(--color-info);
+  }
+
   @media (width >= 64rem) {
     .org-header.org-with-menu {
       padding-left: 60px;
