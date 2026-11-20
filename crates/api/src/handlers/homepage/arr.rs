@@ -15,7 +15,7 @@ use organizr_integrations::http::time_limit;
 use organizr_settings::Settings;
 use serde_json::{Value, json};
 
-use super::{Permissions, no_requests, service_url};
+use super::{Permissions, calendar_more, no_requests, service_url};
 use crate::caller::Caller;
 use crate::client::Client;
 use crate::envelope::Envelope;
@@ -312,16 +312,23 @@ pub async fn lidarr_calendar(
     .await
 }
 
-/// Whether the caller gets the calendar of at least one application.
+/// Whether the caller gets the calendar of at least one source: an application, or
+/// the iCal addresses.
 pub fn sees_a_calendar(settings: &Settings, caller: &Caller) -> bool {
     [Kind::Sonarr, Kind::Lidarr, Kind::Radarr]
         .into_iter()
-        .any(|kind| calendar_permissions(kind).allow(settings, caller))
+        .map(calendar_permissions)
+        .chain([
+            calendar_more::sickrage_permissions(),
+            calendar_more::couchpotato_permissions(),
+            calendar_more::ical_permissions(),
+        ])
+        .any(|permissions| permissions.allow(settings, caller))
 }
 
 /// `GET /homepage/calendar`: the events of every application whose calendar the
-/// caller gets. The answer is a success also when that is none, as in the PHP
-/// application.
+/// caller gets, and the events of the iCal addresses apart from them. The answer is a
+/// success also when the caller gets none, as in the PHP application.
 pub async fn calendar(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
@@ -337,10 +344,14 @@ pub async fn calendar(
             events.extend(events_of(&state, kind, &headers, &client, (&start, &end)).await?);
         }
     }
-    // Calendars in the iCal format are not read yet.
-    Ok(Envelope::success(
-        json!({ "ical": false, "events": events }),
-    ))
+    if calendar_more::sickrage_permissions().allow(&settings, &caller) {
+        events.extend(calendar_more::sickrage_events(&state, &headers, &client).await?);
+    }
+    if calendar_more::couchpotato_permissions().allow(&settings, &caller) {
+        events.extend(calendar_more::couchpotato_events(&state, &headers, &client).await?);
+    }
+    let ical = calendar_more::ical_part(&state, &caller).await;
+    Ok(Envelope::success(json!({ "ical": ical, "events": events })))
 }
 
 async fn queue_of(

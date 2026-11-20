@@ -6,11 +6,13 @@
 //! order, and then asks the route of each item for its data.
 
 pub mod arr;
+pub mod calendar_more;
 pub mod downloaders;
 pub mod downloaders_more;
 pub mod emby;
 pub mod health_checks;
 pub mod html;
+pub mod ombi;
 pub mod overseerr;
 pub mod pihole;
 pub mod plex;
@@ -150,6 +152,7 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderWeatherAndAir" => ("weather", weather::permissions()),
         "homepageOrdertautulli" => ("tautulli", tautulli::permissions()),
         "homepageOrderoverseerr" => ("overseerr", overseerr::permissions()),
+        "homepageOrderombi" => ("ombi", ombi::permissions()),
         "homepageOrderplexnowplaying" => ("plexstreams", plex::permissions(plex::Part::Streams)),
         "homepageOrderplexrecent" => ("plexrecent", plex::permissions(plex::Part::Recent)),
         "homepageOrderplexplaylist" => ("plexplaylists", plex::permissions(plex::Part::Playlists)),
@@ -241,8 +244,7 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
             continue;
         };
         let seen = if item.kind == "calendar" {
-            // The calendar shows when the caller gets the calendar of one
-            // application at least.
+            // The calendar shows when the caller gets one source of it at least.
             arr::sees_a_calendar(settings, caller)
         } else {
             permissions.allow(settings, caller)
@@ -264,6 +266,9 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
                 "firstDay": settings.calendar_first_day,
                 "limit": settings.calendar_limit,
             });
+        }
+        if item.kind == "ombi" {
+            item.options = ombi::options(settings);
         }
         if item.kind == "weather" {
             // The title shows only when its switch is on.

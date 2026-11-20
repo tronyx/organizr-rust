@@ -1,12 +1,17 @@
 <script lang="ts">
-  // The calendar item: the episodes, films and albums of the days around today.
+  // The calendar item: the episodes, films, albums and calendar events of the days
+  // around today.
   import Dialog from '../../components/Dialog.svelte';
   import {
     addDays,
+    allEvents,
+    type CalendarAnswer,
     type CalendarEvent,
     type CalendarOptions,
     type CalendarView,
+    dayOf,
     eventsByDay,
+    genresOf,
     KINDS,
     longDay,
     monthGrid,
@@ -27,13 +32,9 @@
   } from '../../lib/calendar';
   import { itemData } from '../../lib/itemData.svelte';
 
-  interface Answer {
-    events: CalendarEvent[];
-  }
-
   let { options }: { options: CalendarOptions } = $props();
 
-  const item = itemData<Answer>('homepage/calendar', 'calendarRefresh');
+  const item = itemData<CalendarAnswer>('homepage/calendar', 'calendarRefresh');
 
   const now = today();
   // The day that the views stand on: its month, its week, or the day itself.
@@ -47,7 +48,7 @@
   let hiddenStates = $state<string[]>([]);
   let open = $state<CalendarEvent | null>(null);
 
-  const all = $derived(item.data?.events ?? []);
+  const all = $derived(allEvents(item.data));
   const kinds = $derived(
     Object.keys(KINDS).filter((kind) => all.some((one) => one.imagetypeFilter === kind)),
   );
@@ -304,17 +305,17 @@
     {/if}
     <p class="my-2 flex flex-wrap gap-1">
       <span class="badge {stateOf(event).badge}">{stateOf(event).word}</span>
-      <span class="badge badge-outline">{longDay(event.start.slice(0, 10))}</span>
+      <span class="badge badge-outline">{longDay(dayOf(event.start))}</span>
       {#each event.releaseType ?? [] as release (release)}
         <span class="badge badge-outline">{release}</span>
       {/each}
       {#if event.details.runtime}
         <span class="badge badge-outline">{event.details.runtime} minutes</span>
       {/if}
-      {#if event.details.ratings}
+      {#if event.details.ratings && event.details.ratings !== 'unknown'}
         <span class="badge badge-outline">Rating {event.details.ratings}</span>
       {/if}
-      {#each event.details.genres ?? [] as genre (genre)}
+      {#each genresOf(event) as genre (genre)}
         <span class="badge badge-ghost">{genre}</span>
       {/each}
     </p>
@@ -322,7 +323,7 @@
       <p class="text-sm">{event.details.overview}</p>
     {/if}
     <div class="modal-action">
-      {#if event.details.showLink && /^https?:\/\//.test(event.details.href)}
+      {#if event.details.showLink && /^https?:\/\//.test(event.details.href ?? '')}
         <a class="btn" href={event.details.href} target="_blank" rel="noopener noreferrer">
           Open in the application
         </a>

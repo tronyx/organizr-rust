@@ -5,6 +5,7 @@
   import Notice from '../../components/Notice.svelte';
   import { api, failureText } from '../../lib/api';
   import type { CalendarOptions } from '../../lib/calendar';
+  import { requestOptions } from '../../lib/requests';
   import type { HomepageItem } from '../../lib/homepage';
   import ArrQueue from './ArrQueue.svelte';
   import Calendar from './Calendar.svelte';
@@ -56,6 +57,7 @@
     'jellyfinstreams',
     'jellyfinrecent',
     'overseerr',
+    'ombi',
   ]);
 
   /** How the calendar shows, from the options of its item. */
@@ -155,6 +157,8 @@
           <Plex part="recent" service="jellyfin" />
         {:else if item.kind === 'overseerr'}
           <Overseerr />
+        {:else if item.kind === 'ombi'}
+          <Overseerr service="ombi" options={requestOptions(item.options)} />
         {:else if item.kind === 'tautulli'}
           <Tautulli />
         {:else if item.kind === 'weather'}

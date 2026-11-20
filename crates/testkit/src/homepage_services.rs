@@ -1424,3 +1424,264 @@ async fn jdownloader_state(headers: HeaderMap) -> Response {
 pub async fn jdownloader() -> StandIn {
     StandIn::start(Router::new().route("/", get(jdownloader_state))).await
 }
+
+/// The API key of the stand-in for the requests of Ombi.
+pub const OMBI_KEY: &str = "made-up-ombi-key";
+
+/// The token of the user "robin" at the stand-in for the requests of Ombi, as the
+/// browser holds it in the `Auth` cookie.
+pub const OMBI_TOKEN: &str = "made-up-ombi-token-of-robin";
+
+fn ombi_user(name: &str) -> Value {
+    json!({"userName": name, "userAlias": format!("{name} the alias")})
+}
+
+fn ombi_films() -> Value {
+    json!([
+        {
+            "id": 31, "theMovieDbId": 815, "title": "The Film", "overview": "A film.",
+            "posterPath": "/poster815.jpg", "background": "/back815.jpg",
+            "approved": true, "available": true, "denied": false, "deniedReason": null,
+            "requestedUser": ombi_user("robin"),
+            "requestedDate": "2020-01-03T10:00:00", "releaseDate": "2019-05-01T00:00:00",
+        },
+        {
+            "id": 33, "theMovieDbId": 999, "title": "Denied Film", "overview": null,
+            "posterPath": "", "background": null,
+            "approved": false, "available": false, "denied": true, "deniedReason": "No",
+            "requestedUser": ombi_user("pat"),
+            "requestedDate": "2020-01-04T10:00:00", "releaseDate": "2019-06-01T00:00:00",
+        },
+    ])
+}
+
+fn ombi_series() -> Value {
+    json!([
+        {
+            "id": 32, "tvDbId": 4711, "title": "The Show", "overview": "A show.",
+            "posterPath": "https://art.example.net/show.jpg", "background": "",
+            "releaseDate": "2018-09-01T00:00:00",
+            "childRequests": [{
+                "id": 52, "approved": false, "available": false, "denied": false, "deniedReason": null,
+                "requestedUser": ombi_user("pat"), "requestedDate": "2020-01-05T10:00:00",
+            }],
+        },
+        {"id": 34, "tvDbId": 4799, "title": "No Children", "childRequests": []},
+    ])
+}
+
+fn ombi_reply(
+    method: &str,
+    path: &str,
+    by_key: bool,
+    by_user: bool,
+    body: &Value,
+) -> (StatusCode, Value) {
+    let done = (StatusCode::OK, json!({"result": true}));
+    let known = |available: bool, requested: bool| {
+        (
+            StatusCode::OK,
+            json!({"theTvDbId": "1234", "available": available, "requested": requested}),
+        )
+    };
+    match (method, path) {
+        ("GET", "/api/v1/Request/movie") if by_key => (StatusCode::OK, ombi_films()),
+        ("GET", "/api/v1/Request/tv") if by_key => (StatusCode::OK, ombi_series()),
+        ("GET", "/api/v1/Settings/about") if by_key => {
+            (StatusCode::OK, json!({"version": "4.0.0"}))
+        }
+        (
+            "POST",
+            "/api/v1/Request/movie/approve"
+            | "/api/v1/Request/movie/available"
+            | "/api/v1/Request/movie/unavailable"
+            | "/api/v1/Request/tv/approve",
+        )
+        | ("PUT", "/api/v1/Request/movie/deny")
+            if by_key && (body["id"] == 31 || body["id"] == 32) =>
+        {
+            done
+        }
+        ("DELETE", "/api/v1/Request/movie/31" | "/api/v1/Request/tv/32") if by_key => done,
+        ("GET", "/api/v1/Search/movie/info/123" | "/api/v1/Search/movie/info/500") if by_user => {
+            known(false, false)
+        }
+        ("GET", "/api/v1/Search/movie/info/815") if by_user => known(true, true),
+        ("GET", "/api/v1/Search/movie/info/816") if by_user => known(false, true),
+        ("GET", "/api/v2/Search/tv/moviedb/4712") if by_user => known(false, false),
+        ("GET", "/api/v2/Search/tv/moviedb/4713") if by_user => (
+            StatusCode::OK,
+            json!({"theTvDbId": null, "available": false, "requested": false}),
+        ),
+        ("POST", "/api/v1/Request/movie") if by_user && body["theMovieDbId"] != 500 => done,
+        ("POST", "/api/v1/Request/tv") if by_user => done,
+        // Ombi answers a request without a key or a token with no text.
+        _ if !by_key && !by_user => (StatusCode::UNAUTHORIZED, Value::Null),
+        _ => (StatusCode::NOT_FOUND, json!({"message": "Not found"})),
+    }
+}
+
+async fn ombi_api(
+    headers: HeaderMap,
+    method: axum::http::Method,
+    uri: axum::http::Uri,
+    body: axum::body::Bytes,
+) -> Response {
+    let header_text = |name: &str| headers.get(name).and_then(|value| value.to_str().ok());
+    let by_key = header_text("apikey") == Some(OMBI_KEY);
+    let token = format!("Bearer {OMBI_TOKEN}");
+    let by_user = header_text("authorization") == Some(token.as_str());
+    let body = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    let (status, answer) = ombi_reply(method.as_str(), uri.path(), by_key, by_user, &body);
+    if answer.is_null() {
+        status.into_response()
+    } else {
+        (status, axum::Json(answer)).into_response()
+    }
+}
+
+/// A stand-in for the API of Ombi that the homepage uses: two requests for films,
+/// and two for series, of which one has no child request.
+pub async fn ombi_requests() -> StandIn {
+    StandIn::start(Router::new().fallback(ombi_api)).await
+}
+
+/// The API key of the stand-in for SickRage.
+pub const SICKRAGE_KEY: &str = "made-up-sickrage-key";
+
+fn sickrage_episode(day: &str, name: &str) -> Value {
+    json!({
+        "airdate": day, "airs": "Sunday 9:00 PM", "ep_name": name, "ep_plot": "What happens.",
+        "episode": 3, "season": 2, "network": "The Network", "paused": 0, "quality": "HD720p",
+        "show_name": "The Show", "show_status": "Continuing", "tvdbid": 4711, "weekday": 7,
+    })
+}
+
+async fn sickrage_api(
+    axum::extract::Path(key): axum::extract::Path<String>,
+    RawQuery(query): RawQuery,
+) -> Response {
+    if key != SICKRAGE_KEY {
+        // SickRage answers a wrong key with the status 200.
+        return axum::Json(json!({"data": {}, "message": "WRONG API KEY", "result": "denied"}))
+            .into_response();
+    }
+    let data = match query_field(query.as_deref(), "cmd") {
+        Some("future") => json!({
+            "missed": [sickrage_episode("2020-01-05", "The Missed One")],
+            "today": [],
+            "soon": [],
+            "later": [sickrage_episode("2099-01-04", "The Late One")],
+        }),
+        Some("history") => json!([{
+            "date": "2020-01-06 22:10", "episode": 2, "season": 2, "show_name": "The Show",
+            "status": "Downloaded", "tvdbid": 4711, "quality": "HD720p", "provider": "-1",
+            "resource": "The.Show.S02E02.720p.mkv", "resource_path": "/tv/The Show",
+        }]),
+        Some("sb") => json!({"api_version": 4, "sr_version": "10.0.0"}),
+        _ => {
+            return axum::Json(json!({"data": {}, "message": "No such cmd", "result": "error"}))
+                .into_response();
+        }
+    };
+    axum::Json(json!({"data": data, "message": "", "result": "success"})).into_response()
+}
+
+/// A stand-in for SickRage: one episode that was missed, one far in the future, and
+/// one that was downloaded.
+pub async fn sickrage() -> StandIn {
+    StandIn::start(Router::new().route("/api/{key}/", get(sickrage_api))).await
+}
+
+/// The API key of the stand-in for CouchPotato.
+pub const COUCHPOTATO_KEY: &str = "made-up-couchpotato-key";
+
+/// A day as text, a number of days after today in UTC.
+fn day_from_today(days: i64) -> String {
+    let today = jiff::Timestamp::now()
+        .to_zoned_datetime(jiff::tz::TimeZone::UTC)
+        .date();
+    today
+        .checked_add(jiff::Span::new().days(days))
+        .unwrap_or(today)
+        .strftime("%Y-%m-%d")
+        .to_string()
+}
+
+fn couchpotato_film(title: &str, id: u32, status: &str, released: &str) -> Value {
+    json!({
+        "status": status,
+        "info": {
+            "original_title": title, "tmdb_id": id, "released": released,
+            "tagline": "A tagline.", "plot": "A film.", "runtime": 101, "year": 2020,
+            "genres": ["Drama"], "rating": {"imdb": [7.2, 1000]},
+            "images": {"backdrop_original": [], "backdrop": []},
+        },
+        "releases": [],
+    })
+}
+
+async fn couchpotato_films(
+    axum::extract::Path(key): axum::extract::Path<String>,
+    RawQuery(query): RawQuery,
+) -> Response {
+    if key != COUCHPOTATO_KEY || query.as_deref() != Some("status=active%2Cdone") {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    axum::Json(json!({
+        "success": true,
+        "empty": false,
+        "movies": [
+            couchpotato_film("An Old Film", 814, "done", "2019-01-07"),
+            couchpotato_film("The Film", 815, "done", &day_from_today(-2)),
+            couchpotato_film("The Next Film", 816, "active", &day_from_today(5)),
+        ],
+    }))
+    .into_response()
+}
+
+/// A stand-in for CouchPotato: one film from long ago, one of two days ago that it
+/// has, and one that comes in five days.
+pub async fn couchpotato() -> StandIn {
+    StandIn::start(Router::new().route("/api/{key}/media.list", get(couchpotato_films))).await
+}
+
+async fn ics_file() -> Response {
+    let day = |days: i64| day_from_today(days).replace('-', "");
+    let text = [
+        "BEGIN:VCALENDAR".to_owned(),
+        "VERSION:2.0".to_owned(),
+        "PRODID:-//made-up//calendar//EN".to_owned(),
+        "BEGIN:VEVENT".to_owned(),
+        "UID:one@example.com".to_owned(),
+        format!("DTSTART:{}T170000Z", day(1)),
+        format!("DTEND:{}T183000Z", day(1)),
+        "SUMMARY:Dinner".to_owned(),
+        "END:VEVENT".to_owned(),
+        "BEGIN:VEVENT".to_owned(),
+        "UID:two@example.com".to_owned(),
+        format!("DTSTART;VALUE=DATE:{}", day(-3)),
+        format!("DTEND;VALUE=DATE:{}", day(-2)),
+        "SUMMARY:A birthday".to_owned(),
+        "END:VEVENT".to_owned(),
+        "BEGIN:VEVENT".to_owned(),
+        "UID:three@example.com".to_owned(),
+        "DTSTART:20190105T170000Z".to_owned(),
+        "DTEND:20190105T180000Z".to_owned(),
+        "SUMMARY:Long ago".to_owned(),
+        "END:VEVENT".to_owned(),
+        "END:VCALENDAR".to_owned(),
+    ]
+    .join("\r\n");
+    (
+        [(header::CONTENT_TYPE, "text/calendar; charset=utf-8")],
+        text,
+    )
+        .into_response()
+}
+
+/// A stand-in for a server that hands out a calendar file at `/calendar.ics`: a
+/// dinner tomorrow, a birthday three days ago, and an event of the year 2019.
+pub async fn ics() -> StandIn {
+    StandIn::start(Router::new().route("/calendar.ics", get(ics_file))).await
+}

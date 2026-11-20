@@ -4,11 +4,19 @@
 export interface CalendarEvent {
   id: string;
   title: string;
-  /** A day (`2026-11-20`) or a moment (`2026-11-20T20:00:00Z`). */
+  /**
+   * A day (`2026-11-20`) or a moment (`2026-11-20T20:00:00Z`). A moment without a time
+   * zone (`2026-11-20 20:00:00`) is a time of the browser.
+   */
   start: string;
-  /** `tv`, `film` or `music`. */
+  /** For an event of a calendar in the iCal format: its end, a day or a moment. */
+  end?: string;
+  /** `tv`, `film`, `music` or `ical`. */
   imagetypeFilter: string;
-  /** The state of the download, as a class name of the PHP interface. */
+  /**
+   * The state of the download, as a class name of the PHP interface. For an event of a
+   * calendar in the iCal format: `ical-upcoming` or `ical-over`.
+   */
   downloadFilter: string;
   /** For a film: which releases are on this day. */
   releaseType?: string[];
@@ -19,9 +27,11 @@ export interface CalendarEvent {
     runtime: number | string | null;
     image: string;
     ratings: number | string | null;
-    genres: string[] | null;
-    href: string;
-    showLink: boolean;
+    /** A list. SickRage sends an empty text. */
+    genres: string[] | string | null;
+    /** The link of the event. SickRage and CouchPotato send none. */
+    href?: string;
+    showLink?: boolean;
     videoQuality?: string | null;
     status?: string | null;
   };
@@ -42,6 +52,7 @@ export const KINDS: Record<string, { word: string; icon: string }> = {
   tv: { word: 'Series', icon: 'fontawesome::tv' },
   film: { word: 'Films', icon: 'fontawesome::film' },
   music: { word: 'Music', icon: 'fontawesome::music' },
+  ical: { word: 'Calendar events', icon: 'fontawesome::calendar' },
 };
 
 /** The states of a download, with the word and the colour of each one. */
@@ -51,7 +62,73 @@ export const STATES: Record<string, { word: string; badge: string }> = {
   'text-danger': { word: 'Missing', badge: 'badge-error' },
   'text-primary animated flash': { word: 'Premiere', badge: 'badge-primary' },
   'text-dark': { word: 'Not monitored', badge: 'badge-neutral' },
+  'ical-upcoming': { word: 'Upcoming', badge: 'badge-info' },
+  'ical-over': { word: 'Over', badge: 'badge-neutral' },
 };
+
+/** An event of a calendar in the iCal format, as `GET homepage/calendar` describes it. */
+export interface IcalEvent {
+  title: string;
+  /** A day or a moment. */
+  start: string;
+  end?: string;
+  /** `bg-info` for an event that is not over, and `bg-success` for one that is. */
+  bgColor?: string;
+}
+
+/** What `GET homepage/calendar` answers. */
+export interface CalendarAnswer {
+  /** The episodes, films and albums of the applications. */
+  events?: CalendarEvent[] | null;
+  /** The events of the iCal addresses, or `false` for a person who does not get them. */
+  ical?: IcalEvent[] | false | null;
+}
+
+/** Every event of an answer, with the events of the iCal addresses in the form of the others. */
+export function allEvents(answer: CalendarAnswer | null): CalendarEvent[] {
+  if (!answer) {
+    return [];
+  }
+  const ical = Array.isArray(answer.ical) ? answer.ical : [];
+  return [
+    ...(answer.events ?? []),
+    ...ical.map((one, place) => ({
+      id: `ical-${place}`,
+      title: one.title,
+      start: one.start,
+      end: one.end,
+      imagetypeFilter: 'ical',
+      downloadFilter: one.bgColor === 'bg-info' ? 'ical-upcoming' : 'ical-over',
+      details: {
+        topTitle: one.title,
+        bottomTitle: '',
+        overview: null,
+        runtime: null,
+        image: '',
+        ratings: null,
+        genres: null,
+      },
+    })),
+  ];
+}
+
+/** The genres of an event, as a list. */
+export function genresOf(event: CalendarEvent): string[] {
+  const genres = event.details.genres;
+  return Array.isArray(genres) ? genres : [];
+}
+
+/** Whether a start names a time of day. */
+function hasTime(start: string): boolean {
+  return /[T ]\d{1,2}:\d{2}/.test(start);
+}
+
+/** The moment of a start, or nothing for a text that is none. */
+function momentOf(start: string): Date | null {
+  // SickRage writes a space between the day and the time.
+  const moment = new Date(start.replace(' ', 'T'));
+  return Number.isNaN(moment.getTime()) ? null : moment;
+}
 
 /** The state of an event. An unknown one shows as it came. */
 export function stateOf(event: CalendarEvent): { word: string; badge: string } {
@@ -75,8 +152,8 @@ export function dayOf(start: string): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(start)) {
     return start;
   }
-  const moment = new Date(start);
-  if (Number.isNaN(moment.getTime())) {
+  const moment = momentOf(start);
+  if (!moment) {
     return start.slice(0, 10);
   }
   return dayText(moment.getFullYear(), moment.getMonth() + 1, moment.getDate());
@@ -84,11 +161,8 @@ export function dayOf(start: string): string {
 
 /** The time of an event in the time zone of the browser, or nothing for a start without a time. */
 export function timeOf(start: string): string | null {
-  if (!start.includes('T')) {
-    return null;
-  }
-  const moment = new Date(start);
-  if (Number.isNaN(moment.getTime())) {
+  const moment = hasTime(start) ? momentOf(start) : null;
+  if (!moment) {
     return null;
   }
   return `${pad(moment.getHours())}:${pad(moment.getMinutes())}`;
@@ -283,11 +357,8 @@ export function rangeTitle(first: string, last: string): string {
  * without a time.
  */
 export function shortTime(start: string): string | null {
-  if (!start.includes('T')) {
-    return null;
-  }
-  const moment = new Date(start);
-  if (Number.isNaN(moment.getTime())) {
+  const moment = hasTime(start) ? momentOf(start) : null;
+  if (!moment) {
     return null;
   }
   const hour = moment.getHours();

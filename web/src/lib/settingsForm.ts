@@ -635,7 +635,7 @@ const PLEX_ITEMS: FieldGroup[] = [
   },
 ];
 
-/** The settings of the Overseerr item. */
+/** The settings of the Overseerr item and of the Ombi item. */
 const OVERSEERR_ITEMS: FieldGroup[] = [
   {
     title: 'Overseerr',
@@ -685,6 +685,89 @@ const OVERSEERR_ITEMS: FieldGroup[] = [
       { key: 'overseerrPrefer4K', label: 'Send new requests to the 4K service', kind: 'switch' },
       {
         key: 'overseerrRefresh',
+        label: 'Milliseconds between two loads of the requests',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'Ombi',
+    test: 'ombi',
+    fields: [
+      ...itemFields(
+        'the requests of Ombi',
+        'homepageOmbiEnabled',
+        'homepageOmbiAuth',
+        'homepageOrderombi',
+      ),
+      {
+        key: 'ombiToken',
+        label: 'API key of Ombi',
+        kind: 'secret',
+        help: 'The address of Ombi is on the tab "Login", with single sign-on.',
+      },
+      {
+        key: 'ombiDisableCertCheck',
+        label: 'Do not check the certificate of Ombi',
+        kind: 'switch',
+      },
+      {
+        key: 'ombiLimitUser',
+        label: 'Show a user only the own requests',
+        kind: 'switch',
+        help: 'An Admin and a Co-Admin see all requests.',
+      },
+      { key: 'ombiLimit', label: 'Most requests that are loaded', kind: 'number', min: 1 },
+      {
+        key: 'homepageOmbiRequestAuth',
+        label: 'A new request is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'ombiTvDefault',
+        label: 'A new request for a series asks for',
+        kind: 'select',
+        options: [
+          { value: 'all', label: 'All seasons' },
+          { value: 'first', label: 'The first season' },
+          { value: 'last', label: 'The last season' },
+        ],
+      },
+      {
+        key: 'ombiAlias',
+        label: 'Show the alias of a user in place of the user name',
+        kind: 'switch',
+        help: 'For a user without an alias, the user name shows.',
+      },
+      {
+        key: 'ombiDefaultFilterAvailable',
+        label: 'Show the available requests at the start',
+        kind: 'switch',
+      },
+      {
+        key: 'ombiDefaultFilterUnavailable',
+        label: 'Show the requests that are not available at the start',
+        kind: 'switch',
+      },
+      {
+        key: 'ombiDefaultFilterApproved',
+        label: 'Show the approved requests at the start',
+        kind: 'switch',
+      },
+      {
+        key: 'ombiDefaultFilterUnapproved',
+        label: 'Show the waiting requests at the start',
+        kind: 'switch',
+      },
+      {
+        key: 'ombiDefaultFilterDenied',
+        label: 'Show the denied requests at the start',
+        kind: 'switch',
+      },
+      {
+        key: 'ombiRefresh',
         label: 'Milliseconds between two loads of the requests',
         kind: 'number',
         min: 5000,
@@ -970,6 +1053,11 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         kind: 'switch',
       },
       {
+        key: 'sabnzbdCombine',
+        label: 'Show SABnzbd in the box of the downloaders',
+        kind: 'switch',
+      },
+      {
         key: 'sabnzbdRefresh',
         label: 'Milliseconds between two loads of SABnzbd',
         kind: 'number',
@@ -1026,6 +1114,11 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
       {
         key: 'qBittorrentDisableCertCheck',
         label: 'Do not check the certificate of qBittorrent',
+        kind: 'switch',
+      },
+      {
+        key: 'qBittorrentCombine',
+        label: 'Show qBittorrent in the box of the downloaders',
         kind: 'switch',
       },
       {
@@ -1087,6 +1180,11 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         kind: 'switch',
       },
       {
+        key: 'nzbgetCombine',
+        label: 'Show NZBGet in the box of the downloaders',
+        kind: 'switch',
+      },
+      {
         key: 'nzbgetRefresh',
         label: 'Milliseconds between two loads of NZBGet',
         kind: 'number',
@@ -1120,6 +1218,11 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
       {
         key: 'transmissionDisableCertCheck',
         label: 'Do not check the certificate of Transmission',
+        kind: 'switch',
+      },
+      {
+        key: 'transmissionCombine',
+        label: 'Show Transmission in the box of the downloaders',
         kind: 'switch',
       },
       {
@@ -1349,7 +1452,7 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         label: 'Place of the calendar on the homepage',
         kind: 'number',
         min: 0,
-        help: 'The calendar shows when one application below is switched on.',
+        help: 'The calendar shows when one source below is switched on.',
       },
       {
         key: 'calendarDefault',
@@ -1444,6 +1547,11 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         min: 0,
       },
       {
+        key: 'homepageSonarrQueueCombine',
+        label: 'Show the downloads of Sonarr in the box of the downloaders',
+        kind: 'switch',
+      },
+      {
         key: 'homepageSonarrQueueRefresh',
         label: 'Milliseconds between two loads of the downloads of Sonarr',
         kind: 'number',
@@ -1512,6 +1620,11 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         min: 0,
       },
       {
+        key: 'homepageRadarrQueueCombine',
+        label: 'Show the downloads of Radarr in the box of the downloaders',
+        kind: 'switch',
+      },
+      {
         key: 'homepageRadarrQueueRefresh',
         label: 'Milliseconds between two loads of the downloads of Radarr',
         kind: 'number',
@@ -1554,6 +1667,91 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         help: 'Leave the field empty to use the first address of Lidarr.',
       },
       { key: 'lidarrIcon', label: 'Show the link to Lidarr in an event', kind: 'switch' },
+    ],
+  },
+  {
+    title: 'SickRage',
+    test: 'sickrage',
+    fields: [
+      { key: 'homepageSickrageEnabled', label: 'Show SickRage in the calendar', kind: 'switch' },
+      {
+        key: 'homepageSickrageAuth',
+        label: 'SickRage is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'sickrageURL',
+        label: 'Address of SickRage',
+        kind: 'text',
+        help: 'For more than one install, enter the addresses with commas between them.',
+      },
+      {
+        key: 'sickrageToken',
+        label: 'API key of SickRage',
+        kind: 'secret',
+        help: 'One key for each address, in the same order, with commas between them.',
+      },
+      {
+        key: 'sickrageDisableCertCheck',
+        label: 'Do not check the certificate of SickRage',
+        kind: 'switch',
+      },
+    ],
+  },
+  {
+    title: 'CouchPotato',
+    fields: [
+      {
+        key: 'homepageCouchpotatoEnabled',
+        label: 'Show CouchPotato in the calendar',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageCouchpotatoAuth',
+        label: 'CouchPotato is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'couchpotatoURL',
+        label: 'Address of CouchPotato',
+        kind: 'text',
+        help: 'For more than one install, enter the addresses with commas between them.',
+      },
+      {
+        key: 'couchpotatoToken',
+        label: 'API key of CouchPotato',
+        kind: 'secret',
+        help: 'One key for each address, in the same order, with commas between them.',
+      },
+      {
+        key: 'couchpotatoDisableCertCheck',
+        label: 'Do not check the certificate of CouchPotato',
+        kind: 'switch',
+      },
+    ],
+  },
+  {
+    title: 'Calendars in the iCal format',
+    fields: [
+      {
+        key: 'homepageCalendarEnabled',
+        label: 'Show calendars in the iCal format in the calendar',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageCalendarAuth',
+        label: 'These calendars are for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'calendariCal',
+        label: 'Addresses of the calendars',
+        kind: 'text',
+        help: 'The address of a calendar file (.ics). For more than one calendar, enter the addresses with commas between them.',
+      },
     ],
   },
 ];

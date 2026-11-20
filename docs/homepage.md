@@ -25,7 +25,7 @@ This version has these items:
 - [Custom HTML](#custom-html)
 - [Health checks](#health-checks)
 - [Uptime Kuma](#uptime-kuma)
-- [Calendar](#calendar), with Sonarr, Radarr and Lidarr
+- [Calendar](#calendar), with Sonarr, Radarr, Lidarr, SickRage, CouchPotato and calendars in the iCal format
 - [Downloads of Sonarr and Radarr](#downloads-of-sonarr-and-radarr)
 - [SABnzbd](#sabnzbd)
 - [qBittorrent](#qbittorrent)
@@ -42,6 +42,7 @@ This version has these items:
 - [Jellyfin](#jellyfin): what plays now and new items
 - [Tautulli](#tautulli)
 - [Overseerr](#overseerr)
+- [Ombi](#ombi)
 
 You set all items up in **Settings**, on the tab **Homepage**.
 
@@ -50,7 +51,7 @@ The homepage loads the data of an item again after the time that the item has in
 
 ## Test the connection of a service
 
-The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, rTorrent, uTorrent, JDownloader and Pi-hole.
+The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Ombi, Sonarr, Radarr, Lidarr, SickRage, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, rTorrent, uTorrent, JDownloader and Pi-hole.
 
 1. Enter the address and the key or the login of the service.
 2. Select **Save**. The test reads the settings that are stored.
@@ -155,9 +156,9 @@ A monitor that Uptime Kuma did not check yet is not shown. A monitor in maintena
 
 ## Calendar
 
-The calendar shows the episodes of Sonarr, the films of Radarr and the albums of Lidarr for the days around today.
+The calendar shows the episodes of Sonarr and SickRage, the films of Radarr and CouchPotato, the albums of Lidarr, and the events of calendars in the iCal format, for the days around today.
 
-The calendar has no switch of its own. It shows when a person can see one of the three applications at least. Each application has these settings, here with the keys of Sonarr:
+The calendar has no switch of its own. It shows when a person can see one of its sources at least. Sonarr, Radarr and Lidarr have these settings, here with the keys of Sonarr:
 
 | Setting | Key |
 |---|---|
@@ -197,8 +198,82 @@ An event has a colour for its state:
 | Premiere | The first episode of a season, which was not aired yet. |
 | Not monitored | An episode that was not aired yet, and that Sonarr does not monitor. |
 | Missing | The release is in the past, and there is no file. |
+| Upcoming | An event of a calendar in the iCal format that is not over. |
+| Over | An event of a calendar in the iCal format that is over. |
 
 The day of a film is a day of the time zone of the server. Set the environment variable `TZ` of the container to your time zone, for example `TZ=Europe/Berlin`.
+
+### SickRage
+
+The calendar shows three groups of episodes from SickRage: the episodes that were missed, the episodes of today and of the days to come, and the last 100 episodes that were downloaded. Applications that have the API of SickRage work too, for example SickChill.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageSickrageEnabled` |
+| Level | `homepageSickrageAuth` |
+| Address | `sickrageURL` |
+| API key | `sickrageToken` |
+| Do not check the certificate | `sickrageDisableCertCheck` |
+
+For more than one install, enter the addresses with commas between them. Enter one API key for each address, in the same order.
+
+SickRage gives the time of an episode without a time zone. The calendar takes it for a time of the time zone of the server.
+
+An episode of SickRage shows without a picture.
+
+### CouchPotato
+
+The calendar shows the films of CouchPotato whose release is in the days that the calendar loads. A film that CouchPotato has shows as "Downloaded".
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageCouchpotatoEnabled` |
+| Level | `homepageCouchpotatoAuth` |
+| Address | `couchpotatoURL` |
+| API key | `couchpotatoToken` |
+| Do not check the certificate | `couchpotatoDisableCertCheck` |
+
+For more than one install, enter the addresses with commas between them. Enter one API key for each address, in the same order.
+
+CouchPotato has no connection test.
+
+### Calendars in the iCal format
+
+The calendar shows the events of calendar files in the iCal format (`.ics`). Most calendar services give such an address for a calendar, for example Google Calendar and Nextcloud.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageCalendarEnabled` |
+| Level | `homepageCalendarAuth` |
+| Addresses of the calendars | `calendariCal` |
+
+For more than one calendar, enter the addresses with commas between them. An address that starts with `webcal://` is asked over HTTPS.
+
+The address of a private calendar holds a key. Organizr does not write the address into its log or into an error text.
+
+The calendar shows an event when its start is in the days that the calendar loads. An event shows as "Upcoming" until its end, and as "Over" after that.
+
+An event that repeats shows on each day of its rule. Organizr knows these rules:
+
+| Rule | Example |
+|---|---|
+| Each day, or every few days | `FREQ=DAILY;INTERVAL=2` |
+| Each week, on the day of the start or on named days | `FREQ=WEEKLY;BYDAY=MO,TH` |
+| Each month, on the day of the start or on named days | `FREQ=MONTHLY;BYMONTHDAY=1,15` |
+| Each month, on a day of a week | `FREQ=MONTHLY;BYDAY=2TU` or `BYDAY=-1FR` |
+| Each year | `FREQ=YEARLY` |
+| A number of times, or until a date | `COUNT=10` or `UNTIL=20270101T000000Z` |
+
+An event with another rule shows once, on the day of its first start. Dates that a calendar takes out of a rule (`EXDATE`) still show.
+
+A time of an event is read in this order:
+
+1. A time in UTC is that moment.
+2. A time with a time zone (`TZID`) is a time of that time zone.
+3. In a calendar that names a time zone for itself (`X-WR-TIMEZONE`), a time is a time of that time zone.
+4. Other times are times of the time zone of the server.
+
+A script gets the events of one source with `GET /api/v2/homepage/sickrage/calendar`, `GET /api/v2/homepage/couchpotato/calendar` or `GET /api/v2/homepage/ical/calendar`. `GET /api/v2/homepage/calendar` has the events of the applications in `events`, and the events of the iCal addresses in `ical`.
 
 ### Pictures of events
 
@@ -738,3 +813,53 @@ The server can make a new request for a person:
 The request is made as the person, with the session of Overseerr that single sign-on gave the browser. So a person needs single sign-on for Overseerr to make a request.
 
 The interface of this application does not have the search for a film or a series to request yet. Until then, make new requests in Overseerr.
+
+## Ombi
+
+This item shows the requests for films and series in Ombi, the newest first.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageOmbiEnabled` |
+| Level | `homepageOmbiAuth` |
+| Place | `homepageOrderombi` |
+| Address of Ombi | `ombiURL` |
+| API key | `ombiToken` |
+| Do not check the certificate | `ombiDisableCertCheck` |
+| Show a user only the own requests | `ombiLimitUser` |
+| Most requests that are loaded | `ombiLimit` |
+| Show the alias of a user in place of the user name | `ombiAlias` |
+| Milliseconds between two loads | `ombiRefresh` |
+
+The address of Ombi is the one of [single sign-on](single-sign-on.md), on the tab **Login** of the settings.
+
+With `ombiLimitUser`, a user sees the requests that the user made, and the requests of the fallback user of single sign-on. Organizr compares the user name in Organizr with the user name in Ombi. An Admin and a Co-Admin see all requests.
+
+Five switches say which requests show when the homepage opens. A person can switch each state on and off on the homepage.
+
+| Switch | Key |
+|---|---|
+| The available requests | `ombiDefaultFilterAvailable` |
+| The requests that are not available | `ombiDefaultFilterUnavailable` |
+| The approved requests | `ombiDefaultFilterApproved` |
+| The waiting requests | `ombiDefaultFilterUnapproved` |
+| The denied requests | `ombiDefaultFilterDenied` |
+
+A request opens its details. There, an Admin or a Co-Admin can approve, deny and delete the request, and mark it as available or not available. PHP Organizr lets every person who sees the requests do that.
+
+A script gets the requests with `GET /api/v2/homepage/ombi/requests`. The path can name the type, the largest number of requests and the number of requests to skip: `GET /api/v2/homepage/ombi/requests/movie/10/20`. The type is `movie`, `tv` or `both`.
+
+### New requests in Ombi
+
+The server can make a new request for a person, with `POST /api/v2/homepage/ombi/requests/{type}/{id}`. The type is `movie` or `tv`, and the id is the id of the film or the series in The Movie Database.
+
+| Setting | Key |
+|---|---|
+| Level for a new request | `homepageOmbiRequestAuth` |
+| Seasons of a new request for a series | `ombiTvDefault`: `all`, `first` or `last` |
+
+The request is made as the person, with the token of Ombi that single sign-on gave the browser. So a person needs single sign-on for Ombi to make a request.
+
+Before the request, Organizr asks Ombi whether the film or the series is available or requested already. For a series, Ombi also names the id of the series in TheTVDB, which the request needs.
+
+The interface of this application does not have the search for a film or a series to request yet. Until then, make new requests in Ombi.

@@ -1,5 +1,6 @@
 <script lang="ts">
-  // The Overseerr item: the requests for films and series, and what an Admin can do with one.
+  // The Overseerr item and the Ombi item: the requests for films and series, and what an
+  // Admin can do with one.
   import Dialog from '../../components/Dialog.svelte';
   import { api, failureText } from '../../lib/api';
   import { itemData } from '../../lib/itemData.svelte';
@@ -7,9 +8,17 @@
   import PosterRow from './PosterRow.svelte';
   import { session } from '../../lib/session.svelte';
   import { fromNow } from '../../lib/time';
+  import {
+    hiddenAtStart,
+    REQUEST_SERVICES,
+    type RequestOptions,
+    type RequestService,
+    type RequestState,
+    requestState,
+  } from '../../lib/requests';
 
   interface Request {
-    id: number;
+    id: number | null;
     request_id: number;
     type: 'movie' | 'tv';
     title: string | null;
@@ -37,24 +46,30 @@
     denied: { word: 'Denied', badge: 'badge-error' },
     pending: { word: 'Waiting', badge: 'badge-warning' },
   } as const;
-  type State = keyof typeof STATES;
+  type State = RequestState;
 
-  const item = itemData<Answer>('homepage/overseerr/requests', 'overseerrRefresh');
+  let {
+    service = 'overseerr',
+    options = {},
+  }: { service?: RequestService; options?: RequestOptions } = $props();
 
-  let hidden = $state<State[]>([]);
+  // svelte-ignore state_referenced_locally
+  const name = REQUEST_SERVICES[service];
+  // svelte-ignore state_referenced_locally
+  const item = itemData<Answer>(`homepage/${service}/requests`, `${service}Refresh`);
+
+  // svelte-ignore state_referenced_locally
+  let hidden = $state<State[]>(hiddenAtStart(options));
   let open = $state<Request | null>(null);
   let busy = $state(false);
   let error = $state<string | null>(null);
   let done = $state<string | null>(null);
 
-  function stateOf(request: Request): State {
-    if (request.available) {
-      return 'available';
-    }
-    if (request.denied) {
-      return 'denied';
-    }
-    return request.approved ? 'approved' : 'pending';
+  const stateOf = requestState;
+
+  /** The name of the person who made a request, as the settings show it. */
+  function requesterOf(request: Request): string {
+    return (options.alias === false ? '' : request.userAlias) || request.user;
   }
 
   const all = $derived(item.data?.content ?? []);
@@ -72,7 +87,7 @@
     busy = true;
     error = null;
     try {
-      const path = `homepage/overseerr/requests/${request.type}/${request.request_id}${action}`;
+      const path = `homepage/${service}/requests/${request.type}/${request.request_id}${action}`;
       done = (await api(method, path)).message;
       open = null;
       await item.reload();
@@ -85,7 +100,7 @@
 </script>
 
 {#if item.error}
-  <div role="alert" class="alert alert-error"><span>Overseerr: {item.error}</span></div>
+  <div role="alert" class="alert alert-error"><span>{name}: {item.error}</span></div>
 {:else if item.data}
   <p role="status" class="text-success text-sm">{done ?? ''}</p>
   {#snippet filters()}
@@ -153,7 +168,7 @@
       {/if}
     </p>
     <p class="text-sm opacity-70">
-      Requested by {request.userAlias || request.user}
+      Requested by {requesterOf(request)}
       {fromNow(request.request_date) ?? ''}
     </p>
     {#if request.overview}

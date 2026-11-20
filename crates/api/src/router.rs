@@ -216,7 +216,52 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/homepage/overseerr/requests/{type}/{id}/{seasons}",
             &post(homepage::overseerr::add_request_for_seasons),
         )?
+        .route("/homepage/ombi/requests", &get(homepage::ombi::requests))?
+        .route(
+            "/homepage/ombi/requests/{type}",
+            &get(homepage::ombi::requests_of_type),
+        )?
+        .route(
+            "/homepage/ombi/requests/{type}/{limit}",
+            &get(homepage::ombi::requests_limited),
+        )?
+        .route(
+            "/homepage/ombi/requests/{type}/{limit}/{offset}",
+            &get(homepage::ombi::requests_paged),
+        )?
+        .route(
+            "/homepage/ombi/requests/{type}/{id}/available",
+            &post(homepage::ombi::available),
+        )?
+        .route(
+            "/homepage/ombi/requests/{type}/{id}/unavailable",
+            &post(homepage::ombi::unavailable),
+        )?
+        .route(
+            "/homepage/ombi/requests/{type}/{id}/approve",
+            &post(homepage::ombi::approve),
+        )?
+        .route(
+            "/homepage/ombi/requests/{type}/{id}/deny",
+            &put(homepage::ombi::deny),
+        )?
+        .route(
+            "/homepage/ombi/requests/{type}/{id}",
+            &delete(homepage::ombi::delete).post(homepage::ombi::add_request),
+        )?
         .route("/homepage/calendar", &get(homepage::arr::calendar))?
+        .route(
+            "/homepage/sickrage/calendar",
+            &get(homepage::calendar_more::sickrage_calendar),
+        )?
+        .route(
+            "/homepage/couchpotato/calendar",
+            &get(homepage::calendar_more::couchpotato_calendar),
+        )?
+        .route(
+            "/homepage/ical/calendar",
+            &get(homepage::calendar_more::ical_calendar),
+        )?
         .route(
             "/homepage/sonarr/calendar",
             &get(homepage::arr::sonarr_calendar),
@@ -327,6 +372,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/test/qbittorrent", &post(connection_tests::test_qbittorrent))?
         .route("/test/tautulli", &post(connection_tests::test_tautulli))?
         .route("/test/overseerr", &post(connection_tests::test_overseerr))?
+        .route("/test/ombi", &post(connection_tests::test_ombi))?
+        .route("/test/sickrage", &post(connection_tests::test_sickrage))?
         .route("/test/nzbget", &post(connection_tests::test_nzbget))?
         .route("/test/transmission", &post(connection_tests::test_transmission))?
         .route("/test/deluge", &post(connection_tests::test_deluge))?

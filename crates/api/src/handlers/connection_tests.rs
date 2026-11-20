@@ -17,6 +17,7 @@ use organizr_integrations::emby::Kind as MediaServer;
 use organizr_integrations::http::Outbound;
 use organizr_integrations::pihole;
 use organizr_integrations::probe::{self, Probe};
+use organizr_integrations::sickrage;
 use organizr_settings::Settings;
 use serde_json::Value;
 
@@ -263,6 +264,68 @@ async fn overseerr(test: &Test<'_>, caller: &Caller) -> Outcome {
         Ok(succeeded())
     } else {
         Err(refused(StatusCode::UNAUTHORIZED, "API Connection failed"))
+    }
+}
+
+async fn ombi(test: &Test<'_>) -> Outcome {
+    let settings = test.state.settings();
+    if settings.ombi_url.is_empty() {
+        return Err(Refusal::unprocessable("Ombi URL is not defined"));
+    }
+    if settings.ombi_token.is_empty() {
+        return Err(Refusal::unprocessable("Ombi Token is not defined"));
+    }
+    let url = format!("{}/api/v1/Settings/about", test.url(&settings.ombi_url));
+    let probe = Probe {
+        url: &url,
+        headers: &[
+            ("Accept", "application/json"),
+            ("ApiKey", &settings.ombi_token),
+        ],
+        never_check_certificate: settings.ombi_disable_cert_check,
+        ..Probe::default()
+    };
+    let answer = test.get(probe).await.map_err(unreachable)?;
+    if answer.is_success() {
+        Ok(succeeded())
+    } else if answer.body.trim().is_empty() {
+        Err(refused(StatusCode::UNAUTHORIZED, "API Connection failed"))
+    } else {
+        // What Ombi answered says why.
+        Err(refused(StatusCode::UNAUTHORIZED, shown(&answer.body)))
+    }
+}
+
+async fn sick_rage(test: &Test<'_>) -> Outcome {
+    let settings = test.state.settings();
+    if settings.sickrage_url.is_empty() {
+        return Err(Refusal::unprocessable("SickRage URL is not defined"));
+    }
+    if settings.sickrage_token.is_empty() {
+        return Err(Refusal::unprocessable("SickRage Token is not defined"));
+    }
+    let mut errors = String::new();
+    for (address, token) in pihole::installs(&settings.sickrage_url, &settings.sickrage_token) {
+        let base = test.url(address);
+        let install = sickrage::Install {
+            url: &base,
+            key: token,
+            never_check_certificate: settings.sickrage_disable_cert_check,
+        };
+        let fault = match install.about(test.http, TIME_LIMIT).await {
+            Ok(answer) => sickrage::fault(&answer),
+            Err(error) => Some(error.to_string()),
+        };
+        if let Some(fault) = fault {
+            errors.push_str(&base);
+            errors.push_str(": ");
+            errors.push_str(&shown(&fault));
+        }
+    }
+    if errors.is_empty() {
+        Ok(Envelope::success(Value::Null))
+    } else {
+        Err(refused(StatusCode::INTERNAL_SERVER_ERROR, errors))
     }
 }
 
@@ -543,6 +606,8 @@ enum Service {
     Qbittorrent,
     Tautulli,
     Overseerr,
+    Ombi,
+    Sickrage,
     Nzbget,
     Transmission,
     Deluge,
@@ -606,6 +671,8 @@ async fn run(
         Service::Qbittorrent => qbittorrent(&test).await,
         Service::Tautulli => tautulli(&test).await,
         Service::Overseerr => overseerr(&test, caller).await,
+        Service::Ombi => ombi(&test).await,
+        Service::Sickrage => sick_rage(&test).await,
         Service::Nzbget => nzbget(&test).await,
         Service::Transmission => transmission(&test).await,
         Service::Deluge => deluge(&test, caller).await,
@@ -672,6 +739,16 @@ test_route!(
     /// `POST /test/overseerr`.
     test_overseerr,
     Service::Overseerr
+);
+test_route!(
+    /// `POST /test/ombi`.
+    test_ombi,
+    Service::Ombi
+);
+test_route!(
+    /// `POST /test/sickrage`.
+    test_sickrage,
+    Service::Sickrage
 );
 test_route!(
     /// `POST /test/nzbget`.

@@ -252,6 +252,8 @@ tempfile = "3.27"
 
 Added later, with its milestone: `wasmtime` (48.x LTS line) behind the `wasm-plugins` feature. Not used on purpose: `chrono` in our own code (flagged unmaintained on 2026-11-17; it arrives only through `icalendar`, which is kept inside one module), `jsonwebtoken` (no JWT sessions), `openssl`.
 
+Changed later: the crate `icalendar` of the list above is not used. The application reads calendars in the iCal format with its own reader on `jiff`, which keeps `chrono` out of the build. See D-79 in [deviations.md](deviations.md).
+
 Tools: cargo-nextest 0.9.152, cargo-deny 0.21.0, cargo-machete 0.10.1.
 
 Front end (`web/package.json`): svelte 5.58.0, vite 8.3.8, @sveltejs/vite-plugin-svelte 7.3.1, typescript 6.0.3, svelte-check 4.7.8, tailwindcss and @tailwindcss/vite 4.3.5, daisyui 5.8.1, bits-ui 2.21.0, @tanstack/svelte-query 6.4.3, svelte-dnd-action 0.9.80, @event-calendar/core 5.19.0, embla-carousel-svelte 8.6.0, codemirror 6.0.2 with CSS, JavaScript and HTML language packs, vitest 5.1.1, @testing-library/svelte 5.4.2, jsdom 31.0.1, @playwright/test 1.65.1, eslint 10.15.0, eslint-plugin-svelte 3.24.1, typescript-eslint 8.73.0, prettier 3.10.1, prettier-plugin-svelte 4.2.0. Build stage on Node 26 LTS.
