@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  addDays,
   type CalendarEvent,
   dayOf,
   eventsByDay,
@@ -8,10 +9,15 @@ import {
   monthGrid,
   monthName,
   moveMonth,
+  rangeTitle,
+  shortDay,
+  shortTime,
   shownEvents,
   stateOf,
   timeOf,
+  viewOf,
   weekDays,
+  weekOf,
 } from './calendar';
 
 function event(id: string, start: string, kind = 'tv', state = 'text-success'): CalendarEvent {
@@ -109,5 +115,48 @@ describe('events', () => {
   it('have a word for their state', () => {
     expect(stateOf(event('a', '2026-11-20', 'tv', 'text-danger')).word).toBe('Missing');
     expect(stateOf(event('a', '2026-11-20', 'tv', 'text-new')).word).toBe('text-new');
+  });
+});
+
+describe('weeks and days', () => {
+  it('have the seven days around a day, from the first day of the settings', () => {
+    expect(weekOf('2026-11-20', 0)).toEqual([
+      '2026-11-15',
+      '2026-11-16',
+      '2026-11-17',
+      '2026-11-18',
+      '2026-11-19',
+      '2026-11-20',
+      '2026-11-21',
+    ]);
+    expect(weekOf('2026-11-20', 1)[0]).toBe('2026-11-16');
+    expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
+    expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
+  });
+
+  it('have the titles of PHP Organizr', () => {
+    expect(shortDay('2026-11-15')).toBe('Sun 11/15');
+    expect(rangeTitle('2026-11-15', '2026-11-21')).toBe('Nov 15 – 21, 2026');
+    expect(rangeTitle('2026-11-29', '2026-12-05')).toBe('Nov 29 – Dec 5, 2026');
+    expect(rangeTitle('2026-12-27', '2027-01-02')).toBe('Dec 27, 2026 – Jan 2, 2027');
+    expect(rangeTitle('2026-11-20', '2026-11-20')).toBe('Nov 20, 2026');
+  });
+
+  it('name the view of each setting, and the month for an unknown one', () => {
+    expect(viewOf('basicWeek')).toBe('week');
+    expect(viewOf('basicDay')).toBe('day');
+    expect(viewOf('list')).toBe('list');
+    expect(viewOf('month')).toBe('month');
+    expect(viewOf('agendaWeek')).toBe('month');
+  });
+
+  it('show a time with "a" or "p", and none for a start without a time', () => {
+    const at = (hour: number, minute: number) =>
+      shortTime(new Date(2026, 10, 20, hour, minute).toISOString());
+    expect(at(0, 0)).toBe('12:00a');
+    expect(at(8, 5)).toBe('8:05a');
+    expect(at(12, 30)).toBe('12:30p');
+    expect(at(20, 0)).toBe('8:00p');
+    expect(shortTime('2026-11-20')).toBeNull();
   });
 });

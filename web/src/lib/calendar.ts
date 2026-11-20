@@ -207,3 +207,101 @@ export function longDay(day: string): string {
   const name = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()] ?? '';
   return `${name}, ${number} ${monthName(year, month)}`;
 }
+
+/** The view of the calendar. The settings name them as PHP Organizr does. */
+export type CalendarView = 'month' | 'week' | 'day' | 'list';
+
+/** The view that a setting names: `month`, `basicWeek`, `basicDay` or `list`. */
+export function viewOf(setting: string): CalendarView {
+  const views: Record<string, CalendarView> = {
+    month: 'month',
+    basicWeek: 'week',
+    basicDay: 'day',
+    list: 'list',
+  };
+  return views[setting] ?? 'month';
+}
+
+function dateOf(day: string): Date {
+  const [year, month, number] = day.split('-').map(Number);
+  return new Date(year ?? 1970, (month ?? 1) - 1, number ?? 1);
+}
+
+/** The day that is `days` days after a day, or before it for a number below zero. */
+export function addDays(day: string, days: number): string {
+  const date = dateOf(day);
+  date.setDate(date.getDate() + days);
+  return dayText(date.getFullYear(), date.getMonth() + 1, date.getDate());
+}
+
+/** The seven days of the week that holds a day. The week starts on `firstDay`. */
+export function weekOf(day: string, firstDay: number): string[] {
+  const before = (dateOf(day).getDay() - (firstDay % 7) + 7) % 7;
+  return Array.from({ length: 7 }, (_, place) => addDays(day, place - before));
+}
+
+const SHORT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/** The head of a column of the week view: "Sun 11/15". */
+export function shortDay(day: string): string {
+  const date = dateOf(day);
+  const name = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()] ?? '';
+  return `${name} ${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+/** The title of a week or of a day: "Nov 15 – 21, 2026", or "Nov 20, 2026" for one day. */
+export function rangeTitle(first: string, last: string): string {
+  const from = dateOf(first);
+  const to = dateOf(last);
+  const month = (date: Date) => SHORT_MONTHS[date.getMonth()] ?? '';
+  if (first === last) {
+    return `${month(from)} ${from.getDate()}, ${from.getFullYear()}`;
+  }
+  if (from.getFullYear() !== to.getFullYear()) {
+    return `${month(from)} ${from.getDate()}, ${from.getFullYear()} – ${month(to)} ${to.getDate()}, ${to.getFullYear()}`;
+  }
+  const end =
+    from.getMonth() === to.getMonth() ? `${to.getDate()}` : `${month(to)} ${to.getDate()}`;
+  return `${month(from)} ${from.getDate()} – ${end}, ${to.getFullYear()}`;
+}
+
+/**
+ * The time of an event as PHP Organizr shows it in a week: "8:00p". Nothing for a start
+ * without a time.
+ */
+export function shortTime(start: string): string | null {
+  if (!start.includes('T')) {
+    return null;
+  }
+  const moment = new Date(start);
+  if (Number.isNaN(moment.getTime())) {
+    return null;
+  }
+  const hour = moment.getHours();
+  return `${hour % 12 === 0 ? 12 : hour % 12}:${pad(moment.getMinutes())}${hour < 12 ? 'a' : 'p'}`;
+}
+
+/** The colour of the state of an event, as a value of CSS. */
+export function stateColour(event: CalendarEvent): string {
+  const colours: Record<string, string> = {
+    'badge-success': 'var(--color-success)',
+    'badge-info': 'var(--color-info)',
+    'badge-error': 'var(--color-error)',
+    'badge-primary': '#00ccff',
+    'badge-neutral': '#96a2b4',
+  };
+  return colours[stateOf(event).badge] ?? '#96a2b4';
+}

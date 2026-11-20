@@ -77,7 +77,32 @@ describe('Calendar', () => {
     expect(screen.queryByRole('button', { name: 'The Album' })).toBeNull();
   });
 
-  it('starts in the list when the settings name another view than the month', async () => {
+  it('starts in the week when the settings name it, with a column for each day', async () => {
+    stubApi({
+      'GET homepage/calendar': {
+        data: {
+          ical: false,
+          events: [{ ...event('Tonight', 1, 'tv', 'text-success'), start: NOW }],
+        },
+      },
+    });
+    render(Calendar, { options: { defaultView: 'basicWeek', firstDay: 0, limit: 1000 } });
+
+    const shown = await screen.findByRole('button', { name: /Tonight/ });
+    expect(shown.textContent).toContain('About Tonight');
+    expect(shown.textContent).toContain('Downloaded');
+    expect(screen.getAllByRole('columnheader')).toHaveLength(7);
+    expect(screen.getByRole('button', { name: 'Week' }).getAttribute('aria-pressed')).toBe('true');
+
+    // The day view has the one day, and "Later" goes to the next day.
+    await fireEvent.click(screen.getByRole('button', { name: 'Day' }));
+    expect(screen.getAllByRole('columnheader')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: /Tonight/ })).toBeTruthy();
+    await fireEvent.click(screen.getByRole('button', { name: 'Later' }));
+    expect(screen.queryByRole('button', { name: /Tonight/ })).toBeNull();
+  });
+
+  it('starts in the list when the settings name the list', async () => {
     show({ defaultView: 'list', firstDay: 0, limit: 1000 });
 
     const row = await screen.findByRole('button', { name: /The Album/ });

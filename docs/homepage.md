@@ -161,12 +161,14 @@ The calendar itself has these settings:
 | Setting | Key |
 |---|---|
 | Place | `homepageOrdercalendar` |
-| View at the start: month or list | `calendarDefault` |
+| View at the start: `month`, `basicWeek`, `basicDay` or `list` | `calendarDefault` |
 | First day of a week | `calendarFirstDay` |
 | Days before today that are loaded | `calendarStart` |
 | Days after today that are loaded | `calendarEnd` |
 | Most events that a day of the month shows | `calendarLimit` |
 | Milliseconds between two loads | `calendarRefresh` |
+
+The calendar has four views: the month, the week, the day and the list. The buttons with the arrows go one month, one week or one day back or on. The button "Filter" shows the switches for the kinds and the states of events.
 
 An event has a colour for its state:
 

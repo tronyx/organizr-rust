@@ -416,6 +416,89 @@
     border-left: 26px solid transparent;
   }
 
+  /* The calendar of PHP Organizr: a dark box with a bar of flat buttons, and a grid of
+     days with a lighter column for today. */
+  .org-calendar {
+    background: var(--color-base-200);
+  }
+
+  .org-calendar-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 20px;
+  }
+
+  .org-calendar-bar h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+
+  .org-calendar-buttons {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .org-calendar-buttons button {
+    padding: 4px 8.4px;
+    background: var(--color-base-100);
+    color: #ffffff;
+    cursor: pointer;
+  }
+
+  .org-calendar-buttons button:hover,
+  .org-calendar-buttons button[aria-pressed='true'] {
+    background: var(--color-neutral);
+  }
+
+  .org-calendar-grid {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+
+  .org-calendar-grid th {
+    padding: 7px 0;
+    background: var(--color-base-100);
+    color: #ffffff;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .org-calendar-grid td {
+    border: 1px solid rgb(120 130 140 / 0.13);
+    background: #111111;
+    color: #ffffff;
+    vertical-align: top;
+  }
+
+  .org-calendar-grid th.org-today {
+    color: var(--color-info);
+  }
+
+  .org-calendar-grid td.org-today {
+    background: #3d3d3d;
+  }
+
+  .org-calendar-event {
+    display: block;
+    width: 100%;
+    padding: 5px;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .org-calendar-event:hover {
+    background: rgb(255 255 255 / 0.06);
+  }
+
   @media (width >= 64rem) {
     .org-header.org-with-menu {
       padding-left: 60px;
