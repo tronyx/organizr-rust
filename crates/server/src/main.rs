@@ -2,8 +2,10 @@
 
 mod check;
 mod check_homepage;
+mod cron;
 mod healthcheck;
 mod import;
+mod scheduler;
 mod secret_key;
 mod serve;
 mod web;

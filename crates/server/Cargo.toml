@@ -22,12 +22,14 @@ organizr-auth.workspace = true
 organizr-db.workspace = true
 organizr-import.workspace = true
 organizr-integrations.workspace = true
+organizr-plugins.workspace = true
 organizr-settings.workspace = true
 serde_json.workspace = true
 
 anyhow.workspace = true
 axum.workspace = true
 clap.workspace = true
+jiff.workspace = true
 rust-embed = { workspace = true, optional = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "net", "signal", "io-util", "time"] }
 tracing.workspace = true

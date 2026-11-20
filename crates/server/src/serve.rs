@@ -108,6 +108,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         );
         state = state.with_setup_code(code);
     }
+    // The jobs of the application run in a task of their own, which ends with the server.
+    let scheduler = tokio::spawn(crate::scheduler::run(state.clone()));
     // A request for a file of the web interface is answered before it reaches the API.
     let app = router(state)
         .context("the route table is not valid")?
@@ -129,6 +131,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     .context("the server stopped with an error")?;
 
     tracing::info!("Organizr is stopping");
+    scheduler.abort();
     database
         .close()
         .await

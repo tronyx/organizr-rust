@@ -55,7 +55,7 @@ Date: 2026-11-18. Baseline: Organizr 2.1.5000 (upstream `v2-develop` at `2c1d419
 | CSRF | Fetch-metadata check (`Sec-Fetch-Site` / `Origin`) plus `SameSite=Lax` | No token to leak or rotate | Static form key (today): checked on POST only |
 | Secrets at rest | XChaCha20-Poly1305, master key from env or key file, sub-keys by HKDF | Authenticated encryption; ends the one-key-for-everything design | AES-256-CBC with key-derived IV (today) |
 | Outbound HTTP | reqwest 0.13.5 with rustls (aws-lc-rs) | No OpenSSL in the image | |
-| Scheduler | croner 4 + a Tokio loop | Replaces `cron.php` and system cron | tokio-cron-scheduler: stale, pulls chrono |
+| Scheduler | An own matcher for cron schedules + a Tokio loop | Replaces `cron.php` and system cron | tokio-cron-scheduler: stale, pulls chrono. croner 4: built on jiff 0.2, while this application uses jiff 1 |
 | Front end | **Svelte 5 + Vite 8 + TypeScript 6**, Tailwind 4 + daisyUI 5, Bits UI; embedded in the binary | Escapes output by default; plain static build allows a strict Content-Security-Policy with no inline script; small runtime; readable components | SvelteKit 3: one month old, breaks sub-folder installs. Leptos/Dioxus: breaking releases pending, widgets need JS anyway. htmx: a second HTML API. React/Vue: viable, larger |
 | API types for the front end | ts-rs 12 (Rust types → TypeScript), OpenAPI by utoipa 6 | Front-end build fails when a Rust type changes | openapi-typescript: no TypeScript 6 support yet |
 | Bundled plugins | Compiled-in modules behind a `Plugin` trait | Same trust as core, no runtime cost | |
@@ -230,7 +230,6 @@ ldap3 = { version = "0.12.1", default-features = false, features = ["tls-rustls-
 suppaftp = { version = "13.0.0", features = ["tokio-rustls-aws-lc-rs"] }
 lettre = { version = "0.11.24", default-features = false, features = ["smtp-transport", "builder", "pool", "hostname", "tokio1-rustls", "aws-lc-rs", "rustls-platform-verifier"] }
 minijinja = "3.1.0"               # mail and custom-page templates
-croner = { version = "4.0.3", features = ["jiff"] }
 icalendar = { version = "0.17.17", features = ["recurrence"] }
 quick-xml = { version = "0.42.0", features = ["serialize"] }
 scraper = "0.29.0"
