@@ -78,6 +78,8 @@ export type Content =
   /** A tab that shows another application in a frame. */
   | { kind: 'frame'; tab: MenuTab }
   | { kind: 'homepage'; tab: MenuTab }
+  /** The page of the bookmark plugin. */
+  | { kind: 'bookmarks'; tab: MenuTab }
   /** A tab that opens in a new window. The main area offers the link again. */
   | { kind: 'newWindow'; tab: MenuTab }
   /** A tab that has no address to open. */
@@ -98,6 +100,9 @@ function contentOfTab(tab: MenuTab, caller: Caller): Content {
     // A page of Organizr itself. The address names the page.
     if (tab.url?.includes('page/settings')) {
       return caller.canManage ? { kind: 'settings', section: 'tabs' } : { kind: 'notAllowed' };
+    }
+    if (tab.url?.includes('plugins/bookmark/page')) {
+      return { kind: 'bookmarks', tab };
     }
     return { kind: 'homepage', tab };
   }

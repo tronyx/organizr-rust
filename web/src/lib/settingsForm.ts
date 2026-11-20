@@ -1234,3 +1234,18 @@ export const SPEED_TEST_PLUGIN: FieldGroup[] = [
     ],
   },
 ];
+
+/** The switch of the bookmark plugin. Its bookmarks have an editor of their own. */
+export const BOOKMARK_PLUGIN: FieldGroup[] = [
+  {
+    title: 'Bookmark plugin',
+    fields: [
+      {
+        key: 'BOOKMARK-enabled',
+        label: 'Use the bookmark plugin',
+        kind: 'switch',
+        help: 'Save this switch before you add bookmarks below.',
+      },
+    ],
+  },
+];

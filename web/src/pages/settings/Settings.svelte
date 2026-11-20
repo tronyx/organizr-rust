@@ -6,8 +6,14 @@
   import { api, failureText } from '../../lib/api';
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
-  import { HEALTH_CHECKS_PLUGIN, HOMEPAGE, SPEED_TEST_PLUGIN } from '../../lib/settingsForm';
+  import {
+    BOOKMARK_PLUGIN,
+    HEALTH_CHECKS_PLUGIN,
+    HOMEPAGE,
+    SPEED_TEST_PLUGIN,
+  } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
+  import BookmarksEditor from './BookmarksEditor.svelte';
   import CategoriesEditor from './CategoriesEditor.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
@@ -157,10 +163,13 @@
     <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
   {:else if section === 'plugins'}
     <SettingsForm
-      groups={[...SPEED_TEST_PLUGIN, ...HEALTH_CHECKS_PLUGIN]}
+      groups={[...BOOKMARK_PLUGIN, ...SPEED_TEST_PLUGIN, ...HEALTH_CHECKS_PLUGIN]}
       ondone={(message) => (done = message)}
     >
       <HealthCheckServices ondone={(message) => (done = message)} />
+      {#if session.launch?.plugins['BOOKMARK-enabled'] === true}
+        <BookmarksEditor ondone={(message) => (done = message)} />
+      {/if}
     </SettingsForm>
   {:else if data}
     {#if section === 'tabs'}

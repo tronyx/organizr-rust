@@ -784,6 +784,42 @@ test('the speed test plugin measures the connection to the server', async ({ pag
   await expect(page.getByText(/^Your address: /)).toBeVisible();
 });
 
+test('the Admin adds a bookmark, and the page of the bookmarks shows it as a tile', async ({
+  page,
+}) => {
+  await logIn(page);
+  await page.goto('./#/settings/plugins');
+  await page.getByLabel('Use the bookmark plugin').check();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+
+  // The editor shows once the plugin is on.
+  await page.getByLabel('Name of a new category').fill('Reading');
+  await page.getByRole('button', { name: 'Add a category' }).click();
+  await expect(page.getByRole('status')).toHaveText('The category is added.');
+  await page.getByRole('button', { name: 'Add a bookmark' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Name', { exact: true }).fill('Example');
+  await dialog.getByLabel('Address').fill('https://example.com/');
+  await dialog.getByLabel('Colour of the tile').fill('#804020');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The bookmark is added.');
+  await expect(page.getByRole('table', { name: 'Bookmarks' })).toContainText('Example');
+
+  await page.getByRole('button', { name: 'Make the tab Bookmarks' }).click();
+  await expect(page.getByRole('status')).toHaveText('The menu has the tab Bookmarks.');
+
+  await page.goto('./#Bookmarks');
+  await page.reload();
+  const tile = page.getByRole('region', { name: 'Reading' }).getByRole('link', { name: 'Example' });
+  await expect(tile).toBeVisible();
+  await expect(tile).toHaveAttribute('href', 'https://example.com/');
+  // The colours of the tile reach the page, also with the strict security policy.
+  await expect(tile).toHaveCSS('color', 'rgb(255, 255, 255)');
+  const background = await tile.evaluate((element) => getComputedStyle(element).backgroundImage);
+  expect(background).toContain('linear-gradient');
+});
+
 // This test stays the last one: after it, the login page has a second button whose name
 // starts with "Log in".
 test('the Admin switches the button "Log in with Plex" on, and the login page shows it', async ({

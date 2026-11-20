@@ -5,6 +5,7 @@
   import { PAGES } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
   import Account from './Account.svelte';
+  import Bookmarks from './Bookmarks.svelte';
   import Homepage from './homepage/Homepage.svelte';
   import Login from './Login.svelte';
   import Recover from './Recover.svelte';
@@ -25,6 +26,8 @@
   <Account />
 {:else if content.kind === 'speedTest'}
   <SpeedTest />
+{:else if content.kind === 'bookmarks'}
+  <Bookmarks title={content.tab.name} />
 {:else if content.kind === 'settings'}
   <Settings section={content.section} />
 {:else if content.kind === 'notAllowed'}
