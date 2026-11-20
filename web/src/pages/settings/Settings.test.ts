@@ -506,6 +506,31 @@ describe('Settings, users', () => {
     expect(within(rowOf('zoe')).getByRole('button', { name: /Delete/ })).toBeEnabled();
   });
 
+  it('imports the users of a media server and says how many it added', async () => {
+    const sent = await show('users', {
+      'POST users/import/jellyfin': { message: 'Imported 2 users' },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Import Jellyfin users' }));
+
+    await statusSays('The users of Jellyfin are imported.');
+    expect(await screen.findByText('Imported 2 users')).toBeInTheDocument();
+    expect(changes(sent)).toEqual([['POST users/import/jellyfin', { type: 'jellyfin' }]]);
+    expect(screen.getByRole('button', { name: 'Import Plex users' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Import Emby users' })).toBeEnabled();
+  });
+
+  it('shows why an import failed', async () => {
+    await show('users', {
+      'POST users/import/plex': { status: 401, message: 'Not Authorized' },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Import Plex users' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not Authorized');
+    expect(screen.queryByText(/Imported/)).not.toBeInTheDocument();
+  });
+
   it('adds a user with a name, an address and a password', async () => {
     const sent = await show('users', { 'POST users': { message: 'User created' } });
 

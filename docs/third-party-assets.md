@@ -31,6 +31,8 @@ The folder `web/src/icons` holds five icon fonts. For each font, the script writ
 | Simple Line Icons | `simpleline::<name>` | Simple Line Icons by Sabbir Ahmed and others | MIT |
 | Weather Icons | `weathericon::<name>` | Weather Icons by Erik Flowers | Font: SIL OFL 1.1. Code: MIT |
 
+The script also copies the icon list of PHP Organizr, with the names of the icons to show, to `crates/api/src/handlers/icons.json`. The route `GET /icon` sends it.
+
 The source of Organizr holds these fonts without a licence file. The terms in the table are the terms that each project publishes. Make sure that they are correct before you publish a release.
 
 ## How to update the files

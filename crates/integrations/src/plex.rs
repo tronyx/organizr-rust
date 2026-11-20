@@ -127,6 +127,20 @@ pub struct Share<'a> {
     pub music_filter: &'a str,
 }
 
+/// An account in the friend list of the owner of a Plex server.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlexFriend {
+    /// The user name. A managed account of the home of the owner may have none.
+    pub username: String,
+    /// The e-mail address. A managed account may have none.
+    pub email: String,
+    /// The id of the account at the service.
+    pub id: String,
+    /// Whether the account is a managed one with limits. The PHP application counts an
+    /// account as such unless the service says `restricted="0"`.
+    pub restricted: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct PlexTv {
     base: String,
@@ -299,6 +313,15 @@ impl PlexTv {
         }
     }
 
+    /// The friends of the owner of `owner_token`: the accounts that the owner shared
+    /// a server with, as the friend list of the service names them.
+    pub async fn friends(&self, owner_token: &str) -> Result<Vec<PlexFriend>, PlexError> {
+        let text = self
+            .xml("/api/users", &[("X-Plex-Token", owner_token)])
+            .await?;
+        friends_in(&text)
+    }
+
     /// The Plex servers of the account of a token.
     pub async fn servers(&self, token: &str) -> Result<Vec<PlexServer>, PlexError> {
         let headers = [
@@ -337,6 +360,25 @@ fn friend_in(xml: &str, name: &str, server: Option<&str>) -> Result<bool, PlexEr
         }))
 }
 
+/// Reads the friend list of the service.
+fn friends_in(xml: &str) -> Result<Vec<PlexFriend>, PlexError> {
+    let document = parsed(xml)?;
+    Ok(document
+        .root_element()
+        .children()
+        .filter(roxmltree::Node::is_element)
+        .map(|user| {
+            let text = |name: &str| user.attribute(name).unwrap_or_default().to_owned();
+            PlexFriend {
+                username: text("username"),
+                email: text("email"),
+                id: text("id"),
+                restricted: user.attribute("restricted") != Some("0"),
+            }
+        })
+        .collect())
+}
+
 /// Reads the server list of the service.
 fn servers_in(xml: &str) -> Result<Vec<PlexServer>, PlexError> {
     let document = parsed(xml)?;
@@ -358,7 +400,7 @@ fn servers_in(xml: &str) -> Result<Vec<PlexServer>, PlexError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{AccountAnswer, PlexAccount, friend_in, servers_in};
+    use super::{AccountAnswer, PlexAccount, PlexFriend, friend_in, friends_in, servers_in};
 
     /// The friend list as the service sends it, with made-up accounts.
     const FRIENDS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -411,6 +453,30 @@ mod tests {
             friend_in(FRIENDS, "pat", Some("server-three")).ok(),
             Some(false)
         );
+    }
+
+    #[test]
+    fn friend_list_names_each_account_and_whether_it_has_limits() {
+        let list = r#"<MediaContainer size="2">
+  <User id="7" username="Robin" email="robin@example.com" restricted="0"/>
+  <User id="8" username="Kid" email="" restricted="1"/>
+  <User id="9" title="Old"/>
+</MediaContainer>"#;
+        let friend = |id: &str, username: &str, email: &str, restricted: bool| PlexFriend {
+            username: username.to_owned(),
+            email: email.to_owned(),
+            id: id.to_owned(),
+            restricted,
+        };
+        assert_eq!(
+            friends_in(list).ok(),
+            Some(vec![
+                friend("7", "Robin", "robin@example.com", false),
+                friend("8", "Kid", "", true),
+                friend("9", "", "", true),
+            ])
+        );
+        assert!(friends_in("not xml").is_err());
     }
 
     #[test]

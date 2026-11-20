@@ -10,7 +10,10 @@ use organizr_auth::secrets::{SecretBox, SecretError};
 use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, DbError, StoredSetting};
 use organizr_integrations::http::Outbound;
+use organizr_integrations::ipinfo::IPINFO;
+use organizr_integrations::organizr_app::ORGANIZR_API;
 use organizr_integrations::plex::{PLEX_TV, PlexTv};
+use organizr_integrations::sponsors::{GITHUB_SPONSORS, OPEN_COLLECTIVE};
 use organizr_integrations::stripe::STRIPE_API;
 use organizr_integrations::trakt::{TRAKT_API, TRAKT_SITE};
 use organizr_integrations::youtube::YOUTUBE_API;
@@ -68,6 +71,13 @@ pub struct AppState {
     stripe: Arc<str>,
     /// The address of the API of YouTube.
     youtube: Arc<str>,
+    /// The addresses of the list of members at Open Collective and of the sponsor page
+    /// at GitHub.
+    sponsors: Arc<(String, String)>,
+    /// The address of ipinfo.io.
+    ipinfo: Arc<str>,
+    /// The address of the API of the PHP project Organizr.
+    organizr_api: Arc<str>,
     /// Whether `POST /homepage/scrape` also fetches a page of this computer or of a
     /// private network. Only a test says yes.
     scrapes_local_pages: bool,
@@ -130,6 +140,9 @@ impl AppState {
             trakt: Arc::new((TRAKT_API.to_owned(), TRAKT_SITE.to_owned())),
             stripe: Arc::from(STRIPE_API),
             youtube: Arc::from(YOUTUBE_API),
+            sponsors: Arc::new((OPEN_COLLECTIVE.to_owned(), GITHUB_SPONSORS.to_owned())),
+            ipinfo: Arc::from(IPINFO),
+            organizr_api: Arc::from(ORGANIZR_API),
             scrapes_local_pages: false,
             scheduler_beat: Arc::default(),
             settings_change: Arc::new(Mutex::new(())),
@@ -376,6 +389,50 @@ impl AppState {
     /// The address of the API of YouTube.
     pub fn youtube(&self) -> &str {
         &self.youtube
+    }
+
+    /// The same state, with other addresses for the list of members at Open Collective
+    /// and for the sponsor page at GitHub. A test puts a stand-in there.
+    #[must_use]
+    pub fn with_sponsors(mut self, open_collective: &str, github: &str) -> Self {
+        self.sponsors = Arc::new((open_collective.to_owned(), github.to_owned()));
+        self
+    }
+
+    /// The address of the list of members at Open Collective.
+    pub fn open_collective(&self) -> &str {
+        &self.sponsors.0
+    }
+
+    /// The address of the sponsor page at GitHub.
+    pub fn github_sponsors(&self) -> &str {
+        &self.sponsors.1
+    }
+
+    /// The same state, with another address for ipinfo.io. A test puts a stand-in
+    /// there.
+    #[must_use]
+    pub fn with_ipinfo(mut self, address: &str) -> Self {
+        self.ipinfo = Arc::from(address);
+        self
+    }
+
+    /// The address of ipinfo.io.
+    pub fn ipinfo(&self) -> &str {
+        &self.ipinfo
+    }
+
+    /// The same state, with another address for the API of the PHP project Organizr.
+    /// A test puts a stand-in there.
+    #[must_use]
+    pub fn with_organizr_api(mut self, address: &str) -> Self {
+        self.organizr_api = Arc::from(address);
+        self
+    }
+
+    /// The address of the API of the PHP project Organizr.
+    pub fn organizr_api(&self) -> &str {
+        &self.organizr_api
     }
 
     /// The same state, but `POST /homepage/scrape` also fetches a page of this

@@ -16,9 +16,9 @@ use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
     backups, basics, bookmarks, categories, config, connection_tests,
-    connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin,
-    homepage, images, invites, launch, lock, login, logout, mail, ping, plex, register, speed_test,
-    tabs, token, two_factor, users, wizard,
+    connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
+    homepage, icon, images, invites, ip, launch, lock, login, logout, mail, news, pages, ping,
+    plex, register, speed_test, sponsors, tabs, token, two_factor, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -380,6 +380,27 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
         .route("/plex/servers", &get(plex::servers))?
+        // The PHP application sends another content type from the two news routes.
+        .route(
+            "/news",
+            &get(news::ignored.layer(map_response(fields::as_plain_json))),
+        )?
+        .route(
+            "/news/{id}",
+            &post(news::ignore.layer(map_response(fields::as_plain_json))),
+        )?
+        .route(
+            "/sponsors/opencollective",
+            &get(sponsors::open_collective_list),
+        )?
+        .route("/sponsors/github", &get(sponsors::github_list))?
+        .route("/sponsors/all", &get(sponsors::all))?
+        .route("/ip/{ip}", &get(ip::info))?
+        .route("/icon", &get(icon::list))?
+        .route("/help/smtp", &get(help::smtp))?
+        .route("/page", &get(pages::names))?
+        .route("/page/{page}", &get(pages::one))?
+        .route("/organizr/{page}[/{var1}[/{var2}]]", &get(pages::raw))?
         .route("/backup", &get(backups::list).post(backups::create))?
         .route(
             "/backup/{filename}",
@@ -472,6 +493,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/plugins/php-mailer/email/send", &post(mail::send))?
         .route("/plugins/php-mailer/email/test", &get(mail::test))?
         .route("/users", &get(users::list).post(users::add))?
+        .route("/users/import/{type}", &post(users_import::import))?
         .route("/users/lock", &post(lock::lock_own))?
         .route("/users/unlock", &post(lock::unlock_own))?
         .route("/users/lock/{id}", &post(lock::lock_user))?

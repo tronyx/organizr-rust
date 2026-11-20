@@ -53,6 +53,27 @@
     );
   }
 
+  // The media servers that the users can come from, as the route names them.
+  const IMPORTS = [
+    { type: 'plex', name: 'Plex' },
+    { type: 'jellyfin', name: 'Jellyfin' },
+    { type: 'emby', name: 'Emby' },
+  ] as const;
+  let importing = $state(false);
+  // What the server said about the last import: how many users it added.
+  let imported = $state<string | null>(null);
+
+  async function importFrom(type: string, name: string) {
+    importing = true;
+    imported = null;
+    let message: string | null = null;
+    error = await change(async () => {
+      message = (await api<null>('POST', `users/import/${type}`, { type })).message;
+    }, `The users of ${name} are imported.`);
+    imported = error === null ? message : null;
+    importing = false;
+  }
+
   function remove(user: Account) {
     if (confirm(`Delete the user ${user.username}?`)) {
       void run(() => api('DELETE', `users/${user.id}`), 'The user is deleted.');
@@ -69,6 +90,28 @@
     Add a user
   </button>
 </div>
+
+<section class="mb-4" aria-labelledby="import-users">
+  <h2 id="import-users" class="font-semibold">Import users</h2>
+  <p class="mb-2 text-sm opacity-80">
+    Adds an account for each user of the media server who has none. The server must be set up in the
+    settings. Each new account gets a random password, so its user logs in through the media server.
+  </p>
+  <div class="flex flex-wrap items-center gap-2">
+    {#each IMPORTS as server (server.type)}
+      <button
+        class="btn btn-sm"
+        disabled={importing}
+        onclick={() => void importFrom(server.type, server.name)}
+      >
+        Import {server.name} users
+      </button>
+    {/each}
+    {#if imported}
+      <span class="text-sm">{imported}</span>
+    {/if}
+  </div>
+</section>
 
 {#if error}
   <div role="alert" class="alert alert-error mb-4">

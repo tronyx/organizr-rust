@@ -18,6 +18,8 @@ The script writes:
 - `crates/api/src/handlers/bundled_tab_images.txt`: the names of the pictures for tabs,
   for the image routes of the API.
 - `crates/import/src/bundled_images.txt`: the paths of all pictures, for the importer.
+- `crates/api/src/handlers/icons.json`: the icon list of PHP Organizr, for the route
+  `GET /icon`.
 
 Run it again only when the reference changes. Its results are committed.
 """
@@ -150,8 +152,14 @@ def import_icons(container, work):
     fonts.mkdir(parents=True, exist_ok=True)
 
     docker("cp", f"{container}:{SOURCE}/js/icons.json", str(work / "icons.json"))
+    groups = json.loads((work / "icons.json").read_text(encoding="utf-8"))
+    (REPOSITORY / "crates" / "api" / "src" / "handlers" / "icons.json").write_text(
+        json.dumps(groups, ensure_ascii=False, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     listed = {}
-    for group in json.loads((work / "icons.json").read_text(encoding="utf-8")):
+    for group in groups:
         for icon in group["children"]:
             word, name = icon["id"].split("::", 1)
             listed.setdefault(word, []).append(name)
