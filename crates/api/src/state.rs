@@ -39,6 +39,12 @@ pub struct AppState {
     data_folder: Option<Arc<PathBuf>>,
     /// What lets one backup be made at a time.
     backup_lock: Arc<Mutex<()>>,
+    /// The runtime for extensions. `None` when it could not start.
+    #[cfg(feature = "wasm-plugins")]
+    extension_runtime: Option<organizr_plugins::extension::Extensions>,
+    /// What lets one call of an extension run at a time, by the id of the extension.
+    #[cfg(feature = "wasm-plugins")]
+    extension_locks: Arc<std::sync::Mutex<std::collections::HashMap<String, Arc<Mutex<()>>>>>,
     /// What probes the address to check of a tab.
     prober: Prober,
     /// What sends the e-mails.
@@ -84,6 +90,14 @@ impl AppState {
             picture_cache: None,
             data_folder: None,
             backup_lock: Arc::new(Mutex::new(())),
+            #[cfg(feature = "wasm-plugins")]
+            extension_runtime: organizr_plugins::extension::Extensions::new()
+                .inspect_err(|error| {
+                    tracing::error!(%error, "the runtime for extensions could not start");
+                })
+                .ok(),
+            #[cfg(feature = "wasm-plugins")]
+            extension_locks: Arc::default(),
             prober: Prober::network(),
             mailer: Mailer::smtp(),
             outbound: Outbound::new()
@@ -177,6 +191,22 @@ impl AppState {
     /// The data folder of the install, when the server named one.
     pub fn data_folder(&self) -> Option<&Path> {
         self.data_folder.as_deref().map(PathBuf::as_path)
+    }
+
+    /// The runtime for extensions, when it started.
+    #[cfg(feature = "wasm-plugins")]
+    pub fn extension_runtime(&self) -> Option<&organizr_plugins::extension::Extensions> {
+        self.extension_runtime.as_ref()
+    }
+
+    /// The lock that a call of the extension with the id holds.
+    #[cfg(feature = "wasm-plugins")]
+    pub fn extension_lock(&self, id: &str) -> Arc<Mutex<()>> {
+        let mut locks = self
+            .extension_locks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        locks.entry(id.to_owned()).or_default().clone()
     }
 
     /// The lock that a backup holds while it is made.

@@ -2,8 +2,8 @@
 //
 // An extension is a WebAssembly component that exports the world `extension`. Organizr
 // calls `handle` for each request to a route of the extension. The extension can call
-// the functions of `host`, and nothing else: it has no files, no network and no clock
-// of its own.
+// the functions of `host`. It has no files, no network and no environment. It can read
+// the time and get random numbers.
 package organizr:extension@0.1.0;
 
 interface host {

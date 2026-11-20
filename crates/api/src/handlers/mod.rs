@@ -6,6 +6,8 @@ pub mod bookmarks;
 pub mod categories;
 pub mod config;
 pub mod connection_tests;
+#[cfg(feature = "wasm-plugins")]
+pub mod extensions;
 pub mod external_login;
 pub mod fields;
 pub mod forward_auth;

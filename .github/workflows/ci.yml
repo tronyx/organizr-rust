@@ -55,10 +55,10 @@ jobs:
         run: cargo fmt --all --check
 
       - name: Run clippy with warnings as errors
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked --features organizr/wasm-plugins -- -D warnings
 
       - name: Run the tests
-        run: cargo test --workspace --locked
+        run: cargo test --workspace --locked --features organizr/wasm-plugins
 
   deny:
     name: Advisories, licences and banned crates

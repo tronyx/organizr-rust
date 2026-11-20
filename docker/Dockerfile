@@ -45,7 +45,7 @@ COPY --from=web /web/dist ./web/dist
 # The binary is copied out because a cache mount is not part of the image layer.
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/build/target,sharing=locked \
-    cargo build --release --locked --workspace --features organizr/embedded-web \
+    cargo build --release --locked --workspace --features organizr/embedded-web,organizr/wasm-plugins \
     && cp target/release/organizr /organizr \
     && mkdir /config
 

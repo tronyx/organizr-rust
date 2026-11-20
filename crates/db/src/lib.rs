@@ -8,6 +8,7 @@ mod bookmarks;
 mod categories;
 mod entity;
 mod error;
+mod extensions;
 mod groups;
 mod import;
 mod install;
@@ -27,6 +28,7 @@ use sea_orm_migration::MigratorTrait;
 pub use crate::bookmarks::Bookmarks;
 pub use crate::categories::Categories;
 pub use crate::error::DbError;
+pub use crate::extensions::{ApprovedExtension, Extensions};
 pub use crate::groups::Groups;
 pub use crate::import::{Import, ImportData, ImportedUser};
 pub use crate::install::{Install, NewInstall};
@@ -162,6 +164,11 @@ impl Database {
     /// The bookmarks of the bookmark plugin, and their categories.
     pub const fn bookmarks(&self) -> Bookmarks<'_> {
         Bookmarks::new(&self.connection)
+    }
+
+    /// The extensions that an Admin approved.
+    pub const fn extensions(&self) -> Extensions<'_> {
+        Extensions::new(&self.connection)
     }
 
     /// The invites of the invites plugin.

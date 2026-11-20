@@ -17,6 +17,7 @@ These parts work:
 - The homepage with Plex, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission, Pi-hole, Healthchecks, Uptime Kuma, weather and custom HTML
 - The plugins for bookmarks, health checks, invites, e-mail and the speed test
 - Backup and restore, also on a schedule
+- Extensions of other authors, which run in a sandbox
 
 Parts of PHP Organizr that are not built yet are named in [Architecture](docs/architecture.md), section 10.
 
@@ -73,6 +74,7 @@ All other settings are in the web interface.
 | E-mail | [E-mail](docs/email.md) |
 | Homepage | [Homepage](docs/homepage.md), [Checking your services](docs/checking-your-services.md) |
 | Plugins | [Bookmarks](docs/bookmark-plugin.md), [Health checks](docs/health-checks-plugin.md), [Invites](docs/invites-plugin.md), [Speed test](docs/speed-test-plugin.md) |
+| Extensions of other authors | [Extensions](docs/extensions.md) |
 | Scheduled work | [Scheduled jobs](docs/scheduled-jobs.md) |
 | Images and their checks | [Releases](docs/releases.md) |
 | Design | [Architecture](docs/architecture.md), [Audit of PHP Organizr](docs/audit.md), [Deviations](docs/deviations.md) |

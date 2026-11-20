@@ -22,7 +22,7 @@ const NUMBERS: [&str; 8] = ["01", "02", "03", "04", "05", "06", "07", "08"];
 /// What the browser may do with the document. `sandbox` without `allow-same-origin`
 /// makes it a page of no site. A link can open a window or, after a click, change the
 /// address of the window of Organizr. The HTML itself may load from anywhere.
-const POLICY: &str = "sandbox allow-scripts allow-forms allow-popups \
+pub(crate) const POLICY: &str = "sandbox allow-scripts allow-forms allow-popups \
     allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation; \
     default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self'";
 

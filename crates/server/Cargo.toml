@@ -15,6 +15,8 @@ workspace = true
 # Puts the built web interface (the folder `web/dist`) into the binary. Build the
 # interface first: `npm ci` and `npm run build` in the folder `web`.
 embedded-web = ["dep:rust-embed"]
+# The host of extensions: WebAssembly components in the data folder.
+wasm-plugins = ["organizr-api/wasm-plugins"]
 
 [dependencies]
 organizr-api.workspace = true

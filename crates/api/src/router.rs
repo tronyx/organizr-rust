@@ -335,6 +335,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
                 .put(groups::change.layer(map_response(fields::as_plain_json)))
                 .delete(groups::remove.layer(map_response(fields::as_plain_json))),
         )?;
+    #[cfg(feature = "wasm-plugins")]
+    let routes = extension_routes(routes)?;
 
     // The uploaded pictures have the address of the PHP application, which is not under
     // the address of the API.
@@ -365,6 +367,25 @@ async fn revoke_fixed(
     id: &'static str,
 ) -> Result<Response, ApiError> {
     token::revoke_by_text(&state, &caller, id).await
+}
+
+/// The routes of the extensions.
+#[cfg(feature = "wasm-plugins")]
+fn extension_routes(routes: Routes) -> Result<Routes, RoutePatternError> {
+    use crate::handlers::extensions;
+
+    let mut routes = routes
+        .route("/extensions", &get(extensions::list))?
+        .route("/extensions/{id}", &delete(extensions::remove))?
+        .route("/extensions/{id}/enable", &post(extensions::enable))?
+        .route("/extensions/{id}/disable", &post(extensions::disable))?
+        .route("/extension/{id}", &any(extensions::call_root))?;
+    // The rest of the path belongs to the extension, whatever it holds.
+    routes.router = routes.router.route(
+        &format!("{API_BASE}/extension/{{id}}/{{*path}}"),
+        any(extensions::call),
+    );
+    Ok(routes)
 }
 
 /// Adds what every route gets, and the answer for a request that no route takes.

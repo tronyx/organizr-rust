@@ -18,6 +18,7 @@
   import BackupsEditor from './BackupsEditor.svelte';
   import BookmarksEditor from './BookmarksEditor.svelte';
   import CategoriesEditor from './CategoriesEditor.svelte';
+  import ExtensionsEditor from './ExtensionsEditor.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
   import HealthCheckServices from './HealthCheckServices.svelte';
@@ -191,6 +192,7 @@
       {#if session.launch?.plugins['BOOKMARK-enabled'] === true}
         <BookmarksEditor ondone={(message) => (done = message)} />
       {/if}
+      <ExtensionsEditor ondone={(message) => (done = message)} />
     </SettingsForm>
   {:else if data}
     {#if section === 'tabs'}

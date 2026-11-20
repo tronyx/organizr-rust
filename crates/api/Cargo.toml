@@ -11,6 +11,10 @@ publish.workspace = true
 [lints]
 workspace = true
 
+[features]
+# The routes of extensions: WebAssembly components in the data folder.
+wasm-plugins = ["organizr-plugins/wasm-plugins", "dep:sha2"]
+
 [dependencies]
 organizr-auth.workspace = true
 organizr-db.workspace = true
@@ -30,6 +34,7 @@ jiff.workspace = true
 zip.workspace = true
 md-5.workspace = true
 serde.workspace = true
+sha2 = { workspace = true, optional = true }
 serde_json.workspace = true
 surge-ping.workspace = true
 thiserror.workspace = true
