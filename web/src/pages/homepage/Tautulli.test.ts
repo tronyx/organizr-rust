@@ -31,7 +31,18 @@ const STATISTICS = [
   { stat_id: 'something_new', rows: [{ title: 'Unknown' }] },
 ];
 
-const LIBRARIES = [{ section_name: 'Films', count: 120, plays: 300 }];
+const LIBRARIES = [
+  { section_name: 'Old Films', section_type: 'movie', count: 20, plays: 30 },
+  { section_name: 'Films', section_type: 'movie', count: 120, plays: 300 },
+  {
+    section_name: 'Series',
+    section_type: 'show',
+    count: 10,
+    parent_count: 40,
+    child_count: 500,
+    plays: 900,
+  },
+];
 
 function show(options: Partial<typeof ALL> = {}) {
   stubApi({
@@ -50,28 +61,36 @@ describe('Tautulli', () => {
   it('shows each statistic with its rows, and the libraries', async () => {
     show();
 
-    const films = await screen.findByRole('region', { name: 'Most watched films' });
+    const films = await screen.findByRole('region', { name: 'Most Watched Movies' });
     expect(
       within(films)
         .getAllByRole('listitem')
         .map((row) => row.textContent),
-    ).toEqual(['The Film 12 plays', 'Another Film 9 plays']);
+    ).toEqual(['1 The Film 12', '2 Another Film 9']);
     // The poster that the server keeps is shown.
     expect(films.querySelector('img')?.getAttribute('src')).toBe(
       'data/cache/tautulli-815-list.jpg',
     );
-    expect(screen.getByRole('region', { name: 'Most popular series' }).textContent).toContain(
-      'The Show 4 users',
+    expect(screen.getByRole('region', { name: 'Most Popular TV Shows' }).textContent).toContain(
+      'The Show 4',
     );
-    expect(screen.getByRole('region', { name: 'Most active users' }).textContent).toContain(
+    expect(screen.getByRole('region', { name: 'Most Active Users' }).textContent).toContain(
       'Robin',
     );
-    expect(screen.getByRole('region', { name: 'Most used players' }).textContent).toContain(
+    expect(screen.getByRole('region', { name: 'Most Active Platforms' }).textContent).toContain(
       'Chrome',
     );
-    expect(screen.getByRole('region', { name: 'Libraries' }).textContent).toContain('Films');
+    // The libraries of a kind share a card, the largest first. Series have three numbers.
+    expect(
+      within(screen.getByRole('region', { name: 'Movie Libraries' }))
+        .getAllByRole('listitem')
+        .map((row) => row.textContent),
+    ).toEqual(['1 Films 120', '2 Old Films 20']);
+    expect(screen.getByRole('region', { name: 'TV Show Libraries' }).textContent).toContain(
+      '10 / 40 / 500',
+    );
     // A statistic without rows, and one that the item does not know, are left out.
-    expect(screen.queryByRole('region', { name: 'Most watched series' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Most Watched TV Shows' })).toBeNull();
     expect(screen.queryByText('Unknown')).toBeNull();
     expect(screen.getByRole('heading', { name: 'Tautulli' })).toBeTruthy();
   });
@@ -79,11 +98,11 @@ describe('Tautulli', () => {
   it('leaves out what the options switch off, and shows the user name when they say so', async () => {
     show({ topMovies: false, libraries: false, title: false, friendlyName: false });
 
-    const users = await screen.findByRole('region', { name: 'Most active users' });
+    const users = await screen.findByRole('region', { name: 'Most Active Users' });
     expect(users.textContent).toContain('robin');
     expect(users.textContent).not.toContain('Robin');
-    expect(screen.queryByRole('region', { name: 'Most watched films' })).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Libraries' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Most Watched Movies' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Movie Libraries' })).toBeNull();
     expect(screen.queryByRole('heading', { level: 2 })).toBeNull();
   });
 

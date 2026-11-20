@@ -499,6 +499,105 @@
     background: rgb(255 255 255 / 0.06);
   }
 
+  /* The cards of the Tautulli item: a picture at the left, and a ranked list with the
+     numbers in the orange of Plex. */
+  .org-stats {
+    display: grid;
+    gap: 5px 30px;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  @media (width >= 62rem) {
+    .org-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (width >= 75rem) {
+    .org-stats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .org-stat {
+    display: flex;
+    height: 160px;
+    background: #2d2c2c;
+    color: #ffffff;
+  }
+
+  .org-stat-picture {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 107px;
+    font-size: 60px;
+  }
+
+  .org-stat-picture img {
+    width: 87px;
+    height: 130px;
+    object-fit: cover;
+  }
+
+  .org-stat-picture span {
+    display: grid;
+    place-items: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #cc99cc;
+    font-size: 36px;
+  }
+
+  .org-stat h3 {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 6px 2px 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .org-stat h3 small {
+    color: #96a2b4;
+    font-size: 9px;
+    font-weight: 500;
+  }
+
+  .org-stat ol {
+    height: 122px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding-right: 6px;
+    font-size: 12px;
+  }
+
+  .org-stat li {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    line-height: 1.9;
+  }
+
+  .org-stat li:first-child {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .org-stat-rank {
+    width: 12px;
+    color: #96a2b4;
+    font-size: 11px;
+    text-align: right;
+  }
+
+  .org-stat-count {
+    color: var(--color-accent);
+  }
+
   @media (width >= 64rem) {
     .org-header.org-with-menu {
       padding-left: 60px;

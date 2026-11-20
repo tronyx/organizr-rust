@@ -23,6 +23,10 @@
     section_name?: string;
     section_type?: string;
     count?: number | string;
+    /** The seasons of a library of series, or the albums of a library of music. */
+    parent_count?: number | string;
+    /** The episodes of a library of series, or the tracks of a library of music. */
+    child_count?: number | string;
     plays?: number | string;
   }
 
@@ -44,15 +48,25 @@
     libstats?: { data?: Library[] };
   }
 
-  /** The statistics that the item can show: the option that switches each one, and its title. */
-  const KNOWN: Record<string, { option: keyof Options; title: string }> = {
-    top_movies: { option: 'topMovies', title: 'Most watched films' },
-    popular_movies: { option: 'popularMovies', title: 'Most popular films' },
-    top_tv: { option: 'topTV', title: 'Most watched series' },
-    popular_tv: { option: 'popularTV', title: 'Most popular series' },
-    top_users: { option: 'topUsers', title: 'Most active users' },
-    top_platforms: { option: 'topPlatforms', title: 'Most used players' },
+  /**
+   * The statistics that the item can show, with the words of PHP Organizr: the option
+   * that switches each one, its title, and what its numbers count.
+   */
+  const KNOWN: Record<string, { option: keyof Options; title: string; counts: string }> = {
+    top_movies: { option: 'topMovies', title: 'Most Watched Movies', counts: 'Plays' },
+    popular_movies: { option: 'popularMovies', title: 'Most Popular Movies', counts: 'Users' },
+    top_tv: { option: 'topTV', title: 'Most Watched TV Shows', counts: 'Plays' },
+    popular_tv: { option: 'popularTV', title: 'Most Popular TV Shows', counts: 'Users' },
+    top_users: { option: 'topUsers', title: 'Most Active Users', counts: 'Plays' },
+    top_platforms: { option: 'topPlatforms', title: 'Most Active Platforms', counts: 'Plays' },
   };
+
+  /** The kinds of libraries: the title of the card, what its numbers count, and its icon. */
+  const LIBRARY_KINDS: { type: string; title: string; counts: string; icon: string }[] = [
+    { type: 'movie', title: 'Movie Libraries', counts: 'Movies', icon: 'fa-film' },
+    { type: 'show', title: 'TV Show Libraries', counts: 'Shows/Seasons/Episodes', icon: 'fa-tv' },
+    { type: 'artist', title: 'Music Libraries', counts: 'Artists/Albums/Tracks', icon: 'fa-music' },
+  ];
 
   /** How many rows of a statistic are shown. */
   const ROWS = 5;
@@ -67,6 +81,15 @@
     }),
   );
   const libraries = $derived(options?.libraries ? (item.data?.libstats?.data ?? []) : []);
+  /** The libraries of each kind that has one, the largest first. */
+  const libraryCards = $derived(
+    LIBRARY_KINDS.map((kind) => ({
+      ...kind,
+      rows: libraries
+        .filter((library) => library.section_type === kind.type)
+        .sort((a, b) => Number(b.count ?? 0) - Number(a.count ?? 0)),
+    })).filter((card) => card.rows.length > 0),
+  );
   const title = $derived(session.launch?.settings.homepage.options.titles?.tautulli || 'Tautulli');
 
   /** What a row is about: a film or a series, a user, or a player. */
@@ -80,12 +103,20 @@
     return row.title ?? '';
   }
 
-  /** The number of a row, with its unit. */
+  /** The number of a row: the users who watched, or the plays. */
   function countOf(row: Row): string {
     if (row.users_watched !== undefined && row.users_watched !== '') {
-      return `${row.users_watched} users`;
+      return String(row.users_watched);
     }
-    return row.total_plays === undefined ? '' : `${row.total_plays} plays`;
+    return row.total_plays === undefined ? '' : String(row.total_plays);
+  }
+
+  /** The numbers of a library: one for films, three for series and for music. */
+  function sizeOf(library: Library): string {
+    const numbers = [library.count, library.parent_count, library.child_count].filter(
+      (number) => number !== undefined && number !== '',
+    );
+    return numbers.join(' / ');
   }
 
   /** The poster of a statistic, when the server keeps it. */
@@ -99,57 +130,57 @@
   <div role="alert" class="alert alert-error"><span>Tautulli: {item.error}</span></div>
 {:else if item.data}
   {#if options?.title}
-    <h2 class="mb-2 text-lg font-semibold">{title}</h2>
+    <h2 class="org-item-title">{title}<span aria-hidden="true">:</span></h2>
   {/if}
   {#if statistics.length === 0 && libraries.length === 0}
     <p class="text-sm">Tautulli gave no statistics. Look at its address and its API key.</p>
   {/if}
-  <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-    {#each statistics as statistic (statistic.stat_id)}
-      {@const poster = posterOf(statistic)}
-      <section class="card bg-base-200" aria-label={KNOWN[statistic.stat_id]?.title}>
-        <div class="card-body gap-2 p-3">
-          <h3 class="font-medium">{KNOWN[statistic.stat_id]?.title}</h3>
-          <div class="flex gap-3">
-            {#if poster}
-              <img class="h-24 w-16 rounded object-cover" src={poster} alt="" loading="lazy" />
-            {/if}
-            <ol class="flex-1 text-sm">
-              {#each (statistic.rows ?? []).slice(0, ROWS) as row, index (index)}
-                <li class="flex justify-between gap-2">
-                  <span class="truncate">{nameOf(statistic, row)}</span>
-                  <span class="opacity-70">{countOf(row)}</span>
-                </li>
-              {/each}
-            </ol>
-          </div>
+  <div class="org-stats">
+    {#each libraryCards as card (card.type)}
+      <section class="org-stat" aria-label={card.title}>
+        <div class="org-stat-picture">
+          <i class="oi oi-fontawesome {card.icon}" aria-hidden="true"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h3><span>{card.title}</span><small>{card.counts}</small></h3>
+          <ol>
+            {#each card.rows as library, index (index)}
+              <li>
+                <span class="org-stat-rank">{index + 1}</span>
+                <span class="flex-1 truncate">{library.section_name ?? ''}</span>
+                <span class="org-stat-count">{sizeOf(library)}</span>
+              </li>
+            {/each}
+          </ol>
         </div>
       </section>
     {/each}
-    {#if libraries.length > 0}
-      <section class="card bg-base-200" aria-label="Libraries">
-        <div class="card-body gap-2 p-3">
-          <h3 class="font-medium">Libraries</h3>
-          <table class="table-xs table">
-            <thead>
-              <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Items</th>
-                <th scope="col">Plays</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each libraries as library, index (index)}
-                <tr>
-                  <td>{library.section_name ?? ''}</td>
-                  <td>{library.count ?? ''}</td>
-                  <td>{library.plays ?? ''}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
+    {#each statistics as statistic (statistic.stat_id)}
+      {@const poster = posterOf(statistic)}
+      {@const known = KNOWN[statistic.stat_id]}
+      <section class="org-stat" aria-label={known?.title}>
+        <div class="org-stat-picture">
+          {#if poster}
+            <img src={poster} alt="" loading="lazy" />
+          {:else}
+            <span aria-hidden="true">
+              {[...nameOf(statistic, statistic.rows?.[0] ?? {})][0]?.toUpperCase() ?? ''}
+            </span>
+          {/if}
+        </div>
+        <div class="min-w-0 flex-1">
+          <h3><span>{known?.title}</span><small>{known?.counts}</small></h3>
+          <ol>
+            {#each (statistic.rows ?? []).slice(0, ROWS) as row, index (index)}
+              <li>
+                <span class="org-stat-rank">{index + 1}</span>
+                <span class="flex-1 truncate">{nameOf(statistic, row)}</span>
+                <span class="org-stat-count">{countOf(row)}</span>
+              </li>
+            {/each}
+          </ol>
         </div>
       </section>
-    {/if}
+    {/each}
   </div>
 {/if}
