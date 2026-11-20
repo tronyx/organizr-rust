@@ -516,4 +516,29 @@ mod tests {
             "The weather service gives the air quality"
         );
     }
+
+    /// Asks real applications, for example in local containers. The environment
+    /// variable `ORGANIZR_REAL_SETTINGS` holds the settings as a JSON object. Without
+    /// it, the test does nothing.
+    #[tokio::test]
+    async fn real_applications_answer_when_their_settings_are_given() {
+        let Ok(given) = std::env::var("ORGANIZR_REAL_SETTINGS") else {
+            return;
+        };
+        let given: serde_json::Map<String, Value> =
+            serde_json::from_str(&given).expect("the variable holds a JSON object");
+        let settings: Vec<(&str, Value)> = given
+            .iter()
+            .map(|(key, value)| (key.as_str(), value.clone()))
+            .collect();
+        let http = Outbound::new().expect("the client can be made");
+
+        let lines = ask(&installed_settings(&settings), &http, "http://127.0.0.1:1").await;
+
+        assert!(!lines.is_empty(), "the settings name no application");
+        for line in &lines {
+            println!("{line}");
+            assert_eq!(line.outcome, Outcome::Passed, "{line}");
+        }
+    }
 }

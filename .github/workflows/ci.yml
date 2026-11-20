@@ -166,3 +166,22 @@ jobs:
           path: web/playwright-report/
           retention-days: 7
 
+  applications:
+    name: Real Sonarr, Radarr, SABnzbd and qBittorrent
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        run: rustup toolchain install
+
+      - name: Cache the cargo registry and build output
+        uses: Swatinem/rust-cache@v2.9.3
+
+      # The tests of the homepage talk to stand-ins. This job asks the real applications
+      # the same questions, with the client code of this application.
+      - name: Ask the real applications in containers
+        run: bash parity/services/run.sh
