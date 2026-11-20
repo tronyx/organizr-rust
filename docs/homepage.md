@@ -34,6 +34,8 @@ This version has these items:
 - [Pi-hole](#pi-hole)
 - [Weather and air](#weather-and-air)
 - [Plex](#plex): what plays now, new items and playlists
+- [Emby](#emby): what plays now and new items
+- [Jellyfin](#jellyfin): what plays now and new items
 - [Tautulli](#tautulli)
 - [Overseerr](#overseerr)
 
@@ -44,7 +46,7 @@ The homepage loads the data of an item again after the time that the item has in
 
 ## Test the connection of a service
 
-The settings of these services have a button **Test the connection**: Plex, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission and Pi-hole.
+The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission and Pi-hole.
 
 1. Enter the address and the key or the login of the service.
 2. Select **Save**. The test reads the settings that are stored.
@@ -452,6 +454,131 @@ A person needs the level of Plex on the homepage to load a picture.
 ### Not built yet
 
 PHP Organizr has a search of the Plex server in its top bar. The server of this application has the route for it. The interface does not show the search yet.
+
+## Emby
+
+Two items show your Emby server: what plays now, and what was added last.
+
+Both need these settings:
+
+| Setting | Key |
+|---|---|
+| Switch for Emby on the homepage | `homepageEmbyEnabled` |
+| Level for Emby on the homepage | `homepageEmbyAuth` |
+| Address of the Emby server | `embyURL` |
+| API key | `embyToken` |
+| Do not check the certificate | `embyDisableCertCheck` |
+| Address of an item in the web interface | `homepageEmbyLink` |
+| Name of the tab of Organizr that shows Emby | `embyTabName` |
+| Address of Emby from outside your network | `embyTabURL` |
+
+The address is the address of the Emby server itself, for example `http://192.168.1.10:8096`. You make the API key in the dashboard of Emby. Organizr sends the key in a header of each request, so the key is in no address and in no log.
+
+Each item has a switch, a level and a place of its own:
+
+| Item | Switch | Level | Place |
+|---|---|---|---|
+| Playing now | `homepageEmbyStreams` | `homepageEmbyStreamsAuth` | `homepageOrderembynowplaying` |
+| New items | `homepageEmbyRecent` | `homepageEmbyRecentAuth` | `homepageOrderembyrecent` |
+
+A person needs the level of Emby on the homepage and the level of the item.
+
+These settings are the same ones that Plex uses. You find them in the groups of Plex:
+
+| Setting | Key |
+|---|---|
+| Show who plays, and from which address | `homepageShowStreamNames`, with the level `homepageShowStreamNamesAuth` |
+| Milliseconds between two loads of what plays | `homepageStreamRefresh` |
+| Most new items | `homepageRecentLimit` |
+| Milliseconds between two loads of the new items | `homepageRecentRefresh` |
+| Size of the pictures | `cacheImageSize` |
+
+### Playing now
+
+Each stream shows its picture, how much was watched, and how it reaches its player. A player that plays nothing is not shown.
+
+A person without the level of `homepageShowStreamNames` does not get the names and the addresses of the players from the server.
+
+### New items
+
+The new items are the items that were added last and that one user of the Emby server did not play. The list holds series, episodes, albums, songs, films and videos.
+
+Organizr looks for the user of the Emby server who has the same name as the person in Organizr. Capital letters make no difference. If there is no such user, Organizr takes an administrator of the Emby server.
+
+A poster opens the details of its item, with a link to the item in the web interface of Emby. `homepageEmbyLink` holds the address of that link. Organizr puts the id of the item in the place of `{id}`, and the id of the server in the place of `{serverId}`. If the setting is empty, the details show no link.
+
+### Pictures
+
+The server fetches the pictures of the Emby server in the size that the homepage shows, and keeps each one for a week in the folder `cache` of the data folder. `cacheImageSize` sets the size.
+
+A person needs the level of Emby on the homepage to load a picture.
+
+### Test the connection
+
+The test asks the Emby server for the list of its users. The test needs the switch of Emby on the homepage, as in PHP Organizr.
+
+## Jellyfin
+
+Two items show your Jellyfin server: what plays now, and what was added last.
+
+Both need these settings:
+
+| Setting | Key |
+|---|---|
+| Switch for Jellyfin on the homepage | `homepageJellyfinEnabled` |
+| Level for Jellyfin on the homepage | `homepageJellyfinAuth` |
+| Address of the Jellyfin server | `jellyfinURL` |
+| API key | `jellyfinToken` |
+| Do not check the certificate | `jellyfinDisableCertCheck` |
+| Address of an item in the web interface | `homepageJellyfinLink` |
+| Name of the tab of Organizr that shows Jellyfin | `jellyfinTabName` |
+
+The address is the address of the Jellyfin server itself, for example `http://192.168.1.10:8096`. You make the API key in the dashboard of Jellyfin. Organizr sends the key in a header of each request, so the key is in no address and in no log.
+
+Each item has a switch, a level and a place of its own:
+
+| Item | Switch | Level | Place |
+|---|---|---|---|
+| Playing now | `homepageJellyfinStreams` | `homepageJellyStreamsAuth` | `homepageOrderjellyfinnowplaying` |
+| New items | `homepageJellyfinRecent` | `homepageJellyfinRecentAuth` | `homepageOrderjellyfinrecent` |
+
+A person needs the level of Jellyfin on the homepage and the level of the item.
+
+The key of the level of the streams has the short name `homepageJellyStreamsAuth`, as in PHP Organizr.
+
+These settings are the same ones that Plex uses. You find them in the groups of Plex:
+
+| Setting | Key |
+|---|---|
+| Show who plays, and from which address | `homepageShowStreamNames`, with the level `homepageShowStreamNamesAuth` |
+| Milliseconds between two loads of what plays | `homepageStreamRefresh` |
+| Most new items | `homepageRecentLimit` |
+| Milliseconds between two loads of the new items | `homepageRecentRefresh` |
+| Size of the pictures | `cacheImageSize` |
+
+### Playing now
+
+Each stream shows its picture, how much was watched, and how it reaches its player. A player that plays nothing is not shown.
+
+A person without the level of `homepageShowStreamNames` does not get the names and the addresses of the players from the server.
+
+### New items
+
+The new items are the items that were added last and that one user of the Jellyfin server did not play.
+
+Organizr looks for the user of the Jellyfin server who has the same name as the person in Organizr. Capital letters make no difference. If there is no such user, Organizr takes an administrator of the Jellyfin server.
+
+A poster opens the details of its item, with a link to the item in the web interface of Jellyfin. `homepageJellyfinLink` holds the address of that link. Organizr puts the id of the item in the place of `{id}`, and the id of the server in the place of `{serverId}`. If the setting is empty, the details show no link.
+
+### Pictures
+
+The server fetches the pictures of the Jellyfin server in the size that the homepage shows, and keeps each one for a week in the folder `cache` of the data folder. `cacheImageSize` sets the size.
+
+A person needs the level of Jellyfin on the homepage to load a picture.
+
+### Test the connection
+
+The test asks the Jellyfin server for the list of its users. The test works with the switch of Jellyfin on the homepage off.
 
 ## Overseerr
 

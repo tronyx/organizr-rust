@@ -15,7 +15,7 @@ use organizr_integrations::tautulli::Install as Tautulli;
 use organizr_settings::Settings;
 use serde_json::{Map, Value, json};
 
-use super::{Permissions, no_requests, service_url};
+use super::{Permissions, emby, no_requests, service_url};
 use crate::api_data::ApiData;
 use crate::caller::Caller;
 use crate::client::Client;
@@ -26,10 +26,10 @@ use crate::picture_cache::{self, PictureCache};
 use crate::state::AppState;
 
 /// The largest picture of the server that is handed on, in bytes.
-const PICTURE_LIMIT: usize = 10 * 1024 * 1024;
+pub(super) const PICTURE_LIMIT: usize = 10 * 1024 * 1024;
 
 /// The largest width or height that a picture is asked for, in pixels.
-const LARGEST_SIDE: u32 = 4000;
+pub(super) const LARGEST_SIDE: u32 = 4000;
 
 /// One of the parts of Plex on the homepage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -466,7 +466,8 @@ pub async fn names(
 }
 
 /// `GET /homepage/image`: a picture of the Plex server in a given size. The server
-/// keeps the picture for a week.
+/// keeps the picture for a week. The source `emby` or `jellyfin` asks for a picture of
+/// that server instead, see [`emby::image`].
 ///
 /// The query names the path of the picture on the Plex server (`img`), the size
 /// (`width`, `height`) and the key of the picture in the cache (`key`). A `$` in the key
@@ -479,7 +480,6 @@ pub async fn image(
     uri: axum::http::Uri,
     Query(query): Query<HashMap<String, String>>,
 ) -> Result<Response, Refusal> {
-    let asked = Asked::new(&state, &caller, &client, &headers, Part::Metadata)?;
     let not_found = || {
         Refusal::Api(ApiError::NotFound {
             endpoint: uri.path().to_owned(),
@@ -487,6 +487,16 @@ pub async fn image(
         })
     };
     let field = |name: &str| query.get(name).map_or_default(String::as_str);
+    if let Some(kind) = emby::kind_of(field("source")) {
+        let request = emby::Request {
+            state: &state,
+            caller: &caller,
+            client: &client,
+            headers: &headers,
+        };
+        return emby::image(request, kind, &query, &not_found).await;
+    }
+    let asked = Asked::new(&state, &caller, &client, &headers, Part::Metadata)?;
     if field("source") != "plex" {
         return Err(not_found());
     }

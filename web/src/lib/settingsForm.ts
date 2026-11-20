@@ -693,6 +693,125 @@ const OVERSEERR_ITEMS: FieldGroup[] = [
   },
 ];
 
+/** The keys of the settings of Emby or of Jellyfin on the homepage. */
+interface MediaServerKeys {
+  enabled: string;
+  auth: string;
+  url: string;
+  token: string;
+  certificate: string;
+  link: string;
+  tabName: string;
+  /** Only Emby has this setting. */
+  tabUrl?: string;
+  streams: [enabled: string, auth: string, order: string];
+  recent: [enabled: string, auth: string, order: string];
+}
+
+/**
+ * The settings of Emby or of Jellyfin on the homepage. The two servers have the same
+ * settings under keys of their own.
+ */
+function mediaServerItems(name: string, test: string, keys: MediaServerKeys): FieldGroup[] {
+  const tab: Field[] = [
+    {
+      key: keys.tabName,
+      label: `Name of the tab of Organizr that shows ${name}`,
+      kind: 'text',
+      help: `Use it only when ${name} is behind a reverse proxy.`,
+    },
+  ];
+  if (keys.tabUrl) {
+    tab.push({
+      key: keys.tabUrl,
+      label: `Address of ${name} from outside your network`,
+      kind: 'text',
+      help: `Use it only when ${name} is behind a reverse proxy.`,
+    });
+  }
+  return [
+    {
+      title: name,
+      test,
+      fields: [
+        { key: keys.enabled, label: `Show ${name} on the homepage`, kind: 'switch' },
+        {
+          key: keys.auth,
+          label: `${name} is for users of the level`,
+          kind: 'select',
+          options: LEVELS,
+        },
+        {
+          key: keys.url,
+          label: `Address of the ${name} server`,
+          kind: 'text',
+          help: 'For example http://192.168.1.10:8096',
+        },
+        {
+          key: keys.token,
+          label: `API key of ${name}`,
+          kind: 'secret',
+          help: `You make an API key in the dashboard of ${name}.`,
+        },
+        {
+          key: keys.certificate,
+          label: `Do not check the certificate of the ${name} server`,
+          kind: 'switch',
+        },
+        {
+          key: keys.link,
+          label: `Address of an item in the web interface of ${name}`,
+          kind: 'text',
+          help: 'Organizr puts the id of the item in the place of {id}, and the id of the server in the place of {serverId}.',
+        },
+        ...tab,
+      ],
+    },
+    {
+      title: `${name}: playing now and new items`,
+      fields: [
+        ...itemFields(`what plays now on ${name}`, ...keys.streams),
+        ...itemFields(`the new items of ${name}`, ...keys.recent),
+      ],
+    },
+  ];
+}
+
+/**
+ * The settings of Emby and of Jellyfin on the homepage. Who sees the names, the times
+ * between two loads, the number of new items and the size of the pictures are the
+ * settings of the groups of Plex: PHP Organizr has one setting for the three servers.
+ */
+const MEDIA_SERVER_ITEMS: FieldGroup[] = [
+  ...mediaServerItems('Emby', 'emby', {
+    enabled: 'homepageEmbyEnabled',
+    auth: 'homepageEmbyAuth',
+    url: 'embyURL',
+    token: 'embyToken',
+    certificate: 'embyDisableCertCheck',
+    link: 'homepageEmbyLink',
+    tabName: 'embyTabName',
+    tabUrl: 'embyTabURL',
+    streams: ['homepageEmbyStreams', 'homepageEmbyStreamsAuth', 'homepageOrderembynowplaying'],
+    recent: ['homepageEmbyRecent', 'homepageEmbyRecentAuth', 'homepageOrderembyrecent'],
+  }),
+  ...mediaServerItems('Jellyfin', 'jellyfin', {
+    enabled: 'homepageJellyfinEnabled',
+    auth: 'homepageJellyfinAuth',
+    url: 'jellyfinURL',
+    token: 'jellyfinToken',
+    certificate: 'jellyfinDisableCertCheck',
+    link: 'homepageJellyfinLink',
+    tabName: 'jellyfinTabName',
+    streams: [
+      'homepageJellyfinStreams',
+      'homepageJellyStreamsAuth',
+      'homepageOrderjellyfinnowplaying',
+    ],
+    recent: ['homepageJellyfinRecent', 'homepageJellyfinRecentAuth', 'homepageOrderjellyfinrecent'],
+  }),
+];
+
 /** The settings of the Tautulli item. */
 const TAUTULLI_ITEMS: FieldGroup[] = [
   {
@@ -1280,6 +1399,7 @@ export const HOMEPAGE: FieldGroup[] = [
   ...DOWNLOAD_ITEMS,
   ...WEATHER_ITEMS,
   ...PLEX_ITEMS,
+  ...MEDIA_SERVER_ITEMS,
   ...TAUTULLI_ITEMS,
   ...OVERSEERR_ITEMS,
 ];

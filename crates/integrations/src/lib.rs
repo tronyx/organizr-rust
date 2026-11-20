@@ -4,6 +4,7 @@
 
 pub mod arr;
 pub mod downloaders;
+pub mod emby;
 pub mod health_checks;
 pub mod http;
 pub mod overseerr;

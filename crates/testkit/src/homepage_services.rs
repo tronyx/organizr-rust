@@ -803,6 +803,122 @@ pub async fn plex_server() -> StandIn {
     StandIn::start(Router::new().fallback(plex_server_api)).await
 }
 
+/// The API key of the stand-ins for an Emby server and a Jellyfin server.
+pub const MEDIA_SERVER_KEY: &str = "made-up-media-server-key";
+
+fn media_film() -> Value {
+    json!({
+        "Id": "815", "ServerId": "made-up-server-id", "Type": "Movie", "Name": "The Film",
+        "ProductionYear": 2019, "RunTimeTicks": 60_000_000_000_i64, "CommunityRating": 7.5,
+        "PremiereDate": "2019-05-01T00:00:00.0000000Z", "Overview": "A film.",
+        "Taglines": ["One film."], "Genres": ["Drama"],
+        "ImageTags": {"Primary": "made-up-tag"}, "BackdropImageTags": ["made-up-tag"],
+        "People": [
+            {"Id": "9", "Name": "An Actor", "Role": "The Hero", "Type": "Actor", "PrimaryImageTag": "made-up-tag"},
+            {"Id": "10", "Name": "A Director", "Role": "", "Type": "Director"},
+        ],
+    })
+}
+
+fn media_sessions() -> Value {
+    json!([
+        {
+            "Id": "session-one", "UserName": "robin", "Client": "Web", "DeviceName": "Chrome",
+            "DeviceId": "device-one", "RemoteEndPoint": "192.0.2.50",
+            "PlayState": {"PositionTicks": 6_000_000_000_i64, "IsPaused": true, "PlayMethod": "Transcode"},
+            "TranscodingInfo": {"CompletionPercentage": 40.5, "Bitrate": 4_000_000, "VideoCodec": "h264", "AudioCodec": "aac", "AudioChannels": 2},
+            "NowPlayingItem": {
+                "Id": "301", "ServerId": "made-up-server-id", "Type": "Episode", "Name": "The One",
+                "SeriesName": "The Show", "SeriesId": "30", "ParentIndexNumber": 2, "IndexNumber": 3,
+                "ParentBackdropItemId": "30", "ParentBackdropImageTags": ["made-up-tag"],
+                "ImageTags": {"Primary": "made-up-tag"}, "RunTimeTicks": 24_000_000_000_i64,
+                "Container": "mkv", "MediaStreams": [{"Codec": "hevc", "Width": 1920}, {"Codec": "eac3"}],
+            },
+        },
+        // A player that plays nothing.
+        {"Id": "session-two", "UserName": "pat", "Client": "Television", "DeviceName": "Living room", "DeviceId": "device-two", "PlayState": {"IsPaused": false}},
+        // A type that the homepage does not show.
+        {
+            "Id": "session-three", "UserName": "pat", "Client": "Television", "DeviceName": "Kitchen", "DeviceId": "device-three",
+            "PlayState": {"IsPaused": false, "PlayMethod": "DirectPlay"},
+            "NowPlayingItem": {"Id": "77", "ServerId": "made-up-server-id", "Type": "TvChannel", "Name": "A Channel"},
+        },
+        {
+            "Id": "session-four", "UserName": "pat", "Client": "Phone", "DeviceName": "A phone", "DeviceId": "device-four",
+            "RemoteEndPoint": "198.51.100.7",
+            "PlayState": {"PositionTicks": 0, "IsPaused": false, "PlayMethod": "DirectPlay"},
+            "NowPlayingItem": media_film(),
+        },
+    ])
+}
+
+/// What was added, as the user with the given id sees it: the user 2 played the film.
+fn media_latest(user: &str) -> Value {
+    let series = json!({
+        "Id": "30", "ServerId": "made-up-server-id", "Type": "Series", "Name": "The Show",
+        "ImageTags": {"Primary": "made-up-tag", "Thumb": "made-up-tag"},
+    });
+    if user == "2" {
+        json!([series])
+    } else {
+        json!([media_film(), series])
+    }
+}
+
+fn media_server_api(
+    key_header: (&str, &str),
+    headers: &HeaderMap,
+    uri: &axum::http::Uri,
+) -> Response {
+    let path = uri.path();
+    // The servers give their pictures without a key.
+    if path.starts_with("/Items/") && path.contains("/Images/") {
+        return ([(header::CONTENT_TYPE, "image/jpeg")], JPEG).into_response();
+    }
+    let sent = headers
+        .get(key_header.0)
+        .and_then(|value| value.to_str().ok());
+    if sent != Some(key_header.1) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            "Access token is invalid or expired.",
+        )
+            .into_response();
+    }
+    let body = match path {
+        "/Sessions" => media_sessions(),
+        "/Users" => json!([
+            {"Id": "1", "Name": "Owner", "Policy": {"IsAdministrator": true}},
+            {"Id": "2", "Name": "Zed", "Policy": {"IsAdministrator": false}},
+        ]),
+        "/Users/1/Items/Latest" => media_latest("1"),
+        "/Users/2/Items/Latest" => media_latest("2"),
+        "/Users/1/Items/815" | "/Users/2/Items/815" => media_film(),
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    axum::Json(body).into_response()
+}
+
+fn media_server(header: &'static str, value: String) -> Router {
+    Router::new().fallback(move |headers: HeaderMap, uri: axum::http::Uri| {
+        std::future::ready(media_server_api((header, &value), &headers, &uri))
+    })
+}
+
+/// A stand-in for an Emby server: four sessions, two users, two items that were
+/// added, one film to look at, and pictures. The key comes in the header
+/// `X-Emby-Token`.
+pub async fn emby() -> StandIn {
+    StandIn::start(media_server("x-emby-token", MEDIA_SERVER_KEY.to_owned())).await
+}
+
+/// A stand-in for a Jellyfin server, with what the stand-in for Emby has. The key
+/// comes in the header `Authorization`.
+pub async fn jellyfin() -> StandIn {
+    let value = format!("MediaBrowser Token=\"{MEDIA_SERVER_KEY}\"");
+    StandIn::start(media_server("authorization", value)).await
+}
+
 /// The API key of the stand-in for the requests of Overseerr.
 pub const OVERSEERR_KEY: &str = "made-up-overseerr-key";
 

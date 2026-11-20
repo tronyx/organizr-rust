@@ -1,7 +1,15 @@
 <script lang="ts">
-  // Plex on the homepage: what plays now, what was added last, or the playlists.
+  // A media server on the homepage: what plays now, what was added last, or the
+  // playlists. Plex, Emby and Jellyfin show in the same way. Only Plex has playlists.
   import { itemData } from '../../lib/itemData.svelte';
-  import { pictureAddress, type PlexAnswer, type PlexItem, streamText } from '../../lib/plex';
+  import {
+    type MediaService,
+    pictureAddress,
+    type PlexAnswer,
+    type PlexItem,
+    SERVICE_NAMES,
+    streamText,
+  } from '../../lib/plex';
   import PlexPosters from './PlexPosters.svelte';
 
   /** A playlist: its title, and its videos under the keys "0", "1" and so on. */
@@ -11,12 +19,18 @@
     content?: Record<string, Playlist>;
   }
 
-  let { part }: { part: 'streams' | 'recent' | 'playlists' } = $props();
+  let {
+    part,
+    service = 'plex',
+  }: { part: 'streams' | 'recent' | 'playlists'; service?: MediaService } = $props();
+
+  // svelte-ignore state_referenced_locally
+  const name = SERVICE_NAMES[service];
 
   // svelte-ignore state_referenced_locally
   const refresh = part === 'streams' ? 'homepageStreamRefresh' : 'homepageRecentRefresh';
   // svelte-ignore state_referenced_locally
-  const item = itemData<PlexAnswer | PlaylistAnswer>(`homepage/plex/${part}`, refresh);
+  const item = itemData<PlexAnswer | PlaylistAnswer>(`homepage/${service}/${part}`, refresh);
 
   const items = $derived(
     part !== 'playlists' && Array.isArray(item.data?.content) ? item.data.content : [],
@@ -45,16 +59,16 @@
 </script>
 
 {#if item.error}
-  <div role="alert" class="alert alert-error"><span>Plex: {item.error}</span></div>
+  <div role="alert" class="alert alert-error"><span>{name}: {item.error}</span></div>
 {:else if item.data}
   {#if part === 'streams'}
     <!-- Without a stream the item shows nothing, as in PHP Organizr. -->
     {#if items.length > 0}
       <h2 class="org-item-title">
-        Active Plex Streams<span aria-hidden="true">:</span>
+        Active {name} Streams<span aria-hidden="true">:</span>
         <span class="org-count">{items.length}</span>
       </h2>
-      <ul class="org-cards" aria-label="Active Plex Streams">
+      <ul class="org-cards" aria-label="Active {name} Streams">
         {#each items as stream, index (index)}
           {@const picture = pictureAddress(stream.nowPlayingImageURL)}
           <li class="org-stream">
@@ -98,7 +112,7 @@
       <h2 class="org-item-title">Recently Added<span aria-hidden="true">:</span></h2>
       <p class="text-sm">Nothing was added.</p>
     {:else}
-      <PlexPosters {items} label="Recently Added" />
+      <PlexPosters {items} {service} label="Recently Added" />
     {/if}
   {:else}
     {#if playlist}

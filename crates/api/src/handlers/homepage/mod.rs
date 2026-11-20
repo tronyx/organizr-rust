@@ -7,6 +7,7 @@
 
 pub mod arr;
 pub mod downloaders;
+pub mod emby;
 pub mod health_checks;
 pub mod html;
 pub mod overseerr;
@@ -20,6 +21,7 @@ use axum::Extension;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode, header};
 use organizr_integrations::arr::Kind;
+use organizr_integrations::emby::Kind as EmbyKind;
 use organizr_settings::Settings;
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -146,6 +148,22 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderplexnowplaying" => ("plexstreams", plex::permissions(plex::Part::Streams)),
         "homepageOrderplexrecent" => ("plexrecent", plex::permissions(plex::Part::Recent)),
         "homepageOrderplexplaylist" => ("plexplaylists", plex::permissions(plex::Part::Playlists)),
+        "homepageOrderembynowplaying" => (
+            "embystreams",
+            emby::permissions(EmbyKind::Emby, emby::Part::Streams),
+        ),
+        "homepageOrderembyrecent" => (
+            "embyrecent",
+            emby::permissions(EmbyKind::Emby, emby::Part::Recent),
+        ),
+        "homepageOrderjellyfinnowplaying" => (
+            "jellyfinstreams",
+            emby::permissions(EmbyKind::Jellyfin, emby::Part::Streams),
+        ),
+        "homepageOrderjellyfinrecent" => (
+            "jellyfinrecent",
+            emby::permissions(EmbyKind::Jellyfin, emby::Part::Recent),
+        ),
         _ => return None,
     };
     let item = Item {

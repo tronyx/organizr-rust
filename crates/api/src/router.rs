@@ -162,6 +162,12 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             &get(homepage::plex::search),
         )?
         .route("/homepage/image", &get(homepage::plex::image))?
+        .route("/homepage/emby/streams", &get(homepage::emby::emby_streams))?
+        .route("/homepage/emby/recent", &get(homepage::emby::emby_recent))?
+        .route("/homepage/emby/metadata", &post(homepage::emby::emby_metadata))?
+        .route("/homepage/jellyfin/streams", &get(homepage::emby::jellyfin_streams))?
+        .route("/homepage/jellyfin/recent", &get(homepage::emby::jellyfin_recent))?
+        .route("/homepage/jellyfin/metadata", &post(homepage::emby::jellyfin_metadata))?
         .route(
             "/homepage/overseerr/metadata/{type}/{id}",
             &get(homepage::overseerr::metadata),
@@ -308,6 +314,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/test/nzbget", &post(connection_tests::test_nzbget))?
         .route("/test/transmission", &post(connection_tests::test_transmission))?
         .route("/test/pihole", &post(connection_tests::test_pihole))?
+        .route("/test/emby", &post(connection_tests::test_emby))?
+        .route("/test/jellyfin", &post(connection_tests::test_jellyfin))?
         .route("/plugins/speedtest/garbage", &get(speed_test::garbage))?
         .route(
             "/plugins/speedtest/empty",

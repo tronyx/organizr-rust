@@ -43,6 +43,10 @@
     'plexstreams',
     'plexrecent',
     'plexplaylists',
+    'embystreams',
+    'embyrecent',
+    'jellyfinstreams',
+    'jellyfinrecent',
     'overseerr',
   ]);
 
@@ -125,6 +129,14 @@
           <Plex part="recent" />
         {:else if item.kind === 'plexplaylists'}
           <Plex part="playlists" />
+        {:else if item.kind === 'embystreams'}
+          <Plex part="streams" service="emby" />
+        {:else if item.kind === 'embyrecent'}
+          <Plex part="recent" service="emby" />
+        {:else if item.kind === 'jellyfinstreams'}
+          <Plex part="streams" service="jellyfin" />
+        {:else if item.kind === 'jellyfinrecent'}
+          <Plex part="recent" service="jellyfin" />
         {:else if item.kind === 'overseerr'}
           <Overseerr />
         {:else if item.kind === 'tautulli'}

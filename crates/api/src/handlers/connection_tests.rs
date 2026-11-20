@@ -12,6 +12,7 @@ use organizr_domain::GroupLevel;
 use organizr_integrations::downloaders::{
     self, Client as Downloader, DownloaderError, Login, TorrentQuery,
 };
+use organizr_integrations::emby::Kind as MediaServer;
 use organizr_integrations::http::Outbound;
 use organizr_integrations::pihole;
 use organizr_integrations::probe::{self, Probe};
@@ -21,7 +22,7 @@ use crate::caller::Caller;
 use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
-use crate::handlers::homepage::{Permissions, no_requests, service_url};
+use crate::handlers::homepage::{Permissions, emby, no_requests, service_url};
 use crate::state::AppState;
 
 /// How long a download client has to answer a test.
@@ -388,6 +389,60 @@ async fn pi_hole(test: &Test<'_>) -> Outcome {
     }
 }
 
+/// Emby and Jellyfin: the list of the users of the server. The key goes in a header.
+async fn media_server(test: &Test<'_>, caller: &Caller, kind: MediaServer) -> Outcome {
+    let settings = test.state.settings();
+    let name = kind.name();
+    let (address, token, never_check) = match kind {
+        MediaServer::Emby => {
+            // Emby has the test among its homepage permissions in the PHP application.
+            emby::permissions(kind, emby::Part::Metadata).check(&settings, caller)?;
+            (
+                &settings.emby_url,
+                &settings.emby_token,
+                settings.emby_disable_cert_check,
+            )
+        }
+        MediaServer::Jellyfin => {
+            if settings.jellyfin_url.is_empty() {
+                return Err(Refusal::unprocessable("Jellyfin URL is not defined"));
+            }
+            if settings.jellyfin_token.is_empty() {
+                return Err(Refusal::unprocessable("Jellyfin Token is not defined"));
+            }
+            (
+                &settings.jellyfin_url,
+                &settings.jellyfin_token,
+                settings.jellyfin_disable_cert_check,
+            )
+        }
+    };
+    let url = format!("{}/Users", test.url(address));
+    let (header, key) = kind.key_header(token);
+    let probe = Probe {
+        url: &url,
+        headers: &[(header, &key)],
+        never_check_certificate: never_check,
+        ..Probe::default()
+    };
+    let answer = test.get(probe).await.map_err(unreachable)?;
+    if !answer.is_success() {
+        return Err(refused(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("{name} Connection Error"),
+        ));
+    }
+    // The PHP application reads the answer of Jellyfin, and not the one of Emby.
+    let is_json = matches!(
+        serde_json::from_str::<Value>(&answer.body),
+        Ok(Value::Array(_) | Value::Object(_))
+    );
+    if kind == MediaServer::Jellyfin && !is_json {
+        return Err(Refusal::conflict("URL or token incorrect"));
+    }
+    Ok(succeeded())
+}
+
 /// The services that have a test.
 #[derive(Debug, Clone, Copy)]
 enum Service {
@@ -402,6 +457,8 @@ enum Service {
     Nzbget,
     Transmission,
     Pihole,
+    Emby,
+    Jellyfin,
 }
 
 async fn run(
@@ -459,6 +516,8 @@ async fn run(
         Service::Nzbget => nzbget(&test).await,
         Service::Transmission => transmission(&test).await,
         Service::Pihole => pi_hole(&test).await,
+        Service::Emby => media_server(&test, caller, MediaServer::Emby).await,
+        Service::Jellyfin => media_server(&test, caller, MediaServer::Jellyfin).await,
     }
 }
 
@@ -531,6 +590,16 @@ test_route!(
     /// `POST /test/pihole`.
     test_pihole,
     Service::Pihole
+);
+test_route!(
+    /// `POST /test/emby`.
+    test_emby,
+    Service::Emby
+);
+test_route!(
+    /// `POST /test/jellyfin`.
+    test_jellyfin,
+    Service::Jellyfin
 );
 
 #[cfg(test)]

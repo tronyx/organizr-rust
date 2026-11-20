@@ -1,26 +1,38 @@
 <script lang="ts">
-  // A row of posters of Plex items. A poster opens the details of its item.
+  // A row of posters of the items of a media server. A poster opens the details of
+  // its item.
   import Dialog from '../../components/Dialog.svelte';
   import { api, failureText } from '../../lib/api';
   import PosterRow from './PosterRow.svelte';
-  import { pictureAddress, type PlexAnswer, type PlexItem, subtitleOf } from '../../lib/plex';
+  import {
+    linkOf,
+    type MediaService,
+    pictureAddress,
+    type PlexAnswer,
+    type PlexItem,
+    SERVICE_NAMES,
+    subtitleOf,
+  } from '../../lib/plex';
 
   let {
     items,
     label,
     title = label,
+    service = 'plex',
   }: {
     items: PlexItem[];
     label: string;
     /** The title above the row. */
     title?: string;
+    /** The server of the items. */
+    service?: MediaService;
   } = $props();
 
   let open = $state<PlexItem | null>(null);
   let details = $state<PlexItem | null>(null);
   let error = $state<string | null>(null);
 
-  /** Opens the dialog with what the list knows, and loads what Plex knows more. */
+  /** Opens the dialog with what the list knows, and loads what the server knows more. */
   async function show(item: PlexItem) {
     open = item;
     details = null;
@@ -29,7 +41,7 @@
       return;
     }
     try {
-      const answer = await api<PlexAnswer | null>('POST', 'homepage/plex/metadata', {
+      const answer = await api<PlexAnswer | null>('POST', `homepage/${service}/metadata`, {
         key: item.metadataKey,
       });
       if (open === item) {
@@ -41,6 +53,7 @@
   }
 
   const shown = $derived(details ?? open);
+  const link = $derived(open ? linkOf(open) : null);
   const genres = $derived(Array.isArray(shown?.metadata?.genres) ? shown.metadata.genres : []);
   const actors = $derived(Array.isArray(shown?.metadata?.actors) ? shown.metadata.actors : []);
 </script>
@@ -103,9 +116,9 @@
       </p>
     {/if}
     <div class="modal-action">
-      {#if /^https?:\/\//.test(open.address)}
-        <a class="btn" href={open.address} target="_blank" rel="noopener noreferrer">
-          Open in Plex
+      {#if link}
+        <a class="btn" href={link} target="_blank" rel="noopener noreferrer">
+          Open in {SERVICE_NAMES[service]}
         </a>
       {/if}
       <button type="button" class="btn btn-primary" onclick={() => (open = null)}>Close</button>
