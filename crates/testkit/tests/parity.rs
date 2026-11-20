@@ -561,10 +561,12 @@ async fn config_routes_answer_like_php() {
             )
             // PHP ships a token of a third party as a default.
             .deviation("D-12", all, &format!("{data}/breezometerToken"), json!(""))
-            .pending_at(
+            // PHP raises this version when it changes the table of the invites.
+            .deviation(
+                "D-69",
                 all,
                 &format!("{data}/INVITES-dbVersion"),
-                "the invites plugin, which raises this version, is not built yet",
+                json!("1.0.0"),
             );
         for key in PHP_ONLY_CONFIG {
             replay = replay.deviation_without("D-53", all, &format!("{data}/{key}"));

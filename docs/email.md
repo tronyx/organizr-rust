@@ -49,7 +49,7 @@ In the subject and in the text of an e-mail, these placeholders stand for values
 | `{password}` | The new password, in the e-mail with a new password |
 | `{domain}` and `{fullDomain}` | The address of the site |
 | `{title}` | The name of the install |
-| `{inviteCode}` | An invite code. No e-mail has one at this time |
+| `{inviteCode}` | An invite code. The e-mail of an invite of the [invites plugin](invites-plugin.md) has one |
 
 The text of an e-mail is HTML. A value that comes from a person, for example the name of a user, is written as text. So a name cannot put markup into an e-mail.
 

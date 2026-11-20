@@ -61,17 +61,20 @@
     }
   }
 
-  /** Whether the speed test plugin is on, and this person has its level. */
-  const canSpeedTest = $derived.by(() => {
+  /** Whether a plugin is on, and this person has its level. `name` is `SPEEDTEST`. */
+  function canUse(name: string): boolean {
     const plugins = session.launch?.plugins;
     const group = session.launch?.user?.groupID;
-    if (plugins?.['SPEEDTEST-enabled'] !== true || group === undefined) {
+    if (plugins?.[`${name}-enabled`] !== true || group === undefined) {
       return false;
     }
     const includes = plugins.includes as Record<string, unknown> | undefined;
-    const level = Number(includes?.['SPEEDTEST-Auth-include']);
+    const level = Number(includes?.[`${name}-Auth-include`]);
     return Number.isFinite(level) ? group <= level : group <= 1;
-  });
+  }
+
+  const canSpeedTest = $derived(canUse('SPEEDTEST'));
+  const canInvite = $derived(canUse('INVITES'));
 
   function closeUserMenu() {
     if (userMenu) {
@@ -110,6 +113,9 @@
             <li><a href={PAGES.account} onclick={closeUserMenu}>Account</a></li>
             {#if canSpeedTest}
               <li><a href={PAGES.speedTest} onclick={closeUserMenu}>Speed test</a></li>
+            {/if}
+            {#if canInvite}
+              <li><a href={PAGES.invites} onclick={closeUserMenu}>Invites</a></li>
             {/if}
             <li><button onclick={logOut}>Log out</button></li>
           </ul>

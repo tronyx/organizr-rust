@@ -20,6 +20,8 @@ pub struct Report {
     pub bookmarks: usize,
     /// The number of categories of the bookmark plugin.
     pub bookmark_categories: usize,
+    /// The number of invites of the invites plugin.
+    pub invites: usize,
     /// The number of settings that differ from the default.
     pub settings: usize,
     /// The number of sessions of the PHP install. Sessions are not imported.
@@ -61,6 +63,7 @@ impl fmt::Display for Report {
             (self.tabs, "tabs"),
             (self.bookmark_categories, "bookmark categories"),
             (self.bookmarks, "bookmarks"),
+            (self.invites, "invites"),
             (self.settings, "settings that differ from the default"),
             (self.pictures, "uploaded pictures"),
             (self.other_files, "other files"),

@@ -7,11 +7,13 @@
   import Account from './Account.svelte';
   import Bookmarks from './Bookmarks.svelte';
   import Homepage from './homepage/Homepage.svelte';
+  import Invites from './Invites.svelte';
   import Login from './Login.svelte';
   import Recover from './Recover.svelte';
   import Register from './Register.svelte';
   import Settings from './settings/Settings.svelte';
   import SpeedTest from './SpeedTest.svelte';
+  import UseInvite from './UseInvite.svelte';
 
   let { content }: { content: Exclude<Content, { kind: 'frame' }> } = $props();
 </script>
@@ -26,6 +28,10 @@
   <Account />
 {:else if content.kind === 'speedTest'}
   <SpeedTest />
+{:else if content.kind === 'invites'}
+  <Invites />
+{:else if content.kind === 'useInvite'}
+  <UseInvite code={content.code} />
 {:else if content.kind === 'bookmarks'}
   <Bookmarks title={content.tab.name} />
 {:else if content.kind === 'settings'}

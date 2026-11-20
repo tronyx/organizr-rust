@@ -18,7 +18,7 @@ use std::sync::{Arc, Mutex};
 
 use axum::Router;
 use axum::body::Bytes;
-use axum::extract::{Request, State};
+use axum::extract::{Path, Request, State};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
@@ -334,6 +334,40 @@ async fn plex_servers(headers: HeaderMap) -> Response {
     ))
 }
 
+/// The share of a server with an account. The stand-in knows the server of the owner,
+/// and refuses an account that has that server.
+async fn plex_share(
+    Path(server): Path<String>,
+    headers: HeaderMap,
+    axum::Json(body): axum::Json<Value>,
+) -> Response {
+    if plex_token(&headers) != Some(OWNER_TOKEN) {
+        return (StatusCode::UNAUTHORIZED, "Invalid token").into_response();
+    }
+    let libraries = &body["shared_server"]["library_section_ids"];
+    let unknown_library = libraries
+        .as_array()
+        .is_some_and(|ids| ids.iter().any(|id| id == "404"));
+    if server != SERVER_ID || unknown_library {
+        return (StatusCode::NOT_FOUND, "Not found").into_response();
+    }
+    let invited = body["shared_server"]["invited_email"]
+        .as_str()
+        .unwrap_or_default()
+        .to_lowercase();
+    if invited == "broken" {
+        return (StatusCode::INTERNAL_SERVER_ERROR, "Trouble").into_response();
+    }
+    let has_access = PLEX_USERS.iter().any(|user| {
+        user.shared_servers.contains(&SERVER_ID)
+            && (user.username.to_lowercase() == invited || user.email.to_lowercase() == invited)
+    });
+    if has_access {
+        return (StatusCode::BAD_REQUEST, "Already shared").into_response();
+    }
+    axum::Json(json!({"id": 7, "invited_email": invited})).into_response()
+}
+
 /// Starts a stand-in for `plex.tv` with the accounts of [`PLEX_USERS`].
 pub async fn plex_tv() -> StandIn {
     StandIn::start(
@@ -341,7 +375,8 @@ pub async fn plex_tv() -> StandIn {
             .route("/users/sign_in.json", post(plex_sign_in))
             .route("/users/account.json", get(plex_account_of_token))
             .route("/api/users", get(plex_friends))
-            .route("/pms/servers", get(plex_servers)),
+            .route("/pms/servers", get(plex_servers))
+            .route("/api/servers/{server}/shared_servers/", post(plex_share)),
     )
     .await
 }

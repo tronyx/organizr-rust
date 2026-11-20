@@ -26,6 +26,10 @@ export type Route =
   | { page: 'account' }
   /** The speed test of the plugin. */
   | { page: 'speedTest' }
+  /** The invites of the plugin, for the members who make them. */
+  | { page: 'invites' }
+  /** The page for a person with an invite code. */
+  | { page: 'useInvite'; code: string }
   | { page: 'settings'; section: SettingsSection }
   /** A tab, by its name as the address writes it. */
   | { page: 'tab'; name: string };
@@ -47,6 +51,8 @@ export const PAGES = {
   homepageSettings: '#/settings/homepage',
   pluginSettings: '#/settings/plugins',
   speedTest: '#/speedtest',
+  invites: '#/invites',
+  useInvite: '#/invite',
 } as const;
 
 /** Reads the part of an address from the `#` on. */
@@ -64,6 +70,10 @@ export function parseRoute(hash: string): Route {
     }
     return { page: 'tab', name };
   }
+  const invite = /^\/invite(?:\/([A-Za-z0-9_-]*))?\/*$/.exec(fragment);
+  if (invite) {
+    return { page: 'useInvite', code: invite[1] ?? '' };
+  }
   switch (fragment.replace(/\/+$/, '')) {
     case '/login':
       return { page: 'login' };
@@ -75,6 +85,8 @@ export function parseRoute(hash: string): Route {
       return { page: 'account' };
     case '/speedtest':
       return { page: 'speedTest' };
+    case '/invites':
+      return { page: 'invites' };
     case '/settings':
     case '/settings/tabs':
       return { page: 'settings', section: 'tabs' };
@@ -118,8 +130,20 @@ export function findTab<T extends Pick<MenuTab, 'name'>>(tabs: T[], name: string
   );
 }
 
+/**
+ * The page for the address that the browser opened. The e-mail of an invite leads to
+ * the site with `?invite=` and the code, and that opens the page for an invite code.
+ */
+export function firstRoute(hash: string, search: string): Route {
+  const code = /[?&]invite=([^&#]*)/.exec(search)?.[1];
+  if (code !== undefined && hash.replace(/^#\/?/, '') === '') {
+    return parseRoute(`#/invite/${code}`);
+  }
+  return parseRoute(hash);
+}
+
 class Router {
-  route = $state<Route>(parseRoute(window.location.hash));
+  route = $state<Route>(firstRoute(window.location.hash, window.location.search));
 
   constructor() {
     window.addEventListener('hashchange', () => {

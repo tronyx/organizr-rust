@@ -1,6 +1,6 @@
 //! The import of another install: all its records, stored in one step.
 
-use organizr_domain::{Bookmark, BookmarkCategory, Category, Group, Tab, User};
+use organizr_domain::{Bookmark, BookmarkCategory, Category, Group, Invite, Tab, User};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ConnectionTrait, DatabaseConnection, EntityTrait,
     PaginatorTrait, TransactionTrait,
@@ -14,13 +14,14 @@ use crate::users::UserLogin;
 use crate::{DbError, Engine, stored_settings};
 
 /// The tables whose records keep the id of the other install.
-const TABLES_WITH_IDS: [&str; 6] = [
+const TABLES_WITH_IDS: [&str; 7] = [
     "groups",
     "users",
     "categories",
     "tabs",
     "bookmark_categories",
     "bookmark_tabs",
+    "invites",
 ];
 
 /// A user of the other install, with what that install knows about the login.
@@ -47,6 +48,9 @@ pub struct ImportData {
     pub bookmark_categories: Vec<BookmarkCategory>,
     /// The bookmarks of the bookmark plugin.
     pub bookmarks: Vec<Bookmark>,
+    /// The invites of the invites plugin. No two have the same code, whatever its
+    /// letter case.
+    pub invites: Vec<Invite>,
     /// The settings, in their stored form, with secrets sealed.
     pub settings: Vec<StoredSetting>,
     /// The settings that this application does not know. Each value is sealed.
@@ -247,6 +251,9 @@ async fn store<C: ConnectionTrait>(connection: &C, data: ImportData) -> Result<(
         stored_settings::put_in(connection, &setting.key, &setting.value).await?;
     }
     store_bookmarks(connection, data.bookmark_categories, data.bookmarks).await?;
+    for invite in data.invites {
+        crate::invites::insert_in(connection, invite, true).await?;
+    }
 
     for setting in data.legacy_settings {
         legacy_setting::ActiveModel {

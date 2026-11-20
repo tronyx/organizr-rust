@@ -161,6 +161,11 @@
         <a class="link link-hover w-full text-center text-sm" href={PAGES.register}>
           Make an account
         </a>
+        {#if session.launch?.plugins['INVITES-enabled'] === true}
+          <a class="link link-hover w-full text-center text-sm" href={PAGES.useInvite}>
+            Use an invite code
+          </a>
+        {/if}
       </div>
     </div>
   </form>

@@ -11,6 +11,7 @@ mod error;
 mod groups;
 mod import;
 mod install;
+mod invites;
 mod migration;
 mod sessions;
 mod stored_settings;
@@ -29,6 +30,7 @@ pub use crate::error::DbError;
 pub use crate::groups::Groups;
 pub use crate::import::{Import, ImportData, ImportedUser};
 pub use crate::install::{Install, NewInstall};
+pub use crate::invites::Invites;
 pub use crate::sessions::Sessions;
 pub use crate::stored_settings::{StoredSetting, StoredSettings};
 pub use crate::tabs::Tabs;
@@ -143,6 +145,11 @@ impl Database {
     /// The bookmarks of the bookmark plugin, and their categories.
     pub const fn bookmarks(&self) -> Bookmarks<'_> {
         Bookmarks::new(&self.connection)
+    }
+
+    /// The invites of the invites plugin.
+    pub const fn invites(&self) -> Invites<'_> {
+        Invites::new(&self.connection)
     }
 
     /// The tabs.

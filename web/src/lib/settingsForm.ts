@@ -1235,6 +1235,53 @@ export const SPEED_TEST_PLUGIN: FieldGroup[] = [
   },
 ];
 
+/** The settings of the invites plugin. The invites have a page of their own. */
+export const INVITES_PLUGIN: FieldGroup[] = [
+  {
+    title: 'Invites plugin',
+    fields: [
+      {
+        key: 'INVITES-enabled',
+        label: 'Use the invites plugin',
+        kind: 'switch',
+        help: 'The menu of the user then has the entry "Invites". The plugin needs the Plex token and the Plex ID of the tab "Login".',
+      },
+      {
+        key: 'INVITES-Auth-include',
+        label: 'Invites are made by users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'INVITES-maximum-invites',
+        label: 'Most invites of one user',
+        kind: 'number',
+        min: 0,
+        help: 'The number 0 means no limit. An Admin and a Co-Admin have no limit.',
+      },
+      {
+        key: 'INVITES-allow-delete-include',
+        label: 'A user can delete the own invites',
+        kind: 'switch',
+      },
+      {
+        key: 'INVITES-plexLibraries',
+        label: 'Plex libraries to share',
+        kind: 'text',
+        help: 'The ids of the libraries, with commas between them. Leave it empty to share every library.',
+      },
+      {
+        key: 'INVITES-plex-tv-labels',
+        label: 'Labels of the shows to share',
+        kind: 'text',
+        help: 'With labels, the person sees only the shows that have one of them. Put commas between labels.',
+      },
+      { key: 'INVITES-plex-movies-labels', label: 'Labels of the films to share', kind: 'text' },
+      { key: 'INVITES-plex-music-labels', label: 'Labels of the music to share', kind: 'text' },
+    ],
+  },
+];
+
 /** The switch of the bookmark plugin. Its bookmarks have an editor of their own. */
 export const BOOKMARK_PLUGIN: FieldGroup[] = [
   {

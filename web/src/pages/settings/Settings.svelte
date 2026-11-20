@@ -10,6 +10,7 @@
     BOOKMARK_PLUGIN,
     HEALTH_CHECKS_PLUGIN,
     HOMEPAGE,
+    INVITES_PLUGIN,
     SPEED_TEST_PLUGIN,
   } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
@@ -163,7 +164,12 @@
     <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
   {:else if section === 'plugins'}
     <SettingsForm
-      groups={[...BOOKMARK_PLUGIN, ...SPEED_TEST_PLUGIN, ...HEALTH_CHECKS_PLUGIN]}
+      groups={[
+        ...BOOKMARK_PLUGIN,
+        ...SPEED_TEST_PLUGIN,
+        ...INVITES_PLUGIN,
+        ...HEALTH_CHECKS_PLUGIN,
+      ]}
       ondone={(message) => (done = message)}
     >
       <HealthCheckServices ondone={(message) => (done = message)} />

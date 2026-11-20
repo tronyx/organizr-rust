@@ -822,6 +822,44 @@ test('the Admin adds a bookmark, and the page of the bookmarks shows it as a til
 
 // This test stays the last one: after it, the login page has a second button whose name
 // starts with "Log in".
+test('the Admin makes an invite, and a guest finds the page for its code', async ({ page }) => {
+  await logIn(page);
+  await page.goto('./#/settings/plugins');
+  await page.getByLabel('Use the invites plugin').check();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('link', { name: 'Invites' }).click();
+  await expect(page).toHaveURL(/#\/invites$/);
+  await expect(page.getByText('There are no invites yet.')).toBeVisible();
+  await page.getByLabel('Name of the person').fill('Sam');
+  await page.getByLabel('E-mail address').fill('sam@example.com');
+  await page.getByRole('button', { name: 'Make an invite' }).click();
+  await expect(page.getByRole('status')).toHaveText(/^Invite Code: [A-Z0-9]{6} has been created$/);
+  const table = page.getByRole('table', { name: 'Invites' });
+  await expect(table).toContainText('Not used');
+  const code = (await table.locator('tbody td').first().textContent()) ?? '';
+  expect(code).toMatch(/^[A-Z0-9]{6}$/);
+
+  // A guest gets the page from the login page, and from the link of the e-mail.
+  await page.context().clearCookies();
+  await page.goto('./#/login');
+  await page.reload();
+  await page.getByRole('link', { name: 'Use an invite code' }).click();
+  await expect(page.getByRole('heading', { name: 'Use an invite code' })).toBeVisible();
+  await page.goto(`./?invite=${code}`);
+  await expect(page.getByLabel('Invite code')).toHaveValue(code);
+  await page.getByLabel('Plex user name or e-mail address').fill('sam@example.com');
+  await page.getByRole('button', { name: 'Use the code' }).click();
+  // This install has no Plex server, so the code stays good.
+  await expect(page.getByRole('alert')).toHaveText('Plex Token/ID not set');
+
+  await page.getByLabel('Invite code').fill('WRONG1');
+  await page.getByRole('button', { name: 'Use the code' }).click();
+  await expect(page.getByRole('alert')).toHaveText('Code is invalid');
+});
+
 test('the Admin switches the button "Log in with Plex" on, and the login page shows it', async ({
   page,
   context,

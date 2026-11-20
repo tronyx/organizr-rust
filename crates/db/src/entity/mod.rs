@@ -17,6 +17,7 @@ pub mod bookmark_category;
 pub mod bookmark_tab;
 pub mod category;
 pub mod group;
+pub mod invite;
 pub mod legacy_setting;
 pub mod session;
 pub mod setting;

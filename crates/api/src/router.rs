@@ -16,8 +16,8 @@ use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
     basics, bookmarks, categories, config, fields, forward_auth, groups, health_checks_plugin,
-    homepage, images, launch, login, logout, mail, ping, plex, register, speed_test, tabs, token,
-    two_factor, users, wizard,
+    homepage, images, invites, launch, login, logout, mail, ping, plex, register, speed_test, tabs,
+    token, two_factor, users, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -275,6 +275,13 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route(
             "/plugins/bookmark/categories/{id}",
             &put(bookmarks::change_category).delete(bookmarks::remove_category),
+        )?
+        .route("/plugins/invites", &get(invites::list).post(invites::create))?
+        .route(
+            "/plugins/invites/{code}",
+            &get(invites::verify)
+                .post(invites::use_code)
+                .delete(invites::remove),
         )?
         .route("/plugins/speedtest/garbage", &get(speed_test::garbage))?
         .route(

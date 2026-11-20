@@ -15,7 +15,7 @@ use organizr_auth::secrets::{
 use organizr_db::{ImportData, ImportedUser, SealedTwoFactor, StoredSetting, UserLogin};
 use organizr_domain::{
     Bookmark, BookmarkCategory, Category, CategoryId, CategoryNumber, Group, GroupId, GroupLevel,
-    LevelRange, PasswordHash, Tab, TabId, TabKind, Timestamp, User, UserId, is_hex_color,
+    Invite, LevelRange, PasswordHash, Tab, TabId, TabKind, Timestamp, User, UserId, is_hex_color,
 };
 use organizr_settings::{Settings, SettingsError};
 use serde_json::Value;
@@ -60,6 +60,8 @@ pub struct LegacyInstall {
     pub bookmark_categories: Vec<LegacyRow>,
     /// The rows of the table `BOOKMARK-tabs` of the bookmark plugin.
     pub bookmarks: Vec<LegacyRow>,
+    /// The rows of the table `invites` of the invites plugin.
+    pub invites: Vec<LegacyRow>,
     /// The other tables: name and number of rows.
     pub other_tables: Vec<(String, u64)>,
 }
@@ -94,6 +96,7 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
     let tabs = plan_tabs(&install.tabs, &categories, &mut report);
     let bookmark_categories = plan_bookmark_categories(&install.bookmark_categories, &mut report);
     let bookmarks = plan_bookmarks(&install.bookmarks, &mut report);
+    let invites = plan_invites(&install.invites, &mut report);
     let (settings, legacy_settings) = plan_settings(&install.config, secrets, &mut report)?;
 
     for (table, rows) in &install.other_tables {
@@ -109,6 +112,7 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
     report.tabs = tabs.len();
     report.bookmarks = bookmarks.len();
     report.bookmark_categories = bookmark_categories.len();
+    report.invites = invites.len();
     report.settings = settings.len();
 
     Ok(Plan {
@@ -119,6 +123,7 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
             tabs,
             bookmark_categories,
             bookmarks,
+            invites,
             settings,
             legacy_settings,
         },
@@ -561,6 +566,56 @@ fn plan_bookmark_categories(rows: &[LegacyRow], report: &mut Report) -> Vec<Book
     categories
 }
 
+/// The invites of the invites plugin. An invite without a code is left out, and so is
+/// an invite whose code another invite has in another letter case.
+fn plan_invites(rows: &[LegacyRow], report: &mut Report) -> Vec<Invite> {
+    let mut codes = HashSet::new();
+    let mut invites = Vec::new();
+    for (row, place) in rows.iter().zip(1_i64..) {
+        let Some(code) = row.filled("code") else {
+            report
+                .skipped
+                .push(format!("The invite in row {place} has no code."));
+            continue;
+        };
+        if !codes.insert(code.to_lowercase()) {
+            report.skipped.push(format!(
+                "The invite \"{code}\" has the code of another invite, in another letter case."
+            ));
+            continue;
+        }
+        let seconds = |column: &str| {
+            row.filled(column)
+                .and_then(moment)
+                .map(Timestamp::unix_seconds)
+        };
+        let created_at = seconds("date").unwrap_or_else(|| {
+            report.repairs.push(format!(
+                "The invite \"{code}\" had no valid date. Its date is the start of 1970 now."
+            ));
+            0
+        });
+        let text = |column: &str| row.filled(column).map(str::to_owned);
+        let is_valid = row
+            .text("valid")
+            .is_some_and(|valid| valid.eq_ignore_ascii_case("yes"));
+        invites.push(Invite {
+            id: row.number("id").unwrap_or(place),
+            code: code.to_owned(),
+            created_at,
+            email: text("email").unwrap_or_default(),
+            username: text("username").unwrap_or_default(),
+            used_at: seconds("dateused"),
+            used_by: text("usedby"),
+            used_from: text("ip"),
+            is_valid,
+            kind: text("type").unwrap_or_default().to_lowercase(),
+            invited_by: text("invitedby").unwrap_or_default(),
+        });
+    }
+    invites
+}
+
 /// The bookmarks of the bookmark plugin. A name that is taken gets a number behind it,
 /// and a colour that is no colour becomes black or white.
 fn plan_bookmarks(rows: &[LegacyRow], report: &mut Report) -> Vec<Bookmark> {
@@ -931,7 +986,7 @@ mod tests {
                 ("group_id", Some("1")),
                 ("type", Some("1")),
             ])],
-            other_tables: vec![("tokens".to_owned(), 12), ("invites".to_owned(), 3)],
+            other_tables: vec![("tokens".to_owned(), 12), ("chatroom".to_owned(), 3)],
             ..LegacyInstall::default()
         };
 
@@ -969,7 +1024,10 @@ mod tests {
         assert_eq!(plan.data.settings[0].key, "title");
         assert_eq!(plan.data.settings[0].value, "\"Empty\"");
         assert_eq!(plan.report.sessions, 12);
-        assert_eq!(plan.report.tables_not_imported, [("invites".to_owned(), 3)]);
+        assert_eq!(
+            plan.report.tables_not_imported,
+            [("chatroom".to_owned(), 3)]
+        );
         assert_eq!(plan.report.retired_settings, ["driver"]);
         assert_eq!(plan.report.repairs.len(), 5, "{:#?}", plan.report.repairs);
     }
@@ -1149,6 +1207,75 @@ mod tests {
             plan.report.repairs
         );
         assert_eq!(plan.report.legacy_settings, [] as [String; 0]);
+    }
+
+    #[test]
+    fn invites_of_the_plugin_are_planned_with_repairs() {
+        let row = |id: &'static str,
+                   code: Option<&'static str>,
+                   date: &'static str,
+                   used: Option<[&'static str; 3]>| {
+            let [used_at, used_by, used_from] = used.map_or([None; 3], |used| used.map(Some));
+            LegacyRow::of([
+                ("id", Some(id)),
+                ("code", code),
+                ("date", Some(date)),
+                ("email", Some("sam@example.com")),
+                ("username", Some("Sam")),
+                ("dateused", used_at),
+                ("usedby", used_by),
+                ("ip", used_from),
+                ("valid", Some(if used.is_some() { "No" } else { "Yes" })),
+                ("type", Some("Plex")),
+                ("invitedby", Some("robin")),
+            ])
+        };
+        let good = "2026-01-02 03:04:05";
+        let used = ["2026-01-03 00:00:00", "sam@plex.example.com", "203.0.113.9"];
+        let install = LegacyInstall {
+            invites: vec![
+                row("4", Some("USED01"), good, Some(used)),
+                row("5", Some("AbC123"), "no date", None),
+                row("6", Some("abc123"), good, None),
+                row("7", None, good, None),
+            ],
+            ..LegacyInstall::default()
+        };
+
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let plan = plan(&install, &secrets).expect("the plan can be made");
+
+        let invites = &plan.data.invites;
+        assert_eq!(plan.report.invites, 2);
+        assert_eq!(invites[0].id, 4);
+        assert_eq!(invites[0].created_at, 1_767_323_045);
+        assert_eq!(invites[0].used_at, Some(1_767_398_400));
+        assert_eq!(invites[0].used_by.as_deref(), Some("sam@plex.example.com"));
+        assert_eq!(invites[0].used_from.as_deref(), Some("203.0.113.9"));
+        assert!(!invites[0].is_valid);
+        assert_eq!(invites[0].kind, "plex");
+        assert_eq!(invites[0].invited_by, "robin");
+        assert_eq!((invites[1].id, invites[1].code.as_str()), (5, "AbC123"));
+        assert_eq!(invites[1].created_at, 0);
+        assert!(invites[1].is_valid);
+        assert_eq!(invites[1].used_at, None);
+        let about_invites: Vec<&String> = plan
+            .report
+            .repairs
+            .iter()
+            .filter(|repair| repair.contains("invite"))
+            .collect();
+        assert_eq!(
+            about_invites,
+            ["The invite \"AbC123\" had no valid date. Its date is the start of 1970 now."]
+        );
+        assert_eq!(
+            plan.report.skipped,
+            [
+                "The invite \"abc123\" has the code of another invite, in another letter case.",
+                "The invite in row 4 has no code.",
+            ]
+        );
     }
 
     #[test]

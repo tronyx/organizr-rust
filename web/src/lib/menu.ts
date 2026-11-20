@@ -72,6 +72,8 @@ export type Content =
   | { kind: 'recover' }
   | { kind: 'account' }
   | { kind: 'speedTest' }
+  | { kind: 'invites' }
+  | { kind: 'useInvite'; code: string }
   | { kind: 'settings'; section: SettingsSection }
   /** The settings, for a caller who may not manage the install. */
   | { kind: 'notAllowed' }
@@ -126,6 +128,11 @@ export function contentFor(route: Route, tabs: MenuTab[], caller: Caller): Conte
     case 'speedTest':
       // The server decides who may run the test, and says so on the page.
       return { kind: 'speedTest' };
+    case 'invites':
+      return caller.loggedIn ? { kind: 'invites' } : { kind: 'login' };
+    case 'useInvite':
+      // A code is for everybody: the person who uses it has no account yet.
+      return { kind: 'useInvite', code: route.code };
     case 'settings':
       if (caller.canManage) {
         return { kind: 'settings', section: route.section };

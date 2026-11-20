@@ -11,6 +11,7 @@ pub mod groups;
 pub mod health_checks_plugin;
 pub mod homepage;
 pub mod images;
+pub mod invites;
 pub mod launch;
 pub mod launch_settings;
 pub mod login;

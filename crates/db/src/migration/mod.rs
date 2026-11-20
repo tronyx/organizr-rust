@@ -13,6 +13,7 @@ mod m20261118_000005_user_email_key;
 mod m20261119_000006_user_logins_and_legacy_settings;
 mod m20261119_000007_user_recovery;
 mod m20261120_000008_bookmarks;
+mod m20261120_000009_invites;
 
 /// The list of all migrations, oldest first.
 pub struct Migrator;
@@ -28,6 +29,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261119_000006_user_logins_and_legacy_settings::Migration),
             Box::new(m20261119_000007_user_recovery::Migration),
             Box::new(m20261120_000008_bookmarks::Migration),
+            Box::new(m20261120_000009_invites::Migration),
         ]
     }
 }

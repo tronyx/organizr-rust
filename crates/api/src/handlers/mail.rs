@@ -82,6 +82,8 @@ pub struct Letter<'a> {
     pub user: Option<&'a str>,
     /// A new password, for `{password}`.
     pub password: Option<&'a str>,
+    /// The code of an invite, for `{inviteCode}` and the button of an invite.
+    pub invite_code: Option<&'a str>,
 }
 
 /// Writes an e-mail: the subject and the HTML of the whole message.
@@ -89,7 +91,7 @@ pub fn compose(settings: &Settings, site: &str, letter: Letter<'_>) -> (String, 
     let values = MailValues {
         user: letter.user,
         password: letter.password,
-        invite_code: None,
+        invite_code: letter.invite_code,
         site,
         title: &settings.title,
     };
@@ -100,7 +102,7 @@ pub fn compose(settings: &Settings, site: &str, letter: Letter<'_>) -> (String, 
         kind: letter.kind,
         logo: &settings.mailer_logo,
         site,
-        invite_code: None,
+        invite_code: letter.invite_code,
     };
     let html = mail::lay_out(frame, &subject, &body);
     (subject, html)
@@ -139,6 +141,7 @@ pub fn welcome(state: &AppState, site: &str, username: &str, address: Option<&st
         body: &settings.mailer_email_template_register_user,
         user: Some(username),
         password: None,
+        invite_code: None,
     };
     let (subject, html) = compose(&settings, site, letter);
     let message = Message {
@@ -188,6 +191,7 @@ pub fn new_device(state: &AppState, site: &str, device: NewDevice<'_>) {
         body: &body,
         user: Some(device.username),
         password: None,
+        invite_code: None,
     };
     let (subject, html) = compose(&settings, site, letter);
     let message = Message {
@@ -258,6 +262,7 @@ pub async fn recover(
             body: &settings.mailer_email_template_reset,
             user: Some(&started.user.username),
             password: Some(&started.password),
+            invite_code: None,
         };
         let (subject, html) = compose(&settings, &site, letter);
         let message = Message {
@@ -306,6 +311,7 @@ pub async fn test(
         body: "This is just a test email.",
         user: None,
         password: None,
+        invite_code: None,
     };
     let (subject, html) = compose(&settings, &site, letter);
     let message = Message {
@@ -361,6 +367,7 @@ pub async fn send(
         body: &data.text("body").unwrap_or_default(),
         user: None,
         password: None,
+        invite_code: None,
     };
     let (subject, html) = compose(&settings, &site, letter);
     let recipients = bcc.len();

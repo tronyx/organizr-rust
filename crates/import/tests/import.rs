@@ -137,11 +137,7 @@ async fn install_of_php_is_imported_whole() {
         assert_eq!(report.sessions, 1);
         assert_eq!(
             report.tables_not_imported,
-            [
-                ("chatroom".to_owned(), 1),
-                ("invites".to_owned(), 1),
-                ("options".to_owned(), 0),
-            ]
+            [("chatroom".to_owned(), 1), ("options".to_owned(), 0),]
         );
         assert_eq!(report.legacy_settings, ["MB-URL"]);
         assert_eq!(
@@ -674,7 +670,8 @@ async fn dry_run_reports_and_writes_nothing() {
         "{shown}"
     );
     assert!(shown.contains("     6  users"), "{shown}");
-    assert!(shown.contains("  - invites: 1 rows"), "{shown}");
+    assert!(shown.contains("  - chatroom: 1 rows"), "{shown}");
+    assert!(shown.contains("     1  invites"), "{shown}");
     assert!(shown.contains("  - MB-URL"), "{shown}");
     assert!(
         shown.contains("Sessions are not imported (1 found)"),
@@ -1151,6 +1148,36 @@ async fn bookmarks_of_the_plugin_are_imported_with_their_ids() {
         let report = run(legacy.request(), database, &secrets, &legacy.data_dir())
             .await
             .expect("the import runs");
+
+        // The invites plugin brings its invite, which can still be used.
+        assert_eq!(report.invites, 1);
+        let invites = database.invites();
+        let invite = invites
+            .find("madeup")
+            .await
+            .expect("the invite loads")
+            .expect("the invite is there");
+        assert_eq!((invite.id, invite.code.as_str()), (1, "MADEUP"));
+        assert_eq!(invite.created_at, 1_767_323_045);
+        assert_eq!(invite.email, "guest@example.com");
+        assert_eq!(
+            (invite.kind.as_str(), invite.invited_by.as_str()),
+            ("plex", "admin")
+        );
+        assert!(invite.is_valid);
+        // A new invite gets the id after the highest one.
+        let next = invites
+            .insert(organizr_domain::NewInvite {
+                code: "next".to_owned(),
+                created_at: 1,
+                email: "pat@example.com".to_owned(),
+                username: "pat".to_owned(),
+                kind: "plex".to_owned(),
+                invited_by: "admin".to_owned(),
+            })
+            .await
+            .expect("an invite can be added");
+        assert_eq!(next.id, 2);
 
         // The bookmark plugin brings its category and its bookmark, with their ids.
         assert_eq!((report.bookmark_categories, report.bookmarks), (1, 1));

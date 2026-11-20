@@ -112,6 +112,21 @@ impl AccountAnswer {
 }
 
 /// The client for the account service.
+/// What the owner of a Plex server shares with an account.
+#[derive(Debug, Clone, Copy)]
+pub struct Share<'a> {
+    /// The name or the e-mail address of the Plex account.
+    pub account: &'a str,
+    /// The ids of the libraries. An empty list shares every library.
+    pub libraries: &'a [&'a str],
+    /// The filter for the shows, for example `label=kids`, or the empty text.
+    pub tv_filter: &'a str,
+    /// The filter for the films.
+    pub movies_filter: &'a str,
+    /// The filter for the music.
+    pub music_filter: &'a str,
+}
+
 #[derive(Debug, Clone)]
 pub struct PlexTv {
     base: String,
@@ -225,6 +240,63 @@ impl PlexTv {
             .xml("/api/users", &[("X-Plex-Token", owner_token)])
             .await?;
         friend_in(&text, name, server)
+    }
+
+    /// Shares the Plex server with the id `server` with an account. plex.tv sends
+    /// the account an invitation. `owner_token` is the token of the owner of the server.
+    ///
+    /// plex.tv answers with the status 400 for an account that has the access, with
+    /// 401 for a wrong token, and with 404 for a server or a library that it does not
+    /// know.
+    pub async fn share(
+        &self,
+        owner_token: &str,
+        server: &str,
+        share: &Share<'_>,
+    ) -> Result<(), PlexError> {
+        // The id is a part of the address. plex.tv knows no id with other characters.
+        let is_id = !server.is_empty()
+            && server
+                .chars()
+                .all(|letter| letter.is_ascii_alphanumeric() || letter == '-' || letter == '_');
+        if !is_id {
+            return Err(PlexError::Status(404));
+        }
+        let url = self.url(&format!("/api/servers/{server}/shared_servers/"));
+        // The PHP application sends an empty text, not an empty list, for "all libraries".
+        let libraries = if share.libraries.is_empty() {
+            serde_json::Value::from("")
+        } else {
+            serde_json::Value::from(share.libraries)
+        };
+        let body = serde_json::json!({
+            "server_id": server,
+            "shared_server": {
+                "library_section_ids": libraries,
+                "invited_email": share.account,
+            },
+            "sharing_settings": {
+                "filterTelevision": share.tv_filter,
+                "filterMovies": share.movies_filter,
+                "filterMusic": share.music_filter,
+            },
+        });
+        let response = self
+            .http
+            .client_for(&url)
+            .post(&url)
+            .timeout(TIMEOUT)
+            .header("Accept", "application/json")
+            .header("X-Plex-Token", owner_token)
+            .json(&body)
+            .send()
+            .await
+            .map_err(PlexError::Unreachable)?;
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(PlexError::Status(response.status().as_u16()))
+        }
     }
 
     /// The Plex servers of the account of a token.
