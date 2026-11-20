@@ -31,6 +31,7 @@ This version has these items:
 - [qBittorrent](#qbittorrent)
 - [NZBGet](#nzbget)
 - [Transmission](#transmission)
+- [Pi-hole](#pi-hole)
 - [Weather and air](#weather-and-air)
 - [Plex](#plex): what plays now, new items and playlists
 - [Tautulli](#tautulli)
@@ -265,6 +266,30 @@ This item shows the torrents of Transmission and how far each one is. The oldest
 | Milliseconds between two loads | `transmissionRefresh` |
 
 The address is the address of the web interface of Transmission without `/rpc` at its end. For a default install, this is `http://<host>:9091/transmission`.
+
+
+## Pi-hole
+
+This item shows how many requests Pi-hole got today, how many it blocked, and how many domains are on its lists. Pi-hole is a server that blocks advertisements for a whole network.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepagePiholeEnabled` |
+| Level | `homepagePiholeAuth` |
+| Place | `homepageOrderPihole` |
+| Addresses | `piholeURL` |
+| Tokens | `piholeToken` |
+| Add the installs up | `homepagePiholeCombine` |
+| Show the title | `piholeHeaderToggle` |
+| Milliseconds between two loads | `homepagePiholeRefresh` |
+
+The address is the address of the web interface, for example `http://192.168.1.2/admin`. The token is the API token from the settings of Pi-hole.
+
+For more than one install, put commas between the addresses, and give the tokens in the same order with commas between them. Organizr asks an address only when the list of tokens has a place for it. For two installs without tokens, enter one comma as the tokens.
+
+The answer names each install by its host. Two installs on one host with different ports do not work together, as in PHP Organizr.
+
+The item works with Pi-hole 5. Pi-hole 6 has another API, which this item does not know. PHP Organizr does not know it either.
 
 ## Weather and air
 

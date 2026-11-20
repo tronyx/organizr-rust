@@ -517,6 +517,30 @@ pub async fn transmission() -> StandIn {
     StandIn::start(Router::new().route("/rpc", get(transmission_rpc).post(transmission_rpc))).await
 }
 
+/// The token of the Pi-hole stand-in.
+pub const PIHOLE_TOKEN: &str = "made-up-pihole-token";
+
+/// Pi-hole 5 answers a request without the right token with an empty list.
+async fn pihole_summary(RawQuery(query): RawQuery) -> Response {
+    if query_field(query.as_deref(), "auth") != Some(PIHOLE_TOKEN) {
+        return axum::Json(json!([])).into_response();
+    }
+    axum::Json(json!({
+        "domains_being_blocked": 150_000,
+        "dns_queries_today": 12_000,
+        "ads_blocked_today": 3_000,
+        "ads_percentage_today": 25.0,
+        "unique_clients": 14,
+        "status": "enabled",
+    }))
+    .into_response()
+}
+
+/// A stand-in for Pi-hole 5, with its web interface under `/admin`.
+pub async fn pihole() -> StandIn {
+    StandIn::start(Router::new().route("/admin/api.php", get(pihole_summary))).await
+}
+
 /// The API key of the BreezoMeter stand-in.
 pub const WEATHER_KEY: &str = "made-up-weather-key";
 

@@ -10,6 +10,7 @@ pub mod downloaders;
 pub mod health_checks;
 pub mod html;
 pub mod overseerr;
+pub mod pihole;
 pub mod plex;
 pub mod tautulli;
 pub mod uptime_kuma;
@@ -136,6 +137,7 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderRadarrQueue" => ("radarrqueue", arr::queue_permissions(Kind::Radarr)),
         "homepageOrdersabnzbd" => ("sabnzbd", downloaders::sabnzbd_permissions()),
         "homepageOrderqBittorrent" => ("qbittorrent", downloaders::qbittorrent_permissions()),
+        "homepageOrderPihole" => ("pihole", pihole::permissions()),
         "homepageOrdernzbget" => ("nzbget", downloaders::nzbget_permissions()),
         "homepageOrdertransmission" => ("transmission", downloaders::transmission_permissions()),
         "homepageOrderWeatherAndAir" => ("weather", weather::permissions()),

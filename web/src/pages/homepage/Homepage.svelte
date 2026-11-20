@@ -11,6 +11,7 @@
   import CustomHtml from './CustomHtml.svelte';
   import HealthChecks from './HealthChecks.svelte';
   import Overseerr from './Overseerr.svelte';
+  import Pihole from './Pihole.svelte';
   import Plex from './Plex.svelte';
   import Nzbget from './Nzbget.svelte';
   import Qbittorrent from './Qbittorrent.svelte';
@@ -34,6 +35,7 @@
     'qbittorrent',
     'nzbget',
     'transmission',
+    'pihole',
     'weather',
     'tautulli',
     'plexstreams',
@@ -103,6 +105,8 @@
           <Nzbget />
         {:else if item.kind === 'transmission'}
           <Transmission />
+        {:else if item.kind === 'pihole'}
+          <Pihole />
         {:else if item.kind === 'plexstreams'}
           <Plex part="streams" />
         {:else if item.kind === 'plexrecent'}

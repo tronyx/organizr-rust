@@ -7,6 +7,7 @@ pub mod downloaders;
 pub mod health_checks;
 pub mod http;
 pub mod overseerr;
+pub mod pihole;
 pub mod plex;
 pub mod plex_server;
 pub mod sso;

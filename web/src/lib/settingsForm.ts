@@ -911,6 +911,37 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
     ],
   },
   {
+    title: 'Pi-hole',
+    fields: [
+      ...itemFields(
+        'the numbers of Pi-hole',
+        'homepagePiholeEnabled',
+        'homepagePiholeAuth',
+        'homepageOrderPihole',
+      ),
+      {
+        key: 'piholeURL',
+        label: 'Addresses of Pi-hole',
+        kind: 'text',
+        help: 'The address of the web interface, for example http://192.168.1.2/admin. For more installs, put commas between the addresses.',
+      },
+      {
+        key: 'piholeToken',
+        label: 'Tokens of Pi-hole',
+        kind: 'secret',
+        help: 'One token for each address, in the same order, with commas between them.',
+      },
+      { key: 'homepagePiholeCombine', label: 'Add the installs up', kind: 'switch' },
+      { key: 'piholeHeaderToggle', label: 'Show the title of the item', kind: 'switch' },
+      {
+        key: 'homepagePiholeRefresh',
+        label: 'Milliseconds between two loads of Pi-hole',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
     title: 'NZBGet',
     fields: [
       ...itemFields(

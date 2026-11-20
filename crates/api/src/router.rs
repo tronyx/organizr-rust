@@ -241,6 +241,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/homepage/qbittorrent/queue",
             &get(homepage::downloaders::qbittorrent_queue),
         )?
+        .route("/homepage/pihole/stats", &get(homepage::pihole::stats))?
         .route(
             "/homepage/nzbget/queue",
             &get(homepage::downloaders::nzbget_queue),
