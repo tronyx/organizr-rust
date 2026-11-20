@@ -68,7 +68,7 @@ async fn statistics_come_for_the_levels_of_the_caller() {
         assert_eq!(
             data["options"],
             json!({
-                "url": format!("{}/", service.url()),
+                "url": service.url(),
                 "libraries": true,
                 "topMovies": true,
                 "topTV": true,
