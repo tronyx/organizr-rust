@@ -52,7 +52,7 @@ To use PostgreSQL in place of SQLite, start from [docker/examples/compose.postgr
 ## Settings of the container
 
 | Variable | Meaning | Default |
-|---|---|---|
+| --- | --- | --- |
 | `ORGANIZR_DATA_DIR` | The data folder | `/config` in the image |
 | `ORGANIZR_DATABASE_URL` | The database. See [Choosing a database](docs/choosing-a-database.md) | SQLite in the data folder |
 | `ORGANIZR_LISTEN` | The address and the port that the server listens on | Port 8080 on all addresses |
@@ -65,7 +65,7 @@ All other settings are in the web interface.
 ## Documentation
 
 | Subject | Page |
-|---|---|
+| --- | --- |
 | Database | [Choosing a database](docs/choosing-a-database.md) |
 | Import from PHP Organizr | [Importing](docs/importing.md) |
 | Stored secrets and their key | [Secrets](docs/secrets.md) |
