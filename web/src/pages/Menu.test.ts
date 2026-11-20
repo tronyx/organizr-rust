@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/svelte';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
+import { frames as loadedFrames } from '../lib/frames.svelte';
 import type { MenuCategory, MenuTab } from '../lib/types';
 import Menu from './Menu.svelte';
 import TabFrames from './TabFrames.svelte';
@@ -151,6 +152,32 @@ describe('TabFrames', () => {
       hidden: frame.classList.contains('hidden'),
     }));
   }
+
+  beforeEach(() => {
+    loadedFrames.reset();
+  });
+
+  it('makes a new frame for a tab that is loaded again, and none for a closed one', async () => {
+    const { container } = render(TabFrames, { tabs, shown: 1 });
+    const first = container.querySelector('iframe');
+    expect(first?.title).toBe('Status');
+
+    loadedFrames.reload(1);
+    await Promise.resolve();
+    const second = container.querySelector('iframe');
+    expect(second?.title).toBe('Status');
+    expect(second).not.toBe(first);
+  });
+
+  it('takes the frame of a closed tab away', async () => {
+    const { container, rerender } = render(TabFrames, { tabs, shown: 1 });
+    await rerender({ tabs, shown: undefined });
+    expect(frames(container)).toHaveLength(1);
+
+    loadedFrames.close(1);
+    await Promise.resolve();
+    expect(frames(container)).toEqual([]);
+  });
 
   it('has no frame until a tab is opened', () => {
     const { container } = render(TabFrames, { tabs, shown: undefined });

@@ -6,6 +6,8 @@
   import type { Snippet } from 'svelte';
 
   import { api, failureText } from '../lib/api';
+  import { frames } from '../lib/frames.svelte';
+  import { opensNewWindow } from '../lib/menu';
   import { PAGES, router } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
   import { pictureOf } from '../lib/picture';
@@ -102,6 +104,48 @@
     return picture.kind === 'image' ? picture.address : null;
   });
 
+  /** The tab on top, when it shows another application in a frame. */
+  const framed = $derived.by(() => {
+    const tab = session.tabs.find((one) => one.id === shown);
+    return tab && tab.type === 1 && !opensNewWindow(tab) && tab.access_url ? tab : undefined;
+  });
+
+  /** Loads what the main area shows again: the frame of a tab, or the page. */
+  function reloadShown() {
+    if (framed) {
+      frames.reload(framed.id);
+    } else {
+      window.location.reload();
+    }
+  }
+
+  /** Closes the frame of the tab on top and goes to the start. */
+  function closeShown() {
+    if (framed) {
+      frames.close(framed.id);
+    }
+    router.go(PAGES.home);
+  }
+
+  /** Opens what the main area shows in a tab of the browser. */
+  function openShown() {
+    window.open(framed?.access_url ?? window.location.href, '_blank', 'noopener');
+  }
+
+  function toggleFullScreen() {
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+    } else {
+      void document.documentElement.requestFullscreen();
+    }
+  }
+
+  let avatarFailed = $state(false);
+  const avatar = $derived.by(() => {
+    const image = session.launch?.user?.image;
+    return !avatarFailed && typeof image === 'string' && /^https?:\/\//.test(image) ? image : null;
+  });
+
   function closeUserMenu() {
     if (userMenu) {
       userMenu.open = false;
@@ -122,7 +166,7 @@
         <i class="oi oi-themify ti-menu" aria-hidden="true"></i>
       </button>
     {/if}
-    <a class="org-logo min-w-0 flex-1" href={PAGES.home}>
+    <a class="org-logo min-w-0" href={PAGES.home}>
       {#if logo}
         <img src={logo} alt={title} onerror={() => (logoFailed = true)} />
       {:else}
@@ -130,8 +174,42 @@
       {/if}
     </a>
     {#if session.loggedIn}
+      <button type="button" class="org-header-link" aria-label="Load again" onclick={reloadShown}>
+        <i class="oi oi-themify ti-reload" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="org-header-link" aria-label="Close the tab" onclick={closeShown}>
+        <i class="oi oi-themify ti-close" aria-hidden="true"></i>
+      </button>
+      <button
+        type="button"
+        class="org-header-link"
+        aria-label="Open in a tab of the browser"
+        onclick={openShown}
+      >
+        <i class="oi oi-themify ti-arrow-top-right" aria-hidden="true"></i>
+      </button>
+    {/if}
+    <span class="flex-1"></span>
+    <button
+      type="button"
+      class="org-header-link max-sm:hidden"
+      aria-label="Full screen"
+      onclick={toggleFullScreen}
+    >
+      <i class="oi oi-themify ti-fullscreen" aria-hidden="true"></i>
+    </button>
+    {#if session.loggedIn}
       <details class="dropdown dropdown-end" bind:this={userMenu}>
-        <summary class="org-header-link gap-1 font-medium" aria-label="Menu of the user">
+        <summary class="org-header-link gap-2 font-medium" aria-label="Menu of the user">
+          {#if avatar}
+            <img
+              class="size-9 rounded-full"
+              src={avatar}
+              alt=""
+              referrerpolicy="no-referrer"
+              onerror={() => (avatarFailed = true)}
+            />
+          {/if}
           {session.launch?.user?.username}
         </summary>
         <ul class="menu dropdown-content bg-neutral z-30 w-52 p-0 py-1 shadow">
