@@ -1,0 +1,71 @@
+name: scan
+
+# Scans the published images for known vulnerabilities, once a week and on request.
+# The build stops only for a finding that has a correction. This run lists every
+# finding of the levels HIGH and CRITICAL, and fails when one of them has a correction:
+# a new build with newer base images then removes it.
+on:
+  schedule:
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scan
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Scan the image (${{ matrix.tag }})
+    runs-on: ubuntu-26.04
+    permissions:
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        tag:
+          - develop
+          - latest
+    steps:
+      - name: Log in to the registry
+        uses: docker/login-action@v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull the image
+        id: pull
+        env:
+          TAG: ${{ matrix.tag }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}:${TAG}"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          if docker pull "${image}"; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            # Before the first release, the tag latest does not exist.
+            echo "::notice::There is no image ${image} to scan."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: List every finding
+        if: steps.pull.outputs.found == 'true'
+        env:
+          IMAGE: ${{ steps.pull.outputs.image }}
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            ghcr.io/aquasecurity/trivy:0.76.2 image \
+            --scanners vuln --severity HIGH,CRITICAL --no-progress "${IMAGE}"
+
+      - name: Fail for a finding that has a correction
+        if: steps.pull.outputs.found == 'true'
+        env:
+          IMAGE: ${{ steps.pull.outputs.image }}
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            ghcr.io/aquasecurity/trivy:0.76.2 image \
+            --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+            --exit-code 1 --no-progress "${IMAGE}"

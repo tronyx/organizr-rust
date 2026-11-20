@@ -2,11 +2,16 @@ name: build
 
 # Builds the image for both architectures, tests that it starts, and publishes it.
 # It runs once a day when the branch has commits that no earlier run built, on request,
-# and for a pull request to main that changes a file of the image.
-# Only a run for the branch develop publishes: ghcr.io/<owner>/<repository>:develop.
+# for each push to main, and for a pull request to main that changes a file of the image.
+# A run for the branch develop publishes ghcr.io/<owner>/<repository>:develop.
+# A run for the branch main publishes :latest and :<version of the workspace>.
+# No image is published when the scan finds a vulnerability that has a correction.
 on:
   schedule:
     - cron: "7 12 * * *"
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -74,6 +79,10 @@ jobs:
     runs-on: ${{ matrix.runner }}
     env:
       IMAGE: organizr-smoke-test:${{ matrix.architecture }}
+    outputs:
+      # Both architectures give the same values.
+      channel: ${{ steps.prep.outputs.channel }}
+      version: ${{ steps.prep.outputs.version }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7.0.1
@@ -106,15 +115,20 @@ jobs:
           else
             CACHE_REF_NAME="${GITHUB_REF_NAME}"
           fi
-          # Only a run for the branch develop publishes, and never a run for a pull request
-          if [[ "${GITHUB_REF}" == refs/heads/develop && "${GITHUB_EVENT_NAME}" != pull_request ]]; then
-            PUBLISH=true
-          else
-            PUBLISH=false
+          # Only a run for the branch develop or main publishes, and never a run for a
+          # pull request. The channel is the tag that the image of the branch gets.
+          PUBLISH=false
+          CHANNEL=none
+          if [[ "${GITHUB_EVENT_NAME}" != pull_request ]]; then
+            case "${GITHUB_REF}" in
+              refs/heads/develop) PUBLISH=true; CHANNEL=develop ;;
+              refs/heads/main) PUBLISH=true; CHANNEL=latest ;;
+            esac
           fi
           ARCHITECTURE=${{ matrix.architecture }}
           {
             echo "publish=${PUBLISH}"
+            echo "channel=${CHANNEL}"
             echo "registry_image=ghcr.io/${GITHUB_REPOSITORY,,}"
             echo "platform=${ARCHITECTURE//-/\/}"
             echo "cache=type=gha,scope=${CACHE_REF_NAME}-${ARCHITECTURE}"
@@ -179,6 +193,15 @@ jobs:
           [[ "$(docker inspect --format '{{.State.ExitCode}}' organizr-smoke)" == "0" ]]
           docker rm organizr-smoke
 
+      # A finding without a correction does not stop the run: nothing can be done about
+      # it here. The weekly scan of the published image reports each finding.
+      - name: Scan the image for vulnerabilities that have a correction
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            ghcr.io/aquasecurity/trivy:0.76.2 image \
+            --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+            --exit-code 1 --no-progress "${IMAGE}"
+
       - name: Log in to the registry
         if: steps.prep.outputs.publish == 'true'
         uses: docker/login-action@v4.8.0
@@ -187,8 +210,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # The layers come from the cache of the build above, so this is the image that was tested.
-      # The software list and the build record come with the release pipeline.
+      # The layers come from the cache of the build above, so this is the image that was
+      # tested. The image carries its software list (SBOM) and the record of its build
+      # (provenance), which `docker buildx imagetools inspect` shows.
       - name: Push the tested image
         if: steps.prep.outputs.publish == 'true'
         uses: docker/build-push-action@v7.4.0
@@ -196,19 +220,21 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: true
-          provenance: false
-          sbom: false
+          provenance: mode=max
+          sbom: true
           platforms: ${{ steps.prep.outputs.platform }}
           cache-from: ${{ steps.prep.outputs.cache }}
-          tags: ${{ steps.prep.outputs.registry_image }}:develop-${{ matrix.architecture }}
+          tags: ${{ steps.prep.outputs.registry_image }}:${{ steps.prep.outputs.channel }}-${{ matrix.architecture }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.prep.outputs.version }}
+            org.opencontainers.image.licenses=GPL-3.0-only
 
   publish:
     name: Publish the image for both architectures
     needs: build
-    if: github.ref == 'refs/heads/develop' && github.event_name != 'pull_request'
+    if: needs.build.outputs.channel != 'none' && needs.build.outputs.channel != ''
     runs-on: ubuntu-26.04
     permissions:
       packages: write
@@ -227,13 +253,21 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Join the two images under one name
+        env:
+          CHANNEL: ${{ needs.build.outputs.channel }}
+          VERSION: ${{ needs.build.outputs.version }}
         run: |
           set -euo pipefail
           image="ghcr.io/${GITHUB_REPOSITORY,,}"
-          docker buildx imagetools create --tag "${image}:develop" \
-            "${image}:develop-linux-amd64" "${image}:develop-linux-arm64"
+          tags=(--tag "${image}:${CHANNEL}")
+          # A release also has the name of its version, which stays as it is.
+          if [[ "${CHANNEL}" == latest ]]; then
+            tags+=(--tag "${image}:${VERSION}")
+          fi
+          docker buildx imagetools create "${tags[@]}" \
+            "${image}:${CHANNEL}-linux-amd64" "${image}:${CHANNEL}-linux-arm64"
 
-          platforms=$(docker buildx imagetools inspect "${image}:develop" \
+          platforms=$(docker buildx imagetools inspect "${image}:${CHANNEL}" \
             --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
           echo "${platforms}"
           [[ "${platforms}" == *linux/amd64* && "${platforms}" == *linux/arm64* ]]

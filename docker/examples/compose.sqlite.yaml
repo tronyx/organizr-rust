@@ -1,0 +1,17 @@
+# Organizr with SQLite, the default database: one container and one volume.
+# Start it with: docker compose -f compose.sqlite.yaml up -d
+services:
+  organizr:
+    image: ghcr.io/tronyx/organizr-rust:develop
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      # The database, the key for the stored secrets and the uploaded pictures.
+      - organizr-data:/config
+    # environment:
+    #   # The addresses of your reverse proxy, when Organizr runs behind one.
+    #   ORGANIZR_TRUSTED_PROXIES: "172.16.0.0/12"
+
+volumes:
+  organizr-data:

@@ -1,0 +1,36 @@
+# Organizr with PostgreSQL: two containers.
+# Replace change-this-password in both places with a password of your own.
+# Start it with: docker compose -f compose.postgres.yaml up -d
+services:
+  organizr:
+    image: ghcr.io/tronyx/organizr-rust:develop
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ORGANIZR_DATABASE_URL: postgres://organizr:change-this-password@database:5432/organizr
+    volumes:
+      # The key for the stored secrets and the uploaded pictures.
+      - organizr-data:/config
+
+  database:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: organizr
+      POSTGRES_PASSWORD: change-this-password
+      POSTGRES_DB: organizr
+    volumes:
+      - organizr-database:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username organizr --dbname organizr"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  organizr-data:
+  organizr-database:
