@@ -119,6 +119,17 @@ impl<'a> Tabs<'a> {
             .transpose()
     }
 
+    /// The tab with the given address, when a tab has exactly that address.
+    pub async fn find_by_url(&self, url: &str) -> Result<Option<Tab>, DbError> {
+        tab::Entity::find()
+            .filter(tab::Column::Url.eq(url))
+            .order_by_asc(tab::Column::Id)
+            .one(self.connection)
+            .await?
+            .map(Tab::try_from)
+            .transpose()
+    }
+
     /// All tabs in menu order.
     pub async fn list(&self) -> Result<Vec<Tab>, DbError> {
         tab::Entity::find()

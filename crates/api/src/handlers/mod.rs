@@ -1,6 +1,7 @@
 //! The request handlers, grouped as the route files of the PHP application are.
 
 pub mod basics;
+pub mod bookmarks;
 pub mod categories;
 pub mod config;
 pub mod external_login;

@@ -15,9 +15,9 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    basics, categories, config, fields, forward_auth, groups, health_checks_plugin, homepage,
-    images, launch, login, logout, mail, ping, plex, register, speed_test, tabs, token, two_factor,
-    users, wizard,
+    basics, bookmarks, categories, config, fields, forward_auth, groups, health_checks_plugin,
+    homepage, images, launch, login, logout, mail, ping, plex, register, speed_test, tabs, token,
+    two_factor, users, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -247,6 +247,34 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route(
             "/plugins/healthchecks/run",
             &get(health_checks_plugin::run),
+        )?
+        .route("/plugins/bookmark/page", &get(bookmarks::page))?
+        .route("/plugins/bookmark/setup/tab", &get(bookmarks::set_up_tab))?
+        .route(
+            "/plugins/bookmark/setup/category",
+            &get(bookmarks::set_up_category),
+        )?
+        .route(
+            "/plugins/bookmark/tabs",
+            &get(bookmarks::list)
+                .post(bookmarks::add)
+                .put(bookmarks::reorder),
+        )?
+        .route(
+            "/plugins/bookmark/tabs/{id}",
+            &get(bookmarks::one)
+                .put(bookmarks::change)
+                .delete(bookmarks::remove),
+        )?
+        .route(
+            "/plugins/bookmark/categories",
+            &get(bookmarks::list)
+                .post(bookmarks::add_category)
+                .put(bookmarks::reorder_categories),
+        )?
+        .route(
+            "/plugins/bookmark/categories/{id}",
+            &put(bookmarks::change_category).delete(bookmarks::remove_category),
         )?
         .route("/plugins/speedtest/garbage", &get(speed_test::garbage))?
         .route(
