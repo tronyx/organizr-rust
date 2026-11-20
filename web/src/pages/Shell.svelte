@@ -61,6 +61,16 @@
     }
   }
 
+  /** Locks the account: the interface then shows only the lock screen. */
+  async function lock() {
+    try {
+      await api('POST', 'users/lock');
+      await session.load();
+    } catch (failure) {
+      error = failureText(failure);
+    }
+  }
+
   /** Whether a plugin is on, and this person has its level. `name` is `SPEEDTEST`. */
   function canUse(name: string): boolean {
     const plugins = session.launch?.plugins;
@@ -117,6 +127,7 @@
             {#if canInvite}
               <li><a href={PAGES.invites} onclick={closeUserMenu}>Invites</a></li>
             {/if}
+            <li><button onclick={lock}>Lock the screen</button></li>
             <li><button onclick={logOut}>Log out</button></li>
           </ul>
         </details>

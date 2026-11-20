@@ -15,6 +15,7 @@ pub mod images;
 pub mod invites;
 pub mod launch;
 pub mod launch_settings;
+pub mod lock;
 pub mod login;
 pub mod logout;
 pub mod mail;

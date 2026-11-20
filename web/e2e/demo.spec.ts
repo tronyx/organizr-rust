@@ -860,6 +860,25 @@ test('the Admin makes an invite, and a guest finds the page for its code', async
   await expect(page.getByRole('alert')).toHaveText('Code is invalid');
 });
 
+test('a user locks the screen and opens it again with the password', async ({ page }) => {
+  await logIn(page);
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('button', { name: 'Lock the screen' }).click();
+  await expect(page.getByRole('heading', { name: 'The screen is locked' })).toBeVisible();
+  // The lock holds after the page is loaded again.
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'The screen is locked' })).toBeVisible();
+  await expect(page.getByLabel('Menu of the user')).toHaveCount(0);
+
+  await page.getByLabel('Password').fill('not the password');
+  await page.getByRole('button', { name: 'Unlock' }).click();
+  await expect(page.getByRole('alert')).toHaveText('Password Incorrect');
+
+  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('button', { name: 'Unlock' }).click();
+  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+});
+
 test('the Admin switches the button "Log in with Plex" on, and the login page shows it', async ({
   page,
   context,

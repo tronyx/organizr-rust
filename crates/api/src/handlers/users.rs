@@ -104,7 +104,7 @@ fn user_id(text: &str) -> Option<UserId> {
 }
 
 /// The user that the path names, when there is one.
-async fn user_at(database: &Database, id: &str) -> Result<Option<User>, DbError> {
+pub(crate) async fn user_at(database: &Database, id: &str) -> Result<Option<User>, DbError> {
     match user_id(id) {
         Some(id) => database.users().find(id).await,
         None => Ok(None),
@@ -112,7 +112,7 @@ async fn user_at(database: &Database, id: &str) -> Result<Option<User>, DbError>
 }
 
 /// Whether the user is in the group of the Admin.
-fn is_admin(groups: &[Group], user: &User) -> bool {
+pub(crate) fn is_admin(groups: &[Group], user: &User) -> bool {
     groups
         .iter()
         .any(|group| group.id == user.group && group.level == GroupLevel::ADMIN)

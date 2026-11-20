@@ -14,7 +14,7 @@ These parts work:
 - Login with a password, with Plex, with a second factor, and password recovery by e-mail
 - Forward auth for a reverse proxy, and single sign-on to Plex, Ombi, Overseerr and Tautulli
 - The import of an install of PHP Organizr
-- The homepage with Plex, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, Healthchecks, Uptime Kuma, weather and custom HTML
+- The homepage with Plex, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission, Pi-hole, Healthchecks, Uptime Kuma, weather and custom HTML
 - The plugins for bookmarks, health checks, invites, e-mail and the speed test
 
 Parts of PHP Organizr that are not built yet are named in [Architecture](docs/architecture.md), section 10.
@@ -66,7 +66,7 @@ All other settings are in the web interface.
 | Database | [Choosing a database](docs/choosing-a-database.md) |
 | Import from PHP Organizr | [Importing](docs/importing.md) |
 | Stored secrets and their key | [Secrets](docs/secrets.md) |
-| Login | [Plex login](docs/plex-login.md), [Second factor](docs/second-factor.md), [Single sign-on](docs/single-sign-on.md) |
+| Login | [Plex login](docs/plex-login.md), [Second factor](docs/second-factor.md), [Single sign-on](docs/single-sign-on.md), [Lock screen](docs/lock-screen.md) |
 | Reverse proxy | [Forward auth](docs/forward-auth.md) |
 | E-mail | [E-mail](docs/email.md) |
 | Homepage | [Homepage](docs/homepage.md), [Checking your services](docs/checking-your-services.md) |

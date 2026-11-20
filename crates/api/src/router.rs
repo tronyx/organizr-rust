@@ -16,7 +16,7 @@ use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
     basics, bookmarks, categories, config, connection_tests, fields, forward_auth, groups,
-    health_checks_plugin, homepage, images, invites, launch, login, logout, mail, ping, plex,
+    health_checks_plugin, homepage, images, invites, launch, lock, login, logout, mail, ping, plex,
     register, speed_test, tabs, token, two_factor, users, wizard,
 };
 use crate::picture_cache;
@@ -313,6 +313,10 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/plugins/php-mailer/email/send", &post(mail::send))?
         .route("/plugins/php-mailer/email/test", &get(mail::test))?
         .route("/users", &get(users::list).post(users::add))?
+        .route("/users/lock", &post(lock::lock_own))?
+        .route("/users/unlock", &post(lock::unlock_own))?
+        .route("/users/lock/{id}", &post(lock::lock_user))?
+        .route("/users/unlock/{id}", &post(lock::unlock_user))?
         .route(
             "/users/{id}",
             &get(users::one)

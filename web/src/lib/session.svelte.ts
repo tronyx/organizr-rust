@@ -19,6 +19,8 @@ class Session {
   /** Whether the install waits for the set-up wizard. */
   needsSetUp = $derived(this.launch?.status.status === 'wizard');
   loggedIn = $derived(this.launch?.user?.loggedin === true);
+  /** Whether the account is locked: the interface then shows only the lock screen. */
+  locked = $derived(this.loggedIn && this.launch?.user?.locked === 1);
   /** Whether the caller may manage tabs and categories. */
   canManage = $derived(this.loggedIn && (this.launch?.user?.groupID ?? 999) <= CO_ADMIN);
   tabs = $derived<MenuTab[]>(this.launch?.tabs || []);

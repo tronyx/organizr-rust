@@ -71,6 +71,8 @@ export interface User {
   image: string | null;
   userID: number | null;
   loggedin: boolean;
+  /** `1` while the account is locked. For a guest, the server sends `false`. */
+  locked?: number | boolean;
 }
 
 export interface Appearance {

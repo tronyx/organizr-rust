@@ -6,6 +6,7 @@
   import { router } from './lib/route.svelte';
   import { session } from './lib/session.svelte';
   import Content from './pages/Content.svelte';
+  import Locked from './pages/Locked.svelte';
   import Shell from './pages/Shell.svelte';
   import TabFrames from './pages/TabFrames.svelte';
   import Wizard from './pages/Wizard.svelte';
@@ -28,6 +29,8 @@
 
 {#if session.launch && session.needsSetUp}
   <Wizard />
+{:else if session.locked}
+  <Locked />
 {:else if session.launch}
   <Shell shown={shown?.id}>
     <!-- The frames stay loaded below every other page. -->
