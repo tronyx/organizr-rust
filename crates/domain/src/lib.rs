@@ -1,5 +1,6 @@
 //! Domain types for Organizr: ids, levels, enums, state machines and domain errors. No I/O.
 
+mod bookmark;
 mod category;
 mod change;
 pub mod email;
@@ -11,6 +12,10 @@ mod tab;
 mod time;
 mod user;
 
+pub use bookmark::{
+    Bookmark, BookmarkCategory, BookmarkCategoryChanges, BookmarkChanges, NewBookmark,
+    NewBookmarkCategory, is_hex_color,
+};
 pub use category::{Category, CategoryChanges, NewCategory};
 pub use change::Change;
 pub use group::{Group, GroupChanges, GroupLevel, InvalidGroupLevel, NewGroup};

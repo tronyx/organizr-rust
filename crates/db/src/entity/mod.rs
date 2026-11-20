@@ -13,6 +13,8 @@
     reason = "a row has one field per column, and some tables have many switches"
 )]
 
+pub mod bookmark_category;
+pub mod bookmark_tab;
 pub mod category;
 pub mod group;
 pub mod legacy_setting;

@@ -4,6 +4,7 @@
 //! The person installing chooses the engine with the database URL. All queries and all
 //! migrations are written once and run on both engines.
 
+mod bookmarks;
 mod categories;
 mod entity;
 mod error;
@@ -22,6 +23,7 @@ use sea_orm::sqlx::sqlite::SqliteJournalMode;
 use sea_orm::{ConnectOptions, DatabaseConnection};
 use sea_orm_migration::MigratorTrait;
 
+pub use crate::bookmarks::Bookmarks;
 pub use crate::categories::Categories;
 pub use crate::error::DbError;
 pub use crate::groups::Groups;
@@ -136,6 +138,11 @@ impl Database {
     /// The stored settings.
     pub const fn settings(&self) -> StoredSettings<'_> {
         StoredSettings::new(&self.connection)
+    }
+
+    /// The bookmarks of the bookmark plugin, and their categories.
+    pub const fn bookmarks(&self) -> Bookmarks<'_> {
+        Bookmarks::new(&self.connection)
     }
 
     /// The tabs.
