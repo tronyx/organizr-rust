@@ -2,9 +2,19 @@
   // A row of posters of Plex items. A poster opens the details of its item.
   import Dialog from '../../components/Dialog.svelte';
   import { api, failureText } from '../../lib/api';
+  import PosterRow from './PosterRow.svelte';
   import { pictureAddress, type PlexAnswer, type PlexItem, subtitleOf } from '../../lib/plex';
 
-  let { items, label }: { items: PlexItem[]; label: string } = $props();
+  let {
+    items,
+    label,
+    title = label,
+  }: {
+    items: PlexItem[];
+    label: string;
+    /** The title above the row. */
+    title?: string;
+  } = $props();
 
   let open = $state<PlexItem | null>(null);
   let details = $state<PlexItem | null>(null);
@@ -35,29 +45,22 @@
   const actors = $derived(Array.isArray(shown?.metadata?.actors) ? shown.metadata.actors : []);
 </script>
 
-<ul class="flex gap-3 overflow-x-auto pb-2" aria-label={label}>
+<PosterRow {title} {label}>
   {#each items as item, index (index)}
     {@const picture = pictureAddress(item.imageURL)}
-    <li class="w-28 shrink-0">
-      <button type="button" class="w-full text-left" onclick={() => show(item)}>
+    <li class="org-poster">
+      <button type="button" title="{item.title} {subtitleOf(item)}" onclick={() => show(item)}>
         {#if picture}
-          <img
-            class="bg-base-300 aspect-[2/3] w-full rounded object-cover"
-            src={picture}
-            alt=""
-            loading="lazy"
-          />
+          <img src={picture} alt="" loading="lazy" />
         {:else}
-          <span class="bg-base-300 grid aspect-[2/3] w-full place-items-center rounded text-2xl">
-            {[...item.title][0] ?? '?'}
-          </span>
+          <span class="org-poster-empty" aria-hidden="true">{[...item.title][0] ?? '?'}</span>
         {/if}
-        <span class="mt-1 block truncate text-sm font-medium">{item.title}</span>
-        <span class="block truncate text-xs opacity-70">{subtitleOf(item)}</span>
+        <span class="sr-only">{item.title}</span>
+        <span class="sr-only">{subtitleOf(item)}</span>
       </button>
     </li>
   {/each}
-</ul>
+</PosterRow>
 
 {#if open && shown}
   {@const picture = pictureAddress(shown.nowPlayingImageURL)}

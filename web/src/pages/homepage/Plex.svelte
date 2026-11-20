@@ -48,13 +48,13 @@
   <div role="alert" class="alert alert-error"><span>Plex: {item.error}</span></div>
 {:else if item.data}
   {#if part === 'streams'}
-    <h2 class="mb-2 text-lg font-semibold">
-      Playing now <span class="badge badge-info">{items.length}</span>
-    </h2>
-    {#if items.length === 0}
-      <p class="text-sm">Nothing plays at this time.</p>
-    {:else}
-      <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" aria-label="Playing now">
+    <!-- Without a stream the item shows nothing, as in PHP Organizr. -->
+    {#if items.length > 0}
+      <h2 class="org-item-title">
+        Active Plex Streams<span aria-hidden="true">:</span>
+        <span class="org-count">{items.length}</span>
+      </h2>
+      <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" aria-label="Active Plex Streams">
         {#each items as stream, index (index)}
           {@const picture = pictureAddress(stream.nowPlayingImageURL)}
           <li class="card bg-base-200 overflow-hidden">
@@ -85,18 +85,17 @@
       </ul>
     {/if}
   {:else if part === 'recent'}
-    <h2 class="mb-2 text-lg font-semibold">New in Plex</h2>
     {#if items.length === 0}
+      <h2 class="org-item-title">Recently Added<span aria-hidden="true">:</span></h2>
       <p class="text-sm">Nothing was added.</p>
     {:else}
-      <PlexPosters {items} label="New in Plex" />
+      <PlexPosters {items} label="Recently Added" />
     {/if}
   {:else}
-    <div class="mb-2 flex flex-wrap items-center gap-2">
-      <h2 class="text-lg font-semibold">Playlists of Plex</h2>
+    {#if playlist}
       {#if playlists.length > 1}
         <select
-          class="select select-sm ml-auto w-auto"
+          class="select select-sm float-right w-auto"
           aria-label="Playlist"
           onchange={(event) => (chosen = event.currentTarget.value)}
         >
@@ -105,10 +104,9 @@
           {/each}
         </select>
       {/if}
-    </div>
-    {#if playlist}
       <PlexPosters items={videosOf(playlist)} label={playlist.title} />
     {:else}
+      <h2 class="org-item-title">Playlists<span aria-hidden="true">:</span></h2>
       <p class="text-sm">There are no playlists to show.</p>
     {/if}
   {/if}

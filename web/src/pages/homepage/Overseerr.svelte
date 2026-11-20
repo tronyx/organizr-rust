@@ -4,6 +4,7 @@
   import { api, failureText } from '../../lib/api';
   import { itemData } from '../../lib/itemData.svelte';
   import { pictureAddress } from '../../lib/plex';
+  import PosterRow from './PosterRow.svelte';
   import { session } from '../../lib/session.svelte';
   import { fromNow } from '../../lib/time';
 
@@ -86,10 +87,8 @@
 {#if item.error}
   <div role="alert" class="alert alert-error"><span>Overseerr: {item.error}</span></div>
 {:else if item.data}
-  <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-    <h2 class="text-lg font-semibold">
-      Requests <span class="badge badge-info">{all.length}</span>
-    </h2>
+  <p role="status" class="text-success text-sm">{done ?? ''}</p>
+  {#snippet filters()}
     {#each states as state (state)}
       <label class="flex items-center gap-1 text-sm">
         <input
@@ -101,44 +100,41 @@
         {STATES[state].word}
       </label>
     {/each}
-  </div>
-  <p role="status" class="text-success min-h-5 text-sm">{done ?? ''}</p>
+  {/snippet}
+  <PosterRow title="Requests" label="Requests" controls={filters}>
+    {#each shown as request (request.request_id)}
+      {@const picture = pictureAddress(request.poster)}
+      {@const state = STATES[stateOf(request)]}
+      <li class="org-poster">
+        <button
+          type="button"
+          title="{request.title ?? ''}: {state.word}"
+          onclick={() => {
+            open = request;
+            error = null;
+          }}
+        >
+          {#if picture}
+            <img src={picture} alt="" loading="lazy" />
+          {:else}
+            <span class="org-poster-empty" aria-hidden="true">
+              {[...(request.title ?? '?')][0] ?? '?'}
+            </span>
+          {/if}
+          <!-- The colour of the corner says how far the request is. -->
+          <span
+            class="org-poster-corner"
+            style:--org-state="var(--color-{state.badge.replace('badge-', '')})"
+            aria-hidden="true"
+          ></span>
+          <span class="sr-only">{request.title ?? ''}</span>
+          <span class="sr-only">{state.word}</span>
+        </button>
+      </li>
+    {/each}
+  </PosterRow>
   {#if shown.length === 0}
     <p class="text-sm">There are no requests to show.</p>
-  {:else}
-    <ul class="flex gap-3 overflow-x-auto pb-2" aria-label="Requests">
-      {#each shown as request (request.request_id)}
-        {@const picture = pictureAddress(request.poster)}
-        {@const state = STATES[stateOf(request)]}
-        <li class="w-28 shrink-0">
-          <button
-            type="button"
-            class="w-full text-left"
-            onclick={() => {
-              open = request;
-              error = null;
-            }}
-          >
-            {#if picture}
-              <img
-                class="bg-base-300 aspect-[2/3] w-full rounded object-cover"
-                src={picture}
-                alt=""
-                loading="lazy"
-              />
-            {:else}
-              <span
-                class="bg-base-300 grid aspect-[2/3] w-full place-items-center rounded text-2xl"
-              >
-                {[...(request.title ?? '?')][0] ?? '?'}
-              </span>
-            {/if}
-            <span class="mt-1 block truncate text-sm font-medium">{request.title ?? ''}</span>
-            <span class="badge badge-sm {state.badge}">{state.word}</span>
-          </button>
-        </li>
-      {/each}
-    </ul>
   {/if}
 {/if}
 

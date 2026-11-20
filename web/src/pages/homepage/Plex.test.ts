@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 
 import type { PlexItem } from '../../lib/plex';
@@ -47,7 +47,7 @@ describe('Plex', () => {
     });
     render(Plex, { part: 'streams' });
 
-    const list = await screen.findByRole('list', { name: 'Playing now' });
+    const list = await screen.findByRole('list', { name: 'Active Plex Streams' });
     const [first, second] = within(list).getAllByRole('listitem') as [HTMLElement, HTMLElement];
     expect(first.textContent).toContain('The Show - The One');
     expect(first.textContent).toContain('S2 · E3');
@@ -58,14 +58,16 @@ describe('Plex', () => {
     // The picture that stands for "no picture" is not shown.
     expect(first.querySelector('img')).toBeNull();
     expect(second.textContent).toContain('Playing');
-    expect(screen.getByRole('heading', { name: /Playing now/ }).textContent).toContain('2');
+    expect(screen.getByRole('heading', { name: /Active Plex Streams/ }).textContent).toContain('2');
   });
 
-  it('says so when nothing plays', async () => {
-    stubApi({ 'GET homepage/plex/streams': { data: { content: [] } } });
-    render(Plex, { part: 'streams' });
+  it('shows nothing when nothing plays', async () => {
+    const sent = stubApi({ 'GET homepage/plex/streams': { data: { content: [] } } });
+    const { container } = render(Plex, { part: 'streams' });
 
-    expect(await screen.findByText('Nothing plays at this time.')).toBeTruthy();
+    await waitFor(() => expect(sent.length).toBeGreaterThan(0));
+    await Promise.resolve();
+    expect(container.textContent.trim()).toBe('');
   });
 
   it('shows the new items as posters, and the details of one from Plex', async () => {
