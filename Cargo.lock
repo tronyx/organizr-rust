@@ -2683,6 +2683,7 @@ name = "organizr-integrations"
 version = "0.1.0"
 dependencies = [
  "jiff",
+ "md-5",
  "organizr-testkit",
  "reqwest",
  "roxmltree",

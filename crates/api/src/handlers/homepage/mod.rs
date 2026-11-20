@@ -7,6 +7,7 @@
 
 pub mod arr;
 pub mod downloaders;
+pub mod downloaders_more;
 pub mod emby;
 pub mod health_checks;
 pub mod html;
@@ -142,6 +143,10 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderPihole" => ("pihole", pihole::permissions()),
         "homepageOrdernzbget" => ("nzbget", downloaders::nzbget_permissions()),
         "homepageOrdertransmission" => ("transmission", downloaders::transmission_permissions()),
+        "homepageOrderdeluge" => ("deluge", downloaders_more::deluge_permissions()),
+        "homepageOrderrTorrent" => ("rtorrent", downloaders_more::rtorrent_permissions()),
+        "homepageOrderuTorrent" => ("utorrent", downloaders_more::utorrent_permissions()),
+        "homepageOrderjdownloader" => ("jdownloader", downloaders_more::jdownloader_permissions()),
         "homepageOrderWeatherAndAir" => ("weather", weather::permissions()),
         "homepageOrdertautulli" => ("tautulli", tautulli::permissions()),
         "homepageOrderoverseerr" => ("overseerr", overseerr::permissions()),
@@ -295,6 +300,10 @@ fn is_combined(settings: &Settings, kind: &str) -> bool {
         "nzbget" => settings.nzbget_combine,
         "transmission" => settings.transmission_combine,
         "qbittorrent" => settings.qbittorrent_combine,
+        "deluge" => settings.deluge_combine,
+        "rtorrent" => settings.rtorrent_combine,
+        "utorrent" => settings.utorrent_combine,
+        "jdownloader" => settings.jdownloader_combine,
         "sonarrqueue" => settings.homepage_sonarr_queue_combine,
         "radarrqueue" => settings.homepage_radarr_queue_combine,
         _ => false,

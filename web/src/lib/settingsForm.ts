@@ -1130,6 +1130,213 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
       },
     ],
   },
+  {
+    title: 'Deluge',
+    test: 'deluge',
+    fields: [
+      ...itemFields(
+        'the torrents of Deluge',
+        'homepageDelugeEnabled',
+        'homepageDelugeAuth',
+        'homepageOrderdeluge',
+      ),
+      {
+        key: 'delugeURL',
+        label: 'Address of Deluge',
+        kind: 'text',
+        help: 'The address of the web interface of Deluge. Deluge needs the plugin WebAPI.',
+      },
+      {
+        key: 'delugePassword',
+        label: 'Password of the web interface of Deluge',
+        kind: 'secret',
+      },
+      {
+        key: 'delugeHideSeeding',
+        label: 'Leave out the torrents that are complete and not in the queue',
+        kind: 'switch',
+      },
+      { key: 'delugeHideStatus', label: 'Leave out what the tracker said', kind: 'switch' },
+      { key: 'delugeCombine', label: 'Show Deluge in the box of the downloaders', kind: 'switch' },
+      {
+        key: 'delugeDisableCertCheck',
+        label: 'Do not check the certificate of Deluge',
+        kind: 'switch',
+      },
+      {
+        key: 'delugeRefresh',
+        label: 'Milliseconds between two loads of Deluge',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'rTorrent',
+    test: 'rtorrent',
+    fields: [
+      ...itemFields(
+        'the torrents of rTorrent',
+        'homepagerTorrentEnabled',
+        'homepagerTorrentAuth',
+        'homepageOrderrTorrent',
+      ),
+      {
+        key: 'rTorrentURL',
+        label: 'Address of rTorrent',
+        kind: 'text',
+        help: 'Organizr puts /RPC2 after the address, unless the address holds .php.',
+      },
+      {
+        key: 'rTorrentURLOverride',
+        label: 'Second address of rTorrent',
+        kind: 'text',
+        help: 'Only when the address does not work. A full address stands in place of the address. A path stands after the address, and gets no /RPC2.',
+      },
+      { key: 'rTorrentUsername', label: 'User name of rTorrent', kind: 'text' },
+      { key: 'rTorrentPassword', label: 'Password of rTorrent', kind: 'secret' },
+      {
+        key: 'rTorrentHideSeeding',
+        label: 'Leave out the torrents that upload',
+        kind: 'switch',
+      },
+      {
+        key: 'rTorrentHideCompleted',
+        label: 'Leave out the torrents that are complete and closed',
+        kind: 'switch',
+      },
+      {
+        key: 'rTorrentSortOrder',
+        label: 'The torrents are sorted by',
+        kind: 'select',
+        options: [
+          { value: 'dated', label: 'The time that they started, the newest first' },
+          { value: 'datea', label: 'The time that they started, the oldest first' },
+          { value: 'hashd', label: 'The hash, downwards' },
+          { value: 'hasha', label: 'The hash, upwards' },
+          { value: 'named', label: 'The name, downwards' },
+          { value: 'namea', label: 'The name, upwards' },
+          { value: 'sized', label: 'The size, the largest first' },
+          { value: 'sizea', label: 'The size, the smallest first' },
+          { value: 'labeld', label: 'The label, downwards' },
+          { value: 'labela', label: 'The label, upwards' },
+          { value: 'statusd', label: 'The state, downwards' },
+          { value: 'statusa', label: 'The state, upwards' },
+        ],
+      },
+      {
+        key: 'rTorrentLimit',
+        label: 'The most torrents',
+        kind: 'number',
+        min: 0,
+        help: 'With 0, the item shows up to 1000 torrents.',
+      },
+      {
+        key: 'rTorrentIgnoreLabel',
+        label: 'Leave out the torrents with these labels',
+        kind: 'text',
+        help: 'Labels with commas between them.',
+      },
+      {
+        key: 'rTorrentCombine',
+        label: 'Show rTorrent in the box of the downloaders',
+        kind: 'switch',
+      },
+      {
+        key: 'rTorrentDisableCertCheck',
+        label: 'Do not check the certificate of rTorrent',
+        kind: 'switch',
+      },
+      {
+        key: 'rTorrentRefresh',
+        label: 'Milliseconds between two loads of rTorrent',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'uTorrent',
+    test: 'utorrent',
+    fields: [
+      ...itemFields(
+        'the torrents of uTorrent',
+        'homepageuTorrentEnabled',
+        'homepageuTorrentAuth',
+        'homepageOrderuTorrent',
+      ),
+      {
+        key: 'uTorrentURL',
+        label: 'Address of uTorrent',
+        kind: 'text',
+        help: 'The address of the web interface without /gui at its end.',
+      },
+      { key: 'uTorrentUsername', label: 'User name of uTorrent', kind: 'text' },
+      { key: 'uTorrentPassword', label: 'Password of uTorrent', kind: 'secret' },
+      {
+        key: 'uTorrentHideSeeding',
+        label: 'Leave out the torrents that upload',
+        kind: 'switch',
+      },
+      {
+        key: 'uTorrentHideCompleted',
+        label: 'Leave out the torrents that are finished',
+        kind: 'switch',
+      },
+      {
+        key: 'uTorrentCombine',
+        label: 'Show uTorrent in the box of the downloaders',
+        kind: 'switch',
+      },
+      {
+        key: 'uTorrentDisableCertCheck',
+        label: 'Do not check the certificate of uTorrent',
+        kind: 'switch',
+      },
+      {
+        key: 'uTorrentRefresh',
+        label: 'Milliseconds between two loads of uTorrent',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'JDownloader',
+    test: 'jdownloader',
+    fields: [
+      ...itemFields(
+        'the packages of JDownloader',
+        'homepageJdownloaderEnabled',
+        'homepageJdownloaderAuth',
+        'homepageOrderjdownloader',
+      ),
+      {
+        key: 'jdownloaderURL',
+        label: 'Address of the service of JDownloader',
+        kind: 'text',
+        help: 'The address of the Python module myjd-api. For FeedCrawler, put /api/myjd after its address.',
+      },
+      { key: 'jdownloaderUsername', label: 'User name of the service', kind: 'text' },
+      { key: 'jdownloaderPassword', label: 'Password of the service', kind: 'secret' },
+      {
+        key: 'jdownloaderCombine',
+        label: 'Show JDownloader in the box of the downloaders',
+        kind: 'switch',
+      },
+      {
+        key: 'jdownloaderDisableCertCheck',
+        label: 'Do not check the certificate of the service',
+        kind: 'switch',
+      },
+      {
+        key: 'jdownloaderRefresh',
+        label: 'Milliseconds between two loads of JDownloader',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
 ];
 
 /** The settings of the calendar, and of the applications that fill it. */

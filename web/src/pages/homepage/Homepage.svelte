@@ -9,17 +9,21 @@
   import ArrQueue from './ArrQueue.svelte';
   import Calendar from './Calendar.svelte';
   import CustomHtml from './CustomHtml.svelte';
+  import Deluge from './Deluge.svelte';
   import Downloaders from './Downloaders.svelte';
   import HealthChecks from './HealthChecks.svelte';
+  import Jdownloader from './Jdownloader.svelte';
   import Overseerr from './Overseerr.svelte';
   import Pihole from './Pihole.svelte';
   import Plex from './Plex.svelte';
   import Nzbget from './Nzbget.svelte';
   import Qbittorrent from './Qbittorrent.svelte';
+  import Rtorrent from './Rtorrent.svelte';
   import Sabnzbd from './Sabnzbd.svelte';
   import Tautulli from './Tautulli.svelte';
   import Transmission from './Transmission.svelte';
   import UptimeKuma from './UptimeKuma.svelte';
+  import Utorrent from './Utorrent.svelte';
   import Weather from './Weather.svelte';
 
   let { title }: { title: string } = $props();
@@ -37,6 +41,10 @@
     'qbittorrent',
     'nzbget',
     'transmission',
+    'deluge',
+    'rtorrent',
+    'utorrent',
+    'jdownloader',
     'pihole',
     'weather',
     'tautulli',
@@ -121,6 +129,14 @@
           <Nzbget />
         {:else if item.kind === 'transmission'}
           <Transmission />
+        {:else if item.kind === 'deluge'}
+          <Deluge />
+        {:else if item.kind === 'rtorrent'}
+          <Rtorrent />
+        {:else if item.kind === 'utorrent'}
+          <Utorrent />
+        {:else if item.kind === 'jdownloader'}
+          <Jdownloader />
         {:else if item.kind === 'pihole'}
           <Pihole />
         {:else if item.kind === 'plexstreams'}

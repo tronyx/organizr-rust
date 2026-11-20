@@ -12,16 +12,19 @@ use organizr_domain::GroupLevel;
 use organizr_integrations::downloaders::{
     self, Client as Downloader, DownloaderError, Login, TorrentQuery,
 };
+use organizr_integrations::downloaders_more::ClientError;
 use organizr_integrations::emby::Kind as MediaServer;
 use organizr_integrations::http::Outbound;
 use organizr_integrations::pihole;
 use organizr_integrations::probe::{self, Probe};
+use organizr_settings::Settings;
 use serde_json::Value;
 
 use crate::caller::Caller;
 use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
+use crate::handlers::homepage::downloaders_more::{self as more, Asked};
 use crate::handlers::homepage::{Permissions, emby, no_requests, service_url};
 use crate::state::AppState;
 
@@ -345,6 +348,92 @@ async fn qbittorrent(test: &Test<'_>) -> Outcome {
     }
 }
 
+fn client_failed(error: &ClientError) -> Refusal {
+    refused(StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
+}
+
+impl Test<'_> {
+    /// What the tests of Deluge, rTorrent, uTorrent and JDownloader ask with.
+    fn asked<'a>(&'a self, settings: &'a Settings) -> Asked<'a> {
+        Asked {
+            settings,
+            http: self.http,
+            headers: self.headers,
+            client: self.client,
+            timeout: Some(TIME_LIMIT),
+        }
+    }
+}
+
+/// Deluge has the test among its homepage permissions in the PHP application.
+async fn deluge(test: &Test<'_>, caller: &Caller) -> Outcome {
+    let settings = test.state.settings();
+    more::deluge_permissions().check(&settings, caller)?;
+    test.asked(&settings)
+        .deluge()
+        .await
+        .map_err(|error| client_failed(&error))?;
+    Ok(succeeded())
+}
+
+async fn rtorrent(test: &Test<'_>) -> Outcome {
+    let settings = test.state.settings();
+    more::no_rtorrent_address(&settings)?;
+    let answers = test
+        .asked(&settings)
+        .rtorrent_answers()
+        .await
+        .map_err(|error| client_failed(&error))?;
+    if answers {
+        Ok(succeeded())
+    } else {
+        Err(refused(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "rTorrent error occurred",
+        ))
+    }
+}
+
+async fn utorrent(test: &Test<'_>) -> Outcome {
+    let settings = test.state.settings();
+    if settings.utorrent_url.is_empty() {
+        return Err(Refusal::unprocessable("uTorrent URL is not defined"));
+    }
+    let torrents = test
+        .asked(&settings)
+        .utorrent()
+        .await
+        .map_err(|error| client_failed(&error))?;
+    if torrents.is_some() {
+        Ok(succeeded())
+    } else {
+        Err(refused(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "uTorrent error occurred",
+        ))
+    }
+}
+
+async fn jdownloader(test: &Test<'_>) -> Outcome {
+    let settings = test.state.settings();
+    if settings.jdownloader_url.is_empty() {
+        return Err(Refusal::unprocessable("JDownloader URL is not defined"));
+    }
+    let answer = test
+        .asked(&settings)
+        .jdownloader()
+        .await
+        .map_err(|error| client_failed(&error))?;
+    if answer.is_some() {
+        Ok(succeeded())
+    } else {
+        Err(refused(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "JDownloader Error Occurred",
+        ))
+    }
+}
+
 /// What is wrong with the answer of Pi-hole to the question for its status, or nothing.
 fn pihole_fault(is_success: bool, body: &str) -> Option<&'static str> {
     if !is_success {
@@ -456,6 +545,10 @@ enum Service {
     Overseerr,
     Nzbget,
     Transmission,
+    Deluge,
+    Rtorrent,
+    Utorrent,
+    Jdownloader,
     Pihole,
     Emby,
     Jellyfin,
@@ -515,6 +608,10 @@ async fn run(
         Service::Overseerr => overseerr(&test, caller).await,
         Service::Nzbget => nzbget(&test).await,
         Service::Transmission => transmission(&test).await,
+        Service::Deluge => deluge(&test, caller).await,
+        Service::Rtorrent => rtorrent(&test).await,
+        Service::Utorrent => utorrent(&test).await,
+        Service::Jdownloader => jdownloader(&test).await,
         Service::Pihole => pi_hole(&test).await,
         Service::Emby => media_server(&test, caller, MediaServer::Emby).await,
         Service::Jellyfin => media_server(&test, caller, MediaServer::Jellyfin).await,
@@ -585,6 +682,26 @@ test_route!(
     /// `POST /test/transmission`.
     test_transmission,
     Service::Transmission
+);
+test_route!(
+    /// `POST /test/deluge`.
+    test_deluge,
+    Service::Deluge
+);
+test_route!(
+    /// `POST /test/rtorrent`.
+    test_rtorrent,
+    Service::Rtorrent
+);
+test_route!(
+    /// `POST /test/utorrent`.
+    test_utorrent,
+    Service::Utorrent
+);
+test_route!(
+    /// `POST /test/jdownloader`.
+    test_jdownloader,
+    Service::Jdownloader
 );
 test_route!(
     /// `POST /test/pihole`.

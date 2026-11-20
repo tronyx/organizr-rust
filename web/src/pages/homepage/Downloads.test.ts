@@ -3,11 +3,15 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { session } from '../../lib/session.svelte';
 import { stubApi } from '../../test-helpers';
+import Deluge from './Deluge.svelte';
 import Downloaders from './Downloaders.svelte';
+import Jdownloader from './Jdownloader.svelte';
 import Nzbget from './Nzbget.svelte';
 import Qbittorrent from './Qbittorrent.svelte';
+import Rtorrent from './Rtorrent.svelte';
 import Sabnzbd from './Sabnzbd.svelte';
 import Transmission from './Transmission.svelte';
+import Utorrent from './Utorrent.svelte';
 
 const QUEUE = {
   content: {
@@ -255,6 +259,263 @@ describe('Transmission', () => {
     stubApi({ 'GET homepage/transmission/queue': { data: { content: false } } });
     render(Transmission);
     expect(await screen.findByText(/Transmission gave no answer/)).toBeTruthy();
+  });
+});
+
+describe('Deluge', () => {
+  it('shows each torrent with its state, how far it is, and what the tracker said', async () => {
+    stubApi({
+      'GET homepage/deluge/queue': {
+        data: {
+          content: {
+            queueItems: [
+              {
+                name: 'The.Show',
+                state: 'Downloading',
+                progress: 40.5,
+                eta: 3720,
+                tracker_status: 'Announce OK',
+              },
+              { name: 'An.Old.Film', state: 'Seeding', progress: 100, eta: 0, tracker_status: '' },
+            ],
+            historyItems: false,
+          },
+        },
+      },
+    });
+    render(Deluge);
+
+    const table = await screen.findByRole('table', { name: 'Torrents of Deluge' });
+    const rows = within(table).getAllByRole('row');
+    expect(rows[1]?.textContent).toContain('Downloading');
+    expect(rows[1]?.textContent).toContain('40 %');
+    expect(rows[1]?.textContent).toContain('1 h 2 min');
+    expect(rows[1]?.textContent).toContain('Announce OK');
+    expect(rows[2]?.textContent).toContain('Seeding');
+    expect(rows[2]?.textContent).toContain('100 %');
+    // The table can scroll, so a long list stays 300 pixels high.
+    expect(table.parentElement?.className).toBe('overflow-x-auto');
+  });
+
+  it('says so when there are no torrents, and shows the error of the server', async () => {
+    stubApi({
+      'GET homepage/deluge/queue': { data: { content: { queueItems: [], historyItems: false } } },
+    });
+    const { unmount } = render(Deluge);
+    expect(await screen.findByText('There are no torrents to show.')).toBeTruthy();
+    unmount();
+
+    stubApi({ 'GET homepage/deluge/queue': { status: 500, message: 'Login failed' } });
+    render(Deluge);
+    expect((await screen.findByRole('alert')).textContent).toContain('Deluge: Login failed');
+  });
+});
+
+describe('Rtorrent', () => {
+  it('shows each torrent with its state, its label, and how far it is', async () => {
+    stubApi({
+      'GET homepage/rtorrent/queue': {
+        data: {
+          content: {
+            queueItems: [
+              // rTorrent sends its numbers as text.
+              {
+                name: 'The.Show',
+                status: 'Downloading',
+                size: '1000000',
+                downloaded: '400000',
+                label: 'tv',
+              },
+              {
+                name: 'An.Old.Film',
+                status: 'Seeding',
+                size: '1000',
+                downloaded: '1000',
+                label: '',
+              },
+              { name: 'An.Empty.One', status: 'Stopped', size: '0', downloaded: '0', label: '' },
+            ],
+            historyItems: false,
+          },
+        },
+      },
+    });
+    render(Rtorrent);
+
+    const table = await screen.findByRole('table', { name: 'Torrents of rTorrent' });
+    const rows = within(table).getAllByRole('row');
+    expect(rows[1]?.textContent).toContain('Downloading');
+    expect(rows[1]?.textContent).toContain('tv');
+    expect(rows[1]?.textContent).toContain('40 %');
+    expect(rows[2]?.textContent).toContain('100 %');
+    // A torrent without a size is at the start.
+    expect(rows[3]?.textContent).toContain('0 %');
+    expect(table.parentElement?.className).toBe('overflow-x-auto');
+  });
+
+  it('says so when rTorrent gave no answer, and when there are no torrents', async () => {
+    stubApi({ 'GET homepage/rtorrent/queue': { data: { content: false } } });
+    const { unmount } = render(Rtorrent);
+    expect(await screen.findByText(/rTorrent gave no answer/)).toBeTruthy();
+    unmount();
+
+    stubApi({
+      'GET homepage/rtorrent/queue': { data: { content: { queueItems: [], historyItems: false } } },
+    });
+    render(Rtorrent);
+    expect(await screen.findByText('There are no torrents to show.')).toBeTruthy();
+  });
+});
+
+describe('Utorrent', () => {
+  it('shows each torrent with its state, its label, and how far it is', async () => {
+    stubApi({
+      'GET homepage/utorrent/queue': {
+        data: {
+          content: {
+            queueItems: [
+              { Name: 'The.Show', Status: 'Downloading', Percent: '45.3%', Labels: 'tv' },
+              { Name: 'An.Old.Film', Status: 'Seeding', Percent: '100.0%', Labels: '' },
+              // A message that the server could not read gives no state and no number.
+              { Name: 'An.Odd.One', Status: '', Percent: '', Labels: '' },
+            ],
+          },
+        },
+      },
+    });
+    render(Utorrent);
+
+    const table = await screen.findByRole('table', { name: 'Torrents of uTorrent' });
+    const rows = within(table).getAllByRole('row');
+    expect(rows[1]?.textContent).toContain('Downloading');
+    expect(rows[1]?.textContent).toContain('tv');
+    expect(rows[1]?.textContent).toContain('45 %');
+    expect(rows[2]?.textContent).toContain('100 %');
+    expect(rows[3]?.textContent).toContain('0 %');
+    expect(table.parentElement?.className).toBe('overflow-x-auto');
+  });
+
+  it('says so when uTorrent gave no answer, and when there are no torrents', async () => {
+    stubApi({ 'GET homepage/utorrent/queue': { data: { content: false } } });
+    const { unmount } = render(Utorrent);
+    expect(await screen.findByText(/uTorrent gave no answer/)).toBeTruthy();
+    unmount();
+
+    stubApi({ 'GET homepage/utorrent/queue': { data: { content: { queueItems: [] } } } });
+    render(Utorrent);
+    expect(await screen.findByText('There are no torrents to show.')).toBeTruthy();
+  });
+});
+
+const PACKAGES = {
+  content: {
+    queueItems: [
+      {
+        name: 'A.Package',
+        speed: '1.2 MB/s',
+        size: '4.00 GB',
+        eta: '40m:00s',
+        percentage: '25',
+        enabled: true,
+      },
+      {
+        name: 'A.Done.Package',
+        speed: null,
+        size: '1.00 GB',
+        eta: null,
+        percentage: '100',
+        enabled: true,
+      },
+      {
+        name: 'A.Waiting.Package',
+        speed: null,
+        size: '2.00 GB',
+        eta: null,
+        percentage: '0',
+        enabled: true,
+      },
+      { name: 'A.Package.That.Is.Off', speed: null, size: '2.00 GB', eta: null, percentage: '0' },
+    ],
+    grabberItems: [{ name: 'A.New.Package' }],
+    encryptedItems: [{ name: 'A.Locked.Package' }],
+    offlineItems: [{ name: 'A.Lost.Package' }],
+    $status: ['RUNNING', false, false],
+  },
+};
+
+describe('Jdownloader', () => {
+  it('shows the packages that download, and the packages of the link grabber', async () => {
+    stubApi({ 'GET homepage/jdownloader/queue': { data: PACKAGES } });
+    render(Jdownloader);
+
+    const table = await screen.findByRole('table', { name: 'Packages of JDownloader' });
+    const rows = within(table).getAllByRole('row');
+    expect(rows).toHaveLength(8);
+    expect(rows[1]?.textContent).toContain('1.2 MB/s');
+    expect(rows[1]?.textContent).toContain('4.00 GB');
+    expect(rows[1]?.textContent).toContain('40m:00s');
+    expect(rows[1]?.textContent).toContain('25 %');
+    expect(rows[2]?.textContent).toContain('Completed');
+    expect(rows[3]?.textContent).toContain('Stopped');
+    expect(rows[4]?.textContent).toContain('Disabled');
+    expect(rows[5]?.textContent).toContain('Online');
+    expect(rows[6]?.textContent).toContain('Encrypted');
+    expect(rows[7]?.textContent).toContain('Offline');
+    expect(screen.getByText('Downloads: Running')).toBeTruthy();
+    expect(table.parentElement?.className).toBe('overflow-x-auto');
+  });
+
+  it('says so when the service gave no answer, and when there are no packages', async () => {
+    stubApi({ 'GET homepage/jdownloader/queue': { data: { content: false } } });
+    const { unmount } = render(Jdownloader);
+    expect(await screen.findByText(/JDownloader gave no answer/)).toBeTruthy();
+    unmount();
+
+    stubApi({
+      'GET homepage/jdownloader/queue': {
+        data: {
+          content: {
+            queueItems: [],
+            grabberItems: [],
+            encryptedItems: [],
+            offlineItems: [],
+            $status: [null, null, null],
+          },
+        },
+      },
+    });
+    render(Jdownloader);
+    expect(await screen.findByText('There are no packages to show.')).toBeTruthy();
+  });
+});
+
+describe('Downloaders with the other download clients', () => {
+  it('shows a tab with the number of entries for each of them', async () => {
+    stubApi({
+      'GET homepage/deluge/queue': {
+        data: {
+          content: { queueItems: [{ name: 'The.Show', progress: 40 }], historyItems: false },
+        },
+      },
+      'GET homepage/rtorrent/queue': { data: { content: false } },
+      'GET homepage/utorrent/queue': {
+        data: { content: { queueItems: [{ Name: 'One' }, { Name: 'Two' }] } },
+      },
+      'GET homepage/jdownloader/queue': { data: PACKAGES },
+    });
+    render(Downloaders, { members: ['deluge', 'rtorrent', 'utorrent', 'jdownloader'] });
+
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(await screen.findByRole('tab', { name: 'Deluge: 1' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'rTorrent: 0' })).toBeTruthy();
+    expect(await screen.findByRole('tab', { name: 'uTorrent: 2' })).toBeTruthy();
+    const packages = await screen.findByRole('tab', { name: 'JDownloader: 7' });
+    expect(document.getElementById('downloader-deluge')?.hidden).toBe(false);
+    expect(document.getElementById('downloader-jdownloader')?.hidden).toBe(true);
+
+    await fireEvent.click(packages);
+    expect(document.getElementById('downloader-deluge')?.hidden).toBe(true);
+    expect(document.getElementById('downloader-jdownloader')?.hidden).toBe(false);
   });
 });
 

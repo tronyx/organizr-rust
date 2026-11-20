@@ -31,6 +31,10 @@ This version has these items:
 - [qBittorrent](#qbittorrent)
 - [NZBGet](#nzbget)
 - [Transmission](#transmission)
+- [Deluge](#deluge)
+- [rTorrent](#rtorrent)
+- [uTorrent](#utorrent)
+- [JDownloader](#jdownloader)
 - [Pi-hole](#pi-hole)
 - [Weather and air](#weather-and-air)
 - [Plex](#plex): what plays now, new items and playlists
@@ -46,7 +50,7 @@ The homepage loads the data of an item again after the time that the item has in
 
 ## Test the connection of a service
 
-The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission and Pi-hole.
+The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, rTorrent, uTorrent, JDownloader and Pi-hole.
 
 1. Enter the address and the key or the login of the service.
 2. Select **Save**. The test reads the settings that are stored.
@@ -213,6 +217,10 @@ Each downloader has a switch "combine". The downloaders whose switch is on share
 | Switch for NZBGet | `nzbgetCombine` |
 | Switch for Transmission | `transmissionCombine` |
 | Switch for qBittorrent | `qBittorrentCombine` |
+| Switch for Deluge | `delugeCombine` |
+| Switch for rTorrent | `rTorrentCombine` |
+| Switch for uTorrent | `uTorrentCombine` |
+| Switch for JDownloader | `jdownloaderCombine` |
 | Switch for the downloads of Sonarr | `homepageSonarrQueueCombine` |
 | Switch for the downloads of Radarr | `homepageRadarrQueueCombine` |
 
@@ -310,6 +318,121 @@ This item shows the torrents of Transmission and how far each one is. The oldest
 
 The address is the address of the web interface of Transmission without `/rpc` at its end. For a default install, this is `http://<host>:9091/transmission`.
 
+## Deluge
+
+This item shows the torrents of Deluge and how far each one is.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageDelugeEnabled` |
+| Level | `homepageDelugeAuth` |
+| Place | `homepageOrderdeluge` |
+| Address | `delugeURL` |
+| Password | `delugePassword` |
+| Leave out the torrents that are complete and not in the queue | `delugeHideSeeding` |
+| Leave out what the tracker said | `delugeHideStatus` |
+| Do not check the certificate | `delugeDisableCertCheck` |
+| Milliseconds between two loads | `delugeRefresh` |
+
+The address is the address of the web interface of Deluge. The password is the password of the web interface.
+
+Deluge needs the plugin WebAPI, as in PHP Organizr:
+
+1. Download the plugin from `https://github.com/idlesign/deluge-webapi/tree/master/dist`.
+2. Open the web interface of Deluge. Go to **Preferences**, then **Plugins**, and select **Install plugin**.
+3. Switch the plugin **WebAPI** on.
+
+Without the plugin, Deluge answers with an error, and the item shows that error.
+
+Organizr logs in to Deluge with the password each time it loads the torrents. Deluge has ten seconds to answer.
+
+The setting `delugeHideCompleted` of PHP Organizr has no effect, and the settings page does not show it. PHP Organizr hides a torrent as "completed" only when Deluge sends its progress as the text `100`. Deluge sends a number.
+
+The connection test of Deluge needs the switch of the item, as in PHP Organizr.
+
+## rTorrent
+
+This item shows the torrents of rTorrent and how far each one is.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepagerTorrentEnabled` |
+| Level | `homepagerTorrentAuth` |
+| Place | `homepageOrderrTorrent` |
+| Address | `rTorrentURL` |
+| Second address | `rTorrentURLOverride` |
+| User name | `rTorrentUsername` |
+| Password | `rTorrentPassword` |
+| Leave out the torrents that upload | `rTorrentHideSeeding` |
+| Leave out the torrents that are complete and closed | `rTorrentHideCompleted` |
+| Sorted by | `rTorrentSortOrder` |
+| The most torrents | `rTorrentLimit` |
+| Leave out the torrents with these labels | `rTorrentIgnoreLabel` |
+| Do not check the certificate | `rTorrentDisableCertCheck` |
+| Milliseconds between two loads | `rTorrentRefresh` |
+
+Organizr talks to rTorrent with XML-RPC. It puts `/RPC2` after the address, unless the address holds `.php`. These addresses are possible:
+
+| Address | Organizr asks |
+|---|---|
+| `http://<host>:8080` | `http://<host>:8080/RPC2` |
+| `https://<host>/xmlrpc.php` | `https://<host>/xmlrpc.php` |
+| `https://<host>/rutorrent/plugins/httprpc/action.php` | The same address |
+
+Use the second address only when the address does not work. A second address that holds the address stands in place of the address. Another second address stands after the address. In both cases, Organizr adds no `/RPC2`.
+
+Organizr sends the user name and the password only after the web server in front of rTorrent asked for them, and only when both hold a value. It answers a request for Basic or for Digest authentication. With Digest authentication, the password itself does not go to the server.
+
+The label of a torrent is its first custom field, as ruTorrent sets it. A torrent is left out when the setting for the labels holds its label. Capital letters make no difference. A torrent without a label is never left out for its label.
+
+When the limit is 0, the item shows up to 1000 torrents.
+
+## uTorrent
+
+This item shows the torrents of uTorrent and how far each one is.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageuTorrentEnabled` |
+| Level | `homepageuTorrentAuth` |
+| Place | `homepageOrderuTorrent` |
+| Address | `uTorrentURL` |
+| User name | `uTorrentUsername` |
+| Password | `uTorrentPassword` |
+| Leave out the torrents that upload | `uTorrentHideSeeding` |
+| Leave out the torrents that are finished | `uTorrentHideCompleted` |
+| Do not check the certificate | `uTorrentDisableCertCheck` |
+| Milliseconds between two loads | `uTorrentRefresh` |
+
+The address is the address of the web interface of uTorrent without `/gui` at its end.
+
+Organizr asks uTorrent for a token and a cookie each time it loads the torrents. It does not store them. The settings `uTorrentToken` and `uTorrentCookie` of PHP Organizr are not used.
+
+## JDownloader
+
+This item shows the packages that JDownloader downloads, and the packages in its link grabber.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageJdownloaderEnabled` |
+| Level | `homepageJdownloaderAuth` |
+| Place | `homepageOrderjdownloader` |
+| Address | `jdownloaderURL` |
+| User name | `jdownloaderUsername` |
+| Password | `jdownloaderPassword` |
+| Do not check the certificate | `jdownloaderDisableCertCheck` |
+| Milliseconds between two loads | `jdownloaderRefresh` |
+
+Organizr does not talk to JDownloader itself. It reads from a service that does, as PHP Organizr: the Python module `myjd-api`, or FeedCrawler.
+
+| Service | Address |
+|---|---|
+| `myjd-api` | The address of the module, for example `http://<host>:8080` |
+| FeedCrawler | The address of FeedCrawler with `/api/myjd` at its end |
+
+Organizr sends the user name and the password when one of them holds a value.
+
+The item shows the packages. It has no buttons to start, pause or stop the downloads. The buttons of PHP Organizr do nothing.
 
 ## Pi-hole
 

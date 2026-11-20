@@ -2,10 +2,14 @@
   // The downloader item of PHP Organizr: the downloaders whose "combine" switch is on
   // share one box. Each has a tab with its picture and the number of its entries.
   import ArrQueue from './ArrQueue.svelte';
+  import Deluge from './Deluge.svelte';
+  import Jdownloader from './Jdownloader.svelte';
   import Nzbget from './Nzbget.svelte';
   import Qbittorrent from './Qbittorrent.svelte';
+  import Rtorrent from './Rtorrent.svelte';
   import Sabnzbd from './Sabnzbd.svelte';
   import Transmission from './Transmission.svelte';
+  import Utorrent from './Utorrent.svelte';
 
   /** The name and the picture of each downloader that the box can hold. */
   const MEMBERS: Record<string, { name: string; picture: string }> = {
@@ -13,6 +17,10 @@
     nzbget: { name: 'NZBGet', picture: 'plugins/images/tabs/nzbget.png' },
     transmission: { name: 'Transmission', picture: 'plugins/images/tabs/transmission.png' },
     qbittorrent: { name: 'qBittorrent', picture: 'plugins/images/tabs/qBittorrent.png' },
+    deluge: { name: 'Deluge', picture: 'plugins/images/tabs/deluge.png' },
+    rtorrent: { name: 'rTorrent', picture: 'plugins/images/tabs/rTorrent.png' },
+    utorrent: { name: 'uTorrent', picture: 'plugins/images/tabs/utorrent.png' },
+    jdownloader: { name: 'JDownloader', picture: 'plugins/images/tabs/jdownloader.png' },
     sonarrqueue: { name: 'Sonarr', picture: 'plugins/images/tabs/sonarr.png' },
     radarrqueue: { name: 'Radarr', picture: 'plugins/images/tabs/radarr.png' },
   };
@@ -60,6 +68,14 @@
         <Transmission oncount={(count) => (counts[member] = count)} />
       {:else if member === 'qbittorrent'}
         <Qbittorrent oncount={(count) => (counts[member] = count)} />
+      {:else if member === 'deluge'}
+        <Deluge oncount={(count) => (counts[member] = count)} />
+      {:else if member === 'rtorrent'}
+        <Rtorrent oncount={(count) => (counts[member] = count)} />
+      {:else if member === 'utorrent'}
+        <Utorrent oncount={(count) => (counts[member] = count)} />
+      {:else if member === 'jdownloader'}
+        <Jdownloader oncount={(count) => (counts[member] = count)} />
       {:else if member === 'sonarrqueue'}
         <ArrQueue application="sonarr" oncount={(count) => (counts[member] = count)} />
       {:else if member === 'radarrqueue'}

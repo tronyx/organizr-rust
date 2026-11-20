@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 jiff.workspace = true
+md-5.workspace = true
 reqwest.workspace = true
 roxmltree.workspace = true
 rustls.workspace = true

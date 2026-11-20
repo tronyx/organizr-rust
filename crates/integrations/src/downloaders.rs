@@ -1,4 +1,5 @@
-//! The download clients of the homepage: SABnzbd and qBittorrent.
+//! The download clients of the homepage: SABnzbd, qBittorrent, NZBGet and Transmission.
+//! Deluge, rTorrent, uTorrent and JDownloader are in `downloaders_more`.
 
 use std::time::Duration;
 
@@ -38,11 +39,11 @@ pub struct Client<'a> {
 }
 
 impl Client<'_> {
-    fn base(&self) -> &str {
+    pub(crate) fn base(&self) -> &str {
         self.url.trim_end_matches('/')
     }
 
-    fn limit(&self) -> Duration {
+    pub(crate) fn limit(&self) -> Duration {
         self.timeout.unwrap_or(TIME_LIMIT)
     }
 }
@@ -87,7 +88,7 @@ pub struct Login<'a> {
 
 impl Login<'_> {
     /// The request with the name and the password, when both are set.
-    fn on(self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+    pub(crate) fn on(self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
         if self.username.is_empty() || self.password.is_empty() {
             request
         } else {

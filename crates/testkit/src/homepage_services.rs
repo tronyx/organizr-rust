@@ -1053,3 +1053,374 @@ async fn overseerr_api(
 pub async fn overseerr_requests() -> StandIn {
     StandIn::start(Router::new().fallback(overseerr_api)).await
 }
+
+/// The password of the web interface of the Deluge stand-in.
+pub const DELUGE_PASSWORD: &str = "the password of Deluge";
+
+const DELUGE_SESSION: &str = "_session_id=made-up-deluge-session";
+
+/// The JSON-RPC API of the web interface of Deluge, with the `WebAPI` plugin.
+async fn deluge_json(headers: HeaderMap, body: axum::body::Bytes) -> Response {
+    let asked: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    let id = asked.get("id").cloned().unwrap_or(Value::Null);
+    let answer = |result: Value, error: Value| {
+        axum::Json(json!({"id": id, "result": result, "error": error})).into_response()
+    };
+    let has_session = headers
+        .get(header::COOKIE)
+        .and_then(|value| value.to_str().ok())
+        == Some(DELUGE_SESSION);
+    match asked.get("method").and_then(Value::as_str) {
+        Some("auth.login") => {
+            if asked.pointer("/params/0").and_then(Value::as_str) == Some(DELUGE_PASSWORD) {
+                (
+                    [(
+                        header::SET_COOKIE,
+                        format!(
+                            "{DELUGE_SESSION}; Expires=Fri, 01 Jan 2100 00:00:00 GMT; Path=/json"
+                        ),
+                    )],
+                    answer(json!(true), Value::Null),
+                )
+                    .into_response()
+            } else {
+                answer(json!(false), Value::Null)
+            }
+        }
+        Some(_) if !has_session => answer(
+            Value::Null,
+            json!({"message": "Not authenticated", "code": 1}),
+        ),
+        Some("webapi.get_torrents") => {
+            let torrent = |name: &str, queue: i64, progress: f64, state: &str| {
+                json!({
+                    "comment": "", "download_payload_rate": 1000, "eta": 600,
+                    "hash": format!("made-up-hash-of-{name}"), "is_finished": progress >= 100.0,
+                    "is_seed": progress >= 100.0, "message": "OK", "name": name,
+                    "paused": state == "Paused", "progress": progress, "queue": queue,
+                    "state": state, "total_size": 1_000_000, "upload_payload_rate": 10,
+                    "tracker_status": "Announce OK",
+                })
+            };
+            answer(
+                json!({"torrents": [
+                    torrent("The.Show.S02E03", 0, 40.5, "Downloading"),
+                    torrent("An.Old.Film", -1, 100.0, "Seeding"),
+                    torrent("A.Paused.Film", -1, 100.0, "Paused"),
+                ]}),
+                Value::Null,
+            )
+        }
+        _ => answer(Value::Null, json!({"message": "Unknown method", "code": 2})),
+    }
+}
+
+/// A stand-in for the web interface of Deluge with the `WebAPI` plugin: one torrent
+/// that downloads, one that uploads, and one that is complete and paused.
+pub async fn deluge() -> StandIn {
+    StandIn::start(Router::new().route("/json", axum::routing::post(deluge_json))).await
+}
+
+/// The account of the rTorrent stand-in: the name, the password, and the header that a
+/// request with both carries.
+pub const RTORRENT_LOGIN: (&str, &str, &str) = (
+    "rtorrent",
+    "the password of rTorrent",
+    "Basic cnRvcnJlbnQ6dGhlIHBhc3N3b3JkIG9mIHJUb3JyZW50",
+);
+
+/// One torrent of the rTorrent stand-in.
+struct RtorrentRow {
+    name: &'static str,
+    connection: &'static str,
+    started: i64,
+    open: i64,
+    complete: i64,
+    label: &'static str,
+}
+
+impl RtorrentRow {
+    /// The values of the torrent, in the order that Organizr asks for them. rTorrent
+    /// sends each number as `i8`.
+    fn xml(&self) -> String {
+        let text = |text: &str| format!("<value><string>{text}</string></value>");
+        let number = |number: i64| format!("<value><i8>{number}</i8></value>");
+        let done = if self.complete == 1 {
+            1_000_000
+        } else {
+            400_000
+        };
+        let values = [
+            text(self.name),
+            text(&format!("/downloads/{}", self.name)),
+            number(5000),
+            number(1_000_000),
+            number(done),
+            number(done),
+            text(self.connection),
+            number(1000),
+            number(10),
+            number(self.started),
+            number(self.open),
+            text(""),
+            text(&format!("HASH{}", self.started)),
+            number(self.complete),
+            number(5),
+            number(262_144),
+            number(0),
+            number(0),
+            number(0),
+            text(""),
+            text(self.label),
+            text(""),
+            text(""),
+            text(""),
+            text(""),
+        ];
+        format!(
+            "<value><array><data>{}</data></array></value>",
+            values.concat()
+        )
+    }
+}
+
+const RTORRENT_ROWS: [RtorrentRow; 3] = [
+    RtorrentRow {
+        name: "The.Show.S02E03",
+        connection: "leech",
+        started: 300,
+        open: 1,
+        complete: 0,
+        label: "tv",
+    },
+    RtorrentRow {
+        name: "An.Old.Film",
+        connection: "seed",
+        started: 100,
+        open: 1,
+        complete: 1,
+        label: "films",
+    },
+    RtorrentRow {
+        name: "A.Closed.Film",
+        connection: "seed",
+        started: 200,
+        open: 0,
+        complete: 1,
+        label: "",
+    },
+];
+
+/// What rTorrent answers to a method of XML-RPC.
+fn rtorrent_answer(body: &str) -> Response {
+    let list = |values: String| {
+        (
+            [(header::CONTENT_TYPE, "text/xml")],
+            format!(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodResponse><params><param>\
+                 <value><array><data>{values}</data></array></value>\
+                 </param></params></methodResponse>"
+            ),
+        )
+            .into_response()
+    };
+    if body.contains("<methodName>system.listMethods</methodName>") {
+        list(
+            "<value><string>system.listMethods</string></value>\
+             <value><string>d.multicall2</string></value>"
+                .to_owned(),
+        )
+    } else if body.contains("<methodName>d.multicall2</methodName>") {
+        list(RTORRENT_ROWS.iter().map(RtorrentRow::xml).collect())
+    } else {
+        (
+            [(header::CONTENT_TYPE, "text/xml")],
+            "<?xml version=\"1.0\"?><methodResponse><fault><value><struct>\
+             <member><name>faultCode</name><value><i4>-506</i4></value></member>\
+             <member><name>faultString</name><value><string>Method not defined</string></value>\
+             </member></struct></value></fault></methodResponse>",
+        )
+            .into_response()
+    }
+}
+
+/// rTorrent behind a web server that asks for the name and the password with Basic.
+async fn rtorrent_rpc(headers: HeaderMap, body: axum::body::Bytes) -> Response {
+    if !has_login(&headers, RTORRENT_LOGIN.2) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            [(header::WWW_AUTHENTICATE, "Basic realm=\"rTorrent\"")],
+            "Unauthorized",
+        )
+            .into_response();
+    }
+    rtorrent_answer(&String::from_utf8_lossy(&body))
+}
+
+/// rTorrent behind a web server that asks with Digest. The stand-in looks at the shape
+/// of the answer to its challenge, and not at the hash.
+async fn rtorrent_rpc_with_digest(headers: HeaderMap, body: axum::body::Bytes) -> Response {
+    let answer = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+    let answered = answer.starts_with("Digest ")
+        && answer.contains(&format!("username=\"{}\"", RTORRENT_LOGIN.0))
+        && answer.contains("nonce=\"made-up-nonce\"")
+        && answer.contains("uri=\"/digest/RPC2\"")
+        && answer.contains("response=\"");
+    if !answered {
+        return (
+            StatusCode::UNAUTHORIZED,
+            [(
+                header::WWW_AUTHENTICATE,
+                "Digest realm=\"rTorrent\", qop=\"auth\", nonce=\"made-up-nonce\"",
+            )],
+            "Unauthorized",
+        )
+            .into_response();
+    }
+    rtorrent_answer(&String::from_utf8_lossy(&body))
+}
+
+/// A stand-in for rTorrent: one torrent that downloads, one that uploads, and one that
+/// is complete and closed. `/RPC2` asks for the login with Basic, `/digest/RPC2` asks
+/// with Digest, and `/no-list/RPC2` answers every method with a fault.
+pub async fn rtorrent() -> StandIn {
+    use axum::routing::post;
+    StandIn::start(
+        Router::new()
+            .route("/RPC2", post(rtorrent_rpc))
+            .route("/digest/RPC2", post(rtorrent_rpc_with_digest))
+            .route("/no-list/RPC2", post(|| async { rtorrent_answer("") })),
+    )
+    .await
+}
+
+/// The account of the uTorrent stand-in: the name, the password, and the header that a
+/// request with both carries.
+pub const UTORRENT_LOGIN: (&str, &str, &str) = (
+    "utorrent",
+    "the password of uTorrent",
+    "Basic dXRvcnJlbnQ6dGhlIHBhc3N3b3JkIG9mIHVUb3JyZW50",
+);
+
+/// The token of the uTorrent stand-in.
+pub const UTORRENT_TOKEN: &str = "made-up_uTorrent-token";
+
+const UTORRENT_COOKIE: &str = "GUID=made-up-guid";
+
+async fn utorrent_token(headers: HeaderMap) -> Response {
+    if !has_login(&headers, UTORRENT_LOGIN.2) {
+        return (StatusCode::UNAUTHORIZED, "401 Unauthorized").into_response();
+    }
+    (
+        [(header::SET_COOKIE, format!("{UTORRENT_COOKIE}; path=/"))],
+        format!("<html><div id='token' style='display:none;'>{UTORRENT_TOKEN}</div></html>"),
+    )
+        .into_response()
+}
+
+async fn utorrent_list(headers: HeaderMap, RawQuery(query): RawQuery) -> Response {
+    if !has_login(&headers, UTORRENT_LOGIN.2) {
+        return (StatusCode::UNAUTHORIZED, "401 Unauthorized").into_response();
+    }
+    let cookie = headers
+        .get(header::COOKIE)
+        .and_then(|value| value.to_str().ok());
+    if query_field(query.as_deref(), "token") != Some(UTORRENT_TOKEN)
+        || cookie != Some(UTORRENT_COOKIE)
+    {
+        return (StatusCode::BAD_REQUEST, "invalid request").into_response();
+    }
+    let torrent = |name: &str, status: i64, progress: i64, message: &str| {
+        json!([
+            format!("HASH-OF-{name}"),
+            status,
+            name,
+            1_000_000,
+            progress,
+            400_000,
+            5000,
+            12,
+            10,
+            1000,
+            600,
+            "tv",
+            2,
+            5,
+            1,
+            3,
+            65536,
+            1,
+            600_000,
+            "",
+            "",
+            message,
+            "1",
+            1_600_000_000,
+            0,
+            "",
+            "/downloads",
+            0,
+            "ABCD",
+        ])
+    };
+    axum::Json(json!({
+        "build": 45000,
+        "label": [["tv", 3]],
+        "torrents": [
+            torrent("The.Show.S02E03", 201, 400, "Downloading 40.0 %"),
+            torrent("An.Old.Film", 201, 1000, "Seeding 100.0 %"),
+            torrent("A.Finished.Film", 136, 1000, "Finished 100.0 %"),
+        ],
+        "torrentc": "1234567890",
+    }))
+    .into_response()
+}
+
+/// A stand-in for the web interface of uTorrent: one torrent that downloads, one that
+/// uploads, and one that is finished.
+pub async fn utorrent() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/gui/token.html", get(utorrent_token).post(utorrent_token))
+            .route("/gui/", get(utorrent_list)),
+    )
+    .await
+}
+
+/// The account of the stand-in for the service of JDownloader: the name, the password,
+/// and the header that a request with both carries.
+pub const JDOWNLOADER_LOGIN: (&str, &str, &str) = (
+    "jdownloader",
+    "the password of JDownloader",
+    "Basic amRvd25sb2FkZXI6dGhlIHBhc3N3b3JkIG9mIEpEb3dubG9hZGVy",
+);
+
+async fn jdownloader_state(headers: HeaderMap) -> Response {
+    if !has_login(&headers, JDOWNLOADER_LOGIN.2) {
+        return (StatusCode::UNAUTHORIZED, "Unauthorized").into_response();
+    }
+    axum::Json(json!({
+        "downloader_state": "RUNNING",
+        "grabber_collecting": false,
+        "update_ready": false,
+        "packages": {
+            "downloader": [{
+                "name": "A.Package", "speed": "1.2 MB/s", "size": "4.00 GB", "done": "1.00 GB",
+                "eta": "40m:00s", "percentage": "25", "enabled": true,
+            }],
+            "linkgrabber_decrypted": [{"name": "A.New.Package", "size": "700.00 MB"}],
+            "linkgrabber_failed": [],
+            "linkgrabber_offline": [{"name": "A.Lost.Package"}],
+        },
+    }))
+    .into_response()
+}
+
+/// A stand-in for the service that reads JDownloader, as the Python module `myjd-api`
+/// answers: one package that downloads, one that waits, and one that is offline.
+pub async fn jdownloader() -> StandIn {
+    StandIn::start(Router::new().route("/", get(jdownloader_state))).await
+}

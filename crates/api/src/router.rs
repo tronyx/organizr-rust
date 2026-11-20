@@ -256,6 +256,22 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/homepage/transmission/queue",
             &get(homepage::downloaders::transmission_queue),
         )?
+        .route(
+            "/homepage/deluge/queue",
+            &get(homepage::downloaders_more::deluge_queue),
+        )?
+        .route(
+            "/homepage/rtorrent/queue",
+            &get(homepage::downloaders_more::rtorrent_queue),
+        )?
+        .route(
+            "/homepage/utorrent/queue",
+            &get(homepage::downloaders_more::utorrent_queue),
+        )?
+        .route(
+            "/homepage/jdownloader/queue",
+            &get(homepage::downloaders_more::jdownloader_queue),
+        )?
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
         .route("/plex/servers", &get(plex::servers))?
@@ -313,6 +329,10 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/test/overseerr", &post(connection_tests::test_overseerr))?
         .route("/test/nzbget", &post(connection_tests::test_nzbget))?
         .route("/test/transmission", &post(connection_tests::test_transmission))?
+        .route("/test/deluge", &post(connection_tests::test_deluge))?
+        .route("/test/rtorrent", &post(connection_tests::test_rtorrent))?
+        .route("/test/utorrent", &post(connection_tests::test_utorrent))?
+        .route("/test/jdownloader", &post(connection_tests::test_jdownloader))?
         .route("/test/pihole", &post(connection_tests::test_pihole))?
         .route("/test/emby", &post(connection_tests::test_emby))?
         .route("/test/jellyfin", &post(connection_tests::test_jellyfin))?
