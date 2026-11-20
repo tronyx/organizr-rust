@@ -1,6 +1,7 @@
 //! The `organizr` binary: start-up, scheduler, embedded web assets and subcommands.
 
 mod check;
+mod check_homepage;
 mod healthcheck;
 mod import;
 mod secret_key;

@@ -12,6 +12,7 @@ use anyhow::Context;
 use organizr_integrations::http::Outbound;
 use organizr_integrations::plex::{PLEX_TV, PlexAccount, PlexTv};
 use organizr_integrations::sso::{self, Fallback, Login};
+use organizr_integrations::weather::BREEZOMETER;
 use organizr_settings::Settings;
 use tracing_subscriber::EnvFilter;
 
@@ -57,14 +58,14 @@ impl fmt::Display for Line {
     }
 }
 
-fn line(question: impl Into<String>, outcome: Outcome) -> Line {
+pub fn line(question: impl Into<String>, outcome: Outcome) -> Line {
     Line {
         question: question.into(),
         outcome,
     }
 }
 
-fn failed(why: impl fmt::Display) -> Outcome {
+pub fn failed(why: impl fmt::Display) -> Outcome {
     Outcome::Failed(why.to_string())
 }
 
@@ -91,7 +92,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .context("the database did not close cleanly")?;
     let http = Outbound::new().context("cannot make the client for the requests")?;
 
-    let lines = ask(&settings, &http, PLEX_TV).await;
+    let mut lines = ask(&settings, &http, PLEX_TV).await;
+    lines.extend(crate::check_homepage::ask(&settings, &http, BREEZOMETER).await);
     for line in &lines {
         println!("{line}");
     }
@@ -109,7 +111,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
 /// The address of a service as the settings hold it, when the check can ask it: the
 /// address must say `http://` or `https://`.
-fn complete(address: &str) -> Result<&str, Outcome> {
+pub fn complete(address: &str) -> Result<&str, Outcome> {
     let address = address.trim();
     if address.is_empty() {
         Err(skipped("the settings hold no address"))

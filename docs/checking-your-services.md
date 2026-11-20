@@ -1,14 +1,16 @@
 # Checking your services
 
-The `organizr check` command asks plex.tv, Ombi, Overseerr and Tautulli the questions that a login asks them. It prints for each question whether the answer was usable.
+The `organizr check` command asks the services of your settings the questions that Organizr asks them: plex.tv, Ombi, Overseerr and Tautulli for a login, and the applications of the homepage for their items. It prints for each question whether the answer was usable.
 
-Use the command after you set up [the login through Plex](plex-login.md) or [single sign-on](single-sign-on.md), or when one of them stops working.
+Use the command after you set up [the login through Plex](plex-login.md), [single sign-on](single-sign-on.md) or an item of [the homepage](homepage.md), or when one of them stops working.
 
 ## What the command does
 
 The command reads the settings of the install: the Plex token of the owner, the id of the Plex server, and the addresses of the applications. Then it logs the owner of the Plex token in to each application, in the same way as a login through Plex does.
 
 The command changes no setting and stores nothing. Each application sees one more login of the owner.
+
+Then the command asks each application of the homepage that has an address in the settings: the Plex server, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, Healthchecks, Uptime Kuma and the weather service. It only reads. An application without an address has no line in the report.
 
 The report holds no token, no password, no address and no name of an account.
 
@@ -53,6 +55,16 @@ When plex.tv does not know the token, the command stops there. The other questio
 
 The questions about a fallback user are asked only when the settings hold a fallback user and its password.
 
+The lines for the homepage come after the lines for the login:
+
+```text
+ok       The Plex server lists what plays now
+ok       Tautulli gives its statistics
+ok       Sonarr install 1 of 1 gives its calendar
+FAILED   SABnzbd gives its queue: the answer has no queue; look at the API key
+ok       qBittorrent takes the login and gives its torrents
+```
+
 ## When a question fails
 
 The command writes the reason to the log, above the report. The log names the address of the application that did not answer. For more detail, set the environment variable `ORGANIZR_LOG` to `debug`.
@@ -63,5 +75,6 @@ The command writes the reason to the log, above the report. The log names the ad
 | The stored id is one of them | The setting `plexID`. The tab **Login** of the settings lists the servers with their ids. |
 | An application gives a session for the Plex token | The address of the application, and whether the application lets Plex accounts log in. The owner must be able to log in to the application with Plex. |
 | An application gives a session for the fallback user | The name and the password of the fallback user. For Overseerr, the name is an e-mail address. |
+| An application of the homepage gives its data | The address and the key of the application in the settings of [the homepage](homepage.md). For qBittorrent, the user name, the password and the version of the API. |
 
 An address must start with `http://` or `https://`. The command skips an address without that start, because only a browser knows the host of such an address.
