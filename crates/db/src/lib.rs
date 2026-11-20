@@ -21,7 +21,7 @@ mod users;
 use std::time::Duration;
 
 use sea_orm::sqlx::sqlite::SqliteJournalMode;
-use sea_orm::{ConnectOptions, DatabaseConnection};
+use sea_orm::{ConnectOptions, ConnectionTrait, DatabaseConnection};
 use sea_orm_migration::MigratorTrait;
 
 pub use crate::bookmarks::Bookmarks;
@@ -98,6 +98,23 @@ impl Database {
     /// The engine behind this database.
     pub const fn engine(&self) -> Engine {
         self.engine
+    }
+
+    /// Writes a copy of the database to a new file, for a backup. The copy is whole
+    /// also while other requests write to the database.
+    ///
+    /// Returns whether a copy was made: only `SQLite` keeps its data in a file. A
+    /// database on `PostgreSQL` is saved with the tools of `PostgreSQL`.
+    pub async fn snapshot(&self, file: &std::path::Path) -> Result<bool, DbError> {
+        if self.engine != Engine::Sqlite {
+            return Ok(false);
+        }
+        // The file name is a text of the statement, so a quote in it is doubled.
+        let name = file.display().to_string().replace('\'', "''");
+        self.connection
+            .execute_unprepared(&format!("VACUUM INTO '{name}'"))
+            .await?;
+        Ok(true)
     }
 
     /// Brings the schema up to date. Migrations that already ran are skipped.

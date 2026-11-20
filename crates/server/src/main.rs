@@ -5,6 +5,7 @@ mod check_homepage;
 mod cron;
 mod healthcheck;
 mod import;
+mod restore;
 mod scheduler;
 mod secret_key;
 mod serve;
@@ -32,6 +33,8 @@ enum Command {
     /// Ask plex.tv, Ombi, Overseerr and Tautulli what a login asks them, with the
     /// stored settings. Prints for each one whether the answer was usable.
     Check(check::Args),
+    /// Put the files and the database of a backup back. Stop the server first.
+    Restore(restore::Args),
 }
 
 #[tokio::main]
@@ -41,6 +44,7 @@ async fn main() -> anyhow::Result<()> {
         Command::Healthcheck(args) => healthcheck::run(&args).await,
         Command::Import(args) => import::run(args).await,
         Command::Check(args) => check::run(args).await,
+        Command::Restore(args) => restore::run(&args),
     }
 }
 

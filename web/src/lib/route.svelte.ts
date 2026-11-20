@@ -14,7 +14,8 @@ export type SettingsSection =
   | 'mail'
   | 'login'
   | 'homepage'
-  | 'plugins';
+  | 'plugins'
+  | 'backups';
 
 export type Route =
   | { page: 'home' }
@@ -50,6 +51,7 @@ export const PAGES = {
   loginSettings: '#/settings/login',
   homepageSettings: '#/settings/homepage',
   pluginSettings: '#/settings/plugins',
+  backupSettings: '#/settings/backups',
   speedTest: '#/speedtest',
   invites: '#/invites',
   useInvite: '#/invite',
@@ -106,6 +108,8 @@ export function parseRoute(hash: string): Route {
       return { page: 'settings', section: 'homepage' };
     case '/settings/plugins':
       return { page: 'settings', section: 'plugins' };
+    case '/settings/backups':
+      return { page: 'settings', section: 'backups' };
     default:
       return { page: 'home' };
   }

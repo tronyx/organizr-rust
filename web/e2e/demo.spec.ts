@@ -860,6 +860,27 @@ test('the Admin makes an invite, and a guest finds the page for its code', async
   await expect(page.getByRole('alert')).toHaveText('Code is invalid');
 });
 
+test('the Admin makes a backup, sees it in the list and deletes it', async ({ page }) => {
+  await logIn(page);
+  await page.goto('./#/settings/backups');
+  await expect(page.getByText('There are no backups yet.')).toBeVisible();
+  await page.getByRole('button', { name: 'Make a backup now' }).click();
+  await expect(page.getByRole('status')).toHaveText('The backup is made.');
+  const table = page.getByRole('table', { name: 'Backups' });
+  await expect(table).toContainText(/backup\[\d{4}-\d\d-\d\d_\d\d-\d\d - \w\w\]\[[\d.]+\]\.zip/);
+
+  // The link sends the zip file.
+  const link = table.getByRole('link', { name: /^Save backup/ });
+  const answer = await page.request.get((await link.getAttribute('href')) ?? '');
+  expect(answer.status()).toBe(200);
+  expect(answer.headers()['content-type']).toBe('application/zip');
+  expect((await answer.body()).subarray(0, 2).toString()).toBe('PK');
+
+  await table.getByRole('button', { name: /^Delete backup/ }).click();
+  await expect(page.getByRole('status')).toHaveText('The backup is deleted.');
+  await expect(page.getByText('There are no backups yet.')).toBeVisible();
+});
+
 test('a user locks the screen and opens it again with the password', async ({ page }) => {
   await logIn(page);
   await page.getByLabel('Menu of the user').click();

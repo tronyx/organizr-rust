@@ -27,14 +27,16 @@ ipnet.workspace = true
 futures-util.workspace = true
 http-body-util.workspace = true
 jiff.workspace = true
+zip.workspace = true
 md-5.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 surge-ping.workspace = true
 thiserror.workspace = true
-# The lock that puts changes of the settings in a row, the files of uploaded pictures,
-# the connections and the time limit of a ping, and the tasks that send e-mails.
-tokio = { workspace = true, features = ["fs", "net", "rt", "sync", "time"] }
+# The lock that puts changes of the settings in a row, the files of uploaded pictures
+# and of backups, the connections and the time limit of a ping, and the tasks that send
+# e-mails.
+tokio = { workspace = true, features = ["fs", "io-util", "net", "rt", "sync", "time"] }
 tower-http.workspace = true
 tracing.workspace = true
 uuid.workspace = true

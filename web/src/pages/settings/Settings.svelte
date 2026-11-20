@@ -7,6 +7,7 @@
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
   import {
+    BACKUPS,
     BOOKMARK_PLUGIN,
     HEALTH_CHECKS_PLUGIN,
     HOMEPAGE,
@@ -14,6 +15,7 @@
     SPEED_TEST_PLUGIN,
   } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
+  import BackupsEditor from './BackupsEditor.svelte';
   import BookmarksEditor from './BookmarksEditor.svelte';
   import CategoriesEditor from './CategoriesEditor.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
@@ -150,6 +152,15 @@
     >
       Plugins
     </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'backups'}
+      aria-selected={section === 'backups'}
+      href={PAGES.backupSettings}
+    >
+      Backups
+    </a>
   </div>
 
   <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
@@ -162,6 +173,10 @@
     <LoginSettings ondone={(message) => (done = message)} />
   {:else if section === 'homepage'}
     <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
+  {:else if section === 'backups'}
+    <SettingsForm groups={BACKUPS} ondone={(message) => (done = message)}>
+      <BackupsEditor ondone={(message) => (done = message)} />
+    </SettingsForm>
   {:else if section === 'plugins'}
     <SettingsForm
       groups={[

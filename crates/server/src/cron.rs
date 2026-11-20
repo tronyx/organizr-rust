@@ -96,6 +96,15 @@ impl FromStr for Schedule {
     type Err = String;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
+        // The words that the settings of the PHP application use for a schedule.
+        let text = match text.trim() {
+            "@hourly" => "0 * * * *",
+            "@daily" | "@midnight" => "0 0 * * *",
+            "@weekly" => "0 0 * * 0",
+            "@monthly" => "0 0 1 * *",
+            "@yearly" | "@annually" => "0 0 1 1 *",
+            other => other,
+        };
         let fields: Vec<&str> = text.split_whitespace().collect();
         let [minute, hour, day, month, week_day] = fields.as_slice() else {
             return Err(format!(
@@ -193,6 +202,31 @@ mod tests {
         // With one of them open, the other one decides.
         assert!(!names("0 12 1 * *", FRIDAY_NOON));
         assert!(!names("0 12 * * mon", FRIDAY_NOON));
+    }
+
+    #[test]
+    fn words_stand_for_the_schedules_that_the_php_application_gives_them() {
+        let parsed = |text: &str| text.parse::<Schedule>();
+        for (word, fields) in [
+            ("@hourly", "0 * * * *"),
+            ("@daily", "0 0 * * *"),
+            ("@midnight", "0 0 * * *"),
+            ("@weekly", "0 0 * * 0"),
+            ("@monthly", "0 0 1 * *"),
+            ("@yearly", "0 0 1 1 *"),
+            ("@annually", "0 0 1 1 *"),
+            (" @weekly ", "0 0 * * sun"),
+        ] {
+            assert_eq!(parsed(word), parsed(fields), "{word}");
+            assert!(parsed(word).is_ok(), "{word}");
+        }
+        assert!(names("@hourly", FRIDAY_NOON));
+        assert!(!names("@daily", FRIDAY_NOON));
+        // The week starts on Sunday: 22 November 2026.
+        assert!(names("@weekly", "2026-11-22T00:00:00+00:00"));
+        assert!(!names("@weekly", "2026-11-21T00:00:00+00:00"));
+        assert!(parsed("@often").is_err());
+        assert!(parsed("@daily *").is_err());
     }
 
     #[test]

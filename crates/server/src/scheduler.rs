@@ -34,16 +34,19 @@ pub fn is_due(schedule: &str, now: &ZonedDateTime) -> Result<bool, String> {
 pub enum Job {
     /// The run of the health checks plugin.
     HealthChecks,
+    /// A backup of the install.
+    Backup,
 }
 
 impl Job {
     /// Every job.
-    pub const ALL: [Self; 1] = [Self::HealthChecks];
+    pub const ALL: [Self; 2] = [Self::HealthChecks, Self::Backup];
 
     /// The name of the job in the log.
     pub const fn name(self) -> &'static str {
         match self {
             Self::HealthChecks => "health checks",
+            Self::Backup => "backup",
         }
     }
 
@@ -53,6 +56,9 @@ impl Job {
             Self::HealthChecks => (settings.health_checks_cron_run_enabled
                 && health_checks::is_ready(settings))
             .then_some(settings.health_checks_cron_run_schedule.as_str()),
+            Self::Backup => settings
+                .auto_backup_cron_enabled
+                .then_some(settings.auto_backup_cron_schedule.as_str()),
         }
     }
 
@@ -65,6 +71,11 @@ impl Job {
                 };
                 let settings = state.settings();
                 health_checks::run(http, &settings).await;
+            }
+            Self::Backup => {
+                if let Err(error) = organizr_api::create_backup(state).await {
+                    tracing::error!(error, "the scheduled backup could not be made");
+                }
             }
         }
     }
@@ -236,6 +247,32 @@ mod tests {
                 "{changed:?}"
             );
         }
+    }
+
+    #[test]
+    fn backup_is_due_at_its_schedule_when_it_is_switched_on() {
+        // 22 November 2026 is a Sunday. The default schedule is `@weekly`.
+        let sunday = at("2026-11-22T00:00:00+00:00");
+        let on = [("autoBackupCronEnabled", json!(true))];
+        assert_eq!(due_jobs(&installed_settings(&on), &sunday), [Job::Backup]);
+        assert_eq!(
+            due_jobs(&installed_settings(&on), &at("2026-11-23T00:00:00+00:00")),
+            []
+        );
+        assert_eq!(due_jobs(&installed_settings(&[]), &sunday), []);
+
+        let nightly = [
+            ("autoBackupCronEnabled", json!(true)),
+            ("autoBackupCronSchedule", json!("30 3 * * *")),
+        ];
+        assert_eq!(
+            due_jobs(
+                &installed_settings(&nightly),
+                &at("2026-11-23T03:30:00+00:00")
+            ),
+            [Job::Backup]
+        );
+        assert_eq!(due_jobs(&installed_settings(&nightly), &sunday), []);
     }
 
     #[test]

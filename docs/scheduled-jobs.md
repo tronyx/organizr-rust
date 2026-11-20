@@ -7,6 +7,7 @@ Organizr runs its scheduled jobs itself, inside the server. PHP Organizr needs a
 | Job | Switch | Schedule |
 |---|---|---|
 | Run of the [health checks plugin](health-checks-plugin.md) | `HEALTHCHECKS-cron-run-enabled` | `HEALTHCHECKS-cron-run-schedule` |
+| [Backup](backups.md) of the install | `autoBackupCronEnabled` | `autoBackupCronSchedule` |
 
 More jobs come with the features that need them.
 
@@ -50,6 +51,16 @@ Examples:
 | `0 * * * *` | At each full hour |
 | `30 4 * * *` | Each day at 04:30 |
 | `0 8 * * mon-fri` | On each working day at 08:00 |
+
+A schedule can also be one of these words:
+
+| Word | Meaning |
+|---|---|
+| `@hourly` | At each full hour |
+| `@daily` or `@midnight` | Each day at 00:00 |
+| `@weekly` | Each Sunday at 00:00 |
+| `@monthly` | On the first day of each month at 00:00 |
+| `@yearly` or `@annually` | On 1 January at 00:00 |
 
 If a schedule limits the day of the month and the day of the week, a day that fits one of the two is enough. `0 12 1 * mon` is noon on the first day of each month and on each Monday.
 

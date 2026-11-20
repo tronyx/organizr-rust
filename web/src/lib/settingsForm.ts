@@ -1339,6 +1339,39 @@ export const SPEED_TEST_PLUGIN: FieldGroup[] = [
   },
 ];
 
+/** The settings of the backups. The backups have a list of their own below the form. */
+export const BACKUPS: FieldGroup[] = [
+  {
+    title: 'Backups on a schedule',
+    fields: [
+      {
+        key: 'autoBackupCronEnabled',
+        label: 'Make backups on a schedule',
+        kind: 'switch',
+      },
+      {
+        key: 'autoBackupCronSchedule',
+        label: 'Schedule of the backups',
+        kind: 'text',
+        help: 'One of the words @daily, @weekly and @monthly, or the five fields of a cron schedule, for example 30 3 * * * for each day at 3:30. The times are in the time zone of the server.',
+      },
+      {
+        key: 'keepBackupsCountCron',
+        label: 'Number of backups to keep',
+        kind: 'number',
+        min: 0,
+        help: 'After a new backup, the oldest backups over this number are deleted. The number 0 keeps every backup.',
+      },
+      {
+        key: 'backupLocation',
+        label: 'Folder for the backups',
+        kind: 'text',
+        help: 'A folder on the server that exists. Leave it empty for the folder backups in the data folder.',
+      },
+    ],
+  },
+];
+
 /** The settings of the invites plugin. The invites have a page of their own. */
 export const INVITES_PLUGIN: FieldGroup[] = [
   {

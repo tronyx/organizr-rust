@@ -11,7 +11,7 @@ Use SQLite unless you have a reason to use PostgreSQL. SQLite is the default.
 | What it is | One file in the data volume | A separate database server |
 | What you run | One container | Two containers: Organizr and PostgreSQL |
 | What you configure | Nothing | A URL with a user name and a password |
-| How you make a backup | Copy the data volume, or use the backup function of Organizr | Use the backup function of Organizr, or the tools of PostgreSQL |
+| How you make a backup | Use the [backup function](backups.md) of Organizr | Use the tools of PostgreSQL for the database, and the [backup function](backups.md) of Organizr for the files |
 | Recommended for | A home server or a small team, which is almost every install | An install that already has a PostgreSQL server with backups and monitoring |
 
 Organizr reads much more than it writes, and the data is small. SQLite is fast for this work, and it has no server that can fail or that you must update. PostgreSQL does not make Organizr faster for a normal install. It is there for people who keep all their data in one PostgreSQL server.

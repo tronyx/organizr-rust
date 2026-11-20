@@ -16,6 +16,7 @@ These parts work:
 - The import of an install of PHP Organizr
 - The homepage with Plex, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission, Pi-hole, Healthchecks, Uptime Kuma, weather and custom HTML
 - The plugins for bookmarks, health checks, invites, e-mail and the speed test
+- Backup and restore, also on a schedule
 
 Parts of PHP Organizr that are not built yet are named in [Architecture](docs/architecture.md), section 10.
 
@@ -66,6 +67,7 @@ All other settings are in the web interface.
 | Database | [Choosing a database](docs/choosing-a-database.md) |
 | Import from PHP Organizr | [Importing](docs/importing.md) |
 | Stored secrets and their key | [Secrets](docs/secrets.md) |
+| Backup and restore | [Backups](docs/backups.md) |
 | Login | [Plex login](docs/plex-login.md), [Second factor](docs/second-factor.md), [Single sign-on](docs/single-sign-on.md), [Lock screen](docs/lock-screen.md) |
 | Reverse proxy | [Forward auth](docs/forward-auth.md) |
 | E-mail | [E-mail](docs/email.md) |

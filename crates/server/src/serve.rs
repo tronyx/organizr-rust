@@ -63,6 +63,11 @@ impl StorageArgs {
         &self.data_dir
     }
 
+    /// The database URL, when one was given.
+    pub fn database_url(&self) -> Option<&str> {
+        self.database_url.as_deref()
+    }
+
     /// What seals the stored secrets. The key file is made when it is missing.
     pub fn secrets(&self) -> anyhow::Result<SecretBox> {
         let key_file = self
@@ -93,7 +98,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         // The pictures that people upload, at the place of the PHP application.
         .with_picture_folder(args.storage.data_dir.join("userTabs"))
         // The pictures of other applications that the server fetches and keeps.
-        .with_picture_cache(args.storage.data_dir.join("cache"));
+        .with_picture_cache(args.storage.data_dir.join("cache"))
+        .with_data_folder(args.storage.data_dir.clone());
     let is_set_up = database
         .install()
         .is_done()

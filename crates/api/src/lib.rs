@@ -1,6 +1,7 @@
 //! The HTTP API of Organizr: router, response envelope, extractors, error type and handlers.
 
 pub mod api_data;
+pub mod backup;
 pub mod caller;
 pub mod client;
 pub mod cookie_domain;
@@ -18,5 +19,6 @@ mod same_origin;
 pub mod slim_route;
 mod state;
 
+pub use crate::handlers::backups::create_backup;
 pub use crate::router::{API_BASE, router};
 pub use crate::state::{AppState, stored_settings};

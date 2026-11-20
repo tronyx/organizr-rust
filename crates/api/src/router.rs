@@ -15,7 +15,7 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    basics, bookmarks, categories, config, connection_tests, fields, forward_auth, groups,
+    backups, basics, bookmarks, categories, config, connection_tests, fields, forward_auth, groups,
     health_checks_plugin, homepage, images, invites, launch, lock, login, logout, mail, ping, plex,
     register, speed_test, tabs, token, two_factor, users, wizard,
 };
@@ -253,6 +253,11 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
         .route("/plex/servers", &get(plex::servers))?
+        .route("/backup", &get(backups::list).post(backups::create))?
+        .route(
+            "/backup/{filename}",
+            &get(backups::download).delete(backups::remove),
+        )?
         .route(
             "/plugins/healthchecks/run",
             &get(health_checks_plugin::run),

@@ -35,6 +35,10 @@ pub struct AppState {
     /// The pictures of other applications that the server keeps. Without it, no such
     /// picture is fetched.
     picture_cache: Option<PictureCache>,
+    /// The data folder, for the backups.
+    data_folder: Option<Arc<PathBuf>>,
+    /// What lets one backup be made at a time.
+    backup_lock: Arc<Mutex<()>>,
     /// What probes the address to check of a tab.
     prober: Prober,
     /// What sends the e-mails.
@@ -78,6 +82,8 @@ impl AppState {
             secrets: Arc::new(secrets),
             picture_folder: None,
             picture_cache: None,
+            data_folder: None,
+            backup_lock: Arc::new(Mutex::new(())),
             prober: Prober::network(),
             mailer: Mailer::smtp(),
             outbound: Outbound::new()
@@ -113,6 +119,13 @@ impl AppState {
     #[must_use]
     pub fn with_picture_cache(mut self, folder: PathBuf) -> Self {
         self.picture_cache = Some(PictureCache::new(folder));
+        self
+    }
+
+    /// The same state, with the data folder of the install. A backup holds its files.
+    #[must_use]
+    pub fn with_data_folder(mut self, folder: PathBuf) -> Self {
+        self.data_folder = Some(Arc::new(folder));
         self
     }
 
@@ -161,6 +174,16 @@ impl AppState {
     }
 
     /// The count of failed logins. It starts empty when the application starts.
+    /// The data folder of the install, when the server named one.
+    pub fn data_folder(&self) -> Option<&Path> {
+        self.data_folder.as_deref().map(PathBuf::as_path)
+    }
+
+    /// The lock that a backup holds while it is made.
+    pub fn backup_lock(&self) -> &Mutex<()> {
+        &self.backup_lock
+    }
+
     pub fn login_limiter(&self) -> &LoginLimiter {
         &self.login_limiter
     }
