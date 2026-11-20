@@ -6,6 +6,7 @@ pub mod caller;
 pub mod client;
 pub mod cookie_domain;
 pub mod cookies;
+pub mod cron;
 pub mod device_cookie;
 pub mod envelope;
 pub mod error;

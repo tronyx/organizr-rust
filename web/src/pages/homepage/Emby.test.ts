@@ -154,7 +154,10 @@ describe('the settings of Emby and Jellyfin', () => {
       /emby|jelly/i.test(key),
     );
 
-    expect(keys).toHaveLength(27);
+    // 27 settings of the two servers, 11 of the live television of Emby, and 20 of
+    // JellyStat, whose keys hold the same words.
+    expect(keys).toHaveLength(58);
+    expect(keys.filter((key) => !/LiveTVTracker|JellyStat/i.test(key))).toHaveLength(27);
     expect(new Set(keys).size).toBe(keys.length);
     // PHP Organizr names the level of the streams of Jellyfin with the short name.
     expect(keys).toContain('homepageJellyStreamsAuth');

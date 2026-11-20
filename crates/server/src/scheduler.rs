@@ -15,10 +15,9 @@ use std::time::Duration;
 
 use jiff::ZonedDateTime;
 use organizr_api::AppState;
+use organizr_api::cron::Schedule;
 use organizr_plugins::health_checks;
 use organizr_settings::Settings;
-
-use crate::cron::Schedule;
 
 /// How long a job may run.
 const JOB_TIME_LIMIT: Duration = Duration::from_mins(10);
@@ -112,9 +111,12 @@ fn until_next_minute(now: &ZonedDateTime) -> Duration {
 /// Runs the scheduler until the task is dropped.
 pub async fn run(state: AppState) {
     let running: Vec<Arc<AtomicBool>> = Job::ALL.iter().map(|_| Arc::default()).collect();
+    // `GET /test/cron` says from this whether the scheduler runs.
+    state.scheduler_woke(ZonedDateTime::now().timestamp().as_second());
     loop {
         tokio::time::sleep(until_next_minute(&ZonedDateTime::now())).await;
         let now = ZonedDateTime::now();
+        state.scheduler_woke(now.timestamp().as_second());
         for job in due_jobs(&state.settings(), &now) {
             let Some(busy) = Job::ALL
                 .iter()

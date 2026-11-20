@@ -78,3 +78,43 @@ describe('events of SickRage', () => {
     ]);
   });
 });
+
+describe('events of Trakt', () => {
+  const FILM: CalendarEvent = {
+    id: 'Trakt-Movie-1',
+    title: 'The Film',
+    start: '2099-01-07',
+    imagetypeFilter: 'film',
+    downloadFilter: 'text-dark',
+    details: {
+      topTitle: 'The Film',
+      bottomTitle: 'One more time',
+      overview: 'A film.',
+      runtime: 110,
+      image: '/plugins/images/homepage/no-np.png',
+      ratings: 7.5,
+      genres: ['action'],
+    },
+  };
+  const PREMIERE: CalendarEvent = {
+    ...EPISODE,
+    id: 'Trakt-Tv-1',
+    start: '2099-01-05T02:00:00.000Z',
+    downloadFilter: 'text-primary animated flash',
+  };
+
+  it('have the states that Trakt can know: to come, premiere, and aired', () => {
+    expect(stateOf(FILM).word).toBe('Not monitored');
+    expect(stateOf(PREMIERE).word).toBe('Premiere');
+    expect(stateOf({ ...PREMIERE, downloadFilter: 'text-danger' }).word).toBe('Missing');
+    expect(KINDS[FILM.imagetypeFilter]?.word).toBe('Films');
+  });
+
+  it('stand on a day for a film, and at a moment for an episode', () => {
+    expect(dayOf(FILM.start)).toBe('2099-01-07');
+    expect(timeOf(FILM.start)).toBeNull();
+    expect(timeOf(PREMIERE.start)).not.toBeNull();
+    expect(genresOf(FILM)).toEqual(['action']);
+    expect(allEvents({ events: [FILM, PREMIERE], ical: false })).toHaveLength(2);
+  });
+});

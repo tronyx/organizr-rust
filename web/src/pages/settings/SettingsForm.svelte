@@ -3,7 +3,7 @@
   import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
 
-  import { api, failureText } from '../../lib/api';
+  import { api, apiUrl, failureText } from '../../lib/api';
   import { randomKey } from '../../lib/random';
   import { session } from '../../lib/session.svelte';
   import {
@@ -201,6 +201,17 @@
         {/if}
         {#if group.lookup}
           {@render tester(group.lookup.test, group.lookup.label)}
+        {/if}
+        {#if group.link}
+          <div class="mt-2 flex flex-wrap items-center gap-3">
+            {#if hasChanges}
+              <span class="text-sm">Save the settings before you use "{group.link.label}".</span>
+            {:else}
+              <a class="btn btn-sm" href={apiUrl(group.link.path)} target="_blank" rel="noopener">
+                {group.link.label}
+              </a>
+            {/if}
+          </div>
         {/if}
       </fieldset>
     {/each}

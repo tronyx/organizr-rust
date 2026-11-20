@@ -14,8 +14,10 @@ use organizr_integrations::downloaders::{
 };
 use organizr_integrations::downloaders_more::ClientError;
 use organizr_integrations::emby::Kind as MediaServer;
+use organizr_integrations::emby_live_tv;
 use organizr_integrations::http::Outbound;
 use organizr_integrations::indexers::Kind as Indexer;
+use organizr_integrations::jellystat::Install as JellyStat;
 use organizr_integrations::pihole;
 use organizr_integrations::probe::{self, Probe};
 use organizr_integrations::sickrage;
@@ -27,7 +29,10 @@ use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::handlers::homepage::downloaders_more::{self as more, Asked};
-use crate::handlers::homepage::{Permissions, emby, indexers, no_requests, service_url, unifi};
+use crate::handlers::homepage::{
+    Permissions, emby, emby_live_tv as live_tv, indexers, jellystat, no_requests, service_url,
+    unifi,
+};
 use crate::state::AppState;
 
 /// How long a download client has to answer a test.
@@ -683,6 +688,88 @@ async fn media_server(test: &Test<'_>, caller: &Caller, kind: MediaServer) -> Ou
     Ok(succeeded())
 }
 
+/// The live television of Emby: the name of the server, and whether it has live
+/// television.
+async fn emby_live_television(test: &Test<'_>, caller: &Caller) -> Outcome {
+    let settings = test.state.settings();
+    live_tv::permissions().check(&settings, caller)?;
+    let url = live_tv::address(&settings, test.headers, test.client);
+    match emby_live_tv::test(test.http, &live_tv::server(&settings, &url)).await {
+        Ok(message) => Ok(Envelope::success(Value::Null).with_message(message)),
+        Err(error) => Err(refused(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            error.to_string(),
+        )),
+    }
+}
+
+/// JellyStat: the page of JellyStat for an item that shows it in a frame, and the
+/// libraries for an item that shows the statistics.
+async fn jelly_stat(test: &Test<'_>, caller: &Caller) -> Outcome {
+    let settings = test.state.settings();
+    jellystat::permissions(&settings).check(&settings, caller)?;
+    let failed = |error: String| {
+        refused(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Connection test failed: {error}"),
+        )
+    };
+    let never_check = settings.jelly_stat_disable_cert_check;
+    if settings.homepage_jelly_stat_display_mode == "iframe" {
+        let url = test.url(&settings.jelly_stat_url);
+        let probe = Probe {
+            url: &url,
+            never_check_certificate: never_check,
+            ..Probe::default()
+        };
+        return if test.get(probe).await.map_err(failed)?.is_success() {
+            Ok(Envelope::success(Value::Null).with_message("Successfully connected to JellyStat"))
+        } else {
+            Err(refused(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to connect to JellyStat URL",
+            ))
+        };
+    }
+    let url = jellystat::api_address(&settings, test.headers, test.client);
+    let install = JellyStat {
+        url: &url,
+        key: &settings.jelly_stat_apikey,
+        never_check_certificate: never_check,
+    };
+    let answer = install
+        .get(test.http, "/api/getLibraries", &[])
+        .await
+        .map_err(failed)?;
+    if answer.is_success() {
+        match serde_json::from_str::<Value>(&answer.body) {
+            Ok(Value::Object(fields)) if fields.contains_key("error") => {
+                let error = fields
+                    .get("error")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
+                return Err(refused(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("JellyStat API error: {}", shown(error)),
+                ));
+            }
+            Ok(Value::Array(_) | Value::Object(_)) => {
+                return Ok(Envelope::success(Value::Null)
+                    .with_message("Successfully connected to JellyStat API"));
+            }
+            _ => {}
+        }
+    }
+    // The libraries did not come. The page of JellyStat says whether it runs at all.
+    let page = install.get(test.http, "", &[]).await.map_err(failed)?;
+    let message = if page.is_success() {
+        "JellyStat is reachable but API key is invalid or API endpoints are not responding correctly."
+    } else {
+        "Cannot connect to JellyStat URL. Check URL and network connectivity."
+    };
+    Err(refused(StatusCode::INTERNAL_SERVER_ERROR, message))
+}
+
 /// The services that have a test.
 #[derive(Debug, Clone, Copy)]
 enum Service {
@@ -710,6 +797,8 @@ enum Service {
     Adguard,
     Unifi,
     UnifiSites,
+    EmbyLiveTv,
+    JellyStat,
 }
 
 async fn run(
@@ -780,6 +869,8 @@ async fn run(
         Service::Adguard => adguard(&test).await,
         Service::Unifi => unifi_health(&test, caller).await,
         Service::UnifiSites => unifi_sites(&test, caller).await,
+        Service::EmbyLiveTv => emby_live_television(&test, caller).await,
+        Service::JellyStat => jelly_stat(&test, caller).await,
     }
 }
 
@@ -917,6 +1008,16 @@ test_route!(
     /// `POST /test/unifi/site`.
     test_unifi_site,
     Service::UnifiSites
+);
+test_route!(
+    /// `POST /test/embyLiveTVTracker`.
+    test_emby_live_tv,
+    Service::EmbyLiveTv
+);
+test_route!(
+    /// `POST /test/jellystat`.
+    test_jellystat,
+    Service::JellyStat
 );
 
 #[cfg(test)]

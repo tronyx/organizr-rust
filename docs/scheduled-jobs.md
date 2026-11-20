@@ -65,3 +65,7 @@ A schedule can also be one of these words:
 If a schedule limits the day of the month and the day of the week, a day that fits one of the two is enough. `0 12 1 * mon` is noon on the first day of each month and on each Monday.
 
 The times are in the time zone of the server. Set the environment variable `TZ` of the container to your time zone, for example `TZ=Europe/Berlin`.
+
+## Test a schedule
+
+A script can ask the server whether it can read a schedule, and whether the scheduler runs. [Tests of the settings](settings-tests.md) describes the two routes.

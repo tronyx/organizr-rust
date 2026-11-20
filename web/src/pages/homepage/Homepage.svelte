@@ -7,21 +7,26 @@
   import type { CalendarOptions } from '../../lib/calendar';
   import { requestOptions } from '../../lib/requests';
   import type { HomepageItem } from '../../lib/homepage';
+  import { donateOptions, jellyStatOptions, liveTvOptions } from '../../lib/statistics';
   import Adguard from './Adguard.svelte';
   import ArrQueue from './ArrQueue.svelte';
   import Calendar from './Calendar.svelte';
   import CustomHtml from './CustomHtml.svelte';
   import Deluge from './Deluge.svelte';
+  import Donate from './Donate.svelte';
   import Downloaders from './Downloaders.svelte';
+  import EmbyLiveTv from './EmbyLiveTv.svelte';
   import HealthChecks from './HealthChecks.svelte';
   import Indexers from './Indexers.svelte';
   import Jdownloader from './Jdownloader.svelte';
+  import JellyStat from './JellyStat.svelte';
   import Monitorr from './Monitorr.svelte';
   import Netdata from './Netdata.svelte';
   import Octoprint from './Octoprint.svelte';
   import Overseerr from './Overseerr.svelte';
   import Pihole from './Pihole.svelte';
   import Plex from './Plex.svelte';
+  import PromPage from './PromPage.svelte';
   import Nzbget from './Nzbget.svelte';
   import Qbittorrent from './Qbittorrent.svelte';
   import Rtorrent from './Rtorrent.svelte';
@@ -73,6 +78,10 @@
     'speedtest',
     'octoprint',
     'unifi',
+    'prompage',
+    'donate',
+    'embylivetv',
+    'jellystat',
   ]);
 
   /** How the calendar shows, from the options of its item. */
@@ -192,6 +201,14 @@
           <Octoprint />
         {:else if item.kind === 'unifi'}
           <Unifi />
+        {:else if item.kind === 'prompage'}
+          <PromPage />
+        {:else if item.kind === 'donate'}
+          <Donate options={donateOptions(item.options)} />
+        {:else if item.kind === 'embylivetv'}
+          <EmbyLiveTv options={liveTvOptions(item.options)} />
+        {:else if item.kind === 'jellystat'}
+          <JellyStat options={jellyStatOptions(item.options)} />
         {:else if item.kind === 'weather'}
           <Weather title={typeof item.options?.title === 'string' ? item.options.title : ''} />
         {/if}

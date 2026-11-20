@@ -25,7 +25,7 @@ This version has these items:
 - [Custom HTML](#custom-html)
 - [Health checks](#health-checks)
 - [Uptime Kuma](#uptime-kuma)
-- [Calendar](#calendar), with Sonarr, Radarr, Lidarr, SickRage, CouchPotato and calendars in the iCal format
+- [Calendar](#calendar), with Sonarr, Radarr, Lidarr, SickRage, CouchPotato, Trakt and calendars in the iCal format
 - [Downloads of Sonarr and Radarr](#downloads-of-sonarr-and-radarr)
 - [SABnzbd](#sabnzbd)
 - [qBittorrent](#qbittorrent)
@@ -50,6 +50,10 @@ This version has these items:
 - [Speedtest Tracker](#speedtest-tracker)
 - [OctoPrint](#octoprint)
 - [UniFi](#unifi)
+- [PromPage](#prompage)
+- [Emby live TV](#emby-live-tv)
+- [JellyStat](#jellystat)
+- [Donate](#donate)
 
 You set all items up in **Settings**, on the tab **Homepage**.
 
@@ -58,13 +62,15 @@ The homepage loads the data of an item again after the time that the item has in
 
 ## Test the connection of a service
 
-The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Ombi, Sonarr, Radarr, Lidarr, SickRage, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, rTorrent, uTorrent, JDownloader, Pi-hole, Jackett, Prowlarr, AdGuard Home and UniFi. The settings of UniFi have a second button, **Read the sites of the controller**, which is the test `unifi/site`.
+The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Ombi, Sonarr, Radarr, Lidarr, SickRage, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, rTorrent, uTorrent, JDownloader, Pi-hole, Jackett, Prowlarr, AdGuard Home, UniFi, Emby live TV and JellyStat. The settings of UniFi have a second button, **Read the sites of the controller**, which is the test `unifi/site`.
 
 1. Enter the address and the key or the login of the service.
 2. Select **Save**. The test reads the settings that are stored.
 3. Select **Test the connection**. The page shows whether the service answered, or what is wrong.
 
-Only an Admin or a Co-Admin can run a test. A script can run it with `POST /api/v2/test/<service>`, where the service is the name in lower case without the hyphen, for example `pihole`.
+Only an Admin or a Co-Admin can run a test. A script can run it with `POST /api/v2/test/<service>`, where the service is the name in lower case without the hyphen, for example `pihole`. The test of Emby live TV has the name `embyLiveTVTracker`.
+
+[Tests of the settings](settings-tests.md) describes the tests that test no service of the homepage.
 
 ## Custom HTML
 
@@ -163,7 +169,7 @@ A monitor that Uptime Kuma did not check yet is not shown. A monitor in maintena
 
 ## Calendar
 
-The calendar shows the episodes of Sonarr and SickRage, the films of Radarr and CouchPotato, the albums of Lidarr, and the events of calendars in the iCal format, for the days around today.
+The calendar shows the episodes of Sonarr and SickRage, the films of Radarr and CouchPotato, the albums of Lidarr, the episodes and the films of a Trakt account, and the events of calendars in the iCal format, for the days around today.
 
 The calendar has no switch of its own. It shows when a person can see one of its sources at least. Sonarr, Radarr and Lidarr have these settings, here with the keys of Sonarr:
 
@@ -281,6 +287,40 @@ A time of an event is read in this order:
 4. Other times are times of the time zone of the server.
 
 A script gets the events of one source with `GET /api/v2/homepage/sickrage/calendar`, `GET /api/v2/homepage/couchpotato/calendar` or `GET /api/v2/homepage/ical/calendar`. `GET /api/v2/homepage/calendar` has the events of the applications in `events`, and the events of the iCal addresses in `ical`.
+
+### Trakt
+
+The calendar shows the episodes and the films of the calendar of one [Trakt](https://trakt.tv/) account.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageTraktEnabled` |
+| Level | `homepageTraktAuth` |
+| Client id of the API application | `traktClientId` |
+| Client secret of the API application | `traktClientSecret` |
+| Days before today that are loaded | `calendarStartTrakt` |
+| Days after today that are loaded | `calendarEndTrakt` |
+
+Organizr needs an API application at Trakt, and the permission of the account:
+
+1. Log in at Trakt, and open the page **Your API Apps** of the settings. Add a new application.
+2. Enter a name. For the redirect URI, enter the address of Organizr with `api/v2/oauth/trakt` after it, for example `https://organizr.example.com/api/v2/oauth/trakt`.
+3. Copy the client id and the client secret of the application.
+4. In Organizr, open **Settings**, and select the tab **Homepage**. Enter the client id and the client secret in the group **Trakt**, and select **Save**.
+5. Select **Connect the Trakt account**. A new window opens the page of Trakt.
+6. Allow the access at Trakt. The window comes back to Organizr and shows **Details Saved**.
+7. Switch **Show Trakt in the calendar** on, and select **Save**.
+
+Only an Admin or a Co-Admin can connect the account. Organizr stores the access token and the refresh token of the account as secrets. The settings page does not show them.
+
+- When the access token is over, Organizr asks Trakt for new tokens before it loads the calendar. You do not connect the account again.
+- If Trakt refuses the tokens, the calendar shows no event of Trakt. Select **Connect the Trakt account** again.
+- Trakt gives 33 days at most: the days before today and the days after today together.
+- An event of Trakt has no picture.
+- Trakt does not know your files. An episode that was aired shows as missing. An episode and a film to come show as not monitored. The first episode of a season to come shows as a premiere.
+- The address of Organizr in the redirect URI must be the one that your browser uses, with `https` when your browser uses it.
+
+A script gets the events with `GET /api/v2/homepage/trakt/calendar`.
 
 ### Pictures of events
 
@@ -565,7 +605,7 @@ The item needs an API key of BreezoMeter. PHP Organizr comes with a key of its a
 
 A kind of data that the API refuses is not shown. If the API gives nothing at all, the item says so.
 
-PHP Organizr can search the latitude and the longitude of a city. This application does not have that search yet.
+PHP Organizr can search the latitude and the longitude of a city. That search uses a key of the author of PHP Organizr at a map service, and the settings have no place for a key of your own. So this application has no such search. Enter the two numbers yourself.
 
 ## Tautulli
 
@@ -1097,3 +1137,133 @@ For the classic controller, the name of the site is its short name, not its desc
 Organizr logs in for each load, uses the cookie of the login for one request, and does not store it. The setting `unifiCookie` is not used.
 
 The controller of most installs has a certificate that no authority signed. So the switch **Do not check the certificate** is on in the default settings.
+
+## PromPage
+
+This item shows the services of a [PromPage](https://github.com/henrywhitaker3/prompage) status page, and whether each one is up.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepagePromPageEnabled` |
+| Place | `homepageOrderPromPage` |
+| Address of PromPage | `promPageURL` |
+| Show a title | `homepagePromPageHeaderToggle` |
+| Title | `homepagePromPageHeader` |
+| Small form | `homepagePromPageCompact` |
+| Show the uptime | `homepagePromPageShowUptime` |
+| Milliseconds between two loads | `homepagePromPageRefresh` |
+
+The item has no level. Every person who opens the homepage sees it when its switch is on, also without a login. PHP Organizr does the same.
+
+Organizr reads `api/services` of PromPage. That address needs no key.
+
+## Emby live TV
+
+This item shows the live television of the Emby server: the number of the timers and of the recordings, the recordings to come, and the recordings that are made.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageEmbyLiveTVTrackerEnabled` |
+| Level | `homepageEmbyLiveTVTrackerAuth` |
+| Place | `homepageOrderEmbyLiveTVTracker` |
+| Minutes between two loads | `homepageEmbyLiveTVTrackerRefresh` |
+| Show the numbers of the timers only | `homepageEmbyLiveTVTrackerCompactView` |
+| Show the length of a recording | `homepageEmbyLiveTVTrackerShowDuration` |
+| Show the series and the title of the episode | `homepageEmbyLiveTVTrackerShowSeriesInfo` |
+| Show the user who set a timer | `homepageEmbyLiveTVTrackerShowUserInfo` |
+| Largest number of scheduled recordings | `homepageEmbyLiveTVTrackerMaxItems` |
+| Show the recordings that are made | `homepageEmbyLiveTVTrackerShowCompleted` |
+| Largest number of recordings that are made | `homepageEmbyLiveTVTrackerMaxCompletedItems` |
+
+The item uses the address and the API key of [Emby](#emby): `embyURL` and `embyToken`. It does not need the switch of the Emby item.
+
+The time between two loads is in minutes. Most other items have it in milliseconds.
+
+The button **Test the connection** shows the name of the server, and whether the server has live television. A script runs the test with `POST /api/v2/test/embyLiveTVTracker`.
+
+If the server does not answer a request, the numbers of that request are 0 and its list is empty. The item shows no error then. PHP Organizr does the same.
+
+## JellyStat
+
+This item shows the statistics that [JellyStat](https://github.com/CyferShepard/Jellystat) keeps for an Emby or a Jellyfin server: the libraries, the users, and the films, the series and the music that were played most. It can also show the pages of JellyStat in a frame.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageJellyStatEnabled` |
+| Level | `homepageJellyStatAuth` |
+| Place | `homepageOrderJellyStat` |
+| What the item shows: `native` for the statistics, `iframe` for the frame | `homepageJellyStatDisplayMode` |
+| Address of JellyStat | `jellyStatURL` |
+| Address of JellyStat for the server | `jellyStatInternalURL` |
+| API key | `jellyStatApikey` |
+| Do not check the certificate | `jellyStatDisableCertCheck` |
+| Minutes between two loads | `homepageJellyStatRefresh` |
+| Days that the statistics look back | `homepageJellyStatDays` |
+| Show the libraries | `homepageJellyStatShowLibraries` |
+| Show the users | `homepageJellyStatShowUsers` |
+| Largest number of users in the list | `homepageJellyStatMaxItems` |
+| Show what was played most | `homepageJellyStatShowMostWatched` |
+| Show the films, the series, the music | `homepageJellyStatShowMostWatchedMovies`, `homepageJellyStatShowMostWatchedShows`, `homepageJellyStatShowMostListenedMusic` |
+| Largest number of items in each of these lists | `homepageJellyStatMostWatchedCount` |
+| Height of the frame in pixels | `homepageJellyStatIframeHeight` |
+| Let the frame scroll | `homepageJellyStatIframeScrolling` |
+
+Make the API key in the settings of JellyStat. The statistics need the key. The frame does not.
+
+- The browser loads the posters and the frame from the address of JellyStat. So that address must be one that the browser can reach.
+- If the server reaches JellyStat at another address, enter that one as the address for the server.
+- The API key goes to JellyStat in a header. PHP Organizr puts it into the address.
+- JellyStat counts a play without a video, or of less than ten minutes, as music. PHP Organizr reads the history in the same way.
+
+A poster opens the details of its item. Organizr asks the media server for them when the homepage shows that server: Jellyfin first, or else Emby. The pictures of the details then come through Organizr, so a person needs the level of that server to see them. Without such a server, Organizr asks JellyStat.
+
+The frame shows the pages of JellyStat as they are. JellyStat must allow other sites to show it in a frame, and a person logs in at JellyStat in the frame.
+
+A script gets the statistics with `GET /api/v2/homepage/jellystat`, and the details of an item with `POST /api/v2/homepage/jellystat/metadata` and the id of the item as `key`.
+
+## Donate
+
+This item lets a person donate money to you. The payments go to your own [Stripe](https://stripe.com/) account. Organizr sees no card: a person pays on a page of Stripe.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageDonateEnabled` |
+| Level | `homepageDonateAuth` |
+| Place | `homepageOrderDonate` |
+| Publishable key of Stripe | `homepageDonatePublicToken` |
+| Secret key of Stripe | `homepageDonateSecretToken` |
+| Id of the product | `homepageDonateProductID` |
+| Title of the item | `homepageDonateCustomizeHeading` |
+| Text of the item | `homepageDonateCustomizeDescription` |
+| Smallest amount, in cents | `homepageDonateMinimum` |
+| Let a person see the own donations | `homepageDonateShowUserHistory` |
+
+To set the item up:
+
+1. Log in at Stripe, or make an account.
+2. Add a product with a one-time price. Copy the id of the product.
+3. Open the page **API keys** of Stripe. Copy the publishable key and the secret key.
+4. Enter the three values in Organizr, and select **Save**.
+
+A person enters an amount in whole US dollars and selects **Donate**. A new window opens the page of Stripe. After the payment, Stripe sends the window back to Organizr.
+
+- The amount is at least the smallest amount of the settings.
+- Only a person with the level of the item can start a payment. In PHP Organizr, everybody can, also when the item is off.
+- The item shows its text as text. HTML in the text is not read.
+- With **Let a person see the own donations**, a person sees the payments with the e-mail address of the own account. An Admin sees the payments of everybody, with the e-mail addresses.
+- The secret key is a secret of the settings. No answer of Organizr holds it.
+
+Use a test key of Stripe first. Stripe then takes no money, and you can pay with a test card.
+
+## Routes without an item
+
+PHP Organizr has three more routes that help its pages. This application has them for scripts. Its own pages do not use them.
+
+| Route | What it does | Who can use it |
+|---|---|---|
+| `GET /api/v2/homepage/youtube/{title}` | Searches YouTube for the trailer of a title, with the API key of the setting `youtubeAPI`. | Everybody |
+| `POST /api/v2/homepage/scrape` | Fetches the page at the address `url` of the body. | An Admin or a Co-Admin |
+| `POST /api/v2/homepage/weather/coordinates` | Searches the latitude and the longitude of a place. It finds nothing here. | An Admin or a Co-Admin |
+
+- The trailer search needs your own API key of YouTube. PHP Organizr falls back on keys of its author. This application does not, so the answer is an error without a key.
+- The fetch of a page takes an address of the wide web only. It does not fetch an address of the server itself or of a private network, it follows no redirect, and a page has 2 MB at most. In PHP Organizr, everybody can use the route without a login.

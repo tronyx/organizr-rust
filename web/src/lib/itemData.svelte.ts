@@ -30,11 +30,20 @@ export interface ItemData<T> {
   reload(): Promise<void>;
 }
 
+/** The time between two loads from a number of minutes, in milliseconds. */
+export function minutesOfRefresh(minutes: number): number {
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return DEFAULT_REFRESH;
+  }
+  return Math.max(minutes * 60000, SHORTEST_REFRESH);
+}
+
 /**
  * Loads the data of an item from `path` while the component that calls this is shown.
- * `refreshKey` is the key of the setting that holds the time between two loads.
+ * `refreshKey` is the key of the setting that holds the time between two loads. An
+ * item whose setting holds minutes names them in `minutes`, and the key is not read.
  */
-export function itemData<T>(path: string, refreshKey: string): ItemData<T> {
+export function itemData<T>(path: string, refreshKey: string, minutes?: number): ItemData<T> {
   let data = $state<T | null>(null);
   let error = $state<string | null>(null);
 
@@ -49,7 +58,10 @@ export function itemData<T>(path: string, refreshKey: string): ItemData<T> {
 
   onMount(() => {
     void reload();
-    const every = refreshTime(session.launch?.settings.homepage.refresh, refreshKey);
+    const every =
+      minutes === undefined
+        ? refreshTime(session.launch?.settings.homepage.refresh, refreshKey)
+        : minutesOfRefresh(minutes);
     const timer = setInterval(() => void reload(), every);
     return () => clearInterval(timer);
   });

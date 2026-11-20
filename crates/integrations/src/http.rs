@@ -9,7 +9,7 @@
 //! check the certificate of such a service, and neither does this client. The
 //! certificate of every service that is reached by a name is checked.
 
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::sync::Once;
 use std::time::Duration;
 
@@ -57,6 +57,19 @@ impl Outbound {
         self.client(url, false)
     }
 
+    /// A client for one request to an address that a caller of the API named. It
+    /// reaches `host` at `address` and nowhere else, it follows no redirect, and it
+    /// checks the certificate. So the request cannot go to another place than the one
+    /// that was checked before.
+    pub fn pinned(&self, host: &str, address: SocketAddr) -> Result<Client, reqwest::Error> {
+        Client::builder()
+            .user_agent(user_agent())
+            .connect_timeout(CONNECT_TIMEOUT)
+            .redirect(reqwest::redirect::Policy::none())
+            .resolve(host, address)
+            .build()
+    }
+
     /// The client for a URL of a service that has a setting "do not check the
     /// certificate". With `never_check`, the certificate is not checked.
     pub fn client(&self, url: &str, never_check: bool) -> &Client {
@@ -72,6 +85,26 @@ impl Outbound {
 /// of some services holds their API key, which must not go into a log or an answer.
 pub fn without_address(error: reqwest::Error) -> String {
     error.without_url().to_string()
+}
+
+/// A text for a place in an address: every byte that is no letter, digit, `-`, `.`, `_`
+/// or `~` is written as `%` and its two hexadecimal digits.
+pub fn escaped(text: &str) -> String {
+    use std::fmt::Write as _;
+
+    let mut out = String::with_capacity(text.len());
+    for byte in text.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' => {
+                out.push(char::from(byte));
+            }
+            other => {
+                // Writing into a text cannot fail.
+                let _ = write!(out, "%{other:02X}");
+            }
+        }
+    }
+    out
 }
 
 /// The time limit of a request from a setting of the PHP application, which is the
@@ -154,6 +187,13 @@ mod tests {
         ] {
             assert!(!is_address_over_https(url), "{url}");
         }
+    }
+
+    #[test]
+    fn text_for_an_address_keeps_only_plain_characters() {
+        assert_eq!(super::escaped("abc-XYZ_0.9~"), "abc-XYZ_0.9~");
+        assert_eq!(super::escaped("a b&c=d/e?"), "a%20b%26c%3Dd%2Fe%3F");
+        assert_eq!(super::escaped("\u{e9}"), "%C3%A9");
     }
 
     #[test]

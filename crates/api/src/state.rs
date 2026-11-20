@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicI64, Ordering};
 
 use arc_swap::ArcSwap;
 use organizr_auth::login_limit::LoginLimiter;
@@ -10,6 +11,9 @@ use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, DbError, StoredSetting};
 use organizr_integrations::http::Outbound;
 use organizr_integrations::plex::{PLEX_TV, PlexTv};
+use organizr_integrations::stripe::STRIPE_API;
+use organizr_integrations::trakt::{TRAKT_API, TRAKT_SITE};
+use organizr_integrations::youtube::YOUTUBE_API;
 use organizr_plugins::mail::Mailer;
 use organizr_settings::{Settings, SettingsError};
 use serde_json::Value;
@@ -58,6 +62,17 @@ pub struct AppState {
     plex_tv: Arc<str>,
     /// The address of the weather API.
     breezometer: Arc<str>,
+    /// The addresses of the API and of the pages of Trakt.
+    trakt: Arc<(String, String)>,
+    /// The address of the API of Stripe.
+    stripe: Arc<str>,
+    /// The address of the API of YouTube.
+    youtube: Arc<str>,
+    /// Whether `POST /homepage/scrape` also fetches a page of this computer or of a
+    /// private network. Only a test says yes.
+    scrapes_local_pages: bool,
+    /// The second of the last time that the scheduler of the server woke, or 0.
+    scheduler_beat: Arc<AtomicI64>,
     /// Held while settings are changed, so that two changes do not overwrite each other.
     settings_change: Arc<Mutex<()>>,
 }
@@ -112,6 +127,11 @@ impl AppState {
                 .ok(),
             plex_tv: Arc::from(PLEX_TV),
             breezometer: Arc::from(BREEZOMETER),
+            trakt: Arc::new((TRAKT_API.to_owned(), TRAKT_SITE.to_owned())),
+            stripe: Arc::from(STRIPE_API),
+            youtube: Arc::from(YOUTUBE_API),
+            scrapes_local_pages: false,
+            scheduler_beat: Arc::default(),
             settings_change: Arc::new(Mutex::new(())),
         }
     }
@@ -312,6 +332,75 @@ impl AppState {
     /// The address of the weather API.
     pub fn breezometer(&self) -> &str {
         &self.breezometer
+    }
+
+    /// The same state, with other addresses for the API and for the pages of Trakt. A
+    /// test puts a stand-in there.
+    #[must_use]
+    pub fn with_trakt(mut self, api: &str, site: &str) -> Self {
+        self.trakt = Arc::new((api.to_owned(), site.to_owned()));
+        self
+    }
+
+    /// The address of the API of Trakt.
+    pub fn trakt_api(&self) -> &str {
+        &self.trakt.0
+    }
+
+    /// The address of the pages of Trakt.
+    pub fn trakt_site(&self) -> &str {
+        &self.trakt.1
+    }
+
+    /// The same state, with another address for the API of Stripe. A test puts a
+    /// stand-in there.
+    #[must_use]
+    pub fn with_stripe(mut self, address: &str) -> Self {
+        self.stripe = Arc::from(address);
+        self
+    }
+
+    /// The address of the API of Stripe.
+    pub fn stripe(&self) -> &str {
+        &self.stripe
+    }
+
+    /// The same state, with another address for the API of YouTube. A test puts a
+    /// stand-in there.
+    #[must_use]
+    pub fn with_youtube(mut self, address: &str) -> Self {
+        self.youtube = Arc::from(address);
+        self
+    }
+
+    /// The address of the API of YouTube.
+    pub fn youtube(&self) -> &str {
+        &self.youtube
+    }
+
+    /// The same state, but `POST /homepage/scrape` also fetches a page of this
+    /// computer. A test uses it to fetch a page of a stand-in.
+    #[must_use]
+    pub const fn with_local_pages_scraped(mut self) -> Self {
+        self.scrapes_local_pages = true;
+        self
+    }
+
+    /// Whether `POST /homepage/scrape` also fetches a page of this computer or of a
+    /// private network.
+    pub const fn scrapes_local_pages(&self) -> bool {
+        self.scrapes_local_pages
+    }
+
+    /// Notes that the scheduler of the server woke at the given second.
+    pub fn scheduler_woke(&self, second: i64) {
+        self.scheduler_beat.store(second, Ordering::Relaxed);
+    }
+
+    /// The second of the last time that the scheduler of the server woke, or 0 when
+    /// it never did.
+    pub fn scheduler_beat(&self) -> i64 {
+        self.scheduler_beat.load(Ordering::Relaxed)
     }
 
     /// The client for requests to other services.

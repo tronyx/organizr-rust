@@ -73,7 +73,7 @@ All other settings are in the web interface.
 | Login | [Plex login](docs/plex-login.md), [Second factor](docs/second-factor.md), [Single sign-on](docs/single-sign-on.md), [Lock screen](docs/lock-screen.md) |
 | Reverse proxy | [Forward auth](docs/forward-auth.md) |
 | E-mail | [E-mail](docs/email.md) |
-| Homepage | [Homepage](docs/homepage.md), [Checking your services](docs/checking-your-services.md) |
+| Homepage | [Homepage](docs/homepage.md), [Checking your services](docs/checking-your-services.md), [Tests of the settings](docs/settings-tests.md) |
 | Plugins | [Bookmarks](docs/bookmark-plugin.md), [Health checks](docs/health-checks-plugin.md), [Invites](docs/invites-plugin.md), [Speed test](docs/speed-test-plugin.md) |
 | Extensions of other authors | [Extensions](docs/extensions.md) |
 | Scheduled work | [Scheduled jobs](docs/scheduled-jobs.md) |

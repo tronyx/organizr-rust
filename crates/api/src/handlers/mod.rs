@@ -6,6 +6,7 @@ pub mod bookmarks;
 pub mod categories;
 pub mod config;
 pub mod connection_tests;
+pub mod connection_tests_more;
 #[cfg(feature = "wasm-plugins")]
 pub mod extensions;
 pub mod external_login;
@@ -22,6 +23,7 @@ pub mod lock;
 pub mod login;
 pub mod logout;
 pub mod mail;
+pub mod notice_page;
 pub mod ping;
 pub mod plex;
 pub mod register;

@@ -15,7 +15,7 @@ use organizr_integrations::http::time_limit;
 use organizr_settings::Settings;
 use serde_json::{Value, json};
 
-use super::{Permissions, calendar_more, no_requests, service_url};
+use super::{Permissions, calendar_more, no_requests, service_url, trakt};
 use crate::caller::Caller;
 use crate::client::Client;
 use crate::envelope::Envelope;
@@ -312,8 +312,8 @@ pub async fn lidarr_calendar(
     .await
 }
 
-/// Whether the caller gets the calendar of at least one source: an application, or
-/// the iCal addresses.
+/// Whether the caller gets the calendar of at least one source: an application, the
+/// account at Trakt, or the iCal addresses.
 pub fn sees_a_calendar(settings: &Settings, caller: &Caller) -> bool {
     [Kind::Sonarr, Kind::Lidarr, Kind::Radarr]
         .into_iter()
@@ -321,13 +321,15 @@ pub fn sees_a_calendar(settings: &Settings, caller: &Caller) -> bool {
         .chain([
             calendar_more::sickrage_permissions(),
             calendar_more::couchpotato_permissions(),
+            trakt::permissions(),
             calendar_more::ical_permissions(),
         ])
         .any(|permissions| permissions.allow(settings, caller))
 }
 
 /// `GET /homepage/calendar`: the events of every application whose calendar the
-/// caller gets, and the events of the iCal addresses apart from them. The answer is a
+/// caller gets and of the account at Trakt, and the events of the iCal addresses
+/// apart from them. The answer is a
 /// success also when the caller gets none, as in the PHP application.
 pub async fn calendar(
     State(state): State<AppState>,
@@ -349,6 +351,13 @@ pub async fn calendar(
     }
     if calendar_more::couchpotato_permissions().allow(&settings, &caller) {
         events.extend(calendar_more::couchpotato_events(&state, &headers, &client).await?);
+    }
+    if trakt::permissions().allow(&settings, &caller) {
+        // A calendar of Trakt that cannot be read is left out, as in the PHP
+        // application.
+        if let Ok(found) = trakt::events(&state, &headers, &client).await {
+            events.extend(found);
+        }
     }
     let ical = calendar_more::ical_part(&state, &caller).await;
     Ok(Envelope::success(json!({ "ical": ical, "events": events })))

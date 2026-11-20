@@ -111,7 +111,7 @@ impl Server<'_> {
 
     /// The JSON at a path of the server. Nothing when the server refused the request.
     /// An answer that is no JSON reads as `null`, as in the PHP application.
-    async fn json(
+    pub(crate) async fn json(
         &self,
         http: &Outbound,
         path: &str,
@@ -338,7 +338,7 @@ fn stream_type(method: &str) -> &'static str {
 }
 
 /// The address of the route that gives a picture of the server.
-fn picture_route(
+pub(crate) fn picture_route(
     kind: Kind,
     picture: &str,
     id: &str,

@@ -15,9 +15,10 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    backups, basics, bookmarks, categories, config, connection_tests, fields, forward_auth, groups,
-    health_checks_plugin, homepage, images, invites, launch, lock, login, logout, mail, ping, plex,
-    register, speed_test, tabs, token, two_factor, users, wizard,
+    backups, basics, bookmarks, categories, config, connection_tests,
+    connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin,
+    homepage, images, invites, launch, lock, login, logout, mail, ping, plex, register, speed_test,
+    tabs, token, two_factor, users, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -151,6 +152,40 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         )?
         .route("/homepage/kuma/data", &get(homepage::uptime_kuma::data))?
         .route("/homepage/weather/data", &get(homepage::weather::data))?
+        .route(
+            "/homepage/weather/coordinates",
+            &post(homepage::helpers::coordinates),
+        )?
+        .route("/homepage/prompage/data", &get(homepage::prompage::data))?
+        .route("/homepage/youtube/{query}", &get(homepage::helpers::trailer))?
+        .route("/homepage/scrape", &post(homepage::helpers::scrape))?
+        .route("/homepage/trakt/calendar", &get(homepage::trakt::calendar))?
+        .route("/oauth/trakt", &get(homepage::trakt::oauth))?
+        .route("/homepage/donate/success", &get(homepage::donate::success))?
+        .route("/homepage/donate/cancel", &get(homepage::donate::cancel))?
+        .route("/homepage/donate/error", &get(homepage::donate::error))?
+        .route(
+            "/homepage/donate",
+            &get(homepage::donate::history).post(homepage::donate::start_from_form),
+        )?
+        .route("/homepage/donate/", &get(homepage::donate::start))?
+        .route(
+            "/homepage/donate/{amount}",
+            &get(homepage::donate::start_with_amount),
+        )?
+        .route(
+            "/homepage/embyLiveTVTracker/stats",
+            &get(homepage::emby_live_tv::stats),
+        )?
+        .route(
+            "/homepage/embyLiveTVTracker/activity",
+            &get(homepage::emby_live_tv::activity),
+        )?
+        .route("/homepage/jellystat", &get(homepage::jellystat::data))?
+        .route(
+            "/homepage/jellystat/metadata",
+            &post(homepage::jellystat::metadata),
+        )?
         .route("/homepage/tautulli/data", &get(homepage::tautulli::data))?
         .route("/homepage/tautulli/names", &get(homepage::plex::names))?
         .route("/homepage/plex/streams", &get(homepage::plex::streams))?
@@ -413,6 +448,20 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/test/adguard", &post(connection_tests::test_adguard))?
         .route("/test/unifi", &post(connection_tests::test_unifi))?
         .route("/test/unifi/site", &post(connection_tests::test_unifi_site))?
+        .route(
+            "/test/embyLiveTVTracker",
+            &post(connection_tests::test_emby_live_tv),
+        )?
+        .route("/test/jellystat", &post(connection_tests::test_jellystat))?
+        .route("/test/iframe", &post(more_tests::test_iframe))?
+        .route("/test/path", &post(more_tests::test_path))?
+        .route("/test/folder", &post(more_tests::test_folder))?
+        .route("/test/database", &post(more_tests::test_database))?
+        .route(
+            "/test/cron",
+            &get(more_tests::test_cron).post(more_tests::test_cron_schedule),
+        )?
+        .route("/test/slack-logs", &post(more_tests::test_slack_logs))?
         .route("/plugins/speedtest/garbage", &get(speed_test::garbage))?
         .route(
             "/plugins/speedtest/empty",

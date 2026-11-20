@@ -2273,3 +2273,386 @@ pub async fn unifi_os() -> StandIn {
     )
     .await
 }
+
+/// The client id and the client secret of the API application at the stand-in for
+/// Trakt.
+pub const TRAKT_CLIENT: (&str, &str) = ("made-up-trakt-client-id", "made-up-trakt-client-secret");
+
+/// The code that the stand-in for Trakt takes for tokens.
+pub const TRAKT_CODE: &str = "made-up-trakt-code";
+
+/// The access token and the refresh token that the stand-in for Trakt gives for
+/// [`TRAKT_CODE`].
+pub const TRAKT_TOKENS: (&str, &str) =
+    ("made-up-trakt-access-token", "made-up-trakt-refresh-token");
+
+/// The refresh token that the stand-in for Trakt gives for a refresh token.
+pub const TRAKT_NEXT_REFRESH: &str = "made-up-trakt-refresh-token-two";
+
+fn has_trakt_token(headers: &HeaderMap) -> bool {
+    let sent = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok());
+    let has_key = headers
+        .get("trakt-api-key")
+        .and_then(|value| value.to_str().ok())
+        == Some(TRAKT_CLIENT.0);
+    has_key && sent == Some(format!("Bearer {}", TRAKT_TOKENS.0).as_str())
+}
+
+async fn trakt_shows(headers: HeaderMap) -> Response {
+    if !has_trakt_token(&headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    axum::Json(json!([
+        {
+            "first_aired": "2099-01-05T02:00:00.000Z",
+            "episode": {"season": 3, "number": 1, "title": "The Return", "overview": "They are back.", "runtime": 45, "ids": {"tmdb": 9001}},
+            "show": {"title": "The Show", "year": 2019, "rating": 8.1, "genres": ["drama"], "ids": {"tmdb": 4711}},
+        },
+        {
+            "first_aired": "2001-03-04T20:00:00.000Z",
+            "episode": {"season": 1, "number": 12, "title": "The End", "ids": {"tmdb": 9002}},
+            "show": {"title": "The Old Show", "ids": {"tmdb": 4712}},
+        },
+    ]))
+    .into_response()
+}
+
+async fn trakt_movies(headers: HeaderMap) -> Response {
+    if !has_trakt_token(&headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    axum::Json(json!([
+        {
+            "released": "2099-01-07",
+            "movie": {
+                "title": "The Film", "year": 2099, "released": "2099-01-07", "tagline": "One more time",
+                "status": "released", "overview": "A film.", "runtime": 110, "rating": 7.5,
+                "genres": ["action"], "ids": {"tmdb": 815},
+            },
+        },
+    ]))
+    .into_response()
+}
+
+async fn trakt_token(axum::Json(body): axum::Json<Value>) -> Response {
+    let field = |name: &str| body.get(name).and_then(Value::as_str).unwrap_or_default();
+    let is_application = field("client_id") == TRAKT_CLIENT.0
+        && field("client_secret") == TRAKT_CLIENT.1
+        && field("redirect_uri").ends_with("/api/v2/oauth/trakt");
+    let refresh = match (field("grant_type"), is_application) {
+        ("authorization_code", true) if field("code") == TRAKT_CODE => TRAKT_TOKENS.1,
+        ("refresh_token", true) if field("refresh_token") == TRAKT_TOKENS.1 => TRAKT_NEXT_REFRESH,
+        _ => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                axum::Json(json!({
+                    "error": "invalid_grant",
+                    "error_description": "The provided authorization grant is invalid, expired or revoked.",
+                })),
+            )
+                .into_response();
+        }
+    };
+    axum::Json(json!({
+        "access_token": TRAKT_TOKENS.0,
+        "token_type": "bearer",
+        "expires_in": 86400,
+        "refresh_token": refresh,
+        "scope": "public",
+        // The first day of 2100, so the token is not over while a test runs.
+        "created_at": 4_102_444_800_i64,
+    }))
+    .into_response()
+}
+
+/// A stand-in for the API of Trakt: the calendar of one account with two episodes
+/// and one film, and the route that gives tokens.
+pub async fn trakt() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/calendars/my/shows/{start}/{days}", get(trakt_shows))
+            .route("/calendars/my/movies/{start}/{days}", get(trakt_movies))
+            .route("/oauth/token", axum::routing::post(trakt_token)),
+    )
+    .await
+}
+
+/// The API key of the stand-in for JellyStat.
+pub const JELLYSTAT_KEY: &str = "made-up-jellystat-key";
+
+fn has_jellystat_key(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-api-token")
+        .and_then(|value| value.to_str().ok())
+        == Some(JELLYSTAT_KEY)
+}
+
+fn jellystat_refusal() -> Response {
+    (
+        StatusCode::UNAUTHORIZED,
+        axum::Json(json!({"error": "Invalid API Key"})),
+    )
+        .into_response()
+}
+
+async fn jellystat_libraries(headers: HeaderMap) -> Response {
+    if !has_jellystat_key(&headers) {
+        return jellystat_refusal();
+    }
+    axum::Json(json!([
+        {"Id": "lib-1", "Name": "Films", "ServerId": "made-up-server-id", "CollectionType": "movies", "item_count": 120, "season_count": 0, "episode_count": 0, "total_play_time": 36_610_000_000_i64},
+        {"Id": "lib-2", "Name": "Series", "ServerId": "made-up-server-id", "CollectionType": "tvshows", "item_count": 40, "season_count": 90, "episode_count": 800, "total_play_time": 0},
+    ]))
+    .into_response()
+}
+
+async fn jellystat_history(headers: HeaderMap, RawQuery(query): RawQuery) -> Response {
+    if !has_jellystat_key(&headers) {
+        return jellystat_refusal();
+    }
+    if query_field(query.as_deref(), "page") != Some("1") {
+        return axum::Json(json!({"results": []})).into_response();
+    }
+    let video = json!([{"Type": "Video"}, {"Type": "Audio"}]);
+    axum::Json(json!({
+        "current_page": 1,
+        "pages": 1,
+        "results": [
+            {"Id": "h1", "UserName": "robin", "NowPlayingItemId": "815", "NowPlayingItemName": "The Film (2019)", "PlaybackDuration": 5400, "ActivityDateInserted": "2026-11-18T20:00:00.000Z", "ServerId": "made-up-server-id", "MediaStreams": video},
+            {"Id": "h2", "UserName": "robin", "NowPlayingItemId": "301", "NowPlayingItemName": "The One", "SeriesName": "The Show", "EpisodeId": "301", "PlaybackDuration": 1800, "ActivityDateInserted": "2026-11-19T20:00:00.000Z", "ServerId": "made-up-server-id", "MediaStreams": video},
+            {"Id": "h3", "UserName": "pat", "NowPlayingItemId": "302", "NowPlayingItemName": "The Two", "SeriesName": "The Show", "EpisodeId": "302", "PlaybackDuration": 1700, "ActivityDateInserted": "2026-11-17T20:00:00.000Z", "ServerId": "made-up-server-id", "MediaStreams": video},
+            {"Id": "h4", "UserName": "pat", "NowPlayingItemId": "77", "NowPlayingItemName": "A Song", "PlaybackDuration": 200, "ActivityDateInserted": "2026-11-16T20:00:00.000Z", "ServerId": "made-up-server-id", "MediaStreams": [{"Type": "Audio"}]},
+        ],
+    }))
+    .into_response()
+}
+
+async fn jellystat_item(headers: HeaderMap, RawQuery(query): RawQuery) -> Response {
+    if !has_jellystat_key(&headers) {
+        return jellystat_refusal();
+    }
+    if query_field(query.as_deref(), "id") != Some("815") {
+        return (
+            StatusCode::NOT_FOUND,
+            axum::Json(json!({"error": "not found"})),
+        )
+            .into_response();
+    }
+    axum::Json(json!({
+        "Id": "815", "ServerId": "made-up-server-id", "Type": "Movie", "Name": "The Film",
+        "ProductionYear": 2019, "Overview": "A film, as JellyStat knows it.",
+        "ImageTags": {"Primary": "made-up-tag"},
+    }))
+    .into_response()
+}
+
+/// A stand-in for JellyStat: two libraries, a history of four rows, what it knows
+/// about the item 815, and a page at its address. The key comes in the header
+/// `x-api-token`.
+pub async fn jellystat() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route(
+                "/",
+                get(|| async { axum::response::Html("<html><title>Jellystat</title></html>") }),
+            )
+            .route("/api/getLibraries", get(jellystat_libraries))
+            .route("/api/getHistory", get(jellystat_history))
+            .route("/api/getItem", get(jellystat_item)),
+    )
+    .await
+}
+
+fn live_tv_api(headers: &HeaderMap, uri: &axum::http::Uri) -> Response {
+    let sent = headers
+        .get("x-emby-token")
+        .and_then(|value| value.to_str().ok());
+    if sent != Some(MEDIA_SERVER_KEY) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            "Access token is invalid or expired.",
+        )
+            .into_response();
+    }
+    let body = match uri.path() {
+        "/emby/System/Info" => {
+            json!({"ServerName": "Made-up Emby", "Version": "4.8.0.0", "Id": "made-up-server-id"})
+        }
+        "/emby/LiveTv/Info" => {
+            json!({"Services": [{"Name": "Emby", "Status": "Ok"}], "IsEnabled": true})
+        }
+        "/emby/Users" => json!([
+            {"Id": "1", "Name": "Owner", "Policy": {"IsAdministrator": true}},
+            {"Id": "2", "Name": "Zed", "Policy": {"IsAdministrator": false}},
+        ]),
+        "/emby/LiveTv/Timers" => json!({"TotalRecordCount": 2, "Items": [
+            {
+                "Id": "t2", "Name": "Late Show", "ChannelId": "12", "UserId": "2",
+                "StartDate": "2099-01-05T22:00:00.0000000Z", "EndDate": "2099-01-05T23:30:00.0000000Z",
+                "ProgramInfo": {"Name": "Late Show", "EpisodeTitle": "Guests", "SeriesName": "The Late Show"},
+            },
+            {
+                "Id": "t1", "Name": "News", "SeriesName": "The News", "ChannelName": "One",
+                "StartDate": "2001-03-04T20:00:00.0000000Z", "EndDate": "2001-03-04T20:30:00.0000000Z",
+            },
+        ]}),
+        "/emby/LiveTv/SeriesTimers" => {
+            json!({"TotalRecordCount": 1, "Items": [{"Id": "st1", "Name": "The News"}]})
+        }
+        "/emby/LiveTv/Recordings" => json!({"TotalRecordCount": 31, "Items": [
+            {"Id": "r1", "Name": "The Film", "ChannelName": "Two", "DateCreated": "2026-11-18T20:15:00.0000000Z", "RunTimeTicks": 54_000_000_000_i64},
+            {"Id": "r2", "Name": "News", "SeriesName": "The News", "DateCreated": "2026-11-17T06:00:00.0000000Z"},
+        ]}),
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    axum::Json(body).into_response()
+}
+
+/// A stand-in for an Emby server with live television: its name, two timers, one
+/// series timer, two recordings and two users. The key comes in the header
+/// `X-Emby-Token`.
+pub async fn emby_live_tv() -> StandIn {
+    StandIn::start(
+        Router::new().fallback(|headers: HeaderMap, uri: axum::http::Uri| {
+            std::future::ready(live_tv_api(&headers, &uri))
+        }),
+    )
+    .await
+}
+
+/// A stand-in for PromPage, with two services.
+pub async fn prompage() -> StandIn {
+    StandIn::start(Router::new().route(
+        "/api/services",
+        get(|| async {
+            axum::Json(json!({"services": [
+                {"name": "Blog", "group": "Web", "status": true, "uptime": 99.954},
+                {"name": "Mail", "group": "Web", "status": false, "uptime": 87.5},
+            ]}))
+        }),
+    ))
+    .await
+}
+
+/// The secret key of the account at the stand-in for Stripe.
+pub const STRIPE_SECRET: &str = "sk_test_made-up-stripe-secret";
+
+/// The page for a payment that the stand-in for Stripe names.
+pub const STRIPE_PAGE: &str = "https://checkout.stripe.example/c/pay/cs_test_made-up";
+
+fn stripe_refusal(headers: &HeaderMap) -> Option<Response> {
+    let sent = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok());
+    (sent != Some(format!("Bearer {STRIPE_SECRET}").as_str())).then(|| {
+        (
+            StatusCode::UNAUTHORIZED,
+            axum::Json(json!({"error": {"type": "invalid_request_error", "message": "Invalid API Key provided: sk_test_****"}})),
+        )
+            .into_response()
+    })
+}
+
+async fn stripe_charges(headers: HeaderMap) -> Response {
+    if let Some(refusal) = stripe_refusal(&headers) {
+        return refusal;
+    }
+    let charge = |id: &str, cents: u32, email: &str| {
+        json!({
+            "id": id, "object": "charge", "amount": cents, "amount_captured": cents,
+            // 20 November 2026, 10:00 UTC.
+            "created": 1_795_168_800, "currency": "usd",
+            "billing_details": {"email": email, "name": "A Name"},
+        })
+    };
+    axum::Json(json!({"object": "list", "has_more": false, "data": [
+        charge("ch_1", 1250, "Admin@Example.com"),
+        charge("ch_2", 500, "Zoe@Example.com"),
+        charge("ch_3", 0, "zoe@example.com"),
+    ]}))
+    .into_response()
+}
+
+async fn stripe_session(headers: HeaderMap) -> Response {
+    if let Some(refusal) = stripe_refusal(&headers) {
+        return refusal;
+    }
+    axum::Json(json!({"id": "cs_test_made-up", "object": "checkout.session", "url": STRIPE_PAGE}))
+        .into_response()
+}
+
+/// A stand-in for the API of Stripe: three charges, and the start of a payment.
+pub async fn stripe() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/v1/charges", get(stripe_charges))
+            .route("/v1/checkout/sessions", axum::routing::post(stripe_session)),
+    )
+    .await
+}
+
+/// The API key of the stand-in for YouTube.
+pub const YOUTUBE_KEY: &str = "made-up-youtube-key";
+
+async fn youtube_search(headers: HeaderMap) -> Response {
+    let sent = headers
+        .get("x-goog-api-key")
+        .and_then(|value| value.to_str().ok());
+    if sent != Some(YOUTUBE_KEY) {
+        return (
+            StatusCode::FORBIDDEN,
+            axum::Json(json!({"error": {"code": 403, "message": "The request is missing a valid API key."}})),
+        )
+            .into_response();
+    }
+    axum::Json(json!({
+        "kind": "youtube#searchListResponse",
+        "items": [{
+            "kind": "youtube#searchResult",
+            "id": {"kind": "youtube#video", "videoId": "made-up-video"},
+            "snippet": {"title": "The Film - Official Trailer"},
+        }],
+    }))
+    .into_response()
+}
+
+/// A stand-in for the API of YouTube, which finds one video.
+pub async fn youtube() -> StandIn {
+    StandIn::start(Router::new().route("/youtube/v3/search", get(youtube_search))).await
+}
+
+/// A stand-in for a web server with pages: a page of HTML, a file of JSON, a page
+/// that forbids frames, a page that sends the browser on, and a webhook.
+pub async fn pages() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route(
+                "/page",
+                get(|| async { axum::response::Html("<p>Fish &amp; Chips &copy; 2026</p>") }),
+            )
+            .route(
+                "/data.json",
+                get(|| async { axum::Json(json!({"answer": 42})) }),
+            )
+            .route(
+                "/no-frames",
+                get(|| async { ([("x-frame-options", "DENY")], "no frames") }),
+            )
+            .route(
+                "/same-origin",
+                get(|| async { ([("x-frame-options", "SAMEORIGIN")], "same origin") }),
+            )
+            .route(
+                "/moved",
+                get(|| async { (StatusCode::FOUND, [(header::LOCATION, "/page")]) }),
+            )
+            .route("/hook", axum::routing::post(|| async { "ok" }))
+            .route(
+                "/closed-hook",
+                axum::routing::post(|| async { (StatusCode::NOT_FOUND, "no such hook") }),
+            ),
+    )
+    .await
+}

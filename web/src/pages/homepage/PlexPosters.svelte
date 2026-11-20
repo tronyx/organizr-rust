@@ -19,6 +19,8 @@
     label,
     title = label,
     service = 'plex',
+    detailsPath = `homepage/${service}/metadata`,
+    serverName = SERVICE_NAMES[service],
   }: {
     items: PlexItem[];
     label: string;
@@ -26,9 +28,14 @@
     title?: string;
     /** The server of the items. */
     service?: MediaService;
+    /** The route that gives the details of an item, when it is not the one of the server. */
+    detailsPath?: string;
+    /** The name of the server on the button that opens an item there. */
+    serverName?: string;
   } = $props();
 
-  let open = $state<PlexItem | null>(null);
+  // The item is kept as it is, so it can be told apart from the item of a later click.
+  let open = $state.raw<PlexItem | null>(null);
   let details = $state<PlexItem | null>(null);
   let error = $state<string | null>(null);
 
@@ -41,7 +48,7 @@
       return;
     }
     try {
-      const answer = await api<PlexAnswer | null>('POST', `homepage/${service}/metadata`, {
+      const answer = await api<PlexAnswer | null>('POST', detailsPath, {
         key: item.metadataKey,
       });
       if (open === item) {
@@ -53,7 +60,8 @@
   }
 
   const shown = $derived(details ?? open);
-  const link = $derived(open ? linkOf(open) : null);
+  // The list names the address of an item. Some lists do not, and the details do.
+  const link = $derived(open ? (linkOf(open) ?? (details ? linkOf(details) : null)) : null);
   const genres = $derived(Array.isArray(shown?.metadata?.genres) ? shown.metadata.genres : []);
   const actors = $derived(Array.isArray(shown?.metadata?.actors) ? shown.metadata.actors : []);
 </script>
@@ -118,7 +126,7 @@
     <div class="modal-action">
       {#if link}
         <a class="btn" href={link} target="_blank" rel="noopener noreferrer">
-          Open in {SERVICE_NAMES[service]}
+          Open in {serverName}
         </a>
       {/if}
       <button type="button" class="btn btn-primary" onclick={() => (open = null)}>Close</button>

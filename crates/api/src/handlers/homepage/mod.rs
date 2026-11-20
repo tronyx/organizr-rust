@@ -8,12 +8,16 @@
 pub mod adguard;
 pub mod arr;
 pub mod calendar_more;
+pub mod donate;
 pub mod downloaders;
 pub mod downloaders_more;
 pub mod emby;
+pub mod emby_live_tv;
 pub mod health_checks;
+pub mod helpers;
 pub mod html;
 pub mod indexers;
+pub mod jellystat;
 pub mod monitorr;
 pub mod netdata;
 pub mod octoprint;
@@ -21,8 +25,10 @@ pub mod ombi;
 pub mod overseerr;
 pub mod pihole;
 pub mod plex;
+pub mod prompage;
 pub mod speedtest_tracker;
 pub mod tautulli;
+pub mod trakt;
 pub mod unifi;
 pub mod uptime_kuma;
 pub mod weather;
@@ -169,6 +175,11 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderSpeedtest" => ("speedtest", speedtest_tracker::permissions()),
         "homepageOrderOctoprint" => ("octoprint", octoprint::permissions()),
         "homepageOrderunifi" => ("unifi", unifi::permissions()),
+        "homepageOrderPromPage" => ("prompage", prompage::permissions()),
+        "homepageOrderDonate" => ("donate", donate::permissions()),
+        "homepageOrderEmbyLiveTVTracker" => ("embylivetv", emby_live_tv::permissions()),
+        // What the item needs depends on its settings, see `visible_items`.
+        "homepageOrderJellyStat" => ("jellystat", jellystat::details_permissions()),
         "homepageOrderplexnowplaying" => ("plexstreams", plex::permissions(plex::Part::Streams)),
         "homepageOrderplexrecent" => ("plexrecent", plex::permissions(plex::Part::Recent)),
         "homepageOrderplexplaylist" => ("plexplaylists", plex::permissions(plex::Part::Playlists)),
@@ -262,6 +273,9 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
         let seen = if item.kind == "calendar" {
             // The calendar shows when the caller gets one source of it at least.
             arr::sees_a_calendar(settings, caller)
+        } else if item.kind == "jellystat" {
+            // The statistics need the API key, and the frame does not.
+            jellystat::permissions(settings).allow(settings, caller)
         } else {
             permissions.allow(settings, caller)
         };
@@ -291,6 +305,12 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
         }
         if item.kind == "prowlarr" {
             item.options = indexers::options(IndexerKind::Prowlarr, settings);
+        }
+        match item.kind {
+            "donate" => item.options = donate::options(settings),
+            "embylivetv" => item.options = emby_live_tv::options(settings),
+            "jellystat" => item.options = jellystat::options(settings),
+            _ => {}
         }
         if item.kind == "weather" {
             // The title shows only when its switch is on.

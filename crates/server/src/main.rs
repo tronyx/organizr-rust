@@ -2,7 +2,6 @@
 
 mod check;
 mod check_homepage;
-mod cron;
 mod healthcheck;
 mod import;
 mod restore;

@@ -89,16 +89,16 @@ pub fn permissions(kind: Kind, part: Part) -> Permissions {
 }
 
 /// The settings of one of the two servers.
-struct Install<'a> {
-    address: &'a str,
-    token: &'a str,
-    never_check: bool,
-    link: &'a str,
-    open_tab: bool,
-    tab_name: &'a str,
+pub(super) struct Install<'a> {
+    pub(super) address: &'a str,
+    pub(super) token: &'a str,
+    pub(super) never_check: bool,
+    pub(super) link: &'a str,
+    pub(super) open_tab: bool,
+    pub(super) tab_name: &'a str,
 }
 
-fn install(settings: &Settings, kind: Kind) -> Install<'_> {
+pub(super) fn install(settings: &Settings, kind: Kind) -> Install<'_> {
     match kind {
         Kind::Emby => Install {
             address: &settings.emby_url,

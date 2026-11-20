@@ -30,6 +30,11 @@ export interface FieldGroup {
   test?: string;
   /** A second test, whose answer holds values for a field of the group. */
   lookup?: { test: string; label: string };
+  /**
+   * A route of the API that the Admin opens in a new window, for a login at another
+   * service: the path after `api/v2/`, and the text of the button.
+   */
+  link?: { path: string; label: string };
 }
 
 /** The general settings, in the groups of the page. */
@@ -1030,6 +1035,263 @@ const WEATHER_ITEMS: FieldGroup[] = [
         label: 'Milliseconds between two loads of the weather',
         kind: 'number',
         min: 5000,
+      },
+    ],
+  },
+];
+
+/** The settings of the PromPage item. PHP Organizr has no level for it: everybody sees it. */
+const PROMPAGE_ITEMS: FieldGroup[] = [
+  {
+    title: 'PromPage',
+    fields: [
+      { key: 'homepagePromPageEnabled', label: 'Show PromPage', kind: 'switch' },
+      {
+        key: 'homepageOrderPromPage',
+        label: 'Place of PromPage on the homepage',
+        kind: 'number',
+        min: 0,
+        help: 'The item with the lowest number stands at the top.',
+      },
+      {
+        key: 'promPageURL',
+        label: 'Address of PromPage',
+        kind: 'text',
+        help: 'Every person who opens the homepage sees this item, also without a login.',
+      },
+      {
+        key: 'homepagePromPageHeaderToggle',
+        label: 'Show a title above the services',
+        kind: 'switch',
+      },
+      { key: 'homepagePromPageHeader', label: 'Title above the services', kind: 'text' },
+      {
+        key: 'homepagePromPageCompact',
+        label: 'Show the services in the small form',
+        kind: 'switch',
+      },
+      {
+        key: 'homepagePromPageShowUptime',
+        label: 'Show the uptime of a service',
+        kind: 'switch',
+      },
+      {
+        key: 'homepagePromPageRefresh',
+        label: 'Milliseconds between two loads of PromPage',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+];
+
+/** The amounts that the donate item takes as its minimum, in cents, as PHP Organizr lists them. */
+const DONATE_MINIMUMS = [100, 200, 300, 400, 500, 1000, 2000, 2500, 5000, 7500, 10000].map(
+  (cents) => ({ value: String(cents), label: `${cents / 100} USD` }),
+);
+
+/** The settings of the donate item. */
+const DONATE_ITEMS: FieldGroup[] = [
+  {
+    title: 'Donate',
+    fields: [
+      ...itemFields(
+        'the donate item',
+        'homepageDonateEnabled',
+        'homepageDonateAuth',
+        'homepageOrderDonate',
+      ),
+      {
+        key: 'homepageDonatePublicToken',
+        label: 'Publishable key of your Stripe account',
+        kind: 'text',
+        help: 'The payments go to your own Stripe account. Copy both keys from the page "API keys" of Stripe.',
+      },
+      {
+        key: 'homepageDonateSecretToken',
+        label: 'Secret key of your Stripe account',
+        kind: 'secret',
+      },
+      {
+        key: 'homepageDonateProductID',
+        label: 'Id of the product at Stripe',
+        kind: 'text',
+        help: 'Add a product with a one-time price at Stripe, and copy its id.',
+      },
+      { key: 'homepageDonateCustomizeHeading', label: 'Title of the item', kind: 'text' },
+      {
+        key: 'homepageDonateCustomizeDescription',
+        label: 'Text of the item',
+        kind: 'textarea',
+        help: 'The homepage shows the text as it is. HTML in it is not read.',
+      },
+      {
+        key: 'homepageDonateMinimum',
+        label: 'Smallest amount',
+        kind: 'select',
+        options: DONATE_MINIMUMS,
+      },
+      {
+        key: 'homepageDonateShowUserHistory',
+        label: 'Let a person see the own donations',
+        kind: 'switch',
+        help: 'An Admin sees the donations of everybody, with the e-mail addresses.',
+      },
+    ],
+  },
+];
+
+/** The settings of the two items that show more of a media server. */
+const MEDIA_STATISTICS_ITEMS: FieldGroup[] = [
+  {
+    title: 'Emby live TV',
+    test: 'embyLiveTVTracker',
+    fields: [
+      ...itemFields(
+        'the live TV of Emby',
+        'homepageEmbyLiveTVTrackerEnabled',
+        'homepageEmbyLiveTVTrackerAuth',
+        'homepageOrderEmbyLiveTVTracker',
+      ),
+      {
+        key: 'homepageEmbyLiveTVTrackerRefresh',
+        label: 'Minutes between two loads of the live TV',
+        kind: 'number',
+        min: 1,
+        help: 'The item uses the address and the API key of Emby.',
+      },
+      {
+        key: 'homepageEmbyLiveTVTrackerCompactView',
+        label: 'Show the numbers of the timers only',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageEmbyLiveTVTrackerShowDuration',
+        label: 'Show the length of a recording',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageEmbyLiveTVTrackerShowSeriesInfo',
+        label: 'Show the series and the title of the episode',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageEmbyLiveTVTrackerShowUserInfo',
+        label: 'Show the user who set a timer',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageEmbyLiveTVTrackerMaxItems',
+        label: 'Largest number of scheduled recordings',
+        kind: 'number',
+        min: 1,
+      },
+      {
+        key: 'homepageEmbyLiveTVTrackerShowCompleted',
+        label: 'Show the recordings that are made',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageEmbyLiveTVTrackerMaxCompletedItems',
+        label: 'Largest number of recordings that are made',
+        kind: 'number',
+        min: 1,
+      },
+    ],
+  },
+  {
+    title: 'JellyStat',
+    test: 'jellystat',
+    fields: [
+      ...itemFields(
+        'JellyStat',
+        'homepageJellyStatEnabled',
+        'homepageJellyStatAuth',
+        'homepageOrderJellyStat',
+      ),
+      {
+        key: 'homepageJellyStatDisplayMode',
+        label: 'What the item shows',
+        kind: 'select',
+        options: [
+          { value: 'native', label: 'The statistics' },
+          { value: 'iframe', label: 'The pages of JellyStat in a frame' },
+        ],
+      },
+      { key: 'jellyStatURL', label: 'Address of JellyStat', kind: 'text' },
+      {
+        key: 'jellyStatInternalURL',
+        label: 'Address of JellyStat for the server',
+        kind: 'text',
+        help: 'Leave the field empty when the server reaches JellyStat at the same address as a browser.',
+      },
+      {
+        key: 'jellyStatApikey',
+        label: 'API key of JellyStat',
+        kind: 'secret',
+        help: 'The statistics need the key. The frame does not.',
+      },
+      {
+        key: 'jellyStatDisableCertCheck',
+        label: 'Do not check the certificate of JellyStat',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageJellyStatRefresh',
+        label: 'Minutes between two loads of the statistics',
+        kind: 'number',
+        min: 1,
+      },
+      {
+        key: 'homepageJellyStatDays',
+        label: 'Days that the statistics look back',
+        kind: 'number',
+        min: 1,
+      },
+      { key: 'homepageJellyStatShowLibraries', label: 'Show the libraries', kind: 'switch' },
+      { key: 'homepageJellyStatShowUsers', label: 'Show the users', kind: 'switch' },
+      {
+        key: 'homepageJellyStatMaxItems',
+        label: 'Largest number of users in the list',
+        kind: 'number',
+        min: 1,
+      },
+      {
+        key: 'homepageJellyStatShowMostWatched',
+        label: 'Show what was played most',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageJellyStatShowMostWatchedMovies',
+        label: 'Show the films that were watched most',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageJellyStatShowMostWatchedShows',
+        label: 'Show the series that were watched most',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageJellyStatShowMostListenedMusic',
+        label: 'Show the music that was played most',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageJellyStatMostWatchedCount',
+        label: 'Largest number of items in each of these lists',
+        kind: 'number',
+        min: 1,
+      },
+      {
+        key: 'homepageJellyStatIframeHeight',
+        label: 'Height of the frame in pixels',
+        kind: 'number',
+        min: 300,
+      },
+      {
+        key: 'homepageJellyStatIframeScrolling',
+        label: 'Let the frame scroll',
+        kind: 'switch',
       },
     ],
   },
@@ -2062,6 +2324,43 @@ const CALENDAR_ITEMS: FieldGroup[] = [
       },
     ],
   },
+  {
+    title: 'Trakt',
+    link: { path: 'oauth/trakt', label: 'Connect the Trakt account' },
+    fields: [
+      { key: 'homepageTraktEnabled', label: 'Show Trakt in the calendar', kind: 'switch' },
+      {
+        key: 'homepageTraktAuth',
+        label: 'Trakt is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'traktClientId',
+        label: 'Client id of the API application at Trakt',
+        kind: 'text',
+        help: 'Make an API application at Trakt. Its redirect URI is the address of this site with api/v2/oauth/trakt after it.',
+      },
+      {
+        key: 'traktClientSecret',
+        label: 'Client secret of the API application at Trakt',
+        kind: 'secret',
+      },
+      {
+        key: 'calendarStartTrakt',
+        label: 'Days before today that the calendar of Trakt loads',
+        kind: 'number',
+        min: 0,
+        help: 'Trakt gives 33 days at most: the days before today and the days after today together.',
+      },
+      {
+        key: 'calendarEndTrakt',
+        label: 'Days after today that the calendar of Trakt loads',
+        kind: 'number',
+        min: 0,
+      },
+    ],
+  },
 ];
 
 /** The settings of the custom HTML items. */
@@ -2109,14 +2408,17 @@ export const HOMEPAGE: FieldGroup[] = [
   ...CUSTOM_HTML_ITEMS,
   ...SERVICE_ITEMS,
   ...MONITOR_ITEMS,
+  ...PROMPAGE_ITEMS,
   ...SEARCH_ITEMS,
   ...CALENDAR_ITEMS,
   ...DOWNLOAD_ITEMS,
   ...WEATHER_ITEMS,
   ...PLEX_ITEMS,
   ...MEDIA_SERVER_ITEMS,
+  ...MEDIA_STATISTICS_ITEMS,
   ...TAUTULLI_ITEMS,
   ...OVERSEERR_ITEMS,
+  ...DONATE_ITEMS,
 ];
 
 /** The settings of the health checks plugin, without its list of services. */
