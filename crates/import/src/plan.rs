@@ -14,8 +14,8 @@ use organizr_auth::secrets::{
 };
 use organizr_db::{ImportData, ImportedUser, SealedTwoFactor, StoredSetting, UserLogin};
 use organizr_domain::{
-    Category, CategoryId, CategoryNumber, Group, GroupId, GroupLevel, LevelRange, PasswordHash,
-    Tab, TabId, TabKind, Timestamp, User, UserId,
+    Bookmark, BookmarkCategory, Category, CategoryId, CategoryNumber, Group, GroupId, GroupLevel,
+    LevelRange, PasswordHash, Tab, TabId, TabKind, Timestamp, User, UserId, is_hex_color,
 };
 use organizr_settings::{Settings, SettingsError};
 use serde_json::Value;
@@ -56,6 +56,10 @@ pub struct LegacyInstall {
     pub categories: Vec<LegacyRow>,
     /// The rows of the table `tabs`.
     pub tabs: Vec<LegacyRow>,
+    /// The rows of the table `BOOKMARK-categories` of the bookmark plugin.
+    pub bookmark_categories: Vec<LegacyRow>,
+    /// The rows of the table `BOOKMARK-tabs` of the bookmark plugin.
+    pub bookmarks: Vec<LegacyRow>,
     /// The other tables: name and number of rows.
     pub other_tables: Vec<(String, u64)>,
 }
@@ -88,6 +92,8 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
     let users = plan_users(&install.users, &groups, secrets, &mut report)?;
     let categories = plan_categories(&install.categories, &mut report);
     let tabs = plan_tabs(&install.tabs, &categories, &mut report);
+    let bookmark_categories = plan_bookmark_categories(&install.bookmark_categories, &mut report);
+    let bookmarks = plan_bookmarks(&install.bookmarks, &mut report);
     let (settings, legacy_settings) = plan_settings(&install.config, secrets, &mut report)?;
 
     for (table, rows) in &install.other_tables {
@@ -101,6 +107,8 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
     report.users = users.len();
     report.categories = categories.len();
     report.tabs = tabs.len();
+    report.bookmarks = bookmarks.len();
+    report.bookmark_categories = bookmark_categories.len();
     report.settings = settings.len();
 
     Ok(Plan {
@@ -109,6 +117,8 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
             users,
             categories,
             tabs,
+            bookmark_categories,
+            bookmarks,
             settings,
             legacy_settings,
         },
@@ -498,6 +508,96 @@ fn plan_categories(rows: &[LegacyRow], report: &mut Report) -> Vec<Category> {
     }
     one_default_category(&mut categories, report);
     categories
+}
+
+/// The categories of the bookmark plugin. A category without a number gets the next
+/// free one, a name that is taken gets a number behind it, and exactly one category is
+/// the category of new bookmarks.
+fn plan_bookmark_categories(rows: &[LegacyRow], report: &mut Report) -> Vec<BookmarkCategory> {
+    let mut categories: Vec<BookmarkCategory> = Vec::new();
+    let mut names = Names::default();
+    for (row, place) in rows.iter().zip(1_i64..) {
+        let name = names.give(
+            "bookmark category",
+            row.filled("category"),
+            "Category",
+            report,
+        );
+        let wanted = row.number("category_id");
+        let number = match wanted {
+            Some(number) if categories.iter().all(|other| other.number != number) => number,
+            _ => {
+                let free = categories
+                    .iter()
+                    .map(|other| other.number)
+                    .max()
+                    .map_or(1, |highest| highest.saturating_add(1));
+                report.repairs.push(format!(
+                    "The bookmark category \"{name}\" had no number of its own. It has the number {free} now."
+                ));
+                free
+            }
+        };
+        categories.push(BookmarkCategory {
+            id: row.number("id").unwrap_or(place),
+            number,
+            position: row.number("order").unwrap_or(place),
+            name,
+            is_default: row.is_on("default"),
+        });
+    }
+    let mut seen_default = false;
+    for category in &mut categories {
+        if category.is_default && seen_default {
+            category.is_default = false;
+        }
+        seen_default |= category.is_default;
+    }
+    if !seen_default
+        && let Some(first) = categories.iter_mut().min_by_key(|category| category.number)
+    {
+        first.is_default = true;
+    }
+    categories
+}
+
+/// The bookmarks of the bookmark plugin. A name that is taken gets a number behind it,
+/// and a colour that is no colour becomes black or white.
+fn plan_bookmarks(rows: &[LegacyRow], report: &mut Report) -> Vec<Bookmark> {
+    let mut names = Names::default();
+    let mut bookmarks = Vec::new();
+    for (row, place) in rows.iter().zip(1_i64..) {
+        let name = names.give("bookmark", row.filled("name"), "Bookmark", report);
+        let mut color = |column: &str, fallback: &str| match row.filled(column) {
+            Some(color) if is_hex_color(color) => color.to_owned(),
+            _ => {
+                report.repairs.push(format!(
+                    "The bookmark \"{name}\" had no valid {column}. It is {fallback} now."
+                ));
+                fallback.to_owned()
+            }
+        };
+        let background_color = color("background_color", "#000000");
+        let text_color = color("text_color", "#ffffff");
+        let least_access = row
+            .number("group_id")
+            .and_then(|level| i32::try_from(level).ok())
+            .filter(|level| (0..=999).contains(level))
+            .unwrap_or(999);
+        bookmarks.push(Bookmark {
+            id: row.number("id").unwrap_or(place),
+            position: row.number("order").unwrap_or(place),
+            category: row.number("category_id").unwrap_or(0),
+            name,
+            url: row.text("url").unwrap_or_default().to_owned(),
+            enabled: row.is_on("enabled"),
+            least_access,
+            image: row.text("image").unwrap_or_default().to_owned(),
+            background_color,
+            text_color,
+        });
+    }
+    bookmarks
 }
 
 /// Makes exactly one category the category of new tabs.
@@ -1049,5 +1149,91 @@ mod tests {
             plan.report.repairs
         );
         assert_eq!(plan.report.legacy_settings, [] as [String; 0]);
+    }
+
+    #[test]
+    fn bookmarks_of_the_plugin_are_planned_with_repairs() {
+        let install = LegacyInstall {
+            bookmark_categories: vec![
+                LegacyRow::of([
+                    ("id", Some("1")),
+                    ("order", Some("1")),
+                    ("category", Some("Work")),
+                    ("category_id", Some("1")),
+                    ("default", Some("0")),
+                ]),
+                // The same number and the same name as the first one.
+                LegacyRow::of([
+                    ("id", Some("2")),
+                    ("order", Some("2")),
+                    ("category", Some("work")),
+                    ("category_id", Some("1")),
+                    ("default", Some("0")),
+                ]),
+            ],
+            bookmarks: vec![
+                LegacyRow::of([
+                    ("id", Some("5")),
+                    ("order", Some("1")),
+                    ("category_id", Some("1")),
+                    ("name", Some("Wiki")),
+                    ("url", Some("https://wiki.example.com")),
+                    ("enabled", Some("1")),
+                    ("group_id", Some("4")),
+                    ("image", Some("fontawesome::book")),
+                    ("background_color", Some("#123")),
+                    ("text_color", Some("#abcdef")),
+                ]),
+                // The same name, a colour that is none, and a level that is none.
+                LegacyRow::of([
+                    ("id", Some("6")),
+                    ("order", Some("2")),
+                    ("category_id", Some("9")),
+                    ("name", Some("WIKI")),
+                    ("url", None),
+                    ("enabled", Some("0")),
+                    ("group_id", Some("5000")),
+                    ("image", None),
+                    ("background_color", Some("red")),
+                    ("text_color", None),
+                ]),
+            ],
+            ..LegacyInstall::default()
+        };
+
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let plan = plan(&install, &secrets).expect("the plan can be made");
+
+        let categories = &plan.data.bookmark_categories;
+        assert_eq!(
+            categories
+                .iter()
+                .map(|one| (one.number, one.name.as_str(), one.is_default))
+                .collect::<Vec<_>>(),
+            [(1, "Work", true), (2, "work (2)", false)]
+        );
+        let bookmarks = &plan.data.bookmarks;
+        assert_eq!(bookmarks[0].id, 5);
+        assert_eq!(bookmarks[0].background_color, "#123");
+        assert_eq!(bookmarks[0].least_access, 4);
+        assert!(bookmarks[0].enabled);
+        assert_eq!(bookmarks[1].name, "WIKI (2)");
+        assert_eq!(bookmarks[1].background_color, "#000000");
+        assert_eq!(bookmarks[1].text_color, "#ffffff");
+        assert_eq!(bookmarks[1].least_access, 999);
+        assert_eq!(bookmarks[1].url, "");
+        assert!(!bookmarks[1].enabled);
+        assert_eq!(
+            (plan.report.bookmark_categories, plan.report.bookmarks),
+            (2, 2)
+        );
+        // One line for each repair: a name twice, a number, and two colours.
+        let about_bookmarks: Vec<&String> = plan
+            .report
+            .repairs
+            .iter()
+            .filter(|repair| repair.contains("bookmark"))
+            .collect();
+        assert_eq!(about_bookmarks.len(), 5, "{about_bookmarks:?}");
     }
 }

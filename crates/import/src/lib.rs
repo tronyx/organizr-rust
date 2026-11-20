@@ -32,7 +32,14 @@ const CONFIG_FILE: &str = "data/config/config.php";
 const WEB_ROOTS: [&str; 5] = ["", "www/organizr", "www/Dashboard", "www", "html"];
 
 /// The tables that the importer reads.
-const IMPORTED_TABLES: [&str; 4] = ["groups", "users", "categories", "tabs"];
+const IMPORTED_TABLES: [&str; 6] = [
+    "groups",
+    "users",
+    "categories",
+    "tabs",
+    "BOOKMARK-categories",
+    "BOOKMARK-tabs",
+];
 
 /// Why an import cannot run.
 #[derive(Debug, Error)]
@@ -158,6 +165,8 @@ pub async fn read(request: ImportRequest<'_>) -> Result<Source, ImportError> {
         users: database.rows("users").await?,
         categories: database.rows("categories").await?,
         tabs: database.rows("tabs").await?,
+        bookmark_categories: database.rows("BOOKMARK-categories").await?,
+        bookmarks: database.rows("BOOKMARK-tabs").await?,
         other_tables: Vec::new(),
     };
     for table in database.tables().await? {

@@ -51,6 +51,7 @@ If the new database holds records, the import stops and changes nothing. To impo
 | From the old install | In the new install |
 |---|---|
 | Groups, users, categories, tabs | The same records, with the same ids |
+| Bookmarks and bookmark categories of the bookmark plugin | The same records, with the same ids |
 | Passwords of users | The same hashes. Each user logs in with the old password |
 | Second factor of a user, Plex token of a user | Kept, sealed with the key of the new install |
 | Settings in `data/config/config.php` | The settings of the new install. A setting that has its default value is not stored |
@@ -64,7 +65,7 @@ If the new database holds records, the import stops and changes nothing. To impo
 ## What is not imported
 
 - Sessions. Every user logs in again.
-- The tables of plugins and of the chat: `invites`, `BOOKMARK-categories`, `BOOKMARK-tabs`, `chatroom` and `options`. This version does not have these features yet. The report gives the number of rows of each table. The rows stay in the old database, so keep that file.
+- The tables of the invites plugin and of the chat: `invites`, `chatroom` and `options`. This version does not have these features yet. The report gives the number of rows of each table. The rows stay in the old database, so keep that file.
 - The picture cache in `data/cache`. The application makes its cache again.
 - PHP files that a person added in `data/pages`, `data/routes` and `data/plugins`. The report lists them. This application cannot run PHP.
 - The settings `driver`, `dbHost`, `dbUsername`, `dbPassword`, `dbLocation`, `dbName`, `logLocation`, `configVersion` and `organizrHash`. The new install gets its database from `ORGANIZR_DATABASE_URL`, writes its log to the standard output, and seals secrets with its own key.

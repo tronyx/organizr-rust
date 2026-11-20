@@ -1,18 +1,27 @@
 //! The import of another install: all its records, stored in one step.
 
-use organizr_domain::{Category, Group, Tab, User};
+use organizr_domain::{Bookmark, BookmarkCategory, Category, Group, Tab, User};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ConnectionTrait, DatabaseConnection, EntityTrait,
     PaginatorTrait, TransactionTrait,
 };
 
-use crate::entity::{category, group, legacy_setting, setting, tab, user};
+use crate::entity::{
+    bookmark_category, bookmark_tab, category, group, legacy_setting, setting, tab, user,
+};
 use crate::stored_settings::StoredSetting;
 use crate::users::UserLogin;
 use crate::{DbError, Engine, stored_settings};
 
 /// The tables whose records keep the id of the other install.
-const TABLES_WITH_IDS: [&str; 4] = ["groups", "users", "categories", "tabs"];
+const TABLES_WITH_IDS: [&str; 6] = [
+    "groups",
+    "users",
+    "categories",
+    "tabs",
+    "bookmark_categories",
+    "bookmark_tabs",
+];
 
 /// A user of the other install, with what that install knows about the login.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,6 +43,10 @@ pub struct ImportData {
     pub categories: Vec<Category>,
     /// The tabs. The category of each one is in `categories`.
     pub tabs: Vec<Tab>,
+    /// The categories of the bookmark plugin.
+    pub bookmark_categories: Vec<BookmarkCategory>,
+    /// The bookmarks of the bookmark plugin.
+    pub bookmarks: Vec<Bookmark>,
     /// The settings, in their stored form, with secrets sealed.
     pub settings: Vec<StoredSetting>,
     /// The settings that this application does not know. Each value is sealed.
@@ -104,6 +117,45 @@ async fn is_empty<C: ConnectionTrait>(connection: &C) -> Result<bool, DbError> {
         && category::Entity::find().count(connection).await? == 0
         && tab::Entity::find().count(connection).await? == 0
         && setting::Entity::find().count(connection).await? == 0)
+}
+
+/// Stores the records of the bookmark plugin, with their ids.
+async fn store_bookmarks<C: ConnectionTrait>(
+    connection: &C,
+    categories: Vec<BookmarkCategory>,
+    bookmarks: Vec<Bookmark>,
+) -> Result<(), DbError> {
+    for category in categories {
+        bookmark_category::ActiveModel {
+            id: ActiveValue::Set(category.id),
+            number: ActiveValue::Set(category.number),
+            position: ActiveValue::Set(category.position),
+            name_key: ActiveValue::Set(category.name.to_lowercase()),
+            name: ActiveValue::Set(category.name),
+            is_default: ActiveValue::Set(category.is_default),
+        }
+        .insert(connection)
+        .await?;
+    }
+
+    for bookmark in bookmarks {
+        bookmark_tab::ActiveModel {
+            id: ActiveValue::Set(bookmark.id),
+            position: ActiveValue::Set(bookmark.position),
+            category_number: ActiveValue::Set(bookmark.category),
+            name_key: ActiveValue::Set(bookmark.name.to_lowercase()),
+            name: ActiveValue::Set(bookmark.name),
+            url: ActiveValue::Set(bookmark.url),
+            enabled: ActiveValue::Set(bookmark.enabled),
+            least_access_level: ActiveValue::Set(bookmark.least_access),
+            image: ActiveValue::Set(bookmark.image),
+            background_color: ActiveValue::Set(bookmark.background_color),
+            text_color: ActiveValue::Set(bookmark.text_color),
+        }
+        .insert(connection)
+        .await?;
+    }
+    Ok(())
 }
 
 async fn store<C: ConnectionTrait>(connection: &C, data: ImportData) -> Result<(), DbError> {
@@ -194,6 +246,8 @@ async fn store<C: ConnectionTrait>(connection: &C, data: ImportData) -> Result<(
     for setting in &data.settings {
         stored_settings::put_in(connection, &setting.key, &setting.value).await?;
     }
+    store_bookmarks(connection, data.bookmark_categories, data.bookmarks).await?;
+
     for setting in data.legacy_settings {
         legacy_setting::ActiveModel {
             name: ActiveValue::Set(setting.key),

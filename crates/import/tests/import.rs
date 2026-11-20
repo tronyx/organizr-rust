@@ -138,8 +138,6 @@ async fn install_of_php_is_imported_whole() {
         assert_eq!(
             report.tables_not_imported,
             [
-                ("BOOKMARK-categories".to_owned(), 1),
-                ("BOOKMARK-tabs".to_owned(), 1),
                 ("chatroom".to_owned(), 1),
                 ("invites".to_owned(), 1),
                 ("options".to_owned(), 0),
@@ -1140,6 +1138,64 @@ async fn import_runs_again_after_one_that_failed_late() {
             std::fs::read_to_string(data_dir.join("userTabs/own.png")).expect("readable"),
             "data/userTabs/own.png"
         );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn bookmarks_of_the_plugin_are_imported_with_their_ids() {
+    on_each_engine(async |database| {
+        let legacy = Legacy::with("").await;
+        let secrets = seed::secrets();
+
+        let report = run(legacy.request(), database, &secrets, &legacy.data_dir())
+            .await
+            .expect("the import runs");
+
+        // The bookmark plugin brings its category and its bookmark, with their ids.
+        assert_eq!((report.bookmark_categories, report.bookmarks), (1, 1));
+        let categories = database
+            .bookmarks()
+            .categories()
+            .await
+            .expect("the categories load");
+        assert_eq!(categories.len(), 1);
+        assert_eq!(
+            (
+                categories[0].id,
+                categories[0].number,
+                categories[0].name.as_str()
+            ),
+            (1, 1, "Reading")
+        );
+        assert!(categories[0].is_default);
+        let bookmarks = database
+            .bookmarks()
+            .list()
+            .await
+            .expect("the bookmarks load");
+        assert_eq!(bookmarks.len(), 1);
+        assert_eq!(bookmarks[0].name, "News");
+        assert_eq!(bookmarks[0].url, "https://news.example.com/");
+        assert_eq!(bookmarks[0].least_access, 999);
+        assert_eq!(bookmarks[0].background_color, "#000000");
+        // A new bookmark gets the id after the one that was imported.
+        let next = database
+            .bookmarks()
+            .insert(organizr_domain::NewBookmark {
+                position: 2,
+                category: 1,
+                name: "Wiki".to_owned(),
+                url: "https://wiki.example.com/".to_owned(),
+                enabled: true,
+                least_access: 4,
+                image: String::new(),
+                background_color: "#fff".to_owned(),
+                text_color: "#000".to_owned(),
+            })
+            .await
+            .expect("a new bookmark is stored");
+        assert_eq!(next.id, 2);
     })
     .await;
 }
