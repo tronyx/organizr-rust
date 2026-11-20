@@ -104,6 +104,38 @@ fn serve_answers_and_creates_its_database_in_the_data_folder() {
         data_dir.path().join("organizr.db").is_file(),
         "the default database is an SQLite file in the data folder"
     );
+    // The log also goes to the file of the day in the folder `logs`, as JSON lines.
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let logged = loop {
+        let found = log_files_in(data_dir.path())
+            .iter()
+            .any(|file| file_holds(file, r#""message":"Organizr is listening""#));
+        if found || Instant::now() > deadline {
+            break found;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    };
+    assert!(logged, "the log file has the line of the start");
+}
+
+/// The log files in the folder `logs` of a data folder.
+fn log_files_in(data_dir: &Path) -> Vec<std::path::PathBuf> {
+    std::fs::read_dir(data_dir.join("logs")).map_or_else(
+        |_| Vec::new(),
+        |entries| {
+            entries
+                .filter_map(Result::ok)
+                .map(|entry| entry.path())
+                .filter(|path| {
+                    path.extension().is_some_and(|extension| extension == "log")
+                        && path
+                            .file_name()
+                            .and_then(|name| name.to_str())
+                            .is_some_and(|name| name.starts_with("organizr-"))
+                })
+                .collect()
+        },
+    )
 }
 
 #[test]
@@ -264,6 +296,15 @@ fn stored_secrets_need_the_key_file_of_the_install() {
         "{text}"
     );
     assert!(!text.contains(API_KEY), "the log holds the API key");
+    let files = log_files_in(data_dir.path());
+    assert!(!files.is_empty(), "the log files are written");
+    for file in files {
+        assert!(
+            !file_holds(&file, API_KEY),
+            "{} holds the API key",
+            file.display()
+        );
+    }
 }
 
 #[test]

@@ -11,7 +11,7 @@ use std::time::Duration;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::http::Outbound;
+use crate::http::{Outbound, without_address};
 
 /// Who logs in, and from where.
 #[derive(Clone, Copy)]
@@ -119,7 +119,8 @@ async fn ombi_request(
         .json(&body)
         .send()
         .await
-        .inspect_err(|error| tracing::warn!(%error, "Ombi cannot be reached"))
+        // The address can hold a key or a password, so the log names none.
+        .map_err(|error| tracing::warn!(error = %without_address(error), "Ombi cannot be reached"))
         .ok()?;
     if !response.status().is_success() {
         return None;
@@ -190,7 +191,10 @@ async fn overseerr_request(
         .json(&body)
         .send()
         .await
-        .inspect_err(|error| tracing::warn!(%error, "Overseerr cannot be reached"))
+        // The address can hold a key or a password, so the log names none.
+        .map_err(
+            |error| tracing::warn!(error = %without_address(error), "Overseerr cannot be reached"),
+        )
         .ok()?;
     if !response.status().is_success() {
         return None;
@@ -278,7 +282,7 @@ pub async fn tautulli_sessions(
             }
             Ok(_) => None,
             Err(error) => {
-                tracing::warn!(%error, "Tautulli cannot be reached");
+                tracing::warn!(error = %without_address(error), "Tautulli cannot be reached");
                 None
             }
         };

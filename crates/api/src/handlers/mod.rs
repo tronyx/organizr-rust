@@ -23,6 +23,7 @@ pub mod ip;
 pub mod launch;
 pub mod launch_settings;
 pub mod lock;
+pub mod log;
 pub mod login;
 pub mod logout;
 pub mod mail;

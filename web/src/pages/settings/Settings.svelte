@@ -1,6 +1,6 @@
 <script lang="ts">
   // The settings: the general settings, the editors for tabs, categories, groups and
-  // users, and the settings of the e-mails.
+  // users, the settings of the e-mails, the backups and the log.
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
@@ -12,6 +12,7 @@
     HEALTH_CHECKS_PLUGIN,
     HOMEPAGE,
     INVITES_PLUGIN,
+    LOGS,
     SPEED_TEST_PLUGIN,
   } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
@@ -22,6 +23,7 @@
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
   import HealthCheckServices from './HealthCheckServices.svelte';
+  import LogViewer from './LogViewer.svelte';
   import LoginSettings from './LoginSettings.svelte';
   import SettingsForm from './SettingsForm.svelte';
   import MailSettings from './MailSettings.svelte';
@@ -162,6 +164,15 @@
     >
       Backups
     </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'logs'}
+      aria-selected={section === 'logs'}
+      href={PAGES.logSettings}
+    >
+      Logs
+    </a>
   </div>
 
   <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
@@ -177,6 +188,10 @@
   {:else if section === 'backups'}
     <SettingsForm groups={BACKUPS} ondone={(message) => (done = message)}>
       <BackupsEditor ondone={(message) => (done = message)} />
+    </SettingsForm>
+  {:else if section === 'logs'}
+    <SettingsForm groups={LOGS} ondone={(message) => (done = message)}>
+      <LogViewer ondone={(message) => (done = message)} />
     </SettingsForm>
   {:else if section === 'plugins'}
     <SettingsForm

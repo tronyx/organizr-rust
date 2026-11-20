@@ -2581,6 +2581,68 @@ export const BACKUPS: FieldGroup[] = [
   },
 ];
 
+/** The levels of a record of the log, from the lowest, as PHP Organizr names them. */
+export const LOG_LEVELS = [
+  'DEBUG',
+  'INFO',
+  'NOTICE',
+  'WARNING',
+  'ERROR',
+  'CRITICAL',
+  'ALERT',
+  'EMERGENCY',
+] as const;
+
+/** The settings of the log. The page of the log stands below them. */
+export const LOGS: FieldGroup[] = [
+  {
+    title: 'Log',
+    fields: [
+      {
+        key: 'logLevel',
+        label: 'Lowest level in the log file',
+        kind: 'select',
+        options: LOG_LEVELS.map((level) => ({
+          value: level,
+          label: level.charAt(0) + level.slice(1).toLowerCase(),
+        })),
+        help: 'A line of a lower level stays out of the log file. The standard output of the server has a level of its own, in ORGANIZR_LOG.',
+      },
+      {
+        key: 'maxLogFiles',
+        label: 'Number of log files to keep',
+        kind: 'number',
+        min: 1,
+        help: 'The server writes one file for each day. When there are more files, the oldest ones are deleted.',
+      },
+      {
+        key: 'logLiveUpdateRefresh',
+        label: 'Time between two loads of the live log',
+        kind: 'select',
+        options: [
+          { value: '2500', label: '2.5 seconds' },
+          { value: '5000', label: '5 seconds' },
+          { value: '10000', label: '10 seconds' },
+          { value: '15000', label: '15 seconds' },
+          { value: '30000', label: '30 seconds' },
+          { value: '60000', label: '1 minute' },
+          { value: '300000', label: '5 minutes' },
+          { value: '600000', label: '10 minutes' },
+          { value: '900000', label: '15 minutes' },
+          { value: '1800000', label: '30 minutes' },
+          { value: '3600000', label: '1 hour' },
+        ],
+      },
+      {
+        key: 'logPageSize',
+        label: 'Records on a page of the log',
+        kind: 'select',
+        options: ['10', '25', '50', '100'].map((value) => ({ value, label: value })),
+      },
+    ],
+  },
+];
+
 /** The settings of the invites plugin. The invites have a page of their own. */
 export const INVITES_PLUGIN: FieldGroup[] = [
   {

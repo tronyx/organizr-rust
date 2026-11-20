@@ -17,8 +17,8 @@ use crate::error::ApiError;
 use crate::handlers::{
     backups, basics, bookmarks, categories, config, connection_tests,
     connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
-    homepage, icon, images, invites, ip, launch, lock, login, logout, mail, media_register, news,
-    pages, ping, plex, register, speed_test, sponsors, tabs, token, two_factor, users,
+    homepage, icon, images, invites, ip, launch, lock, log, login, logout, mail, media_register,
+    news, pages, ping, plex, register, speed_test, sponsors, tabs, token, two_factor, users,
     users_import, wizard,
 };
 use crate::picture_cache;
@@ -405,6 +405,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/page/{page}", &get(pages::one))?
         .route("/organizr/{page}[/{var1}[/{var2}]]", &get(pages::raw))?
         .route("/backup", &get(backups::list).post(backups::create))?
+        .route("/log[/{number}[/{trace_id}]]", &get(log::read))?
+        .route("/log[/{number}]", &delete(log::purge))?
         .route(
             "/backup/{filename}",
             &get(backups::download).delete(backups::remove),

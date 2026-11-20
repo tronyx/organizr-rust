@@ -77,6 +77,7 @@ All other settings are in the web interface.
 | Plugins | [Bookmarks](docs/bookmark-plugin.md), [Health checks](docs/health-checks-plugin.md), [Invites](docs/invites-plugin.md), [Speed test](docs/speed-test-plugin.md) |
 | Extensions of other authors | [Extensions](docs/extensions.md) |
 | Scheduled work | [Scheduled jobs](docs/scheduled-jobs.md) |
+| The log of the server | [The log](docs/log.md) |
 | Images and their checks | [Releases](docs/releases.md) |
 | Design | [Architecture](docs/architecture.md), [Audit of PHP Organizr](docs/audit.md), [Deviations](docs/deviations.md) |
 

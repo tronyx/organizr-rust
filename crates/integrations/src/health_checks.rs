@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use serde_json::Value;
 
-use crate::http::Outbound;
+use crate::http::{Outbound, without_address};
 
 /// The query that asks for checks with the given tags: `?tag=a&tag=b`. Tags come with
 /// commas between them. No tags, or `*`, ask for every check.
@@ -44,7 +44,7 @@ pub async fn checks(
         let response = match request.send().await {
             Ok(response) => response,
             Err(error) => {
-                tracing::warn!(%error, "Healthchecks cannot be reached");
+                tracing::warn!(error = %without_address(error), "Healthchecks cannot be reached");
                 continue;
             }
         };
@@ -59,7 +59,10 @@ pub async fn checks(
                 }
             }
             Ok(_) => tracing::warn!("Healthchecks gave no list of checks"),
-            Err(error) => tracing::warn!(%error, "the answer of Healthchecks cannot be read"),
+            Err(error) => tracing::warn!(
+                error = %without_address(error),
+                "the answer of Healthchecks cannot be read"
+            ),
         }
     }
     // Checks with the same status stay in the order of the projects.

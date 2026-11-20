@@ -11,6 +11,7 @@ pub mod device_cookie;
 pub mod envelope;
 pub mod error;
 mod handlers;
+pub mod log_files;
 pub mod php_json;
 pub mod php_url;
 pub mod picture_cache;
@@ -22,4 +23,4 @@ mod state;
 
 pub use crate::handlers::backups::create_backup;
 pub use crate::router::{API_BASE, router};
-pub use crate::state::{AppState, stored_settings};
+pub use crate::state::{AppState, SettingsWatch, stored_settings};

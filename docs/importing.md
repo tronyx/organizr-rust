@@ -75,7 +75,7 @@ If the new database holds records, the import stops and changes nothing. To impo
 - The tables `chatroom` and `options`. This version does not have the chat yet. The report gives the number of rows of each table. The rows stay in the old database, so keep that file.
 - The picture cache in `data/cache`. The application makes its cache again.
 - PHP files that a person added in `data/pages`, `data/routes` and `data/plugins`. The report lists them. This application cannot run PHP.
-- The settings `driver`, `dbHost`, `dbUsername`, `dbPassword`, `dbLocation`, `dbName`, `logLocation`, `configVersion` and `organizrHash`. The new install gets its database from `ORGANIZR_DATABASE_URL`, writes its log to the standard output, and seals secrets with its own key.
+- The settings `driver`, `dbHost`, `dbUsername`, `dbPassword`, `dbLocation`, `dbName`, `logLocation`, `configVersion` and `organizrHash`. The new install gets its database from `ORGANIZR_DATABASE_URL`, writes its log to the standard output and to the folder `logs` of its data folder (see [The log](log.md)), and seals secrets with its own key.
 
 ## Settings that the application does not know
 

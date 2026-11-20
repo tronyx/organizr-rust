@@ -5,6 +5,7 @@ mod check_homepage;
 mod check_homepage_more;
 mod healthcheck;
 mod import;
+mod log_file;
 mod restore;
 mod scheduler;
 mod secret_key;

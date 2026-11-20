@@ -2,16 +2,23 @@
 
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use anyhow::Context;
 use organizr_api::client::TrustedProxies;
+use organizr_api::log_files;
 use organizr_api::{AppState, router};
 use organizr_auth::secrets::SecretBox;
 use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, Engine};
 use organizr_settings::Settings;
 use tokio::net::TcpListener;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::filter::filter_fn;
+use tracing_subscriber::layer::SubscriberExt as _;
+use tracing_subscriber::util::SubscriberInitExt as _;
+use tracing_subscriber::{EnvFilter, Layer as _};
+
+use crate::log_file::FileLog;
 
 /// The options of `organizr serve`. Each one can also be set in the environment.
 ///
@@ -86,7 +93,7 @@ impl StorageArgs {
 
 /// Runs the server until the process is asked to stop.
 pub async fn run(args: Args) -> anyhow::Result<()> {
-    start_logging();
+    let log_file = start_logging(&args.storage.data_dir);
 
     let database = open_database(&args.storage).await?;
     let secrets = args.storage.secrets()?;
@@ -105,6 +112,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         // The pictures of other applications that the server fetches and keeps.
         .with_picture_cache(args.storage.data_dir.join("cache"))
         .with_data_folder(args.storage.data_dir.clone());
+    // The log file follows the `logLevel` and `maxLogFiles` settings from now on.
+    log_file.follow(state.settings_watch());
     #[cfg(feature = "wasm-plugins")]
     {
         state = state.with_extension_marketplace(&args.extension_marketplace);
@@ -151,17 +160,29 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     tracing::info!("Organizr is stopping");
     scheduler.abort();
-    database
+    let closed = database
         .close()
         .await
-        .context("the database did not close cleanly")
+        .context("the database did not close cleanly");
+    log_file.flush(LAST_LINES);
+    closed
 }
 
-/// Writes log lines to the standard output. `ORGANIZR_LOG` sets the level, for example
-/// `debug` or `organizr_api=debug,info`. The default is `info`.
-fn start_logging() {
+/// How long the server waits at the end for the last lines of the log file.
+const LAST_LINES: Duration = Duration::from_secs(2);
+
+/// Writes log lines to the standard output, and to the log file of the day in the folder
+/// `logs` of the data folder. `ORGANIZR_LOG` sets the level of the standard output, for
+/// example `debug` or `organizr_api=debug,info`. The default is `info`. The `logLevel`
+/// setting sets the level of the file.
+fn start_logging(data_dir: &Path) -> FileLog {
     let filter = EnvFilter::try_from_env("ORGANIZR_LOG").unwrap_or_else(|_| EnvFilter::new("info"));
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    let (log_file, file_layer) = FileLog::start(log_files::folder(data_dir));
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().with_filter(filter))
+        .with(file_layer.with_filter(filter_fn(crate::log_file::may_reach_the_file)))
+        .init();
+    log_file
 }
 
 /// Opens the database and brings its schema up to date.

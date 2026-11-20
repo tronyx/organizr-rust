@@ -87,6 +87,18 @@ pub struct AppState {
     settings_change: Arc<Mutex<()>>,
 }
 
+/// The settings of a running application, as they are at each moment. Reading them is
+/// cheap and never waits for a change.
+#[derive(Debug, Clone)]
+pub struct SettingsWatch(Arc<ArcSwap<Settings>>);
+
+impl SettingsWatch {
+    /// Runs `read` with the settings as they are now.
+    pub fn read<R>(&self, read: impl FnOnce(&Settings) -> R) -> R {
+        read(&self.0.load())
+    }
+}
+
 /// Why a change of settings failed.
 #[derive(Debug, Error)]
 pub enum ChangeError {
@@ -198,6 +210,12 @@ impl AppState {
     /// what it got, so one request works with one set of settings from start to end.
     pub fn settings(&self) -> Arc<Settings> {
         self.settings.load_full()
+    }
+
+    /// A view of the settings that follows each change, for a part of the server that
+    /// lives outside the requests: the writer of the log file.
+    pub fn settings_watch(&self) -> SettingsWatch {
+        SettingsWatch(Arc::clone(&self.settings))
     }
 
     /// Puts new settings in place of the current ones. Requests that start after this

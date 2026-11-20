@@ -499,6 +499,24 @@ test('the Admin changes the name of the install and the registration password', 
   );
 });
 
+test('the Admin reads the log of the server on the settings page', async ({ page }) => {
+  await logIn(page);
+  await page.goto('./#/settings/tabs');
+  await page.getByRole('tab', { name: 'Logs' }).click();
+  await expect(page).toHaveURL(/#\/settings\/logs$/);
+
+  // The server writes its start to the log file of the day.
+  const log = page.getByRole('table', { name: 'Log' });
+  await expect(log).toContainText('Organizr is listening');
+  await expect(page.getByLabel('Lowest level in the log file')).toHaveValue('INFO');
+
+  await page.getByRole('combobox', { name: 'Level', exact: true }).selectOption('WARNING');
+  await expect(log).not.toContainText('Organizr is listening');
+  await page.getByRole('combobox', { name: 'Level', exact: true }).selectOption('NONE');
+  await page.getByRole('button', { name: 'Details of Organizr is listening' }).click();
+  await expect(log).toContainText('crates/server/src/serve.rs');
+});
+
 test('a guest cannot open the settings', async ({ page }) => {
   await page.goto('./#/settings/tabs');
 

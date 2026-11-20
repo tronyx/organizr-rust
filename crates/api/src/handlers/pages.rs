@@ -68,7 +68,6 @@ fn page(name: &str) -> Option<(&'static str, Needs)> {
         "settings"
         | "settings_customize_appearance"
         | "settings_customize_settings"
-        | "settings_settings_logs"
         | "settings_settings_main"
         | "settings_template" => ("#/settings/general", SetUpAndCoAdmin),
         "settings_image_manager" | "settings_tab_editor_tabs" => {
@@ -79,6 +78,7 @@ fn page(name: &str) -> Option<(&'static str, Needs)> {
         | "settings_plugins_enabled"
         | "settings_plugins_settings" => ("#/settings/plugins", SetUpAndCoAdmin),
         "settings_settings_backup" => ("#/settings/backups", SetUpAndCoAdmin),
+        "settings_settings_logs" => ("#/settings/logs", SetUpAndCoAdmin),
         "settings_settings_sso" => ("#/settings/login", SetUpAndCoAdmin),
         "settings_tab_editor_categories" => ("#/settings/categories", SetUpAndCoAdmin),
         "settings_tab_editor_homepage" | "settings_tab_editor_homepage_order" => {
