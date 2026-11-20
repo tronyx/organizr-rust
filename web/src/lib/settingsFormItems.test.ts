@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { type Field, HOMEPAGE } from './settingsForm';
+import { type Field, HOMEPAGE, siteList } from './settingsForm';
 
 const FIELDS = HOMEPAGE.flatMap((group) => group.fields);
 
@@ -100,5 +100,78 @@ describe('the settings of the calendar', () => {
       'homepageCalendarAuth',
       'calendariCal',
     ]);
+  });
+});
+
+describe('the settings of the search items and of the monitors', () => {
+  it('have a connection test where the server has one, and keep keys and passwords secret', () => {
+    const tests: [string, string | undefined][] = [
+      ['Jackett', 'jackett'],
+      ['Prowlarr', 'prowlarr'],
+      ['AdGuard Home', 'adguard'],
+      ['UniFi', 'unifi'],
+      ['Netdata', undefined],
+      ['Monitorr', undefined],
+      ['Speedtest Tracker', undefined],
+      ['OctoPrint', undefined],
+    ];
+    for (const [title, test] of tests) {
+      expect(group(title), title).toBeDefined();
+      expect(group(title)?.test, title).toBe(test);
+    }
+    expect(group('UniFi')?.lookup?.test).toBe('unifi/site');
+    for (const key of ['jackettToken', 'ProwlarrToken', 'octoprintToken', 'unifiPassword']) {
+      expect(field(key)?.kind, key).toBe('secret');
+    }
+  });
+
+  it('name the settings of Prowlarr and the places as the server names them', () => {
+    expect(group('Prowlarr')?.fields.map((one) => one.key)).toEqual([
+      'homepageProwlarrEnabled',
+      'homepageProwlarrAuth',
+      'homepageOrderProwlarr',
+      'ProwlarrURL',
+      'ProwlarrToken',
+      'ProwlarrDisableCertCheck',
+      'homepageProwlarrBackholeDownload',
+    ]);
+    expect(field('homepageOrderAdguard')).toBeDefined();
+    expect(field('homepageOrderunifi')).toBeDefined();
+    // The server has no setting for a login of AdGuard Home.
+    expect(field('adGuardUsername')).toBeUndefined();
+    expect(field('adGuardPassword')).toBeUndefined();
+  });
+
+  it('have a group for each of the seven charts of Netdata', () => {
+    for (const number of [1, 2, 3, 4, 5, 6, 7]) {
+      expect(group(`Netdata: chart ${number}`)?.fields.map((one) => one.key)).toEqual(
+        ['Enabled', 'Title', 'Data', 'Chart', 'Colour', 'Size', 'lg', 'md', 'sm'].map(
+          (name) => `netdata${number}${name}`,
+        ),
+      );
+    }
+    expect(field('netdataCustom')?.kind).toBe('textarea');
+  });
+
+  it('have each key once', () => {
+    const keys = FIELDS.map((one) => one.key);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe('siteList', () => {
+  it('names the sites of a controller with their descriptions', () => {
+    expect(
+      siteList({
+        meta: { rc: 'ok' },
+        data: [{ name: 'default', desc: 'Default' }, { name: 'x7k2m9qa' }, { desc: 'No name' }],
+      }),
+    ).toBe('The names of the sites are: Default: default, x7k2m9qa');
+  });
+
+  it('is nothing for an answer without sites', () => {
+    expect(siteList(null)).toBeNull();
+    expect(siteList({ content: [] })).toBeNull();
+    expect(siteList({ data: [] })).toBeNull();
   });
 });

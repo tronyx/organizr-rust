@@ -5,6 +5,7 @@
 //! builds it. It asks `GET /homepage/items` which items the caller sees and in which
 //! order, and then asks the route of each item for its data.
 
+pub mod adguard;
 pub mod arr;
 pub mod calendar_more;
 pub mod downloaders;
@@ -12,11 +13,17 @@ pub mod downloaders_more;
 pub mod emby;
 pub mod health_checks;
 pub mod html;
+pub mod indexers;
+pub mod monitorr;
+pub mod netdata;
+pub mod octoprint;
 pub mod ombi;
 pub mod overseerr;
 pub mod pihole;
 pub mod plex;
+pub mod speedtest_tracker;
 pub mod tautulli;
+pub mod unifi;
 pub mod uptime_kuma;
 pub mod weather;
 
@@ -25,6 +32,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode, header};
 use organizr_integrations::arr::Kind;
 use organizr_integrations::emby::Kind as EmbyKind;
+use organizr_integrations::indexers::Kind as IndexerKind;
 use organizr_settings::Settings;
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -153,6 +161,14 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrdertautulli" => ("tautulli", tautulli::permissions()),
         "homepageOrderoverseerr" => ("overseerr", overseerr::permissions()),
         "homepageOrderombi" => ("ombi", ombi::permissions()),
+        "homepageOrderJackett" => ("jackett", indexers::permissions(IndexerKind::Jackett)),
+        "homepageOrderProwlarr" => ("prowlarr", indexers::permissions(IndexerKind::Prowlarr)),
+        "homepageOrderAdguard" => ("adguard", adguard::permissions()),
+        "homepageOrderNetdata" => ("netdata", netdata::permissions()),
+        "homepageOrderMonitorr" => ("monitorr", monitorr::permissions()),
+        "homepageOrderSpeedtest" => ("speedtest", speedtest_tracker::permissions()),
+        "homepageOrderOctoprint" => ("octoprint", octoprint::permissions()),
+        "homepageOrderunifi" => ("unifi", unifi::permissions()),
         "homepageOrderplexnowplaying" => ("plexstreams", plex::permissions(plex::Part::Streams)),
         "homepageOrderplexrecent" => ("plexrecent", plex::permissions(plex::Part::Recent)),
         "homepageOrderplexplaylist" => ("plexplaylists", plex::permissions(plex::Part::Playlists)),
@@ -269,6 +285,12 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
         }
         if item.kind == "ombi" {
             item.options = ombi::options(settings);
+        }
+        if item.kind == "jackett" {
+            item.options = indexers::options(IndexerKind::Jackett, settings);
+        }
+        if item.kind == "prowlarr" {
+            item.options = indexers::options(IndexerKind::Prowlarr, settings);
         }
         if item.kind == "weather" {
             // The title shows only when its switch is on.

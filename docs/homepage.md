@@ -43,6 +43,13 @@ This version has these items:
 - [Tautulli](#tautulli)
 - [Overseerr](#overseerr)
 - [Ombi](#ombi)
+- [Jackett](#jackett) and [Prowlarr](#prowlarr): a search of the indexers
+- [AdGuard Home](#adguard-home)
+- [Netdata](#netdata)
+- [Monitorr](#monitorr)
+- [Speedtest Tracker](#speedtest-tracker)
+- [OctoPrint](#octoprint)
+- [UniFi](#unifi)
 
 You set all items up in **Settings**, on the tab **Homepage**.
 
@@ -51,7 +58,7 @@ The homepage loads the data of an item again after the time that the item has in
 
 ## Test the connection of a service
 
-The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Ombi, Sonarr, Radarr, Lidarr, SickRage, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, rTorrent, uTorrent, JDownloader and Pi-hole.
+The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Ombi, Sonarr, Radarr, Lidarr, SickRage, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, rTorrent, uTorrent, JDownloader, Pi-hole, Jackett, Prowlarr, AdGuard Home and UniFi. The settings of UniFi have a second button, **Read the sites of the controller**, which is the test `unifi/site`.
 
 1. Enter the address and the key or the login of the service.
 2. Select **Save**. The test reads the settings that are stored.
@@ -863,3 +870,230 @@ The request is made as the person, with the token of Ombi that single sign-on ga
 Before the request, Organizr asks Ombi whether the film or the series is available or requested already. For a series, Ombi also names the id of the series in TheTVDB, which the request needs.
 
 The interface of this application does not have the search for a film or a series to request yet. Until then, make new requests in Ombi.
+
+## Jackett
+
+This item searches the indexers of [Jackett](https://github.com/Jackett/Jackett) for a text, and shows the releases that Jackett finds in a table.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageJackettEnabled` |
+| Level | `homepageJackettAuth` |
+| Place | `homepageOrderJackett` |
+| Address of Jackett | `jackettURL` |
+| API key | `jackettToken` |
+| Do not check the certificate | `jackettDisableCertCheck` |
+| Download with the black hole folder | `homepageJackettBackholeDownload` |
+
+Type a text and select **Search**. The table shows the date, the tracker, the name, the size, the files, the grabs, the seeders and the leechers of each release. The newest release stands first. The name of a release opens its page at the tracker.
+
+The last column has the download:
+
+- With **Download with the black hole folder** on, a release has a button. The button makes Jackett put the torrent file into its black hole folder. Set this folder in Jackett, and let your download client watch it.
+- Without the switch, a release has a link: its magnet link, or its page at the tracker.
+
+The API key of Jackett stays on the server. Jackett puts its key into its download links. Organizr cuts the key out of the answer before the answer goes to the browser, and puts the key back when it asks Jackett for a black hole download. So the download link of Jackett itself does not work from the browser, and the interface does not show it.
+
+A person who has the level of the item can search and can start a black hole download.
+
+## Prowlarr
+
+This item searches the indexers of [Prowlarr](https://prowlarr.com/) for a text, and shows the releases that Prowlarr finds in a table.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageProwlarrEnabled` |
+| Level | `homepageProwlarrAuth` |
+| Place | `homepageOrderProwlarr` |
+| Address of Prowlarr | `ProwlarrURL` |
+| API key | `ProwlarrToken` |
+| Do not check the certificate | `ProwlarrDisableCertCheck` |
+| Download with the download client of Prowlarr | `homepageProwlarrBackholeDownload` |
+
+The keys of the address, the API key and the certificate switch start with a capital letter. These are the names in the default settings of PHP Organizr.
+
+The table shows the date, the indexer, the title, the size, the grabs, the seeders and the leechers of each release. The release with the most seeders stands first.
+
+The last column has the download:
+
+- With **Download with the download client of Prowlarr** on, a release has a button. The button makes Prowlarr send the release to the download client that you set up in Prowlarr.
+- Without the switch, a release has a link to its page at the indexer, or its magnet link when the indexer gives one. The download link of Prowlarr holds the API key of Prowlarr, so the interface does not show it.
+
+The API key goes to Prowlarr in a header, and it stays on the server, as for Jackett.
+
+## AdGuard Home
+
+This item shows how many requests [AdGuard Home](https://adguard.com/adguard-home/overview.html) got, how many it blocked, how long it needed for an answer, and how many domains are on its block lists.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageAdGuardEnabled` |
+| Level | `homepageAdGuardAuth` |
+| Place | `homepageOrderAdguard` |
+| Addresses | `adguardURL` |
+| Show the title | `adguardHeaderToggle` |
+| Show the installs in one row of cards | `homepageAdGuardCombine` |
+| Show the total of the queries | `adguardQueriesToggle` |
+| Show the blocked queries | `adguardQueriesBlockedToggle` |
+| Show the part that was blocked | `adguardPercentToggle` |
+| Show the processing time | `adguardProcessingToggle` |
+| Show the domains on the block lists | `adguardDomainListToggle` |
+| Milliseconds between two loads | `homepageAdGuardRefresh` |
+
+For more than one install, put commas between the addresses. The answer names each install by its host.
+
+Organizr sends no user name and no password to AdGuard Home. PHP Organizr reads them from two settings, `adGuardUsername` and `adGuardPassword`, that its default settings do not have, and this version has only the settings of the defaults. So the item works with an install that answers its API without a login. An install that asks for a login refuses the request: the item then shows no numbers for it, and the connection test names it with "Unknown Failure".
+
+The number of domains on the block lists is the sum of the rules of all filter lists and of the rules of the install itself.
+
+## Netdata
+
+This item shows up to seven charts. Each chart shows one number of an install of [Netdata](https://www.netdata.cloud/), as a ring or as a gauge.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageNetdataEnabled` |
+| Level | `homepageNetdataAuth` |
+| Place | `homepageOrderNetdata` |
+| Address of Netdata | `netdataURL` |
+| Do not check the certificate | `netdataDisableCertCheck` |
+| Custom charts | `netdataCustom` |
+| Milliseconds between two loads | `homepageNetdataRefresh` |
+
+Each chart has these settings, where `<N>` is the number of the chart from 1 to 7:
+
+| Setting | Key | Values |
+|---|---|---|
+| Switch | `netdata<N>Enabled` | |
+| Title | `netdata<N>Title` | |
+| What the chart shows | `netdata<N>Data` | `disk-read`, `disk-write`, `cpu`, `net-in`, `net-out`, `ram-used`, `swap-used`, `disk-used`, `disk-avail`, `custom` |
+| Form | `netdata<N>Chart` | `easypiechart` for a ring, `gauge` for a gauge |
+| Colour | `netdata<N>Colour` | A hexadecimal colour without the number sign, for example `46e302` |
+| Size | `netdata<N>Size` | `lg`, `md`, `sm` |
+| Show on large, medium and small screens | `netdata<N>lg`, `netdata<N>md`, `netdata<N>sm` | |
+
+The disk and the network charts show megabytes or megabits in a second, and their part of the highest value that Netdata has. The other charts show a part of 100.
+
+When Netdata does not answer, the charts show without a number.
+
+### Custom charts
+
+A chart with the value `custom` reads its number from a request that you write. The setting `netdataCustom` holds JSON with one entry for each custom chart, by the number of the chart:
+
+```json
+{
+  "1": {
+    "url": "api/v1/data?chart=system.ram&format=array&points=540&group=average&gtime=0&options=absolute|percentage|jsonwrap|nonzero&after=-540&dimensions=used|buffers|active|wired",
+    "value": "result,0",
+    "units": "%",
+    "max": 100
+  }
+}
+```
+
+| Field | Meaning | Needed |
+|---|---|---|
+| `url` | The path of the request, after the address of Netdata. | Yes |
+| `value` | The way to the number in the JSON answer: keys and places, with commas between them. | Yes |
+| `units` | The unit that the chart shows. The default is `%`. | No |
+| `max` | The highest value. The default is 100. | No |
+| `mutator` | Calculations on the number, with commas between them, for example `/1000,*8`. The signs are `+`, `-`, `*` and `/`. | No |
+| `netdata` | The address of another install of Netdata to ask. | No |
+
+A chart whose entry is missing or not complete shows the reason and no number.
+
+## Monitorr
+
+This item shows the services that an install of [Monitorr](https://github.com/Monitorr/Monitorr) watches, and whether each one is online.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageMonitorrEnabled` |
+| Level | `homepageMonitorrAuth` |
+| Place | `homepageOrderMonitorr` |
+| Address of Monitorr | `monitorrURL` |
+| Do not check the certificate | `monitorrDisableCertCheck` |
+| Show a title | `monitorrHeaderToggle` |
+| Title | `monitorrHeader` |
+| Small form | `monitorrCompact` |
+| Milliseconds between two loads | `homepageMonitorrRefresh` |
+
+Monitorr has no API. Organizr reads the HTML that the page of Monitorr loads from `assets/php/loop.php`, and takes the name, the state, the picture and the link of each service from it. Another version of Monitorr can write other HTML, and the item then shows no services.
+
+The services that are offline stand first. A service is online, offline or unresponsive.
+
+Organizr loads the picture of each service from Monitorr and sends it with the answer. A picture of more than 512 KB is left out.
+
+Organizr sends no key to Monitorr. PHP Organizr sends its own API key with each request.
+
+## Speedtest Tracker
+
+This item shows the last result of an install of [Speedtest Tracker](https://github.com/henrywhitaker3/Speedtest-Tracker): the ping, the download speed and the upload speed. It also shows the average, the highest and the lowest values when the install sends them.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageSpeedtestEnabled` |
+| Level | `homepageSpeedtestAuth` |
+| Place | `homepageOrderSpeedtest` |
+| Address of Speedtest Tracker | `speedtestURL` |
+| Do not check the certificate | `speedtestDisableCertCheck` |
+| Show a title | `speedtestHeaderToggle` |
+| Title | `speedtestHeader` |
+| Milliseconds between two loads | `homepageSpeedtestRefresh` |
+
+Organizr reads `api/speedtest/latest` of the install, without a key.
+
+This item is not the [speed test plugin](speed-test-plugin.md). The plugin measures the connection between a browser and Organizr. This item shows what another service measured.
+
+## OctoPrint
+
+This item shows the state of a 3D printer with [OctoPrint](https://octoprint.org/). While the printer prints, it also shows the file, the progress, the total print time and the time that is left. When the webcam of OctoPrint is on, the item shows its stream.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageOctoprintEnabled` |
+| Level | `homepageOctoprintAuth` |
+| Place | `homepageOrderOctoprint` |
+| Address of OctoPrint | `octoprintURL` |
+| API key | `octoprintToken` |
+| Do not check the certificate | `octoprintDisableCertCheck` |
+| Show a title | `octoprintHeaderToggle` |
+| Title | `octoprintHeader` |
+| Milliseconds between two loads | `homepageOctoprintRefresh` |
+
+Make the API key in the settings of OctoPrint, under **Application Keys**.
+
+Organizr reads the print job and the settings of OctoPrint. Of the settings, the answer holds only whether the webcam is on and the address of its stream. The other settings of OctoPrint hold keys and passwords, and they stay on the server.
+
+The browser loads the stream of the webcam from OctoPrint. So the browser must reach the address of OctoPrint.
+
+## UniFi
+
+This item shows the parts of a network from a UniFi Network controller: the wireless network, the wired network, the internet connection and the VPN. Each part that is in order has a card with its clients and its traffic.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageUnifiEnabled` |
+| Level | `homepageUnifiAuth` |
+| Place | `homepageOrderunifi` |
+| Address of the controller | `unifiURL` |
+| User name | `unifiUsername` |
+| Password | `unifiPassword` |
+| Name of the site | `unifiSiteName` |
+| Do not check the certificate | `unifiDisableCertCheck` |
+| Milliseconds between two loads | `homepageUnifiRefresh` |
+
+Use a local account of the controller without a second factor. Capital and small letters count in the user name.
+
+There are two kinds of controller, and Organizr finds out which one it talks to:
+
+| Controller | How Organizr knows it | Site |
+|---|---|---|
+| A console with UniFi OS, for example a Dream Machine or a Cloud Key of the second generation | The start page sends a header `x-csrf-token`. | Always the site `default`. |
+| The classic controller, for example the software on a computer | The start page sends no such header. | The site of the setting `unifiSiteName`. |
+
+For the classic controller, the name of the site is its short name, not its description. The first site has the name `default`. To see the names, save the address and the login, and select **Read the sites of the controller**.
+
+Organizr logs in for each load, uses the cookie of the login for one request, and does not store it. The setting `unifiCookie` is not used.
+
+The controller of most installs has a certificate that no authority signed. So the switch **Do not check the certificate** is on in the default settings.

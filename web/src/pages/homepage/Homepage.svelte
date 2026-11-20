@@ -7,13 +7,18 @@
   import type { CalendarOptions } from '../../lib/calendar';
   import { requestOptions } from '../../lib/requests';
   import type { HomepageItem } from '../../lib/homepage';
+  import Adguard from './Adguard.svelte';
   import ArrQueue from './ArrQueue.svelte';
   import Calendar from './Calendar.svelte';
   import CustomHtml from './CustomHtml.svelte';
   import Deluge from './Deluge.svelte';
   import Downloaders from './Downloaders.svelte';
   import HealthChecks from './HealthChecks.svelte';
+  import Indexers from './Indexers.svelte';
   import Jdownloader from './Jdownloader.svelte';
+  import Monitorr from './Monitorr.svelte';
+  import Netdata from './Netdata.svelte';
+  import Octoprint from './Octoprint.svelte';
   import Overseerr from './Overseerr.svelte';
   import Pihole from './Pihole.svelte';
   import Plex from './Plex.svelte';
@@ -21,8 +26,10 @@
   import Qbittorrent from './Qbittorrent.svelte';
   import Rtorrent from './Rtorrent.svelte';
   import Sabnzbd from './Sabnzbd.svelte';
+  import SpeedtestTracker from './SpeedtestTracker.svelte';
   import Tautulli from './Tautulli.svelte';
   import Transmission from './Transmission.svelte';
+  import Unifi from './Unifi.svelte';
   import UptimeKuma from './UptimeKuma.svelte';
   import Utorrent from './Utorrent.svelte';
   import Weather from './Weather.svelte';
@@ -58,6 +65,14 @@
     'jellyfinrecent',
     'overseerr',
     'ombi',
+    'jackett',
+    'prowlarr',
+    'adguard',
+    'netdata',
+    'monitorr',
+    'speedtest',
+    'octoprint',
+    'unifi',
   ]);
 
   /** How the calendar shows, from the options of its item. */
@@ -161,6 +176,22 @@
           <Overseerr service="ombi" options={requestOptions(item.options)} />
         {:else if item.kind === 'tautulli'}
           <Tautulli />
+        {:else if item.kind === 'jackett'}
+          <Indexers service="jackett" blackHole={item.options?.blackHole === true} />
+        {:else if item.kind === 'prowlarr'}
+          <Indexers service="prowlarr" blackHole={item.options?.blackHole === true} />
+        {:else if item.kind === 'adguard'}
+          <Adguard />
+        {:else if item.kind === 'netdata'}
+          <Netdata />
+        {:else if item.kind === 'monitorr'}
+          <Monitorr />
+        {:else if item.kind === 'speedtest'}
+          <SpeedtestTracker />
+        {:else if item.kind === 'octoprint'}
+          <Octoprint />
+        {:else if item.kind === 'unifi'}
+          <Unifi />
         {:else if item.kind === 'weather'}
           <Weather title={typeof item.options?.title === 'string' ? item.options.title : ''} />
         {/if}

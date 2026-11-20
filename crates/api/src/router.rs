@@ -293,6 +293,31 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             &get(homepage::downloaders::qbittorrent_queue),
         )?
         .route("/homepage/pihole/stats", &get(homepage::pihole::stats))?
+        .route("/homepage/adguard/stats", &get(homepage::adguard::stats))?
+        .route("/homepage/netdata/data", &get(homepage::netdata::data))?
+        .route("/homepage/monitorr/data", &get(homepage::monitorr::data))?
+        .route(
+            "/homepage/speedtest/data",
+            &get(homepage::speedtest_tracker::data),
+        )?
+        .route("/homepage/octoprint/data", &get(homepage::octoprint::data))?
+        .route("/homepage/unifi/data", &get(homepage::unifi::data))?
+        .route(
+            "/homepage/jackett/download/",
+            &post(homepage::indexers::jackett_download),
+        )?
+        .route(
+            "/homepage/jackett/{query}",
+            &get(homepage::indexers::jackett_search),
+        )?
+        .route(
+            "/homepage/prowlarr/download/",
+            &post(homepage::indexers::prowlarr_download),
+        )?
+        .route(
+            "/homepage/prowlarr/{query}",
+            &get(homepage::indexers::prowlarr_search),
+        )?
         .route(
             "/homepage/nzbget/queue",
             &get(homepage::downloaders::nzbget_queue),
@@ -383,6 +408,11 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/test/pihole", &post(connection_tests::test_pihole))?
         .route("/test/emby", &post(connection_tests::test_emby))?
         .route("/test/jellyfin", &post(connection_tests::test_jellyfin))?
+        .route("/test/jackett", &post(connection_tests::test_jackett))?
+        .route("/test/prowlarr", &post(connection_tests::test_prowlarr))?
+        .route("/test/adguard", &post(connection_tests::test_adguard))?
+        .route("/test/unifi", &post(connection_tests::test_unifi))?
+        .route("/test/unifi/site", &post(connection_tests::test_unifi_site))?
         .route("/plugins/speedtest/garbage", &get(speed_test::garbage))?
         .route(
             "/plugins/speedtest/empty",

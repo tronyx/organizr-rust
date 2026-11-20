@@ -11,6 +11,7 @@
     formValues,
     hasSecret,
     SECURE,
+    siteList,
     type FieldGroup,
     type FormValue,
   } from '../../lib/settingsForm';
@@ -72,7 +73,10 @@
     testing = service;
     try {
       const answer = await api('POST', `test/${service}`);
-      tested[service] = { ok: true, text: answer.message ?? 'The connection works.' };
+      tested[service] = {
+        ok: true,
+        text: siteList(answer.data) ?? answer.message ?? 'The connection works.',
+      };
     } catch (failure) {
       tested[service] = { ok: false, text: failureText(failure) };
     } finally {
@@ -88,6 +92,31 @@
 
   onMount(load);
 </script>
+
+{#snippet tester(service: string, label: string)}
+  {@const result = tested[service]}
+  <div class="mt-2 flex flex-wrap items-center gap-3">
+    <button
+      type="button"
+      class="btn btn-sm"
+      disabled={hasChanges || testing !== null}
+      onclick={() => test(service)}
+    >
+      {#if testing === service}<span class="loading loading-spinner loading-xs"></span>{/if}
+      {label}
+    </button>
+    {#if hasChanges}
+      <span class="text-sm">Save the settings before you test.</span>
+    {:else if result}
+      <span
+        role={result.ok ? 'status' : 'alert'}
+        class={result.ok ? 'text-success text-sm' : 'text-error text-sm'}
+      >
+        {result.text}
+      </span>
+    {/if}
+  </div>
+{/snippet}
 
 {#if config}
   <form class="max-w-2xl" onsubmit={save}>
@@ -168,29 +197,10 @@
           {/if}
         {/each}
         {#if group.test}
-          {@const service = group.test}
-          {@const result = tested[service]}
-          <div class="mt-2 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              class="btn btn-sm"
-              disabled={hasChanges || testing !== null}
-              onclick={() => test(service)}
-            >
-              {#if testing === service}<span class="loading loading-spinner loading-xs"></span>{/if}
-              Test the connection of {group.title}
-            </button>
-            {#if hasChanges}
-              <span class="text-sm">Save the settings before you test.</span>
-            {:else if result}
-              <span
-                role={result.ok ? 'status' : 'alert'}
-                class={result.ok ? 'text-success text-sm' : 'text-error text-sm'}
-              >
-                {result.text}
-              </span>
-            {/if}
-          </div>
+          {@render tester(group.test, `Test the connection of ${group.title}`)}
+        {/if}
+        {#if group.lookup}
+          {@render tester(group.lookup.test, group.lookup.label)}
         {/if}
       </fieldset>
     {/each}

@@ -1685,3 +1685,591 @@ async fn ics_file() -> Response {
 pub async fn ics() -> StandIn {
     StandIn::start(Router::new().route("/calendar.ics", get(ics_file))).await
 }
+
+/// The API key of the Jackett stand-in.
+pub const JACKETT_KEY: &str = "made-up-jackett-key";
+
+/// Jackett answers a search with the releases of every indexer. Its download links
+/// hold its API key.
+async fn jackett_results(RawQuery(query): RawQuery) -> Response {
+    let query = query.as_deref();
+    if query_field(query, "apikey") != Some(JACKETT_KEY) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    let link = |folder: &str| {
+        format!(
+            "http://127.0.0.1:9117/{folder}/tracker/?jackett_apikey={JACKETT_KEY}&path=made-up-path&file=A+Film+2024"
+        )
+    };
+    let results = if query_field(query, "Query") == Some("this-is-just-a-test-for-organizr") {
+        json!([])
+    } else {
+        json!([
+            {
+                "FirstSeen": "0001-01-01T00:00:00",
+                "Tracker": "Tracker one",
+                "TrackerId": "tracker",
+                "CategoryDesc": "Movies",
+                "Title": "A Film 2024 1080p",
+                "Guid": "https://tracker.example.com/details/1",
+                "Link": link("dl"),
+                "Details": "https://tracker.example.com/details/1",
+                "PublishDate": "2026-11-01T10:00:00+00:00",
+                "Category": [2000],
+                "Size": 4_294_967_296_u64,
+                "Files": 3,
+                "Grabs": 120,
+                "Seeders": 45,
+                "Peers": 7,
+                "MagnetUri": null,
+                "BlackholeLink": link("bh"),
+            },
+            {
+                "Tracker": "Tracker two",
+                "TrackerId": "other",
+                "Title": "A Film 2024 720p",
+                "Guid": "magnet:?xt=urn:btih:0000000000000000000000000000000000000000",
+                "Link": null,
+                "Details": null,
+                "PublishDate": "2026-10-20T08:30:00+00:00",
+                "Size": 1_073_741_824,
+                "Files": null,
+                "Grabs": null,
+                "Seeders": 3,
+                "Peers": 1,
+                "MagnetUri": "magnet:?xt=urn:btih:0000000000000000000000000000000000000000",
+                "BlackholeLink": null,
+            },
+        ])
+    };
+    axum::Json(json!({
+        "Results": results,
+        "Indexers": [{"ID": "tracker", "Name": "Tracker one", "Status": 2, "Results": 1, "Error": null}],
+    }))
+    .into_response()
+}
+
+/// Jackett answers a black hole link with a result, also when it is an error.
+async fn jackett_black_hole(RawQuery(query): RawQuery) -> Response {
+    let query = query.as_deref();
+    let answer = if query_field(query, "jackett_apikey") != Some(JACKETT_KEY) {
+        json!({"result": "error", "error": "Incorrect API key"})
+    } else if query_field(query, "path") == Some("made-up-path") {
+        json!({"result": "success"})
+    } else {
+        json!({"result": "error", "error": "Blackhole directory does not exist"})
+    };
+    axum::Json(answer).into_response()
+}
+
+/// A stand-in for Jackett, with two releases for every search but the one of the
+/// connection test.
+pub async fn jackett() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/api/v2.0/indexers/all/results", get(jackett_results))
+            .route("/bh/tracker/", get(jackett_black_hole)),
+    )
+    .await
+}
+
+/// The API key of the Prowlarr stand-in.
+pub const PROWLARR_KEY: &str = "made-up-prowlarr-key";
+
+/// The `guid` of the release of the Prowlarr stand-in.
+pub const PROWLARR_GUID: &str = "https://tracker.example.com/details/1";
+
+fn has_prowlarr_key(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-api-key")
+        .and_then(|value| value.to_str().ok())
+        == Some(PROWLARR_KEY)
+}
+
+fn prowlarr_release() -> Value {
+    json!({
+        "guid": PROWLARR_GUID,
+        "age": 19,
+        "size": 4_294_967_296_u64,
+        "indexerId": 5,
+        "indexer": "Tracker one",
+        "title": "A Film 2024 1080p",
+        "sortTitle": "a film 2024 1080p",
+        "publishDate": "2026-11-01T10:00:00Z",
+        "downloadUrl": format!(
+            "http://127.0.0.1:9696/5/download?apikey={PROWLARR_KEY}&link=made-up-link&file=A+Film+2024"
+        ),
+        "infoUrl": "https://tracker.example.com/details/1",
+        "grabs": 120,
+        "seeders": 45,
+        "leechers": 7,
+        "protocol": "torrent",
+    })
+}
+
+async fn prowlarr_search(headers: HeaderMap, RawQuery(query): RawQuery) -> Response {
+    if !has_prowlarr_key(&headers) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            axum::Json(json!({"error": "Unauthorized"})),
+        )
+            .into_response();
+    }
+    if query_field(query.as_deref(), "query") == Some("this-is-just-a-test-for-organizr") {
+        return axum::Json(json!([])).into_response();
+    }
+    axum::Json(json!([prowlarr_release()])).into_response()
+}
+
+/// Prowlarr sends a release of its last search to its download client, and answers
+/// with the release.
+async fn prowlarr_grab(headers: HeaderMap, body: axum::body::Bytes) -> Response {
+    if !has_prowlarr_key(&headers) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            axum::Json(json!({"error": "Unauthorized"})),
+        )
+            .into_response();
+    }
+    let asked: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    if asked.get("guid") == Some(&json!(PROWLARR_GUID)) && asked.get("indexerId") == Some(&json!(5))
+    {
+        axum::Json(prowlarr_release()).into_response()
+    } else {
+        (
+            StatusCode::NOT_FOUND,
+            axum::Json(json!({
+                "message": "Couldn't find requested release in cache, try searching again",
+            })),
+        )
+            .into_response()
+    }
+}
+
+/// A stand-in for Prowlarr, with one release for every search but the one of the
+/// connection test.
+pub async fn prowlarr() -> StandIn {
+    StandIn::start(Router::new().route("/api/v1/search", get(prowlarr_search).post(prowlarr_grab)))
+        .await
+}
+
+async fn adguard_stats() -> Response {
+    axum::Json(json!({
+        "time_units": "hours",
+        "num_dns_queries": 12_000,
+        "num_blocked_filtering": 3_000,
+        "num_replaced_safebrowsing": 0,
+        "num_replaced_safesearch": 0,
+        "num_replaced_parental": 0,
+        "avg_processing_time": 0.012_34,
+        "top_queried_domains": [{"example.com": 400}],
+        "top_clients": [{"192.0.2.20": 900}],
+        "top_blocked_domains": [{"ads.example.com": 250}],
+    }))
+    .into_response()
+}
+
+async fn adguard_filters() -> Response {
+    axum::Json(json!({
+        "enabled": true,
+        "interval": 24,
+        "filters": [
+            {"id": 1, "enabled": true, "name": "List one", "rules_count": 100_000,
+             "url": "https://lists.example.com/one.txt"},
+            {"id": 2, "enabled": true, "name": "List two", "rules_count": 50_000,
+             "url": "https://lists.example.com/two.txt"},
+        ],
+        "whitelist_filters": null,
+        "user_rules": ["||ads.example.com^", "@@||good.example.com^"],
+    }))
+    .into_response()
+}
+
+/// A stand-in for AdGuard Home without a login.
+pub async fn adguard() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/control/stats", get(adguard_stats))
+            .route("/control/filtering/status", get(adguard_filters)),
+    )
+    .await
+}
+
+async fn adguard_refusal() -> Response {
+    (StatusCode::UNAUTHORIZED, "Unauthorized").into_response()
+}
+
+/// A stand-in for AdGuard Home with a login: it refuses a request without one.
+pub async fn adguard_with_login() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/control/stats", get(adguard_refusal))
+            .route("/control/filtering/status", get(adguard_refusal)),
+    )
+    .await
+}
+
+/// The data API of Netdata.
+async fn netdata_data(RawQuery(query): RawQuery) -> Response {
+    let query = query.as_deref();
+    let chart = query_field(query, "chart").unwrap_or_default();
+    let dimension = query_field(query, "dimensions")
+        .or_else(|| query_field(query, "dimension"))
+        .unwrap_or_default();
+    let wrapped = |latest: f64, max: f64| {
+        json!({
+            "api": 1,
+            "id": chart,
+            "name": chart,
+            "view_update_every": 1,
+            "update_every": 1,
+            "dimension_names": [dimension],
+            "latest_values": [latest],
+            "view_latest_values": [latest],
+            "dimensions": 1,
+            "points": 540,
+            "format": "array",
+            "result": [latest],
+            "min": 0,
+            "max": max,
+        })
+    };
+    let answer = match (chart, dimension) {
+        ("system.io", "in") => wrapped(1500.0, 6000.0),
+        ("system.io", "out") => wrapped(-3000.0, 6000.0),
+        ("system.net", "received") => wrapped(8000.0, 100_000.0),
+        ("system.net", "sent") => wrapped(-2000.0, 100_000.0),
+        ("system.cpu", _) => json!([12.5, 11.0, 14.25]),
+        ("system.ram", _) => wrapped(42.5, 60.0),
+        ("system.swap", _) => wrapped(1.5, 2.0),
+        ("disk_space._", "avail" | "used") => json!({
+            "api": 1,
+            "id": "disk_space._",
+            "format": "json",
+            "result": {
+                "labels": ["time", dimension],
+                "data": [[1_793_000_000_000_u64, if dimension == "avail" { 61.5 } else { 38.5 }]],
+            },
+            "min": 0,
+            "max": 100,
+        }),
+        _ => {
+            return (
+                StatusCode::NOT_FOUND,
+                format!("Chart is not found: {chart}"),
+            )
+                .into_response();
+        }
+    };
+    axum::Json(answer).into_response()
+}
+
+/// A stand-in for Netdata, with the charts of the system that the homepage asks for.
+pub async fn netdata() -> StandIn {
+    StandIn::start(Router::new().route("/api/v1/data", get(netdata_data))).await
+}
+
+/// The HTML that Monitorr loads into its page: one tile for each service. Two tiles
+/// stand in one line.
+const MONITORR_TILES: &str = concat!(
+    "<div class=\"col-lg-4\"><a class=\"servicetile\" href=\"https://plex.example.com/web\" target=\"_blank\" style=\"display: block\"><div id=\"serviceimg\"><div><img id=\"plex-service-img\" src=\"assets/img/../data/usrimg/plex.png\" class=\"serviceimg\" alt=plex></div></div><div id=\"servicetitle\"><div>Plex</div></div><div class=\"btnonline\">Online</div></a></div></div>",
+    "<div class=\"col-lg-4\"><div class=\"servicetile\"><div id=\"serviceimg\"><div><img id=\"router-service-img\" src=\"assets/img/../data/usrimg/router.png\" class=\"serviceimg\" alt=router></div></div><div id=\"servicetitlenolink\" style=\"cursor: default\"><div>Router</div></div><div class=\"btnunknown\">Unresponsive</div></div></div>\n",
+    "<div class=\"col-lg-4\"><div class=\"servicetile\"><div id=\"serviceimg\"><div><img id=\"backup &amp; sync-service-img\" src=\"assets/img/../data/usrimg/backup.png\" class=\"serviceimg imgoffline\" alt=backup></div></div><div id=\"servicetitleoffline\" style=\"cursor: default\"><div>Backup &amp; Sync</div></div><div class=\"btnoffline\" style=\"cursor: default\">Offline</div></div></div>\n",
+);
+
+async fn monitorr_tiles() -> Response {
+    (
+        [(header::CONTENT_TYPE, "text/html; charset=UTF-8")],
+        MONITORR_TILES,
+    )
+        .into_response()
+}
+
+async fn monitorr_picture() -> Response {
+    ([(header::CONTENT_TYPE, "image/png")], JPEG).into_response()
+}
+
+/// A stand-in for Monitorr with three services. Only the picture of the first one can
+/// be loaded.
+pub async fn monitorr() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/assets/php/loop.php", get(monitorr_tiles))
+            .route("/assets/data/usrimg/plex.png", get(monitorr_picture)),
+    )
+    .await
+}
+
+fn speedtest_result(ping: f64, download: f64, upload: f64) -> Value {
+    json!({
+        "id": 42,
+        "ping": ping,
+        "download": download,
+        "upload": upload,
+        "server_id": 1234,
+        "server_name": "A server",
+        "server_host": "speedtest.example.com:8080",
+        "url": "https://www.speedtest.net/result/c/made-up",
+        "scheduled": true,
+        "failed": false,
+        "created_at": "2026-11-01T10:00:00.000000Z",
+        "updated_at": "2026-11-01T10:00:00.000000Z",
+    })
+}
+
+async fn speedtest_latest() -> Response {
+    axum::Json(json!({
+        "method": "get latest speedtest",
+        "data": speedtest_result(12.345, 250.12, 40.26),
+        "average": {"ping": 13.5, "download": 240.0, "upload": 39.0},
+        "max": {"ping": 20.0, "download": 260.5, "upload": 41.0},
+        "minimum": {"ping": 9.5, "download": 200.25, "upload": 35.0},
+    }))
+    .into_response()
+}
+
+/// A stand-in for Speedtest Tracker.
+pub async fn speedtest_tracker() -> StandIn {
+    StandIn::start(Router::new().route("/api/speedtest/latest", get(speedtest_latest))).await
+}
+
+/// The API key of the OctoPrint stand-in.
+pub const OCTOPRINT_KEY: &str = "made-up-octoprint-key";
+
+/// A key in the settings of the OctoPrint stand-in, which must stay on the server.
+pub const OCTOPRINT_INNER_KEY: &str = "made-up-key-inside-the-settings";
+
+fn for_octoprint_key(headers: &HeaderMap, body: Value) -> Response {
+    let key = headers
+        .get("x-api-key")
+        .and_then(|value| value.to_str().ok());
+    if key == Some(OCTOPRINT_KEY) {
+        axum::Json(body).into_response()
+    } else {
+        (StatusCode::FORBIDDEN, "Invalid API key").into_response()
+    }
+}
+
+async fn octoprint_job(headers: HeaderMap) -> Response {
+    for_octoprint_key(
+        &headers,
+        json!({
+            "job": {
+                "file": {"name": "bracket.gcode", "display": "Bracket.gcode", "origin": "local", "size": 1_234_567},
+                "estimatedPrintTime": 5400.0,
+                "filament": {"tool0": {"length": 3200.5, "volume": 7.7}},
+                "user": "admin",
+            },
+            "progress": {"completion": 41.6, "filepos": 513_580, "printTime": 2200, "printTimeLeft": 3200},
+            "state": "Printing",
+        }),
+    )
+}
+
+async fn octoprint_settings(headers: HeaderMap) -> Response {
+    for_octoprint_key(
+        &headers,
+        json!({
+            "api": {"allowCrossOrigin": false, "key": OCTOPRINT_INNER_KEY},
+            "appearance": {"name": "Printer"},
+            "webcam": {
+                "webcamEnabled": true,
+                "streamUrl": "/webcam/?action=stream",
+                "snapshotUrl": "http://127.0.0.1:8080/?action=snapshot",
+                "flipH": false,
+            },
+        }),
+    )
+}
+
+/// A stand-in for OctoPrint, with a printer that prints.
+pub async fn octoprint() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/api/job", get(octoprint_job))
+            .route("/api/settings", get(octoprint_settings)),
+    )
+    .await
+}
+
+/// The account of the UniFi stand-ins.
+pub const UNIFI_LOGIN: (&str, &str) = ("organizr", "the password of UniFi");
+
+/// The token that the stand-in for a console with UniFi OS sends with its start page.
+pub const UNIFI_TOKEN: &str = "made-up-csrf-token";
+
+const UNIFI_CLASSIC_COOKIES: &str = "unifises=made-up-session; csrf_token=made-up-classic-token";
+const UNIFI_OS_COOKIE: &str = "TOKEN=made-up-token-of-the-console";
+
+fn unifi_health_body() -> Value {
+    json!({
+        "meta": {"rc": "ok"},
+        "data": [
+            {"subsystem": "wlan", "status": "ok", "num_user": 14, "num_guest": 2, "num_ap": 3,
+             "tx_bytes-r": 120_000, "rx_bytes-r": 45_000},
+            {"subsystem": "wan", "status": "ok", "wan_ip": "203.0.113.7", "num_gw": 1,
+             "tx_bytes-r": 300_000, "rx_bytes-r": 900_000},
+            {"subsystem": "www", "status": "ok", "drops": 2, "latency": 11, "uptime": 86_400,
+             "tx_bytes-r": 300_000, "rx_bytes-r": 900_000},
+            {"subsystem": "lan", "status": "ok", "num_user": 9, "num_sw": 2,
+             "tx_bytes-r": 80_000, "rx_bytes-r": 60_000},
+            {"subsystem": "vpn", "status": "unknown"},
+        ],
+    })
+}
+
+fn unifi_refusal(status: StatusCode, message: &str) -> Response {
+    (
+        status,
+        axum::Json(json!({"meta": {"rc": "error", "msg": message}, "data": []})),
+    )
+        .into_response()
+}
+
+fn has_cookies(headers: &HeaderMap, wanted: &str) -> bool {
+    headers
+        .get(header::COOKIE)
+        .and_then(|value| value.to_str().ok())
+        == Some(wanted)
+}
+
+/// The classic controller sends its start page from `/manage`.
+async fn unifi_classic_root() -> Response {
+    (StatusCode::FOUND, [(header::LOCATION, "/manage")]).into_response()
+}
+
+async fn unifi_classic_page() -> Response {
+    (
+        [(header::CONTENT_TYPE, "text/html")],
+        "<html><title>UniFi Network</title></html>",
+    )
+        .into_response()
+}
+
+async fn unifi_classic_login(body: axum::body::Bytes) -> Response {
+    let asked: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    if asked.get("username") == Some(&json!(UNIFI_LOGIN.0))
+        && asked.get("password") == Some(&json!(UNIFI_LOGIN.1))
+    {
+        let mut response = axum::Json(json!({"meta": {"rc": "ok"}, "data": []})).into_response();
+        for cookie in UNIFI_CLASSIC_COOKIES.split("; ") {
+            if let Ok(value) = format!("{cookie}; Path=/; Secure; HttpOnly").parse() {
+                response.headers_mut().append(header::SET_COOKIE, value);
+            }
+        }
+        response
+    } else {
+        unifi_refusal(StatusCode::BAD_REQUEST, "api.err.Invalid")
+    }
+}
+
+async fn unifi_classic_health(
+    headers: HeaderMap,
+    axum::extract::Path(site): axum::extract::Path<String>,
+) -> Response {
+    if !has_cookies(&headers, UNIFI_CLASSIC_COOKIES) {
+        return unifi_refusal(StatusCode::UNAUTHORIZED, "api.err.LoginRequired");
+    }
+    if site != "default" {
+        return unifi_refusal(StatusCode::UNAUTHORIZED, "api.err.NoSiteContext");
+    }
+    axum::Json(unifi_health_body()).into_response()
+}
+
+async fn unifi_classic_sites(headers: HeaderMap) -> Response {
+    if !has_cookies(&headers, UNIFI_CLASSIC_COOKIES) {
+        return unifi_refusal(StatusCode::UNAUTHORIZED, "api.err.LoginRequired");
+    }
+    axum::Json(json!({
+        "meta": {"rc": "ok"},
+        "data": [
+            {"_id": "made-up-id-one", "name": "default", "desc": "Default", "role": "admin"},
+            {"_id": "made-up-id-two", "name": "x7k2m9qa", "desc": "Second house", "role": "admin"},
+        ],
+    }))
+    .into_response()
+}
+
+/// A stand-in for the classic UniFi Network controller, with the sites `default` and
+/// `x7k2m9qa`. Only the first one has data.
+pub async fn unifi_classic() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/", get(unifi_classic_root))
+            .route("/manage", get(unifi_classic_page))
+            .route("/api/login", axum::routing::post(unifi_classic_login))
+            .route("/api/s/{site}/stat/health", get(unifi_classic_health))
+            .route("/api/self/sites", get(unifi_classic_sites)),
+    )
+    .await
+}
+
+async fn unifi_os_root() -> Response {
+    (
+        [
+            (header::CONTENT_TYPE, "text/html"),
+            (header::HeaderName::from_static("x-csrf-token"), UNIFI_TOKEN),
+        ],
+        "<html><title>UniFi OS</title></html>",
+    )
+        .into_response()
+}
+
+fn has_unifi_token(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-csrf-token")
+        .and_then(|value| value.to_str().ok())
+        == Some(UNIFI_TOKEN)
+}
+
+/// The console takes the login as the fields of a form, as the PHP application sends
+/// it, with `+` for a space.
+async fn unifi_os_login(headers: HeaderMap, body: axum::body::Bytes) -> Response {
+    let body = String::from_utf8_lossy(&body).into_owned();
+    let field = |name: &str| {
+        query_field(Some(&body), name)
+            .unwrap_or_default()
+            .replace('+', " ")
+    };
+    if has_unifi_token(&headers)
+        && field("username") == UNIFI_LOGIN.0
+        && field("password") == UNIFI_LOGIN.1
+    {
+        (
+            [(
+                header::SET_COOKIE,
+                format!("{UNIFI_OS_COOKIE}; path=/; samesite=none; secure; httponly"),
+            )],
+            axum::Json(json!({"unique_id": "made-up-id", "username": UNIFI_LOGIN.0})),
+        )
+            .into_response()
+    } else {
+        (
+            StatusCode::FORBIDDEN,
+            axum::Json(json!({"code": "AUTHENTICATION_FAILED_INVALID_CREDENTIALS"})),
+        )
+            .into_response()
+    }
+}
+
+async fn unifi_os_health(headers: HeaderMap) -> Response {
+    if has_cookies(&headers, UNIFI_OS_COOKIE) && has_unifi_token(&headers) {
+        axum::Json(unifi_health_body()).into_response()
+    } else {
+        unifi_refusal(StatusCode::UNAUTHORIZED, "api.err.LoginRequired")
+    }
+}
+
+/// A stand-in for a console with UniFi OS.
+pub async fn unifi_os() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/", get(unifi_os_root))
+            .route("/api/auth/login", axum::routing::post(unifi_os_login))
+            .route(
+                "/proxy/network/api/s/default/stat/health",
+                get(unifi_os_health),
+            ),
+    )
+    .await
+}

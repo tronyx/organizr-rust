@@ -55,3 +55,12 @@ export function stubApi(
   );
   return sent;
 }
+
+/** The entry of a list at a place. A list without that entry fails the test. */
+export function at<T>(list: ArrayLike<T>, index: number): T {
+  const found = list[index];
+  if (found === undefined) {
+    throw new Error(`The list has no entry at ${index}`);
+  }
+  return found;
+}

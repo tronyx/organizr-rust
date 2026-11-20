@@ -28,6 +28,8 @@ export interface FieldGroup {
   fields: Field[];
   /** The service whose connection test the group offers: the name in `POST /test/<name>`. */
   test?: string;
+  /** A second test, whose answer holds values for a field of the group. */
+  lookup?: { test: string; label: string };
 }
 
 /** The general settings, in the groups of the page. */
@@ -1442,6 +1444,312 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
   },
 ];
 
+/** How long between two loads of an item, as a field. */
+function refreshField(key: string, name: string): Field {
+  return {
+    key,
+    label: `Milliseconds between two loads of ${name}`,
+    kind: 'number',
+    min: 5000,
+  };
+}
+
+/** The settings of the items that search the indexers of Jackett and Prowlarr. */
+const SEARCH_ITEMS: FieldGroup[] = [
+  {
+    title: 'Jackett',
+    test: 'jackett',
+    fields: [
+      ...itemFields(
+        'the search of Jackett',
+        'homepageJackettEnabled',
+        'homepageJackettAuth',
+        'homepageOrderJackett',
+      ),
+      { key: 'jackettURL', label: 'Address of Jackett', kind: 'text' },
+      { key: 'jackettToken', label: 'API key of Jackett', kind: 'secret' },
+      {
+        key: 'jackettDisableCertCheck',
+        label: 'Do not check the certificate of Jackett',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageJackettBackholeDownload',
+        label: 'Download with the black hole folder of Jackett',
+        kind: 'switch',
+        help: 'A release then has a button that makes Jackett put the torrent file into its black hole folder.',
+      },
+    ],
+  },
+  {
+    title: 'Prowlarr',
+    test: 'prowlarr',
+    fields: [
+      ...itemFields(
+        'the search of Prowlarr',
+        'homepageProwlarrEnabled',
+        'homepageProwlarrAuth',
+        'homepageOrderProwlarr',
+      ),
+      { key: 'ProwlarrURL', label: 'Address of Prowlarr', kind: 'text' },
+      { key: 'ProwlarrToken', label: 'API key of Prowlarr', kind: 'secret' },
+      {
+        key: 'ProwlarrDisableCertCheck',
+        label: 'Do not check the certificate of Prowlarr',
+        kind: 'switch',
+      },
+      {
+        key: 'homepageProwlarrBackholeDownload',
+        label: 'Download with the download client of Prowlarr',
+        kind: 'switch',
+        help: 'A release then has a button that makes Prowlarr send it to its download client. Without this switch, a release has only a link to its page.',
+      },
+    ],
+  },
+];
+
+/** What a chart of the Netdata item can show. */
+const NETDATA_SOURCES = [
+  { value: '', label: 'Nothing' },
+  { value: 'disk-read', label: 'Disk read' },
+  { value: 'disk-write', label: 'Disk write' },
+  { value: 'cpu', label: 'CPU' },
+  { value: 'net-in', label: 'Network inbound' },
+  { value: 'net-out', label: 'Network outbound' },
+  { value: 'ram-used', label: 'Used RAM' },
+  { value: 'swap-used', label: 'Used swap' },
+  { value: 'disk-used', label: 'Disk space used' },
+  { value: 'disk-avail', label: 'Disk space available' },
+  { value: 'custom', label: 'Custom' },
+];
+
+/** The settings of one chart of the Netdata item. */
+function netdataChart(number: number): FieldGroup {
+  const key = (name: string) => `netdata${number}${name}`;
+  return {
+    title: `Netdata: chart ${number}`,
+    fields: [
+      { key: key('Enabled'), label: `Show chart ${number}`, kind: 'switch' },
+      { key: key('Title'), label: 'Title of the chart', kind: 'text' },
+      { key: key('Data'), label: 'What the chart shows', kind: 'select', options: NETDATA_SOURCES },
+      {
+        key: key('Chart'),
+        label: 'Form of the chart',
+        kind: 'select',
+        options: [
+          { value: '', label: 'Ring' },
+          { value: 'easypiechart', label: 'Ring (easy pie chart)' },
+          { value: 'gauge', label: 'Gauge' },
+        ],
+      },
+      {
+        key: key('Colour'),
+        label: 'Colour of the chart',
+        kind: 'select',
+        options: [
+          { value: '', label: 'The colour of the theme' },
+          { value: 'fe3912', label: 'Red' },
+          { value: '46e302', label: 'Green' },
+          { value: 'CC22AA', label: 'Purple' },
+          { value: '5054e6', label: 'Blue' },
+          { value: 'dddd00', label: 'Yellow' },
+          { value: 'd66300', label: 'Orange' },
+        ],
+      },
+      {
+        key: key('Size'),
+        label: 'Size of the chart',
+        kind: 'select',
+        options: [
+          { value: '', label: 'Medium' },
+          { value: 'lg', label: 'Large' },
+          { value: 'md', label: 'Medium (md)' },
+          { value: 'sm', label: 'Small' },
+        ],
+      },
+      { key: key('lg'), label: 'Show on large screens', kind: 'switch' },
+      { key: key('md'), label: 'Show on medium screens', kind: 'switch' },
+      { key: key('sm'), label: 'Show on small screens', kind: 'switch' },
+    ],
+  };
+}
+
+/** The settings of the items that show the state of a service. */
+const MONITOR_ITEMS: FieldGroup[] = [
+  {
+    title: 'AdGuard Home',
+    test: 'adguard',
+    fields: [
+      ...itemFields(
+        'the numbers of AdGuard Home',
+        'homepageAdGuardEnabled',
+        'homepageAdGuardAuth',
+        'homepageOrderAdguard',
+      ),
+      {
+        key: 'adguardURL',
+        label: 'Addresses of AdGuard Home',
+        kind: 'text',
+        help: 'For more installs, put commas between the addresses. Organizr sends no user name and no password, so an install that asks for a login gives no numbers.',
+      },
+      { key: 'adguardHeaderToggle', label: 'Show the title of the item', kind: 'switch' },
+      {
+        key: 'homepageAdGuardCombine',
+        label: 'Show the installs in one row of cards',
+        kind: 'switch',
+      },
+      { key: 'adguardQueriesToggle', label: 'Show the total of the queries', kind: 'switch' },
+      { key: 'adguardQueriesBlockedToggle', label: 'Show the blocked queries', kind: 'switch' },
+      { key: 'adguardPercentToggle', label: 'Show the part that was blocked', kind: 'switch' },
+      { key: 'adguardProcessingToggle', label: 'Show the processing time', kind: 'switch' },
+      {
+        key: 'adguardDomainListToggle',
+        label: 'Show the domains on the block lists',
+        kind: 'switch',
+      },
+      refreshField('homepageAdGuardRefresh', 'AdGuard Home'),
+    ],
+  },
+  {
+    title: 'Netdata',
+    fields: [
+      ...itemFields(
+        'the charts of Netdata',
+        'homepageNetdataEnabled',
+        'homepageNetdataAuth',
+        'homepageOrderNetdata',
+      ),
+      { key: 'netdataURL', label: 'Address of Netdata', kind: 'text' },
+      {
+        key: 'netdataDisableCertCheck',
+        label: 'Do not check the certificate of Netdata',
+        kind: 'switch',
+      },
+      {
+        key: 'netdataCustom',
+        label: 'Custom charts',
+        kind: 'textarea',
+        help: 'JSON with one entry for each custom chart, by the number of the chart. An entry needs "url" (a path of the API of Netdata) and "value" (the way to the number in the answer, with commas). It can have "units", "max", "mutator" (for example "/1000") and "netdata" (the address of another install).',
+      },
+      refreshField('homepageNetdataRefresh', 'Netdata'),
+    ],
+  },
+  ...[1, 2, 3, 4, 5, 6, 7].map(netdataChart),
+  {
+    title: 'Monitorr',
+    fields: [
+      ...itemFields(
+        'the services of Monitorr',
+        'homepageMonitorrEnabled',
+        'homepageMonitorrAuth',
+        'homepageOrderMonitorr',
+      ),
+      { key: 'monitorrURL', label: 'Address of Monitorr', kind: 'text' },
+      {
+        key: 'monitorrDisableCertCheck',
+        label: 'Do not check the certificate of Monitorr',
+        kind: 'switch',
+      },
+      { key: 'monitorrHeaderToggle', label: 'Show a title above the services', kind: 'switch' },
+      { key: 'monitorrHeader', label: 'Title above the services', kind: 'text' },
+      { key: 'monitorrCompact', label: 'Show the services in the small form', kind: 'switch' },
+      refreshField('homepageMonitorrRefresh', 'Monitorr'),
+    ],
+  },
+  {
+    title: 'Speedtest Tracker',
+    fields: [
+      ...itemFields(
+        'the results of Speedtest Tracker',
+        'homepageSpeedtestEnabled',
+        'homepageSpeedtestAuth',
+        'homepageOrderSpeedtest',
+      ),
+      { key: 'speedtestURL', label: 'Address of Speedtest Tracker', kind: 'text' },
+      {
+        key: 'speedtestDisableCertCheck',
+        label: 'Do not check the certificate of Speedtest Tracker',
+        kind: 'switch',
+      },
+      { key: 'speedtestHeaderToggle', label: 'Show a title above the results', kind: 'switch' },
+      { key: 'speedtestHeader', label: 'Title above the results', kind: 'text' },
+      refreshField('homepageSpeedtestRefresh', 'Speedtest Tracker'),
+    ],
+  },
+  {
+    title: 'OctoPrint',
+    fields: [
+      ...itemFields(
+        'the print job of OctoPrint',
+        'homepageOctoprintEnabled',
+        'homepageOctoprintAuth',
+        'homepageOrderOctoprint',
+      ),
+      { key: 'octoprintURL', label: 'Address of OctoPrint', kind: 'text' },
+      { key: 'octoprintToken', label: 'API key of OctoPrint', kind: 'secret' },
+      {
+        key: 'octoprintDisableCertCheck',
+        label: 'Do not check the certificate of OctoPrint',
+        kind: 'switch',
+      },
+      { key: 'octoprintHeaderToggle', label: 'Show a title above the print job', kind: 'switch' },
+      { key: 'octoprintHeader', label: 'Title above the print job', kind: 'text' },
+      refreshField('homepageOctoprintRefresh', 'OctoPrint'),
+    ],
+  },
+  {
+    title: 'UniFi',
+    test: 'unifi',
+    lookup: { test: 'unifi/site', label: 'Read the sites of the controller' },
+    fields: [
+      ...itemFields(
+        'the network of UniFi',
+        'homepageUnifiEnabled',
+        'homepageUnifiAuth',
+        'homepageOrderunifi',
+      ),
+      { key: 'unifiURL', label: 'Address of the controller', kind: 'text' },
+      {
+        key: 'unifiUsername',
+        label: 'User name of the controller',
+        kind: 'text',
+        help: 'Capital and small letters count. Use a local account without a second factor.',
+      },
+      { key: 'unifiPassword', label: 'Password of the controller', kind: 'secret' },
+      {
+        key: 'unifiSiteName',
+        label: 'Name of the site',
+        kind: 'text',
+        help: 'For the classic controller only: the name of the site, not its description. A console with UniFi OS has one site.',
+      },
+      {
+        key: 'unifiDisableCertCheck',
+        label: 'Do not check the certificate of the controller',
+        kind: 'switch',
+      },
+      refreshField('homepageUnifiRefresh', 'UniFi'),
+    ],
+  },
+];
+
+/**
+ * The sites of a UniFi controller as a sentence, from the answer of `POST test/unifi/site`.
+ * Nothing when the answer names no site.
+ */
+export function siteList(data: unknown): string | null {
+  const sites = (data as { data?: unknown } | null)?.data;
+  if (!Array.isArray(sites)) {
+    return null;
+  }
+  const named = sites
+    .filter(
+      (site): site is { name: string; desc?: unknown } =>
+        typeof site === 'object' && site !== null && typeof site.name === 'string',
+    )
+    .map((site) => (typeof site.desc === 'string' ? `${site.desc}: ${site.name}` : site.name));
+  return named.length > 0 ? `The names of the sites are: ${named.join(', ')}` : null;
+}
+
 /** The settings of the calendar, and of the applications that fill it. */
 const CALENDAR_ITEMS: FieldGroup[] = [
   {
@@ -1800,6 +2108,8 @@ const CUSTOM_HTML_ITEMS: FieldGroup[] = CUSTOM_HTML.map((number) => ({
 export const HOMEPAGE: FieldGroup[] = [
   ...CUSTOM_HTML_ITEMS,
   ...SERVICE_ITEMS,
+  ...MONITOR_ITEMS,
+  ...SEARCH_ITEMS,
   ...CALENDAR_ITEMS,
   ...DOWNLOAD_ITEMS,
   ...WEATHER_ITEMS,

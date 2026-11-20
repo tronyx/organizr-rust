@@ -15,6 +15,7 @@ use organizr_integrations::downloaders::{
 use organizr_integrations::downloaders_more::ClientError;
 use organizr_integrations::emby::Kind as MediaServer;
 use organizr_integrations::http::Outbound;
+use organizr_integrations::indexers::Kind as Indexer;
 use organizr_integrations::pihole;
 use organizr_integrations::probe::{self, Probe};
 use organizr_integrations::sickrage;
@@ -26,7 +27,7 @@ use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::handlers::homepage::downloaders_more::{self as more, Asked};
-use crate::handlers::homepage::{Permissions, emby, no_requests, service_url};
+use crate::handlers::homepage::{Permissions, emby, indexers, no_requests, service_url, unifi};
 use crate::state::AppState;
 
 /// How long a download client has to answer a test.
@@ -541,6 +542,93 @@ async fn pi_hole(test: &Test<'_>) -> Outcome {
     }
 }
 
+/// What is wrong with the answer of AdGuard Home to the question for its statistics,
+/// or nothing.
+fn adguard_fault(is_success: bool, body: &str) -> Option<&'static str> {
+    if !is_success {
+        return Some("Unknown Failure");
+    }
+    match serde_json::from_str::<Value>(body) {
+        Ok(Value::Object(_) | Value::Array(_)) => None,
+        _ => Some("Response was not JSON"),
+    }
+}
+
+/// AdGuard Home: the statistics of each install. The requests carry no user name and
+/// no password, as the requests of the homepage item.
+async fn adguard(test: &Test<'_>) -> Outcome {
+    let settings = test.state.settings();
+    if settings.adguard_url.is_empty() {
+        return Err(Refusal::unprocessable("AdGuard URL is not defined"));
+    }
+    let mut errors = String::new();
+    for address in settings.adguard_url.split(',') {
+        let base = test.url(address);
+        let url = format!("{base}/control/stats");
+        let probe = Probe {
+            url: &url,
+            ..Probe::default()
+        };
+        let fault = match test.get(probe).await {
+            Ok(answer) => adguard_fault(answer.is_success(), &answer.body).map(str::to_owned),
+            Err(error) => Some(error),
+        };
+        if let Some(fault) = fault {
+            errors.push_str(&probe::host_of(&base).unwrap_or_default());
+            errors.push_str(": ");
+            errors.push_str(&fault);
+        }
+    }
+    if errors.is_empty() {
+        Ok(Envelope::success(Value::Null))
+    } else {
+        Err(refused(StatusCode::INTERNAL_SERVER_ERROR, errors))
+    }
+}
+
+/// Jackett and Prowlarr: a search for a text that no release has. The answer holds
+/// what the service found, without the key of the service.
+async fn indexer(test: &Test<'_>, caller: &Caller, kind: Indexer) -> Outcome {
+    let settings = test.state.settings();
+    indexers::check(kind, &settings, caller, true)?;
+    let url = indexers::address(kind, &settings, test.headers, test.client);
+    let install = indexers::install(kind, &settings, &url);
+    let reply = install
+        .search(test.http, kind, "this-is-just-a-test-for-organizr")
+        .await
+        .map_err(unreachable)?;
+    if !reply.is_success {
+        return Err(refused(
+            StatusCode::FORBIDDEN,
+            format!("Error connecting to {}", kind.name()),
+        ));
+    }
+    let found = reply.json(install.key).unwrap_or(Value::Bool(false));
+    Ok(Envelope::success(serde_json::json!({ "content": found })))
+}
+
+/// The login at the controller, and the health of the site.
+async fn unifi_health(test: &Test<'_>, caller: &Caller) -> Outcome {
+    let settings = test.state.settings();
+    unifi::test_permissions().check(&settings, caller)?;
+    unifi::health(&settings, test.http, test.headers, test.client)
+        .await
+        .map_err(|error| unifi::refusal(&error))?;
+    Ok(succeeded())
+}
+
+/// The sites of a classic controller, for the choice of the site of the settings.
+async fn unifi_sites(test: &Test<'_>, caller: &Caller) -> Outcome {
+    let settings = test.state.settings();
+    unifi::test_permissions().check(&settings, caller)?;
+    let url = test.url(&settings.unifi_url);
+    let sites = unifi::controller(&settings, &url)
+        .sites(test.http)
+        .await
+        .map_err(|error| unifi::refusal(&error))?;
+    Ok(Envelope::success(sites))
+}
+
 /// Emby and Jellyfin: the list of the users of the server. The key goes in a header.
 async fn media_server(test: &Test<'_>, caller: &Caller, kind: MediaServer) -> Outcome {
     let settings = test.state.settings();
@@ -617,6 +705,11 @@ enum Service {
     Pihole,
     Emby,
     Jellyfin,
+    Jackett,
+    Prowlarr,
+    Adguard,
+    Unifi,
+    UnifiSites,
 }
 
 async fn run(
@@ -682,6 +775,11 @@ async fn run(
         Service::Pihole => pi_hole(&test).await,
         Service::Emby => media_server(&test, caller, MediaServer::Emby).await,
         Service::Jellyfin => media_server(&test, caller, MediaServer::Jellyfin).await,
+        Service::Jackett => indexer(&test, caller, Indexer::Jackett).await,
+        Service::Prowlarr => indexer(&test, caller, Indexer::Prowlarr).await,
+        Service::Adguard => adguard(&test).await,
+        Service::Unifi => unifi_health(&test, caller).await,
+        Service::UnifiSites => unifi_sites(&test, caller).await,
     }
 }
 
@@ -795,6 +893,31 @@ test_route!(
     test_jellyfin,
     Service::Jellyfin
 );
+test_route!(
+    /// `POST /test/jackett`.
+    test_jackett,
+    Service::Jackett
+);
+test_route!(
+    /// `POST /test/prowlarr`.
+    test_prowlarr,
+    Service::Prowlarr
+);
+test_route!(
+    /// `POST /test/adguard`.
+    test_adguard,
+    Service::Adguard
+);
+test_route!(
+    /// `POST /test/unifi`.
+    test_unifi,
+    Service::Unifi
+);
+test_route!(
+    /// `POST /test/unifi/site`.
+    test_unifi_site,
+    Service::UnifiSites
+);
 
 #[cfg(test)]
 mod tests {
@@ -836,6 +959,14 @@ mod tests {
         assert_eq!(pihole_fault(true, "{}"), Some("Missing API Token"));
         assert_eq!(pihole_fault(true, "<html>"), Some("Response was not JSON"));
         assert_eq!(pihole_fault(false, "{}"), Some("Unknown Failure"));
+    }
+
+    #[test]
+    fn answer_of_adguard_is_read_for_its_fault() {
+        assert_eq!(adguard_fault(true, r#"{"num_dns_queries": 5}"#), None);
+        assert_eq!(adguard_fault(true, "<html>"), Some("Response was not JSON"));
+        assert_eq!(adguard_fault(true, "5"), Some("Response was not JSON"));
+        assert_eq!(adguard_fault(false, "{}"), Some("Unknown Failure"));
     }
 
     #[test]
