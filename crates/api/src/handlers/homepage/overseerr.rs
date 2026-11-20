@@ -723,6 +723,13 @@ mod tests {
         assert!(!seen(false, "zed", ""));
         // A guest has no name, and the name of nobody is nobody.
         assert!(!seen(false, "", ""));
+        let nameless = json!({
+            "id": 6, "status": 1, "type": "movie",
+            "media": {"tmdbId": 816, "status": 2},
+            "requestedBy": {"username": null, "plexUsername": null},
+        });
+        assert!(request_row(&nameless, false, "", "").is_none());
+        assert!(request_row(&nameless, true, "", "").is_some());
         // The user name of Overseerr comes before the one of Plex.
         let row = request_row(&entry, true, "", "").map(|(_, _, row)| row);
         assert_eq!(

@@ -56,8 +56,7 @@ fn style_sheet(query: Option<&str>) -> Option<&str> {
     let is_plain = !name.is_empty()
         && name
             .chars()
-            .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character))
-        && !name.contains("..");
+            .all(|character| character.is_ascii_alphanumeric() || "._-".contains(character));
     is_plain.then_some(path)
 }
 

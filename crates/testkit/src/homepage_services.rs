@@ -611,9 +611,10 @@ fn plex_recent(kind: Option<&str>) -> &'static str {
     }
 }
 
-const PLEX_PLAYLISTS: &str = r#"<MediaContainer size="3">
+const PLEX_PLAYLISTS: &str = r#"<MediaContainer size="4">
   <Playlist title="Film night!" playlistType="video" key="/playlists/7/items"/>
   <Playlist title="A private list" playlistType="video" key="/playlists/8/items"/>
+  <Playlist title="Elsewhere" playlistType="video" key="/status/sessions"/>
   <Playlist title="Songs" playlistType="audio" key="/playlists/9/items"/>
 </MediaContainer>"#;
 
@@ -653,7 +654,7 @@ async fn plex_server_api(
     }
 }
 
-/// A stand-in for a Plex Media Server: two sessions, two items that were added, three
+/// A stand-in for a Plex Media Server: two sessions, two items that were added, four
 /// playlists, one film to look at and to find, and pictures.
 pub async fn plex_server() -> StandIn {
     StandIn::start(Router::new().fallback(plex_server_api)).await

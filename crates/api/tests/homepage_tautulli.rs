@@ -99,6 +99,22 @@ async fn statistics_come_for_the_levels_of_the_caller() {
         // The libraries were not asked for.
         assert_eq!(service.seen().len(), 3);
 
+        // With the levels the other way round, the user sees who watches only.
+        let other = installed_app_with(
+            database,
+            &[
+                ("homepageTautulliEnabled", json!(true)),
+                ("homepageTautulliAuth", json!("4")),
+                ("homepageTautulliMiscAuth", json!("4")),
+                ("tautulliURL", json!(service.url())),
+                ("tautulliApikey", json!(TAUTULLI_KEY)),
+            ],
+        );
+        let some = call(&other, As::User(&user), "GET", PATH, None).await;
+        assert_eq!(stat_ids(&some.data()), ["top_users", "top_platforms"]);
+        assert_eq!(some.data()["options"]["topMovies"], json!(false));
+        assert_eq!(some.data()["options"]["topUsers"], json!(true));
+
         let guest = call(&app, As::Guest, "GET", PATH, None).await;
         assert_eq!(guest.status, StatusCode::UNAUTHORIZED);
         assert_eq!(

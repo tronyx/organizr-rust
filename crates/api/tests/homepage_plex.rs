@@ -84,6 +84,21 @@ async fn streams_show_who_plays_only_to_callers_with_the_level() {
         assert_eq!(some.data()["content"][0]["user"], "");
         assert_eq!(some.data()["content"][0]["userAddress"], "x.x.x.x");
 
+        // Another setting shows a user the names, and not the addresses.
+        let names_only = installed_app_with(
+            database,
+            &settings(
+                &server,
+                &[
+                    ("homepageShowStreamNamesWithoutIp", json!(true)),
+                    ("homepageShowStreamNamesWithoutIpAuth", json!("4")),
+                ],
+            ),
+        );
+        let some = call(&names_only, As::User(&user), "GET", path, None).await;
+        assert_eq!(some.data()["content"][0]["user"], "robin");
+        assert_eq!(some.data()["content"][0]["userAddress"], "x.x.x.x");
+
         let guest = call(&app, As::Guest, "GET", path, None).await;
         assert_eq!(guest.status, StatusCode::UNAUTHORIZED);
         assert_eq!(
@@ -178,6 +193,13 @@ async fn recent_items_come_newest_first_and_playlists_with_their_videos() {
         );
         assert_eq!(content["Filmnight"]["title"], "Film night!");
         assert_eq!(content["Filmnight"]["0"]["title"], "The Film");
+        // The playlist whose path is no path of the playlists was not asked for.
+        assert!(
+            !server
+                .seen()
+                .iter()
+                .any(|seen| seen.path == "/status/sessions")
+        );
 
         // A user has no level for these two parts.
         let user = seed::logged_in(database, &app, "zed", 4).await;
