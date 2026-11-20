@@ -232,6 +232,26 @@ async fn ftp_login_makes_an_account_without_an_address() {
 }
 
 #[tokio::test]
+async fn ftp_login_refuses_anonymous_although_the_server_would_take_it() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let server = login_servers::ftp_server().await;
+        let app = installed_app_with(database, &ftp_settings(&server));
+
+        for name in ["anonymous", "ANONYMOUS", " ftp "] {
+            let answer = log_in(&app, name, "any-password").await;
+            assert_eq!(answer.status, StatusCode::UNAUTHORIZED, "{name:?}");
+            assert_eq!(answer.message(), json!("User credentials incorrect"));
+        }
+        // The server was not asked, and no account was made.
+        assert_eq!(server.seen(), Vec::<String>::new());
+        assert!(user(database, "anonymous").await.is_none());
+        assert!(user(database, "ftp").await.is_none());
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn ftp_without_tls_on_the_server_fails_with_the_default_scheme() {
     on_each_engine(async |database| {
         seed::installed(database).await;

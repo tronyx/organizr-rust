@@ -237,6 +237,19 @@ async fn ftp_refuses_an_empty_password_and_a_line_break_without_asking() {
 }
 
 #[tokio::test]
+async fn ftp_refuses_the_names_of_anonymous_ftp_without_asking() {
+    let server = login_servers::ftp_server().await;
+    let port = server.port();
+    for name in ["anonymous", "Anonymous", " FTP "] {
+        assert_eq!(
+            ftp::log_in(&ftp(port, false), name, "any@example.com").await,
+            Ok(false)
+        );
+    }
+    assert_eq!(server.seen(), Vec::<String>::new());
+}
+
+#[tokio::test]
 async fn ftps_needs_tls_and_an_unreachable_server_is_an_error() {
     let server = login_servers::ftp_server().await;
     let (user, password) = FTP_USERS[0];

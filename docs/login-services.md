@@ -85,9 +85,9 @@ Both tests use the stored settings, so save the settings before you test. The se
 
 The address names one server. Without a scheme, Organizr uses FTPS (`AUTH TLS` before the login), as PHP Organizr does when PHP has TLS. Without a port, the port is 21. Another scheme than `ftp` or `ftps` refuses every login.
 
-Organizr sends `USER` and `PASS`, and `QUIT` at the end. The password is right when the server answers `230`. The whole login has 20 seconds. With FTPS, the certificate of the server is checked, as for LDAP.
+Organizr sends `USER` and `PASS`, and `QUIT` at the end. The password is right when the server answers `230`. The whole login has 20 seconds. With FTPS, the certificate of the server is checked, as for LDAP. The owner of the project decided on 2026-11-20 to keep this check. A server with a self-signed certificate needs a certificate that the system trusts, or the plain address `ftp://` (for LDAP, `ldap://` with both TLS switches off), which sends the password without TLS.
 
-An FTP server that lets anybody in as `anonymous` with any password lets anybody into Organizr as `anonymous`. Do not use such a server for the login.
+Many FTP servers let anybody in as `anonymous` or `ftp` with any password. Organizr refuses these two names, in any letter case, before it asks the server, as a wrong password. All the same, use a server whose accounts are those of the people who log in.
 
 ## Emby and Jellyfin
 

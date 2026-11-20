@@ -293,7 +293,8 @@ pub async fn ldap_server(anonymous: bool) -> Listening {
 
 // --- FTP ----------------------------------------------------------------------------
 
-/// The accounts of the stand-in for an FTP server: name and password.
+/// The accounts of the stand-in for an FTP server: name and password. As many real
+/// servers do, it also lets `anonymous` and `ftp` in with any password.
 pub const FTP_USERS: [(&str, &str); 1] = [("robin", "robin-ftp-password")];
 
 async fn serve_ftp(stream: TcpStream, log: Log) {
@@ -316,7 +317,10 @@ async fn serve_ftp(stream: TcpStream, log: Log) {
                 "331 Password required\r\n"
             }
             "PASS" => {
-                if FTP_USERS.contains(&(user.as_str(), argument)) {
+                let anonymous = ["anonymous", "ftp"]
+                    .iter()
+                    .any(|name| user.eq_ignore_ascii_case(name));
+                if anonymous || FTP_USERS.contains(&(user.as_str(), argument)) {
                     "230 Logged in\r\n"
                 } else {
                     "530 Login incorrect\r\n"

@@ -62,16 +62,30 @@ fn is_safe(text: &str) -> bool {
     !text.chars().any(char::is_control)
 }
 
+/// Whether a user name is one of the names of anonymous FTP, `anonymous` and `ftp`, in
+/// any letter case and with space around it. Many servers let these names in with any
+/// password.
+pub fn is_anonymous(user: &str) -> bool {
+    let user = user.trim();
+    user.eq_ignore_ascii_case("anonymous") || user.eq_ignore_ascii_case("ftp")
+}
+
 /// Checks a name and a password. `Ok(true)` when the server logs the user in.
 ///
-/// An empty password is refused without asking, so a server that lets in every user
-/// without a password lets nobody into Organizr.
+/// An empty password and the names of anonymous FTP are refused without asking, so a
+/// server that lets in every user without a password, or every anonymous user, lets
+/// nobody into Organizr.
 pub async fn log_in(
     server: &FtpServer<'_>,
     user: &str,
     password: &str,
 ) -> Result<bool, FtpFailure> {
-    if user.is_empty() || password.is_empty() || !is_safe(user) || !is_safe(password) {
+    if user.is_empty()
+        || password.is_empty()
+        || is_anonymous(user)
+        || !is_safe(user)
+        || !is_safe(password)
+    {
         return Ok(false);
     }
     tokio::time::timeout(server.timeout, attempt(server, user, password))
@@ -113,7 +127,25 @@ async fn attempt(server: &FtpServer<'_>, user: &str, password: &str) -> Result<b
 
 #[cfg(test)]
 mod tests {
-    use super::is_safe;
+    use super::{is_anonymous, is_safe};
+
+    #[test]
+    fn names_of_anonymous_ftp_are_found_in_any_letter_case() {
+        for name in [
+            "anonymous",
+            "ANONYMOUS",
+            "Anonymous",
+            " anonymous ",
+            "ftp",
+            "FTP",
+            "	Ftp",
+        ] {
+            assert!(is_anonymous(name), "{name:?}");
+        }
+        for name in ["robin", "anon", "ftpuser", "my ftp", "anonymous1", ""] {
+            assert!(!is_anonymous(name), "{name:?}");
+        }
+    }
 
     #[test]
     fn texts_with_control_characters_cannot_be_sent() {
