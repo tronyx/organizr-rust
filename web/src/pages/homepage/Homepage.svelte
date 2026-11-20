@@ -12,9 +12,11 @@
   import HealthChecks from './HealthChecks.svelte';
   import Overseerr from './Overseerr.svelte';
   import Plex from './Plex.svelte';
+  import Nzbget from './Nzbget.svelte';
   import Qbittorrent from './Qbittorrent.svelte';
   import Sabnzbd from './Sabnzbd.svelte';
   import Tautulli from './Tautulli.svelte';
+  import Transmission from './Transmission.svelte';
   import UptimeKuma from './UptimeKuma.svelte';
   import Weather from './Weather.svelte';
 
@@ -30,6 +32,8 @@
     'radarrqueue',
     'sabnzbd',
     'qbittorrent',
+    'nzbget',
+    'transmission',
     'weather',
     'tautulli',
     'plexstreams',
@@ -95,6 +99,10 @@
           <Sabnzbd />
         {:else if item.kind === 'qbittorrent'}
           <Qbittorrent />
+        {:else if item.kind === 'nzbget'}
+          <Nzbget />
+        {:else if item.kind === 'transmission'}
+          <Transmission />
         {:else if item.kind === 'plexstreams'}
           <Plex part="streams" />
         {:else if item.kind === 'plexrecent'}

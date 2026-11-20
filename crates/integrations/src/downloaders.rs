@@ -17,8 +17,8 @@ pub enum DownloaderError {
     /// address, because the address of SABnzbd holds its API key.
     #[error("the download client cannot be reached: {0}")]
     Unreachable(String),
-    /// qBittorrent did not start a session: the name or the password is wrong.
-    #[error("qBittorrent gave no session")]
+    /// The client did not start a session: the name or the password is wrong.
+    #[error("the download client gave no session")]
     NoSession,
 }
 
@@ -74,6 +74,135 @@ pub async fn sabnzbd(
         return Ok(None);
     }
     Ok(response.json().await.ok())
+}
+
+/// The name and the password of an account of a download client.
+#[derive(Clone, Copy)]
+pub struct Login<'a> {
+    /// The user name.
+    pub username: &'a str,
+    /// The password.
+    pub password: &'a str,
+}
+
+impl Login<'_> {
+    /// The request with the name and the password, when both are set.
+    fn on(self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        if self.username.is_empty() || self.password.is_empty() {
+            request
+        } else {
+            request.basic_auth(self.username, Some(self.password))
+        }
+    }
+}
+
+/// The queue and the history of NZBGet, each as NZBGet sent it, or nothing when
+/// NZBGet refused that request.
+pub async fn nzbget(
+    http: &Outbound,
+    client: Client<'_>,
+    login: Login<'_>,
+) -> Result<(Option<Value>, Option<Value>), DownloaderError> {
+    let mut answers = [None, None];
+    for (answer, method) in answers.iter_mut().zip(["listgroups", "history"]) {
+        let url = format!("{}/jsonrpc/{method}", client.base());
+        let request = http
+            .client(&url, client.never_check_certificate)
+            .get(&url)
+            .timeout(client.limit());
+        let response = login.on(request).send().await.map_err(unreachable)?;
+        if response.status().is_success() {
+            *answer = response.json::<Value>().await.ok();
+        } else {
+            tracing::warn!(status = %response.status(), method, "NZBGet refused the request");
+        }
+    }
+    let [queue, history] = answers;
+    Ok((queue, history))
+}
+
+/// The header in which Transmission names its session.
+const TRANSMISSION_SESSION: &str = "x-transmission-session-id";
+
+/// The fields of a torrent that Transmission is asked for.
+const TRANSMISSION_FIELDS: [&str; 12] = [
+    "id",
+    "name",
+    "totalSize",
+    "eta",
+    "isFinished",
+    "isStalled",
+    "percentDone",
+    "rateDownload",
+    "status",
+    "downloadDir",
+    "errorString",
+    "addedDate",
+];
+
+/// The torrents of Transmission, as it sent them, or nothing when Transmission
+/// refused the request for them.
+pub async fn transmission(
+    http: &Outbound,
+    client: Client<'_>,
+    login: Login<'_>,
+) -> Result<Option<Vec<Value>>, DownloaderError> {
+    let url = format!("{}/rpc", client.base());
+    let web = http.client(&url, client.never_check_certificate);
+    // Transmission refuses the first request, and names the session in its answer.
+    let response = login
+        .on(web.get(&url).timeout(client.limit()))
+        .send()
+        .await
+        .map_err(unreachable)?;
+    let session = response
+        .headers()
+        .get(TRANSMISSION_SESSION)
+        .and_then(|value| value.to_str().ok())
+        .filter(|session| !session.is_empty())
+        .ok_or(DownloaderError::NoSession)?
+        .to_owned();
+
+    let body = serde_json::json!({
+        "method": "torrent-get",
+        "arguments": { "fields": TRANSMISSION_FIELDS },
+        "tags": "",
+    });
+    let request = web
+        .post(&url)
+        .header(TRANSMISSION_SESSION, session)
+        .json(&body)
+        .timeout(client.limit());
+    let response = login.on(request).send().await.map_err(unreachable)?;
+    if !response.status().is_success() {
+        tracing::warn!(status = %response.status(), "Transmission refused the request");
+        return Ok(None);
+    }
+    let answer = response.json::<Value>().await.unwrap_or(Value::Null);
+    let torrents = answer
+        .pointer("/arguments/torrents")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    Ok(Some(torrents))
+}
+
+/// The torrents of Transmission without the ones that the settings hide, the oldest
+/// first. Transmission gives each torrent a status: 0 for stopped, 5 for waiting to
+/// upload, and 6 for uploading.
+pub fn shown_transfers(
+    mut torrents: Vec<Value>,
+    hide_seeding: bool,
+    hide_completed: bool,
+) -> Vec<Value> {
+    torrents.retain(|torrent| {
+        let status = torrent.get("status").and_then(Value::as_i64);
+        let seeding = matches!(status, Some(5 | 6));
+        let stopped = status == Some(0);
+        !(hide_seeding && seeding || hide_completed && stopped)
+    });
+    torrents.sort_by_key(|torrent| torrent.get("addedDate").and_then(Value::as_i64));
+    torrents
 }
 
 /// How qBittorrent is asked for its torrents.
@@ -170,7 +299,7 @@ mod tests {
     use reqwest::header::{HeaderMap, HeaderValue, SET_COOKIE};
     use serde_json::json;
 
-    use super::{session_cookie, shown_torrents};
+    use super::{Value, session_cookie, shown_torrents, shown_transfers};
 
     fn headers(cookies: &[&'static str]) -> HeaderMap {
         let mut headers = HeaderMap::new();
@@ -196,6 +325,36 @@ mod tests {
         assert_eq!(session_cookie(&headers(&["lang=en"])), None);
         assert_eq!(session_cookie(&headers(&["SID=; path=/"])), None);
         assert_eq!(session_cookie(&headers(&[])), None);
+    }
+
+    #[test]
+    fn transfers_that_the_settings_hide_are_left_out_and_the_oldest_is_first() {
+        let torrent = |name: &str, status: i64, added: i64| serde_json::json!({"name": name, "status": status, "addedDate": added});
+        let all = vec![
+            torrent("new", 4, 30),
+            torrent("stopped", 0, 20),
+            torrent("waits to upload", 5, 10),
+            torrent("uploads", 6, 5),
+        ];
+        let names = |torrents: Vec<Value>| -> Vec<String> {
+            torrents
+                .iter()
+                .map(|torrent| torrent["name"].as_str().unwrap_or_default().to_owned())
+                .collect()
+        };
+        assert_eq!(
+            names(shown_transfers(all.clone(), false, false)),
+            ["uploads", "waits to upload", "stopped", "new"]
+        );
+        assert_eq!(
+            names(shown_transfers(all.clone(), true, false)),
+            ["stopped", "new"]
+        );
+        assert_eq!(
+            names(shown_transfers(all.clone(), false, true)),
+            ["uploads", "waits to upload", "new"]
+        );
+        assert_eq!(names(shown_transfers(all, true, true)), ["new"]);
     }
 
     #[test]

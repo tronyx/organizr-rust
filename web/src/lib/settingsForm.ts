@@ -910,6 +910,66 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
       },
     ],
   },
+  {
+    title: 'NZBGet',
+    fields: [
+      ...itemFields(
+        'the downloads of NZBGet',
+        'homepageNzbgetEnabled',
+        'homepageNzbgetAuth',
+        'homepageOrdernzbget',
+      ),
+      { key: 'nzbgetURL', label: 'Address of NZBGet', kind: 'text' },
+      { key: 'nzbgetUsername', label: 'User name of NZBGet', kind: 'text' },
+      { key: 'nzbgetPassword', label: 'Password of NZBGet', kind: 'secret' },
+      {
+        key: 'nzbgetDisableCertCheck',
+        label: 'Do not check the certificate of NZBGet',
+        kind: 'switch',
+      },
+      {
+        key: 'nzbgetRefresh',
+        label: 'Milliseconds between two loads of NZBGet',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
+  {
+    title: 'Transmission',
+    fields: [
+      ...itemFields(
+        'the torrents of Transmission',
+        'homepageTransmissionEnabled',
+        'homepageTransmissionAuth',
+        'homepageOrdertransmission',
+      ),
+      { key: 'transmissionURL', label: 'Address of Transmission', kind: 'text' },
+      { key: 'transmissionUsername', label: 'User name of Transmission', kind: 'text' },
+      { key: 'transmissionPassword', label: 'Password of Transmission', kind: 'secret' },
+      {
+        key: 'transmissionHideSeeding',
+        label: 'Leave out the torrents that upload',
+        kind: 'switch',
+      },
+      {
+        key: 'transmissionHideCompleted',
+        label: 'Leave out the torrents that are stopped',
+        kind: 'switch',
+      },
+      {
+        key: 'transmissionDisableCertCheck',
+        label: 'Do not check the certificate of Transmission',
+        kind: 'switch',
+      },
+      {
+        key: 'transmissionRefresh',
+        label: 'Milliseconds between two loads of Transmission',
+        kind: 'number',
+        min: 5000,
+      },
+    ],
+  },
 ];
 
 /** The settings of the calendar, and of the applications that fill it. */

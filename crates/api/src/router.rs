@@ -241,6 +241,14 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/homepage/qbittorrent/queue",
             &get(homepage::downloaders::qbittorrent_queue),
         )?
+        .route(
+            "/homepage/nzbget/queue",
+            &get(homepage::downloaders::nzbget_queue),
+        )?
+        .route(
+            "/homepage/transmission/queue",
+            &get(homepage::downloaders::transmission_queue),
+        )?
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
         .route("/plex/servers", &get(plex::servers))?

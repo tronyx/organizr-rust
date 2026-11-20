@@ -1,11 +1,12 @@
-//! The download clients of the homepage: the queues of SABnzbd and qBittorrent.
+//! The download clients of the homepage: the queues of SABnzbd, qBittorrent, NZBGet
+//! and Transmission.
 
 use axum::Extension;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use organizr_domain::GroupLevel;
 use organizr_integrations::downloaders::{
-    self, Client as Downloader, DownloaderError, TorrentQuery,
+    self, Client as Downloader, DownloaderError, Login, TorrentQuery,
 };
 use organizr_integrations::http::time_limit;
 use serde_json::{Map, Value, json};
@@ -33,6 +34,24 @@ pub fn qbittorrent_permissions() -> Permissions {
         enabled: vec!["homepageqBittorrentEnabled".to_owned()],
         auth: vec!["homepageqBittorrentAuth".to_owned()],
         not_empty: vec!["qBittorrentURL".to_owned()],
+    }
+}
+
+/// What must hold before a caller gets the NZBGet item.
+pub fn nzbget_permissions() -> Permissions {
+    Permissions {
+        enabled: vec!["homepageNzbgetEnabled".to_owned()],
+        auth: vec!["homepageNzbgetAuth".to_owned()],
+        not_empty: vec!["nzbgetURL".to_owned()],
+    }
+}
+
+/// What must hold before a caller gets the Transmission item.
+pub fn transmission_permissions() -> Permissions {
+    Permissions {
+        enabled: vec!["homepageTransmissionEnabled".to_owned()],
+        auth: vec!["homepageTransmissionAuth".to_owned()],
+        not_empty: vec!["transmissionURL".to_owned()],
     }
 }
 
@@ -189,4 +208,86 @@ pub async fn qbittorrent_queue(
     Ok(Envelope::success(json!({
         "content": { "queueItems": torrents, "historyItems": false },
     })))
+}
+
+/// `GET /homepage/nzbget/queue`: the queue and the history of NZBGet.
+pub async fn nzbget_queue(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    Extension(client): Extension<Client>,
+    headers: HeaderMap,
+) -> Result<Envelope<Value>, Refusal> {
+    let settings = state.settings();
+    nzbget_permissions().check(&settings, &caller)?;
+    let http = state.outbound().ok_or_else(no_requests)?;
+    let url = service_url(&settings.nzbget_url, &headers, &client);
+    let install = Downloader {
+        url: &url,
+        timeout: time_limit(&settings.nzbget_refresh.to_string()),
+        never_check_certificate: settings.nzbget_disable_cert_check,
+    };
+    let login = Login {
+        username: &settings.nzbget_username,
+        password: &settings.nzbget_password,
+    };
+    let (queue, history) = downloaders::nzbget(http, install, login)
+        .await
+        .map_err(|error| failed(&error))?;
+    // The content holds what NZBGet gave, and is `false` when it gave nothing.
+    let mut content = Map::new();
+    if let Some(queue) = queue {
+        content.insert("queueItems".to_owned(), queue);
+    }
+    if let Some(history) = history {
+        content.insert("historyItems".to_owned(), history);
+    }
+    let content = if content.is_empty() {
+        Value::Bool(false)
+    } else {
+        Value::Object(content)
+    };
+    Ok(Envelope::success(json!({ "content": content })))
+}
+
+/// `GET /homepage/transmission/queue`: the torrents of Transmission, without the ones
+/// that the settings hide.
+pub async fn transmission_queue(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    Extension(client): Extension<Client>,
+    headers: HeaderMap,
+) -> Result<Envelope<Value>, Refusal> {
+    let settings = state.settings();
+    transmission_permissions().check(&settings, &caller)?;
+    let http = state.outbound().ok_or_else(no_requests)?;
+    let url = service_url(&settings.transmission_url, &headers, &client);
+    let install = Downloader {
+        url: &url,
+        timeout: time_limit(&settings.transmission_refresh.to_string()),
+        never_check_certificate: settings.transmission_disable_cert_check,
+    };
+    let login = Login {
+        username: &settings.transmission_username,
+        password: &settings.transmission_password,
+    };
+    let torrents = match downloaders::transmission(http, install, login).await {
+        Ok(torrents) => torrents,
+        Err(DownloaderError::NoSession) => {
+            tracing::warn!("Transmission gave no session");
+            return Err(Refusal::Request(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Transmission Connect Function - Error: Could not get session ID".to_owned(),
+            ));
+        }
+        Err(error) => return Err(failed(&error)),
+    };
+    let content = torrents.map_or(Value::Bool(false), |torrents| {
+        let torrents = downloaders::shown_transfers(
+            torrents,
+            settings.transmission_hide_seeding,
+            settings.transmission_hide_completed,
+        );
+        json!({ "queueItems": torrents, "historyItems": false })
+    });
+    Ok(Envelope::success(json!({ "content": content })))
 }

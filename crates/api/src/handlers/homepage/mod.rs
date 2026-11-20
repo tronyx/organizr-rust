@@ -136,6 +136,8 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderRadarrQueue" => ("radarrqueue", arr::queue_permissions(Kind::Radarr)),
         "homepageOrdersabnzbd" => ("sabnzbd", downloaders::sabnzbd_permissions()),
         "homepageOrderqBittorrent" => ("qbittorrent", downloaders::qbittorrent_permissions()),
+        "homepageOrdernzbget" => ("nzbget", downloaders::nzbget_permissions()),
+        "homepageOrdertransmission" => ("transmission", downloaders::transmission_permissions()),
         "homepageOrderWeatherAndAir" => ("weather", weather::permissions()),
         "homepageOrdertautulli" => ("tautulli", tautulli::permissions()),
         "homepageOrderoverseerr" => ("overseerr", overseerr::permissions()),

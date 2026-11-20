@@ -29,6 +29,8 @@ This version has these items:
 - [Downloads of Sonarr and Radarr](#downloads-of-sonarr-and-radarr)
 - [SABnzbd](#sabnzbd)
 - [qBittorrent](#qbittorrent)
+- [NZBGet](#nzbget)
+- [Transmission](#transmission)
 - [Weather and air](#weather-and-air)
 - [Plex](#plex): what plays now, new items and playlists
 - [Tautulli](#tautulli)
@@ -226,6 +228,43 @@ This item shows the torrents of qBittorrent and how far each one is.
 Select version 2 of the API for qBittorrent 4.1 and later. The default of the setting is version 1, as in PHP Organizr.
 
 Organizr logs in to qBittorrent with the user name and the password each time it loads the torrents. If qBittorrent blocks an address after wrong logins, a wrong password in this setting blocks the address of Organizr.
+
+
+## NZBGet
+
+This item shows the downloads in the queue of NZBGet, and its last ten downloads.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageNzbgetEnabled` |
+| Level | `homepageNzbgetAuth` |
+| Place | `homepageOrdernzbget` |
+| Address | `nzbgetURL` |
+| User name | `nzbgetUsername` |
+| Password | `nzbgetPassword` |
+| Do not check the certificate | `nzbgetDisableCertCheck` |
+| Milliseconds between two loads | `nzbgetRefresh` |
+
+Organizr sends the user name and the password only when both hold a value.
+
+## Transmission
+
+This item shows the torrents of Transmission and how far each one is. The oldest torrent is first.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageTransmissionEnabled` |
+| Level | `homepageTransmissionAuth` |
+| Place | `homepageOrdertransmission` |
+| Address | `transmissionURL` |
+| User name | `transmissionUsername` |
+| Password | `transmissionPassword` |
+| Leave out the torrents that upload | `transmissionHideSeeding` |
+| Leave out the torrents that are stopped | `transmissionHideCompleted` |
+| Do not check the certificate | `transmissionDisableCertCheck` |
+| Milliseconds between two loads | `transmissionRefresh` |
+
+The address is the address of the web interface of Transmission without `/rpc` at its end. For a default install, this is `http://<host>:9091/transmission`.
 
 ## Weather and air
 

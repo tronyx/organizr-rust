@@ -416,6 +416,107 @@ pub async fn qbittorrent() -> StandIn {
     .await
 }
 
+/// The account of the NZBGet stand-in: the name, the password, and the header that a
+/// request with both carries.
+pub const NZBGET_LOGIN: (&str, &str, &str) = (
+    "nzbget",
+    "the password of NZBGet",
+    "Basic bnpiZ2V0OnRoZSBwYXNzd29yZCBvZiBOWkJHZXQ=",
+);
+
+fn has_login(headers: &HeaderMap, wanted: &str) -> bool {
+    headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        == Some(wanted)
+}
+
+async fn nzbget_groups(headers: HeaderMap) -> Response {
+    if !has_login(&headers, NZBGET_LOGIN.2) {
+        return (StatusCode::UNAUTHORIZED, "Access denied").into_response();
+    }
+    axum::Json(json!({"version": "1.1", "result": [
+        {"NZBID": 4, "NZBName": "The.Show.S02E03", "Status": "DOWNLOADING",
+         "FileSizeMB": 1000, "RemainingSizeMB": 250, "Category": "tv"},
+        {"NZBID": 5, "NZBName": "A.Waiting.Film", "Status": "QUEUED",
+         "FileSizeMB": 4000, "RemainingSizeMB": 4000, "Category": "movies"},
+    ]}))
+    .into_response()
+}
+
+async fn nzbget_history(headers: HeaderMap) -> Response {
+    if !has_login(&headers, NZBGET_LOGIN.2) {
+        return (StatusCode::UNAUTHORIZED, "Access denied").into_response();
+    }
+    axum::Json(json!({"version": "1.1", "result": [
+        {"NZBID": 3, "Name": "An.Old.Film", "Status": "SUCCESS/ALL", "FileSizeMB": 2000},
+        {"NZBID": 2, "Name": "A.Broken.Film", "Status": "FAILURE/PAR", "FileSizeMB": 1500},
+    ]}))
+    .into_response()
+}
+
+/// A stand-in for NZBGet: two downloads in the queue and two in the history.
+pub async fn nzbget() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/jsonrpc/listgroups", get(nzbget_groups))
+            .route("/jsonrpc/history", get(nzbget_history)),
+    )
+    .await
+}
+
+/// The account of the Transmission stand-in: the name, the password, and the header
+/// that a request with both carries.
+pub const TRANSMISSION_LOGIN: (&str, &str, &str) = (
+    "transmission",
+    "the password of Transmission",
+    "Basic dHJhbnNtaXNzaW9uOnRoZSBwYXNzd29yZCBvZiBUcmFuc21pc3Npb24=",
+);
+
+const TRANSMISSION_SESSION: &str = "made-up-transmission-session";
+
+/// Transmission refuses a request without its session, and names the session.
+async fn transmission_rpc(headers: HeaderMap, body: axum::body::Bytes) -> Response {
+    if !has_login(&headers, TRANSMISSION_LOGIN.2) {
+        return (StatusCode::UNAUTHORIZED, "Unauthorized User").into_response();
+    }
+    let session = headers
+        .get("x-transmission-session-id")
+        .and_then(|value| value.to_str().ok());
+    if session != Some(TRANSMISSION_SESSION) {
+        return (
+            StatusCode::CONFLICT,
+            [("X-Transmission-Session-Id", TRANSMISSION_SESSION)],
+            "409: Conflict",
+        )
+            .into_response();
+    }
+    let asked: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    if asked.get("method").and_then(Value::as_str) != Some("torrent-get") {
+        return axum::Json(json!({"result": "method name not recognized"})).into_response();
+    }
+    let torrent = |id: i64, name: &str, status: i64, done: f64, added: i64| {
+        json!({
+            "id": id, "name": name, "status": status, "percentDone": done, "eta": 600,
+            "totalSize": 1_000_000, "rateDownload": 1000, "isFinished": false,
+            "isStalled": false, "downloadDir": "/downloads", "errorString": "",
+            "addedDate": added,
+        })
+    };
+    axum::Json(json!({"result": "success", "arguments": {"torrents": [
+        torrent(3, "The.Show.S02E03", 4, 0.4, 300),
+        torrent(1, "An.Old.Film", 6, 1.0, 100),
+        torrent(2, "A.Stopped.Film", 0, 1.0, 200),
+    ]}}))
+    .into_response()
+}
+
+/// A stand-in for Transmission: one torrent that downloads, one that uploads, and one
+/// that is stopped.
+pub async fn transmission() -> StandIn {
+    StandIn::start(Router::new().route("/rpc", get(transmission_rpc).post(transmission_rpc))).await
+}
+
 /// The API key of the BreezoMeter stand-in.
 pub const WEATHER_KEY: &str = "made-up-weather-key";
 

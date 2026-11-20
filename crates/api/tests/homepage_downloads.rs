@@ -10,7 +10,9 @@
 
 use axum::http::StatusCode;
 use organizr_testkit::engines::on_each_engine;
-use organizr_testkit::homepage_services::{self, QBITTORRENT_LOGIN, SABNZBD_KEY};
+use organizr_testkit::homepage_services::{
+    self, NZBGET_LOGIN, QBITTORRENT_LOGIN, SABNZBD_KEY, TRANSMISSION_LOGIN,
+};
 use organizr_testkit::http::{As, call};
 use organizr_testkit::{installed_app_with, seed};
 use serde_json::{Value, json};
@@ -226,6 +228,138 @@ async fn qbittorrent_torrents_come_without_the_ones_that_the_settings_hide() {
             json!("qBittorrent Connect Function - Error: Could not get session ID")
         );
 
+        let guest = call(&app, As::Guest, "GET", path, None).await;
+        assert_eq!(guest.status, StatusCode::UNAUTHORIZED);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn nzbget_gives_its_queue_and_its_history() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let service = homepage_services::nzbget().await;
+        let settings = |password: &str| {
+            vec![
+                ("homepageNzbgetEnabled", json!(true)),
+                ("nzbgetURL", json!(format!("{}/", service.url()))),
+                ("nzbgetUsername", json!(NZBGET_LOGIN.0)),
+                ("nzbgetPassword", json!(password)),
+            ]
+        };
+        let path = "/homepage/nzbget/queue";
+
+        let app = installed_app_with(database, &settings(NZBGET_LOGIN.1));
+        let answer = call(&app, As::Admin, "GET", path, None).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let content = &answer.data()["content"];
+        assert_eq!(
+            content["queueItems"]["result"][0]["NZBName"],
+            json!("The.Show.S02E03")
+        );
+        assert_eq!(
+            content["historyItems"]["result"][1]["Status"],
+            json!("FAILURE/PAR")
+        );
+        let paths: Vec<String> = service.seen().into_iter().map(|seen| seen.path).collect();
+        assert_eq!(paths, ["/jsonrpc/listgroups", "/jsonrpc/history"]);
+
+        // NZBGet refuses a wrong password, and the content is then `false`.
+        let app = installed_app_with(database, &settings("wrong"));
+        let answer = call(&app, As::Admin, "GET", path, None).await;
+        assert_eq!(answer.status, StatusCode::OK);
+        assert_eq!(answer.data()["content"], json!(false));
+        // Without a password, no login is sent at all.
+        let before = service.seen().len();
+        let app = installed_app_with(database, &settings(""));
+        call(&app, As::Admin, "GET", path, None).await;
+        assert_eq!(service.seen()[before].header("authorization"), None);
+
+        // The item has the checks of every item.
+        let guest = call(&app, As::Guest, "GET", path, None).await;
+        assert_eq!(guest.status, StatusCode::UNAUTHORIZED);
+        let off = installed_app_with(database, &[("nzbgetURL", json!(service.url()))]);
+        let answer = call(&off, As::Admin, "GET", path, None).await;
+        assert_eq!(answer.status, StatusCode::CONFLICT);
+        let items = call(
+            &installed_app_with(database, &settings(NZBGET_LOGIN.1)),
+            As::Admin,
+            "GET",
+            "/homepage/items",
+            None,
+        )
+        .await;
+        assert!(
+            items.body.contains("\"kind\":\"nzbget\"")
+                || items.body.contains("\"kind\": \"nzbget\""),
+            "{}",
+            items.body
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn transmission_torrents_come_without_the_ones_that_the_settings_hide() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let service = homepage_services::transmission().await;
+        let settings = |password: &str, more: &[(&'static str, Value)]| {
+            let mut settings = vec![
+                ("homepageTransmissionEnabled", json!(true)),
+                ("transmissionURL", json!(format!("{}/", service.url()))),
+                ("transmissionUsername", json!(TRANSMISSION_LOGIN.0)),
+                ("transmissionPassword", json!(password)),
+            ];
+            settings.extend(more.iter().cloned());
+            settings
+        };
+        let path = "/homepage/transmission/queue";
+
+        let app = installed_app_with(database, &settings(TRANSMISSION_LOGIN.1, &[]));
+        let answer = call(&app, As::Admin, "GET", path, None).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let content = &answer.data()["content"];
+        assert_eq!(content["historyItems"], json!(false));
+        // The oldest torrent is first.
+        assert_eq!(
+            names(content),
+            ["An.Old.Film", "A.Stopped.Film", "The.Show.S02E03"]
+        );
+        assert_eq!(content["queueItems"][2]["percentDone"], json!(0.4));
+        let seen = service.seen();
+        assert_eq!(
+            (seen[0].method.as_str(), seen[0].path.as_str()),
+            ("GET", "/rpc")
+        );
+        assert_eq!(seen[1].method, "POST");
+        assert_eq!(seen[1].json()["method"], json!("torrent-get"));
+        assert_eq!(
+            seen[1].json()["arguments"]["fields"]
+                .as_array()
+                .map(Vec::len),
+            Some(12)
+        );
+
+        let hiding = settings(
+            TRANSMISSION_LOGIN.1,
+            &[
+                ("transmissionHideSeeding", json!(true)),
+                ("transmissionHideCompleted", json!(true)),
+            ],
+        );
+        let app = installed_app_with(database, &hiding);
+        let answer = call(&app, As::Admin, "GET", path, None).await;
+        assert_eq!(names(&answer.data()["content"]), ["The.Show.S02E03"]);
+
+        // A wrong password gets no session.
+        let app = installed_app_with(database, &settings("wrong", &[]));
+        let answer = call(&app, As::Admin, "GET", path, None).await;
+        assert_eq!(answer.status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(
+            answer.message(),
+            json!("Transmission Connect Function - Error: Could not get session ID")
+        );
         let guest = call(&app, As::Guest, "GET", path, None).await;
         assert_eq!(guest.status, StatusCode::UNAUTHORIZED);
     })
