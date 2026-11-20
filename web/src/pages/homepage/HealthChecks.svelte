@@ -18,20 +18,26 @@
     options: { desc: boolean; tags: boolean };
   }
 
-  /** How each status shows: the colour of its badge, and its word. */
-  const STATUS: Record<string, { badge: string; word: string }> = {
-    up: { badge: 'badge-success', word: 'Up' },
-    down: { badge: 'badge-error', word: 'Down' },
-    grace: { badge: 'badge-warning', word: 'Late' },
-    paused: { badge: 'badge-neutral', word: 'Paused' },
-    new: { badge: 'badge-info', word: 'New' },
+  /** How each status shows, as in PHP Organizr: its colour, its icon, and its word. */
+  const STATUS: Record<string, { colour: string; icon: string; word: string }> = {
+    up: { colour: 'var(--color-success)', icon: 'oi-themify ti-link', word: 'Up' },
+    down: { colour: 'var(--color-error)', icon: 'oi-themify ti-unlink', word: 'Down' },
+    grace: { colour: 'var(--color-warning)', icon: 'oi-themify ti-alert', word: 'Late' },
+    paused: { colour: 'var(--color-primary)', icon: 'oi-themify ti-control-pause', word: 'Paused' },
+    new: { colour: 'var(--color-info)', icon: 'oi-themify ti-time', word: 'New' },
   };
+  const OTHER = { colour: 'var(--color-warning)', icon: 'oi-themify ti-alert' };
 
   const tags = session.launch?.settings.homepage.options.healthChecksTags ?? '';
   const path = tags ? `homepage/healthchecks/${encodeURIComponent(tags)}` : 'homepage/healthchecks';
   const item = itemData<Answer>(path, 'homepageHealthChecksRefresh');
 
   const checks = $derived(item.data?.content.checks ?? []);
+
+  /** The picture of a check: PHP Organizr takes the first tag that is an address. */
+  function pictureOf(check: Check): string | null {
+    return (check.tags ?? '').split(' ').find((tag) => /^https?:\/\//.test(tag)) ?? null;
+  }
 
   /** The tags of a check without the ones that are addresses. */
   function tagsOf(check: Check): string[] {
@@ -42,37 +48,45 @@
 {#if item.error}
   <div role="alert" class="alert alert-error"><span>Health checks: {item.error}</span></div>
 {:else if checks.length > 0}
-  <h2 class="mb-2 text-lg font-semibold">
-    Health checks <span class="badge badge-info">{checks.length}</span>
+  <h2 class="org-item-title">
+    Health checks : <span class="org-count">{checks.length}</span>
   </h2>
-  <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-label="Health checks">
+  <ul class="org-cards" aria-label="Health checks">
     {#each checks as check, index (index)}
-      {@const status = STATUS[check.status] ?? { badge: 'badge-warning', word: check.status }}
-      <li class="card bg-base-200">
-        <div class="card-body gap-1 p-3">
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-medium">{check.name || 'New Item'}</span>
-            <span class="badge {status.badge}">{status.word}</span>
+      {@const status = STATUS[check.status] ?? { ...OTHER, word: check.status }}
+      {@const picture = pictureOf(check)}
+      <li class="org-card" style:--org-state={status.colour}>
+        <!-- A click shows the times of the check, as in PHP Organizr. -->
+        <details>
+          <summary class="org-card-row cursor-pointer">
+            {#if picture}
+              <img src={picture} alt="" loading="lazy" />
+            {/if}
+            <span class="min-w-0 flex-1 truncate">{check.name || 'New Item'}</span>
+            <i class="oi {status.icon} text-xl" style:color={status.colour} aria-hidden="true"></i>
+            <span class="sr-only">{status.word}</span>
+          </summary>
+          <div class="org-card-more">
+            <dl class="grid grid-cols-2">
+              <dt>Last ping</dt>
+              <dd>{fromNow(check.last_ping) ?? 'n/a'}</dd>
+              <dt>Next ping</dt>
+              <dd>
+                {check.status === 'down' ? 'Service down' : (fromNow(check.next_ping) ?? 'n/a')}
+              </dd>
+            </dl>
+            {#if item.data?.options.desc && check.desc}
+              <p>Notes: {check.desc}</p>
+            {/if}
+            {#if item.data?.options.tags}
+              <p class="flex flex-wrap gap-1">
+                {#each tagsOf(check) as tag (tag)}
+                  <span class="badge badge-outline badge-sm">{tag}</span>
+                {/each}
+              </p>
+            {/if}
           </div>
-          <dl class="grid grid-cols-2 text-sm">
-            <dt>Last ping</dt>
-            <dd>{fromNow(check.last_ping) ?? 'n/a'}</dd>
-            <dt>Next ping</dt>
-            <dd>
-              {check.status === 'down' ? 'Service down' : (fromNow(check.next_ping) ?? 'n/a')}
-            </dd>
-          </dl>
-          {#if item.data?.options.desc && check.desc}
-            <p class="text-sm">Notes: {check.desc}</p>
-          {/if}
-          {#if item.data?.options.tags}
-            <p class="flex flex-wrap gap-1">
-              {#each tagsOf(check) as tag (tag)}
-                <span class="badge badge-outline badge-sm">{tag}</span>
-              {/each}
-            </p>
-          {/if}
-        </div>
+        </details>
       </li>
     {/each}
   </ul>

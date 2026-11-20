@@ -82,7 +82,7 @@
     <p>The homepage has no items for you.</p>
   </Notice>
 {:else}
-  <main class="flex flex-col gap-4 p-4" aria-label={title}>
+  <main class="flex flex-col gap-2.5 px-[25px] pt-2.5 pb-[15px]" aria-label={title}>
     {#each items as item (item.key)}
       <section data-item={item.key}>
         {#if item.kind === 'customhtml'}

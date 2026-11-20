@@ -195,6 +195,100 @@
     transform: rotate(90deg);
   }
 
+  /* A homepage item of PHP Organizr: a thin title with a line after it, and small dark
+     cards with a coloured edge at the left for the state. */
+  .org-item-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+    font-size: 18px;
+    font-weight: 300;
+    line-height: 22px;
+    color: #dce2ec;
+  }
+
+  .org-item-title::after {
+    flex: 1;
+    height: 1px;
+    margin-left: 8px;
+    background: rgb(120 130 140 / 0.13);
+    content: '';
+  }
+
+  .org-count {
+    padding: 4px 12px 3px;
+    border-radius: 60px;
+    background: var(--color-info);
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 10.5px;
+  }
+
+  .org-cards {
+    display: grid;
+    gap: 10px 30px;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  @media (width >= 48rem) {
+    .org-cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (width >= 62rem) {
+    .org-cards {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (width >= 75rem) {
+    .org-cards {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (width >= 100rem) {
+    .org-cards {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
+  .org-card {
+    min-height: 45px;
+    background: #2d2c2c;
+    color: #ffffff;
+    box-shadow: inset 4px 0 0 0 var(--org-state, var(--color-success));
+  }
+
+  .org-card-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 45px;
+    padding: 2.5px 15.7px 2.5px 20px;
+    font-size: 21px;
+    line-height: 30px;
+    list-style: none;
+  }
+
+  .org-card-row::-webkit-details-marker {
+    display: none;
+  }
+
+  .org-card-row img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+
+  .org-card-more {
+    padding: 0 15.7px 8px 20px;
+    font-size: 14px;
+  }
+
   @media (width >= 64rem) {
     .org-header.org-with-menu {
       padding-left: 60px;

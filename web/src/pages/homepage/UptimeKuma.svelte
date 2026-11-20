@@ -30,33 +30,35 @@
   <div role="alert" class="alert alert-error"><span>Uptime Kuma: {item.error}</span></div>
 {:else if item.data}
   {#if options?.titleToggle}
-    <h2 class="mb-2 text-lg font-semibold">{options.title}</h2>
+    <h2 class="org-item-title">{options.title}<span aria-hidden="true">:</span></h2>
   {/if}
-  <ul
-    class="grid gap-2 {options?.compact
-      ? 'sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
-      : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'}"
-    aria-label={options?.title || 'Uptime Kuma'}
-  >
+  <ul class="org-cards" aria-label={options?.title || 'Uptime Kuma'}>
     {#each monitors as monitor, index (index)}
       {@const link = linkOf(monitor)}
-      <li class="card bg-base-200">
-        <div class="card-body gap-1 p-3 {options?.compact ? '' : 'items-center text-center'}">
-          <span class="font-medium">
+      <li
+        class="org-card"
+        style:--org-state={monitor.status ? 'var(--color-success)' : 'var(--color-error)'}
+      >
+        <div class="org-card-row">
+          <span class="flex min-w-0 flex-1 items-baseline gap-3">
             {#if link}
-              <a class="link link-hover" href={link} target="_blank" rel="noopener noreferrer">
+              <a class="truncate" href={link} target="_blank" rel="noopener noreferrer">
                 {monitor.name}
               </a>
             {:else}
-              {monitor.name}
+              <span class="truncate">{monitor.name}</span>
+            {/if}
+            {#if options?.showLatency && monitor.latency !== null}
+              <span class="text-xs opacity-60">{monitor.latency}ms</span>
             {/if}
           </span>
-          {#if options?.showLatency && monitor.latency !== null}
-            <span class="text-sm opacity-70">{monitor.latency} ms</span>
-          {/if}
-          <span class="badge {monitor.status ? 'badge-success' : 'badge-error'}">
-            {monitor.status ? 'Online' : 'Offline'}
-          </span>
+          <i
+            class="oi oi-fontawesome {monitor.status
+              ? 'fa-check-circle text-success'
+              : 'fa-times-circle text-error'} text-xl"
+            aria-hidden="true"
+          ></i>
+          <span class="sr-only">{monitor.status ? 'Online' : 'Offline'}</span>
         </div>
       </li>
     {/each}

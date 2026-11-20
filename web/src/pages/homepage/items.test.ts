@@ -102,7 +102,7 @@ describe('UptimeKuma', () => {
     const list = await screen.findByRole('list', { name: 'Monitors' });
     const [router, blog] = within(list).getAllByRole('listitem') as [HTMLElement, HTMLElement];
     expect(router.textContent).toContain('Online');
-    expect(router.textContent).toContain('3 ms');
+    expect(router.textContent).toContain('3ms');
     // The text "null" is no address.
     expect(within(router).queryByRole('link')).toBeNull();
     expect(blog.textContent).toContain('Offline');
