@@ -141,6 +141,8 @@ test('the menu shows the tabs under their categories and opens them in frames', 
   await page.reload();
 
   const menu = page.getByRole('navigation', { name: 'Tabs' });
+  // The menu is a strip of pictures until the pointer is over it.
+  await menu.hover();
   await expect(menu.getByRole('link', { name: 'Ping' })).toBeVisible();
   await expect(menu.getByText('Media')).toBeVisible();
   const docs = menu.getByRole('link', { name: 'Docs' });
@@ -152,6 +154,9 @@ test('the menu shows the tabs under their categories and opens them in frames', 
   await expect(page).toHaveURL(/#Ping$/);
   await expect(page.frameLocator('iframe[title="Ping"]').locator('body')).toContainText('pong');
 
+  // A category is closed until the person opens it.
+  await menu.hover();
+  await menu.getByText('Media').click();
   await menu.getByRole('link', { name: 'Rox Page' }).click();
   await expect(page).toHaveURL(/#Rox-Page$/);
   await expect(page.frameLocator('iframe[title="Rox Page"]').locator('body')).toContainText(
@@ -165,6 +170,7 @@ test('the menu shows the tabs under their categories and opens them in frames', 
   await page.reload();
   await expect(page.locator('iframe[title="Rox Page"]')).toBeVisible();
   await expect(page.locator('iframe')).toHaveCount(1);
+  await menu.hover();
   await expect(menu.getByRole('link', { name: 'Rox Page' })).toHaveAttribute(
     'aria-current',
     'page',
@@ -188,6 +194,8 @@ test('the Admin adds, changes, hides, moves and deletes a tab in the settings', 
   await page.getByRole('banner').getByRole('link', { name: 'Settings' }).click();
   await expect(page).toHaveURL(/#\/settings\/tabs$/);
   const menu = page.getByRole('navigation', { name: 'Tabs' });
+  // The menu is a strip of pictures until the pointer is over it.
+  await menu.hover();
   const status = page.getByRole('status');
   await expect(page.getByRole('row', { name: /Rox Page/ })).toContainText('Media');
 
@@ -247,6 +255,8 @@ test('a tab shows a picture of Organizr or an icon in the menu', async ({ page }
   await logIn(page);
   await page.goto('./#/settings/tabs');
   const menu = page.getByRole('navigation', { name: 'Tabs' });
+  // The menu is a strip of pictures until the pointer is over it.
+  await menu.hover();
   const status = page.getByRole('status');
   const add = async (name: string, picture: string) => {
     await page.getByRole('button', { name: 'Add a tab' }).click();
@@ -521,6 +531,8 @@ test('a person with the registration password makes an account and sees the tabs
   // The new user is logged in, in the default group, and sees the tabs of that group.
   await expect(page.getByLabel('Menu of the user')).toHaveText('zoe');
   const menu = page.getByRole('navigation', { name: 'Tabs' });
+  // The menu is a strip of pictures until the pointer is over it.
+  await menu.hover();
   await expect(menu.getByRole('link', { name: 'Ping' })).toBeVisible();
   // The tab "Settings" is for Admins and Co-Admins, and so are the settings.
   await expect(menu.getByRole('link', { name: 'Settings' })).toHaveCount(0);
@@ -561,6 +573,8 @@ test('the menu shows whether the application behind a tab answers', async ({ pag
   await page.reload();
 
   const menu = page.getByRole('navigation', { name: 'Tabs' });
+  // The menu is a strip of pictures until the pointer is over it.
+  await menu.hover();
   await expect(menu.getByRole('link', { name: 'Answers' }).getByRole('img')).toHaveAccessibleName(
     'answers',
   );

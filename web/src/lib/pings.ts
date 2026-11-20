@@ -47,3 +47,13 @@ export function pingStatus(
   }
   return results[address] === false ? 'down' : 'up';
 }
+
+/** The time of the answer as the menu shows it, for example `0.24ms`, or `null` without one. */
+export function pingTime(tab: MenuTab, results: Record<string, PingResult>): string | null {
+  const address = tab.ping_url?.trim() ?? '';
+  if (tab.ping !== 1 || address === '' || !Object.hasOwn(results, address)) {
+    return null;
+  }
+  const time = results[address];
+  return typeof time === 'number' ? `${Number(time.toFixed(2))}ms` : null;
+}

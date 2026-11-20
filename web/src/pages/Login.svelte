@@ -1,6 +1,7 @@
 <script lang="ts">
   // The login page.
   import { api, ApiError, failureText } from '../lib/api';
+  import { pictureOf } from '../lib/picture';
   import { plexToken } from '../lib/plexLogin';
   import { takeReturn } from '../lib/returnTo';
   import { PAGES, router } from '../lib/route.svelte';
@@ -23,6 +24,19 @@
   // The server sends a new password by e-mail only when its mail plugin is on.
   const canRecover = $derived(session.launch?.plugins['PHPMAILER-enabled'] === true);
   const canUsePlex = $derived(session.launch?.settings.sso.plex.oAuthEnabled === true);
+
+  const title = $derived(session.launch?.appearance.title || 'Organizr');
+  // The picture above the form, when the setting says so. A picture that does not load
+  // gives way to the title.
+  let logoFailed = $state(false);
+  const logo = $derived.by(() => {
+    const appearance = session.launch?.appearance;
+    if (!appearance?.useLogoLogin || logoFailed) {
+      return null;
+    }
+    const picture = pictureOf(appearance.loginLogo ?? null, title);
+    return picture.kind === 'image' ? picture.address : null;
+  });
 
   function logIn(event: SubmitEvent) {
     event.preventDefault();
@@ -92,81 +106,98 @@
   }
 </script>
 
-<main class="grid min-h-[70vh] place-items-center p-4">
-  <form class="card bg-base-200 w-full max-w-sm shadow" onsubmit={logIn}>
-    <div class="card-body">
-      <h1 class="card-title">Log in</h1>
-      <fieldset class="fieldset">
-        <label class="label" for="login-username">User name or e-mail address</label>
-        <input
-          id="login-username"
-          class="input w-full"
-          bind:value={username}
-          required={tokenOfPlex === null}
-          autocomplete="username"
-        />
-        <label class="label" for="login-password">Password</label>
-        <input
-          id="login-password"
-          class="input w-full"
-          type="password"
-          bind:value={password}
-          required={tokenOfPlex === null}
-          autocomplete="current-password"
-        />
-        {#if needsCode}
-          <label class="label" for="login-code">Code from your authenticator app</label>
-          <!-- svelte-ignore a11y_autofocus -->
+<main class="grid min-h-full place-items-center p-4">
+  <div class="flex w-full max-w-sm flex-col items-center gap-8">
+    {#if logo}
+      <img
+        class="max-h-56 max-w-[350px]"
+        src={logo}
+        alt={title}
+        onerror={() => (logoFailed = true)}
+      />
+    {:else}
+      <p class="text-2xl font-normal text-white">{title}</p>
+    {/if}
+    <form class="card bg-base-200 w-full shadow-[0_0_10px_rgb(0_0_0/0.6)]" onsubmit={logIn}>
+      <div class="card-body">
+        <h1 class="card-title">Log in</h1>
+        <fieldset class="fieldset">
+          <label class="label" for="login-username">User name or e-mail address</label>
           <input
-            id="login-code"
+            id="login-username"
             class="input w-full"
-            bind:value={code}
-            required
-            autofocus
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            aria-describedby="login-code-help"
+            bind:value={username}
+            required={tokenOfPlex === null}
+            autocomplete="username"
           />
-          <p id="login-code-help" class="label whitespace-normal">
-            Your account has a second factor. Enter the six digits that the app shows now.
-          </p>
+          <label class="label" for="login-password">Password</label>
+          <input
+            id="login-password"
+            class="input w-full"
+            type="password"
+            bind:value={password}
+            required={tokenOfPlex === null}
+            autocomplete="current-password"
+          />
+          {#if needsCode}
+            <label class="label" for="login-code">Code from your authenticator app</label>
+            <!-- svelte-ignore a11y_autofocus -->
+            <input
+              id="login-code"
+              class="input w-full"
+              bind:value={code}
+              required
+              autofocus
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              aria-describedby="login-code-help"
+            />
+            <p id="login-code-help" class="label whitespace-normal">
+              Your account has a second factor. Enter the six digits that the app shows now.
+            </p>
+          {/if}
+          <label class="label mt-2">
+            <input type="checkbox" class="checkbox" bind:checked={remember} />
+            Stay logged in on this device
+          </label>
+        </fieldset>
+
+        {#if error}
+          <div role="alert" class="alert alert-error">
+            <span>{error}</span>
+          </div>
         {/if}
-        <label class="label mt-2">
-          <input type="checkbox" class="checkbox" bind:checked={remember} />
-          Stay logged in on this device
-        </label>
-      </fieldset>
 
-      {#if error}
-        <div role="alert" class="alert alert-error">
-          <span>{error}</span>
-        </div>
-      {/if}
-
-      <div class="card-actions">
-        <button class="btn btn-primary w-full" disabled={busy}>
-          {#if busy}<span class="loading loading-spinner loading-sm"></span>{/if}
-          Log in
-        </button>
-        {#if canUsePlex}
-          <button type="button" class="btn w-full" disabled={busy} onclick={logInWithPlex}>
-            Log in with Plex
+        <div class="card-actions">
+          <button class="btn btn-primary w-full" disabled={busy}>
+            {#if busy}<span class="loading loading-spinner loading-sm"></span>{/if}
+            Log in
           </button>
-        {/if}
-        {#if canRecover}
-          <a class="link link-hover w-full text-center text-sm" href={PAGES.recover}>
-            Forgot your password?
+          {#if canUsePlex}
+            <button
+              type="button"
+              class="btn btn-accent w-full"
+              disabled={busy}
+              onclick={logInWithPlex}
+            >
+              Log in with Plex
+            </button>
+          {/if}
+          {#if canRecover}
+            <a class="link link-hover w-full text-center text-sm" href={PAGES.recover}>
+              Forgot your password?
+            </a>
+          {/if}
+          <a class="link link-hover w-full text-center text-sm" href={PAGES.register}>
+            Make an account
           </a>
-        {/if}
-        <a class="link link-hover w-full text-center text-sm" href={PAGES.register}>
-          Make an account
-        </a>
-        {#if session.launch?.plugins['INVITES-enabled'] === true}
-          <a class="link link-hover w-full text-center text-sm" href={PAGES.useInvite}>
-            Use an invite code
-          </a>
-        {/if}
+          {#if session.launch?.plugins['INVITES-enabled'] === true}
+            <a class="link link-hover w-full text-center text-sm" href={PAGES.useInvite}>
+              Use an invite code
+            </a>
+          {/if}
+        </div>
       </div>
-    </div>
-  </form>
+    </form>
+  </div>
 </main>

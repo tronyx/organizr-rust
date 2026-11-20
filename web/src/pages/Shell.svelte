@@ -1,11 +1,14 @@
 <script lang="ts">
-  // The frame around every page of an install that is set up: the menu of tabs at the
-  // left, and the bar at the top with the name of the install and the menu of the user.
+  // The frame around every page of an install that is set up, laid out as PHP Organizr
+  // lays it out: a bar at the top with the picture or the name of the install and the
+  // menu of the user, and at the left a strip with the pictures of the tabs, which
+  // opens to the full menu under the pointer. A visitor who sees no tab gets no frame.
   import type { Snippet } from 'svelte';
 
   import { api, failureText } from '../lib/api';
   import { PAGES, router } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
+  import { pictureOf } from '../lib/picture';
   import { pingInterval, pingList, type PingResult } from '../lib/pings';
   import Menu from './Menu.svelte';
 
@@ -86,6 +89,19 @@
   const canSpeedTest = $derived(canUse('SPEEDTEST'));
   const canInvite = $derived(canUse('INVITES'));
 
+  const title = $derived(session.launch?.appearance.title || 'Organizr');
+  // The picture of the install stands in the bar when the setting says so. A picture
+  // that does not load gives way to the title.
+  let logoFailed = $state(false);
+  const logo = $derived.by(() => {
+    const appearance = session.launch?.appearance;
+    if (!appearance?.useLogo || logoFailed) {
+      return null;
+    }
+    const picture = pictureOf(appearance.logo ?? null, title);
+    return picture.kind === 'image' ? picture.address : null;
+  });
+
   function closeUserMenu() {
     if (userMenu) {
       userMenu.open = false;
@@ -93,71 +109,91 @@
   }
 </script>
 
-<div class={['drawer', hasMenu && 'lg:drawer-open']}>
-  <input
-    id="menu-toggle"
-    type="checkbox"
-    class="drawer-toggle"
-    bind:checked={menuOpen}
-    aria-label="Show the menu of tabs"
-  />
-
-  <div class="drawer-content flex h-screen flex-col">
-    <header class="navbar bg-base-300 min-h-12 gap-2 px-4">
-      {#if hasMenu}
-        <label for="menu-toggle" class="btn btn-ghost btn-sm lg:hidden">Menu</label>
-      {/if}
-      <a class="flex-1 text-lg font-semibold" href={PAGES.home}>
-        {session.launch?.appearance.title || 'Organizr'}
-      </a>
-      {#if session.loggedIn}
-        <details class="dropdown dropdown-end" bind:this={userMenu}>
-          <summary class="btn btn-ghost btn-sm" aria-label="Menu of the user">
-            {session.launch?.user?.username}
-          </summary>
-          <ul class="menu dropdown-content bg-base-200 rounded-box z-30 mt-2 w-52 p-2 shadow">
-            <li class="menu-title">{session.launch?.user?.group}</li>
-            {#if session.canManage}
-              <li><a href={PAGES.tabSettings} onclick={closeUserMenu}>Settings</a></li>
-            {/if}
-            <li><a href={PAGES.account} onclick={closeUserMenu}>Account</a></li>
-            {#if canSpeedTest}
-              <li><a href={PAGES.speedTest} onclick={closeUserMenu}>Speed test</a></li>
-            {/if}
-            {#if canInvite}
-              <li><a href={PAGES.invites} onclick={closeUserMenu}>Invites</a></li>
-            {/if}
-            <li><button onclick={lock}>Lock the screen</button></li>
-            <li><button onclick={logOut}>Log out</button></li>
-          </ul>
-        </details>
-      {:else}
-        <a class="btn btn-ghost btn-sm" href={PAGES.login}>Log in</a>
-      {/if}
-    </header>
-
-    {#if error}
-      <div role="alert" class="alert alert-error m-4">
-        <span>{error}</span>
-      </div>
+{#if hasMenu || session.loggedIn}
+  <header class={['org-header', hasMenu && 'org-with-menu']}>
+    {#if hasMenu}
+      <button
+        type="button"
+        class="org-header-link lg:hidden"
+        aria-label="Show the menu of tabs"
+        aria-expanded={menuOpen}
+        onclick={() => (menuOpen = !menuOpen)}
+      >
+        <i class="oi oi-themify ti-menu" aria-hidden="true"></i>
+      </button>
     {/if}
+    <a class="org-logo min-w-0 flex-1" href={PAGES.home}>
+      {#if logo}
+        <img src={logo} alt={title} onerror={() => (logoFailed = true)} />
+      {:else}
+        <span class="truncate">{title}</span>
+      {/if}
+    </a>
+    {#if session.loggedIn}
+      <details class="dropdown dropdown-end" bind:this={userMenu}>
+        <summary class="org-header-link gap-1 font-medium" aria-label="Menu of the user">
+          {session.launch?.user?.username}
+        </summary>
+        <ul class="menu dropdown-content bg-neutral z-30 w-52 p-0 py-1 shadow">
+          <li class="menu-title">{session.launch?.user?.group}</li>
+          {#if session.canManage}
+            <li><a href={PAGES.tabSettings} onclick={closeUserMenu}>Settings</a></li>
+          {/if}
+          <li><a href={PAGES.account} onclick={closeUserMenu}>Account</a></li>
+          {#if canSpeedTest}
+            <li><a href={PAGES.speedTest} onclick={closeUserMenu}>Speed test</a></li>
+          {/if}
+          {#if canInvite}
+            <li><a href={PAGES.invites} onclick={closeUserMenu}>Invites</a></li>
+          {/if}
+          <li><button onclick={lock}>Lock the screen</button></li>
+          <li><button onclick={logOut}>Log out</button></li>
+        </ul>
+      </details>
+    {:else}
+      <a class="org-header-link" href={PAGES.login}>Log in</a>
+    {/if}
+  </header>
+{/if}
 
-    <div class="relative min-h-0 flex-1">
-      {@render children()}
+{#if hasMenu}
+  <aside class={['org-sidebar', menuOpen && 'org-open']}>
+    <div class="org-sidebar-head">
+      <button
+        type="button"
+        class="grid size-5 shrink-0 cursor-pointer place-items-center"
+        aria-label="Close the menu of tabs"
+        onclick={() => (menuOpen = false)}
+      >
+        <i class="oi oi-themify ti-menu text-base" aria-hidden="true"></i>
+      </button>
+      <span class="org-wide">Navigation</span>
     </div>
-  </div>
+    <Menu
+      tabs={session.tabs}
+      categories={session.categories}
+      unsortedPlace={session.unsortedPlace}
+      {pings}
+      {shown}
+      onpick={() => (menuOpen = false)}
+    />
+  </aside>
+{/if}
 
-  <div class="drawer-side z-20">
-    <label for="menu-toggle" class="drawer-overlay" aria-label="Close the menu of tabs"></label>
-    <aside class="bg-base-200 min-h-full w-64">
-      <Menu
-        tabs={session.tabs}
-        categories={session.categories}
-        unsortedPlace={session.unsortedPlace}
-        {pings}
-        {shown}
-        onpick={() => (menuOpen = false)}
-      />
-    </aside>
+<div
+  class={[
+    'flex flex-col',
+    hasMenu || session.loggedIn ? 'org-content' : 'fixed inset-0',
+    hasMenu && 'org-with-menu',
+  ]}
+>
+  {#if error}
+    <div role="alert" class="alert alert-error m-4">
+      <span>{error}</span>
+    </div>
+  {/if}
+
+  <div class="relative min-h-0 flex-1">
+    {@render children()}
   </div>
 </div>

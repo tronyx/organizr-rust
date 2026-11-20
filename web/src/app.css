@@ -1,7 +1,223 @@
 @import 'tailwindcss';
 
 @plugin 'daisyui' {
-  themes:
-    dark --default,
-    light;
+  themes: light;
+}
+
+/* The look of PHP Organizr with its theme "Organizr" and its style "dark": the same
+   colours, the same square boxes, and the same sizes of text. */
+@plugin 'daisyui/theme' {
+  name: 'organizr';
+  default: true;
+  prefersdark: true;
+  color-scheme: dark;
+
+  /* The page, the boxes on it with the menu, and the heading of a box. */
+  --color-base-100: #1f1f1f;
+  --color-base-200: #1b1a1a;
+  --color-base-300: #232323;
+  --color-base-content: #dce2ec;
+  --color-primary: #2cabe3;
+  --color-primary-content: #ffffff;
+  --color-secondary: #707cd2;
+  --color-secondary-content: #ffffff;
+  --color-accent: #e5a00d;
+  --color-accent-content: #ffffff;
+  --color-neutral: #131313;
+  --color-neutral-content: #ffffff;
+  --color-info: #2cabe3;
+  --color-info-content: #ffffff;
+  --color-success: #00c292;
+  --color-success-content: #ffffff;
+  --color-warning: #fec107;
+  --color-warning-content: #1b1a1a;
+  --color-error: #f33155;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.1875rem;
+  --radius-field: 0.1875rem;
+  --radius-box: 0rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@theme {
+  --font-sans: 'Rubik Variable', Rubik, ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    font-weight: 300;
+    line-height: 1.43;
+  }
+}
+
+@layer components {
+  /* The frame of PHP Organizr: a bar of 40 pixels at the top, and at the left a strip of
+     pictures that opens to the full menu under the pointer. */
+  .org-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    height: 40px;
+    background: var(--color-base-100);
+    color: #ffffff;
+  }
+
+  .org-header-link {
+    display: inline-flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 14px;
+    color: #ffffff;
+    cursor: pointer;
+  }
+
+  .org-header-link:hover,
+  .org-header-link:focus-visible {
+    background: rgb(0 0 0 / 0.2);
+  }
+
+  .org-logo {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 10px;
+    font-size: 18px;
+    color: #ffffff;
+    white-space: nowrap;
+  }
+
+  .org-logo img {
+    max-width: 215px;
+    max-height: 40px;
+  }
+
+  .org-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    width: 240px;
+    overflow: hidden auto;
+    scrollbar-width: none;
+    background: var(--color-base-200);
+    box-shadow: 1px 0 20px rgb(0 0 0 / 0.08);
+    transform: translateX(-100%);
+    transition:
+      width 0.15s ease-in-out,
+      transform 0.15s ease-in-out;
+  }
+
+  .org-sidebar.org-open {
+    transform: none;
+  }
+
+  .org-sidebar-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 58px;
+    padding: 4px 20px;
+    font-size: 21px;
+    font-weight: 400;
+    color: #ffffff;
+    white-space: nowrap;
+  }
+
+  .org-content {
+    position: fixed;
+    inset: 40px 0 0 0;
+  }
+
+  .org-menu a,
+  .org-menu summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 51px;
+    padding: 10px 15px;
+    color: #97999f;
+    white-space: nowrap;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .org-menu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .org-menu a:hover,
+  .org-menu a:focus-visible,
+  .org-menu summary:hover,
+  .org-menu summary:focus-visible {
+    color: #ffffff;
+    background: rgb(0 0 0 / 0.07);
+  }
+
+  .org-menu a[aria-current='page'] {
+    color: #ffffff;
+    font-weight: 500;
+    box-shadow: inset 4px 0 0 0 #5f5f62;
+  }
+
+  .org-menu .org-label {
+    margin-left: auto;
+    padding: 5px 8px;
+    border-radius: 60px;
+    background: #131313;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 10px;
+  }
+
+  .org-menu .org-label + .org-label,
+  .org-menu .org-label + .status,
+  .org-menu .org-label + .org-arrow {
+    margin-left: 0;
+  }
+
+  .org-menu .org-arrow {
+    font-size: 10px;
+    transition: transform 0.15s;
+  }
+
+  .org-menu details[open] > summary .org-arrow {
+    transform: rotate(90deg);
+  }
+
+  @media (width >= 64rem) {
+    .org-header.org-with-menu {
+      padding-left: 60px;
+    }
+
+    .org-content.org-with-menu {
+      left: 60px;
+    }
+
+    .org-sidebar {
+      width: 60px;
+      transform: none;
+    }
+
+    .org-sidebar:hover,
+    .org-sidebar:focus-within {
+      width: 240px;
+    }
+
+    /* The closed strip shows the pictures only. */
+    .org-sidebar:not(:hover, :focus-within) .org-wide,
+    .org-sidebar:not(:hover, :focus-within) details > ul {
+      display: none;
+    }
+  }
 }

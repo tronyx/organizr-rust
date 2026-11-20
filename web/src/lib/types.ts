@@ -77,6 +77,14 @@ export interface User {
 
 export interface Appearance {
   title: string;
+  /** The picture of the install: an address, or a path of a picture on this server. */
+  logo?: string;
+  /** The picture above the login form. */
+  loginLogo?: string;
+  /** Whether the bar at the top shows the picture and not the title. */
+  useLogo?: boolean;
+  /** Whether the login page shows its picture and not the title. */
+  useLogoLogin?: boolean;
 }
 
 /** Where the tabs without a heading stand in the menu. */
