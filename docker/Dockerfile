@@ -60,6 +60,8 @@ COPY --from=builder /organizr /usr/local/bin/organizr
 # user the application runs as. A folder mounted here must be writable for that user.
 COPY --from=builder --chown=65532:65532 /config /config
 ENV ORGANIZR_DATA_DIR=/config
+# The list of the marketplace for extensions. An empty value switches the marketplace off.
+ENV ORGANIZR_EXTENSION_MARKETPLACE=https://raw.githubusercontent.com/tronyx/organizr-rust-marketplace/main/extensions.json
 VOLUME /config
 
 # The "nonroot" user of the base image, by number, so that a platform that checks for a

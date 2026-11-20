@@ -117,14 +117,22 @@ The runtime for extensions is a build feature with the name `wasm-plugins`. The 
 
 A marketplace is a list of extensions on a web server. With a marketplace, the Admin installs an extension from the settings page.
 
-Organizr reads the address of the list from the environment variable `ORGANIZR_EXTENSION_MARKETPLACE`. Without the variable, there is no marketplace, and the settings show none. The list of the project is in the repository `tronyx/organizr-rust-marketplace`:
+Organizr reads the address of the list from the environment variable `ORGANIZR_EXTENSION_MARKETPLACE`. The container image sets it to the list of the project, which is in the repository `tronyx/organizr-rust-marketplace`:
+
+```text
+https://raw.githubusercontent.com/tronyx/organizr-rust-marketplace/main/extensions.json
+```
+
+To use another list, set the variable to its address. Use only a list whose owner you trust. The owner of a list decides which files it names.
+
+To switch the marketplace off, set the variable to an empty value. The settings then show no marketplace:
 
 ```yaml
 environment:
-  ORGANIZR_EXTENSION_MARKETPLACE: https://raw.githubusercontent.com/tronyx/organizr-rust-marketplace/main/extensions.json
+  ORGANIZR_EXTENSION_MARKETPLACE: ""
 ```
 
-Use only a list whose owner you trust. The owner of a list decides which files it names.
+A server that you start without the container image has no marketplace until you set the variable.
 
 1. Open **Settings**, and select the tab **Plugins**. The section **Extensions** shows the heading **Marketplace**.
 2. Select **Install** for an extension. Organizr downloads its file into the folder `plugins` of the data folder.
