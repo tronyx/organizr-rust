@@ -799,6 +799,109 @@ async fn database_is_found_in_the_volume_of_a_container() {
     .await;
 }
 
+/// Closes a folder for the test, runs a dry run, and opens the folder again so that
+/// the temporary folder can be deleted. `file` is a file in the folder. Returns
+/// `None` when the file can still be looked at: the user `root` enters every folder,
+/// so the test cannot run as that user.
+#[cfg(unix)]
+async fn dry_run_with_closed_folder(
+    legacy: &Legacy,
+    file: &Path,
+) -> Option<Result<organizr_import::report::Report, ImportError>> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let folder = file.parent().expect("the file is in a folder");
+    let set = |mode: u32| {
+        std::fs::set_permissions(folder, std::fs::Permissions::from_mode(mode))
+            .expect("the permissions can be set");
+    };
+    // Without the execute permission, nobody but `root` can look at a file in it.
+    set(0o600);
+    let result = if std::fs::metadata(file).is_ok() {
+        eprintln!("skipped: this user enters a folder without the permission");
+        None
+    } else {
+        Some(dry_run(legacy.request(), &seed::secrets()).await)
+    };
+    set(0o755);
+    result
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn database_in_a_folder_that_cannot_be_entered_is_named_with_the_cause() {
+    let legacy = Legacy::with("").await;
+    let file = legacy.root().join("data/parity-db/parity.db");
+
+    let Some(refused) = dry_run_with_closed_folder(&legacy, &file).await else {
+        return;
+    };
+
+    let Err(error) = refused else {
+        panic!("the dry run worked");
+    };
+    let shown = error.to_string();
+    let ImportError::Inaccessible { path, source } = error else {
+        panic!("{error:?}");
+    };
+    assert_eq!(path, file.display().to_string());
+    assert_eq!(source.kind(), std::io::ErrorKind::PermissionDenied);
+    assert!(shown.contains(&path), "{shown}");
+    assert!(
+        shown.to_lowercase().contains("permission denied"),
+        "{shown}"
+    );
+    assert!(shown.contains("UID 65532"), "{shown}");
+    // With the folder open again, the same request works.
+    let report = dry_run(legacy.request(), &seed::secrets())
+        .await
+        .expect("the dry run works");
+    assert_eq!(report.users, 4);
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn configuration_file_in_a_folder_that_cannot_be_entered_is_named_with_the_cause() {
+    let legacy = Legacy::with("").await;
+    let file = legacy.root().join("data/config/config.php");
+
+    let Some(refused) = dry_run_with_closed_folder(&legacy, &file).await else {
+        return;
+    };
+
+    let Err(ImportError::Inaccessible { path, source }) = refused else {
+        panic!("{refused:?}");
+    };
+    assert_eq!(path, file.display().to_string());
+    assert_eq!(source.kind(), std::io::ErrorKind::PermissionDenied);
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn file_that_can_be_read_is_found_behind_a_folder_that_cannot_be_entered() {
+    use std::os::unix::fs::PermissionsExt;
+
+    // The configuration names a folder that this user cannot enter. The database is
+    // also under the folder of the install, by the end of that path, and is found there.
+    let closed = tempfile::tempdir().expect("a temporary folder can be made");
+    let location = closed.path().join("parity-db");
+    std::fs::create_dir_all(&location).expect("the folder can be made");
+    let line = format!("'dbLocation' => '{}/',", location.display());
+    let config = CONFIG.replace(DATABASE_LINE, &line);
+    assert_ne!(config, CONFIG);
+    let legacy = Legacy::build(&config, "parity-db/parity.db", "").await;
+
+    let set = |mode: u32| {
+        std::fs::set_permissions(closed.path(), std::fs::Permissions::from_mode(mode))
+            .expect("the permissions can be set");
+    };
+    set(0o600);
+    let report = dry_run(legacy.request(), &seed::secrets()).await;
+    set(0o755);
+
+    assert_eq!(report.expect("the dry run works").users, 4);
+}
+
 #[tokio::test]
 async fn folder_without_an_install_or_a_database_is_refused_with_a_reason() {
     let secrets = seed::secrets();

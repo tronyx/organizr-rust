@@ -13,6 +13,7 @@ pub mod php_config;
 pub mod plan;
 pub mod report;
 
+use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use organizr_auth::secrets::SecretBox;
@@ -51,6 +52,17 @@ pub enum ImportError {
          or in its folders www/organizr, www/Dashboard, www or html"
     )]
     NoInstall(String),
+    /// A place where a file of the PHP install can be could not be looked at, and the
+    /// file was found in no other place.
+    #[error(
+        "cannot look at {path}: {source}; the user that runs the import must be able to          enter each folder of that path (in the container image, that user has the UID 65532)"
+    )]
+    Inaccessible {
+        /// The path that could not be looked at.
+        path: String,
+        /// What the system reported.
+        source: std::io::Error,
+    },
     /// The configuration file cannot be read from the disk.
     #[error("cannot read {file}: {source}")]
     Unreadable {
@@ -123,12 +135,18 @@ pub struct Source {
 
 /// Finds the PHP install and reads its configuration file and its database.
 pub async fn read(request: ImportRequest<'_>) -> Result<Source, ImportError> {
-    let web_root = WEB_ROOTS
+    let config_files: Vec<PathBuf> = WEB_ROOTS
         .iter()
-        .map(|inside| request.from.join(inside))
-        .find(|root| root.join(CONFIG_FILE).is_file())
+        .map(|inside| request.from.join(inside).join(CONFIG_FILE))
+        .collect();
+    let config_file = first_file(&config_files)?
         .ok_or_else(|| ImportError::NoInstall(request.from.display().to_string()))?;
-    let config_file = web_root.join(CONFIG_FILE);
+    // The configuration file is two folders below the folder of the application.
+    let web_root = config_file
+        .ancestors()
+        .nth(3)
+        .unwrap_or(request.from)
+        .to_owned();
     let shown = config_file.display().to_string();
     let text = std::fs::read_to_string(&config_file).map_err(|source| ImportError::Unreadable {
         file: shown.clone(),
@@ -210,18 +228,43 @@ fn find_database(folders: &[&Path], location: &str, name: &str) -> Result<PathBu
             candidates.extend(names.iter().map(|name| inside.join(name)));
         }
     }
-    candidates
-        .iter()
-        .find(|candidate| candidate.is_file())
-        .cloned()
-        .ok_or_else(|| {
-            let mut tried: Vec<String> = candidates
-                .iter()
-                .map(|candidate| candidate.display().to_string())
-                .collect();
-            tried.dedup();
-            ImportError::NoDatabase(tried)
-        })
+    first_file(&candidates)?.ok_or_else(|| {
+        let mut tried: Vec<String> = candidates
+            .iter()
+            .map(|candidate| candidate.display().to_string())
+            .collect();
+        tried.dedup();
+        ImportError::NoDatabase(tried)
+    })
+}
+
+/// Whether the system says with this kind of error that nothing is at a path.
+const fn means_absent(kind: ErrorKind) -> bool {
+    matches!(kind, ErrorKind::NotFound | ErrorKind::NotADirectory)
+}
+
+/// The first of the paths that is a file.
+///
+/// A path that cannot be looked at, for example in a folder that this user cannot
+/// enter, does not stop the search: the file can be at a later path. When no path is a
+/// file, the first path that could not be looked at is the error, because "not found"
+/// would send the person to the wrong repair.
+fn first_file(candidates: &[PathBuf]) -> Result<Option<PathBuf>, ImportError> {
+    let mut inaccessible = None;
+    for candidate in candidates {
+        match std::fs::metadata(candidate) {
+            Ok(found) if found.is_file() => return Ok(Some(candidate.clone())),
+            Ok(_) => {}
+            Err(error) if means_absent(error.kind()) => {}
+            Err(source) => {
+                inaccessible.get_or_insert(ImportError::Inaccessible {
+                    path: candidate.display().to_string(),
+                    source,
+                });
+            }
+        }
+    }
+    inaccessible.map_or(Ok(None), Err)
 }
 
 /// Reads the PHP install and makes the plan, and writes nothing. The secrets of the plan
@@ -296,4 +339,37 @@ pub async fn store(
             other => ImportError::Database(other),
         })?;
     Ok(report)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_a_missing_path_means_that_nothing_is_there() {
+        assert!(means_absent(ErrorKind::NotFound));
+        assert!(means_absent(ErrorKind::NotADirectory));
+        assert!(!means_absent(ErrorKind::PermissionDenied));
+        assert!(!means_absent(ErrorKind::Other));
+    }
+
+    #[test]
+    fn first_file_passes_folders_and_missing_paths() {
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let file = folder.path().join("config.php");
+        std::fs::write(&file, "text").expect("the file can be written");
+        let candidates = [
+            folder.path().join("missing"),
+            // A folder is no file.
+            folder.path().to_owned(),
+            // A path through a file names nothing.
+            file.join("below"),
+            file.clone(),
+        ];
+
+        let found = first_file(&candidates).expect("every path can be looked at");
+        assert_eq!(found, Some(file));
+        let found = first_file(&candidates[..3]).expect("every path can be looked at");
+        assert_eq!(found, None);
+    }
 }
