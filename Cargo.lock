@@ -2315,12 +2315,14 @@ name = "organizr-plugins"
 version = "0.1.0"
 dependencies = [
  "lettre",
+ "organizr-integrations",
  "organizr-settings",
  "organizr-testkit",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
