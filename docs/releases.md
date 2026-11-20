@@ -49,4 +49,17 @@ New vulnerabilities become known after an image is published. The workflow `scan
 
 The file `docker/Dockerfile` names each base image with its version and its digest. A digest is the fingerprint of one exact image. The file `Cargo.lock` and the file `web/package-lock.json` name the exact version of each library. So two builds of one commit use the same software.
 
-To get a correction of a base image, change its version and its digest in `docker/Dockerfile`. The workflow checks that the Rust version there is the same as in `rust-toolchain.toml`.
+## Updates of the pinned versions
+
+The file `renovate.json` is the configuration for Renovate. Renovate is a service that looks for new versions of the pinned software and opens a pull request for each update. It works only after the owner of the repository installs the Renovate app of GitHub for the repository.
+
+Renovate follows these rules here:
+
+- It opens pull requests against the branch `develop`, on Monday before 6 in the morning.
+- It waits seven days after a release before it offers that release.
+- It updates the base images of `docker/Dockerfile` with their digests, the Rust and web libraries, the GitHub actions, and the tools that the workflows run.
+- The Rust version comes in one pull request for `rust-toolchain.toml` and for `docker/Dockerfile`. The workflow `build` fails when the two versions differ.
+- Small updates of the Rust libraries come as one pull request, and so do small updates of the web libraries.
+- It leaves the folder `parity` alone. The PHP image there is the reference for the tests.
+
+The workflows `ci` and `lint` run for each pull request of Renovate, as for every other pull request.
