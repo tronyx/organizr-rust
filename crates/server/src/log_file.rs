@@ -22,8 +22,10 @@ use organizr_api::SettingsWatch;
 use organizr_api::log_files::{self, Record};
 use serde_json::{Map, Value};
 use tracing::field::{Field, Visit};
+use tracing::span::{Attributes, Id};
 use tracing::{Event, Level, Metadata, Subscriber};
 use tracing_subscriber::layer::{Context, Layer};
+use tracing_subscriber::registry::LookupSpan;
 
 /// The number of lines that can wait for the disk. More are dropped.
 const QUEUE: usize = 8192;
@@ -133,14 +135,53 @@ pub struct FileLayer {
     source: Source,
 }
 
-impl<S: Subscriber> Layer<S> for FileLayer {
-    fn on_event(&self, event: &Event<'_>, _context: Context<'_, S>) {
+/// The request id of a span, kept in the extensions of the span.
+struct SpanRequestId(String);
+
+/// Finds the field `request_id` of a span.
+#[derive(Default)]
+struct RequestIdField(Option<String>);
+
+impl Visit for RequestIdField {
+    fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
+        if field.name() == "request_id" {
+            self.0 = Some(format!("{value:?}"));
+        }
+    }
+
+    fn record_str(&mut self, field: &Field, value: &str) {
+        if field.name() == "request_id" {
+            self.0 = Some(value.to_owned());
+        }
+    }
+}
+
+impl<S> Layer<S> for FileLayer
+where
+    S: Subscriber + for<'lookup> LookupSpan<'lookup>,
+{
+    fn on_new_span(&self, attributes: &Attributes<'_>, id: &Id, context: Context<'_, S>) {
+        let mut field = RequestIdField::default();
+        attributes.record(&mut field);
+        if let (Some(request_id), Some(span)) = (field.0, context.span(id)) {
+            span.extensions_mut().insert(SpanRequestId(request_id));
+        }
+    }
+
+    fn on_event(&self, event: &Event<'_>, context: Context<'_, S>) {
         let level = level_name(*event.metadata().level());
         if log_files::rank(level) < threshold(&self.source) {
             return;
         }
         let now = jiff::Timestamp::now();
-        let record = record_of(event, level, now);
+        let mut record = record_of(event, level, now);
+        record.request_id = context.event_scope(event).and_then(|scope| {
+            scope.into_iter().find_map(|span| {
+                span.extensions()
+                    .get::<SpanRequestId>()
+                    .map(|id| id.0.clone())
+            })
+        });
         let Ok(mut text) = serde_json::to_string(&record) else {
             return;
         };
@@ -199,6 +240,7 @@ fn record_of(event: &Event<'_>, level: &str, now: jiff::Timestamp) -> Record {
         channel: channel_of(metadata.target()),
         username,
         trace_id: uuid::Uuid::new_v4().to_string(),
+        request_id: None,
         file: metadata.file().unwrap_or_default().replace('\\', "/"),
         line: metadata.line(),
         context: fields.context,
@@ -463,6 +505,29 @@ mod tests {
         let text = std::fs::read_to_string(&files[0].path).expect("readable");
         assert!(text.starts_with(r#"{"log_level":"WARNING","message":"a login failed","channel":"Tests","username":"zoe","trace_id":""#), "{text}");
         assert_eq!(text.lines().count(), 1);
+    }
+
+    #[test]
+    fn a_line_in_the_span_of_a_request_carries_its_id() {
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        with_file_log(folder.path(), None, |_| {
+            tracing::info!("outside");
+            let span = tracing::info_span!("request", request_id = %"the-id");
+            let _inside = span.enter();
+            let inner = tracing::info_span!("inner", other = 1);
+            let _deeper = inner.enter();
+            tracing::info!("inside");
+        });
+        let found = records(folder.path());
+        assert_eq!(found[0].message, "outside");
+        assert_eq!(found[0].request_id, None);
+        assert_eq!(found[1].message, "inside");
+        assert_eq!(found[1].request_id.as_deref(), Some("the-id"));
+        // The field comes next to the trace id, and is `null` outside a request.
+        let files = log_files::list(folder.path()).expect("listed");
+        let text = std::fs::read_to_string(&files[0].path).expect("readable");
+        assert!(text.contains(r#","request_id":null,"file":"#), "{text}");
+        assert!(text.contains(r#","request_id":"the-id","file":"#), "{text}");
     }
 
     #[test]

@@ -13,6 +13,7 @@ function record(message: string, level = 'INFO', trace = message): LogRecord {
     channel: 'Login',
     username: 'zoe',
     trace_id: trace,
+    request_id: null,
     file: 'crates/api/src/handlers/login.rs',
     line: 117,
     context: {},
@@ -113,7 +114,11 @@ describe('LogViewer', () => {
   });
 
   it('opens the details of a record by its trace id', async () => {
-    const full = { ...record('a login failed', 'WARNING', 'trace-1'), context: { attempts: 3 } };
+    const full = {
+      ...record('a login failed', 'WARNING', 'trace-1'),
+      context: { attempts: 3 },
+      request_id: 'request-9',
+    };
     stubApi({
       'GET config': CONFIG,
       'GET log/0': pageOf([record('a login failed', 'WARNING', 'trace-1')]),
@@ -125,6 +130,7 @@ describe('LogViewer', () => {
     await fireEvent.click(button);
     expect(await screen.findByText(/"attempts": 3/)).toBeTruthy();
     expect(screen.getByText('trace-1')).toBeTruthy();
+    expect(screen.getByText('request-9')).toBeTruthy();
     expect(screen.getByText('crates/api/src/handlers/login.rs#L117')).toBeTruthy();
     expect(button.getAttribute('aria-expanded')).toBe('true');
   });

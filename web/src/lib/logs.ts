@@ -9,6 +9,8 @@ export interface LogRecord {
   channel: string;
   username: string;
   trace_id: string;
+  /** The id of the request that wrote the record: the header `X-Request-Id` of its answer. */
+  request_id: string | null;
   file: string;
   line: number | null;
   context: Record<string, unknown>;

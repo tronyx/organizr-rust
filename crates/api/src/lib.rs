@@ -16,6 +16,7 @@ pub mod php_json;
 pub mod php_url;
 pub mod picture_cache;
 pub mod ping;
+pub mod request_id;
 mod router;
 mod same_origin;
 pub mod slim_route;

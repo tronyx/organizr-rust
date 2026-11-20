@@ -556,3 +556,94 @@ fn check_of_an_install_without_a_plex_token_asks_nothing_and_succeeds() {
         "skipped  plex.tv knows the stored Plex token: the settings hold no Plex token"
     );
 }
+
+/// Sends a GET request with more header lines, and returns the whole answer as text.
+fn get_with_headers(address: SocketAddr, path: &str, headers: &[&str]) -> String {
+    let mut stream = TcpStream::connect(address).expect("the server accepts a connection");
+    let mut head = vec![
+        format!("GET {path} HTTP/1.1"),
+        format!("Host: {address}"),
+        "Connection: close".to_owned(),
+    ];
+    head.extend(headers.iter().map(|line| (*line).to_owned()));
+    write!(stream, "{}\r\n\r\n", head.join("\r\n")).expect("the request can be sent");
+    let mut answer = String::new();
+    stream
+        .read_to_string(&mut answer)
+        .expect("the answer can be read");
+    answer
+}
+
+/// The value of the header `X-Request-Id` of an answer.
+fn request_id_of(answer: &str) -> String {
+    answer
+        .lines()
+        .take_while(|line| !line.is_empty())
+        .find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            name.eq_ignore_ascii_case("x-request-id")
+                .then(|| value.trim().to_owned())
+        })
+        .unwrap_or_else(|| panic!("the answer has no X-Request-Id: {answer}"))
+}
+
+#[test]
+fn each_answer_has_a_request_id_that_its_log_lines_carry() {
+    let data_dir = tempfile::tempdir().expect("a temporary folder can be created");
+    let output = data_dir.path().join("output.log");
+    let address = free_address();
+    let mut server = Server::start_logging_to(address, data_dir.path(), &output);
+    assert!(server.wait_until_healthy(address, Duration::from_secs(30)));
+
+    // A file of the web interface, an answer of the API, a refusal and "not found".
+    let page = get_with_headers(address, "/", &[]);
+    assert!(page.starts_with("HTTP/1.1 200"), "{page}");
+    let refused = get_with_headers(address, "/api/v2/tabs", &[]);
+    assert!(refused.starts_with("HTTP/1.1 401"), "{refused}");
+    let missing = get_with_headers(address, "/api/v2/no-such-route", &[]);
+    assert!(missing.starts_with("HTTP/1.1 404"), "{missing}");
+    let ids = [&page, &refused, &missing].map(|answer| request_id_of(answer));
+    for id in &ids {
+        assert_eq!(id.len(), 36, "{id}");
+    }
+    assert!(ids[0] != ids[1] && ids[1] != ids[2] && ids[0] != ids[2]);
+
+    // The id of a client is not used. This request writes a warning to the log: the
+    // address in X-Forwarded-For comes from no trusted proxy.
+    let answer = get_with_headers(
+        address,
+        "/api/v2/status",
+        &[
+            "X-Request-Id: injected-by-the-client",
+            "X-Forwarded-For: 203.0.113.9",
+        ],
+    );
+    assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+    let id = request_id_of(&answer);
+    assert_ne!(id, "injected-by-the-client");
+
+    let in_the_file = format!(r#""request_id":"{id}""#);
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let found = loop {
+        let line = log_files_in(data_dir.path()).iter().find_map(|file| {
+            std::fs::read_to_string(file)
+                .ok()?
+                .lines()
+                .find(|line| line.contains(&in_the_file))
+                .map(str::to_owned)
+        });
+        if line.is_some() || Instant::now() > deadline {
+            break line;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    };
+    let line = found.expect("the log file has the warning of the request");
+    assert!(line.contains("X-Forwarded-For"), "{line}");
+    drop(server);
+    let text = std::fs::read_to_string(&output).expect("the output can be read");
+    assert!(text.contains(&format!("request_id={id}")), "{text}");
+    assert!(!text.contains("injected-by-the-client"), "{text}");
+    for file in log_files_in(data_dir.path()) {
+        assert!(!file_holds(&file, "injected-by-the-client"));
+    }
+}

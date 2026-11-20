@@ -233,6 +233,8 @@
                     <dl class="grid grid-cols-[auto_1fr] gap-x-4 text-sm">
                       <dt class="font-semibold">Trace ID</dt>
                       <dd class="font-mono text-xs">{details.trace_id}</dd>
+                      <dt class="font-semibold">Request ID</dt>
+                      <dd class="font-mono text-xs">{details.request_id ?? 'None'}</dd>
                       <dt class="font-semibold">File</dt>
                       <dd class="font-mono text-xs">
                         {details.file}{details.line === null ? '' : `#L${details.line}`}

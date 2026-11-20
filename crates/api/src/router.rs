@@ -604,6 +604,9 @@ fn finish(routes: Router<AppState>, open: Router<AppState>, state: AppState) -> 
             header::EXPIRES,
             HeaderValue::from_static("Thu, 19 Nov 1981 08:52:00 GMT"),
         ))
+        // The outermost layer: every answer gets the request id, also "not found" and the
+        // refusals of the layers above, and every log line of the request carries it.
+        .layer(from_fn(crate::request_id::assign))
         .with_state(state)
 }
 

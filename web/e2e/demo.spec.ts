@@ -515,6 +515,8 @@ test('the Admin reads the log of the server on the settings page', async ({ page
   await page.getByRole('combobox', { name: 'Level', exact: true }).selectOption('NONE');
   await page.getByRole('button', { name: 'Details of Organizr is listening' }).click();
   await expect(log).toContainText('crates/server/src/serve.rs');
+  // The start of the server is no request, so the record has no request id.
+  await expect(log).toContainText(/Request ID\s*None/);
 });
 
 test('a guest cannot open the settings', async ({ page }) => {

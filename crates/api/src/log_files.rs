@@ -137,7 +137,8 @@ pub fn rank(level: &str) -> u16 {
 /// One record of the log, with the fields of the records of PHP Organizr.
 ///
 /// PHP also writes `server_ip_address`, `user_agent` and `process_time`; this
-/// application does not. `trace_id` is a new random id for each record, as in PHP.
+/// application does not. `trace_id` is a new random id for each record, as in PHP;
+/// `request_id` is the id of the request (D-13).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Record {
@@ -151,6 +152,9 @@ pub struct Record {
     pub username: String,
     /// The id of the record.
     pub trace_id: String,
+    /// The id of the request that wrote the record, as the header `X-Request-Id` of its
+    /// answer names it, or `None` outside a request. PHP has no such field.
+    pub request_id: Option<String>,
     /// The source file that wrote the record.
     pub file: String,
     /// The line in that file.

@@ -10,7 +10,7 @@ Organizr writes its log to two places:
 The file of a day has the name `organizr-<date>.log`, for example `organizr-2026-11-20.log`. The date and the times in the file are in UTC. Each line of the file is one record, as a JSON object:
 
 ```json
-{"log_level":"INFO","message":"a user logged in","channel":"Login","username":"robin","trace_id":"0b1f6a3e-7c1d-4a52-9d55-3f2a8c9e1b47","file":"crates/api/src/handlers/login.rs","line":117,"context":{},"remote_ip_address":"192.0.2.7","datetime":"2026-11-20 03:15:00.123456","timezone":"UTC"}
+{"log_level":"INFO","message":"a user logged in","channel":"Login","username":"robin","trace_id":"0b1f6a3e-7c1d-4a52-9d55-3f2a8c9e1b47","request_id":"6f1c2b9e-4d0a-4f3e-8a71-2c5d9e0b3a64","file":"crates/api/src/handlers/login.rs","line":117,"context":{},"remote_ip_address":"192.0.2.7","datetime":"2026-11-20 03:15:00.123456","timezone":"UTC"}
 ```
 
 | Field | What it holds |
@@ -20,6 +20,7 @@ The file of a day has the name `organizr-<date>.log`, for example `organizr-2026
 | `channel` | The part of the server that wrote the record. The page of the log calls it the function |
 | `username` | The user the record is about, or `System` |
 | `trace_id` | A random id of the record. The page of the log finds a record by it |
+| `request_id` | The id of the request that wrote the record, or `null` for a record that no request wrote, for example at the start of the server |
 | `file`, `line` | The place in the source code that wrote the record |
 | `context` | The other values of the record, for example the reason of an error |
 | `remote_ip_address` | The address of the client, when the record names one. Otherwise `null` |
@@ -30,6 +31,19 @@ To read the files without the web interface, use a tool for JSON lines, for exam
 ```sh
 jq -r '[.datetime, .log_level, .message] | @tsv' data/logs/organizr-2026-11-20.log
 ```
+
+## Find the lines of a request
+
+Each answer of the server has the header `X-Request-Id`: a random id that the server makes for the request. Every line that the request writes to the log carries the same id: `request_id` in the log file, and `request{request_id=...}` in the standard output. The server never takes the id from a header of the client.
+
+To find the lines of a request, read the header of its answer, for example in the network tools of the browser or with `curl -i`. Then search the log for the id:
+
+```sh
+grep '"request_id":"6f1c2b9e-4d0a-4f3e-8a71-2c5d9e0b3a64"' data/logs/organizr-*.log
+docker logs organizr 2>&1 | grep 'request_id=6f1c2b9e-4d0a-4f3e-8a71-2c5d9e0b3a64'
+```
+
+The page of the log in the web interface shows the request id in the details of a record.
 
 ## What the file holds
 
@@ -63,7 +77,7 @@ An Admin or a Co-Admin can read the log on the page **Settings** > **Logs**, bel
 - **File** chooses the file of a day, or **All** for all of them.
 - **Level** shows the records of one level only.
 - **Reload** loads the page again. **Live update** loads it again and again, in the time of `logLiveUpdateRefresh`.
-- **Details** shows the trace id, the place in the source code and the context of a record.
+- **Details** shows the trace id, the request id, the place in the source code and the context of a record.
 - **Purge this file** deletes the chosen file. The server makes a new file with the next record of the day.
 
 ## The API

@@ -141,7 +141,9 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     // A request for a file of the web interface is answered before it reaches the API.
     let app = router(state)
         .context("the route table is not valid")?
-        .layer(axum::middleware::from_fn(crate::web::serve_files));
+        .layer(axum::middleware::from_fn(crate::web::serve_files))
+        // The files of the web interface get a request id too. The router keeps this one.
+        .layer(axum::middleware::from_fn(organizr_api::request_id::assign));
 
     let listener = TcpListener::bind(args.listen)
         .await
