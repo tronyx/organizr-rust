@@ -1260,6 +1260,15 @@ const CUSTOM_HTML_ITEMS: FieldGroup[] = CUSTOM_HTML.map((number) => ({
       kind: 'textarea',
       help: 'The homepage shows the HTML in a frame of its own, apart from Organizr.',
     },
+    {
+      key: `homepageCustomHTML${number}Trusted`,
+      label: `Trust custom HTML ${number}: show it as a page of this site`,
+      kind: 'switch',
+      help:
+        'Switch this on for HTML that embeds a page which only lets this site frame it. ' +
+        'A script in a trusted item can do all that the person who looks at the page can do ' +
+        'in Organizr. Trust only HTML and scripts that you know.',
+    },
   ],
 }));
 

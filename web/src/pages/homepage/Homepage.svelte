@@ -96,7 +96,7 @@
     {#each items as item (item.key)}
       <section data-item={item.key}>
         {#if item.kind === 'customhtml'}
-          <CustomHtml id={item.id} />
+          <CustomHtml id={item.id} trusted={item.options?.trusted === true} />
         {:else if item.kind === 'downloader'}
           <Downloaders members={membersOf(item)} />
         {:else if item.kind === 'healthchecks'}

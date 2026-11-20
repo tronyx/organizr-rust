@@ -384,27 +384,35 @@ settings! {
     homepage_custom_html01_enabled: Flag = "homepageCustomHTML01Enabled", false;
     homepage_custom_html01_auth: TextNumber<u32> = "homepageCustomHTML01Auth", 1;
     custom_html01: Text = "customHTML01", String::new();
+    homepage_custom_html01_trusted: Flag = "homepageCustomHTML01Trusted", false;
     homepage_custom_html02_enabled: Flag = "homepageCustomHTML02Enabled", false;
     homepage_custom_html02_auth: TextNumber<u32> = "homepageCustomHTML02Auth", 1;
     custom_html02: Text = "customHTML02", String::new();
+    homepage_custom_html02_trusted: Flag = "homepageCustomHTML02Trusted", false;
     homepage_custom_html03_enabled: Flag = "homepageCustomHTML03Enabled", false;
     homepage_custom_html03_auth: TextNumber<u32> = "homepageCustomHTML03Auth", 1;
     custom_html03: Text = "customHTML03", String::new();
+    homepage_custom_html03_trusted: Flag = "homepageCustomHTML03Trusted", false;
     homepage_custom_html04_enabled: Flag = "homepageCustomHTML04Enabled", false;
     homepage_custom_html04_auth: TextNumber<u32> = "homepageCustomHTML04Auth", 1;
     custom_html04: Text = "customHTML04", String::new();
+    homepage_custom_html04_trusted: Flag = "homepageCustomHTML04Trusted", false;
     homepage_custom_html05_enabled: Flag = "homepageCustomHTML05Enabled", false;
     homepage_custom_html05_auth: TextNumber<u32> = "homepageCustomHTML05Auth", 1;
     custom_html05: Text = "customHTML05", String::new();
+    homepage_custom_html05_trusted: Flag = "homepageCustomHTML05Trusted", false;
     homepage_custom_html06_enabled: Flag = "homepageCustomHTML06Enabled", false;
     homepage_custom_html06_auth: TextNumber<u32> = "homepageCustomHTML06Auth", 1;
     custom_html06: Text = "customHTML06", String::new();
+    homepage_custom_html06_trusted: Flag = "homepageCustomHTML06Trusted", false;
     homepage_custom_html07_enabled: Flag = "homepageCustomHTML07Enabled", false;
     homepage_custom_html07_auth: TextNumber<u32> = "homepageCustomHTML07Auth", 1;
     custom_html07: Text = "customHTML07", String::new();
+    homepage_custom_html07_trusted: Flag = "homepageCustomHTML07Trusted", false;
     homepage_custom_html08_enabled: Flag = "homepageCustomHTML08Enabled", false;
     homepage_custom_html08_auth: TextNumber<u32> = "homepageCustomHTML08Auth", 1;
     custom_html08: Text = "customHTML08", String::new();
+    homepage_custom_html08_trusted: Flag = "homepageCustomHTML08Trusted", false;
     homepage_deluge_enabled: Flag = "homepageDelugeEnabled", false;
     homepage_deluge_auth: TextNumber<u32> = "homepageDelugeAuth", 1;
     homepage_jdownloader_enabled: Flag = "homepageJdownloaderEnabled", false;
@@ -1147,12 +1155,34 @@ mod tests {
         }
     }
 
+    /// The settings that the PHP application does not have. Each one is a recorded
+    /// difference: see `docs/deviations.md`.
+    const OWN_SETTINGS: [&str; 8] = [
+        "homepageCustomHTML01Trusted",
+        "homepageCustomHTML02Trusted",
+        "homepageCustomHTML03Trusted",
+        "homepageCustomHTML04Trusted",
+        "homepageCustomHTML05Trusted",
+        "homepageCustomHTML06Trusted",
+        "homepageCustomHTML07Trusted",
+        "homepageCustomHTML08Trusted",
+    ];
+
     #[test]
     fn every_setting_is_a_setting_of_the_php_application() {
         let php = php_defaults();
 
         for key in Settings::KEYS {
             let known = php.iter().any(|(php_key, _)| php_key == key);
+            if OWN_SETTINGS.contains(key) {
+                assert!(
+                    !known,
+                    "`{key}` is listed as a setting of this application only"
+                );
+                // A setting of this application only is off until the Admin changes it.
+                assert_eq!(Settings::defaults().get(key), Some(json!(false)), "`{key}`");
+                continue;
+            }
             assert_ne!(
                 known,
                 WRITTEN_BY_THE_SET_UP.contains(key),

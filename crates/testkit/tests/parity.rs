@@ -571,6 +571,16 @@ async fn config_routes_answer_like_php() {
         for key in PHP_ONLY_CONFIG {
             replay = replay.deviation_without("D-53", all, &format!("{data}/{key}"));
         }
+        // Each custom HTML item has a switch that PHP does not have.
+        for number in 1..=8 {
+            replay = replay.deviation_adds_in_order(
+                "D-76",
+                all,
+                data,
+                &format!("homepageCustomHTML0{number}Trusted"),
+                json!(false),
+            );
+        }
 
         // The install of the recorder at this point: set up, with a registration password.
         let app = installed_app_with(

@@ -231,6 +231,10 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
             combined.push(item.kind);
             continue;
         }
+        if item.kind == "customhtml" && html::is_trusted(settings, &item.id) {
+            // The interface then shows the item in a frame without a sandbox.
+            item.options = json!({ "trusted": true });
+        }
         if item.kind == "calendar" {
             item.options = json!({
                 "defaultView": settings.calendar_default,

@@ -61,6 +61,51 @@ async fn items_are_the_ones_that_the_caller_sees_in_the_order_of_the_homepage() 
 }
 
 #[tokio::test]
+async fn trusted_custom_html_is_a_page_of_this_site() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app_with(
+            database,
+            &[
+                ("homepageCustomHTML01Enabled", json!(true)),
+                ("customHTML01", json!(HTML)),
+                ("homepageCustomHTML01Trusted", json!(true)),
+                ("homepageCustomHTML02Enabled", json!(true)),
+                ("customHTML02", json!("<p>Two</p>")),
+            ],
+        );
+
+        // The document of the trusted item has no sandbox. Only this site frames it.
+        let trusted = call(&app, As::Admin, "GET", "/homepage/html/01", None).await;
+        assert_eq!(trusted.status, StatusCode::OK, "{}", trusted.body);
+        let policy = header(&trusted, "content-security-policy").expect("the answer has a policy");
+        assert!(!policy.contains("sandbox"), "{policy}");
+        assert!(policy.contains("frame-ancestors 'self'"), "{policy}");
+
+        // The switch of one item does not change another item.
+        let other = call(&app, As::Admin, "GET", "/homepage/html/02", None).await;
+        let policy = header(&other, "content-security-policy").expect("the answer has a policy");
+        assert!(policy.starts_with("sandbox allow-scripts "), "{policy}");
+
+        // The list of the homepage says which item is trusted.
+        let listed = call(&app, As::Admin, "GET", "/homepage/items", None).await;
+        assert_eq!(
+            listed.data(),
+            json!([
+                {
+                    "key": "homepageOrdercustomhtml01",
+                    "kind": "customhtml",
+                    "id": "01",
+                    "options": {"trusted": true},
+                },
+                {"key": "homepageOrdercustomhtml02", "kind": "customhtml", "id": "02"},
+            ])
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn custom_html_is_a_document_of_no_site() {
     on_each_engine(async |database| {
         seed::installed(database).await;

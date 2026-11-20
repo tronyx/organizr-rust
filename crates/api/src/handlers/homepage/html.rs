@@ -5,11 +5,18 @@
 //! its own, `GET /homepage/html/{number}`, which the interface shows in a frame. The
 //! answer tells the browser to treat the document as a page of no site: its scripts
 //! run, but they cannot read the cookies of Organizr or call its routes as the person.
+//!
+//! An item with the switch `homepageCustomHTML{number}Trusted` is a page of this site,
+//! as in the PHP application. It can embed pages that only let this site frame them,
+//! and its scripts can do all that the person can do.
 
 use axum::Extension;
 use axum::extract::{Path, RawQuery, State};
 use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
+
+use organizr_settings::Settings;
+use serde_json::Value;
 
 use super::Permissions;
 use crate::caller::Caller;
@@ -25,6 +32,18 @@ const NUMBERS: [&str; 8] = ["01", "02", "03", "04", "05", "06", "07", "08"];
 pub(crate) const POLICY: &str = "sandbox allow-scripts allow-forms allow-popups \
     allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation; \
     default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self'";
+
+/// What the browser may do with the document of a trusted item: all that a page of
+/// this site may do. Only this site can frame it.
+pub(crate) const TRUSTED_POLICY: &str =
+    "default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self'";
+
+/// Whether the Admin trusts the item with the given number: its document is then a
+/// page of this site.
+pub fn is_trusted(settings: &Settings, number: &str) -> bool {
+    NUMBERS.contains(&number)
+        && settings.get(&format!("homepageCustomHTML{number}Trusted")) == Some(Value::Bool(true))
+}
 
 /// The style that every custom HTML item starts with. See the file.
 const BASE_STYLE: &str = include_str!("custom_html.css");
@@ -102,9 +121,14 @@ pub async fn show(
         header::CONTENT_TYPE,
         HeaderValue::from_static("text/html; charset=utf-8"),
     );
+    let policy = if is_trusted(&settings, &number) {
+        TRUSTED_POLICY
+    } else {
+        POLICY
+    };
     headers.insert(
         header::CONTENT_SECURITY_POLICY,
-        HeaderValue::from_static(POLICY),
+        HeaderValue::from_static(policy),
     );
     headers.insert(
         header::X_CONTENT_TYPE_OPTIONS,

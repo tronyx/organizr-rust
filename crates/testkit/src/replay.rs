@@ -95,6 +95,9 @@ struct Edit {
     /// The key to add to the object at `pointer`. Without it, the value at `pointer`
     /// is replaced.
     new_key: Option<String>,
+    /// Whether the keys of the object are put in the order of the alphabet after the
+    /// new key is added.
+    sorted: bool,
     value: Value,
 }
 
@@ -153,6 +156,33 @@ impl Replay {
             case: case.to_owned(),
             pointer: pointer.to_owned(),
             new_key: Some(key.to_owned()),
+            sorted: false,
+            value,
+        });
+        self
+    }
+
+    /// Expects one more key in an object of the body of a case whose keys stand in the
+    /// order of the alphabet, because of an approved deviation. The key stands at its
+    /// place in that order.
+    ///
+    /// `id` must be an entry of `docs/deviations.md`. `pointer` is a JSON pointer to the
+    /// object, for example `/response/data`.
+    #[must_use]
+    pub fn deviation_adds_in_order(
+        mut self,
+        id: &str,
+        case: &str,
+        pointer: &str,
+        key: &str,
+        value: Value,
+    ) -> Self {
+        assert_approved(id);
+        self.edits.push(Edit {
+            case: case.to_owned(),
+            pointer: pointer.to_owned(),
+            new_key: Some(key.to_owned()),
+            sorted: true,
             value,
         });
         self
@@ -265,6 +295,7 @@ impl Replay {
             case: case.to_owned(),
             pointer: pointer.to_owned(),
             new_key: None,
+            sorted: false,
             value,
         });
         self
@@ -1020,6 +1051,9 @@ impl Edit {
                     "case `{case}`: the object at `{}` already has the key `{key}`",
                     self.pointer
                 );
+                if self.sorted {
+                    object.sort_keys();
+                }
             }
         }
     }

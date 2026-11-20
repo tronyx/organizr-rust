@@ -2,7 +2,14 @@
   // One custom HTML item: HTML of the Admin, in a frame that keeps it apart from Organizr.
   import { customHtmlAddress, FRAME_SANDBOX, reportedHeight } from '../../lib/homepage';
 
-  let { id }: { id: string } = $props();
+  let {
+    id,
+    trusted = false,
+  }: {
+    id: string;
+    /** The Admin trusts the item: it is a page of this site, without the sandbox. */
+    trusted?: boolean;
+  } = $props();
 
   let frame = $state<HTMLIFrameElement | null>(null);
   // Until the document says how high it is.
@@ -28,6 +35,6 @@
   style:height="{height}px"
   title="Custom HTML {id}"
   src={customHtmlAddress(id)}
-  sandbox={FRAME_SANDBOX}
+  sandbox={trusted ? undefined : FRAME_SANDBOX}
   loading="lazy"
 ></iframe>

@@ -23,6 +23,17 @@ describe('Homepage', () => {
     expect(sandbox).not.toContain('allow-same-origin');
   });
 
+  it('shows a trusted item in a frame without the sandbox', async () => {
+    stubApi({
+      'GET homepage/items': { data: [{ ...ONE, options: { trusted: true } }, TWO] },
+    });
+    render(Homepage, { title: 'Homepage' });
+
+    const first = await screen.findByTitle('Custom HTML 01');
+    expect(first.hasAttribute('sandbox')).toBe(false);
+    expect(screen.getByTitle('Custom HTML 02').hasAttribute('sandbox')).toBe(true);
+  });
+
   it('gives a frame the height that its own document reports', async () => {
     stubApi({ 'GET homepage/items': { data: [ONE, TWO] } });
     render(Homepage, { title: 'Homepage' });

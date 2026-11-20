@@ -68,6 +68,7 @@ There are eight custom HTML items, with the numbers 01 to 08. Each one holds HTM
 | Level | `homepageCustomHTML01Auth` |
 | Place | `homepageOrdercustomhtml01` |
 | HTML | `customHTML01` |
+| Trust the item | `homepageCustomHTML01Trusted` |
 
 ### The frame of an item
 
@@ -82,6 +83,17 @@ What this means for the HTML of an item:
 - A link without a `target` changes the address of Organizr. The link `<a href="#Plex">` opens the tab "Plex".
 - A link with `target="_blank"` opens a new window.
 - The frame is as high as its content.
+
+### Trusted items
+
+An item in the frame is a page of no site. Some pages only let your own site frame them: a reverse proxy sends the header `Content-Security-Policy: frame-ancestors` with the names of your sites. Such a page stays empty in the frame, and a page that needs the login of your site does not get it.
+
+For such an item, switch **Trust custom HTML 01** on. The item is then a page of your site, as in PHP Organizr:
+
+- It can embed pages that only let your site frame them, and the browser sends your login to them.
+- A script in the item can do all that the person who looks at the page can do in Organizr. This also holds for a script that the HTML loads from another site.
+
+Trust only HTML and scripts that you know. The switch is off for each item at the start, also after an import.
 
 ### HTML from PHP Organizr
 
