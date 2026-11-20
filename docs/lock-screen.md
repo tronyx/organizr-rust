@@ -28,11 +28,14 @@ Wrong passwords on the lock screen are counted with the failed logins of the acc
 
 An Admin or a Co-Admin can lock and unlock the account of another user. Only an Admin can do this for the account of an Admin.
 
+1. Open **Settings**, and select the tab **Users**.
+2. Change the switch in the column **Locked** of the user.
+
+A script can use these routes:
+
 | Route | For | Purpose |
 |---|---|---|
 | `POST /api/v2/users/lock` | Each user | Lock the own account |
 | `POST /api/v2/users/unlock` | Each user | Unlock the own account, with the field `password` |
 | `POST /api/v2/users/lock/{id}` | Admin and Co-Admin | Lock the account with the id |
 | `POST /api/v2/users/unlock/{id}` | Admin and Co-Admin | Unlock the account with the id |
-
-The settings page for the users has no button for this yet. Use the routes, or the field `locked` of `PUT /api/v2/users/{id}`.
