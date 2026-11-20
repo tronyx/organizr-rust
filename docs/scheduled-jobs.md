@@ -68,4 +68,4 @@ The times are in the time zone of the server. Set the environment variable `TZ` 
 
 ## Test a schedule
 
-A script can ask the server whether it can read a schedule, and whether the scheduler runs. [Tests of the settings](settings-tests.md) describes the two routes.
+The settings of the backups and of the health checks plugin have a button **Test the schedule** next to the schedule, and a button **Check that the scheduler runs**. A script can ask the same questions. [Tests of the settings](settings-tests.md) describes the two routes.

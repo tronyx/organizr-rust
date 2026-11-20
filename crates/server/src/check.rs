@@ -12,6 +12,7 @@ use anyhow::Context;
 use organizr_integrations::http::Outbound;
 use organizr_integrations::plex::{PLEX_TV, PlexAccount, PlexTv};
 use organizr_integrations::sso::{self, Fallback, Login};
+use organizr_integrations::trakt::TRAKT_API;
 use organizr_integrations::weather::BREEZOMETER;
 use organizr_settings::Settings;
 use tracing_subscriber::EnvFilter;
@@ -94,6 +95,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     let mut lines = ask(&settings, &http, PLEX_TV).await;
     lines.extend(crate::check_homepage::ask(&settings, &http, BREEZOMETER).await);
+    lines.extend(crate::check_homepage_more::ask(&settings, &http, TRAKT_API).await);
     for line in &lines {
         println!("{line}");
     }

@@ -12,8 +12,10 @@
     hasSecret,
     SECURE,
     siteList,
+    valueTestBody,
     type FieldGroup,
     type FormValue,
+    type ValueTest,
   } from '../../lib/settingsForm';
 
   let {
@@ -34,7 +36,7 @@
   let loadError = $state<string | null>(null);
   let error = $state<string | null>(null);
   let busy = $state(false);
-  /** What the last connection test of a service said. */
+  /** What the last test said: of a service, of the scheduler, or of the value of a field. */
   let tested = $state<Record<string, { ok: boolean; text: string }>>({});
   let testing = $state<string | null>(null);
 
@@ -68,20 +70,31 @@
     }
   }
 
-  /** Asks the server to try the stored settings of a service. */
-  async function test(service: string) {
-    testing = service;
+  /** Runs a test of the server, and keeps its answer under `name`. */
+  async function run(name: string, method: string, path: string, body?: unknown) {
+    testing = name;
     try {
-      const answer = await api('POST', `test/${service}`);
-      tested[service] = {
+      const answer = await api(method, path, body);
+      tested[name] = {
         ok: true,
         text: siteList(answer.data) ?? answer.message ?? 'The connection works.',
       };
     } catch (failure) {
-      tested[service] = { ok: false, text: failureText(failure) };
+      tested[name] = { ok: false, text: failureText(failure) };
     } finally {
       testing = null;
     }
+  }
+
+  /** Asks the server to try the stored settings of a service. */
+  function test(service: string) {
+    return run(service, 'POST', `test/${service}`);
+  }
+
+  /** Asks the server to try the value of a field, as it stands in the form. */
+  function testValue(key: string, kind: ValueTest) {
+    const value = form[key];
+    return run(`field:${key}`, 'POST', `test/${kind}`, valueTestBody(kind, String(value ?? '')));
   }
 
   /** The key that the server shows to an Admin, or nothing when it only says "secure". */
@@ -92,6 +105,18 @@
 
   onMount(load);
 </script>
+
+{#snippet answer(name: string)}
+  {@const result = tested[name]}
+  {#if result}
+    <span
+      role={result.ok ? 'status' : 'alert'}
+      class={result.ok ? 'text-success text-sm' : 'text-error text-sm'}
+    >
+      {result.text}
+    </span>
+  {/if}
+{/snippet}
 
 {#snippet tester(service: string, label: string)}
   {@const result = tested[service]}
@@ -108,12 +133,7 @@
     {#if hasChanges}
       <span class="text-sm">Save the settings before you test.</span>
     {:else if result}
-      <span
-        role={result.ok ? 'status' : 'alert'}
-        class={result.ok ? 'text-success text-sm' : 'text-error text-sm'}
-      >
-        {result.text}
-      </span>
+      {@render answer(service)}
     {/if}
   </div>
 {/snippet}
@@ -179,17 +199,36 @@
                 aria-describedby={hint}
                 oninput={(event) => (form[field.key] = event.currentTarget.value)}></textarea>
             {:else}
-              <input
-                {id}
-                class="input w-full"
-                type={field.kind === 'number' ? 'number' : 'text'}
-                min={field.kind === 'number' ? field.min : undefined}
-                step={field.kind === 'number' ? 1 : undefined}
-                required={field.kind === 'number'}
-                value={form[field.key]}
-                aria-describedby={hint}
-                oninput={(event) => (form[field.key] = event.currentTarget.value)}
-              />
+              <div class="flex gap-2">
+                <input
+                  {id}
+                  class="input w-full"
+                  type={field.kind === 'number' ? 'number' : 'text'}
+                  min={field.kind === 'number' ? field.min : undefined}
+                  step={field.kind === 'number' ? 1 : undefined}
+                  required={field.kind === 'number'}
+                  value={form[field.key]}
+                  aria-describedby={hint}
+                  oninput={(event) => (form[field.key] = event.currentTarget.value)}
+                />
+                {#if field.test}
+                  {@const kind = field.test}
+                  <button
+                    type="button"
+                    class="btn"
+                    disabled={testing !== null}
+                    onclick={() => testValue(field.key, kind)}
+                  >
+                    {#if testing === `field:${field.key}`}
+                      <span class="loading loading-spinner loading-xs"></span>
+                    {/if}
+                    Test {field.test === 'cron' ? 'the schedule' : 'the folder'}
+                  </button>
+                {/if}
+              </div>
+              {#if field.test}
+                {@render answer(`field:${field.key}`)}
+              {/if}
             {/if}
           {/if}
           {#if field.help}
@@ -198,6 +237,22 @@
         {/each}
         {#if group.test}
           {@render tester(group.test, `Test the connection of ${group.title}`)}
+        {/if}
+        {#if group.scheduler}
+          <div class="mt-2 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              class="btn btn-sm"
+              disabled={testing !== null}
+              onclick={() => run('scheduler', 'GET', 'test/cron')}
+            >
+              {#if testing === 'scheduler'}
+                <span class="loading loading-spinner loading-xs"></span>
+              {/if}
+              Check that the scheduler runs
+            </button>
+            {@render answer('scheduler')}
+          </div>
         {/if}
         {#if group.lookup}
           {@render tester(group.lookup.test, group.lookup.label)}

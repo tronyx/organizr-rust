@@ -2,7 +2,17 @@
 
 Organizr has tests that tell you whether a value of the settings works, before you depend on it. Only an Admin or a Co-Admin can run a test. The tests of the services of the homepage are in [The homepage](homepage.md#test-the-connection-of-a-service).
 
-Each test is a route below `/api/v2`. The pages of this version have no buttons for the tests of this document. A script sends the request with the API key.
+Each test is a route below `/api/v2`. A script can send the request with the API key. The settings pages have a button for each test, in the place where PHP Organizr has it:
+
+| Test | Button |
+|---|---|
+| A page in a frame | **Test the tab**, below the address in the dialog of a tab. The test uses the address in the dialog, also before you save. |
+| A folder | **Test the folder**, next to the folder of the backups. The test uses the folder in the field, also before you save. |
+| A cron schedule | **Test the schedule**, next to the schedule of the backups and next to the schedule of the health checks plugin. The test uses the schedule in the field, also before you save. |
+| The scheduler | **Check that the scheduler runs**, below the settings of the backups and of the health checks plugin. |
+| The webhook for the logs | **Test the connection of Slack or Discord**, in the group "Slack or Discord" of the general settings. Save the settings before you test. |
+
+The routes and their bodies:
 
 | Test | Route | Body |
 |---|---|---|

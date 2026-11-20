@@ -2,6 +2,7 @@
   // The form for a new tab, or for a tab that is changed.
   import Dialog from '../../components/Dialog.svelte';
   import PictureField from '../../components/PictureField.svelte';
+  import { api } from '../../lib/api';
   import { asSwitch } from '../../lib/editor';
   import type { Category, Group, Tab } from '../../lib/types';
 
@@ -58,6 +59,22 @@
 
   let error = $state<string | null>(null);
   let busy = $state(false);
+  /** Whether the page of the address can show inside Organizr, after a test. */
+  let framed = $state<boolean | null>(null);
+  let testing = $state(false);
+
+  /** Asks the server whether the page of the address lets Organizr show it in a frame. */
+  async function testFrame() {
+    testing = true;
+    try {
+      await api('POST', 'test/iframe', { url });
+      framed = true;
+    } catch {
+      framed = false;
+    } finally {
+      testing = false;
+    }
+  }
 
   // A page of Organizr itself, such as the settings, keeps its kind and its address.
   const isInternal = $derived(tab?.type === 0);
@@ -100,6 +117,26 @@
         <p id="tab-url-hint" class="label whitespace-normal">
           The address can hold placeholders such as {'{username}'} and {'{domain}'}.
         </p>
+        <div class="mt-1 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            class="btn btn-sm"
+            disabled={testing || url.trim() === ''}
+            onclick={testFrame}
+          >
+            {#if testing}<span class="loading loading-spinner loading-xs"></span>{/if}
+            Test the tab
+          </button>
+          {#if framed === true}
+            <span role="status" class="text-success text-sm">
+              The page can show inside Organizr.
+            </span>
+          {:else if framed === false}
+            <span role="alert" class="text-error text-sm">
+              The page cannot show inside Organizr. Let the tab open in a new window.
+            </span>
+          {/if}
+        </div>
 
         <label class="label" for="tab-url-local">Address on the local network</label>
         <input

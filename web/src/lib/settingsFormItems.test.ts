@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { type Field, HOMEPAGE, siteList } from './settingsForm';
+import {
+  BACKUPS,
+  type Field,
+  GENERAL,
+  HEALTH_CHECKS_PLUGIN,
+  HOMEPAGE,
+  siteList,
+  valueTestBody,
+} from './settingsForm';
 
 const FIELDS = HOMEPAGE.flatMap((group) => group.fields);
 
@@ -173,5 +181,46 @@ describe('siteList', () => {
     expect(siteList(null)).toBeNull();
     expect(siteList({ content: [] })).toBeNull();
     expect(siteList({ data: [] })).toBeNull();
+  });
+});
+
+describe('the tests of the settings pages', () => {
+  it('have a button for Emby and for Jellyfin', () => {
+    expect(group('Emby')?.test).toBe('emby');
+    expect(group('Jellyfin')?.test).toBe('jellyfin');
+  });
+
+  it('test the webhook of the logs, which is a secret', () => {
+    const slack = GENERAL.find((candidate) => candidate.title === 'Slack or Discord');
+    expect(slack?.test).toBe('slack-logs');
+    expect(slack?.fields.map((one) => [one.key, one.kind])).toEqual([
+      ['sendLogsToSlack', 'switch'],
+      ['slackLogWebhook', 'secret'],
+      ['slackLogWebHookChannel', 'text'],
+    ]);
+  });
+
+  it('test the schedules, the folder of the backups and the scheduler', () => {
+    const fields = [...BACKUPS, ...HEALTH_CHECKS_PLUGIN].flatMap((one) => one.fields);
+    const tested = fields.filter((one) => one.test).map((one) => [one.key, one.test]);
+    expect(tested).toEqual([
+      ['autoBackupCronSchedule', 'cron'],
+      ['backupLocation', 'folder'],
+      ['HEALTHCHECKS-cron-run-schedule', 'cron'],
+    ]);
+    expect(BACKUPS[0]?.scheduler).toBe(true);
+    expect(HEALTH_CHECKS_PLUGIN[0]?.scheduler).toBe(true);
+  });
+
+  it('send a schedule as one text and a folder in the field folder', () => {
+    expect(valueTestBody('cron', '@daily')).toBe('@daily');
+    expect(valueTestBody('folder', '/backups')).toEqual({ folder: '/backups' });
+  });
+});
+
+describe('the settings of YouTube', () => {
+  it('have the API key as a secret, as the item Misc of PHP has it', () => {
+    expect(group('YouTube')?.fields).toHaveLength(1);
+    expect(field('youtubeAPI')).toMatchObject({ label: 'YouTube API key', kind: 'secret' });
   });
 });

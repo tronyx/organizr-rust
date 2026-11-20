@@ -10,7 +10,19 @@ The command reads the settings of the install: the Plex token of the owner, the 
 
 The command changes no setting and stores nothing. Each application sees one more login of the owner.
 
-Then the command asks each application of the homepage that has an address in the settings: the Plex server, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, Healthchecks, Uptime Kuma and the weather service. It only reads. An application without an address has no line in the report.
+Then the command asks each application of the homepage that has an address in the settings:
+
+- The media servers: Plex, Emby, Jellyfin, Tautulli and JellyStat. The live television of Emby, when its item is on.
+- The requests: Overseerr and Ombi.
+- The calendars: Sonarr, Radarr, Lidarr, SickRage, CouchPotato and Trakt.
+- The download clients: SABnzbd, qBittorrent, Deluge, rTorrent, uTorrent and JDownloader.
+- The indexers: Jackett and Prowlarr.
+- The monitors: Healthchecks, Uptime Kuma, AdGuard Home, Netdata, Monitorr, Speedtest Tracker, OctoPrint and UniFi.
+- The weather service.
+
+Each question is the one that the homepage item asks. The command only reads. An application without an address has no line in the report. Plex, Emby, Jellyfin, Overseerr and Ombi also need their key, because their address also serves a login.
+
+Trakt needs the login at Trakt in the settings. When the access token of Trakt is over, the command skips Trakt: the homepage asks Trakt for new tokens, and the command stores nothing.
 
 The report holds no token, no password, no address and no name of an account.
 
@@ -75,6 +87,8 @@ The command writes the reason to the log, above the report. The log names the ad
 | The stored id is one of them | The setting `plexID`. The tab **Login** of the settings lists the servers with their ids. |
 | An application gives a session for the Plex token | The address of the application, and whether the application lets Plex accounts log in. The owner must be able to log in to the application with Plex. |
 | An application gives a session for the fallback user | The name and the password of the fallback user. For Overseerr, the name is an e-mail address. |
-| An application of the homepage gives its data | The address and the key of the application in the settings of [the homepage](homepage.md). For qBittorrent, the user name, the password and the version of the API. |
+| An application of the homepage gives its data | The address and the key of the application in the settings of [the homepage](homepage.md). For qBittorrent, the user name, the password and the version of the API. For Deluge, rTorrent, uTorrent, JDownloader and UniFi, the user name and the password. |
+| AdGuard Home gives its statistics | The homepage asks AdGuard Home without a login. AdGuard Home must answer without one. |
+| Trakt gives the calendar of the account | The login at Trakt. Log in again in the settings of [the homepage](homepage.md). |
 
 An address must start with `http://` or `https://`. The command skips an address without that start, because only a browser knows the host of such an address.

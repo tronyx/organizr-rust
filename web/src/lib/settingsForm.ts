@@ -10,6 +10,19 @@ interface FieldBase {
   label: string;
   /** One sentence under the field that says what the setting does. */
   help?: string;
+  /**
+   * A test of the value in the field, as it stands in the form: a cron schedule or a
+   * folder. The button stands next to the field.
+   */
+  test?: ValueTest;
+}
+
+/** The tests that take the value of a field and not the stored settings. */
+export type ValueTest = 'cron' | 'folder';
+
+/** The body of `POST /test/<test>` for the value of a field, as PHP Organizr sends it. */
+export function valueTestBody(test: ValueTest, value: string): unknown {
+  return test === 'cron' ? value : { folder: value };
 }
 
 export type Field =
@@ -35,6 +48,8 @@ export interface FieldGroup {
    * service: the path after `api/v2/`, and the text of the button.
    */
   link?: { path: string; label: string };
+  /** The group has a button that asks whether the scheduler of the server runs. */
+  scheduler?: boolean;
 }
 
 /** The general settings, in the groups of the page. */
@@ -122,6 +137,30 @@ export const GENERAL: FieldGroup[] = [
         kind: 'secret',
         generate: true,
         help: 'A script that sends this key has the access of an Admin. The key has 20 characters.',
+      },
+    ],
+  },
+  {
+    title: 'Slack or Discord',
+    test: 'slack-logs',
+    fields: [
+      {
+        key: 'sendLogsToSlack',
+        label: 'Send the log to a webhook of Slack or of Discord',
+        kind: 'switch',
+        help: 'This version of Organizr does not send its log yet. The test needs the switch.',
+      },
+      {
+        key: 'slackLogWebhook',
+        label: 'Address of the webhook',
+        kind: 'secret',
+        help: 'For Discord, end the address with /slack.',
+      },
+      {
+        key: 'slackLogWebHookChannel',
+        label: 'Channel of the webhook',
+        kind: 'text',
+        help: 'The ID of the channel. Discord needs no channel.',
       },
     ],
   },
@@ -2403,6 +2442,24 @@ const CUSTOM_HTML_ITEMS: FieldGroup[] = CUSTOM_HTML.map((number) => ({
   ],
 }));
 
+/**
+ * The key for the search of trailers at YouTube. PHP Organizr has it in its item "Misc",
+ * which shows nothing on the homepage.
+ */
+const YOUTUBE_ITEMS: FieldGroup[] = [
+  {
+    title: 'YouTube',
+    fields: [
+      {
+        key: 'youtubeAPI',
+        label: 'YouTube API key',
+        kind: 'secret',
+        help: 'The search for trailers needs your own key. Without a key, the search finds nothing. You make a key for the YouTube Data API in the Google Cloud console.',
+      },
+    ],
+  },
+];
+
 /** The settings of the items of the homepage. */
 export const HOMEPAGE: FieldGroup[] = [
   ...CUSTOM_HTML_ITEMS,
@@ -2419,12 +2476,14 @@ export const HOMEPAGE: FieldGroup[] = [
   ...TAUTULLI_ITEMS,
   ...OVERSEERR_ITEMS,
   ...DONATE_ITEMS,
+  ...YOUTUBE_ITEMS,
 ];
 
 /** The settings of the health checks plugin, without its list of services. */
 export const HEALTH_CHECKS_PLUGIN: FieldGroup[] = [
   {
     title: 'Health checks plugin',
+    scheduler: true,
     fields: [
       { key: 'HEALTHCHECKS-enabled', label: 'Use the health checks plugin', kind: 'switch' },
       {
@@ -2436,6 +2495,7 @@ export const HEALTH_CHECKS_PLUGIN: FieldGroup[] = [
         key: 'HEALTHCHECKS-cron-run-schedule',
         label: 'Schedule of the checks',
         kind: 'text',
+        test: 'cron',
         help: 'A cron schedule with five fields. For example */5 * * * * for every five minutes.',
       },
       {
@@ -2489,6 +2549,7 @@ export const SPEED_TEST_PLUGIN: FieldGroup[] = [
 export const BACKUPS: FieldGroup[] = [
   {
     title: 'Backups on a schedule',
+    scheduler: true,
     fields: [
       {
         key: 'autoBackupCronEnabled',
@@ -2499,6 +2560,7 @@ export const BACKUPS: FieldGroup[] = [
         key: 'autoBackupCronSchedule',
         label: 'Schedule of the backups',
         kind: 'text',
+        test: 'cron',
         help: 'One of the words @daily, @weekly and @monthly, or the five fields of a cron schedule, for example 30 3 * * * for each day at 3:30. The times are in the time zone of the server.',
       },
       {
@@ -2512,6 +2574,7 @@ export const BACKUPS: FieldGroup[] = [
         key: 'backupLocation',
         label: 'Folder for the backups',
         kind: 'text',
+        test: 'folder',
         help: 'A folder on the server that exists. Leave it empty for the folder backups in the data folder.',
       },
     ],

@@ -1265,5 +1265,5 @@ PHP Organizr has three more routes that help its pages. This application has the
 | `POST /api/v2/homepage/scrape` | Fetches the page at the address `url` of the body. | An Admin or a Co-Admin |
 | `POST /api/v2/homepage/weather/coordinates` | Searches the latitude and the longitude of a place. It finds nothing here. | An Admin or a Co-Admin |
 
-- The trailer search needs your own API key of YouTube. PHP Organizr falls back on keys of its author. This application does not, so the answer is an error without a key.
+- The trailer search needs your own API key of YouTube. PHP Organizr falls back on keys of its author. This application does not, so the answer is an error without a key. Enter your key in the group **YouTube** of the settings of the homepage.
 - The fetch of a page takes an address of the wide web only. It does not fetch an address of the server itself or of a private network, it follows no redirect, and a page has 2 MB at most. In PHP Organizr, everybody can use the route without a login.

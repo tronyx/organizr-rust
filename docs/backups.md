@@ -23,7 +23,7 @@ A backup holds the password hashes of all users. Only an Admin can make, save an
 3. Select **Make a backup now**. The list shows the new backup.
 4. To copy a backup to your computer, select **Save** in its row.
 
-The backups are in the folder `backups` of the data folder. To use another folder, enter it in the field **Folder for the backups**. The folder must exist, and the user of the server must be able to write to it.
+The backups are in the folder `backups` of the data folder. To use another folder, enter it in the field **Folder for the backups**. The folder must exist, and the user of the server must be able to write to it. Select **Test the folder** to see whether the folder exists.
 
 ## Backups on a schedule
 
@@ -34,7 +34,7 @@ The backups are in the folder `backups` of the data folder. To use another folde
 | Number of backups to keep | `keepBackupsCountCron` | 20 |
 | Folder for the backups | `backupLocation` | Empty: the folder `backups` in the data folder |
 
-After each new backup, Organizr deletes the oldest backups over the number to keep. The number 0 keeps every backup. [Scheduled jobs](scheduled-jobs.md) tells you how to write a schedule.
+After each new backup, Organizr deletes the oldest backups over the number to keep. The number 0 keeps every backup. [Scheduled jobs](scheduled-jobs.md) tells you how to write a schedule. Select **Test the schedule** to see whether the scheduler can read it, and **Check that the scheduler runs** to see whether the scheduler runs.
 
 ## Restore a backup
 

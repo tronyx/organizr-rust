@@ -19,10 +19,10 @@ use serde_json::Value;
 use crate::check::{Line, Outcome, complete, failed, line};
 
 /// How long each application has to answer.
-const TIME_LIMIT: Duration = Duration::from_secs(20);
+pub const TIME_LIMIT: Duration = Duration::from_secs(20);
 
 /// A day as the calendars take it: `2026-11-20`.
-fn today() -> String {
+pub fn today() -> String {
     let seconds = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .map_or(0, |since| since.as_secs());
@@ -52,7 +52,7 @@ fn first(addresses: &str) -> &str {
 
 /// A line for an application: skipped when its address is not complete, and else
 /// what the question brought.
-async fn asked<F>(question: String, address: &str, lines: &mut Vec<Line>, ask: F)
+pub async fn asked<F>(question: String, address: &str, lines: &mut Vec<Line>, ask: F)
 where
     F: AsyncFnOnce(&str) -> Outcome,
 {
