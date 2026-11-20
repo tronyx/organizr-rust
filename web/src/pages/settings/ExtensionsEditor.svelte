@@ -22,6 +22,18 @@
     problem: string | null;
   }
 
+  /** An extension that the marketplace offers. */
+  interface MarketRow {
+    id: string;
+    name: string;
+    version: string;
+    description: string;
+    author: string;
+    installed: boolean;
+    up_to_date: boolean;
+    problem: string | null;
+  }
+
   let {
     ondone,
   }: {
@@ -32,6 +44,9 @@
   /** `null` until the list is loaded, and when this server has no extensions. */
   let rows = $state<ExtensionRow[] | null>(null);
   let error = $state<string | null>(null);
+  /** `null` when this server has no marketplace, or the marketplace gave no list. */
+  let market = $state<MarketRow[] | null>(null);
+  let marketError = $state<string | null>(null);
   let busy = $state(false);
   /** The extension whose approval the dialog asks for. */
   let asking = $state<ExtensionRow | null>(null);
@@ -58,11 +73,35 @@
     }
   }
 
+  async function loadMarket() {
+    try {
+      market = (await api<MarketRow[]>('GET', 'extensions/marketplace')).data;
+      marketError = null;
+    } catch (failure) {
+      market = null;
+      // Without a marketplace, the server says so, and the page shows no list.
+      const none =
+        failure instanceof ApiError &&
+        (failure.status === 404 || failure.message === 'No marketplace is set up');
+      marketError = none ? null : failureText(failure);
+    }
+  }
+
+  function marketState(row: MarketRow): string {
+    if (row.problem) {
+      return row.problem;
+    }
+    if (!row.installed) {
+      return 'Not installed';
+    }
+    return row.up_to_date ? 'Installed' : 'Another file is installed';
+  }
+
   async function act(change: () => Promise<unknown>, message: string) {
     busy = true;
     try {
       await change();
-      await load();
+      await Promise.all([load(), loadMarket()]);
       error = null;
       ondone(message);
     } catch (failure) {
@@ -105,7 +144,10 @@
     return level === 0 ? 'The Admin' : `Groups of the level ${level} and above`;
   }
 
-  onMount(load);
+  onMount(() => {
+    void load();
+    void loadMarket();
+  });
 </script>
 
 {#if rows || error}
@@ -200,6 +242,61 @@
           </tbody>
         </table>
       </div>
+    {/if}
+    {#if marketError}
+      <div role="alert" class="alert alert-warning mt-4"><span>{marketError}</span></div>
+    {/if}
+    {#if market}
+      <h3 class="mt-6 font-medium">Marketplace</h3>
+      <p class="my-2 max-w-2xl text-sm">
+        An install downloads the file of an extension and makes sure that it is the file that the
+        marketplace names. The extension then waits for your approval in the list above.
+      </p>
+      {#if market.length === 0}
+        <p class="text-sm">The marketplace offers no extensions.</p>
+      {:else}
+        <div class="overflow-x-auto">
+          <table class="table-sm table" aria-label="Extensions of the marketplace">
+            <thead>
+              <tr>
+                <th scope="col">Extension</th>
+                <th scope="col">State</th>
+                <th scope="col"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each market as row (row.id)}
+                <tr>
+                  <td>
+                    <span class="font-medium">{row.name}</span>
+                    {row.version}
+                    {#if row.author}<span class="text-xs">by {row.author}</span>{/if}
+                    <br /><span class="text-xs">{row.description}</span>
+                  </td>
+                  <td>{marketState(row)}</td>
+                  <td>
+                    {#if canChange && !row.problem && !(row.installed && row.up_to_date)}
+                      <button
+                        type="button"
+                        class="btn btn-ghost btn-xs"
+                        disabled={busy}
+                        aria-label="Install {row.name}"
+                        onclick={() =>
+                          act(
+                            () => api('POST', `extensions/marketplace/${row.id}`),
+                            `The extension ${row.name} is installed. Approve it in the list above.`,
+                          )}
+                      >
+                        Install
+                      </button>
+                    {/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {/if}
     {/if}
   </section>
 {/if}

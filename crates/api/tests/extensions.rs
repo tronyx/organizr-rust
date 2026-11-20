@@ -24,8 +24,10 @@ use organizr_api::router;
 use organizr_db::Database;
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::http::{Answer, As, call};
+use organizr_testkit::services::StandIn;
 use organizr_testkit::{installed_settings, seed, state_with};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use tower::ServiceExt;
 
 const CRATE: &str = env!("CARGO_MANIFEST_DIR");
@@ -390,6 +392,218 @@ async fn values_stay_and_a_changed_file_stops_the_extension() {
             assert_eq!(again.status, StatusCode::NOT_FOUND, "{path}");
         }
         assert!(data.exists());
+    })
+    .await;
+}
+
+fn sha256_of(bytes: &[u8]) -> String {
+    hex::encode(Sha256::digest(bytes))
+}
+
+/// A stand-in for a marketplace: its list, and the files that the list names.
+async fn marketplace() -> StandIn {
+    // The address of the stand-in is known only after its start, so the list names
+    // paths, and the route of the list writes the addresses.
+    async fn list(headers: axum::http::HeaderMap) -> axum::Json<Value> {
+        let host = headers
+            .get("host")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        let entry = |id: &str, file: &str, sha256: String, permissions: Value| {
+            json!({
+                "id": id,
+                "name": format!("The {id} extension"),
+                "version": "1.2.0",
+                "description": "From the marketplace.",
+                "author": "Sam",
+                "permissions": permissions,
+                "least_access": 4,
+                "download": format!("http://{host}/files/{file}"),
+                "sha256": sha256,
+            })
+        };
+        let good = sha256_of(template());
+        axum::Json(json!({"extensions": [
+            entry("hello", "hello.wasm", good.clone(), json!(["storage"])),
+            // The file is not the file that the list names.
+            entry("swapped", "hostile.wasm", good.clone(), json!([])),
+            entry("greedy", "hello.wasm", good.clone(), json!(["network"])),
+            entry("missing", "nothing.wasm", good.clone(), json!([])),
+            entry("Bad Id", "hello.wasm", good, json!([])),
+        ]}))
+    }
+    StandIn::start(
+        Router::new()
+            .route("/extensions.json", axum::routing::get(list))
+            .route(
+                "/files/hello.wasm",
+                axum::routing::get(|| async { template() }),
+            )
+            .route(
+                "/files/hostile.wasm",
+                axum::routing::get(|| async { hostile() }),
+            ),
+    )
+    .await
+}
+
+fn app_with_market(database: &Database, data: &Path, list: &str) -> Router {
+    let state = state_with(database, installed_settings(&[]))
+        .with_data_folder(data.to_owned())
+        .with_extension_marketplace(list);
+    router(state).expect("the route table is valid")
+}
+
+#[tokio::test]
+async fn extension_of_the_marketplace_is_installed_when_its_file_is_the_named_one() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let data = folder.path();
+        let market = marketplace().await;
+        let app = app_with_market(database, data, &format!("{}/extensions.json", market.url()));
+        let boss = seed::logged_in(database, &app, "pat", 1).await;
+
+        let listed = call(
+            &app,
+            As::User(&boss),
+            "GET",
+            "/extensions/marketplace",
+            None,
+        )
+        .await;
+        assert_eq!(listed.status, StatusCode::OK, "{}", listed.body);
+        let offered = listed.data();
+        let ids: Vec<&str> = offered
+            .as_array()
+            .expect("the data is a list")
+            .iter()
+            .filter_map(|row| row["id"].as_str())
+            .collect();
+        assert_eq!(ids, ["hello", "swapped", "greedy", "missing"]);
+        assert_eq!(offered[0]["installed"], json!(false));
+        assert_eq!(offered[0]["problem"], Value::Null);
+        assert!(
+            offered[2]["problem"]
+                .as_str()
+                .is_some_and(|text| text.contains("network"))
+        );
+
+        // Only an Admin installs.
+        let path = "/extensions/marketplace/hello";
+        let refused = call(&app, As::User(&boss), "POST", path, None).await;
+        assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+        assert!(!data.join("plugins").exists());
+
+        let installed = call(&app, As::Admin, "POST", path, None).await;
+        assert_eq!(installed.status, StatusCode::OK, "{}", installed.body);
+        let file = data.join("plugins/hello/plugin.wasm");
+        assert_eq!(std::fs::read(&file).expect("the file is there"), template());
+        assert!(!data.join("plugins/hello/plugin.wasm.part").exists());
+        let listed = call(&app, As::Admin, "GET", "/extensions/marketplace", None).await;
+        assert_eq!(
+            (
+                &listed.data()[0]["installed"],
+                &listed.data()[0]["up_to_date"]
+            ),
+            (&json!(true), &json!(true))
+        );
+
+        // The installed extension waits for the approval, with what the list named.
+        let row = &rows(&app).await[0];
+        assert_eq!(row["name"], json!("The hello extension"));
+        assert_eq!(row["permissions"], json!(["storage"]));
+        assert_eq!(row["least_access"], json!(4));
+        assert_eq!(
+            (&row["approved"], &row["enabled"]),
+            (&json!(false), &json!(false))
+        );
+        let (status, ..) = raw(&app, None, "GET", "/extension/hello/hello", "").await;
+        assert_eq!(status, StatusCode::NOT_FOUND);
+        assert_eq!(approve(&app, "hello").await.status, StatusCode::OK);
+        let (status, _, text) = raw(&app, Some(&boss), "GET", "/extension/hello/hello", "").await;
+        assert_eq!((status, text.as_str()), (StatusCode::OK, "Hello, pat!"));
+
+        // A file on the disk that is not the file of the list shows as out of date.
+        std::fs::write(&file, hostile()).expect("writable");
+        let listed = call(&app, As::Admin, "GET", "/extensions/marketplace", None).await;
+        assert_eq!(
+            (
+                &listed.data()[0]["installed"],
+                &listed.data()[0]["up_to_date"]
+            ),
+            (&json!(true), &json!(false))
+        );
+        // A new install puts the file of the list back, which is the approved one.
+        assert_eq!(
+            call(&app, As::Admin, "POST", path, None).await.status,
+            StatusCode::OK
+        );
+        let (status, ..) = raw(&app, Some(&boss), "GET", "/extension/hello/hello", "").await;
+        assert_eq!(status, StatusCode::OK);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn nothing_is_installed_when_the_file_or_the_entry_is_wrong() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let data = folder.path();
+        let market = marketplace().await;
+        let app = app_with_market(database, data, &format!("{}/extensions.json", market.url()));
+        let install = |id: &'static str| {
+            let app = app.clone();
+            async move {
+                let path = format!("/extensions/marketplace/{id}");
+                call(&app, As::Admin, "POST", &path, None).await
+            }
+        };
+
+        let swapped = install("swapped").await;
+        assert_eq!(swapped.status, StatusCode::CONFLICT);
+        assert!(
+            swapped.body.contains("Nothing was installed"),
+            "{}",
+            swapped.body
+        );
+        let greedy = install("greedy").await;
+        assert_eq!(greedy.status, StatusCode::CONFLICT);
+        assert!(greedy.body.contains("network"), "{}", greedy.body);
+        let missing = install("missing").await;
+        assert_eq!(missing.status, StatusCode::CONFLICT);
+        assert_eq!(
+            missing.message(),
+            json!("The extension could not be downloaded")
+        );
+        for id in ["nothing", "Bad%20Id", "marketplace"] {
+            let path = format!("/extensions/marketplace/{id}");
+            let unknown = call(&app, As::Admin, "POST", &path, None).await;
+            assert_eq!(unknown.status, StatusCode::NOT_FOUND, "{id}");
+        }
+        assert!(!data.join("plugins").exists());
+
+        // Without a marketplace, and with one that does not answer, there is no list.
+        let none = app_in(database, data);
+        for (method, path) in [
+            ("GET", "/extensions/marketplace"),
+            ("POST", "/extensions/marketplace/hello"),
+        ] {
+            let answer = call(&none, As::Admin, method, path, None).await;
+            assert_eq!(answer.status, StatusCode::CONFLICT, "{method}");
+            assert_eq!(answer.message(), json!("No marketplace is set up"));
+        }
+        for list in [
+            "http://127.0.0.1:9/extensions.json",
+            &format!("{}/files/hello.wasm", market.url()),
+        ] {
+            let down = app_with_market(database, data, list);
+            let answer = call(&down, As::Admin, "GET", "/extensions/marketplace", None).await;
+            assert_eq!(answer.status, StatusCode::CONFLICT, "{list}");
+            assert_eq!(answer.message(), json!("Could not access the marketplace"));
+            assert!(!answer.body.contains("127.0.0.1"), "{}", answer.body);
+        }
     })
     .await;
 }

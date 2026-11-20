@@ -51,6 +51,9 @@ function row(changes: Record<string, unknown> = {}) {
   };
 }
 
+/** The answer of a server without a marketplace. */
+const NO_MARKET = { status: 409, message: 'No marketplace is set up' };
+
 async function asGroup(groupID: number) {
   stubApi({ 'GET launch': launchFor(groupID) });
   await session.load();
@@ -146,14 +149,83 @@ describe('ExtensionsEditor', () => {
   });
 
   it('shows nothing on a server that was built without extensions', async () => {
-    const sent = stubApi({ 'GET extensions': { status: 404, message: 'Not Found' } });
+    const missing = { status: 404, message: 'Not Found' };
+    const sent = stubApi({ 'GET extensions': missing, 'GET extensions/marketplace': missing });
     const { container } = render(ExtensionsEditor, { ondone: () => {} });
-    await waitFor(() => expect(sent).toHaveLength(1));
+    await waitFor(() => expect(sent).toHaveLength(2));
     expect(container.textContent?.trim()).toBe('');
   });
 
+  it('lists the marketplace and installs an extension of it', async () => {
+    let installed = false;
+    const offer = (changes: Record<string, unknown>) => ({
+      id: 'hello',
+      name: 'Hello',
+      version: '1.2.0',
+      description: 'From the marketplace.',
+      author: 'Sam',
+      installed: false,
+      up_to_date: false,
+      problem: null,
+      ...changes,
+    });
+    const sent = stubApi({
+      'GET extensions': () => ({ data: installed ? [row()] : [] }),
+      'GET extensions/marketplace': () => ({
+        data: [
+          offer({ installed, up_to_date: installed }),
+          offer({ id: 'greedy', name: 'Greedy', problem: 'It asks for too much' }),
+        ],
+      }),
+      'POST extensions/marketplace/hello': () => {
+        installed = true;
+        return { message: 'Extension installed' };
+      },
+    });
+    const ondone = vi.fn();
+    render(ExtensionsEditor, { ondone });
+
+    const table = await screen.findByRole('table', { name: 'Extensions of the marketplace' });
+    expect(table.textContent).toContain('Not installed');
+    expect(table.textContent).toContain('It asks for too much');
+    // An entry with a problem has no button.
+    expect(screen.queryByRole('button', { name: 'Install Greedy' })).toBeNull();
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Install Hello' }));
+    await waitFor(() =>
+      expect(ondone).toHaveBeenCalledWith(
+        'The extension Hello is installed. Approve it in the list above.',
+      ),
+    );
+    expect(sent.some((request) => request.path === 'extensions/marketplace/hello')).toBe(true);
+    // The new extension waits for the approval, and the marketplace offers no install.
+    expect(await screen.findByRole('button', { name: 'Approve Hello' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Install Hello' })).toBeNull();
+  });
+
+  it('shows no marketplace when none is set up, and a warning when it gave no list', async () => {
+    stubApi({
+      'GET extensions': { data: [] },
+      'GET extensions/marketplace': { status: 409, message: 'No marketplace is set up' },
+    });
+    const { unmount } = render(ExtensionsEditor, { ondone: () => {} });
+    await screen.findByText('There are no extensions in the folder.');
+    expect(screen.queryByText('Marketplace')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+    unmount();
+
+    stubApi({
+      'GET extensions': { data: [] },
+      'GET extensions/marketplace': { status: 409, message: 'Could not access the marketplace' },
+    });
+    render(ExtensionsEditor, { ondone: () => {} });
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      'Could not access the marketplace',
+    );
+  });
+
   it('says so when the folder is empty', async () => {
-    stubApi({ 'GET extensions': { data: [] } });
+    stubApi({ 'GET extensions': { data: [] }, 'GET extensions/marketplace': NO_MARKET });
     render(ExtensionsEditor, { ondone: () => {} });
     expect(await screen.findByText('There are no extensions in the folder.')).toBeTruthy();
   });

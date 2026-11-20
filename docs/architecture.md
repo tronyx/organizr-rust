@@ -270,7 +270,7 @@ Front end (`web/package.json`): svelte 5.58.0, vite 8.3.8, @sveltejs/vite-plugin
 | Chat over Pusher | Built-in server-sent events | No Pusher account needed |
 | Config as a PHP file | Settings and secrets tables with a typed registry | Bootstrap values (data path, port, database URL, trusted proxies, master key) come from environment variables |
 
-The WebAssembly extension system is the largest single item that exists only to keep a rarely used feature. It is scheduled last so it cannot delay the rest, and it stays behind a build feature because the runtime has a high advisory rate. The host, the approval by an Admin and the routes are built: see [Extensions](extensions.md). The marketplace is not built.
+The WebAssembly extension system is the largest single item that exists only to keep a rarely used feature. It is scheduled last so it cannot delay the rest, and it stays behind a build feature because the runtime has a high advisory rate. The host, the approval by an Admin, the routes and the marketplace are built: see [Extensions](extensions.md).
 
 ## 7. Deviations from the PHP behaviour
 

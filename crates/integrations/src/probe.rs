@@ -63,3 +63,38 @@ pub fn host_of(address: &str) -> Option<String> {
         .host_str()
         .map(str::to_owned)
 }
+
+/// How long a download has.
+const DOWNLOAD_TIME_LIMIT: Duration = Duration::from_secs(120);
+
+/// Downloads a file of at most `limit` bytes. Fails when the server cannot be reached,
+/// when it answers with an error, and when the file is larger than the limit.
+pub async fn download(http: &Outbound, url: &str, limit: usize) -> Result<Vec<u8>, String> {
+    let too_large = || format!("the file is larger than {limit} bytes");
+    let mut response = http
+        .client_for(url)
+        .get(url)
+        .timeout(DOWNLOAD_TIME_LIMIT)
+        .send()
+        .await
+        .map_err(without_address)?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "the server answered with the status {}",
+            response.status().as_u16()
+        ));
+    }
+    let announced = response.content_length().unwrap_or(0);
+    if usize::try_from(announced).unwrap_or(usize::MAX) > limit {
+        return Err(too_large());
+    }
+    // The size is counted while the file comes, because a server can name no size.
+    let mut bytes = Vec::new();
+    while let Some(piece) = response.chunk().await.map_err(without_address)? {
+        if bytes.len() + piece.len() > limit {
+            return Err(too_large());
+        }
+        bytes.extend_from_slice(&piece);
+    }
+    Ok(bytes)
+}

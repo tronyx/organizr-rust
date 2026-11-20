@@ -376,6 +376,8 @@ fn extension_routes(routes: Routes) -> Result<Routes, RoutePatternError> {
 
     let mut routes = routes
         .route("/extensions", &get(extensions::list))?
+        .route("/extensions/marketplace", &get(extensions::marketplace))?
+        .route("/extensions/marketplace/{id}", &post(extensions::install))?
         .route("/extensions/{id}", &delete(extensions::remove))?
         .route("/extensions/{id}/enable", &post(extensions::enable))?
         .route("/extensions/{id}/disable", &post(extensions::disable))?

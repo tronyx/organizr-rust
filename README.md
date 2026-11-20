@@ -57,6 +57,7 @@ To use PostgreSQL in place of SQLite, start from [docker/examples/compose.postgr
 | `ORGANIZR_DATABASE_URL` | The database. See [Choosing a database](docs/choosing-a-database.md) | SQLite in the data folder |
 | `ORGANIZR_LISTEN` | The address and the port that the server listens on | Port 8080 on all addresses |
 | `ORGANIZR_TRUSTED_PROXIES` | The addresses of your reverse proxies. See [Forward auth](docs/forward-auth.md) | None |
+| `ORGANIZR_EXTENSION_MARKETPLACE` | The address of the list of a marketplace for extensions. See [Extensions](docs/extensions.md) | None |
 | `ORGANIZR_SECRET_KEY`, `ORGANIZR_SECRET_KEY_FILE` | The key that seals the stored secrets. See [Secrets](docs/secrets.md) | A key file in the data folder |
 
 All other settings are in the web interface.

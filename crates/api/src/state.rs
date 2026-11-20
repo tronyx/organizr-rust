@@ -42,6 +42,9 @@ pub struct AppState {
     /// The runtime for extensions. `None` when it could not start.
     #[cfg(feature = "wasm-plugins")]
     extension_runtime: Option<organizr_plugins::extension::Extensions>,
+    /// The address of the list of the marketplace for extensions, when one is set.
+    #[cfg(feature = "wasm-plugins")]
+    extension_marketplace: Option<Arc<str>>,
     /// What lets one call of an extension run at a time, by the id of the extension.
     #[cfg(feature = "wasm-plugins")]
     extension_locks: Arc<std::sync::Mutex<std::collections::HashMap<String, Arc<Mutex<()>>>>>,
@@ -96,6 +99,8 @@ impl AppState {
                     tracing::error!(%error, "the runtime for extensions could not start");
                 })
                 .ok(),
+            #[cfg(feature = "wasm-plugins")]
+            extension_marketplace: None,
             #[cfg(feature = "wasm-plugins")]
             extension_locks: Arc::default(),
             prober: Prober::network(),
@@ -191,6 +196,22 @@ impl AppState {
     /// The data folder of the install, when the server named one.
     pub fn data_folder(&self) -> Option<&Path> {
         self.data_folder.as_deref().map(PathBuf::as_path)
+    }
+
+    /// The same state, with the address of the list of a marketplace for extensions.
+    /// An empty address means no marketplace.
+    #[cfg(feature = "wasm-plugins")]
+    #[must_use]
+    pub fn with_extension_marketplace(mut self, address: &str) -> Self {
+        self.extension_marketplace =
+            (!address.trim().is_empty()).then(|| Arc::from(address.trim()));
+        self
+    }
+
+    /// The address of the list of the marketplace for extensions, when one is set.
+    #[cfg(feature = "wasm-plugins")]
+    pub fn extension_marketplace(&self) -> Option<&str> {
+        self.extension_marketplace.as_deref()
     }
 
     /// The runtime for extensions, when it started.

@@ -113,6 +113,56 @@ An extension gets these headers of a request: `accept`, `accept-language`, `cont
 
 The runtime for extensions is a build feature with the name `wasm-plugins`. The container image has it. A server that was built without the feature has none of these routes, and the settings show no section **Extensions**.
 
+## The marketplace
+
+A marketplace is a list of extensions on a web server. With a marketplace, the Admin installs an extension from the settings page.
+
+Organizr reads the address of the list from the environment variable `ORGANIZR_EXTENSION_MARKETPLACE`. Without the variable, there is no marketplace, and the settings show none. The list of the project is in the repository `tronyx/organizr-rust-marketplace`:
+
+```yaml
+environment:
+  ORGANIZR_EXTENSION_MARKETPLACE: https://raw.githubusercontent.com/tronyx/organizr-rust-marketplace/main/extensions.json
+```
+
+Use only a list whose owner you trust. The owner of a list decides which files it names.
+
+1. Open **Settings**, and select the tab **Plugins**. The section **Extensions** shows the heading **Marketplace**.
+2. Select **Install** for an extension. Organizr downloads its file into the folder `plugins` of the data folder.
+3. Approve the extension in the list above the marketplace, as an extension that you copied by hand.
+
+Organizr installs a file only when it has the SHA-256 that the list names. So a file that was changed on its way, or on its server, is not installed. An install does not approve an extension.
+
+When the list names a newer file than the installed one, the marketplace shows **Another file is installed**, and offers the install again. The new file then waits for a new approval.
+
+### The format of the list
+
+The list is a JSON file:
+
+```json
+{
+  "extensions": [
+    {
+      "id": "hello",
+      "name": "Hello",
+      "version": "1.0.0",
+      "description": "Greets the caller.",
+      "author": "Your name",
+      "permissions": ["storage"],
+      "least_access": 4,
+      "download": "https://example.com/hello/plugin.wasm",
+      "sha256": "the SHA-256 of the file, as 64 small hex characters"
+    }
+  ]
+}
+```
+
+The fields `id`, `name`, `version`, `download` and `sha256` are necessary. The other fields have the meaning that they have in `plugin.json`. An install writes them into the `plugin.json` of the extension.
+
+| Route | For | Purpose |
+|---|---|---|
+| `GET /api/v2/extensions/marketplace` | Admin and Co-Admin | The extensions of the list, with what is installed |
+| `POST /api/v2/extensions/marketplace/{id}` | Admin | Download and install one extension |
+
 ## What is not built
 
-There is no marketplace for extensions yet. The marketplace routes of PHP Organizr list PHP plugins, which this application cannot run. An extension cannot send requests to other services yet.
+An extension cannot send requests to other services yet. The marketplace routes of PHP Organizr, `/plugins/marketplace` and `/plugins/manage/{plugin}`, are not built: they list PHP plugins, which this application cannot run.

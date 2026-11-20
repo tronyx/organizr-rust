@@ -14,6 +14,7 @@ use axum::http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode, header}
 use axum::response::{IntoResponse, Response};
 use organizr_db::ApprovedExtension;
 use organizr_domain::GroupLevel;
+use organizr_integrations::probe;
 use organizr_plugins::extension::{Call, Caller as ExtensionCaller, ExtensionError, Request};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -88,6 +89,8 @@ fn is_id(text: &str) -> bool {
             .chars()
             .all(|letter| letter.is_ascii_lowercase() || letter.is_ascii_digit() || letter == '-')
         && !text.starts_with('-')
+        // This name is a part of the address of the marketplace routes.
+        && text != "marketplace"
 }
 
 /// An extension as the list shows it.
@@ -387,6 +390,214 @@ pub async fn remove(
     Ok(Envelope::success(NoData).with_message("Extension deleted"))
 }
 
+/// The most bytes of the list of a marketplace.
+const LIST_LIMIT: usize = 1024 * 1024;
+
+/// The list of a marketplace.
+#[derive(Debug, Deserialize)]
+struct MarketList {
+    extensions: Vec<MarketEntry>,
+}
+
+/// An extension that a marketplace offers.
+#[derive(Debug, Clone, Deserialize)]
+struct MarketEntry {
+    id: String,
+    name: String,
+    version: String,
+    #[serde(default)]
+    description: String,
+    #[serde(default)]
+    author: String,
+    #[serde(default)]
+    permissions: Vec<String>,
+    #[serde(default = "default_level")]
+    least_access: u16,
+    /// The address of the file of the component.
+    download: String,
+    /// The SHA-256 of that file, as hex text.
+    sha256: String,
+}
+
+impl MarketEntry {
+    /// What keeps the entry from being installed, when something does.
+    fn problem(&self) -> Option<String> {
+        let is_hash = self.sha256.len() == 64
+            && self
+                .sha256
+                .chars()
+                .all(|letter| letter.is_ascii_digit() || ('a'..='f').contains(&letter));
+        if !is_hash {
+            return Some("The entry has no valid SHA-256".to_owned());
+        }
+        if !(self.download.starts_with("https://") || self.download.starts_with("http://")) {
+            return Some("The entry has no address to download from".to_owned());
+        }
+        if self.least_access > 999 {
+            return Some("The level of the extension is over 999".to_owned());
+        }
+        self.permissions
+            .iter()
+            .find(|permission| !PERMISSIONS.contains(&permission.as_str()))
+            .map(|unknown| {
+                format!(
+                    "The extension asks for the permission \"{unknown}\", which this version \
+                     of Organizr does not know"
+                )
+            })
+    }
+}
+
+/// An extension of the marketplace as the list shows it.
+#[derive(Debug, Serialize)]
+pub struct MarketRow {
+    id: String,
+    name: String,
+    version: String,
+    description: String,
+    author: String,
+    permissions: Vec<String>,
+    least_access: u16,
+    sha256: String,
+    /// Whether the folder of the extensions holds an extension with this id.
+    installed: bool,
+    /// Whether the installed file is the file of the marketplace.
+    up_to_date: bool,
+    problem: Option<String>,
+}
+
+/// Loads the list of the marketplace. An entry whose id is no id is left out.
+async fn market_entries(state: &AppState) -> Result<Vec<MarketEntry>, Refusal> {
+    let url = state
+        .extension_marketplace()
+        .ok_or_else(|| Refusal::conflict("No marketplace is set up"))?;
+    let http = state
+        .outbound()
+        .ok_or_else(|| Refusal::conflict("No requests can be sent"))?;
+    let unreadable = |error: String| {
+        tracing::warn!(error, "the marketplace for extensions cannot be read");
+        Refusal::conflict("Could not access the marketplace")
+    };
+    let bytes = probe::download(http, url, LIST_LIMIT)
+        .await
+        .map_err(unreadable)?;
+    let list: MarketList =
+        serde_json::from_slice(&bytes).map_err(|error| unreadable(error.to_string()))?;
+    Ok(list
+        .extensions
+        .into_iter()
+        .filter(|entry| is_id(&entry.id))
+        .collect())
+}
+
+/// `GET /extensions/marketplace`: the extensions that the marketplace offers.
+pub async fn marketplace(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+) -> Result<Envelope<Vec<MarketRow>>, Refusal> {
+    caller.require(VIEWER)?;
+    let folder = folder_of(&state)?;
+    let entries = market_entries(&state).await?;
+    let rows = tokio::task::spawn_blocking(move || {
+        entries
+            .into_iter()
+            .map(|entry| {
+                let file = folder.join(&entry.id).join(COMPONENT_FILE);
+                let installed = std::fs::read(file).ok().map(|bytes| sha256_of(&bytes));
+                MarketRow {
+                    problem: entry.problem(),
+                    installed: installed.is_some(),
+                    up_to_date: installed.as_deref() == Some(entry.sha256.as_str()),
+                    id: entry.id,
+                    name: entry.name,
+                    version: entry.version,
+                    description: entry.description,
+                    author: entry.author,
+                    permissions: entry.permissions,
+                    least_access: entry.least_access,
+                    sha256: entry.sha256,
+                }
+            })
+            .collect()
+    })
+    .await
+    .map_err(failed)?;
+    Ok(Envelope::success(rows))
+}
+
+/// `POST /extensions/marketplace/{id}`: downloads an extension of the marketplace into
+/// the folder of the extensions.
+///
+/// The file must have the SHA-256 that the marketplace names. The extension does not
+/// answer until an Admin approves it, as an extension that was copied by hand.
+pub async fn install(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    Path(id): Path<String>,
+) -> Result<Envelope<NoData>, Refusal> {
+    caller.require(MANAGER)?;
+    let folder = folder_of(&state)?;
+    let entry = market_entries(&state)
+        .await?
+        .into_iter()
+        .find(|entry| entry.id == id)
+        .ok_or_else(|| Refusal::not_found("Extension does not exist in marketplace"))?;
+    if let Some(problem) = entry.problem() {
+        return Err(Refusal::conflict(problem));
+    }
+    let http = state
+        .outbound()
+        .ok_or_else(|| Refusal::conflict("No requests can be sent"))?;
+    let limit = usize::try_from(COMPONENT_LIMIT).unwrap_or(usize::MAX);
+    let bytes = probe::download(http, &entry.download, limit)
+        .await
+        .map_err(|error| {
+            tracing::warn!(
+                extension = id,
+                error,
+                "an extension could not be downloaded"
+            );
+            Refusal::conflict("The extension could not be downloaded")
+        })?;
+    if sha256_of(&bytes) != entry.sha256 {
+        tracing::warn!(
+            extension = id,
+            "an extension was not installed: the file is not the file of the marketplace"
+        );
+        return Err(Refusal::conflict(
+            "The file does not have the SHA-256 that the marketplace names. Nothing was installed.",
+        ));
+    }
+
+    let manifest = serde_json::json!({
+        "name": entry.name,
+        "version": entry.version,
+        "description": entry.description,
+        "author": entry.author,
+        "permissions": entry.permissions,
+        "least_access": entry.least_access,
+    });
+    let target = folder.join(&id);
+    tokio::task::spawn_blocking(move || {
+        std::fs::create_dir_all(&target)?;
+        // The component gets its name when it is complete.
+        let partial = target.join(format!("{COMPONENT_FILE}.part"));
+        std::fs::write(&partial, &bytes)?;
+        std::fs::rename(&partial, target.join(COMPONENT_FILE))?;
+        std::fs::write(target.join(MANIFEST_FILE), manifest.to_string())
+    })
+    .await
+    .map_err(failed)?
+    .map_err(failed)?;
+    tracing::info!(
+        extension = id,
+        version = entry.version,
+        "an extension was installed"
+    );
+    Ok(Envelope::success(NoData)
+        .with_message("Extension installed. It runs after an Admin approves it."))
+}
+
 /// The start of a text of the runtime, for an answer.
 fn shown(text: &str) -> String {
     text.chars().take(300).collect()
@@ -578,6 +789,7 @@ mod tests {
             "a/b",
             "..",
             "a.b",
+            "marketplace",
             &"a".repeat(41),
         ] {
             assert!(!is_id(id), "{id}");

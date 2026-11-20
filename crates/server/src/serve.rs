@@ -29,6 +29,11 @@ pub struct Args {
     #[arg(long, env = "ORGANIZR_TRUSTED_PROXIES", default_value = "")]
     trusted_proxies: String,
 
+    /// The address of the list of a marketplace for extensions: a JSON file. Without
+    /// it, extensions are installed by hand only.
+    #[arg(long, env = "ORGANIZR_EXTENSION_MARKETPLACE", default_value = "")]
+    extension_marketplace: String,
+
     #[command(flatten)]
     storage: StorageArgs,
 }
@@ -100,6 +105,14 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         // The pictures of other applications that the server fetches and keeps.
         .with_picture_cache(args.storage.data_dir.join("cache"))
         .with_data_folder(args.storage.data_dir.clone());
+    #[cfg(feature = "wasm-plugins")]
+    {
+        state = state.with_extension_marketplace(&args.extension_marketplace);
+    }
+    #[cfg(not(feature = "wasm-plugins"))]
+    if !args.extension_marketplace.is_empty() {
+        tracing::warn!("this server was built without extensions, so the marketplace is not used");
+    }
     let is_set_up = database
         .install()
         .is_done()
