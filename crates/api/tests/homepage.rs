@@ -331,3 +331,46 @@ async fn uptime_kuma_monitors_come_with_the_options_of_the_item() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn downloaders_with_the_combine_switch_show_as_one_item() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app_with(
+            database,
+            &[
+                ("homepageSabnzbdEnabled", json!(true)),
+                ("sabnzbdURL", json!("http://sabnzbd.example.com")),
+                ("sabnzbdToken", json!("made-up-key")),
+                ("sabnzbdCombine", json!(true)),
+                ("homepageOrdersabnzbd", json!("9")),
+                ("homepageqBittorrentEnabled", json!(true)),
+                ("qBittorrentURL", json!("http://qbittorrent.example.com")),
+                ("qBittorrentCombine", json!(true)),
+                ("homepageOrderqBittorrent", json!("8")),
+                ("homepageHealthChecksEnabled", json!(true)),
+                ("healthChecksURL", json!("http://checks.example.com")),
+                ("healthChecksToken", json!("made-up-key")),
+                ("homepageOrderhealthchecks", json!("30")),
+                ("homepageOrderdownloader", json!("20")),
+            ],
+        );
+
+        // The two downloaders stand at the place of the downloader item, in the order
+        // of their own places, and not as items of their own.
+        let listed = call(&app, As::Admin, "GET", "/homepage/items", None).await;
+        assert_eq!(
+            listed.data(),
+            json!([
+                {
+                    "key": "homepageOrderdownloader",
+                    "kind": "downloader",
+                    "id": "",
+                    "options": {"members": ["qbittorrent", "sabnzbd"]},
+                },
+                {"key": "homepageOrderhealthchecks", "kind": "healthchecks", "id": ""},
+            ])
+        );
+    })
+    .await;
+}

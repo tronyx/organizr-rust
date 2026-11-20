@@ -1,0 +1,80 @@
+/* The base of a custom HTML item: the dark page of the interface, and the classes of
+   the PHP interface that such items use most: the grid of Bootstrap 3, a button, a box
+   and a few helpers. The interface is dark, so the document is dark too. Without this,
+   a browser paints a white page behind an item that sets no background. */
+:root { color-scheme: dark; }
+html, body { margin: 0; background: transparent; }
+body { font-family: 'Rubik Variable', Rubik, sans-serif; font-size: 14px; font-weight: 300;
+  line-height: 1.43; color: #96a2b4; }
+*, *::before, *::after { box-sizing: border-box; }
+a { color: #2cabe3; text-decoration: none; }
+h1, h2, h3, h4, h5, h6 { margin: 10px 0; font-weight: 300; color: #dce2ec; }
+.row::after, .clearfix::after { display: table; clear: both; content: ''; }
+.pull-left { float: left; }
+.pull-right { float: right; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+.hidden { display: none !important; }
+.panel { margin-bottom: 15px; background: #1b1a1a; }
+.white-box { margin-bottom: 15px; padding: 25px; background: #1b1a1a; }
+.btn { display: inline-block; padding: 7px 12px; border: 1px solid transparent; border-radius: 3px;
+  background: none; color: inherit; font: inherit; font-weight: 400; line-height: 1.43;
+  text-align: center; white-space: nowrap; vertical-align: middle; cursor: pointer; }
+.btn-info, .btn-primary { background: #2cabe3; color: #ffffff; }
+.btn-block { display: block; width: 100%; }
+[class*='col-'] { position: relative; float: left; width: 100%; min-height: 1px; padding: 0 15px; }
+.col-xs-1 { width: 8.333333%; }
+.col-xs-2 { width: 16.666667%; }
+.col-xs-3 { width: 25%; }
+.col-xs-4 { width: 33.333333%; }
+.col-xs-5 { width: 41.666667%; }
+.col-xs-6 { width: 50%; }
+.col-xs-7 { width: 58.333333%; }
+.col-xs-8 { width: 66.666667%; }
+.col-xs-9 { width: 75%; }
+.col-xs-10 { width: 83.333333%; }
+.col-xs-11 { width: 91.666667%; }
+.col-xs-12 { width: 100%; }
+@media (min-width: 768px) {
+.col-sm-1 { width: 8.333333%; }
+.col-sm-2 { width: 16.666667%; }
+.col-sm-3 { width: 25%; }
+.col-sm-4 { width: 33.333333%; }
+.col-sm-5 { width: 41.666667%; }
+.col-sm-6 { width: 50%; }
+.col-sm-7 { width: 58.333333%; }
+.col-sm-8 { width: 66.666667%; }
+.col-sm-9 { width: 75%; }
+.col-sm-10 { width: 83.333333%; }
+.col-sm-11 { width: 91.666667%; }
+.col-sm-12 { width: 100%; }
+}
+@media (min-width: 992px) {
+.col-md-1 { width: 8.333333%; }
+.col-md-2 { width: 16.666667%; }
+.col-md-3 { width: 25%; }
+.col-md-4 { width: 33.333333%; }
+.col-md-5 { width: 41.666667%; }
+.col-md-6 { width: 50%; }
+.col-md-7 { width: 58.333333%; }
+.col-md-8 { width: 66.666667%; }
+.col-md-9 { width: 75%; }
+.col-md-10 { width: 83.333333%; }
+.col-md-11 { width: 91.666667%; }
+.col-md-12 { width: 100%; }
+}
+@media (min-width: 1200px) {
+.col-lg-1 { width: 8.333333%; }
+.col-lg-2 { width: 16.666667%; }
+.col-lg-3 { width: 25%; }
+.col-lg-4 { width: 33.333333%; }
+.col-lg-5 { width: 41.666667%; }
+.col-lg-6 { width: 50%; }
+.col-lg-7 { width: 58.333333%; }
+.col-lg-8 { width: 66.666667%; }
+.col-lg-9 { width: 75%; }
+.col-lg-10 { width: 83.333333%; }
+.col-lg-11 { width: 91.666667%; }
+.col-lg-12 { width: 100%; }
+}

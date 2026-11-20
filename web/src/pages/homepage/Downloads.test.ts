@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { session } from '../../lib/session.svelte';
 import { stubApi } from '../../test-helpers';
+import Downloaders from './Downloaders.svelte';
 import Nzbget from './Nzbget.svelte';
 import Qbittorrent from './Qbittorrent.svelte';
 import Sabnzbd from './Sabnzbd.svelte';
@@ -254,5 +255,38 @@ describe('Transmission', () => {
     stubApi({ 'GET homepage/transmission/queue': { data: { content: false } } });
     render(Transmission);
     expect(await screen.findByText(/Transmission gave no answer/)).toBeTruthy();
+  });
+});
+
+describe('Downloaders', () => {
+  it('shows a tab with the number of entries for each downloader, and one box at a time', async () => {
+    stubApi({
+      'GET homepage/sabnzbd/queue': { data: QUEUE },
+      'GET homepage/qbittorrent/queue': {
+        data: {
+          content: {
+            queueItems: [
+              { name: 'The.Show', state: 'downloading', progress: 0.4, eta: 3720 },
+              { name: 'An.Old.Film', state: 'stalledUP', progress: 1, eta: 8640000 },
+              { name: 'A.New.Kind', state: 'pausedDL', progress: 0, eta: 8640000 },
+            ],
+            historyItems: false,
+          },
+        },
+      },
+    });
+    render(Downloaders, { members: ['sabnzbd', 'qbittorrent', 'something new'] });
+
+    // A member that this interface does not know gets no tab.
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    const torrents = await screen.findByRole('tab', { name: 'qBittorrent: 3' });
+    expect(torrents.getAttribute('aria-selected')).toBe('false');
+    expect(document.getElementById('downloader-qbittorrent')?.hidden).toBe(true);
+    expect(document.getElementById('downloader-sabnzbd')?.hidden).toBe(false);
+
+    await fireEvent.click(torrents);
+    expect(torrents.getAttribute('aria-selected')).toBe('true');
+    expect(document.getElementById('downloader-qbittorrent')?.hidden).toBe(false);
+    expect(document.getElementById('downloader-sabnzbd')?.hidden).toBe(true);
   });
 });

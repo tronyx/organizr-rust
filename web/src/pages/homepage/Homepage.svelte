@@ -9,6 +9,7 @@
   import ArrQueue from './ArrQueue.svelte';
   import Calendar from './Calendar.svelte';
   import CustomHtml from './CustomHtml.svelte';
+  import Downloaders from './Downloaders.svelte';
   import HealthChecks from './HealthChecks.svelte';
   import Overseerr from './Overseerr.svelte';
   import Pihole from './Pihole.svelte';
@@ -26,6 +27,7 @@
   /** The kinds of items that this interface can show. */
   const KNOWN = new Set([
     'customhtml',
+    'downloader',
     'healthchecks',
     'uptimekuma',
     'calendar',
@@ -54,6 +56,14 @@
       firstDay: Number.isInteger(firstDay) && firstDay >= 0 && firstDay <= 6 ? firstDay : 1,
       limit: Number.isInteger(limit) && limit > 0 ? limit : 1000,
     };
+  }
+
+  /** The downloaders that share the downloader item. */
+  function membersOf(item: HomepageItem): string[] {
+    const members = item.options?.members;
+    return Array.isArray(members)
+      ? members.filter((member): member is string => typeof member === 'string')
+      : [];
   }
 
   let items = $state<HomepageItem[] | null>(null);
@@ -87,6 +97,8 @@
       <section data-item={item.key}>
         {#if item.kind === 'customhtml'}
           <CustomHtml id={item.id} />
+        {:else if item.kind === 'downloader'}
+          <Downloaders members={membersOf(item)} />
         {:else if item.kind === 'healthchecks'}
           <HealthChecks />
         {:else if item.kind === 'uptimekuma'}

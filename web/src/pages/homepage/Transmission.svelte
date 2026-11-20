@@ -29,6 +29,13 @@
     'Uploading',
   ];
 
+  let {
+    oncount,
+  }: {
+    /** Called with the number of entries, for the tab of the downloader item. */
+    oncount?: (count: number) => void;
+  } = $props();
+
   const item = itemData<Answer>('homepage/transmission/queue', 'transmissionRefresh');
 
   const content = $derived(item.data?.content || null);
@@ -49,6 +56,10 @@
     const eta = torrent.eta ?? -1;
     return percentOf(torrent) === 100 || eta < 0 ? '' : durationText(eta);
   }
+
+  $effect(() => {
+    oncount?.(torrents.length);
+  });
 </script>
 
 {#if item.error}

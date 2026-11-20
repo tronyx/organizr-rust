@@ -87,7 +87,7 @@ What this means for the HTML of an item:
 
 An import brings the HTML of your items as it is. Look at each item after the import:
 
-- The CSS classes of the PHP interface do not exist here. An item that uses them looks different.
+- Each item starts with a small style: the dark page, the grid of Bootstrap 3 (`row`, `col-sm-4` and the like), and the classes `btn`, `panel`, `white-box`, `pull-left`, `pull-right`, `text-center` and `clearfix`. The other CSS classes of the PHP interface do not exist here. An item that uses them looks different.
 - The JavaScript functions of the PHP interface do not exist in the frame. A script that calls them fails.
 - A script cannot call the API of Organizr with the session of the person.
 
@@ -185,6 +185,22 @@ The day of a film is a day of the time zone of the server. Set the environment v
 An event shows the fan art of its series or film. When only Sonarr or Radarr has the picture, a browser cannot load it without the API key. The server then fetches the picture, keeps it in the folder `cache` of the data folder, and sends it from `data/cache/`. The first time, the event shows without its picture for a moment.
 
 You can delete the folder `cache` at any time. The server fetches the pictures again.
+
+## Downloaders in one box
+
+Each downloader has a switch "combine". The downloaders whose switch is on share one item, as in PHP Organizr. The item has a tab for each of them, with its picture and the number of its entries. The tabs stand in the order of the places of the downloaders.
+
+| Setting | Key |
+|---|---|
+| Place of the shared item | `homepageOrderdownloader` |
+| Switch for SABnzbd | `sabnzbdCombine` |
+| Switch for NZBGet | `nzbgetCombine` |
+| Switch for Transmission | `transmissionCombine` |
+| Switch for qBittorrent | `qBittorrentCombine` |
+| Switch for the downloads of Sonarr | `homepageSonarrQueueCombine` |
+| Switch for the downloads of Radarr | `homepageRadarrQueueCombine` |
+
+A list of downloads is at most 300 pixels high. A longer list scrolls.
 
 ## Downloads of Sonarr and Radarr
 

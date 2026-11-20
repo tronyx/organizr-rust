@@ -26,6 +26,9 @@ pub(crate) const POLICY: &str = "sandbox allow-scripts allow-forms allow-popups 
     allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation; \
     default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors 'self'";
 
+/// The style that every custom HTML item starts with. See the file.
+const BASE_STYLE: &str = include_str!("custom_html.css");
+
 /// Tells the page of Organizr how high the content is, so the frame can fit it.
 const SIZE_SCRIPT: &str = "<script>(function () {\
     function tell() {\
@@ -70,7 +73,7 @@ fn document(custom: &str, style: Option<&str>) -> String {
     format!(
         "<!doctype html>\n<html><head><meta charset=\"utf-8\">\
          <base href=\"/\" target=\"_top\">{link}\
-         <style>html, body {{ margin: 0; background: transparent; }}</style>\
+         <style>{BASE_STYLE}</style>\
          </head><body>\n{custom}\n{SIZE_SCRIPT}</body></html>\n"
     )
 }

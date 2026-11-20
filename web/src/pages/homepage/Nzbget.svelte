@@ -21,6 +21,13 @@
   /** How many downloads of the history the item shows. */
   const HISTORY_SHOWN = 10;
 
+  let {
+    oncount,
+  }: {
+    /** Called with the number of entries, for the tab of the downloader item. */
+    oncount?: (count: number) => void;
+  } = $props();
+
   const item = itemData<Answer>('homepage/nzbget/queue', 'nzbgetRefresh');
 
   const content = $derived(item.data?.content || null);
@@ -42,6 +49,10 @@
     const text = words.join(', ');
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
+
+  $effect(() => {
+    oncount?.(queue.length);
+  });
 </script>
 
 {#if item.error}

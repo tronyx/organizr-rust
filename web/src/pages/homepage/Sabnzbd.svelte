@@ -32,6 +32,13 @@
   /** How many downloads of the history are shown. */
   const HISTORY = 10;
 
+  let {
+    oncount,
+  }: {
+    /** Called with the number of entries, for the tab of the downloader item. */
+    oncount?: (count: number) => void;
+  } = $props();
+
   const item = itemData<Answer>('homepage/sabnzbd/queue', 'sabnzbdRefresh');
 
   const content = $derived(item.data?.content || null);
@@ -55,6 +62,10 @@
       busy = false;
     }
   }
+
+  $effect(() => {
+    oncount?.(slots.length);
+  });
 </script>
 
 {#if item.error}

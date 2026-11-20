@@ -20,7 +20,14 @@
     content: { queueItems: QueueItem[] };
   }
 
-  let { application }: { application: 'sonarr' | 'radarr' } = $props();
+  let {
+    application,
+    oncount,
+  }: {
+    application: 'sonarr' | 'radarr';
+    /** Called with the number of entries, for the tab of the downloader item. */
+    oncount?: (count: number) => void;
+  } = $props();
 
   // svelte-ignore state_referenced_locally
   const name = application === 'sonarr' ? 'Sonarr' : 'Radarr';
@@ -51,6 +58,10 @@
     const done = (size - (download.sizeleft ?? 0)) / size;
     return Math.round(Math.min(Math.max(done, 0), 1) * 100);
   }
+
+  $effect(() => {
+    oncount?.(downloads.length);
+  });
 </script>
 
 {#if item.error}

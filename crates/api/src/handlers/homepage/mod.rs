@@ -205,38 +205,78 @@ pub fn visible_items(settings: &Settings, caller: &Caller) -> Vec<Item> {
         .collect();
     // Two items on one place stand in the order of their keys.
     placed.sort_unstable();
-    placed
-        .into_iter()
-        .filter_map(|(_, key)| item_of(key))
-        .filter(|(item, permissions)| {
-            if item.kind == "calendar" {
-                // The calendar shows when the caller gets the calendar of one
-                // application at least.
-                arr::sees_a_calendar(settings, caller)
+    let downloader_place = placed
+        .iter()
+        .find(|(_, key)| *key == DOWNLOADER_KEY)
+        .map_or(0, |(place, _)| *place);
+
+    let mut shown: Vec<(u64, Item)> = Vec::new();
+    // The downloaders that show together in one item, as tabs.
+    let mut combined: Vec<&'static str> = Vec::new();
+    for (place, key) in placed {
+        let Some((mut item, permissions)) = item_of(key) else {
+            continue;
+        };
+        let seen = if item.kind == "calendar" {
+            // The calendar shows when the caller gets the calendar of one
+            // application at least.
+            arr::sees_a_calendar(settings, caller)
+        } else {
+            permissions.allow(settings, caller)
+        };
+        if !seen {
+            continue;
+        }
+        if is_combined(settings, item.kind) {
+            combined.push(item.kind);
+            continue;
+        }
+        if item.kind == "calendar" {
+            item.options = json!({
+                "defaultView": settings.calendar_default,
+                "firstDay": settings.calendar_first_day,
+                "limit": settings.calendar_limit,
+            });
+        }
+        if item.kind == "weather" {
+            // The title shows only when its switch is on.
+            let title = if settings.homepage_weather_and_air_weather_header_toggle {
+                settings.homepage_weather_and_air_weather_header.as_str()
             } else {
-                permissions.allow(settings, caller)
-            }
-        })
-        .map(|(mut item, _)| {
-            if item.kind == "calendar" {
-                item.options = json!({
-                    "defaultView": settings.calendar_default,
-                    "firstDay": settings.calendar_first_day,
-                    "limit": settings.calendar_limit,
-                });
-            }
-            if item.kind == "weather" {
-                // The title shows only when its switch is on.
-                let title = if settings.homepage_weather_and_air_weather_header_toggle {
-                    settings.homepage_weather_and_air_weather_header.as_str()
-                } else {
-                    ""
-                };
-                item.options = json!({ "title": title });
-            }
-            item
-        })
-        .collect()
+                ""
+            };
+            item.options = json!({ "title": title });
+        }
+        shown.push((place, item));
+    }
+    if !combined.is_empty() {
+        // The tabs stand in the order of the places of the members.
+        let item = Item {
+            key: DOWNLOADER_KEY,
+            kind: "downloader",
+            id: String::new(),
+            options: json!({ "members": combined }),
+        };
+        let at = shown.partition_point(|(place, _)| *place <= downloader_place);
+        shown.insert(at, (downloader_place, item));
+    }
+    shown.into_iter().map(|(_, item)| item).collect()
+}
+
+/// The key of the place of the item that shows several downloaders as tabs.
+const DOWNLOADER_KEY: &str = "homepageOrderdownloader";
+
+/// Whether the setting of an item says that it shows in the downloader item.
+fn is_combined(settings: &Settings, kind: &str) -> bool {
+    match kind {
+        "sabnzbd" => settings.sabnzbd_combine,
+        "nzbget" => settings.nzbget_combine,
+        "transmission" => settings.transmission_combine,
+        "qbittorrent" => settings.qbittorrent_combine,
+        "sonarrqueue" => settings.homepage_sonarr_queue_combine,
+        "radarrqueue" => settings.homepage_radarr_queue_combine,
+        _ => false,
+    }
 }
 
 /// `GET /homepage/items`: the items of the homepage that the caller sees, in order.
