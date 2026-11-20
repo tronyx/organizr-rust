@@ -16,8 +16,8 @@ use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
     basics, categories, config, fields, forward_auth, groups, health_checks_plugin, homepage,
-    images, launch, login, logout, mail, ping, plex, register, tabs, token, two_factor, users,
-    wizard,
+    images, launch, login, logout, mail, ping, plex, register, speed_test, tabs, token, two_factor,
+    users, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -248,6 +248,12 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/plugins/healthchecks/run",
             &get(health_checks_plugin::run),
         )?
+        .route("/plugins/speedtest/garbage", &get(speed_test::garbage))?
+        .route(
+            "/plugins/speedtest/empty",
+            &get(speed_test::ping).post(speed_test::upload),
+        )?
+        .route("/plugins/speedtest/ip", &get(speed_test::ip))?
         .route("/plugins/php-mailer/email/list", &get(mail::list))?
         .route("/plugins/php-mailer/email/send", &post(mail::send))?
         .route("/plugins/php-mailer/email/test", &get(mail::test))?

@@ -24,6 +24,8 @@ export type Route =
   | { page: 'recover' }
   /** The page of the own account. */
   | { page: 'account' }
+  /** The speed test of the plugin. */
+  | { page: 'speedTest' }
   | { page: 'settings'; section: SettingsSection }
   /** A tab, by its name as the address writes it. */
   | { page: 'tab'; name: string };
@@ -44,6 +46,7 @@ export const PAGES = {
   loginSettings: '#/settings/login',
   homepageSettings: '#/settings/homepage',
   pluginSettings: '#/settings/plugins',
+  speedTest: '#/speedtest',
 } as const;
 
 /** Reads the part of an address from the `#` on. */
@@ -70,6 +73,8 @@ export function parseRoute(hash: string): Route {
       return { page: 'recover' };
     case '/account':
       return { page: 'account' };
+    case '/speedtest':
+      return { page: 'speedTest' };
     case '/settings':
     case '/settings/tabs':
       return { page: 'settings', section: 'tabs' };

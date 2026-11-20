@@ -71,6 +71,7 @@ export type Content =
   | { kind: 'register' }
   | { kind: 'recover' }
   | { kind: 'account' }
+  | { kind: 'speedTest' }
   | { kind: 'settings'; section: SettingsSection }
   /** The settings, for a caller who may not manage the install. */
   | { kind: 'notAllowed' }
@@ -117,6 +118,9 @@ export function contentFor(route: Route, tabs: MenuTab[], caller: Caller): Conte
       return caller.loggedIn ? contentFor({ page: 'home' }, tabs, caller) : { kind: 'recover' };
     case 'account':
       return caller.loggedIn ? { kind: 'account' } : { kind: 'login' };
+    case 'speedTest':
+      // The server decides who may run the test, and says so on the page.
+      return { kind: 'speedTest' };
     case 'settings':
       if (caller.canManage) {
         return { kind: 'settings', section: route.section };

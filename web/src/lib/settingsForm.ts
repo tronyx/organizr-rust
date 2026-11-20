@@ -1213,3 +1213,24 @@ export const HEALTH_CHECKS_PLUGIN: FieldGroup[] = [
     ],
   },
 ];
+
+/** The settings of the speed test plugin. */
+export const SPEED_TEST_PLUGIN: FieldGroup[] = [
+  {
+    title: 'Speed test plugin',
+    fields: [
+      {
+        key: 'SPEEDTEST-enabled',
+        label: 'Use the speed test plugin',
+        kind: 'switch',
+        help: 'The menu of the user then has the entry "Speed test".',
+      },
+      {
+        key: 'SPEEDTEST-Auth-include',
+        label: 'The speed test is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+    ],
+  },
+];

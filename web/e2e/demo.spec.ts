@@ -757,6 +757,33 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
   await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
 });
 
+test('the speed test plugin measures the connection to the server', async ({ page }) => {
+  // The run itself takes about twenty seconds.
+  test.setTimeout(90_000);
+  await logIn(page);
+  await page.goto('./#/settings/plugins');
+  await page.getByLabel('Use the speed test plugin').check();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+
+  // The menu of the user has the entry now.
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('link', { name: 'Speed test' }).click();
+  await expect(page).toHaveURL(/#\/speedtest$/);
+  await expect(page.getByRole('heading', { name: 'Speed test' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Start' }).click();
+  await expect(page.getByText('The test runs.')).toBeVisible();
+  await expect(page.getByText('The test is done.')).toBeVisible({ timeout: 60_000 });
+  // Each of the four values is a number.
+  const values = await page.locator('.stat-value').allTextContents();
+  expect(values).toHaveLength(4);
+  for (const value of values) {
+    expect(value).toMatch(/^\d+(\.\d)?$/);
+  }
+  await expect(page.getByText(/^Your address: /)).toBeVisible();
+});
+
 // This test stays the last one: after it, the login page has a second button whose name
 // starts with "Log in".
 test('the Admin switches the button "Log in with Plex" on, and the login page shows it', async ({

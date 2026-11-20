@@ -18,6 +18,7 @@ pub mod mail;
 pub mod ping;
 pub mod plex;
 pub mod register;
+pub mod speed_test;
 pub mod tabs;
 pub mod token;
 pub mod two_factor;

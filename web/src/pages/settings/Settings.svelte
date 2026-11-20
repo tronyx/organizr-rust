@@ -6,7 +6,7 @@
   import { api, failureText } from '../../lib/api';
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
-  import { HEALTH_CHECKS_PLUGIN, HOMEPAGE } from '../../lib/settingsForm';
+  import { HEALTH_CHECKS_PLUGIN, HOMEPAGE, SPEED_TEST_PLUGIN } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
   import CategoriesEditor from './CategoriesEditor.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
@@ -156,7 +156,10 @@
   {:else if section === 'homepage'}
     <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
   {:else if section === 'plugins'}
-    <SettingsForm groups={HEALTH_CHECKS_PLUGIN} ondone={(message) => (done = message)}>
+    <SettingsForm
+      groups={[...SPEED_TEST_PLUGIN, ...HEALTH_CHECKS_PLUGIN]}
+      ondone={(message) => (done = message)}
+    >
       <HealthCheckServices ondone={(message) => (done = message)} />
     </SettingsForm>
   {:else if data}

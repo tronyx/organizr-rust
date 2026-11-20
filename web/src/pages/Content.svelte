@@ -10,6 +10,7 @@
   import Recover from './Recover.svelte';
   import Register from './Register.svelte';
   import Settings from './settings/Settings.svelte';
+  import SpeedTest from './SpeedTest.svelte';
 
   let { content }: { content: Exclude<Content, { kind: 'frame' }> } = $props();
 </script>
@@ -22,6 +23,8 @@
   <Recover />
 {:else if content.kind === 'account'}
   <Account />
+{:else if content.kind === 'speedTest'}
+  <SpeedTest />
 {:else if content.kind === 'settings'}
   <Settings section={content.section} />
 {:else if content.kind === 'notAllowed'}
