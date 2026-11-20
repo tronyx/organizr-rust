@@ -147,6 +147,14 @@ fn has_arr_key(headers: &HeaderMap) -> bool {
         == Some(ARR_KEY)
 }
 
+/// The folders that an application stores its media in.
+async fn arr_root_folders(headers: HeaderMap) -> Response {
+    for_arr_key(
+        &headers,
+        json!([{"id": 1, "path": "/media", "accessible": true}]),
+    )
+}
+
 /// The answer of a route of the stand-ins: the given JSON for the right key.
 fn for_arr_key(headers: &HeaderMap, body: Value) -> Response {
     if has_arr_key(headers) {
@@ -222,6 +230,7 @@ pub async fn sonarr() -> StandIn {
         Router::new()
             .route("/api/v3/calendar", get(sonarr_calendar))
             .route("/api/v3/queue", get(sonarr_queue))
+            .route("/api/v3/rootfolder", get(arr_root_folders))
             .route("/MediaCover/1/fanart.jpg", get(arr_picture)),
     )
     .await
@@ -264,7 +273,8 @@ pub async fn radarr() -> StandIn {
     StandIn::start(
         Router::new()
             .route("/api/v3/calendar", get(radarr_calendar))
-            .route("/api/v3/queue", get(radarr_queue)),
+            .route("/api/v3/queue", get(radarr_queue))
+            .route("/api/v3/rootfolder", get(arr_root_folders)),
     )
     .await
 }
@@ -289,7 +299,12 @@ async fn lidarr_calendar(headers: HeaderMap) -> Response {
 
 /// A stand-in for Lidarr: one album in the calendar.
 pub async fn lidarr() -> StandIn {
-    StandIn::start(Router::new().route("/api/v1/calendar", get(lidarr_calendar))).await
+    StandIn::start(
+        Router::new()
+            .route("/api/v1/calendar", get(lidarr_calendar))
+            .route("/api/v1/rootfolder", get(arr_root_folders)),
+    )
+    .await
 }
 
 /// The API key of the SABnzbd stand-in.
@@ -755,9 +770,11 @@ async fn plex_server_api(
     uri: axum::http::Uri,
     RawQuery(query): RawQuery,
 ) -> Response {
+    // The token comes in a header, or in the query as the connection test sends it.
     let token = headers
         .get("x-plex-token")
-        .and_then(|value| value.to_str().ok());
+        .and_then(|value| value.to_str().ok())
+        .or_else(|| query_field(query.as_deref(), "X-Plex-Token"));
     if token != Some(PLEX_SERVER_TOKEN) {
         return (
             StatusCode::UNAUTHORIZED,
@@ -770,6 +787,7 @@ async fn plex_server_api(
     };
     match uri.path() {
         "/status/sessions" => xml(PLEX_SESSIONS),
+        "/servers" => xml("<MediaContainer size=\"1\"><Server name=\"Media\"/></MediaContainer>"),
         "/hubs/home/recentlyAdded" => xml(plex_recent(query_field(query.as_deref(), "type"))),
         "/playlists" => xml(PLEX_PLAYLISTS),
         "/playlists/7/items" | "/library/metadata/815" => xml(PLEX_FILM),
@@ -881,6 +899,13 @@ fn overseerr_reply(
             }
         }
         _ if !by_key && !by_user => (
+            StatusCode::FORBIDDEN,
+            json!({"message": "You do not have permission to access this endpoint"}),
+        ),
+        ("GET", "/api/v1/settings/main") if by_key => {
+            (StatusCode::OK, json!({"applicationTitle": "Overseerr"}))
+        }
+        ("GET", "/api/v1/settings/main") => (
             StatusCode::FORBIDDEN,
             json!({"message": "You do not have permission to access this endpoint"}),
         ),

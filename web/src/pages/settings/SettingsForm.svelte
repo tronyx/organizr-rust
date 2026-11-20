@@ -33,6 +33,9 @@
   let loadError = $state<string | null>(null);
   let error = $state<string | null>(null);
   let busy = $state(false);
+  /** What the last connection test of a service said. */
+  let tested = $state<Record<string, { ok: boolean; text: string }>>({});
+  let testing = $state<string | null>(null);
 
   const changed = $derived(config ? changedSettings(groups, config, form) : {});
   const hasChanges = $derived(Object.keys(changed).length > 0);
@@ -61,6 +64,19 @@
       error = failureText(failure);
     } finally {
       busy = false;
+    }
+  }
+
+  /** Asks the server to try the stored settings of a service. */
+  async function test(service: string) {
+    testing = service;
+    try {
+      const answer = await api('POST', `test/${service}`);
+      tested[service] = { ok: true, text: answer.message ?? 'The connection works.' };
+    } catch (failure) {
+      tested[service] = { ok: false, text: failureText(failure) };
+    } finally {
+      testing = null;
     }
   }
 
@@ -151,6 +167,31 @@
             <p id={hint} class="label whitespace-normal">{field.help}</p>
           {/if}
         {/each}
+        {#if group.test}
+          {@const service = group.test}
+          {@const result = tested[service]}
+          <div class="mt-2 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              class="btn btn-sm"
+              disabled={hasChanges || testing !== null}
+              onclick={() => test(service)}
+            >
+              {#if testing === service}<span class="loading loading-spinner loading-xs"></span>{/if}
+              Test the connection of {group.title}
+            </button>
+            {#if hasChanges}
+              <span class="text-sm">Save the settings before you test.</span>
+            {:else if result}
+              <span
+                role={result.ok ? 'status' : 'alert'}
+                class={result.ok ? 'text-success text-sm' : 'text-error text-sm'}
+              >
+                {result.text}
+              </span>
+            {/if}
+          </div>
+        {/if}
       </fieldset>
     {/each}
 

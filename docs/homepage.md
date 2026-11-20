@@ -41,6 +41,17 @@ You set all items up in **Settings**, on the tab **Homepage**.
 
 The homepage loads the data of an item again after the time that the item has in its settings. The shortest time is five seconds.
 
+
+## Test the connection of a service
+
+The settings of these services have a button **Test the connection**: Plex, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission and Pi-hole.
+
+1. Enter the address and the key or the login of the service.
+2. Select **Save**. The test reads the settings that are stored.
+3. Select **Test the connection**. The page shows whether the service answered, or what is wrong.
+
+Only an Admin or a Co-Admin can run a test. A script can run it with `POST /api/v2/test/<service>`, where the service is the name in lower case without the hyphen, for example `pihole`.
+
 ## Custom HTML
 
 There are eight custom HTML items, with the numbers 01 to 08. Each one holds HTML that you write.

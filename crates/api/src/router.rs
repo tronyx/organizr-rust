@@ -15,9 +15,9 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    basics, bookmarks, categories, config, fields, forward_auth, groups, health_checks_plugin,
-    homepage, images, invites, launch, login, logout, mail, ping, plex, register, speed_test, tabs,
-    token, two_factor, users, wizard,
+    basics, bookmarks, categories, config, connection_tests, fields, forward_auth, groups,
+    health_checks_plugin, homepage, images, invites, launch, login, logout, mail, ping, plex,
+    register, speed_test, tabs, token, two_factor, users, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -292,6 +292,17 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
                 .post(invites::use_code)
                 .delete(invites::remove),
         )?
+        .route("/test/plex", &post(connection_tests::test_plex))?
+        .route("/test/sonarr", &post(connection_tests::test_sonarr))?
+        .route("/test/radarr", &post(connection_tests::test_radarr))?
+        .route("/test/lidarr", &post(connection_tests::test_lidarr))?
+        .route("/test/sabnzbd", &post(connection_tests::test_sabnzbd))?
+        .route("/test/qbittorrent", &post(connection_tests::test_qbittorrent))?
+        .route("/test/tautulli", &post(connection_tests::test_tautulli))?
+        .route("/test/overseerr", &post(connection_tests::test_overseerr))?
+        .route("/test/nzbget", &post(connection_tests::test_nzbget))?
+        .route("/test/transmission", &post(connection_tests::test_transmission))?
+        .route("/test/pihole", &post(connection_tests::test_pihole))?
         .route("/plugins/speedtest/garbage", &get(speed_test::garbage))?
         .route(
             "/plugins/speedtest/empty",

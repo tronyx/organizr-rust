@@ -10,6 +10,7 @@ pub mod overseerr;
 pub mod pihole;
 pub mod plex;
 pub mod plex_server;
+pub mod probe;
 pub mod sso;
 pub mod tautulli;
 pub mod uptime_kuma;

@@ -26,6 +26,8 @@ export type Field =
 export interface FieldGroup {
   title: string;
   fields: Field[];
+  /** The service whose connection test the group offers: the name in `POST /test/<name>`. */
+  test?: string;
 }
 
 /** The general settings, in the groups of the page. */
@@ -513,6 +515,7 @@ const SERVICE_ITEMS: FieldGroup[] = [
 const PLEX_ITEMS: FieldGroup[] = [
   {
     title: 'Plex',
+    test: 'plex',
     fields: [
       { key: 'homepagePlexEnabled', label: 'Show Plex on the homepage', kind: 'switch' },
       {
@@ -636,6 +639,7 @@ const PLEX_ITEMS: FieldGroup[] = [
 const OVERSEERR_ITEMS: FieldGroup[] = [
   {
     title: 'Overseerr',
+    test: 'overseerr',
     fields: [
       ...itemFields(
         'the requests of Overseerr',
@@ -693,6 +697,7 @@ const OVERSEERR_ITEMS: FieldGroup[] = [
 const TAUTULLI_ITEMS: FieldGroup[] = [
   {
     title: 'Tautulli',
+    test: 'tautulli',
     fields: [
       ...itemFields(
         'Tautulli',
@@ -830,6 +835,7 @@ const WEATHER_ITEMS: FieldGroup[] = [
 const DOWNLOAD_ITEMS: FieldGroup[] = [
   {
     title: 'SABnzbd',
+    test: 'sabnzbd',
     fields: [
       ...itemFields(
         'the downloads of SABnzbd',
@@ -854,6 +860,7 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
   },
   {
     title: 'qBittorrent',
+    test: 'qbittorrent',
     fields: [
       ...itemFields(
         'the torrents of qBittorrent',
@@ -912,6 +919,7 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
   },
   {
     title: 'Pi-hole',
+    test: 'pihole',
     fields: [
       ...itemFields(
         'the numbers of Pi-hole',
@@ -943,6 +951,7 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
   },
   {
     title: 'NZBGet',
+    test: 'nzbget',
     fields: [
       ...itemFields(
         'the downloads of NZBGet',
@@ -968,6 +977,7 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
   },
   {
     title: 'Transmission',
+    test: 'transmission',
     fields: [
       ...itemFields(
         'the torrents of Transmission',
@@ -1052,6 +1062,7 @@ const CALENDAR_ITEMS: FieldGroup[] = [
   },
   {
     title: 'Sonarr',
+    test: 'sonarr',
     fields: [
       { key: 'homepageSonarrEnabled', label: 'Show Sonarr in the calendar', kind: 'switch' },
       {
@@ -1116,6 +1127,7 @@ const CALENDAR_ITEMS: FieldGroup[] = [
   },
   {
     title: 'Radarr',
+    test: 'radarr',
     fields: [
       { key: 'homepageRadarrEnabled', label: 'Show Radarr in the calendar', kind: 'switch' },
       {
@@ -1183,6 +1195,7 @@ const CALENDAR_ITEMS: FieldGroup[] = [
   },
   {
     title: 'Lidarr',
+    test: 'lidarr',
     fields: [
       { key: 'homepageLidarrEnabled', label: 'Show Lidarr in the calendar', kind: 'switch' },
       {

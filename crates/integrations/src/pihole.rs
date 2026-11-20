@@ -8,6 +8,7 @@ use std::time::Duration;
 use serde_json::{Map, Value};
 
 use crate::http::{Outbound, without_address};
+use crate::probe::host_of;
 
 /// How long an install has to answer.
 const TIME_LIMIT: Duration = Duration::from_secs(10);
@@ -18,14 +19,6 @@ const TIME_LIMIT: Duration = Duration::from_secs(10);
 /// the first address always counts, and each further one needs a comma in the tokens.
 pub fn installs<'a>(addresses: &'a str, tokens: &'a str) -> Vec<(&'a str, &'a str)> {
     addresses.split(',').zip(tokens.split(',')).collect()
-}
-
-/// The host of an address, which names an install in the answer.
-fn host_of(address: &str) -> Option<String> {
-    reqwest::Url::parse(address)
-        .ok()?
-        .host_str()
-        .map(str::to_owned)
 }
 
 /// The summary of each install, by its host. An install that refuses the request, or
