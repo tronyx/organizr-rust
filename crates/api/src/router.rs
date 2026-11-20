@@ -17,8 +17,9 @@ use crate::error::ApiError;
 use crate::handlers::{
     backups, basics, bookmarks, categories, config, connection_tests,
     connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
-    homepage, icon, images, invites, ip, launch, lock, login, logout, mail, news, pages, ping,
-    plex, register, speed_test, sponsors, tabs, token, two_factor, users, users_import, wizard,
+    homepage, icon, images, invites, ip, launch, lock, login, logout, mail, media_register, news,
+    pages, ping, plex, register, speed_test, sponsors, tabs, token, two_factor, users,
+    users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -380,6 +381,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/image/select", &get(images::select))?
         .route("/image/{image}", &delete(images::remove))?
         .route("/plex/servers", &get(plex::servers))?
+        .route("/plex/register", &post(media_register::plex))?
+        .route("/emby/register", &post(media_register::emby))?
         // The PHP application sends another content type from the two news routes.
         .route(
             "/news",

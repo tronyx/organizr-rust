@@ -13,8 +13,9 @@ use organizr_auth::login_limit::{Attempt, LimitPolicy};
 use organizr_db::DbError;
 use organizr_domain::email::{self, php_trim};
 use organizr_domain::{GroupLevel, Invite, NewInvite};
-use organizr_integrations::plex::{PlexError, Share};
+use organizr_integrations::plex::{PlexError, PlexTv, Share};
 use organizr_plugins::mail::{MailKind, Message, Recipient};
+use organizr_settings::Settings;
 use serde::Serialize;
 
 use crate::api_data::ApiData;
@@ -84,7 +85,7 @@ fn date_and_time(seconds: i64) -> String {
 }
 
 /// The plugin answers only when it is switched on.
-fn check_enabled(state: &AppState) -> Result<(), Refusal> {
+pub(crate) fn check_enabled(state: &AppState) -> Result<(), Refusal> {
     if state.settings().invites_enabled {
         Ok(())
     } else {
@@ -220,7 +221,11 @@ pub async fn create(
 /// The invite of a code that can still be used. A wrong code counts like a failed
 /// login: by the address of the client. When the count reaches the `loginAttempts`
 /// setting, the answer is `403 "User is locked out"` for `loginLockout` milliseconds.
-async fn usable(state: &AppState, client: &Client, code: &str) -> Result<Invite, Refusal> {
+pub(crate) async fn usable(
+    state: &AppState,
+    client: &Client,
+    code: &str,
+) -> Result<Invite, Refusal> {
     let limiter = state.login_limiter();
     let attempt = Attempt::new(client.address, LIMIT_KEY);
     if let Some(retry_after) = limiter.locked_for(&attempt, Instant::now()) {
@@ -310,30 +315,72 @@ pub async fn use_code(
         None
     };
 
-    let invites = state.database().invites();
-    let now = now_stamp(SystemTime::now()).unix_seconds();
-    let from = client.address.to_string();
-    if !invites
-        .mark_used(&code, used_by.as_deref(), &from, now)
-        .await?
-    {
-        // Another request used the code a moment before.
-        let attempt = Attempt::new(client.address, LIMIT_KEY);
-        return Err(wrong_code(&state, &attempt));
-    }
+    reserve(&state, &client, &code, used_by.as_deref()).await?;
     tracing::info!(client = %client.address, "an invite was used");
     let (Some(plex), Some(account)) = (plex, used_by) else {
         // The PHP application does nothing more for a server that is not Plex.
         return Ok(Envelope::success(NoData).with_message("User now has access to system"));
     };
+    match share_plex_server(&plex, &settings, &account).await {
+        Ok(Access::Given) => {
+            Ok(Envelope::success(NoData).with_message("Plex User now has access to system"))
+        }
+        // The account has the access, so the invite did its work.
+        Ok(Access::AlreadyHad) => Err(Refusal::conflict("Plex User already has access")),
+        Err(message) => {
+            state.database().invites().restore(&code).await?;
+            Err(Refusal::conflict(message))
+        }
+    }
+}
 
+/// Marks a usable code as used by `used_by`, from the address of the client. When
+/// another request used the code a moment before, the answer is the one for a wrong
+/// code, and it is counted.
+pub(crate) async fn reserve(
+    state: &AppState,
+    client: &Client,
+    code: &str,
+    used_by: Option<&str>,
+) -> Result<(), Refusal> {
+    let now = now_stamp(SystemTime::now()).unix_seconds();
+    let from = client.address.to_string();
+    if state
+        .database()
+        .invites()
+        .mark_used(code, used_by, &from, now)
+        .await?
+    {
+        Ok(())
+    } else {
+        let attempt = Attempt::new(client.address, LIMIT_KEY);
+        Err(wrong_code(state, &attempt))
+    }
+}
+
+/// What a share of the Plex server did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Access {
+    /// The account got the access.
+    Given,
+    /// The account had the access already.
+    AlreadyHad,
+}
+
+/// Shares the Plex server of the settings with an account, with the libraries and the
+/// labels of the invites plugin. A failure is the message for the caller.
+pub(crate) async fn share_plex_server(
+    plex: &PlexTv,
+    settings: &Settings,
+    account: &str,
+) -> Result<Access, &'static str> {
     let libraries: Vec<&str> = settings
         .invites_plex_libraries
         .split(',')
         .filter(|library| !library.is_empty())
         .collect();
     let share = Share {
-        account: &account,
+        account,
         libraries: &libraries,
         tv_filter: &label_filter(&settings.invites_plex_tv_labels),
         movies_filter: &label_filter(&settings.invites_plex_movies_labels),
@@ -343,13 +390,8 @@ pub async fn use_code(
         .share(&settings.plex_token, &settings.plex_id, &share)
         .await
     {
-        Ok(()) => {
-            return Ok(Envelope::success(NoData).with_message("Plex User now has access to system"));
-        }
-        // The account has the access, so the invite did its work.
-        Err(PlexError::Status(400)) => {
-            return Err(Refusal::conflict("Plex User already has access"));
-        }
+        Ok(()) => return Ok(Access::Given),
+        Err(PlexError::Status(400)) => return Ok(Access::AlreadyHad),
         Err(PlexError::Status(401)) => "Incorrect Token",
         Err(PlexError::Status(404)) => "Libraries not setup correct",
         Err(PlexError::Status(_)) => "An Error Occurred",
@@ -359,8 +401,7 @@ pub async fn use_code(
         reason = message,
         "Plex did not give the access of an invite"
     );
-    invites.restore(&code).await?;
-    Err(Refusal::conflict(message))
+    Err(message)
 }
 
 /// `DELETE /plugins/invites/{code}`: deletes an invite. An Admin or a Co-Admin deletes

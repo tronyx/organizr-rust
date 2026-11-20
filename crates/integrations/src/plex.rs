@@ -313,6 +313,51 @@ impl PlexTv {
         }
     }
 
+    /// Makes a new Plex account. `client_id` is the id of this install.
+    ///
+    /// Returns the texts of the errors that the service names, each as
+    /// `[Plex.tv Error: <message> for field: (<field>)]`, as the PHP application writes
+    /// them. A refusal without such errors gives [`PlexError::Status`]. The password
+    /// goes in the body only, and no error holds it.
+    pub async fn join(
+        &self,
+        client_id: &str,
+        username: &str,
+        email: &str,
+        password: &str,
+    ) -> Result<Result<(), String>, PlexError> {
+        let url = self.url("/api/v2/users");
+        let response = self
+            .http
+            .client_for(&url)
+            .post(&url)
+            .timeout(LOGIN_TIMEOUT)
+            .header("Accept", "application/json")
+            .header("X-Plex-Product", PRODUCT)
+            .header("X-Plex-Version", PRODUCT_VERSION)
+            .header("X-Plex-Client-Identifier", client_id)
+            .form(&[
+                ("email", email),
+                ("username", username),
+                ("password", password),
+            ])
+            .send()
+            .await
+            .map_err(PlexError::Unreachable)?;
+        let status = response.status();
+        let text = response.text().await.unwrap_or_default();
+        let answer: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
+        let errors = join_errors(&answer);
+        if !errors.is_empty() {
+            return Ok(Err(errors));
+        }
+        if status.is_success() {
+            Ok(Ok(()))
+        } else {
+            Err(PlexError::Status(status.as_u16()))
+        }
+    }
+
     /// The friends of the owner of `owner_token`: the accounts that the owner shared
     /// a server with, as the friend list of the service names them.
     pub async fn friends(&self, owner_token: &str) -> Result<Vec<PlexFriend>, PlexError> {
@@ -360,6 +405,29 @@ fn friend_in(xml: &str, name: &str, server: Option<&str>) -> Result<bool, PlexEr
         }))
 }
 
+/// The errors of an answer to a new account, as the PHP application writes them. An
+/// error without a message or a field is left out, as in PHP.
+fn join_errors(answer: &serde_json::Value) -> String {
+    answer
+        .get("errors")
+        .and_then(serde_json::Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|error| {
+            let text = |name: &str| match error.get(name)? {
+                serde_json::Value::String(text) => Some(text.clone()),
+                serde_json::Value::Null => None,
+                other => Some(other.to_string()),
+            };
+            Some(format!(
+                "[Plex.tv Error: {} for field: ({})]",
+                text("message")?,
+                text("field")?
+            ))
+        })
+        .collect()
+}
+
 /// Reads the friend list of the service.
 fn friends_in(xml: &str) -> Result<Vec<PlexFriend>, PlexError> {
     let document = parsed(xml)?;
@@ -400,7 +468,9 @@ fn servers_in(xml: &str) -> Result<Vec<PlexServer>, PlexError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{AccountAnswer, PlexAccount, PlexFriend, friend_in, friends_in, servers_in};
+    use super::{
+        AccountAnswer, PlexAccount, PlexFriend, friend_in, friends_in, join_errors, servers_in,
+    };
 
     /// The friend list as the service sends it, with made-up accounts.
     const FRIENDS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -477,6 +547,20 @@ mod tests {
             ])
         );
         assert!(friends_in("not xml").is_err());
+    }
+
+    #[test]
+    fn errors_of_a_new_account_are_written_as_php_writes_them() {
+        let answer = serde_json::json!({"errors": [
+            {"code": 1, "message": "has already been taken", "field": "email"},
+            {"message": "no field"},
+            {"message": "is too short", "field": "password"},
+        ]});
+        assert_eq!(
+            join_errors(&answer),
+            "[Plex.tv Error: has already been taken for field: (email)][Plex.tv Error: is too short for field: (password)]"
+        );
+        assert_eq!(join_errors(&serde_json::json!({"id": 1})), "");
     }
 
     #[test]

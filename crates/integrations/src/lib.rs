@@ -8,6 +8,7 @@ pub mod couchpotato;
 pub mod downloaders;
 pub mod downloaders_more;
 pub mod emby;
+pub mod emby_join;
 pub mod emby_live_tv;
 pub mod frames;
 pub mod health_checks;

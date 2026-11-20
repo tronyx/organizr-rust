@@ -26,6 +26,7 @@ pub mod lock;
 pub mod login;
 pub mod logout;
 pub mod mail;
+pub mod media_register;
 pub mod news;
 pub mod notice_page;
 pub mod pages;

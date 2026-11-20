@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { contentFor } from '../lib/menu';
 import { firstRoute, parseRoute } from '../lib/route.svelte';
-import { stubApi } from '../test-helpers';
+import { stubApi, type CannedAnswer } from '../test-helpers';
 import Invites from './Invites.svelte';
 import UseInvite from './UseInvite.svelte';
 
@@ -148,6 +148,55 @@ describe('UseInvite', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('Code is invalid');
     expect(sent).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Use the code' })).toBeTruthy();
+  });
+
+  async function fillNewAccount() {
+    await fireEvent.input(screen.getByLabelText('User name'), { target: { value: 'sam' } });
+    await fireEvent.input(screen.getByLabelText('E-mail address'), {
+      target: { value: 'sam@example.com' },
+    });
+    await fireEvent.input(screen.getByLabelText('Password'), {
+      target: { value: 'the password of sam' },
+    });
+  }
+
+  it('makes a Plex account with the code', async () => {
+    const sent = stubApi({ 'POST plex/register': { message: 'User has joined Plex' } });
+    render(UseInvite, { code: 'ABC123' });
+
+    await fireEvent.click(screen.getByLabelText('Make a Plex account'));
+    expect(screen.queryByLabelText('Plex user name or e-mail address')).toBeNull();
+    await fillNewAccount();
+    await fireEvent.click(screen.getByRole('button', { name: 'Make the account' }));
+
+    const status = await screen.findByRole('status');
+    expect(status.textContent).toContain('User has joined Plex');
+    expect(status.textContent).toContain('Accept the invitation');
+    expect(sent[0]?.body).toEqual({
+      code: 'ABC123',
+      username: 'sam',
+      email: 'sam@example.com',
+      password: 'the password of sam',
+    });
+  });
+
+  it('makes an Emby user with the code, and shows a refusal', async () => {
+    let answer: CannedAnswer = { status: 401, message: 'Code is invalid' };
+    const sent = stubApi({ 'POST emby/register': () => answer });
+    render(UseInvite, { code: ' ABC123 ' });
+
+    await fireEvent.click(screen.getByLabelText('Make an Emby user'));
+    await fillNewAccount();
+    await fireEvent.click(screen.getByRole('button', { name: 'Make the account' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('Code is invalid');
+
+    answer = { message: 'User has joined Emby' };
+    await fireEvent.click(screen.getByRole('button', { name: 'Make the account' }));
+    const status = await screen.findByRole('status');
+    expect(status.textContent).toContain('User has joined Emby');
+    expect(status.textContent).toContain('Log in to Emby');
+    expect(sent).toHaveLength(2);
+    expect((sent[0]?.body as { code: string }).code).toBe('ABC123');
   });
 });
 
