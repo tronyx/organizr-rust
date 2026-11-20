@@ -58,7 +58,15 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked --features organizr/wasm-plugins -- -D warnings
 
       - name: Run the tests
-        run: cargo test --workspace --locked --features organizr/wasm-plugins
+        run: cargo test --workspace --locked
+
+      # The runtime for extensions makes each test program large. With it in every test
+      # program, the linker runs out of space on the runner. So only the tests of the
+      # extensions are built with it.
+      - name: Run the tests of the extensions
+        run: |
+          cargo test --locked -p organizr-plugins --features wasm-plugins --test extension
+          cargo test --locked -p organizr-api --features wasm-plugins --lib --test extensions
 
   deny:
     name: Advisories, licences and banned crates
