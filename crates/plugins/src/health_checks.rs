@@ -80,9 +80,15 @@ pub fn services(setting: &Value) -> Vec<Service> {
     entries
         .into_iter()
         .filter_map(|(key, fields)| {
-            let fields: Map<String, Value> = fields
-                .as_array()?
-                .iter()
+            // PHP stores a list as a map with the places as keys. The import can
+            // bring either form.
+            let listed: Vec<&Value> = match fields {
+                Value::Array(list) => list.iter().collect(),
+                Value::Object(map) => map.values().collect(),
+                _ => return None,
+            };
+            let fields: Map<String, Value> = listed
+                .into_iter()
                 .filter_map(|field| {
                     let label = field.get("label")?.as_str()?;
                     Some((
@@ -261,6 +267,14 @@ mod tests {
         assert_eq!(found[0].external(), "https://plex.example.com");
         assert_eq!(found[0].internal(), "");
         assert_eq!(found[0].fields["Service Name"], "Plex");
+
+        // The fields of a service can be a map with the places as keys.
+        let mapped = services(&json!({"0": {
+            "0": {"label": "UUID", "value": "made-up-id-five"},
+            "1": {"label": "Enabled", "value": true},
+        }}));
+        assert_eq!(mapped.len(), 1);
+        assert_eq!(mapped[0].id(), "made-up-id-five");
 
         // A list is read as an object whose keys are the places.
         let listed = services(&json!([item("Plex", "made-up-id-one", &json!(true))]));

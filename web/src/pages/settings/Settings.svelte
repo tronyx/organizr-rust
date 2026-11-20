@@ -6,11 +6,12 @@
   import { api, failureText } from '../../lib/api';
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
-  import { HOMEPAGE } from '../../lib/settingsForm';
+  import { HEALTH_CHECKS_PLUGIN, HOMEPAGE } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
   import CategoriesEditor from './CategoriesEditor.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
+  import HealthCheckServices from './HealthCheckServices.svelte';
   import LoginSettings from './LoginSettings.svelte';
   import SettingsForm from './SettingsForm.svelte';
   import MailSettings from './MailSettings.svelte';
@@ -133,6 +134,15 @@
     >
       Homepage
     </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'plugins'}
+      aria-selected={section === 'plugins'}
+      href={PAGES.pluginSettings}
+    >
+      Plugins
+    </a>
   </div>
 
   <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
@@ -145,6 +155,10 @@
     <LoginSettings ondone={(message) => (done = message)} />
   {:else if section === 'homepage'}
     <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
+  {:else if section === 'plugins'}
+    <SettingsForm groups={HEALTH_CHECKS_PLUGIN} ondone={(message) => (done = message)}>
+      <HealthCheckServices ondone={(message) => (done = message)} />
+    </SettingsForm>
   {:else if data}
     {#if section === 'tabs'}
       <TabsEditor {data} {change} />

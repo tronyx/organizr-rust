@@ -1170,3 +1170,46 @@ export const HOMEPAGE: FieldGroup[] = [
   ...TAUTULLI_ITEMS,
   ...OVERSEERR_ITEMS,
 ];
+
+/** The settings of the health checks plugin, without its list of services. */
+export const HEALTH_CHECKS_PLUGIN: FieldGroup[] = [
+  {
+    title: 'Health checks plugin',
+    fields: [
+      { key: 'HEALTHCHECKS-enabled', label: 'Use the health checks plugin', kind: 'switch' },
+      {
+        key: 'HEALTHCHECKS-cron-run-enabled',
+        label: 'Run the checks on a schedule',
+        kind: 'switch',
+      },
+      {
+        key: 'HEALTHCHECKS-cron-run-schedule',
+        label: 'Schedule of the checks',
+        kind: 'text',
+        help: 'A cron schedule with five fields. For example */5 * * * * for every five minutes.',
+      },
+      {
+        key: 'HEALTHCHECKS-PingURL',
+        label: 'Address that the results go to',
+        kind: 'text',
+        help: 'https://hc-ping.com/ for healthchecks.io, or the address of your own install.',
+      },
+      {
+        key: 'HEALTHCHECKS-Auth-include',
+        label: 'A run by hand is for users of the level',
+        kind: 'select',
+        options: LEVELS,
+      },
+      {
+        key: 'HEALTHCHECKS-401-enabled',
+        label: 'Count the answer 401 (not logged in) as "the service works"',
+        kind: 'switch',
+      },
+      {
+        key: 'HEALTHCHECKS-403-enabled',
+        label: 'Count the answer 403 (not allowed) as "the service works"',
+        kind: 'switch',
+      },
+    ],
+  },
+];
