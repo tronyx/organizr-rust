@@ -10,6 +10,20 @@ import { ADDRESS, SETUP_CODE_VARIABLE } from './server';
 
 test.describe.configure({ mode: 'serial' });
 
+/** Saves a form of the settings, and waits until the server stored it and the form loaded again. */
+async function saveSettings(page: Page) {
+  const stored = page.waitForResponse(
+    (answer) => answer.url().endsWith('/api/v2/config') && answer.request().method() === 'PUT',
+  );
+  const loaded = page.waitForResponse(
+    (answer) => answer.url().includes('/api/v2/settings/') && answer.request().method() === 'GET',
+  );
+  await page.getByRole('button', { name: 'Save' }).click();
+  expect((await stored).ok()).toBe(true);
+  await loaded;
+  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+}
+
 test('the server hands out the page with a strict security policy', async ({ page }) => {
   const response = await page.goto('./');
 
@@ -476,43 +490,55 @@ test('the Admin changes the name of the install and the registration password', 
 }) => {
   await logIn(page);
   await page.goto('./#/settings/tabs');
-  await page.getByRole('tab', { name: 'System Settings' }).click();
-  await page.getByRole('tab', { name: 'Main' }).click();
-  await expect(page).toHaveURL(/#\/settings\/general$/);
-  const name = page.getByLabel('Name of this install');
+  // The name is in Customize, Appearance, Top Bar, as in PHP.
+  await page.getByRole('tab', { name: 'Customize' }).click();
+  await expect(page).toHaveURL(/#\/settings\/appearance$/);
+  await page.getByRole('tab', { name: 'Top Bar' }).click();
+  const name = page.getByLabel('Organizr Title');
   await expect(name).toHaveValue('Organizr V2');
   const save = page.getByRole('button', { name: 'Save' });
   await expect(save).toBeDisabled();
-
   await name.fill('Media at home');
-  await page.getByLabel('Registration password').fill(NEW_REGISTRATION_PASSWORD);
   await save.click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');
   // The bar and the title of the page follow at once.
   await expect(page).toHaveTitle('Media at home');
   await expect(page.getByRole('banner')).toContainText('Media at home');
 
+  // The registration password is in System Settings, Main, Login.
+  await page.getByRole('tab', { name: 'System Settings' }).click();
+  await expect(page).toHaveURL(/#\/settings\/general$/);
+  await page.getByRole('tab', { name: 'Login', exact: true }).click();
+  await page.getByLabel('Registration Password', { exact: true }).fill(NEW_REGISTRATION_PASSWORD);
+  await saveSettings(page);
+  await expect(page.getByLabel('Registration Password', { exact: true })).toHaveValue('');
+
   // The server stored both. It shows the name, and for the password only that it has one.
   await page.reload();
-  await expect(page.getByLabel('Name of this install')).toHaveValue('Media at home');
-  await expect(page.getByLabel('Registration password')).toHaveValue('');
-  await expect(page.getByLabel('Registration password')).toHaveAttribute(
+  await page.getByRole('tab', { name: 'Login', exact: true }).click();
+  await expect(page.getByLabel('Registration Password', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Registration Password', { exact: true })).toHaveAttribute(
     'placeholder',
     'A value is stored',
   );
+  await page.goto('./#/settings/appearance');
+  await page.getByRole('tab', { name: 'Top Bar' }).click();
+  await expect(page.getByLabel('Organizr Title')).toHaveValue('Media at home');
 });
 
 test('the Admin reads the log of the server on the settings page', async ({ page }) => {
   await logIn(page);
   await page.goto('./#/settings/tabs');
   await page.getByRole('tab', { name: 'System Settings' }).click();
-  await page.getByRole('tab', { name: 'Logs' }).click();
+  await page
+    .getByRole('tablist', { name: 'System Settings' })
+    .getByRole('tab', { name: 'Logs' })
+    .click();
   await expect(page).toHaveURL(/#\/settings\/logs$/);
 
   // The server writes its start to the log file of the day.
   const log = page.getByRole('table', { name: 'Log' });
   await expect(log).toContainText('Organizr is listening');
-  await expect(page.getByLabel('Lowest level in the log file')).toHaveValue('INFO');
 
   await page.getByRole('combobox', { name: 'Level', exact: true }).selectOption('WARNING');
   await expect(log).not.toContainText('Organizr is listening');
@@ -534,12 +560,13 @@ test('the Admin installs a theme, picks it, and sets a colour and custom CSS', a
   await expect(page.getByRole('status')).toHaveText('The theme Nord is installed.');
 
   await page.getByRole('tab', { name: 'Appearance' }).click();
+  await page.getByRole('tab', { name: 'Colors & Themes' }).click();
   const theme = page.getByLabel('Theme', { exact: true });
   await theme.selectOption('Nord');
-  await expect(page.getByRole('img', { name: 'Preview of the theme Nord' })).toBeVisible();
-  await page.getByLabel('Colour of the bar at the top', { exact: true }).fill('#112233');
+  await page.getByLabel('Nav Bar Color', { exact: true }).fill('#112233');
+  await page.getByRole('tab', { name: 'Custom CSS' }).click();
   await page
-    .getByLabel('Custom CSS')
+    .getByLabel('Custom CSS', { exact: true })
     .fill('.org-header { border-bottom: 3px solid rgb(1, 2, 3); }');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');
@@ -555,9 +582,11 @@ test('the Admin installs a theme, picks it, and sets a colour and custom CSS', a
   await expect(root).toHaveCSS('background-color', 'rgb(46, 52, 64)');
 
   // Back to the look of a new install, for the tests after this one.
+  await page.getByRole('tab', { name: 'Colors & Themes' }).click();
   await page.getByLabel('Theme', { exact: true }).selectOption('Organizr');
-  await page.getByLabel('Colour of the bar at the top', { exact: true }).fill('');
-  await page.getByLabel('Custom CSS').fill('');
+  await page.getByLabel('Nav Bar Color', { exact: true }).fill('');
+  await page.getByRole('tab', { name: 'Custom CSS' }).click();
+  await page.getByLabel('Custom CSS', { exact: true }).fill('');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');
   await expect(root).toHaveAttribute('data-theme', 'organizr');
@@ -570,9 +599,10 @@ test('the Admin adds a custom script, which every page runs while the switch is 
 }) => {
   await logIn(page);
   await page.goto('./#/settings/appearance');
+  await page.getByRole('tab', { name: 'Custom Javascript' }).click();
   await expect(page.getByText(/The scripts run now/)).toBeVisible();
   await page
-    .getByLabel('Custom JavaScript')
+    .getByLabel('Custom Javascript', { exact: true })
     .fill("document.documentElement.setAttribute('data-custom-script', 'ran');");
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');
@@ -592,7 +622,8 @@ test('the Admin adds a custom script, which every page runs while the switch is 
   // Without a script there is no file, and the page loads none.
   await logIn(page);
   await page.goto('./#/settings/appearance');
-  await page.getByLabel('Custom JavaScript').fill('');
+  await page.getByRole('tab', { name: 'Custom Javascript' }).click();
+  await page.getByLabel('Custom Javascript', { exact: true }).fill('');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');
   await page.reload();
@@ -1049,16 +1080,29 @@ test('the Admin switches the button "Log in with Plex" on, and the login page sh
   await logIn(page);
   await page.goto('./#/settings/tabs');
   await page.getByRole('tab', { name: 'System Settings' }).click();
-  await page.getByRole('tab', { name: 'Login' }).click();
+  await page
+    .getByRole('tablist', { name: 'System Settings' })
+    .getByRole('tab', { name: 'SSO' })
+    .click();
   await expect(page).toHaveURL(/#\/settings\/login$/);
 
   // No Plex token is stored, so the server has no account to list the servers of.
   await page.getByRole('button', { name: 'List the Plex servers' }).click();
   await expect(page.getByRole('alert')).toHaveText('Plex Token cannot be empty');
 
-  await page.getByLabel('Show the button "Log in with Plex"').check();
-  await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  // PHP shows "Enable Plex oAuth" under Main, Authentication, for the back end Plex.
+  await page
+    .getByRole('tablist', { name: 'System Settings' })
+    .getByRole('tab', { name: 'Main' })
+    .click();
+  await page.getByRole('tab', { name: 'Authentication' }).click();
+  await page.getByLabel('Authentication Type').selectOption('both');
+  await page.getByLabel('Authentication Backend').selectOption('plex');
+  await page.getByLabel('Enable Plex oAuth').check();
+  await saveSettings(page);
+  // Organizr checks the passwords alone again; the button stays on.
+  await page.getByLabel('Authentication Type').selectOption('internal');
+  await saveSettings(page);
 
   await context.clearCookies();
   await page.goto('./#/login');

@@ -7,13 +7,11 @@
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
   import {
-    BACKUPS,
     BOOKMARK_PLUGIN,
     CHAT_PLUGIN,
     HEALTH_CHECKS_PLUGIN,
     HOMEPAGE,
     INVITES_PLUGIN,
-    LOGS,
     SPEED_TEST_PLUGIN,
   } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
@@ -31,6 +29,7 @@
   import MailSettings from './MailSettings.svelte';
   import TabsEditor from './TabsEditor.svelte';
   import ThemeMarketplace from './ThemeMarketplace.svelte';
+  import UpdateCheck from './UpdateCheck.svelte';
   import UsersEditor from './UsersEditor.svelte';
 
   let { section }: { section: SettingsSection } = $props();
@@ -93,8 +92,9 @@
       icon: 'ti-settings',
       pages: [
         { section: 'general', page: 'generalSettings', label: 'Main' },
-        { section: 'login', page: 'loginSettings', label: 'Login' },
+        { section: 'login', page: 'loginSettings', label: 'SSO' },
         { section: 'logs', page: 'logSettings', label: 'Logs' },
+        { section: 'updates', page: 'updateSettings', label: 'Updates' },
         { section: 'backups', page: 'backupSettings', label: 'Backup' },
       ],
     },
@@ -191,18 +191,16 @@
       <ThemeMarketplace ondone={(message) => (done = message)} />
     {:else if section === 'mail'}
       <MailSettings ondone={(message) => (done = message)} />
+    {:else if section === 'updates'}
+      <UpdateCheck ondone={(message) => (done = message)} />
     {:else if section === 'login'}
       <LoginSettings ondone={(message) => (done = message)} />
     {:else if section === 'homepage'}
       <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
     {:else if section === 'backups'}
-      <SettingsForm groups={BACKUPS} ondone={(message) => (done = message)}>
-        <BackupsEditor ondone={(message) => (done = message)} />
-      </SettingsForm>
+      <BackupsEditor ondone={(message) => (done = message)} />
     {:else if section === 'logs'}
-      <SettingsForm groups={LOGS} ondone={(message) => (done = message)}>
-        <LogViewer ondone={(message) => (done = message)} />
-      </SettingsForm>
+      <LogViewer ondone={(message) => (done = message)} />
     {:else if section === 'plugins'}
       <SettingsForm
         groups={[

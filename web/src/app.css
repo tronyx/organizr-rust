@@ -1053,6 +1053,198 @@
     opacity: 0.2;
   }
 
+  /* A form of the settings of PHP: the groups as tabs down the left, the fields in two
+     columns with their labels above them. */
+  .org-form-body {
+    display: flex;
+    min-height: 300px;
+  }
+
+  .org-vtabs {
+    display: flex;
+    flex: 0 0 150px;
+    flex-direction: column;
+    border-right: 1px solid rgb(120 130 140 / 0.13);
+  }
+
+  .org-vtabs button {
+    margin: 0 -1px 10px 0;
+    padding: 10px 15px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .org-vtabs button:hover,
+  .org-vtabs button:focus-visible {
+    color: var(--color-base-content);
+  }
+
+  .org-vtabs button.org-current {
+    border-right: 2px solid var(--color-info);
+    background: #111111;
+  }
+
+  .org-form-fields {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 20px 20px;
+  }
+
+  .org-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 30px;
+  }
+
+  .org-form-group {
+    margin-bottom: 25px;
+  }
+
+  .org-form-wide {
+    grid-column: 1 / -1;
+  }
+
+  .org-form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+
+  .org-form-help {
+    margin-left: 4px;
+    color: var(--color-info);
+    font-size: 11px;
+    vertical-align: super;
+    cursor: help;
+  }
+
+  .org-form-control {
+    width: 100%;
+    height: 38px;
+    padding: 7px 12px;
+    border: 1px solid rgb(120 130 140 / 0.2);
+    background: var(--color-base-200);
+    color: #ffffff;
+    font-weight: 300;
+  }
+
+  .org-form-control:focus {
+    border-color: var(--color-info);
+    outline: none;
+  }
+
+  select.org-form-control {
+    border-radius: 4px;
+  }
+
+  .org-form-multiple,
+  .org-form-code {
+    height: auto;
+    min-height: 38px;
+  }
+
+  .org-input-group {
+    display: flex;
+  }
+
+  .org-input-addon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    background: #4b5563;
+    color: #ffffff;
+    cursor: pointer;
+  }
+
+  .org-colour-swatch {
+    height: 38px;
+    padding: 4px;
+    border: 0;
+  }
+
+  .org-input-addon-purple {
+    background: #7460ee;
+  }
+
+  .org-form-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 18px;
+    border-radius: 9999px;
+    background: var(--color-info);
+    color: var(--color-info-content);
+    font-weight: 400;
+    cursor: pointer;
+  }
+
+  .org-form-button:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  /* The switch of PHP (switchery): a green pill with a round knob. */
+  .org-switch {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    border: 1px solid rgb(120 130 140 / 0.3);
+    border-radius: 9999px;
+    background: var(--color-base-200);
+    cursor: pointer;
+    appearance: none;
+    transition: background 0.2s;
+  }
+
+  .org-switch::after {
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
+    content: '';
+    transition: left 0.2s;
+  }
+
+  .org-switch:checked {
+    border-color: var(--color-success);
+    background: var(--color-success);
+  }
+
+  .org-switch:checked::after {
+    left: 25px;
+  }
+
+  .org-switch:focus-visible {
+    outline: 2px solid var(--color-info);
+    outline-offset: 2px;
+  }
+
+  .org-notice {
+    padding: 15px 20px;
+    border-left: 3px solid var(--color-info);
+    background: var(--color-base-300);
+  }
+
+  .org-notice h3 {
+    margin-bottom: 6px;
+    color: #ffffff;
+    font-weight: 500;
+  }
+
+  .org-notice-warning {
+    border-left-color: var(--color-warning);
+  }
+
+  .org-notice-danger {
+    border-left-color: var(--color-error);
+  }
+
   .org-theme-preview {
     display: flex;
     flex-direction: column;

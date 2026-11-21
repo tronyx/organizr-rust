@@ -1,9 +1,8 @@
 <script lang="ts">
-  // The settings of the login through Plex and of single sign-on, and a list of the
-  // Plex servers of the stored token.
+  // System Settings, SSO: the form of single sign-on of PHP Organizr, with a list of the
+  // Plex servers of the stored token in its group Plex.
   import { api, failureText } from '../../lib/api';
-  import { LOGIN } from '../../lib/settingsForm';
-  import SettingsForm from './SettingsForm.svelte';
+  import PhpSettingsForm from './PhpSettingsForm.svelte';
 
   /** A Plex server, as `GET plex/servers` describes it. */
   interface PlexServer {
@@ -38,8 +37,8 @@
   }
 </script>
 
-<SettingsForm groups={LOGIN} {ondone}>
-  <section class="mt-8 max-w-2xl" aria-labelledby="plex-servers-title">
+{#snippet plexServers()}
+  <section class="mb-6" aria-labelledby="plex-servers-title">
     <h2 id="plex-servers-title" class="text-base font-semibold">Find the id of your Plex server</h2>
     <p class="my-2 text-sm">
       Save the Plex token first. The list shows the servers of that Plex account. Copy the id of
@@ -82,4 +81,11 @@
       {/if}
     {/if}
   </section>
-</SettingsForm>
+{/snippet}
+
+<PhpSettingsForm
+  path="settings/sso"
+  title="Single Sign-On"
+  extra={{ Plex: plexServers }}
+  {ondone}
+/>

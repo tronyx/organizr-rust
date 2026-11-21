@@ -1010,9 +1010,9 @@
     {
      "type": "switch",
      "label": "Enable LDAP TLS",
-     "name": "ldapSSL",
+     "name": "ldapTLS",
      "value": {
-      "$config": "ldapSSL"
+      "$config": "ldapTLS"
      },
      "class": "ldapAuth switchAuth",
      "help": "This will enable the use of TLS for LDAP connections"

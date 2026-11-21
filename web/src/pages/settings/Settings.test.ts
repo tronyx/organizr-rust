@@ -674,130 +674,278 @@ describe('Settings, users', () => {
   });
 });
 
-describe('Settings, general', () => {
-  const CONFIG = {
-    title: 'Home',
-    description: 'My server',
-    logo: 'plugins/images/organizr/organizr-logo-h.png',
-    useLogo: false,
-    unsortedTabs: 'top',
-    rememberMeDays: '7',
-    loginAttempts: '5',
-    loginLockout: '60000',
-    localIPList: '',
-    hideRegistration: false,
-    registrationPassword: '***Secure***',
-    organizrAPI: 'abcdefghij0123456789',
-    plexToken: '',
+describe('Settings, Main: the form of PHP', () => {
+  /** A short form in the shape of `GET settings/main`, with the groups of PHP. */
+  const MAIN = {
+    Socks: [{ type: 'switch', label: 'Enable', name: 'socksEnabled', value: false }],
+    API: [
+      {
+        type: 'password-alt-copy',
+        label: 'Organizr API',
+        name: 'organizrAPI',
+        value: 'abcdefghij0123456789',
+      },
+      { type: 'button', label: 'Generate New API Key', class: 'newAPIKey', text: 'Generate' },
+    ],
+    Authentication: [
+      {
+        type: 'select',
+        label: 'Authentication Type',
+        name: 'authType',
+        value: 'internal',
+        options: [
+          { name: 'Organizr DB', value: 'internal' },
+          { name: 'Organizr DB + Backend', value: 'both' },
+        ],
+      },
+      {
+        type: 'select',
+        label: 'Authentication Backend',
+        name: 'authBackend',
+        class: 'backendAuth switchAuth',
+        value: '',
+        options: [
+          { name: 'Ldap', value: 'ldap' },
+          { name: 'Plex', value: 'plex' },
+        ],
+      },
+      {
+        type: 'input',
+        label: 'Host Address',
+        name: 'authBackendHost',
+        class: 'ldapAuth ftpAuth switchAuth',
+        value: '',
+      },
+      {
+        type: 'input',
+        label: 'Plex Admin Username or Email',
+        name: 'plexAdmin',
+        class: 'plexAuth switchAuth',
+        value: '',
+      },
+      {
+        type: 'button',
+        label: 'Test Connection',
+        name: 'ldap',
+        class: 'ldapAuth switchAuth',
+        text: 'Test Connection',
+      },
+      { type: 'button', label: 'Test Login', class: 'ldapAuth switchAuth', text: 'Test Login' },
+      {
+        type: 'switch',
+        label: 'Ignore External 2FA on Local Subnet',
+        name: 'ignoreTFALocal',
+        value: false,
+      },
+    ],
+    Login: [
+      {
+        type: 'password',
+        label: 'Registration Password',
+        name: 'registrationPassword',
+        value: '***Secure***',
+      },
+      { type: 'number', label: 'Max Login Attempts', name: 'loginAttempts', value: '5' },
+    ],
   };
 
-  /** Shows the general settings on a stand-in for the API, and waits for the form. */
-  async function showGeneral(answers: Answers = {}) {
+  async function showMain(answers: Answers = {}) {
     const sent = stubApi({
       'GET tabs': { data: DATA },
       'GET users': { data: USERS },
       'GET launch': LAUNCH,
-      'GET config': { data: CONFIG },
+      'GET settings/main': { data: MAIN },
       'GET status': { data: { action: 'launch', database: 'postgresql' } },
+      'GET database/journal': {
+        status: 409,
+        message: 'The journal mode applies only to a database on SQLite',
+      },
+      'GET certificate/custom': { data: { loaded: false, certificates: 0 } },
       ...answers,
     });
     render(Settings, { section: 'general' });
-    await screen.findByLabelText('Name of this install');
+    await screen.findByRole('tab', { name: 'API' });
     return sent;
   }
 
-  it('shows the stored values, and a secret only as stored or not stored', async () => {
-    await showGeneral();
+  function group(name: string) {
+    return fireEvent.click(screen.getByRole('tab', { name }));
+  }
 
-    expect(screen.getByLabelText('Name of this install')).toHaveValue('Home');
-    expect(screen.getByLabelText(/Days that a login lasts/)).toHaveValue(7);
-    expect(screen.getByLabelText(/Show the picture in the menu/)).not.toBeChecked();
-    expect(screen.getByLabelText('Tabs without a heading stand')).toHaveValue('top');
-    const registration = screen.getByLabelText('Registration password');
-    expect(registration).toHaveValue('');
-    expect(registration).toHaveAttribute('placeholder', 'A value is stored');
-    expect(registration).toHaveAttribute('type', 'password');
-    // The server shows the API key to an Admin.
-    expect(screen.getByLabelText('API key')).toHaveAttribute('placeholder', 'abcdefghij0123456789');
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  it('shows the groups of PHP in the order of their names, with the stored values', async () => {
+    await showMain();
+
+    const tabs = within(screen.getByRole('tablist', { name: 'Organizr Settings' }));
+    expect(tabs.getAllByRole('tab').map((tab) => tab.textContent?.trim())).toEqual([
+      'API',
+      'Authentication',
+      'Certificate',
+      'Database',
+      'Login',
+      'Socks',
+    ]);
+    await group('Login');
+    expect(screen.getByLabelText('Max Login Attempts')).toHaveValue(5);
+    // A stored secret is never sent to the page: the field says that it has a value.
+    expect(screen.getByLabelText('Registration Password')).toHaveValue('');
+    expect(screen.getByLabelText('Registration Password')).toHaveAttribute(
+      'placeholder',
+      'A value is stored',
+    );
   });
 
-  it('sends only the settings that the form changed', async () => {
-    const sent = await showGeneral({ 'PUT config': { message: 'Config items updated' } });
+  it('sends only the settings that changed, with one request', async () => {
+    const sent = await showMain({ 'PUT config': { message: 'Config items updated' } });
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toBeDisabled();
 
-    await fireEvent.input(screen.getByLabelText('Name of this install'), {
-      target: { value: 'Media' },
-    });
-    await fireEvent.input(screen.getByLabelText(/Days that a login lasts/), {
-      target: { value: '30' },
-    });
-    await fireEvent.click(screen.getByLabelText('Hide the link to make an account'));
-    await fireEvent.change(screen.getByLabelText('Tabs without a heading stand'), {
-      target: { value: 'bottom' },
-    });
+    await group('Login');
+    await fireEvent.input(screen.getByLabelText('Max Login Attempts'), { target: { value: '9' } });
+    await fireEvent.click(save);
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([['PUT config', { loginAttempts: '9' }]]);
+  });
+
+  it('makes a new API key of 20 characters', async () => {
+    const sent = await showMain({ 'PUT config': {} });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
     await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await statusSays('The settings are saved.');
-    expect(changes(sent)).toEqual([
-      [
-        'PUT config',
-        { title: 'Media', unsortedTabs: 'bottom', rememberMeDays: '30', hideRegistration: true },
-      ],
-    ]);
-    // The form and the menu load their data again.
-    expect(
-      sent
-        .slice(-2)
-        .map((request) => request.path)
-        .sort(),
-    ).toEqual(['config', 'launch']);
-  });
-
-  it('sends a new registration password, and a new API key of 20 characters', async () => {
-    const sent = await showGeneral({ 'PUT config': {} });
-
-    await fireEvent.input(screen.getByLabelText('Registration password'), {
-      target: { value: 'let them in' },
-    });
-    await fireEvent.click(screen.getByRole('button', { name: 'Make a new key' }));
-    const key = (screen.getByLabelText('API key') as HTMLInputElement).value;
-    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await statusSays('The settings are saved.');
-    expect(key).toMatch(/^[A-Za-z0-9]{20}$/);
-    expect(key).not.toBe(CONFIG.organizrAPI);
-    expect(changes(sent)).toEqual([
-      ['PUT config', { registrationPassword: 'let them in', organizrAPI: key }],
-    ]);
+    const [[, body]] = changes(sent) as [[string, { organizrAPI: string }]];
+    expect(body.organizrAPI).toMatch(/^[A-Za-z0-9]{20}$/);
   });
 
   it('shows why the server refused, and keeps what was entered', async () => {
-    await showGeneral({
-      'PUT config': { status: 422, message: 'Config item: rememberMeDays is not valid' },
-    });
+    await showMain({ 'PUT config': { status: 422, message: 'loginAttempts must be a number' } });
 
-    await fireEvent.input(screen.getByLabelText(/Days that a login lasts/), {
-      target: { value: '99999' },
-    });
+    await group('Login');
+    await fireEvent.input(screen.getByLabelText('Max Login Attempts'), { target: { value: '7' } });
     await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Config item: rememberMeDays is not valid',
-    );
-    expect(screen.getByLabelText(/Days that a login lasts/)).toHaveValue(99999);
-    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    expect(await screen.findByRole('alert')).toHaveTextContent('loginAttempts must be a number');
+    expect(screen.getByLabelText('Max Login Attempts')).toHaveValue(7);
   });
 
-  it('says so when the settings cannot be loaded', async () => {
+  it('says so when the form cannot be loaded', async () => {
     stubApi({
       'GET tabs': { data: DATA },
       'GET users': { data: USERS },
-      'GET config': { status: 401, message: 'Not Authorized' },
-      'GET status': { data: { action: 'launch', database: 'postgresql' } },
+      'GET launch': LAUNCH,
+      'GET settings/main': { status: 401, message: 'Not Authorized' },
     });
     render(Settings, { section: 'general' });
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Not Authorized');
+  });
+
+  it('shows the fields of the chosen back end only, as PHP does', async () => {
+    await showMain();
+    await group('Authentication');
+
+    // Organizr checks the passwords alone: no back end and none of its fields.
+    expect(screen.queryByLabelText('Authentication Backend')).toBeNull();
+    expect(screen.queryByLabelText('Host Address')).toBeNull();
+
+    await fireEvent.change(screen.getByLabelText('Authentication Type'), {
+      target: { value: 'both' },
+    });
+    await fireEvent.change(screen.getByLabelText('Authentication Backend'), {
+      target: { value: 'ldap' },
+    });
+    expect(screen.getByLabelText('Host Address')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Plex Admin Username or Email')).toBeNull();
+
+    await fireEvent.change(screen.getByLabelText('Authentication Backend'), {
+      target: { value: 'plex' },
+    });
+    expect(screen.queryByLabelText('Host Address')).toBeNull();
+    expect(screen.getByLabelText('Plex Admin Username or Email')).toBeInTheDocument();
+  });
+
+  it('tests the LDAP connection, and a login with a typed name and password', async () => {
+    const ldap = {
+      ...MAIN,
+      Authentication: MAIN.Authentication.map((field) =>
+        field.name === 'authType'
+          ? { ...field, value: 'both' }
+          : field.name === 'authBackend'
+            ? { ...field, value: 'ldap' }
+            : field,
+      ),
+    };
+    const sent = await showMain({
+      'GET settings/main': { data: ldap },
+      'POST test/ldap': { message: 'LDAP connection successful' },
+      'POST test/ldap/login': { status: 401, message: 'Invalid credentials' },
+    });
+    await group('Authentication');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Test Connection' }));
+    expect(await screen.findByText('LDAP connection successful')).toBeInTheDocument();
+
+    await fireEvent.input(screen.getByLabelText('User name for the test'), {
+      target: { value: 'robin' },
+    });
+    await fireEvent.input(screen.getByLabelText('Password for the test'), {
+      target: { value: 'secret' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Test Login' }));
+    expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
+    expect(changes(sent)).toEqual([
+      ['POST test/ldap', undefined],
+      ['POST test/ldap/login', { username: 'robin', password: 'secret' }],
+    ]);
+  });
+});
+
+describe('Settings, SSO: the form of PHP', () => {
+  it('lists the Plex servers of the token in the group Plex, or says why not', async () => {
+    let known = false;
+    stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET launch': LAUNCH,
+      'GET settings/sso': {
+        data: { Plex: [{ type: 'switch', label: 'Enable', name: 'ssoPlex', value: false }] },
+      },
+      'GET plex/servers': () =>
+        known
+          ? {
+              data: [
+                {
+                  name: 'Media',
+                  address: '203.0.113.5',
+                  machineIdentifier: 'made-up-id',
+                  owned: 1,
+                },
+                {
+                  name: 'Shared',
+                  address: '198.51.100.9',
+                  machineIdentifier: 'other-id',
+                  owned: 0,
+                },
+              ],
+            }
+          : { status: 422, message: 'Plex Token cannot be empty' },
+    });
+    render(Settings, { section: 'login' });
+    const button = await screen.findByRole('button', { name: 'List the Plex servers' });
+    expect(screen.getByRole('heading', { name: 'Single Sign-On' })).toBeInTheDocument();
+
+    await fireEvent.click(button);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Plex Token cannot be empty');
+
+    known = true;
+    await fireEvent.click(button);
+    const row = (await screen.findByRole('rowheader', { name: 'Media' })).closest('tr');
+    expect(row).toHaveTextContent('made-up-id');
+    expect(row).toHaveTextContent('This account');
+    expect(screen.getByRole('rowheader', { name: 'Shared' }).closest('tr')).toHaveTextContent(
+      'Another account',
+    );
   });
 });
 
@@ -902,253 +1050,5 @@ describe('Settings, e-mail', () => {
     await statusSays('The test e-mail was sent to the address of your account.');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(sent.filter((request) => request.path.endsWith('email/test'))).toHaveLength(2);
-  });
-});
-
-describe('Settings, login', () => {
-  const CONFIG = {
-    authType: 'internal',
-    authBackend: '',
-    plexToken: '',
-    plexID: '',
-    plexAdmin: '',
-    plexStrictFriends: true,
-    plexoAuth: false,
-    ignoreTFAIfPlexOAuth: false,
-    ignoreTFALocal: false,
-    ssoPlex: false,
-    ssoOmbi: false,
-    ombiURL: '',
-    ombiFallbackUser: '',
-    ombiFallbackPassword: '',
-    ssoOverseerr: false,
-    overseerrURL: '',
-    overseerrFallbackUser: '',
-    overseerrFallbackPassword: '',
-    ssoTautulli: false,
-    tautulliURL: '',
-    ssoTautulliAuth: '4',
-    authBackendHost: '',
-    authBaseDN: '',
-    authBackendHostPrefix: '',
-    authBackendHostSuffix: '',
-    ldapBindUsername: '',
-    ldapBindPassword: '',
-    ldapType: '1',
-    ldapSSL: false,
-    ldapTLS: false,
-    embyURL: '',
-    embyToken: '',
-    jellyfinURL: '',
-    jellyfinToken: '',
-  };
-
-  async function showLogin(answers: Answers = {}, config: Record<string, unknown> = CONFIG) {
-    const sent = stubApi({
-      'GET tabs': { data: DATA },
-      'GET users': { data: USERS },
-      'GET launch': LAUNCH,
-      'GET config': { data: config },
-      ...answers,
-    });
-    render(Settings, { section: 'login' });
-    await screen.findByLabelText('A password is checked by');
-    return sent;
-  }
-
-  it('saves who checks a password, the Plex token and a single sign-on', async () => {
-    const sent = await showLogin({ 'PUT config': {} });
-    expect(screen.getByRole('tab', { name: 'Login' })).toHaveAttribute('aria-selected', 'true');
-
-    await fireEvent.change(screen.getByLabelText('A password is checked by'), {
-      target: { value: 'both' },
-    });
-    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'plex' } });
-    await fireEvent.input(screen.getByLabelText('Plex token of the owner of the server'), {
-      target: { value: 'made-up-token' },
-    });
-    await fireEvent.click(screen.getByLabelText('Show the button "Log in with Plex"'));
-    await fireEvent.click(screen.getByLabelText('Log the user in to Tautulli'));
-    await fireEvent.input(screen.getByLabelText('Address of Tautulli'), {
-      target: { value: 'https://tautulli.example.com' },
-    });
-    await fireEvent.change(screen.getByLabelText('For users of the level'), {
-      target: { value: '1' },
-    });
-    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await statusSays('The settings are saved.');
-    expect(changes(sent)).toEqual([
-      [
-        'PUT config',
-        {
-          authType: 'both',
-          authBackend: 'plex',
-          plexToken: 'made-up-token',
-          plexoAuth: true,
-          ssoTautulli: true,
-          tautulliURL: 'https://tautulli.example.com',
-          ssoTautulliAuth: '1',
-        },
-      ],
-    ]);
-  });
-
-  it('shows the settings of the chosen back end only, and none when Organizr checks alone', async () => {
-    await showLogin();
-    const shown = (label: string) => screen.queryByLabelText(label) !== null;
-    expect(shown('Address of the server')).toBe(false);
-    expect(shown('Base DN')).toBe(false);
-
-    // The back end alone does not show its settings while Organizr checks alone.
-    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'ldap' } });
-    expect(shown('Base DN')).toBe(false);
-
-    await fireEvent.change(screen.getByLabelText('A password is checked by'), {
-      target: { value: 'both' },
-    });
-    expect(shown('Address of the server')).toBe(true);
-    expect(shown('Base DN')).toBe(true);
-    expect(shown('Bind password')).toBe(true);
-    expect(shown('Address of Emby')).toBe(false);
-
-    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'ftp' } });
-    expect(shown('Address of the server')).toBe(true);
-    expect(shown('Base DN')).toBe(false);
-
-    for (const emby of ['emby_local', 'emby_connect', 'emby_all']) {
-      await fireEvent.change(screen.getByLabelText('Service'), { target: { value: emby } });
-      expect(shown('Address of Emby')).toBe(true);
-      expect(shown('API key of Emby')).toBe(true);
-      expect(shown('Address of Jellyfin')).toBe(false);
-      expect(shown('Address of the server')).toBe(false);
-    }
-
-    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'jellyfin' } });
-    expect(shown('Address of Jellyfin')).toBe(true);
-    expect(shown('Address of Emby')).toBe(false);
-  });
-
-  it('saves the LDAP settings and shows the name of an account', async () => {
-    const sent = await showLogin({ 'PUT config': {} });
-    await fireEvent.change(screen.getByLabelText('A password is checked by'), {
-      target: { value: 'external' },
-    });
-    await fireEvent.change(screen.getByLabelText('Service'), { target: { value: 'ldap' } });
-    const type = (label: string, value: string) =>
-      fireEvent.input(screen.getByLabelText(label), { target: { value } });
-    await type('Address of the server', 'ldap://ldap.example.com');
-    await type('Base DN', 'dc=example,dc=com');
-    await type('Account prefix', 'uid=');
-    await type('Account suffix', ',ou=people,dc=example,dc=com');
-    await type('Bind user name', 'cn=organizr,dc=example,dc=com');
-    await type('Bind password', 'made-up-bind-password');
-    await fireEvent.change(screen.getByLabelText('Type of the LDAP server'), {
-      target: { value: '2' },
-    });
-    await fireEvent.click(screen.getByLabelText('Turn the connection to TLS (StartTLS)'));
-    expect(screen.getByText('uid=TestAcct,ou=people,dc=example,dc=com')).toBeInTheDocument();
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await statusSays('The settings are saved.');
-    expect(changes(sent)).toEqual([
-      [
-        'PUT config',
-        {
-          authType: 'external',
-          authBackend: 'ldap',
-          authBackendHost: 'ldap://ldap.example.com',
-          authBaseDN: 'dc=example,dc=com',
-          authBackendHostPrefix: 'uid=',
-          authBackendHostSuffix: ',ou=people,dc=example,dc=com',
-          ldapBindUsername: 'cn=organizr,dc=example,dc=com',
-          ldapBindPassword: 'made-up-bind-password',
-          ldapType: '2',
-          ldapTLS: true,
-        },
-      ],
-    ]);
-  });
-
-  it('tests the LDAP connection, and a login with a name and a password', async () => {
-    const sent = await showLogin(
-      {
-        'POST test/ldap': { message: 'LDAP connection successful' },
-        'POST test/ldap/login': (request) =>
-          (request.body as { password?: string }).password === 'right'
-            ? { message: 'LDAP connection successful' }
-            : { status: 401, message: 'Username/Password Failed to authenticate' },
-      },
-      { ...CONFIG, authType: 'both', authBackend: 'ldap', authBaseDN: 'dc=example,dc=com' },
-    );
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Test the connection of LDAP' }));
-    expect(await screen.findByText('LDAP connection successful')).toBeInTheDocument();
-
-    await fireEvent.input(screen.getByLabelText('User name for the test'), {
-      target: { value: 'robin' },
-    });
-    await fireEvent.input(screen.getByLabelText('Password for the test'), {
-      target: { value: 'wrong' },
-    });
-    await fireEvent.click(screen.getByRole('button', { name: 'Test a login' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Username/Password Failed to authenticate',
-    );
-
-    await fireEvent.input(screen.getByLabelText('Password for the test'), {
-      target: { value: 'right' },
-    });
-    await fireEvent.click(screen.getByRole('button', { name: 'Test a login' }));
-    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
-
-    const tests = sent.filter((request) => request.path.startsWith('test/'));
-    expect(tests.map((request) => [request.path, request.body])).toEqual([
-      ['test/ldap', undefined],
-      ['test/ldap/login', { username: 'robin', password: 'wrong' }],
-      ['test/ldap/login', { username: 'robin', password: 'right' }],
-    ]);
-    // The typed values are no settings, so nothing waits to be saved.
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-  });
-
-  it('lists the Plex servers of the token with their ids, or says why not', async () => {
-    let known = false;
-    await showLogin({
-      'GET plex/servers': () =>
-        known
-          ? {
-              data: [
-                {
-                  name: 'Media',
-                  address: '203.0.113.5',
-                  machineIdentifier: 'made-up-id',
-                  owned: 1,
-                },
-                {
-                  name: 'Shared',
-                  address: '198.51.100.9',
-                  machineIdentifier: 'other-id',
-                  owned: 0,
-                },
-              ],
-            }
-          : { status: 422, message: 'Plex Token cannot be empty' },
-    });
-    const button = screen.getByRole('button', { name: 'List the Plex servers' });
-
-    await fireEvent.click(button);
-    expect(await screen.findByRole('alert')).toHaveTextContent('Plex Token cannot be empty');
-
-    known = true;
-    await fireEvent.click(button);
-    const row = (await screen.findByRole('rowheader', { name: 'Media' })).closest('tr');
-    expect(row).toHaveTextContent('made-up-id');
-    expect(row).toHaveTextContent('This account');
-    expect(screen.getByRole('rowheader', { name: 'Shared' }).closest('tr')).toHaveTextContent(
-      'Another account',
-    );
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

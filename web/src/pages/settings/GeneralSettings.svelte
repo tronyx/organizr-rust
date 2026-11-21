@@ -1,13 +1,12 @@
 <script lang="ts">
-  // The general settings of the install, the versions, the journal mode of the database
-  // and the custom certificate.
-  import { GENERAL } from '../../lib/settingsForm';
+  // System Settings, Main: the form of PHP Organizr. PHP fills the groups Certificate and
+  // Database with HTML of its own; here they hold the upload of the custom certificate
+  // and the journal mode of the database.
   import { session } from '../../lib/session.svelte';
   import { ADMIN } from '../../lib/types';
   import CustomCertificate from './CustomCertificate.svelte';
   import DatabaseJournal from './DatabaseJournal.svelte';
-  import SettingsForm from './SettingsForm.svelte';
-  import UpdateCheck from './UpdateCheck.svelte';
+  import PhpSettingsForm from './PhpSettingsForm.svelte';
 
   let {
     ondone,
@@ -17,10 +16,22 @@
   } = $props();
 </script>
 
-<SettingsForm groups={GENERAL} {ondone}>
-  <UpdateCheck {ondone} />
-  <DatabaseJournal {ondone} />
+{#snippet certificate()}
   {#if session.launch?.user?.groupID === ADMIN}
     <CustomCertificate {ondone} />
+  {:else}
+    <p>Only the Admin uploads a custom certificate.</p>
   {/if}
-</SettingsForm>
+{/snippet}
+
+{#snippet database()}
+  <DatabaseJournal {ondone} />
+{/snippet}
+
+<PhpSettingsForm
+  path="settings/main"
+  title="Organizr Settings"
+  sorted
+  extra={{ Certificate: certificate, Database: database }}
+  {ondone}
+/>

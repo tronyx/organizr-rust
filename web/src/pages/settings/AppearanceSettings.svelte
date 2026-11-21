@@ -1,16 +1,11 @@
 <script lang="ts">
-  // Customize > Appearance: the theme, the colours that stand on top of it, and the style
-  // sheets of the Admin. The themes are those that the install has: the built-in ones
-  // and the installed ones of the marketplace that this interface has rebuilt.
-  import { onMount } from 'svelte';
-
-  import { api, failureText } from '../../lib/api';
-  import { appearanceGroups } from '../../lib/settingsForm';
-  import { isNativeTheme, themeLabel } from '../../lib/theme';
-  import { PAGES } from '../../lib/route.svelte';
+  // Customize, Appearance: the form of PHP Organizr, with the groups Top Bar, Side Menu,
+  // Login Page, Options, Colors & Themes and the style sheets and scripts. Only the Admin
+  // sees the groups of the scripts (D-07), with a note on whether the scripts run (D-93).
   import { session } from '../../lib/session.svelte';
+  import { scriptsNote } from '../../lib/settingsForm';
   import { ADMIN } from '../../lib/types';
-  import SettingsForm from './SettingsForm.svelte';
+  import PhpSettingsForm from './PhpSettingsForm.svelte';
 
   let {
     ondone,
@@ -19,35 +14,23 @@
     ondone: (message: string) => void;
   } = $props();
 
-  let themes = $state<{ value: string; label: string }[] | null>(null);
-  /** Only the Admin sees and changes the scripts (D-07). */
-  const admin = $derived({
-    isAdmin: session.launch?.user?.groupID === ADMIN,
-    scriptsRun: session.launch?.appearance.customJsEnabled === true,
-  });
-  let loadError = $state<string | null>(null);
-
-  onMount(async () => {
-    try {
-      const { data } = await api<Record<string, unknown>>('GET', 'themes');
-      themes = Object.keys(data ?? {})
-        .filter(isNativeTheme)
-        .map((name) => ({ value: name, label: themeLabel(name) }));
-    } catch (failure) {
-      loadError = failureText(failure);
-    }
-  });
+  const SCRIPTS = ['Custom Javascript', 'Theme Javascript'];
+  const isAdmin = $derived(session.launch?.user?.groupID === ADMIN);
+  const note = $derived(
+    `${scriptsNote(session.launch?.appearance.customJsEnabled === true)} A script runs in the session of every person who opens the page, guests on the login page too, and can do all that the person can do.`,
+  );
 </script>
 
-{#if themes}
-  <p class="mb-4 max-w-2xl text-sm">
-    More themes are in the <a class="link" href={PAGES.themeSettings}>theme marketplace</a>.
-  </p>
-  <SettingsForm groups={appearanceGroups(themes, admin)} {ondone} />
-{:else if loadError}
-  <div role="alert" class="alert alert-error">
-    <span>{loadError}</span>
+{#snippet scripts()}
+  <div class="org-notice org-notice-warning mb-6">
+    <p>{note}</p>
   </div>
-{:else}
-  <span class="loading loading-spinner" aria-label="Loading"></span>
-{/if}
+{/snippet}
+
+<PhpSettingsForm
+  path="settings/appearance"
+  title="Customize Appearance"
+  hidden={isAdmin ? [] : SCRIPTS}
+  extra={isAdmin ? { 'Custom Javascript': scripts, 'Theme Javascript': scripts } : {}}
+  {ondone}
+/>

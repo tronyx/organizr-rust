@@ -104,61 +104,6 @@ describe('the theme marketplace', () => {
   });
 });
 
-describe('the appearance settings', () => {
-  it('offer the themes of the install that have a native version, with a preview', async () => {
-    stubApi({
-      'GET themes': {
-        data: {
-          Blue: { name: 'Blue' },
-          Organizr: { name: 'Organizr' },
-          Nord: { name: 'Nord' },
-          Other: { name: 'Other' },
-        },
-      },
-      'GET config': { data: { theme: 'Nord', headerColor: '', customCss: '' } },
-    });
-    render(AppearanceSettings, { ondone: vi.fn() });
-
-    const select = await screen.findByLabelText('Theme');
-    const options = within(select)
-      .getAllByRole('option')
-      .map((option) => option.textContent);
-    expect(options).toEqual(['Blue', 'Organizr', 'Nord']);
-    expect(screen.getByRole('img', { name: 'Preview of the theme Nord' })).toHaveAttribute(
-      'data-theme',
-      'org-nord',
-    );
-
-    await fireEvent.change(select, { target: { value: 'Blue' } });
-    expect(screen.getByRole('img', { name: 'Preview of the theme Blue' })).toBeInTheDocument();
-  });
-
-  it('save a colour and say when a colour is wrong', async () => {
-    const sent = stubApi({
-      'GET themes': { data: { Organizr: { name: 'Organizr' } } },
-      'GET config': { data: { theme: 'Organizr', headerColor: '' } },
-      'PUT config': { message: 'Config items updated' },
-      'GET launch': LAUNCH,
-    });
-    render(AppearanceSettings, { ondone: vi.fn() });
-
-    const field = await screen.findByLabelText('Colour of the bar at the top');
-    await fireEvent.input(field, { target: { value: 'red; color: blue' } });
-    expect(field).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByText(/This is no colour/)).toBeInTheDocument();
-
-    await fireEvent.input(field, { target: { value: '#112233' } });
-    expect(field).toHaveAttribute('aria-invalid', 'false');
-    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await waitFor(() =>
-      expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
-        headerColor: '#112233',
-      }),
-    );
-  });
-});
-
 describe('the scripts on the appearance page', () => {
   function launchOf(groupID: number, customJsEnabled: boolean) {
     return {
@@ -173,19 +118,34 @@ describe('the scripts on the appearance page', () => {
   async function open(groupID: number, customJsEnabled: boolean) {
     stubApi({
       'GET launch': launchOf(groupID, customJsEnabled),
-      'GET themes': { data: { Organizr: { name: 'Organizr' } } },
-      'GET config': { data: { theme: 'Organizr', customJava: 'window.x = 1;' } },
+      'GET settings/appearance': {
+        data: {
+          'Top Bar': [{ type: 'input', label: 'Title', name: 'title', value: 'Organizr' }],
+          'Custom Javascript': [
+            {
+              type: 'code-editor',
+              label: 'Custom Javascript',
+              name: 'customJava',
+              value: 'window.x = 1;',
+            },
+          ],
+          'Theme Javascript': [
+            { type: 'code-editor', label: 'Theme Javascript', name: 'customThemeJava', value: '' },
+          ],
+        },
+      },
     });
     await session.load();
     render(AppearanceSettings, { ondone: vi.fn() });
-    await screen.findByLabelText('Theme');
+    await screen.findByRole('tab', { name: 'Top Bar' });
   }
 
   it('are for the Admin, with a note that the switch is off', async () => {
     await open(0, false);
 
-    expect(screen.getByLabelText('Custom JavaScript')).toHaveValue('window.x = 1;');
-    expect(screen.getByLabelText('Theme JavaScript')).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('tab', { name: 'Custom Javascript' }));
+    expect(screen.getByLabelText('Custom Javascript')).toHaveValue('window.x = 1;');
+    expect(screen.getByRole('tab', { name: 'Theme Javascript' })).toBeInTheDocument();
     expect(screen.getByText(/The scripts do not run now/)).toHaveTextContent(
       'ORGANIZR_CUSTOM_JS=1',
     );
@@ -197,13 +157,14 @@ describe('the scripts on the appearance page', () => {
   it('say so when the operator turned the switch on', async () => {
     await open(0, true);
 
+    await fireEvent.click(screen.getByRole('tab', { name: 'Custom Javascript' }));
     expect(screen.getByText(/The scripts run now/)).toBeInTheDocument();
   });
 
   it('are not shown to a Co-Admin', async () => {
     await open(1, true);
 
-    expect(screen.queryByLabelText('Custom JavaScript')).toBeNull();
-    expect(screen.queryByLabelText('Theme JavaScript')).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Custom Javascript' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Theme Javascript' })).toBeNull();
   });
 });
