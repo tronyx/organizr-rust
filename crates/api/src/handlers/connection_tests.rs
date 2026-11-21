@@ -503,39 +503,29 @@ async fn jdownloader(test: &Test<'_>) -> Outcome {
     }
 }
 
-/// What is wrong with the answer of Pi-hole to the question for its status, or nothing.
-fn pihole_fault(is_success: bool, body: &str) -> Option<&'static str> {
-    if !is_success {
-        return Some("Unknown Failure");
-    }
-    match serde_json::from_str::<Value>(body) {
-        Ok(answer) if answer.get("status").is_some() => None,
-        Ok(Value::Object(_) | Value::Array(_)) => Some("Missing API Token"),
-        _ => Some("Response was not JSON"),
-    }
-}
-
 async fn pi_hole(test: &Test<'_>) -> Outcome {
     let settings = test.state.settings();
     if settings.pihole_url.is_empty() {
         return Err(Refusal::unprocessable("Pihole URL is not defined"));
     }
     let mut errors = String::new();
-    for (address, token) in pihole::installs(&settings.pihole_url, &settings.pihole_token) {
+    let http = test.state.outbound().ok_or_else(no_requests)?;
+    for (address, password) in pihole::installs(&settings.pihole_url, &settings.pihole_token) {
         let base = test.url(address);
-        let url = format!("{base}/api.php?status");
-        let with_token = [("auth", token)];
-        let probe = Probe {
-            url: &url,
-            query: if token.is_empty() { &[] } else { &with_token },
-            ..Probe::default()
-        };
-        let fault = match test.get(probe).await {
-            Ok(answer) => pihole_fault(answer.is_success(), &answer.body).map(str::to_owned),
-            Err(error) => Some(error),
+        let base = base.trim_end_matches('/');
+        // PHP checks only that a password is there and that the install answers. A
+        // password that Pi-hole refuses fails the test here too (D-101).
+        let fault = if password.is_empty() {
+            Some("Missing API Token".to_owned())
+        } else {
+            match pihole::log_in(http, base, password).await {
+                Ok(Some(_)) => None,
+                Ok(None) => Some("Login failed".to_owned()),
+                Err(error) => Some(error),
+            }
         };
         if let Some(fault) = fault {
-            errors.push_str(&probe::host_of(&base).unwrap_or_default());
+            errors.push_str(&probe::host_of(base).unwrap_or_default());
             errors.push_str(": ");
             errors.push_str(&fault);
         }
@@ -1084,15 +1074,6 @@ mod tests {
             fault(404, "[]").as_deref(),
             Some("The answer has the status 404")
         );
-    }
-
-    #[test]
-    fn answer_of_pihole_is_read_for_its_fault() {
-        assert_eq!(pihole_fault(true, r#"{"status": "enabled"}"#), None);
-        assert_eq!(pihole_fault(true, "[]"), Some("Missing API Token"));
-        assert_eq!(pihole_fault(true, "{}"), Some("Missing API Token"));
-        assert_eq!(pihole_fault(true, "<html>"), Some("Response was not JSON"));
-        assert_eq!(pihole_fault(false, "{}"), Some("Unknown Failure"));
     }
 
     #[test]

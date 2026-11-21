@@ -1,17 +1,19 @@
 <script lang="ts">
-  // The Pi-hole item: how many requests each install got, and how many it blocked.
+  // The Pi-hole item: how many requests each install got in the last 24 hours, how many
+  // it blocked, and which domains it blocked.
   import { itemData } from '../../lib/itemData.svelte';
 
-  interface Summary {
-    domains_being_blocked?: number;
-    dns_queries_today?: number;
-    ads_blocked_today?: number;
-    ads_percentage_today?: number;
+  interface Statistics {
+    sum_queries?: number;
+    sum_blocked?: number;
+    percent_blocked?: number;
+    domains_being_blocked?: string[];
   }
 
   interface Answer {
-    /** The summary of each install, by its host. An install without access sends a list. */
-    data?: Record<string, Summary | unknown[]>;
+    /** The statistics of each install, by its address. An install that refused the
+     * password has only an empty list of blocked domains. */
+    data?: Record<string, Statistics>;
     options: { combine: boolean; title: boolean };
   }
 
@@ -20,22 +22,24 @@
     queries: number;
     blocked: number;
     percent: number;
-    domains: number;
+    domains: string[];
   }
 
   const item = itemData<Answer>('homepage/pihole/stats', 'homepagePiholeRefresh');
 
   const number = (value: unknown): number => (typeof value === 'number' ? value : 0);
 
+  const answered = (statistics: Statistics): boolean => typeof statistics.sum_queries === 'number';
+
   const rows = $derived.by((): Row[] => {
     const installs = Object.entries(item.data?.data ?? {})
-      .filter((entry): entry is [string, Summary] => !Array.isArray(entry[1]))
-      .map(([name, summary]) => ({
+      .filter(([, statistics]) => answered(statistics))
+      .map(([name, statistics]) => ({
         name,
-        queries: number(summary.dns_queries_today),
-        blocked: number(summary.ads_blocked_today),
-        percent: number(summary.ads_percentage_today),
-        domains: number(summary.domains_being_blocked),
+        queries: number(statistics.sum_queries),
+        blocked: number(statistics.sum_blocked),
+        percent: number(statistics.percent_blocked),
+        domains: statistics.domains_being_blocked ?? [],
       }));
     if (!item.data?.options.combine || installs.length < 2) {
       return installs;
@@ -50,16 +54,15 @@
         queries,
         blocked,
         percent: queries > 0 ? (blocked / queries) * 100 : 0,
-        // The installs can share lists, so the highest count is shown.
-        domains: Math.max(...installs.map((row) => row.domains)),
+        domains: [...new Set(installs.flatMap((row) => row.domains))],
       },
     ];
   });
 
-  /** The installs that sent no summary: the token is missing or wrong. */
+  /** The installs that sent no statistics: the password is missing or wrong. */
   const refused = $derived(
     Object.entries(item.data?.data ?? {})
-      .filter((entry) => Array.isArray(entry[1]))
+      .filter(([, statistics]) => !answered(statistics))
       .map(([name]) => name),
   );
 
@@ -76,7 +79,7 @@
     <p class="text-sm">Pi-hole gave no answer. Look at its address.</p>
   {/if}
   {#each refused as name (name)}
-    <p class="text-sm">{name} gave no numbers. Look at its token.</p>
+    <p class="text-sm">{name} gave no numbers. Look at its password.</p>
   {/each}
   {#each rows as row (row.name)}
     <section class="mb-2" aria-label="Pi-hole {row.name}">
@@ -85,22 +88,28 @@
       {/if}
       <div class="stats stats-vertical sm:stats-horizontal bg-base-200 shadow">
         <div class="stat">
-          <div class="stat-title">Requests today</div>
+          <div class="stat-title">Total queries (last 24 hours)</div>
           <div class="stat-value text-2xl">{whole(row.queries)}</div>
         </div>
         <div class="stat">
-          <div class="stat-title">Blocked today</div>
+          <div class="stat-title">Queries blocked (last 24 hours)</div>
           <div class="stat-value text-2xl">{whole(row.blocked)}</div>
         </div>
         <div class="stat">
-          <div class="stat-title">Part that was blocked</div>
+          <div class="stat-title">Percent blocked (last 24 hours)</div>
           <div class="stat-value text-2xl">{row.percent.toFixed(1)} %</div>
         </div>
-        <div class="stat">
-          <div class="stat-title">Domains on the lists</div>
-          <div class="stat-value text-2xl">{whole(row.domains)}</div>
-        </div>
       </div>
+      {#if row.domains.length > 0}
+        <div class="mt-2">
+          <h4 class="text-sm font-medium">Blocked domains (last 24 hours)</h4>
+          <ul class="columns-1 gap-8 text-sm sm:columns-3 xl:columns-5">
+            {#each row.domains as domain (domain)}
+              <li class="break-all">{domain}</li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
     </section>
   {/each}
 {/if}

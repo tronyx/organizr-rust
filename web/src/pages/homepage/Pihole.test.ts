@@ -5,38 +5,38 @@ import { stubApi } from '../../test-helpers';
 import Pihole from './Pihole.svelte';
 
 const FIRST = {
-  domains_being_blocked: 150000,
-  dns_queries_today: 12000,
-  ads_blocked_today: 3000,
-  ads_percentage_today: 25,
+  sum_queries: 12000,
+  sum_blocked: 3000,
+  percent_blocked: 25,
+  domains_being_blocked: ['ads.example.com', 'tracker.example.net'],
 };
 const SECOND = {
-  domains_being_blocked: 90000,
-  dns_queries_today: 8000,
-  ads_blocked_today: 1000,
-  ads_percentage_today: 12.5,
+  sum_queries: 8000,
+  sum_blocked: 1000,
+  percent_blocked: 12.5,
+  domains_being_blocked: ['ads.example.com', 'metrics.example.org'],
 };
+const ONE = 'http://192.0.2.5';
+const TWO = 'http://192.0.2.6';
 
 describe('Pihole', () => {
-  it('shows the numbers of each install', async () => {
+  it('shows the numbers and the blocked domains of each install', async () => {
     stubApi({
       'GET homepage/pihole/stats': {
         data: {
-          data: { '192.0.2.5': FIRST, '192.0.2.6': SECOND },
+          data: { [ONE]: FIRST, [TWO]: SECOND },
           options: { combine: false, title: true },
         },
       },
     });
     render(Pihole);
 
-    const first = await screen.findByRole('region', { name: 'Pi-hole 192.0.2.5' });
+    const first = await screen.findByRole('region', { name: `Pi-hole ${ONE}` });
     expect(first.textContent).toContain('12,000');
     expect(first.textContent).toContain('3,000');
     expect(first.textContent).toContain('25.0 %');
-    expect(first.textContent).toContain('150,000');
-    expect(screen.getByRole('region', { name: 'Pi-hole 192.0.2.6' }).textContent).toContain(
-      '12.5 %',
-    );
+    expect(first.textContent).toContain('tracker.example.net');
+    expect(screen.getByRole('region', { name: `Pi-hole ${TWO}` }).textContent).toContain('12.5 %');
     expect(screen.getByRole('heading', { name: 'Pi-hole' })).toBeTruthy();
   });
 
@@ -44,7 +44,7 @@ describe('Pihole', () => {
     stubApi({
       'GET homepage/pihole/stats': {
         data: {
-          data: { '192.0.2.5': FIRST, '192.0.2.6': SECOND },
+          data: { [ONE]: FIRST, [TWO]: SECOND },
           options: { combine: true, title: false },
         },
       },
@@ -56,18 +56,22 @@ describe('Pihole', () => {
     expect(all.textContent).toContain('4,000');
     // 4000 of 20000 requests.
     expect(all.textContent).toContain('20.0 %');
-    expect(all.textContent).toContain('150,000');
+    // Each domain once.
+    expect(all.querySelectorAll('li')).toHaveLength(3);
     expect(screen.queryByRole('heading', { name: 'Pi-hole' })).toBeNull();
   });
 
   it('says so when an install gave no numbers, or no install answered', async () => {
     stubApi({
       'GET homepage/pihole/stats': {
-        data: { data: { '192.0.2.5': [] }, options: { combine: false, title: true } },
+        data: {
+          data: { [ONE]: { domains_being_blocked: [] } },
+          options: { combine: false, title: true },
+        },
       },
     });
     const { unmount } = render(Pihole);
-    expect(await screen.findByText('192.0.2.5 gave no numbers. Look at its token.')).toBeTruthy();
+    expect(await screen.findByText(`${ONE} gave no numbers. Look at its password.`)).toBeTruthy();
     unmount();
 
     stubApi({

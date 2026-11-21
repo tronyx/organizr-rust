@@ -534,28 +534,82 @@ pub async fn transmission() -> StandIn {
     StandIn::start(Router::new().route("/rpc", get(transmission_rpc).post(transmission_rpc))).await
 }
 
-/// The token of the Pi-hole stand-in.
+/// The password (the app password) of the Pi-hole stand-in.
 pub const PIHOLE_TOKEN: &str = "made-up-pihole-token";
 
-/// Pi-hole 5 answers a request without the right token with an empty list.
-async fn pihole_summary(RawQuery(query): RawQuery) -> Response {
-    if query_field(query.as_deref(), "auth") != Some(PIHOLE_TOKEN) {
-        return axum::Json(json!([])).into_response();
+/// The session id that the Pi-hole stand-in gives for its password.
+pub const PIHOLE_SID: &str = "made-up-pihole-sid";
+
+/// The API of Pi-hole 6 that Organizr uses: the login, the sessions, and the statistics
+/// of the database. Every request but the login needs the session in the header `sid`.
+async fn pihole_api(
+    headers: HeaderMap,
+    method: axum::http::Method,
+    uri: axum::http::Uri,
+    body: axum::body::Bytes,
+) -> Response {
+    let path = uri.path();
+    if method == axum::http::Method::POST && path == "/api/auth" {
+        let asked: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
+        if asked.get("password").and_then(Value::as_str) == Some(PIHOLE_TOKEN) {
+            return axum::Json(json!({
+                "session": {"valid": true, "totp": false, "sid": PIHOLE_SID, "csrf": "made-up-csrf", "validity": 1800},
+                "took": 0.01,
+            }))
+            .into_response();
+        }
+        return (
+            StatusCode::UNAUTHORIZED,
+            axum::Json(json!({
+                "session": {"valid": false, "totp": false, "sid": null, "validity": -1},
+                "took": 0.01,
+            })),
+        )
+            .into_response();
     }
-    axum::Json(json!({
-        "domains_being_blocked": 150_000,
-        "dns_queries_today": 12_000,
-        "ads_blocked_today": 3_000,
-        "ads_percentage_today": 25.0,
-        "unique_clients": 14,
-        "status": "enabled",
-    }))
-    .into_response()
+    if headers.get("sid").and_then(|value| value.to_str().ok()) != Some(PIHOLE_SID) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            axum::Json(json!({"error": {"key": "unauthorized", "message": "Unauthorized"}})),
+        )
+            .into_response();
+    }
+    match (method.as_str(), path) {
+        ("GET", "/api/auth/sessions") => axum::Json(json!({"sessions": [
+            {"id": 0, "current_session": true, "valid": true, "user_agent": "Organizr"},
+            {"id": 1, "current_session": false, "valid": true, "user_agent": "Organizr"},
+            {"id": 2, "current_session": false, "valid": true, "user_agent": "Mozilla/5.0"},
+        ]}))
+        .into_response(),
+        ("DELETE", path) if path.starts_with("/api/auth/session/") => {
+            StatusCode::NO_CONTENT.into_response()
+        }
+        ("GET", "/api/stats/database/summary") => axum::Json(json!({
+            "sum_queries": 12_000,
+            "sum_blocked": 3_000,
+            "percent_blocked": 25.0,
+            "total_clients": 14,
+            "took": 0.02,
+        }))
+        .into_response(),
+        ("GET", "/api/stats/database/top_domains") => axum::Json(json!({
+            "domains": [
+                {"domain": "ads.example.com", "count": 50},
+                {"domain": "tracker.example.net", "count": 20},
+            ],
+            "total_queries": 12_000,
+            "blocked_queries": 3_000,
+            "took": 0.02,
+        }))
+        .into_response(),
+        _ => StatusCode::NOT_FOUND.into_response(),
+    }
 }
 
-/// A stand-in for Pi-hole 5, with its web interface under `/admin`.
+/// A stand-in for Pi-hole 6: the password [`PIHOLE_TOKEN`], one older session of
+/// Organizr and one of a browser, and the statistics of the last 24 hours.
 pub async fn pihole() -> StandIn {
-    StandIn::start(Router::new().route("/admin/api.php", get(pihole_summary))).await
+    StandIn::start(Router::new().fallback(pihole_api)).await
 }
 
 /// The API key of the BreezoMeter stand-in.
@@ -1061,9 +1115,42 @@ pub const DELUGE_PASSWORD: &str = "the password of Deluge";
 
 const DELUGE_SESSION: &str = "_session_id=made-up-deluge-session";
 
+/// The torrents of the Deluge stand-in, with the fields that Organizr asks for.
+fn deluge_torrents() -> Vec<Value> {
+    let torrent = |name: &str, queue: i64, progress: f64, state: &str| {
+        json!({
+            "comment": "", "download_payload_rate": 1000, "eta": 600,
+            "hash": format!("made-up-hash-of-{name}"), "is_finished": progress >= 100.0,
+            "is_seed": progress >= 100.0, "message": "OK", "name": name,
+            "paused": state == "Paused", "progress": progress, "queue": queue,
+            "state": state, "total_size": 1_000_000, "upload_payload_rate": 10,
+            "tracker_status": "Announce OK",
+        })
+    };
+    vec![
+        torrent("The.Show.S02E03", 0, 40.5, "Downloading"),
+        torrent("An.Old.Film", -1, 100.0, "Seeding"),
+        torrent("A.Paused.Film", -1, 100.0, "Paused"),
+    ]
+}
+
+/// The id of the one daemon that the web interface of the Deluge stand-in knows.
+const DELUGE_HOST: &str = "made-up-host-of-deluge";
+
 /// The JSON-RPC API of the web interface of Deluge, with the `WebAPI` plugin.
 async fn deluge_json(headers: HeaderMap, body: axum::body::Bytes) -> Response {
-    let asked: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    deluge_reply(&headers, &body, None)
+}
+
+/// The answer of the Deluge stand-in. `daemon` is `None` with the `WebAPI` plugin.
+/// Without the plugin, it says whether the web interface is connected to its daemon.
+fn deluge_reply(
+    headers: &HeaderMap,
+    body: &[u8],
+    daemon: Option<&std::sync::atomic::AtomicBool>,
+) -> Response {
+    use std::sync::atomic::Ordering;
+    let asked: Value = serde_json::from_slice(body).unwrap_or(Value::Null);
     let id = asked.get("id").cloned().unwrap_or(Value::Null);
     let answer = |result: Value, error: Value| {
         axum::Json(json!({"id": id, "result": result, "error": error})).into_response()
@@ -1093,28 +1180,76 @@ async fn deluge_json(headers: HeaderMap, body: axum::body::Bytes) -> Response {
             Value::Null,
             json!({"message": "Not authenticated", "code": 1}),
         ),
-        Some("webapi.get_torrents") => {
-            let torrent = |name: &str, queue: i64, progress: f64, state: &str| {
-                json!({
-                    "comment": "", "download_payload_rate": 1000, "eta": 600,
-                    "hash": format!("made-up-hash-of-{name}"), "is_finished": progress >= 100.0,
-                    "is_seed": progress >= 100.0, "message": "OK", "name": name,
-                    "paused": state == "Paused", "progress": progress, "queue": queue,
-                    "state": state, "total_size": 1_000_000, "upload_payload_rate": 10,
-                    "tracker_status": "Announce OK",
+        Some("webapi.get_torrents") if daemon.is_none() => {
+            answer(json!({"torrents": deluge_torrents()}), Value::Null)
+        }
+        Some("web.connected") if daemon.is_some() => answer(
+            json!(daemon.is_some_and(|daemon| daemon.load(Ordering::SeqCst))),
+            Value::Null,
+        ),
+        Some("web.get_hosts") if daemon.is_some() => answer(
+            json!([[DELUGE_HOST, "127.0.0.1", 58846, "localclient"]]),
+            Value::Null,
+        ),
+        Some("web.connect") if daemon.is_some() => {
+            if asked.pointer("/params/0").and_then(Value::as_str) == Some(DELUGE_HOST)
+                && let Some(daemon) = daemon
+            {
+                daemon.store(true, Ordering::SeqCst);
+            }
+            answer(json!(["core.get_torrents_status"]), Value::Null)
+        }
+        Some("web.update_ui") if daemon.is_some() => {
+            let connected = daemon.is_some_and(|daemon| daemon.load(Ordering::SeqCst));
+            // Deluge sends each torrent under its hash, with the fields that were asked.
+            let asked_fields: Vec<&str> = asked
+                .pointer("/params/0")
+                .and_then(Value::as_array)
+                .map_or_else(Vec::new, |fields| {
+                    fields.iter().filter_map(Value::as_str).collect()
+                });
+            let torrents: serde_json::Map<String, Value> = deluge_torrents()
+                .into_iter()
+                .map(|torrent| {
+                    let hash = torrent
+                        .get("hash")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_owned();
+                    let fields = asked_fields
+                        .iter()
+                        .filter(|field| **field != "hash")
+                        .filter_map(|field| {
+                            Some(((*field).to_owned(), torrent.get(*field)?.clone()))
+                        })
+                        .collect::<serde_json::Map<_, _>>();
+                    (hash, Value::Object(fields))
                 })
-            };
+                .collect();
             answer(
-                json!({"torrents": [
-                    torrent("The.Show.S02E03", 0, 40.5, "Downloading"),
-                    torrent("An.Old.Film", -1, 100.0, "Seeding"),
-                    torrent("A.Paused.Film", -1, 100.0, "Paused"),
-                ]}),
+                json!({
+                    "connected": connected,
+                    "torrents": if connected { Value::Object(torrents) } else { Value::Null },
+                }),
                 Value::Null,
             )
         }
         _ => answer(Value::Null, json!({"message": "Unknown method", "code": 2})),
     }
+}
+
+/// A stand-in for the web interface of Deluge 2 without the `WebAPI` plugin: it knows
+/// one daemon, is not connected to it at first, and has the torrents of [`deluge`].
+pub async fn deluge_without_plugin() -> StandIn {
+    let daemon = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    StandIn::start(Router::new().route(
+        "/json",
+        axum::routing::post(move |headers: HeaderMap, body: axum::body::Bytes| {
+            let daemon = std::sync::Arc::clone(&daemon);
+            async move { deluge_reply(&headers, &body, Some(&daemon)) }
+        }),
+    ))
+    .await
 }
 
 /// A stand-in for the web interface of Deluge with the `WebAPI` plugin: one torrent

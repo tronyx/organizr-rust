@@ -1,4 +1,4 @@
-//! The Pi-hole item: the summary of one or more installs.
+//! The Pi-hole item: the statistics of the last 24 hours of one or more installs.
 
 use axum::Extension;
 use axum::extract::State;
@@ -22,7 +22,7 @@ pub fn permissions() -> Permissions {
     }
 }
 
-/// `GET /homepage/pihole/stats`: the summary of each install, by its host.
+/// `GET /homepage/pihole/stats`: the statistics of each install, by its address.
 pub async fn stats(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
@@ -38,10 +38,13 @@ pub async fn stats(
             .into_iter()
             .map(|(address, token)| (service_url(address, &headers, &client), token))
             .collect();
-    let summaries = pihole::summaries(http, &installs).await.map_err(|error| {
-        tracing::warn!(%error, "Pi-hole cannot be reached");
-        Refusal::Request(StatusCode::INTERNAL_SERVER_ERROR, error)
-    })?;
+    let now = jiff::Timestamp::now().as_second();
+    let summaries = pihole::statistics(http, &installs, now)
+        .await
+        .map_err(|error| {
+            tracing::warn!(%error, "the statistics of Pi-hole could not be read");
+            Refusal::Request(StatusCode::INTERNAL_SERVER_ERROR, error)
+        })?;
 
     let mut answer = Map::new();
     // Without a summary, the answer has no `data`, as in the PHP application.

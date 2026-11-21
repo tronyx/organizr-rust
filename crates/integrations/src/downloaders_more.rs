@@ -209,18 +209,66 @@ pub async fn deluge(
         _ => return Err(refused("Login failed")),
     }
     let cookie = cookies_of(&headers);
-    let list = DelugeCall {
+    let call = |id: u32, method: &'static str| DelugeCall {
         cookie: cookie.as_deref(),
-        id: 1,
-        method: "webapi.get_torrents",
+        id,
+        method,
         ..login
     };
-    let (result, _) = list.send(json!([null, DELUGE_FIELDS])).await?;
-    Ok(result
-        .get("torrents")
-        .and_then(Value::as_array)
-        .cloned()
-        .unwrap_or_default())
+    match call(1, "webapi.get_torrents")
+        .send(json!([null, DELUGE_FIELDS]))
+        .await
+    {
+        Ok((result, _)) => Ok(result
+            .get("torrents")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default()),
+        Err(ClientError::Refused(text)) if text == DELUGE_UNKNOWN_METHOD => {
+            tracing::debug!("Deluge has no WebAPI plugin; its own API is asked");
+            deluge_without_plugin(call).await
+        }
+        Err(error) => Err(error),
+    }
+}
+
+/// The error of Deluge for a method that it does not know, as [`DelugeCall::send`] gives it.
+const DELUGE_UNKNOWN_METHOD: &str = "Method request returned an error (no. 2): Unknown method";
+
+/// The torrents of a Deluge without the `WebAPI` plugin, from `web.update_ui` of Deluge
+/// itself. When the web interface is not connected to a daemon, it is first connected to
+/// the first daemon that it knows, as the web interface does after a login (D-100).
+async fn deluge_without_plugin<'a>(
+    call: impl Fn(u32, &'static str) -> DelugeCall<'a>,
+) -> Result<Vec<Value>, ClientError> {
+    let (connected, _) = call(2, "web.connected").send(json!([])).await?;
+    if connected != Value::Bool(true) {
+        let (hosts, _) = call(3, "web.get_hosts").send(json!([])).await?;
+        let host = hosts
+            .pointer("/0/0")
+            .and_then(Value::as_str)
+            .ok_or_else(|| refused("Deluge knows no daemon to connect to"))?
+            .to_owned();
+        call(4, "web.connect").send(json!([host])).await?;
+    }
+    let fields: Vec<&str> = DELUGE_FIELDS.split(',').map(str::trim).collect();
+    let (result, _) = call(5, "web.update_ui").send(json!([fields, {}])).await?;
+    let Some(torrents) = result.get("torrents").and_then(Value::as_object) else {
+        return Err(refused("Deluge is not connected to a daemon"));
+    };
+    // Deluge sends each torrent under its hash. The plugin sends a list, with the hash.
+    Ok(torrents
+        .iter()
+        .map(|(hash, torrent)| {
+            let mut torrent = torrent.clone();
+            if let Some(fields) = torrent.as_object_mut() {
+                fields
+                    .entry("hash")
+                    .or_insert_with(|| Value::String(hash.clone()));
+            }
+            torrent
+        })
+        .collect())
 }
 
 /// The state of a torrent of Deluge for the "hide" settings, by the rules of the PHP

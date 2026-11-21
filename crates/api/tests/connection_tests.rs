@@ -217,20 +217,20 @@ async fn pihole_names_the_host_that_failed() {
         let pihole = homepage_services::pihole().await;
         let settings = |token: &str| {
             vec![
-                ("piholeURL", json!(format!("{}/admin", pihole.url()))),
+                ("piholeURL", json!(pihole.url())),
                 ("piholeToken", json!(token)),
             ]
         };
         let good = test(database, "pihole", &settings(PIHOLE_TOKEN)).await;
         assert_eq!(good.status, StatusCode::OK, "{}", good.body);
         assert_eq!(good.message(), Value::Null);
-        assert_eq!(
-            pihole.seen()[0].path,
-            format!("/admin/api.php?status&auth={PIHOLE_TOKEN}")
-        );
+        assert_eq!(pihole.seen()[0].path, "/api/auth");
+        assert_eq!(pihole.seen()[0].json(), json!({"password": PIHOLE_TOKEN}));
         let wrong = test(database, "pihole", &settings("wrong")).await;
         assert_eq!(wrong.status, StatusCode::INTERNAL_SERVER_ERROR);
-        assert_eq!(wrong.message(), json!("127.0.0.1: Missing API Token"));
+        assert_eq!(wrong.message(), json!("127.0.0.1: Login failed"));
+        let missing = test(database, "pihole", &settings("")).await;
+        assert_eq!(missing.message(), json!("127.0.0.1: Missing API Token"));
         let none = test(database, "pihole", &[]).await;
         assert_eq!(none.status, StatusCode::UNPROCESSABLE_ENTITY);
         assert_eq!(none.message(), json!("Pihole URL is not defined"));

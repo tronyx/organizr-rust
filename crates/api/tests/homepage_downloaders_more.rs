@@ -153,6 +153,77 @@ async fn deluge_torrents_come_as_the_plugin_gives_them() {
     .await;
 }
 
+/// Deluge 2 without the `WebAPI` plugin answers `webapi.get_torrents` with "Unknown
+/// method". The torrents then come from `web.update_ui` of Deluge itself, after the web
+/// interface was connected to its first daemon (D-100).
+#[tokio::test]
+async fn deluge_without_the_plugin_gives_its_torrents_through_its_own_api() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let service = homepage_services::deluge_without_plugin().await;
+        let settings: Stored = vec![
+            ("homepageDelugeEnabled", json!(true)),
+            ("homepageDelugeAuth", json!("4")),
+            ("delugeURL", json!(service.url())),
+            ("delugePassword", json!(DELUGE_PASSWORD)),
+        ];
+        let path = "/homepage/deluge/queue";
+
+        let answer = get(database, path, &settings).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let content = &answer.data()["content"];
+        assert_eq!(
+            column(content, "name"),
+            ["The.Show.S02E03", "An.Old.Film", "A.Paused.Film"]
+        );
+        let first = &content["queueItems"][0];
+        assert_eq!(first["hash"], json!("made-up-hash-of-The.Show.S02E03"));
+        assert_eq!(first["progress"], json!(40.5));
+        assert_eq!(first["state"], json!("Downloading"));
+
+        let methods: Vec<Value> = service
+            .seen()
+            .iter()
+            .map(|seen| seen.json()["method"].clone())
+            .collect();
+        assert_eq!(
+            methods,
+            [
+                "auth.login",
+                "webapi.get_torrents",
+                "web.connected",
+                "web.get_hosts",
+                "web.connect",
+                "web.update_ui"
+            ]
+        );
+        let seen = service.seen();
+        assert_eq!(seen[4].json()["params"], json!(["made-up-host-of-deluge"]));
+        let fields = &seen[5].json()["params"][0];
+        assert!(fields.as_array().is_some_and(|fields| fields.len() == 15));
+        assert_eq!(fields[0], json!("comment"));
+        assert_eq!(seen[5].json()["params"][1], json!({}));
+
+        // Once connected, the web interface stays connected.
+        let again = get(database, path, &settings).await;
+        assert_eq!(again.status, StatusCode::OK, "{}", again.body);
+        let methods: Vec<Value> = service.seen()[6..]
+            .iter()
+            .map(|seen| seen.json()["method"].clone())
+            .collect();
+        assert_eq!(
+            methods,
+            [
+                "auth.login",
+                "webapi.get_torrents",
+                "web.connected",
+                "web.update_ui"
+            ]
+        );
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn deluge_has_the_refusals_of_every_item_and_a_connection_test() {
     on_each_engine(async |database| {

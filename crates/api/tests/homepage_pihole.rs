@@ -9,7 +9,7 @@
 
 use axum::http::StatusCode;
 use organizr_testkit::engines::on_each_engine;
-use organizr_testkit::homepage_services::{self, PIHOLE_TOKEN};
+use organizr_testkit::homepage_services::{self, PIHOLE_SID, PIHOLE_TOKEN};
 use organizr_testkit::http::{As, call};
 use organizr_testkit::{installed_app_with, seed};
 use serde_json::{Value, json};
@@ -17,23 +17,19 @@ use serde_json::{Value, json};
 const PATH: &str = "/homepage/pihole/stats";
 
 #[tokio::test]
-async fn summary_of_each_install_comes_by_its_host() {
+async fn statistics_of_each_install_come_by_its_address() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let first = homepage_services::pihole().await;
         let second = homepage_services::pihole().await;
-        // Both stand-ins are on this machine. The second one is named by its host name,
-        // so that the two have different hosts.
-        let second_url = second.url().replace("127.0.0.1", "localhost");
-        assert_ne!(second_url, second.url());
-        let settings = |tokens: &str| {
+        let settings = |passwords: &str| {
             vec![
                 ("homepagePiholeEnabled", json!(true)),
                 (
                     "piholeURL",
-                    json!(format!("{}/admin/,{second_url}/admin", first.url())),
+                    json!(format!("{}/,{}", first.url(), second.url())),
                 ),
-                ("piholeToken", json!(tokens)),
+                ("piholeToken", json!(passwords)),
                 ("homepagePiholeCombine", json!(true)),
             ]
         };
@@ -43,31 +39,76 @@ async fn summary_of_each_install_comes_by_its_host() {
         let answer = call(&app, As::Admin, "GET", PATH, None).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
         let data = answer.data();
-        assert_eq!(data["data"]["127.0.0.1"]["dns_queries_today"], json!(12000));
-        assert_eq!(data["data"]["localhost"]["ads_blocked_today"], json!(3000));
+        let one = &data["data"][first.url()];
+        assert_eq!(one["sum_queries"], json!(12000));
+        assert_eq!(one["sum_blocked"], json!(3000));
+        assert_eq!(one["percent_blocked"], json!(25));
+        assert_eq!(
+            one["domains_being_blocked"],
+            json!(["ads.example.com", "tracker.example.net"])
+        );
+        assert_eq!(data["data"][second.url()]["sum_queries"], json!(12000));
         assert_eq!(data["options"], json!({"combine": true, "title": true}));
+
+        // The login with the password, then the older session of Organizr is removed,
+        // and then the statistics of the last 24 hours are asked with the session.
         let seen = first.seen();
+        let steps: Vec<(&str, &str)> = seen
+            .iter()
+            .map(|seen| {
+                (
+                    seen.method.as_str(),
+                    seen.path.split('?').next().unwrap_or_default(),
+                )
+            })
+            .collect();
         assert_eq!(
-            seen[0].path,
-            format!("/admin/api.php?summaryRaw&auth={PIHOLE_TOKEN}")
+            steps,
+            [
+                ("POST", "/api/auth"),
+                ("GET", "/api/auth/sessions"),
+                ("DELETE", "/api/auth/session/1"),
+                ("GET", "/api/stats/database/summary"),
+                ("GET", "/api/stats/database/top_domains"),
+            ]
+        );
+        assert_eq!(seen[0].json(), json!({"password": PIHOLE_TOKEN}));
+        assert_eq!(seen[0].header("user-agent"), Some("Organizr"));
+        assert_eq!(seen[3].header("sid"), Some(PIHOLE_SID));
+        let range = |path: &str| -> (i64, i64) {
+            let field = |name: &str| {
+                path.split(['?', '&'])
+                    .find_map(|part| part.strip_prefix(&format!("{name}=")))
+                    .and_then(|value| value.parse::<i64>().ok())
+                    .expect("the field is a number")
+            };
+            (field("from"), field("until"))
+        };
+        let (from, until) = range(&seen[3].path);
+        assert_eq!(until - from, 86_400);
+        assert!(
+            seen[4].path.contains("&blocked=true&count=1000"),
+            "{}",
+            seen[4].path
         );
 
-        // An address without a token at its place is not asked. A wrong token gets the
-        // empty list that Pi-hole sends for it.
-        let app = installed_app_with(database, &settings("wrong"));
-        let before = second.seen().len();
+        // A password that Pi-hole refuses gives only an empty list of blocked domains,
+        // as in PHP, and no further request.
+        let app = installed_app_with(database, &settings("wrong,wrong"));
+        let before = first.seen().len();
         let answer = call(&app, As::Admin, "GET", PATH, None).await;
-        assert_eq!(answer.data()["data"], json!({"127.0.0.1": []}));
-        assert_eq!(second.seen().len(), before);
-
-        // Without a token, the request has none.
-        let app = installed_app_with(database, &settings(""));
-        call(&app, As::Admin, "GET", PATH, None).await;
-        let seen = first.seen();
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
         assert_eq!(
-            seen.last().expect("a request came").path,
-            "/admin/api.php?summaryRaw"
+            answer.data()["data"][first.url()],
+            json!({"domains_being_blocked": []})
         );
+        assert_eq!(first.seen().len(), before + 1);
+
+        // An install without a password is an error that names its host.
+        let app = installed_app_with(database, &settings(""));
+        let answer = call(&app, As::Admin, "GET", PATH, None).await;
+        assert_eq!(answer.status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(answer.message(), json!("127.0.0.1: Missing API Token"));
     })
     .await;
 }
@@ -78,7 +119,7 @@ async fn install_that_cannot_be_reached_gives_an_error_without_its_address() {
         seed::installed(database).await;
         let settings: Vec<(&str, Value)> = vec![
             ("homepagePiholeEnabled", json!(true)),
-            ("piholeURL", json!("http://127.0.0.1:9/admin")),
+            ("piholeURL", json!("http://127.0.0.1:9")),
             ("piholeToken", json!("made-up-secret-token")),
         ];
         let app = installed_app_with(database, &settings);
