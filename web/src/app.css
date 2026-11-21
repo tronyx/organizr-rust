@@ -1452,6 +1452,24 @@
     text-transform: uppercase;
   }
 
+  /* The lock screen of PHP: the wallpaper over the whole screen and a box in the middle. */
+  .org-lock-screen {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 100vh;
+    padding-top: 10vh;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+
+  .org-lock-box {
+    width: min(400px, 100% - 32px);
+    padding: 25px;
+    background: var(--color-base-200);
+  }
+
   .org-login-box {
     padding: 50px;
   }

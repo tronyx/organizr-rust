@@ -50,7 +50,7 @@ describe('Locked', () => {
       },
     });
     render(Locked);
-    expect(screen.getByText(/robin, enter your password/)).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'robin' })).toBeTruthy();
 
     await fireEvent.input(screen.getByLabelText('Password'), { target: { value: 'secret' } });
     await fireEvent.click(screen.getByRole('button', { name: 'Unlock' }));

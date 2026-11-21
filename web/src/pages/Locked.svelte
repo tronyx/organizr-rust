@@ -10,6 +10,16 @@
   let error = $state<string | null>(null);
   let busy = $state(false);
 
+  /** The picture behind the lock screen, as PHP takes it: that of the login page. */
+  const wallpaper = $derived.by(() => {
+    const appearance = session.launch?.appearance;
+    if (appearance?.randomMediaImage) {
+      return appearance.randomMediaImage;
+    }
+    const first = (appearance?.loginWallpaper ?? '').split(',')[0]?.trim();
+    return first || 'plugins/images/login-register.jpg';
+  });
+
   async function act(change: () => Promise<unknown>) {
     busy = true;
     error = null;
@@ -42,36 +52,41 @@
   }
 </script>
 
-<main class="grid min-h-screen place-items-center p-4">
-  <form class="card bg-base-200 w-full max-w-sm shadow" onsubmit={unlock}>
-    <div class="card-body">
-      <h1 class="card-title">The screen is locked</h1>
-      <p class="text-sm">
-        {session.launch?.user?.username}, enter your password to open Organizr again.
-      </p>
-      <fieldset class="fieldset">
-        <label class="label" for="unlock-password">Password</label>
-        <input
-          id="unlock-password"
-          class="input w-full"
-          type="password"
-          bind:value={password}
-          required
-          autocomplete="current-password"
-        />
-      </fieldset>
-      {#if error}
-        <div role="alert" class="alert alert-error"><span>{error}</span></div>
-      {/if}
-      <div class="card-actions">
-        <button class="btn btn-primary w-full" disabled={busy}>
-          {#if busy}<span class="loading loading-spinner loading-sm"></span>{/if}
-          Unlock
-        </button>
-        <button type="button" class="btn btn-ghost w-full" disabled={busy} onclick={logOut}>
-          Log out
-        </button>
-      </div>
+<main class="org-lock-screen" style:background-image={`url('${wallpaper}')`}>
+  <form class="org-lock-box" onsubmit={unlock}>
+    <h1 class="sr-only">The screen is locked</h1>
+    <div class="text-center">
+      <img
+        class="mx-auto size-[100px] rounded-full object-cover"
+        alt=""
+        src={session.launch?.user?.image || 'plugins/images/default_user.png'}
+      />
+      <h2 class="mt-3 mb-6 text-2xl font-normal text-white">{session.launch?.user?.username}</h2>
     </div>
+    <label class="sr-only" for="unlock-password">Password</label>
+    <input
+      id="unlock-password"
+      class="input w-full"
+      type="password"
+      placeholder="password"
+      bind:value={password}
+      required
+      autocomplete="current-password"
+    />
+    {#if error}
+      <div role="alert" class="alert alert-error mt-4"><span>{error}</span></div>
+    {/if}
+    <button class="btn btn-primary org-login-button mt-6 w-full" disabled={busy}>
+      {#if busy}<span class="loading loading-spinner loading-sm"></span>{/if}
+      Unlock
+    </button>
+    <button
+      type="button"
+      class="link link-hover mt-4 block w-full text-center text-sm"
+      disabled={busy}
+      onclick={logOut}
+    >
+      Log out
+    </button>
   </form>
 </main>
