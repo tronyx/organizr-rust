@@ -26,6 +26,7 @@ pub mod overseerr;
 pub mod pihole;
 pub mod plex;
 pub mod prompage;
+pub mod request_search;
 pub mod speedtest_tracker;
 pub mod tautulli;
 pub mod trakt;

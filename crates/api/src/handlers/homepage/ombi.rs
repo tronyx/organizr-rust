@@ -14,6 +14,7 @@ use organizr_integrations::ombi::{
 use organizr_settings::Settings;
 use serde_json::{Value, json};
 
+use super::request_search::{self, LONGEST_QUERY, encoded};
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
 use crate::client::Client;
@@ -468,5 +469,101 @@ mod tests {
         ] {
             assert_eq!(tvdb_id(&none), None, "{none}");
         }
+    }
+}
+
+/// The films and series of an answer of `POST /api/v2/search/multi/{text}` of Ombi, in
+/// the shape of [`request_search::result`]. Ombi names an id as a number or as a text.
+fn search_results(answer: &Value) -> Value {
+    let text = |entry: &Value, key: &str| {
+        entry
+            .get(key)
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned()
+    };
+    let results: Vec<Value> = answer.as_array().map_or_default(|entries| {
+        entries
+            .iter()
+            .filter_map(|entry| {
+                let kind = match text(entry, "mediaType").as_str() {
+                    "movie" => "movie",
+                    "tv" => "tv",
+                    _ => return None,
+                };
+                let id = match entry.get("id") {
+                    Some(Value::Number(id)) => id.as_i64(),
+                    Some(Value::String(id)) => id.parse().ok(),
+                    _ => None,
+                }?;
+                Some(request_search::result(
+                    id,
+                    kind,
+                    (&text(entry, "title"), ""),
+                    (&text(entry, "poster"), &text(entry, "overview")),
+                    None,
+                ))
+            })
+            .collect()
+    });
+    json!({ "page": 1, "totalPages": 1, "results": results })
+}
+
+/// `GET /homepage/ombi/search/{query}`: the films and series that Ombi finds for a
+/// text, for a new request (D-108).
+pub async fn search(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    Extension(client): Extension<Client>,
+    headers: HeaderMap,
+    Path(query): Path<String>,
+) -> Result<Envelope<Value>, Refusal> {
+    let settings = state.settings();
+    request_permissions().check(&settings, &caller)?;
+    let query = query.trim();
+    if query.is_empty() || query.len() > LONGEST_QUERY {
+        return Err(Refusal::unprocessable("Search query was not supplied"));
+    }
+    let http = &state
+        .outbound_for(settings.ombi_use_custom_certificate)
+        .ok_or_else(no_requests)?;
+    let wanted = json!({"movies": true, "tvShows": true, "music": false, "people": false});
+    let reply = install(&settings, &headers, &client, None)
+        .send(
+            http,
+            Method::POST,
+            &format!("v2/search/multi/{}", encoded(query)),
+            Some(&wanted),
+            As::Application,
+        )
+        .await
+        .map_err(|error| unreachable(&error))?;
+    if reply.is_success {
+        Ok(Envelope::success(search_results(&reply.body)))
+    } else {
+        Err(failed("Ombi Search Error Occurred"))
+    }
+}
+
+#[cfg(test)]
+mod search_tests {
+    use super::*;
+
+    #[test]
+    fn the_search_keeps_films_and_series() {
+        let answer = json!([
+            {"id": "815", "mediaType": "movie", "title": "The Film", "poster": "/a.jpg", "overview": "A film."},
+            {"id": 816, "mediaType": "tv", "title": "The Show", "poster": null},
+            {"id": 1, "mediaType": "person", "title": "Somebody"},
+        ]);
+        let found = search_results(&answer);
+        let results = found["results"].as_array().unwrap();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0]["id"], 815);
+        assert_eq!(
+            results[0]["poster"],
+            "https://image.tmdb.org/t/p/w300/a.jpg"
+        );
+        assert_eq!(results[1]["type"], "tv");
     }
 }

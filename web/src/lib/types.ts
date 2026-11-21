@@ -156,6 +156,9 @@ export interface Launch {
       };
       /** The media search of the top bar: whether the caller has it, and its server. */
       search?: { enabled: boolean; type: string | null };
+      /** Whether the caller may make requests in Overseerr or Ombi. */
+      overseerr?: { enabled: boolean };
+      ombi?: { enabled: boolean };
     };
     /** What the server says about single sign-on. */
     sso: {

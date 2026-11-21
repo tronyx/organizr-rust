@@ -8,6 +8,7 @@
     title,
     label,
     filters,
+    buttons,
     children,
   }: {
     /** The title above the row. */
@@ -16,6 +17,8 @@
     label: string;
     /** The filters of the row, in the menu of the filter button. */
     filters?: Snippet;
+    /** More buttons at the end of the group, such as the search of the requests. */
+    buttons?: Snippet;
     /** The posters: `li` elements. */
     children: Snippet;
   } = $props();
@@ -50,6 +53,7 @@
           <span class="org-caret" aria-hidden="true"></span>
         </button>
       {/if}
+      {@render buttons?.()}
     </div>
     {#if filters && filtersOpen}
       <div class="org-row-menu">

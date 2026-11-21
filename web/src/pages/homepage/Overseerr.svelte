@@ -6,6 +6,7 @@
   import { itemData } from '../../lib/itemData.svelte';
   import { pictureAddress } from '../../lib/plex';
   import PosterRow from './PosterRow.svelte';
+  import RequestSearch from './RequestSearch.svelte';
   import { session } from '../../lib/session.svelte';
   import { fromNow } from '../../lib/time';
   import {
@@ -67,6 +68,9 @@
 
   const stateOf = requestState;
 
+  /** Whether the person may make a request here: the level, and the session of the service. */
+  const canRequest = $derived(session.launch?.settings.homepage[service]?.enabled === true);
+
   /** The name of the person who made a request, as the settings show it. */
   function requesterOf(request: Request): string {
     return (options.alias === false ? '' : request.userAlias) || request.user;
@@ -116,7 +120,21 @@
       </label>
     {/each}
   {/snippet}
-  <PosterRow title="Requests" label="Requests" {filters}>
+  {#snippet searchButton()}
+    <RequestSearch
+      {service}
+      onrequested={(message) => {
+        done = message;
+        void item.reload();
+      }}
+    />
+  {/snippet}
+  <PosterRow
+    title="Requests"
+    label="Requests"
+    {filters}
+    buttons={canRequest ? searchButton : undefined}
+  >
     {#each shown as request (request.request_id)}
       {@const picture = pictureAddress(request.poster)}
       {@const state = STATES[stateOf(request)]}

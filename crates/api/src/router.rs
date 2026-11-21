@@ -222,6 +222,14 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             &get(homepage::overseerr::metadata),
         )?
         .route(
+            "/homepage/overseerr/search/{query}",
+            &get(homepage::overseerr::search),
+        )?
+        .route(
+            "/homepage/overseerr/search/{query}/{page}",
+            &get(homepage::overseerr::search_page),
+        )?
+        .route(
             "/homepage/overseerr/requests",
             &get(homepage::overseerr::requests),
         )?
@@ -265,6 +273,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/homepage/overseerr/requests/{type}/{id}/{seasons}",
             &post(homepage::overseerr::add_request_for_seasons),
         )?
+        .route("/homepage/ombi/search/{query}", &get(homepage::ombi::search))?
         .route("/homepage/ombi/requests", &get(homepage::ombi::requests))?
         .route(
             "/homepage/ombi/requests/{type}",

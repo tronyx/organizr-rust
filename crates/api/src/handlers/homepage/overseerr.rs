@@ -10,6 +10,7 @@ use organizr_integrations::overseerr::{As, Install, OverseerrError, Reply, defau
 use organizr_settings::Settings;
 use serde_json::{Map, Value, json};
 
+use super::request_search::{self, LONGEST_QUERY, encoded};
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
 use crate::client::Client;
@@ -743,5 +744,143 @@ mod tests {
             row.and_then(|row| row.get("user").cloned()),
             Some(json!("Pat"))
         );
+    }
+}
+
+/// The state of a film or a series in Overseerr, in the words of the search.
+fn search_status(entry: &Value) -> Option<&'static str> {
+    match number_of(entry, &["mediaInfo", "status"]) {
+        Some(4 | 5) => Some("available"),
+        Some(2 | 3) => Some("requested"),
+        _ => None,
+    }
+}
+
+/// The films and series of an answer of `GET /api/v1/search` of Overseerr, without
+/// the people, in the shape of [`request_search::result`].
+fn search_results(answer: &Value) -> Value {
+    let results: Vec<Value> = answer
+        .get("results")
+        .and_then(Value::as_array)
+        .map_or_default(|entries| {
+            entries
+                .iter()
+                .filter_map(|entry| {
+                    let kind = kind(text_of(entry, &["mediaType"]))?;
+                    let id = number_of(entry, &["id"])?;
+                    let title = match text_of(entry, &["title"]) {
+                        "" => text_of(entry, &["name"]),
+                        title => title,
+                    };
+                    let date = match text_of(entry, &["releaseDate"]) {
+                        "" => text_of(entry, &["firstAirDate"]),
+                        date => date,
+                    };
+                    Some(request_search::result(
+                        id,
+                        kind,
+                        (title, date),
+                        (
+                            text_of(entry, &["posterPath"]),
+                            text_of(entry, &["overview"]),
+                        ),
+                        search_status(entry),
+                    ))
+                })
+                .collect()
+        });
+    json!({
+        "page": number_of(answer, &["page"]).unwrap_or(1),
+        "totalPages": number_of(answer, &["totalPages"]).unwrap_or(1),
+        "results": results,
+    })
+}
+
+async fn search_at(
+    state: &AppState,
+    caller: &Caller,
+    client: &Client,
+    headers: &HeaderMap,
+    (query, page): (&str, &str),
+) -> Result<Envelope<Value>, Refusal> {
+    let settings = state.settings();
+    request_permissions().check(&settings, caller)?;
+    let query = query.trim();
+    if query.is_empty() || query.len() > LONGEST_QUERY {
+        return Err(Refusal::unprocessable("Search query was not supplied"));
+    }
+    let Some(page) = number(page) else {
+        return Err(Refusal::unprocessable("Page was not supplied"));
+    };
+    let http = &outbound(state, &settings)?;
+    let reply = install(&settings, headers, client, false)
+        .get(
+            http,
+            &format!("search?query={}&page={page}&language=en", encoded(query)),
+        )
+        .await
+        .map_err(|error| unreachable(&error))?;
+    if reply.is_success {
+        Ok(Envelope::success(search_results(&reply.body)))
+    } else {
+        Err(failed("Overseerr Search Error Occurred"))
+    }
+}
+
+/// `GET /homepage/overseerr/search/{query}`: the films and series that Overseerr finds
+/// for a text, for a new request (D-108).
+pub async fn search(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    Extension(client): Extension<Client>,
+    headers: HeaderMap,
+    Path(query): Path<String>,
+) -> Result<Envelope<Value>, Refusal> {
+    search_at(&state, &caller, &client, &headers, (&query, "1")).await
+}
+
+/// `GET /homepage/overseerr/search/{query}/{page}`: a later page of the search.
+pub async fn search_page(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    Extension(client): Extension<Client>,
+    headers: HeaderMap,
+    Path((query, page)): Path<(String, String)>,
+) -> Result<Envelope<Value>, Refusal> {
+    search_at(&state, &caller, &client, &headers, (&query, &page)).await
+}
+
+#[cfg(test)]
+mod search_tests {
+    use super::*;
+
+    #[test]
+    fn the_search_keeps_films_and_series_with_their_state() {
+        let answer = json!({
+            "page": 1,
+            "totalPages": 3,
+            "results": [
+                {"id": 815, "mediaType": "movie", "title": "The Film", "releaseDate": "2019-05-01",
+                 "posterPath": "/a.jpg", "overview": "A film.", "mediaInfo": {"status": 5}},
+                {"id": 816, "mediaType": "tv", "name": "The Show", "firstAirDate": "2020-01-01",
+                 "posterPath": null, "mediaInfo": {"status": 2}},
+                {"id": 1, "mediaType": "person", "name": "Somebody"},
+            ],
+        });
+        let found = search_results(&answer);
+        assert_eq!(found["totalPages"], 3);
+        let results = found["results"].as_array().unwrap();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0]["title"], "The Film");
+        assert_eq!(results[0]["year"], "2019");
+        assert_eq!(results[0]["status"], "available");
+        assert_eq!(
+            results[0]["poster"],
+            "https://image.tmdb.org/t/p/w300/a.jpg"
+        );
+        assert_eq!(results[1]["type"], "tv");
+        assert_eq!(results[1]["title"], "The Show");
+        assert_eq!(results[1]["status"], "requested");
+        assert_eq!(results[1]["poster"], "plugins/images/homepage/no-list.png");
     }
 }
