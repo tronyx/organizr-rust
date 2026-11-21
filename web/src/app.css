@@ -1542,6 +1542,77 @@
     background: rgb(0 194 146 / 0.25);
   }
 
+  /* Small screens: the main tabs of the settings show their pictures only, as in PHP,
+     the group tabs of a form stand above it as a row that scrolls, and the fields take
+     one column. */
+  @media (max-width: 767px) {
+    .org-settings {
+      padding: 0 8px 8px;
+    }
+
+    .org-page-title {
+      margin: 0 -8px 12px;
+      padding: 10px 16px 6px;
+    }
+
+    .org-main-tabs a {
+      min-width: 0;
+    }
+
+    .org-main-tabs a span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .org-tab-body,
+    .org-panel-body {
+      padding: 12px;
+    }
+
+    .org-panel-heading {
+      padding: 14px 12px;
+    }
+
+    .org-form-body {
+      flex-direction: column;
+    }
+
+    .org-vtabs {
+      flex: 0 0 auto;
+      flex-direction: row;
+      overflow-x: auto;
+      border-right: 0;
+      border-bottom: 1px solid rgb(120 130 140 / 0.13);
+    }
+
+    .org-vtabs button {
+      flex: 0 0 auto;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .org-vtabs button.org-current {
+      border-right: 0;
+      border-bottom: 2px solid var(--color-info);
+    }
+
+    .org-form-fields {
+      padding: 12px 0 0;
+    }
+
+    .org-form-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .org-login-sidebar .org-login-box {
+      padding: 25px;
+    }
+  }
+
   .org-login-box {
     padding: 50px;
   }
