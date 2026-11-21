@@ -113,7 +113,7 @@ fn find<'a>(themes: &'a Map<String, Value>, cleaned: &str) -> Option<(&'a String
 
 /// Every theme that the install has: the built-in ones, and the installed ones after
 /// them, as PHP's `getAllThemesInformation()` sends them.
-fn all_themes(settings: &Settings) -> Map<String, Value> {
+pub(crate) fn all_themes(settings: &Settings) -> Map<String, Value> {
     let mut themes: Map<String, Value> = BUILT_IN
         .iter()
         .map(|name| ((*name).to_owned(), built_in(name)))

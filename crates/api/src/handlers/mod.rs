@@ -38,6 +38,7 @@ pub mod ping;
 pub mod plex;
 pub mod plugins;
 pub mod register;
+pub mod settings_forms;
 pub mod socks;
 pub mod speed_test;
 pub mod sponsors;

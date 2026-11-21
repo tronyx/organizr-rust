@@ -18,8 +18,8 @@ use crate::handlers::{
     backups, basics, bookmarks, categories, chat, config, connection_tests,
     connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
     homepage, icon, images, invites, ip, launch, lock, log, login, login_backends, logout, mail,
-    media_register, news, oidc, pages, ping, plex, plugins, register, socks, speed_test, sponsors,
-    tabs, themes, token, two_factor, users, users_import, wizard,
+    media_register, news, oidc, pages, ping, plex, plugins, register, settings_forms, socks,
+    speed_test, sponsors, tabs, themes, token, two_factor, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -434,6 +434,40 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route(
             "/plugins/manage/{plugin}",
             &post(plugins::manage).delete(plugins::manage),
+        )?
+        .route("/settings/appearance", &get(settings_forms::appearance))?
+        .route("/settings/plugin", &get(settings_forms::plugin))?
+        .route("/settings/theme", &get(settings_forms::theme))?
+        .route("/settings/main", &get(settings_forms::main))?
+        .route("/settings/sso", &get(settings_forms::sso))?
+        .route("/settings/homepage", &get(settings_forms::homepage))?
+        .route(
+            "/settings/homepage/{item}",
+            &get(settings_forms::homepage_item_form),
+        )?
+        .route(
+            "/settings/homepage/{item}/debug",
+            &get(settings_forms::homepage_item_debug),
+        )?
+        .route(
+            "/plugins/bookmark/settings",
+            &get(settings_forms::bookmark_plugin),
+        )?
+        .route(
+            "/plugins/healthchecks/settings",
+            &get(settings_forms::health_checks_plugin),
+        )?
+        .route(
+            "/plugins/invites/settings",
+            &get(settings_forms::invites_plugin),
+        )?
+        .route(
+            "/plugins/php-mailer/settings",
+            &get(settings_forms::mailer_plugin),
+        )?
+        .route(
+            "/plugins/speedtest/settings",
+            &get(settings_forms::speed_test_plugin),
         )?
         .route("/plugins/chat/settings", &get(chat::settings))?
         .route(

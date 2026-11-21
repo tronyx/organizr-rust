@@ -27,7 +27,7 @@ use crate::state::AppState;
 const MANAGER: GroupLevel = GroupLevel::CO_ADMIN;
 
 /// What the answer shows for a secret that has a value.
-const SECURE: &str = "***Secure***";
+pub(crate) const SECURE: &str = "***Secure***";
 
 /// The setting that holds the API key. Only an Admin sees it and changes it.
 const API_KEY: &str = "organizrAPI";
@@ -50,7 +50,7 @@ fn is_for_admins_only(key: &str) -> bool {
 }
 
 /// A setting as the API shows it to a caller of the given level.
-fn shown(key: &str, value: Value, level: GroupLevel) -> Value {
+pub(crate) fn shown(key: &str, value: Value, level: GroupLevel) -> Value {
     let is_empty = value.as_str().is_some_and(str::is_empty);
     let may_see = key == API_KEY && level == GroupLevel::ADMIN;
     if Settings::is_secret(key) && !is_empty && !may_see {
