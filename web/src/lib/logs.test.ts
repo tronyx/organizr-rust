@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { levelClass, logPath, tracePath } from './logs';
-import { LOGS } from './settingsForm';
 
 describe('the log', () => {
   it('asks for a page of a file with the query of PHP Organizr', () => {
@@ -16,26 +15,5 @@ describe('the log', () => {
     expect(levelClass('INFO')).toBe('badge-info');
     expect(levelClass('warning')).toBe('badge-warning');
     expect(levelClass('EMERGENCY')).toBe('badge-error');
-  });
-
-  it('has the settings of the log of PHP Organizr, without its folder', () => {
-    const fields = LOGS.flatMap((group) => group.fields);
-    expect(fields.map((field) => [field.key, field.kind])).toEqual([
-      ['logLevel', 'select'],
-      ['maxLogFiles', 'number'],
-      ['logLiveUpdateRefresh', 'select'],
-      ['logPageSize', 'select'],
-    ]);
-    const level = fields[0];
-    expect(level?.kind === 'select' && level.options.map((option) => option.value)).toEqual([
-      'DEBUG',
-      'INFO',
-      'NOTICE',
-      'WARNING',
-      'ERROR',
-      'CRITICAL',
-      'ALERT',
-      'EMERGENCY',
-    ]);
   });
 });

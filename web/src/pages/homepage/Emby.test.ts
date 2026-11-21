@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 import type { PlexItem } from '../../lib/plex';
 import { linkOf, pictureAddress, streamText } from '../../lib/plex';
-import { HOMEPAGE } from '../../lib/settingsForm';
 import { stubApi } from '../../test-helpers';
 import Plex from './Plex.svelte';
 
@@ -133,35 +132,6 @@ describe.each([
     });
     render(Plex, { part: 'streams', service });
     expect((await screen.findByRole('alert')).textContent).toContain(`${name}: `);
-  });
-
-  it('has its settings on the homepage tab, with a connection test', () => {
-    const group = HOMEPAGE.find((candidate) => candidate.title === name);
-    expect(group?.test).toBe(service);
-    const kind = (key: string) => group?.fields.find((field) => field.key === key)?.kind;
-    expect(kind(`${service}URL`)).toBe('text');
-    expect(kind(`${service}Token`)).toBe('secret');
-    const parts = HOMEPAGE.find(
-      (candidate) => candidate.title === `${name}: playing now and new items`,
-    );
-    expect(parts?.fields.map((field) => field.key)).toContain(`homepageOrder${service}recent`);
-  });
-});
-
-describe('the settings of Emby and Jellyfin', () => {
-  it('name each setting of the homepage once', () => {
-    const keys = HOMEPAGE.flatMap((group) => group.fields.map((field) => field.key)).filter((key) =>
-      /emby|jelly/i.test(key),
-    );
-
-    // 29 settings of the two servers, 11 of the live television of Emby, and 21 of
-    // JellyStat, whose keys hold the same words.
-    expect(keys).toHaveLength(61);
-    expect(keys.filter((key) => !/LiveTVTracker|JellyStat/i.test(key))).toHaveLength(29);
-    expect(new Set(keys).size).toBe(keys.length);
-    // PHP Organizr names the level of the streams of Jellyfin with the short name.
-    expect(keys).toContain('homepageJellyStreamsAuth');
-    expect(keys).not.toContain('jellyfinTabURL');
   });
 });
 

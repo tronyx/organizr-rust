@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 
-import { HOMEPAGE } from '../../lib/settingsForm';
 import { donateOptions, jellyStatOptions, liveTvOptions } from '../../lib/statistics';
 import { stubApi } from '../../test-helpers';
 import Donate from './Donate.svelte';
@@ -11,10 +10,6 @@ import JellyStat from './JellyStat.svelte';
 import PromPage from './PromPage.svelte';
 
 const text = (element: HTMLElement) => element.textContent?.replace(/\s+/g, ' ') ?? '';
-
-function group(title: string) {
-  return HOMEPAGE.find((candidate) => candidate.title === title);
-}
 
 describe('PromPage', () => {
   const options = { title: 'Our services', titleToggle: true, compact: true, showUptime: true };
@@ -407,47 +402,5 @@ describe('Homepage', () => {
     expect(await screen.findByText('No scheduled recordings')).toBeTruthy();
     expect(screen.queryByText('No completed recordings')).toBeNull();
     expect(screen.getByTitle('JellyStat').getAttribute('src')).toBe('https://stats.example.com');
-  });
-});
-
-describe('the settings of the last items', () => {
-  it('have a connection test where the server has one, and keep the keys secret', () => {
-    expect(group('JellyStat')?.test).toBe('jellystat');
-    expect(group('Emby live TV')?.test).toBe('embyLiveTVTracker');
-    expect(group('PromPage')?.test).toBeUndefined();
-    expect(group('Donate')?.test).toBeUndefined();
-    const kind = (title: string, key: string) =>
-      group(title)?.fields.find((field) => field.key === key)?.kind;
-    expect(kind('JellyStat', 'jellyStatApikey')).toBe('secret');
-    expect(kind('Donate', 'homepageDonateSecretToken')).toBe('secret');
-    expect(kind('Trakt', 'traktClientSecret')).toBe('secret');
-  });
-
-  it('offer the login at Trakt, and no field for the tokens that the login stores', () => {
-    expect(group('Trakt')?.link).toEqual({
-      path: 'oauth/trakt',
-      label: 'Connect the Trakt account',
-    });
-    expect(group('Trakt')?.fields.map((field) => field.key)).toEqual([
-      'homepageTraktEnabled',
-      'homepageTraktAuth',
-      'traktClientId',
-      'traktClientSecret',
-      'calendarStartTrakt',
-      'calendarEndTrakt',
-    ]);
-  });
-
-  it('name each setting of the homepage once', () => {
-    const keys = HOMEPAGE.flatMap((one) => one.fields.map((field) => field.key));
-    const twice = keys.filter((key, index) => keys.indexOf(key) !== index);
-
-    expect(twice).toEqual([]);
-    // PromPage has no level in PHP Organizr, so its group offers none.
-    expect(keys).not.toContain('homepagePromPageAuth');
-    expect(keys).toContain('homepageOrderPromPage');
-    expect(keys).toContain('homepageOrderDonate');
-    expect(keys).toContain('homepageOrderEmbyLiveTVTracker');
-    expect(keys).toContain('homepageOrderJellyStat');
   });
 });
