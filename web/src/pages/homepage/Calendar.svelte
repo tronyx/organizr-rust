@@ -123,10 +123,11 @@
         <button type="button" aria-label="Later" onclick={() => move(1)}>
           <i class="oi oi-fontawesome fa-chevron-right" aria-hidden="true"></i>
         </button>
-        <button type="button" onclick={toToday}>Today</button>
+        <button type="button" disabled={cursor === now} onclick={toToday}>Today</button>
       </div>
       <h2 aria-live="polite">{title}</h2>
       <div class="org-calendar-buttons" role="group" aria-label="View of the calendar">
+        <button type="button" onclick={() => void item.reload()}>Refresh</button>
         {#if kinds.length + states.length > 0}
           <button
             type="button"

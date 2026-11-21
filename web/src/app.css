@@ -1886,6 +1886,53 @@
     opacity: 0.85;
   }
 
+  /* The filter menu of a row of posters, as the dropdown of PHP Organizr. */
+  .org-caret {
+    display: inline-block;
+    margin-left: 4px;
+    border-top: 4px solid;
+    border-right: 4px solid transparent;
+    border-left: 4px solid transparent;
+    vertical-align: middle;
+  }
+
+  .org-row-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    min-width: 160px;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 2px;
+    padding: 10px 20px;
+    border-radius: 3px;
+    background: var(--color-base-100);
+    box-shadow: 0 5px 12px rgb(0 0 0 / 0.35);
+    font-size: 14px;
+  }
+
+  .org-row-menu label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .org-row-menu button {
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .org-row-menu button[aria-pressed='true'] {
+    color: var(--color-info);
+  }
+
+  .org-row-menu hr {
+    border-color: rgb(120 130 140 / 0.25);
+  }
+
   .org-posters {
     display: flex;
     gap: 10px;
@@ -1966,6 +2013,12 @@
   .org-calendar-buttons button:hover,
   .org-calendar-buttons button[aria-pressed='true'] {
     background: var(--color-neutral);
+  }
+
+  .org-calendar-buttons button:disabled {
+    background: var(--color-base-100);
+    cursor: default;
+    opacity: 0.65;
   }
 
   .org-calendar-grid {

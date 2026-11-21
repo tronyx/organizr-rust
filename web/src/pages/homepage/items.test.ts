@@ -43,7 +43,7 @@ describe('HealthChecks', () => {
     expect(mail.textContent).toContain('prod');
     expect(mail.textContent).not.toContain('runbook');
     expect(unnamed.textContent).toContain('New Item');
-    expect(screen.getByRole('heading', { name: /Health checks/ }).textContent).toContain('2');
+    expect(screen.getByRole('heading', { name: /Health Checks/ }).textContent).toContain('2');
   });
 
   it('keeps the notes and the tags back when the options say so', async () => {

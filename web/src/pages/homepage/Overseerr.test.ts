@@ -76,6 +76,7 @@ describe('Overseerr', () => {
     // The picture that stands for "no picture" is not shown.
     expect(rows[2]?.querySelector('img')).toBeNull();
 
+    await fireEvent.click(screen.getByRole('button', { name: 'Filter Requests' }));
     await fireEvent.click(screen.getByLabelText('Denied'));
     expect(within(list).getAllByRole('listitem')).toHaveLength(2);
     // No state of "Approved" is in the list, so it has no switch.

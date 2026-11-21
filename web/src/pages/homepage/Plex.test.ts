@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/sve
 import { describe, expect, it } from 'vitest';
 
 import type { PlexItem } from '../../lib/plex';
-import { pictureAddress, streamText } from '../../lib/plex';
+import { pictureAddress, streamsSummary, streamText } from '../../lib/plex';
 import { stubApi } from '../../test-helpers';
 import Plex from './Plex.svelte';
 
@@ -141,5 +141,38 @@ describe('plex helpers', () => {
       streamText(item('A', { userStream: { videoResolution: '4k', product: 'Plex Web' } })),
     ).toBe('4k · Direct Playing · Plex Web');
     expect(streamText(item('A'))).toBe('Direct Playing');
+  });
+
+  it('sum up the streams as the info badge of PHP Organizr', () => {
+    const streams = [
+      item('A', { bandwidth: '8000', bandwidthType: 'wan' }),
+      item('B', { bandwidth: 4400, bandwidthType: 'lan', sessionType: 'Transcoding' }),
+    ];
+    expect(streamsSummary(streams, 'plex')).toBe(
+      'Streams: 1 Direct Play(s) & 1 Transcode(s) | Bandwidth: 12.4 Mbps | WAN: 8.0 Mbps | LAN: 4.4 Mbps',
+    );
+    expect(streamsSummary(streams.slice(0, 1), 'emby')).toBe(
+      'Streams: 1 Direct Play(s) | Bandwidth: 8.0 Mbps',
+    );
+  });
+
+  it('filters the recently added items by kind, as PHP Organizr does', async () => {
+    stubApi({
+      'GET homepage/plex/recent': {
+        data: { content: [item('The Film'), item('The Show', { type: 'tv' })] },
+      },
+    });
+    render(Plex, { part: 'recent' });
+
+    const list = await screen.findByRole('list', { name: 'Recently Added' });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    await fireEvent.click(screen.getByRole('button', { name: 'Filter Recently Added' }));
+    // Only the kinds that the list has are offered.
+    expect(screen.queryByRole('button', { name: 'Music' })).toBeNull();
+    await fireEvent.click(screen.getByRole('button', { name: 'Shows' }));
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    expect(list.textContent).toContain('The Show');
+    await fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
   });
 });

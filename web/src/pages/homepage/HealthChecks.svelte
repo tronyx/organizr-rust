@@ -49,7 +49,7 @@
   <div role="alert" class="alert alert-error"><span>Health checks: {item.error}</span></div>
 {:else if checks.length > 0}
   <h2 class="org-item-title">
-    Health checks : <span class="org-count">{checks.length}</span>
+    Health Checks : <span class="org-count">{checks.length}</span>
   </h2>
   <ul class="org-cards" aria-label="Health checks">
     {#each checks as check, index (index)}

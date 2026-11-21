@@ -105,7 +105,7 @@
   <p role="status" class="text-success text-sm">{done ?? ''}</p>
   {#snippet filters()}
     {#each states as state (state)}
-      <label class="flex items-center gap-1 text-sm">
+      <label>
         <input
           type="checkbox"
           class="checkbox checkbox-xs"
@@ -116,7 +116,7 @@
       </label>
     {/each}
   {/snippet}
-  <PosterRow title="Requests" label="Requests" controls={filters}>
+  <PosterRow title="Requests" label="Requests" {filters}>
     {#each shown as request (request.request_id)}
       {@const picture = pictureAddress(request.poster)}
       {@const state = STATES[stateOf(request)]}

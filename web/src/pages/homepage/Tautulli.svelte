@@ -74,11 +74,23 @@
   const item = itemData<Answer>('homepage/tautulli/data', 'homepageTautulliRefresh');
 
   const options = $derived(item.data?.options);
+  /** The order of the statistics on the page of PHP Organizr. */
+  const ORDER = [
+    'popular_movies',
+    'popular_tv',
+    'top_movies',
+    'top_tv',
+    'top_users',
+    'top_platforms',
+  ];
+
   const statistics = $derived(
-    (item.data?.homestats?.data ?? []).filter((statistic) => {
-      const known = KNOWN[statistic.stat_id];
-      return known && options?.[known.option] && (statistic.rows?.length ?? 0) > 0;
-    }),
+    (item.data?.homestats?.data ?? [])
+      .filter((statistic) => {
+        const known = KNOWN[statistic.stat_id];
+        return known && options?.[known.option] && (statistic.rows?.length ?? 0) > 0;
+      })
+      .sort((a, b) => ORDER.indexOf(a.stat_id) - ORDER.indexOf(b.stat_id)),
   );
   const libraries = $derived(options?.libraries ? (item.data?.libstats?.data ?? []) : []);
   /** The libraries of each kind that has one, the largest first. */

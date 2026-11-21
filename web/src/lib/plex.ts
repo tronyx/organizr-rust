@@ -37,6 +37,9 @@ export interface PlexItem {
   state: string;
   /** `Transcoding` or `Direct Playing`. */
   sessionType: string;
+  /** The bandwidth of a stream in kbps, and whether it goes to the `lan` or the `wan`. */
+  bandwidth?: string | number | null;
+  bandwidthType?: string | null;
   /** Who plays. Empty for a caller who does not see the names. */
   user: string;
   /** The address of the item in the web interface of the server, when there is one. */
@@ -94,4 +97,56 @@ export function streamText(item: PlexItem): string {
   return [resolution, item.sessionType, stream?.platform || stream?.product || '']
     .filter((part) => part !== '')
     .join(' · ');
+}
+
+/** The icon of the kind of an item on its stream card, as PHP Organizr draws it. */
+export function streamIcon(item: PlexItem): string {
+  return (
+    {
+      music: 'icon-music-tone-alt',
+      movie: 'icon-film',
+      tv: 'icon-screen-desktop',
+      video: 'icon-screen-film',
+    }[item.type] ?? ''
+  );
+}
+
+/**
+ * The summary of the streams of a server, as the info badge of PHP Organizr says it:
+ * "Streams: 2 Direct Play(s) | Bandwidth: 12.4 Mbps | WAN: 12.4 Mbps". PHP shows the WAN
+ * and the LAN parts for Plex only.
+ */
+export function streamsSummary(items: PlexItem[], service: MediaService): string {
+  let direct = 0;
+  let transcode = 0;
+  const bandwidth = { wan: 0, lan: 0 };
+  for (const item of items) {
+    if (item.sessionType === 'Direct Playing') {
+      direct += 1;
+    } else {
+      transcode += 1;
+    }
+    const kind = item.bandwidthType;
+    if (kind === 'wan' || kind === 'lan') {
+      bandwidth[kind] += Number(item.bandwidth) || 0;
+    }
+  }
+  const mbps = (kbps: number) => `${(kbps / 1000).toFixed(1)} Mbps`;
+  const counts = [
+    direct > 0 ? `${direct} Direct Play(s)` : '',
+    transcode > 0 ? `${transcode} Transcode(s)` : '',
+  ].filter((part) => part !== '');
+  const parts = [`Streams: ${counts.join(' & ')}`];
+  if (service === 'plex') {
+    parts.push(`Bandwidth: ${mbps(bandwidth.wan + bandwidth.lan)}`);
+    if (bandwidth.wan !== 0) {
+      parts.push(`WAN: ${mbps(bandwidth.wan)}`);
+    }
+    if (bandwidth.lan !== 0) {
+      parts.push(`LAN: ${mbps(bandwidth.lan)}`);
+    }
+  } else {
+    parts.push(`Bandwidth: ${mbps(bandwidth.wan)}`);
+  }
+  return parts.join(' | ');
 }

@@ -21,6 +21,7 @@
     service = 'plex',
     detailsPath = `homepage/${service}/metadata`,
     serverName = SERVICE_NAMES[service],
+    byKind = false,
   }: {
     items: PlexItem[];
     label: string;
@@ -32,7 +33,19 @@
     detailsPath?: string;
     /** The name of the server on the button that opens an item there. */
     serverName?: string;
+    /** Whether the row has the filter of PHP Organizr: all, films, series or music. */
+    byKind?: boolean;
   } = $props();
+
+  /** The kinds that the filter offers, with the words of PHP Organizr. */
+  const KINDS: [string, string][] = [
+    ['movie', 'Movies'],
+    ['tv', 'Shows'],
+    ['music', 'Music'],
+  ];
+  let kind = $state<string | null>(null);
+  const kinds = $derived(KINDS.filter(([name]) => items.some((item) => item.type === name)));
+  const listed = $derived(kind === null ? items : items.filter((item) => item.type === kind));
 
   // The item is kept as it is, so it can be told apart from the item of a later click.
   let open = $state.raw<PlexItem | null>(null);
@@ -66,8 +79,16 @@
   const actors = $derived(Array.isArray(shown?.metadata?.actors) ? shown.metadata.actors : []);
 </script>
 
-<PosterRow {title} {label}>
-  {#each items as item, index (index)}
+{#snippet kindFilters()}
+  <button type="button" aria-pressed={kind === null} onclick={() => (kind = null)}>All</button>
+  <hr />
+  {#each kinds as [name, word] (name)}
+    <button type="button" aria-pressed={kind === name} onclick={() => (kind = name)}>{word}</button>
+  {/each}
+{/snippet}
+
+<PosterRow {title} {label} filters={byKind && kinds.length > 0 ? kindFilters : undefined}>
+  {#each listed as item, index (index)}
     {@const picture = pictureAddress(item.imageURL)}
     <li class="org-poster">
       <button type="button" title="{item.title} {subtitleOf(item)}" onclick={() => show(item)}>

@@ -8,6 +8,8 @@
     type PlexAnswer,
     type PlexItem,
     SERVICE_NAMES,
+    streamIcon,
+    streamsSummary,
     streamText,
   } from '../../lib/plex';
   import PlexPosters from './PlexPosters.svelte';
@@ -67,11 +69,15 @@
       <h2 class="org-item-title">
         Active {name} Streams<span aria-hidden="true">:</span>
         <span class="org-count">{items.length}</span>
+        <span class="org-count" title={streamsSummary(items, service)}>
+          <i class="oi oi-fontawesome fa-info" aria-hidden="true"></i>
+          <span class="sr-only">{streamsSummary(items, service)}</span>
+        </span>
       </h2>
       <ul class="org-cards" aria-label="Active {name} Streams">
         {#each items as stream, index (index)}
           {@const picture = pictureAddress(stream.nowPlayingImageURL)}
-          <li class="org-stream">
+          <li class="org-stream" title={streamText(stream)}>
             {#if picture}
               <img class="aspect-video w-full object-cover" src={picture} alt="" loading="lazy" />
             {/if}
@@ -94,7 +100,12 @@
               <span class="sr-only">{stream.state === 'pause' ? 'Paused' : 'Playing'}</span>
             </div>
             <div class="flex items-center justify-between gap-2 px-2.5 pb-2 text-xs">
-              <span class="truncate">{stream.nowPlayingBottom ?? ''}</span>
+              <span class="truncate">
+                {#if streamIcon(stream)}
+                  <i class="oi oi-simpleline {streamIcon(stream)} text-info" aria-hidden="true"></i>
+                {/if}
+                {stream.nowPlayingBottom ?? ''}
+              </span>
               {#if stream.user}
                 <span class="shrink-0">
                   {stream.user}
@@ -102,7 +113,8 @@
                 </span>
               {/if}
             </div>
-            <p class="truncate px-2.5 pb-2 text-xs opacity-60">{streamText(stream)}</p>
+            <!-- PHP Organizr shows how the stream plays in a pop-up; here it is the title of the card. -->
+            <p class="sr-only">{streamText(stream)}</p>
           </li>
         {/each}
       </ul>
@@ -112,7 +124,7 @@
       <h2 class="org-item-title">Recently Added<span aria-hidden="true">:</span></h2>
       <p class="text-sm">Nothing was added.</p>
     {:else}
-      <PlexPosters {items} {service} label="Recently Added" />
+      <PlexPosters {items} {service} label="Recently Added" byKind />
     {/if}
   {:else}
     {#if playlist}

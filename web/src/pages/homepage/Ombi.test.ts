@@ -96,6 +96,7 @@ describe('Ombi', () => {
     const list = await screen.findByRole('list', { name: 'Requests' });
     expect(rowTexts(list)).toEqual(['The Show Waiting']);
     // The person can switch a state on again.
+    await fireEvent.click(screen.getByRole('button', { name: 'Filter Requests' }));
     await fireEvent.click(screen.getByLabelText('Denied'));
     expect(rowTexts(list)).toHaveLength(2);
   });
