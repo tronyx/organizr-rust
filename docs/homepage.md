@@ -458,13 +458,11 @@ This item shows the torrents of Deluge and how far each one is.
 
 The address is the address of the web interface of Deluge. The password is the password of the web interface.
 
-Deluge needs the plugin WebAPI, as in PHP Organizr:
+PHP Organizr needs the Deluge plugin WebAPI. This version uses the plugin when Deluge has it, and otherwise asks Deluge itself. Without the plugin, Organizr connects the web interface of Deluge to its first daemon when it is not connected yet. To use the plugin:
 
 1. Download the plugin from `https://github.com/idlesign/deluge-webapi/tree/master/dist`.
 2. Open the web interface of Deluge. Go to **Preferences**, then **Plugins**, and select **Install plugin**.
 3. Switch the plugin **WebAPI** on.
-
-Without the plugin, Deluge answers with an error, and the item shows that error.
 
 Organizr logs in to Deluge with the password each time it loads the torrents. Deluge has ten seconds to answer.
 
@@ -558,7 +556,7 @@ The item shows the packages. It has no buttons to start, pause or stop the downl
 
 ## Pi-hole
 
-This item shows how many requests Pi-hole got today, how many it blocked, and how many domains are on its lists. Pi-hole is a server that blocks advertisements for a whole network.
+This item shows how many requests Pi-hole got in the last 24 hours, how many it blocked, and which domains it blocked. Pi-hole is a server that blocks advertisements for a whole network.
 
 | Setting | Key |
 |---|---|
@@ -566,18 +564,18 @@ This item shows how many requests Pi-hole got today, how many it blocked, and ho
 | Level | `homepagePiholeAuth` |
 | Place | `homepageOrderPihole` |
 | Addresses | `piholeURL` |
-| Tokens | `piholeToken` |
+| Passwords | `piholeToken` |
 | Add the installs up | `homepagePiholeCombine` |
 | Show the title | `piholeHeaderToggle` |
 | Milliseconds between two loads | `homepagePiholeRefresh` |
 
-The address is the address of the web interface, for example `http://192.168.1.2/admin`. The token is the API token from the settings of Pi-hole.
+The address is the address of Pi-hole without `/admin`, for example `http://192.168.1.2`. The password is the password of the web interface, or an app password from the settings of Pi-hole. Organizr logs in with it each time it loads the item, and removes its older sessions.
 
-For more than one install, put commas between the addresses, and give the tokens in the same order with commas between them. Organizr asks an address only when the list of tokens has a place for it. For two installs without tokens, enter one comma as the tokens.
+For more than one install, put commas between the addresses, and give the passwords in the same order with commas between them. Organizr asks an address only when the list of passwords has a place for it.
 
-The answer names each install by its host. Two installs on one host with different ports do not work together, as in PHP Organizr.
+The answer names each install by its address.
 
-The item works with Pi-hole 5. Pi-hole 6 has another API, which this item does not know. PHP Organizr does not know it either.
+The item works with Pi-hole 6, as in PHP Organizr 2.1.5000. Pi-hole 5 is not supported.
 
 ## Weather and air
 
@@ -971,6 +969,8 @@ This item shows how many requests [AdGuard Home](https://adguard.com/adguard-hom
 | Level | `homepageAdGuardAuth` |
 | Place | `homepageOrderAdguard` |
 | Addresses | `adguardURL` |
+| User name | `adGuardUsername` |
+| Password | `adGuardPassword` |
 | Show the title | `adguardHeaderToggle` |
 | Show the installs in one row of cards | `homepageAdGuardCombine` |
 | Show the total of the queries | `adguardQueriesToggle` |
@@ -982,7 +982,7 @@ This item shows how many requests [AdGuard Home](https://adguard.com/adguard-hom
 
 For more than one install, put commas between the addresses. The answer names each install by its host.
 
-Organizr sends no user name and no password to AdGuard Home. PHP Organizr reads them from two settings, `adGuardUsername` and `adGuardPassword`, that its default settings do not have, and this version has only the settings of the defaults. So the item works with an install that answers its API without a login. An install that asks for a login refuses the request: the item then shows no numbers for it, and the connection test names it with "Unknown Failure".
+The user name and the password are those of the web interface of AdGuard Home. Organizr sends them to each install, as PHP Organizr does. Without a user name, Organizr sends no login, which works only with an install that has no login. An install that refuses the login shows no numbers, and the connection test names it with "Unknown Failure".
 
 The number of domains on the block lists is the sum of the rules of all filter lists and of the rules of the install itself.
 
