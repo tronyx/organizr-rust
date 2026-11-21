@@ -146,6 +146,9 @@ pub async fn emby_local(
 
 /// Checks a name and a password with the Jellyfin server at `url` (complete, without a
 /// slash at the end), as [`emby_local`] does with Emby.
+///
+/// The device goes in the header `Authorization`. PHP sends it in `X-Emby-Authorization`,
+/// which Jellyfin 12 refuses with 400 (D-99).
 pub async fn jellyfin(
     http: &Outbound,
     url: &str,
@@ -156,7 +159,7 @@ pub async fn jellyfin(
     let answer = send(
         http.client_for(&address)
             .post(&address)
-            .header("X-Emby-Authorization", JELLYFIN_DEVICE)
+            .header("Authorization", JELLYFIN_DEVICE)
             .json(&json!({"Username": username, "Pw": password})),
     )
     .await?;
@@ -169,7 +172,7 @@ pub async fn jellyfin(
     succeeds(
         http.client_for(&address)
             .post(&address)
-            .header("X-Emby-Authorization", header)
+            .header("Authorization", header)
             .header("Content-Type", "application/json"),
     )
     .await

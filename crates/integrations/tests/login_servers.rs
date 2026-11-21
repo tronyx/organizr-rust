@@ -423,7 +423,9 @@ async fn emby_local_refuses_a_user_without_a_password_and_a_failed_log_out() {
 }
 
 #[tokio::test]
-async fn jellyfin_login_sends_what_php_sends() {
+/// PHP sends the device in `X-Emby-Authorization`, which Jellyfin 12 refuses with
+/// 400. The header `Authorization` carries the same text and works on every Jellyfin (D-99).
+async fn jellyfin_login_sends_the_device_of_php_in_authorization() {
     let seen = Seen::default();
     let jellyfin = media_server(Arc::clone(&seen), "/Users/authenticatebyname", true).await;
     let http = outbound();
@@ -439,7 +441,8 @@ async fn jellyfin_login_sends_what_php_sends() {
     let seen = seen.lock().expect("it locks").clone();
     let (_, headers, body) = &seen[0];
     let device = "MediaBrowser Client=\"Organizr Auth\", Device=\"Organizr\", DeviceId=\"orgv2\", Version=\"2.0\"";
-    assert_eq!(headers["x-emby-authorization"], device);
+    assert_eq!(headers["authorization"], device);
+    assert!(headers.get("x-emby-authorization").is_none());
     assert_eq!(
         serde_json::from_str::<Value>(body).expect("JSON"),
         json!({"Username": "robin", "Pw": "robin-media-password"})
@@ -447,9 +450,10 @@ async fn jellyfin_login_sends_what_php_sends() {
     let (path, headers, _) = &seen[1];
     assert_eq!(path, "/Sessions/Logout");
     assert_eq!(
-        headers["x-emby-authorization"],
+        headers["authorization"],
         format!("{device}, Token=\"session-token-of-robin\"")
     );
+    assert!(headers.get("x-emby-authorization").is_none());
 }
 
 /// A stand-in for Emby Connect, with the account "Robin" of the given address.

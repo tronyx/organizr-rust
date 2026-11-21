@@ -198,9 +198,9 @@ async fn added_key_cannot_replace_a_recorded_value() {
 }
 
 #[tokio::test]
-#[should_panic(expected = "D-99 is not an entry of docs/deviations.md")]
+#[should_panic(expected = "D-9999 is not an entry of docs/deviations.md")]
 async fn added_key_needs_an_approved_deviation() {
-    let _ = basics().deviation_adds("D-99", "status", "/response/data", "made_up", json!(true));
+    let _ = basics().deviation_adds("D-9999", "status", "/response/data", "made_up", json!(true));
 }
 
 #[tokio::test]
@@ -326,9 +326,9 @@ async fn value_for_a_null_that_the_recording_does_not_have_is_refused() {
 }
 
 #[tokio::test]
-#[should_panic(expected = "D-99 is not an entry of docs/deviations.md")]
+#[should_panic(expected = "D-9999 is not an entry of docs/deviations.md")]
 async fn value_for_nulls_needs_an_approved_deviation() {
-    let _ = basics().deviation_for_nulls("D-99", "ping", &["message"], json!(0));
+    let _ = basics().deviation_for_nulls("D-9999", "ping", &["message"], json!(0));
 }
 
 #[tokio::test]
@@ -380,9 +380,9 @@ async fn absent_key_that_the_recording_does_not_have_is_refused() {
 }
 
 #[tokio::test]
-#[should_panic(expected = "D-99 is not an entry of docs/deviations.md")]
+#[should_panic(expected = "D-9999 is not an entry of docs/deviations.md")]
 async fn absent_key_needs_an_approved_deviation() {
-    let _ = basics().deviation_without("D-99", "rox", "/response/message");
+    let _ = basics().deviation_without("D-9999", "rox", "/response/message");
 }
 
 #[tokio::test]
@@ -428,7 +428,7 @@ async fn sorted_keys_marker_on_something_that_is_no_object_is_refused() {
 }
 
 #[tokio::test]
-#[should_panic(expected = "D-99 is not an entry of docs/deviations.md")]
+#[should_panic(expected = "D-9999 is not an entry of docs/deviations.md")]
 async fn sorted_keys_need_an_approved_deviation() {
-    let _ = basics().deviation_sorts_keys("D-99", "rox", "/response");
+    let _ = basics().deviation_sorts_keys("D-9999", "rox", "/response");
 }
