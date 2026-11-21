@@ -81,8 +81,14 @@
   onMount(load);
 </script>
 
-<main class="mx-auto max-w-4xl p-4">
-  <h1 class="mb-2 text-xl font-semibold">Invites</h1>
+<main class="org-settings">
+  <div class="org-page-title">
+    <h1>Invites</h1>
+    <ol class="org-breadcrumb" aria-label="Where you are">
+      <li>Plugins</li>
+      <li>Invites</li>
+    </ol>
+  </div>
   <p class="mb-4 max-w-2xl text-sm">
     An invite gives a person access to the Plex server. Give the code to the person. The person
     opens <a class="link" href={PAGES.useInvite}>the page for an invite code</a> and enters the code with

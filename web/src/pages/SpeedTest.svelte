@@ -53,8 +53,14 @@
   }
 </script>
 
-<main class="mx-auto max-w-2xl p-4">
-  <h1 class="mb-2 text-xl font-semibold">Speed test</h1>
+<main class="org-settings">
+  <div class="org-page-title">
+    <h1>Speed test</h1>
+    <ol class="org-breadcrumb" aria-label="Where you are">
+      <li>Plugins</li>
+      <li>Speed test</li>
+    </ol>
+  </div>
   <p class="mb-4 text-sm">
     The test measures the connection between this browser and Organizr. It takes about twenty
     seconds and moves up to some hundred megabytes.
