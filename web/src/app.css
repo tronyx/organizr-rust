@@ -1440,6 +1440,18 @@
     background: var(--color-base-200);
   }
 
+  /* The pages next to the login stand in the same panel, without a card of their own. */
+  .org-login-sidebar .card {
+    max-width: none;
+    padding: 25px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .org-login-sidebar .card .btn {
+    text-transform: uppercase;
+  }
+
   .org-login-box {
     padding: 50px;
   }

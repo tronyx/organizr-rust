@@ -1,6 +1,7 @@
 <script lang="ts">
   // The page for a person who forgot the password: the server sends a new password to
   // the e-mail address of the account.
+  import LoginLayout from '../components/LoginLayout.svelte';
   import { api, failureText } from '../lib/api';
   import { PAGES } from '../lib/route.svelte';
 
@@ -24,7 +25,7 @@
   }
 </script>
 
-<main class="grid min-h-[70vh] place-items-center p-4">
+<LoginLayout>
   <form class="card bg-base-200 w-full max-w-sm shadow" onsubmit={recover}>
     <div class="card-body">
       <h1 class="card-title">Get a new password</h1>
@@ -71,4 +72,4 @@
       </div>
     </div>
   </form>
-</main>
+</LoginLayout>

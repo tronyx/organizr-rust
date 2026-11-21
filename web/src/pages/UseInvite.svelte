@@ -2,6 +2,7 @@
   // The page for a person with an invite code. The code and the name of a Plex account
   // give that account access to the Plex server. A person without an account can make
   // a Plex account or an Emby user with the code instead.
+  import LoginLayout from '../components/LoginLayout.svelte';
   import { api, failureText } from '../lib/api';
   import { PAGES } from '../lib/route.svelte';
 
@@ -59,7 +60,7 @@
   }
 </script>
 
-<main class="grid min-h-[70vh] place-items-center p-4">
+<LoginLayout>
   <form class="card bg-base-200 w-full max-w-sm shadow" onsubmit={use}>
     <div class="card-body">
       <h1 class="card-title">Use an invite code</h1>
@@ -167,4 +168,4 @@
       </div>
     </div>
   </form>
-</main>
+</LoginLayout>
