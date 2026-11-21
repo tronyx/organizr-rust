@@ -156,6 +156,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     }
     // The jobs of the application run in a task of their own, which ends with the server.
     let scheduler = tokio::spawn(crate::scheduler::run(state.clone()));
+    // The streams of the chat end when the server stops, so that they do not hold it.
+    let chat_hub = std::sync::Arc::clone(state.chat_hub());
     // A request for a file of the web interface is answered before it reaches the API.
     let app = router(state)
         .context("the route table is not valid")?
@@ -174,7 +176,10 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .with_graceful_shutdown(stop_requested())
+    .with_graceful_shutdown(async move {
+        stop_requested().await;
+        chat_hub.close();
+    })
     .await
     .context("the server stopped with an error")?;
 

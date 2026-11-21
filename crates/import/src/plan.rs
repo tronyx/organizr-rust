@@ -14,8 +14,9 @@ use organizr_auth::secrets::{
 };
 use organizr_db::{ImportData, ImportedUser, SealedTwoFactor, StoredSetting, UserLogin};
 use organizr_domain::{
-    Bookmark, BookmarkCategory, Category, CategoryId, CategoryNumber, Group, GroupId, GroupLevel,
-    Invite, LevelRange, PasswordHash, Tab, TabId, TabKind, Timestamp, User, UserId, is_hex_color,
+    Bookmark, BookmarkCategory, Category, CategoryId, CategoryNumber, ChatMessage, Group, GroupId,
+    GroupLevel, Invite, LevelRange, PasswordHash, Tab, TabId, TabKind, Timestamp, User, UserId,
+    is_hex_color,
 };
 use organizr_settings::{Settings, SettingsError};
 use serde_json::Value;
@@ -62,6 +63,8 @@ pub struct LegacyInstall {
     pub bookmarks: Vec<LegacyRow>,
     /// The rows of the table `invites` of the invites plugin.
     pub invites: Vec<LegacyRow>,
+    /// The rows of the table `chatroom` of the chat plugin.
+    pub chat_messages: Vec<LegacyRow>,
     /// The other tables: name and number of rows.
     pub other_tables: Vec<(String, u64)>,
 }
@@ -97,6 +100,7 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
     let bookmark_categories = plan_bookmark_categories(&install.bookmark_categories, &mut report);
     let bookmarks = plan_bookmarks(&install.bookmarks, &mut report);
     let invites = plan_invites(&install.invites, &mut report);
+    let chat_messages = plan_chat_messages(&install.chat_messages, &mut report);
     let (settings, legacy_settings) = plan_settings(&install.config, secrets, &mut report)?;
 
     for (table, rows) in &install.other_tables {
@@ -113,6 +117,7 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
     report.bookmarks = bookmarks.len();
     report.bookmark_categories = bookmark_categories.len();
     report.invites = invites.len();
+    report.chat_messages = chat_messages.len();
     report.settings = settings.len();
 
     Ok(Plan {
@@ -124,6 +129,7 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
             bookmark_categories,
             bookmarks,
             invites,
+            chat_messages,
             settings,
             legacy_settings,
         },
@@ -618,6 +624,65 @@ fn plan_invites(rows: &[LegacyRow], report: &mut Report) -> Vec<Invite> {
     invites
 }
 
+/// The messages of the chat plugin. PHP stored each message with its markup written as
+/// HTML entities, which are read back once (D-24). A message without text is left out.
+fn plan_chat_messages(rows: &[LegacyRow], report: &mut Report) -> Vec<ChatMessage> {
+    let mut messages = Vec::new();
+    for (row, place) in rows.iter().zip(1_i64..) {
+        let Some(message) = row.filled("message") else {
+            report
+                .skipped
+                .push(format!("The chat message in row {place} has no text."));
+            continue;
+        };
+        let text = |column: &str| row.text(column).unwrap_or_default().to_owned();
+        let sent_at = row
+            .filled("date")
+            .and_then(moment)
+            .map_or(0, Timestamp::unix_seconds);
+        messages.push(ChatMessage {
+            id: row.number("id").unwrap_or(place),
+            username: text("username"),
+            gravatar: text("gravatar"),
+            uid: text("uid"),
+            sent_at,
+            ip: text("ip"),
+            message: php_entities_decoded(message),
+        });
+    }
+    messages
+}
+
+/// A text that PHP's `htmlspecialchars($text, ENT_QUOTES)` wrote, as it was before:
+/// each of the five entities that it writes is read back once.
+fn php_entities_decoded(text: &str) -> String {
+    const ENTITIES: [(&str, char); 6] = [
+        ("&amp;", '&'),
+        ("&lt;", '<'),
+        ("&gt;", '>'),
+        ("&quot;", '"'),
+        ("&#039;", '\''),
+        ("&#39;", '\''),
+    ];
+    let mut decoded = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find('&') {
+        decoded.push_str(&rest[..start]);
+        rest = &rest[start..];
+        if let Some((entity, character)) =
+            ENTITIES.iter().find(|(entity, _)| rest.starts_with(entity))
+        {
+            decoded.push(*character);
+            rest = &rest[entity.len()..];
+        } else {
+            decoded.push('&');
+            rest = &rest[1..];
+        }
+    }
+    decoded.push_str(rest);
+    decoded
+}
+
 /// The bookmarks of the bookmark plugin. A name that is taken gets a number behind it,
 /// and a colour that is no colour becomes black or white.
 fn plan_bookmarks(rows: &[LegacyRow], report: &mut Report) -> Vec<Bookmark> {
@@ -975,6 +1040,42 @@ mod tests {
     }
 
     #[test]
+    fn chat_messages_are_planned_as_plain_text() {
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let install = LegacyInstall {
+            chat_messages: vec![
+                LegacyRow::of([
+                    ("id", Some("7")),
+                    ("username", Some("robin")),
+                    ("gravatar", Some("https://example.com/robin.png")),
+                    ("uid", Some("f1f17")),
+                    ("date", Some("2026-01-02 03:04:05")),
+                    ("ip", Some("203.0.113.9")),
+                    (
+                        "message",
+                        Some(
+                            "&lt;b&gt;Hi&lt;/b&gt; &amp;amp; &quot;you&quot; &#039;all&#039; &copy;",
+                        ),
+                    ),
+                ]),
+                LegacyRow::of([("id", Some("8")), ("message", Some("  "))]),
+            ],
+            ..LegacyInstall::default()
+        };
+
+        let plan = plan(&install, &secrets).expect("a plan can be made");
+
+        let messages = &plan.data.chat_messages;
+        assert_eq!(messages.len(), 1);
+        assert_eq!(plan.report.chat_messages, 1);
+        assert_eq!(messages[0].id, 7);
+        assert_eq!(messages[0].sent_at, 1_767_323_045);
+        assert_eq!(messages[0].message, "<b>Hi</b> &amp; \"you\" 'all' &copy;");
+        assert_eq!(messages[0].ip, "203.0.113.9");
+        assert_eq!(plan.report.skipped.len(), 1, "{:#?}", plan.report.skipped);
+    }
+
+    #[test]
     fn install_without_rows_gets_what_every_install_needs() {
         let secrets = SecretBox::with_random_key().expect("a key can be made");
         let install = LegacyInstall {
@@ -988,7 +1089,7 @@ mod tests {
                 ("group_id", Some("1")),
                 ("type", Some("1")),
             ])],
-            other_tables: vec![("tokens".to_owned(), 12), ("chatroom".to_owned(), 3)],
+            other_tables: vec![("tokens".to_owned(), 12), ("options".to_owned(), 3)],
             ..LegacyInstall::default()
         };
 
@@ -1026,10 +1127,7 @@ mod tests {
         assert_eq!(plan.data.settings[0].key, "title");
         assert_eq!(plan.data.settings[0].value, "\"Empty\"");
         assert_eq!(plan.report.sessions, 12);
-        assert_eq!(
-            plan.report.tables_not_imported,
-            [("chatroom".to_owned(), 3)]
-        );
+        assert_eq!(plan.report.tables_not_imported, [("options".to_owned(), 3)]);
         assert_eq!(plan.report.retired_settings, ["driver"]);
         assert_eq!(plan.report.repairs.len(), 5, "{:#?}", plan.report.repairs);
     }

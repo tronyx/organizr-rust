@@ -59,6 +59,7 @@ If the new database holds records, the import stops and changes nothing. To impo
 | Groups, users, categories, tabs | The same records, with the same ids |
 | Bookmarks and bookmark categories of the bookmark plugin | The same records, with the same ids |
 | Invites of the invites plugin | The same records, with the same ids. A code that was not used stays good. An invite without a code is left out. So is an invite whose code another invite has in another letter case. The report lists each one |
+| Messages of the chat plugin (table `chatroom`) | The same records, with the same ids. PHP stored the markup of a message as HTML entities; they are read back once, so the message is the text that the person wrote. A message without text is left out, and the report lists it |
 | Passwords of users | The same hashes. Each user logs in with the old password |
 | Second factor of a user, Plex token of a user | Kept, sealed with the key of the new install |
 | Settings in `data/config/config.php` | The settings of the new install. A setting that has its default value is not stored |
@@ -72,7 +73,7 @@ If the new database holds records, the import stops and changes nothing. To impo
 ## What is not imported
 
 - Sessions. Every user logs in again.
-- The tables `chatroom` and `options`. This version does not have the chat yet. The report gives the number of rows of each table. The rows stay in the old database, so keep that file.
+- The table `options`. The report gives its number of rows. The rows stay in the old database, so keep that file.
 - The picture cache in `data/cache`. The application makes its cache again.
 - PHP files that a person added in `data/pages`, `data/routes` and `data/plugins`. The report lists them. This application cannot run PHP.
 - The settings `driver`, `dbHost`, `dbUsername`, `dbPassword`, `dbLocation`, `dbName`, `logLocation`, `configVersion` and `organizrHash`. The new install gets its database from `ORGANIZR_DATABASE_URL`, writes its log to the standard output and to the folder `logs` of its data folder (see [The log](log.md)), and seals secrets with its own key.

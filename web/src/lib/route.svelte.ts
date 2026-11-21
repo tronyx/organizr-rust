@@ -32,6 +32,8 @@ export type Route =
   | { page: 'speedTest' }
   /** The invites of the plugin, for the members who make them. */
   | { page: 'invites' }
+  /** The chat of the plugin. */
+  | { page: 'chat' }
   /** The page for a person with an invite code. */
   | { page: 'useInvite'; code: string }
   | { page: 'settings'; section: SettingsSection }
@@ -60,6 +62,7 @@ export const PAGES = {
   logSettings: '#/settings/logs',
   speedTest: '#/speedtest',
   invites: '#/invites',
+  chat: '#/chat',
   useInvite: '#/invite',
 } as const;
 
@@ -95,6 +98,8 @@ export function parseRoute(hash: string): Route {
       return { page: 'speedTest' };
     case '/invites':
       return { page: 'invites' };
+    case '/chat':
+      return { page: 'chat' };
     case '/settings':
     case '/settings/tabs':
       return { page: 'settings', section: 'tabs' };

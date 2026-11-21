@@ -16,6 +16,7 @@
 pub mod bookmark_category;
 pub mod bookmark_tab;
 pub mod category;
+pub mod chat_message;
 pub mod extension;
 pub mod group;
 pub mod invite;

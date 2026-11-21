@@ -6,6 +6,7 @@
 
 mod bookmarks;
 mod categories;
+mod chat;
 mod entity;
 mod error;
 mod extensions;
@@ -27,6 +28,7 @@ use sea_orm_migration::MigratorTrait;
 
 pub use crate::bookmarks::Bookmarks;
 pub use crate::categories::Categories;
+pub use crate::chat::Chat;
 pub use crate::error::DbError;
 pub use crate::extensions::{ApprovedExtension, Extensions};
 pub use crate::groups::Groups;
@@ -134,6 +136,11 @@ impl Database {
     /// The categories.
     pub const fn categories(&self) -> Categories<'_> {
         Categories::new(&self.connection)
+    }
+
+    /// The messages of the chat plugin.
+    pub const fn chat(&self) -> Chat<'_> {
+        Chat::new(&self.connection)
     }
 
     /// The groups.

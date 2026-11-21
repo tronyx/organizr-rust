@@ -77,7 +77,7 @@ impl From<Invite> for InviteRow {
 }
 
 /// A time as the PHP application stores it: `2026-11-18 19:02:06`, in UTC.
-fn date_and_time(seconds: i64) -> String {
+pub(crate) fn date_and_time(seconds: i64) -> String {
     jiff::Timestamp::from_second(seconds).map_or_else(
         |_| String::new(),
         |time| time.strftime("%Y-%m-%d %H:%M:%S").to_string(),

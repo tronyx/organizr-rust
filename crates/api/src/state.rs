@@ -25,6 +25,7 @@ use thiserror::Error;
 use tokio::sync::Mutex;
 
 use crate::client::TrustedProxies;
+use crate::handlers::chat::ChatHub;
 use crate::picture_cache::PictureCache;
 use crate::ping::{Latency, PingTarget, Prober};
 use organizr_integrations::weather::BREEZOMETER;
@@ -91,6 +92,8 @@ pub struct AppState {
     /// Whether the page runs the scripts of the Admin (`customJava`): the switch
     /// `ORGANIZR_CUSTOM_JS` of the operator. Off unless the operator turns it on.
     custom_js: bool,
+    /// The new messages of the chat plugin, and how many each sender sent lately.
+    chat_hub: Arc<ChatHub>,
 }
 
 /// The settings of a running application, as they are at each moment. Reading them is
@@ -166,6 +169,7 @@ impl AppState {
             scheduler_beat: Arc::default(),
             settings_change: Arc::new(Mutex::new(())),
             custom_js: false,
+            chat_hub: Arc::default(),
         }
     }
 
@@ -200,6 +204,11 @@ impl AppState {
     pub const fn with_custom_js(mut self, enabled: bool) -> Self {
         self.custom_js = enabled;
         self
+    }
+
+    /// What the routes of the chat plugin share.
+    pub fn chat_hub(&self) -> &Arc<ChatHub> {
+        &self.chat_hub
     }
 
     /// Whether the page runs the scripts of the Admin.

@@ -6,6 +6,7 @@
   import { session } from '../lib/session.svelte';
   import Account from './Account.svelte';
   import Bookmarks from './Bookmarks.svelte';
+  import Chat from './Chat.svelte';
   import Homepage from './homepage/Homepage.svelte';
   import Invites from './Invites.svelte';
   import Login from './Login.svelte';
@@ -30,6 +31,8 @@
   <SpeedTest />
 {:else if content.kind === 'invites'}
   <Invites />
+{:else if content.kind === 'chat'}
+  <Chat />
 {:else if content.kind === 'useInvite'}
   <UseInvite code={content.code} />
 {:else if content.kind === 'bookmarks'}

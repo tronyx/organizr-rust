@@ -9,6 +9,7 @@
   import {
     BACKUPS,
     BOOKMARK_PLUGIN,
+    CHAT_PLUGIN,
     HEALTH_CHECKS_PLUGIN,
     HOMEPAGE,
     INVITES_PLUGIN,
@@ -223,6 +224,7 @@
         ...BOOKMARK_PLUGIN,
         ...SPEED_TEST_PLUGIN,
         ...INVITES_PLUGIN,
+        ...CHAT_PLUGIN,
         ...HEALTH_CHECKS_PLUGIN,
       ]}
       ondone={(message) => (done = message)}

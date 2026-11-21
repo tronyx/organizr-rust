@@ -73,6 +73,7 @@ export type Content =
   | { kind: 'account' }
   | { kind: 'speedTest' }
   | { kind: 'invites' }
+  | { kind: 'chat' }
   | { kind: 'useInvite'; code: string }
   | { kind: 'settings'; section: SettingsSection }
   /** The settings, for a caller who may not manage the install. */
@@ -130,6 +131,9 @@ export function contentFor(route: Route, tabs: MenuTab[], caller: Caller): Conte
       return { kind: 'speedTest' };
     case 'invites':
       return caller.loggedIn ? { kind: 'invites' } : { kind: 'login' };
+    case 'chat':
+      // A guest never chats; the server decides about the level.
+      return caller.loggedIn ? { kind: 'chat' } : { kind: 'login' };
     case 'useInvite':
       // A code is for everybody: the person who uses it has no account yet.
       return { kind: 'useInvite', code: route.code };

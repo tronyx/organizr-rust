@@ -97,6 +97,7 @@
 
   const canSpeedTest = $derived(canUse('SPEEDTEST'));
   const canInvite = $derived(canUse('INVITES'));
+  const canChat = $derived(canUse('CHAT'));
 
   const title = $derived(session.launch?.appearance.title || 'Organizr');
   // The picture of the install stands in the bar when the setting says so. A picture
@@ -230,6 +231,9 @@
           {/if}
           {#if canInvite}
             <li><a href={PAGES.invites} onclick={closeUserMenu}>Invites</a></li>
+          {/if}
+          {#if canChat}
+            <li><a href={PAGES.chat} onclick={closeUserMenu}>Chat</a></li>
           {/if}
           <li><button onclick={lock}>Lock the screen</button></li>
           <li><button onclick={logOut}>Log out</button></li>

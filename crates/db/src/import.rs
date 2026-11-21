@@ -1,6 +1,8 @@
 //! The import of another install: all its records, stored in one step.
 
-use organizr_domain::{Bookmark, BookmarkCategory, Category, Group, Invite, Tab, User};
+use organizr_domain::{
+    Bookmark, BookmarkCategory, Category, ChatMessage, Group, Invite, Tab, User,
+};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ConnectionTrait, DatabaseConnection, EntityTrait,
     PaginatorTrait, TransactionTrait,
@@ -14,7 +16,7 @@ use crate::users::UserLogin;
 use crate::{DbError, Engine, stored_settings};
 
 /// The tables whose records keep the id of the other install.
-const TABLES_WITH_IDS: [&str; 7] = [
+const TABLES_WITH_IDS: [&str; 8] = [
     "groups",
     "users",
     "categories",
@@ -22,6 +24,7 @@ const TABLES_WITH_IDS: [&str; 7] = [
     "bookmark_categories",
     "bookmark_tabs",
     "invites",
+    "chatroom",
 ];
 
 /// A user of the other install, with what that install knows about the login.
@@ -51,6 +54,8 @@ pub struct ImportData {
     /// The invites of the invites plugin. No two have the same code, whatever its
     /// letter case.
     pub invites: Vec<Invite>,
+    /// The messages of the chat plugin.
+    pub chat_messages: Vec<ChatMessage>,
     /// The settings, in their stored form, with secrets sealed.
     pub settings: Vec<StoredSetting>,
     /// The settings that this application does not know. Each value is sealed.
@@ -121,6 +126,21 @@ async fn is_empty<C: ConnectionTrait>(connection: &C) -> Result<bool, DbError> {
         && category::Entity::find().count(connection).await? == 0
         && tab::Entity::find().count(connection).await? == 0
         && setting::Entity::find().count(connection).await? == 0)
+}
+
+/// Stores the invites and the chat messages, with their ids.
+async fn store_plugin_records<C: ConnectionTrait>(
+    connection: &C,
+    invites: Vec<Invite>,
+    messages: Vec<ChatMessage>,
+) -> Result<(), DbError> {
+    for invite in invites {
+        crate::invites::insert_in(connection, invite, true).await?;
+    }
+    for message in messages {
+        crate::chat::insert_in(connection, message, true).await?;
+    }
+    Ok(())
 }
 
 /// Stores the records of the bookmark plugin, with their ids.
@@ -252,9 +272,7 @@ async fn store<C: ConnectionTrait>(connection: &C, data: ImportData) -> Result<(
         stored_settings::put_in(connection, &setting.key, &setting.value).await?;
     }
     store_bookmarks(connection, data.bookmark_categories, data.bookmarks).await?;
-    for invite in data.invites {
-        crate::invites::insert_in(connection, invite, true).await?;
-    }
+    store_plugin_records(connection, data.invites, data.chat_messages).await?;
 
     for setting in data.legacy_settings {
         legacy_setting::ActiveModel {

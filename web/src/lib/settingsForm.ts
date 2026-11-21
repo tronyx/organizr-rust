@@ -3125,3 +3125,31 @@ export const BOOKMARK_PLUGIN: FieldGroup[] = [
     ],
   },
 ];
+
+/** The settings of the chat plugin. The chat is never for guests, so that level is left out. */
+export const CHAT_PLUGIN: FieldGroup[] = [
+  {
+    title: 'Chat plugin',
+    fields: [
+      {
+        key: 'CHAT-enabled',
+        label: 'Use the chat plugin',
+        kind: 'switch',
+        help: 'The menu of the user then has the entry "Chat". New messages show at once, without another service.',
+      },
+      {
+        key: 'CHAT-Auth-include',
+        label: 'The chat is for users of the level',
+        kind: 'select',
+        options: LEVELS.filter((level) => level.value !== '999'),
+      },
+      {
+        key: 'CHAT-messageLoadLimit',
+        label: 'Earlier messages that the chat shows',
+        kind: 'number',
+        min: 1,
+        help: 'At most 1000.',
+      },
+    ],
+  },
+];

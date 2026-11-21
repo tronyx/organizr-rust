@@ -3,6 +3,7 @@
 mod bookmark;
 mod category;
 mod change;
+mod chat;
 pub mod email;
 mod group;
 mod ids;
@@ -19,6 +20,7 @@ pub use bookmark::{
 };
 pub use category::{Category, CategoryChanges, NewCategory};
 pub use change::Change;
+pub use chat::ChatMessage;
 pub use group::{Group, GroupChanges, GroupLevel, InvalidGroupLevel, NewGroup};
 pub use ids::{CategoryId, CategoryNumber, GroupId, SessionId, TabId, UserId};
 pub use invite::{Invite, NewInvite};

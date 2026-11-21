@@ -413,17 +413,60 @@ pub async fn uploaded_picture(
     };
     let content_type = shown_type(&name).ok_or_else(not_found)?;
     let file = picture_file(&state, &name).ok_or_else(not_found)?;
-    let content = match tokio::fs::read(&file).await {
+    send_picture(&file, content_type, not_found).await
+}
+
+/// The folder of the icons of the page that a favicon generator made, in the data folder
+/// and in the address: `data/favicon` of PHP Organizr, which the import copies.
+const FAV_ICON_FOLDER: &str = "favicon";
+
+/// The content type of an icon of the page by the ending of its name: a picture that can
+/// be uploaded, an `ico` file or an SVG drawing. Other files of a favicon generator, such
+/// as `site.webmanifest` and `browserconfig.xml`, are not sent.
+fn fav_icon_type(name: &str) -> Option<&'static str> {
+    shown_type(name).or_else(|| {
+        let (_, ending) = name.rsplit_once('.')?;
+        ending.eq_ignore_ascii_case("ico").then_some("image/x-icon")
+    })
+}
+
+/// `GET /data/favicon/{name}`: an icon of the page from the folder `data/favicon` of an
+/// imported PHP install, for the links of the setting `favIcon` (D-93). Everybody can ask
+/// for it: the login page shows the icon too.
+pub async fn fav_icon(
+    State(state): State<AppState>,
+    Path(name): Path<String>,
+    uri: axum::http::Uri,
+) -> Result<Response, ApiError> {
+    let not_found = || ApiError::NotFound {
+        endpoint: uri.path().to_owned(),
+        method: "GET".to_owned(),
+    };
+    let content_type = fav_icon_type(&name).ok_or_else(not_found)?;
+    let file = state
+        .data_folder()
+        .filter(|_| is_safe_name(&name))
+        .map(|folder| folder.join(FAV_ICON_FOLDER).join(&name))
+        .ok_or_else(not_found)?;
+    send_picture(&file, content_type, not_found).await
+}
+
+/// Sends a file of the data folder as the picture that its name says, and as nothing
+/// else.
+async fn send_picture(
+    file: &FilePath,
+    content_type: &'static str,
+    not_found: impl Fn() -> ApiError,
+) -> Result<Response, ApiError> {
+    let content = match tokio::fs::read(file).await {
         Ok(content) => content,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Err(not_found()),
         Err(error) => return Err(ApiError::PictureFolder(error)),
     };
-
     let mut response = Response::new(Body::from(content));
     let headers = response.headers_mut();
     headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
-    // The file is shown as the picture that its name says, and as nothing else. A browser
-    // that opens it as a page runs nothing in it.
+    // A browser that opens the file as a page runs nothing in it.
     headers.insert(
         header::X_CONTENT_TYPE_OPTIONS,
         HeaderValue::from_static("nosniff"),
@@ -444,7 +487,25 @@ pub async fn uploaded_picture(
 
 #[cfg(test)]
 mod tests {
-    use super::{BUNDLED, base_name, is_picture, is_safe_name, picture_type};
+    use super::{BUNDLED, base_name, fav_icon_type, is_picture, is_safe_name, picture_type};
+
+    #[test]
+    fn an_icon_of_the_page_is_a_picture_an_ico_file_or_a_drawing() {
+        assert_eq!(fav_icon_type("favicon.ICO"), Some("image/x-icon"));
+        assert_eq!(fav_icon_type("favicon-32x32.png"), Some("image/png"));
+        assert_eq!(
+            fav_icon_type("safari-pinned-tab.svg"),
+            Some("image/svg+xml")
+        );
+        for name in [
+            "site.webmanifest",
+            "browserconfig.xml",
+            "favicon.ico.html",
+            "ico",
+        ] {
+            assert_eq!(fav_icon_type(name), None, "{name}");
+        }
+    }
 
     #[test]
     fn picture_has_one_of_four_endings_in_any_letter_case() {

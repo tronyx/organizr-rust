@@ -15,11 +15,11 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    backups, basics, bookmarks, categories, config, connection_tests,
+    backups, basics, bookmarks, categories, chat, config, connection_tests,
     connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
     homepage, icon, images, invites, ip, launch, lock, log, login, login_backends, logout, mail,
-    media_register, news, oidc, pages, ping, plex, register, socks, speed_test, sponsors, tabs,
-    themes, token, two_factor, users, users_import, wizard,
+    media_register, news, oidc, pages, ping, plex, plugins, register, socks, speed_test, sponsors,
+    tabs, themes, token, two_factor, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -427,6 +427,21 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/plugins/healthchecks/run",
             &get(health_checks_plugin::run),
         )?
+        .route("/plugins", &get(plugins::all))?
+        .route("/plugins/enabled", &get(plugins::enabled))?
+        .route("/plugins/disabled", &get(plugins::disabled))?
+        .route("/plugins/marketplace", &get(plugins::marketplace))?
+        .route(
+            "/plugins/manage/{plugin}",
+            &post(plugins::manage).delete(plugins::manage),
+        )?
+        .route("/plugins/chat/settings", &get(chat::settings))?
+        .route(
+            "/plugins/chat/message",
+            &get(chat::messages).post(chat::send),
+        )?
+        // Not a route of PHP: the new messages as server-sent events (D-44).
+        .route("/plugins/chat/events", &get(chat::events))?
         .route("/plugins/bookmark/page", &get(bookmarks::page))?
         .route("/plugins/bookmark/setup/tab", &get(bookmarks::set_up_tab))?
         .route(
@@ -548,7 +563,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
     let routes = routes
         .router
         .route("/data/userTabs/{name}", get(images::uploaded_picture))
-        .route("/data/cache/{name}", get(picture_cache::cached_picture));
+        .route("/data/cache/{name}", get(picture_cache::cached_picture))
+        .route("/data/favicon/{name}", get(images::fav_icon));
     // A reverse proxy asks these routes with the method and the headers of the request
     // that it holds back. Such a request can come from another site, so the routes are
     // outside the check for requests from other sites. They change nothing.

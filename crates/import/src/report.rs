@@ -22,6 +22,8 @@ pub struct Report {
     pub bookmark_categories: usize,
     /// The number of invites of the invites plugin.
     pub invites: usize,
+    /// The number of messages of the chat plugin.
+    pub chat_messages: usize,
     /// The number of settings that differ from the default.
     pub settings: usize,
     /// The number of sessions of the PHP install. Sessions are not imported.
@@ -64,6 +66,7 @@ impl fmt::Display for Report {
             (self.bookmark_categories, "bookmark categories"),
             (self.bookmarks, "bookmarks"),
             (self.invites, "invites"),
+            (self.chat_messages, "chat messages"),
             (self.settings, "settings that differ from the default"),
             (self.pictures, "uploaded pictures"),
             (self.other_files, "other files"),

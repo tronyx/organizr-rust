@@ -544,3 +544,72 @@ async fn drawing_that_an_import_brought_is_sent_and_runs_nothing() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn icon_of_the_page_from_an_imported_install_is_sent_as_a_picture_and_nothing_else() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let data = tempfile::tempdir().expect("a folder can be made");
+        let icons = data.path().join("favicon");
+        std::fs::create_dir_all(&icons).expect("the folder can be made");
+        std::fs::write(icons.join("favicon-32x32.png"), PNG).expect("the file can be written");
+        std::fs::write(icons.join("favicon.ico"), b"\x00\x00\x01\x00an icon")
+            .expect("the file can be written");
+        std::fs::write(icons.join("safari-pinned-tab.svg"), "<svg/>")
+            .expect("the file can be written");
+        std::fs::write(icons.join("site.webmanifest"), "{}").expect("the file can be written");
+        std::fs::write(data.path().join("secret.png"), PNG).expect("the file can be written");
+        let state =
+            organizr_testkit::state_with(database, organizr_testkit::installed_settings(&[]))
+                .with_data_folder(data.path().to_owned());
+        let app = organizr_api::router(state).expect("the route table is valid");
+
+        for (path, content_type, policy) in [
+            (
+                "/data/favicon/favicon-32x32.png",
+                "image/png",
+                "default-src 'none'; sandbox",
+            ),
+            (
+                "/data/favicon/favicon.ico",
+                "image/x-icon",
+                "default-src 'none'; sandbox",
+            ),
+            (
+                "/data/favicon/safari-pinned-tab.svg",
+                "image/svg+xml",
+                "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+            ),
+        ] {
+            let sent = get(&app, path).await;
+            assert_eq!(sent.status, StatusCode::OK, "{path}");
+            let header = |name: &str| {
+                sent.headers
+                    .get(name)
+                    .and_then(|value| value.to_str().ok())
+                    .map(str::to_owned)
+            };
+            assert_eq!(header("content-type").as_deref(), Some(content_type));
+            assert_eq!(header("x-content-type-options").as_deref(), Some("nosniff"));
+            assert_eq!(header("content-security-policy").as_deref(), Some(policy));
+        }
+        for path in [
+            "/data/favicon/site.webmanifest",
+            "/data/favicon/missing.png",
+            "/data/favicon/..%2Fsecret.png",
+            "/data/favicon/%2E%2E%2Fsecret.png",
+            "/data/favicon/..%5Csecret.png",
+            "/data/favicon/.hidden.png",
+            "/data/favicon/",
+        ] {
+            let answer = get(&app, path).await;
+            assert_eq!(
+                answer.status,
+                StatusCode::NOT_FOUND,
+                "{path}: {}",
+                answer.body
+            );
+        }
+    })
+    .await;
+}

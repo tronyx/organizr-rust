@@ -173,4 +173,4 @@ The fields `id`, `name`, `version`, `download` and `sha256` are necessary. The o
 
 ## What is not built
 
-An extension cannot send requests to other services yet. The marketplace routes of PHP Organizr, `/plugins/marketplace` and `/plugins/manage/{plugin}`, are not built: they list PHP plugins, which this application cannot run.
+An extension cannot send requests to other services yet. The marketplace routes of PHP Organizr, `/plugins/marketplace` and `/plugins/manage/{plugin}`, install nothing: the marketplace of PHP lists PHP plugins, which this application cannot run (D-94).

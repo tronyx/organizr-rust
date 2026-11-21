@@ -869,6 +869,27 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
   await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
 });
 
+test('the chat plugin shows a new message at once, as text', async ({ page }) => {
+  await logIn(page);
+  await page.goto('./#/settings/plugins');
+  await page.getByLabel('Use the chat plugin').check();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('link', { name: 'Chat' }).click();
+  await expect(page).toHaveURL(/#\/chat$/);
+  await expect(page.getByText('No message yet.')).toBeVisible();
+  const field = page.getByRole('textbox', { name: 'Message' });
+  await field.fill('<b>Hello</b> & welcome');
+  await field.press('Enter');
+  // The message comes back through the stream of the server, as text and not as HTML.
+  const messages = page.getByRole('list', { name: 'Messages' });
+  await expect(messages).toContainText('<b>Hello</b> & welcome');
+  await expect(messages.locator('b')).toHaveCount(0);
+  await expect(field).toHaveValue('');
+});
+
 test('the speed test plugin measures the connection to the server', async ({ page }) => {
   // The run itself takes about twenty seconds.
   test.setTimeout(90_000);

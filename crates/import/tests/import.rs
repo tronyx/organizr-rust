@@ -135,10 +135,7 @@ async fn install_of_php_is_imported_whole() {
         assert_eq!(report.repairs, [] as [String; 0]);
         assert_eq!(report.skipped, [] as [String; 0]);
         assert_eq!(report.sessions, 1);
-        assert_eq!(
-            report.tables_not_imported,
-            [("chatroom".to_owned(), 1), ("options".to_owned(), 0),]
-        );
+        assert_eq!(report.tables_not_imported, [("options".to_owned(), 0)]);
         assert_eq!(report.legacy_settings, ["MB-URL"]);
         assert_eq!(
             report.retired_settings,
@@ -153,6 +150,27 @@ async fn install_of_php_is_imported_whole() {
                 "organizrHash"
             ]
         );
+
+        // The chat messages keep their ids, and a new one gets the next id.
+        assert_eq!(report.chat_messages, 1);
+        let messages = database.chat().newest(10).await.expect("the messages load");
+        assert_eq!(messages.len(), 1);
+        assert_eq!(
+            (
+                messages[0].id,
+                messages[0].username.as_str(),
+                messages[0].message.as_str()
+            ),
+            (1, "admin", "Hello")
+        );
+        let mut next = messages[0].clone();
+        next.sent_at += 1;
+        let next = database
+            .chat()
+            .insert(next)
+            .await
+            .expect("a message can be added");
+        assert_eq!(next.id, 2);
 
         // The groups keep their ids, levels and names.
         let groups = database.groups().list().await.expect("the groups load");
@@ -670,7 +688,8 @@ async fn dry_run_reports_and_writes_nothing() {
         "{shown}"
     );
     assert!(shown.contains("     6  users"), "{shown}");
-    assert!(shown.contains("  - chatroom: 1 rows"), "{shown}");
+    assert!(shown.contains("     1  chat messages"), "{shown}");
+    assert!(shown.contains("  - options: 0 rows"), "{shown}");
     assert!(shown.contains("     1  invites"), "{shown}");
     assert!(shown.contains("  - MB-URL"), "{shown}");
     assert!(

@@ -295,7 +295,7 @@ See `deviations.md`. It lists every approved difference from Organizr 2.1.5000, 
 
 Dry-run mode prints the report and writes nothing. Testing uses a synthetic legacy install that the real PHP application wrote (`parity/legacy-install/generate.py`), values that real PHP encrypted (`parity/php-legacy-aes/generate.php`), plus a local run against a copy of a live install, which never enters the repository.
 
-The tables of features that are not built yet (`invites`, `BOOKMARK-*`, `chatroom`, `options`) are not imported yet. The importer gets each of them in the milestone that builds the feature. A legacy install on MySQL or PostgreSQL is refused with a clear message until that reader exists.
+The tables of the plugins (`invites`, `BOOKMARK-*`, `chatroom`) are imported with the features that use them. The table `options` is not imported. A legacy install on MySQL or PostgreSQL is refused with a clear message until that reader exists.
 
 ## 9. Parity verification
 
