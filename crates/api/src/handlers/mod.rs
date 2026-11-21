@@ -36,6 +36,7 @@ pub mod pages;
 pub mod ping;
 pub mod plex;
 pub mod register;
+pub mod socks;
 pub mod speed_test;
 pub mod sponsors;
 pub mod tabs;

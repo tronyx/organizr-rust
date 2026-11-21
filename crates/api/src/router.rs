@@ -5,7 +5,7 @@ use axum::handler::Handler;
 use axum::http::{HeaderValue, Method, Uri, header};
 use axum::middleware::{from_fn, from_fn_with_state, map_response};
 use axum::response::Response;
-use axum::routing::{MethodRouter, any, delete, get, post, put};
+use axum::routing::{MethodFilter, MethodRouter, any, delete, get, on, post, put};
 use axum::{Extension, Router};
 use tower_http::set_header::SetResponseHeaderLayer;
 
@@ -18,8 +18,8 @@ use crate::handlers::{
     backups, basics, bookmarks, categories, config, connection_tests,
     connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
     homepage, icon, images, invites, ip, launch, lock, log, login, login_backends, logout, mail,
-    media_register, news, oidc, pages, ping, plex, register, speed_test, sponsors, tabs, token,
-    two_factor, users, users_import, wizard,
+    media_register, news, oidc, pages, ping, plex, register, socks, speed_test, sponsors, tabs,
+    token, two_factor, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -53,6 +53,12 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/ping/{ping}", &get(ping::one))?
         .route("/rox", &get(basics::rox))?
         .route("/roxinsocks", &get(basics::roxinsocks))?
+        // The API SOCKS: Slim's `any` stands for these six methods.
+        .route("/socks/{app}/{route:.*}", &socks_methods())?
+        .route(
+            "/multiple/socks/{app}/{instance}/{route:.*}",
+            &socks_methods(),
+        )?
         .route("/wizard", &post(wizard::wizard))?
         .route("/login", &post(login::login))?
         .route("/logout", &get(logout::logout))?
@@ -547,6 +553,17 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             &any(forward_auth::check),
         )?;
     Ok(finish(routes, open.router, state))
+}
+
+/// The methods of the API SOCKS routes: those of Slim's `any`.
+fn socks_methods() -> MethodRouter<AppState> {
+    let methods = MethodFilter::GET
+        .or(MethodFilter::POST)
+        .or(MethodFilter::PUT)
+        .or(MethodFilter::PATCH)
+        .or(MethodFilter::DELETE)
+        .or(MethodFilter::OPTIONS);
+    on(methods, socks::socks)
 }
 
 /// `DELETE /token/{id}` for a path that Axum gives to a route without a parameter.

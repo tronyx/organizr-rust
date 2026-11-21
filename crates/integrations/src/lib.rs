@@ -36,6 +36,7 @@ pub mod prompage;
 pub mod scrape;
 pub mod sickrage;
 pub mod slack;
+pub mod socks;
 pub mod speedtest_tracker;
 pub mod sponsors;
 pub mod sso;

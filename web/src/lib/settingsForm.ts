@@ -80,6 +80,29 @@ export function shownGroups(groups: FieldGroup[], form: Record<string, FormValue
   return groups.filter((group) => !group.when || group.when(form));
 }
 
+/**
+ * The two settings of the API SOCKS of an application, which PHP Organizr shows below the
+ * connection: the switch and the level. `key` starts the keys of the settings, and is in
+ * lower case in the address.
+ */
+function socksFields(key: string, name: string): Field[] {
+  const path = key.toLowerCase();
+  return [
+    {
+      key: `${key}SocksEnabled`,
+      label: `Pass requests on to the API of ${name} (API SOCKS)`,
+      kind: 'switch',
+      help: `Scripts then reach ${name} through Organizr at api/v2/socks/${path}/, or at api/v2/multiple/socks/${path}/1/ for the first of several addresses. They send the key of ${name} themselves.`,
+    },
+    {
+      key: `${key}SocksAuth`,
+      label: `The API SOCKS of ${name} is for users of the level`,
+      kind: 'select',
+      options: LEVELS,
+    },
+  ];
+}
+
 /** The general settings, in the groups of the page. */
 export const GENERAL: FieldGroup[] = [
   {
@@ -1251,6 +1274,7 @@ const TAUTULLI_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of Tautulli',
         kind: 'switch',
       },
+      ...socksFields('tautulli', 'Tautulli'),
       { key: 'tautulliHeaderToggle', label: 'Show a title above the statistics', kind: 'switch' },
       { key: 'tautulliHeader', label: 'Title above the statistics', kind: 'text' },
       {
@@ -1642,6 +1666,7 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of SABnzbd',
         kind: 'switch',
       },
+      ...socksFields('sabnzbd', 'SABnzbd'),
       {
         key: 'sabnzbdCombine',
         label: 'Show SABnzbd in the box of the downloaders',
@@ -1706,6 +1731,7 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of qBittorrent',
         kind: 'switch',
       },
+      ...socksFields('qBittorrent', 'qBittorrent'),
       {
         key: 'qBittorrentCombine',
         label: 'Show qBittorrent in the box of the downloaders',
@@ -1769,6 +1795,7 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of NZBGet',
         kind: 'switch',
       },
+      ...socksFields('nzbget', 'NZBGet'),
       {
         key: 'nzbgetCombine',
         label: 'Show NZBGet in the box of the downloaders',
@@ -2413,6 +2440,7 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of Sonarr',
         kind: 'switch',
       },
+      ...socksFields('sonarr', 'Sonarr'),
       {
         key: 'sonarrCalendarLink',
         label: 'Address that the link of an event opens',
@@ -2483,6 +2511,7 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of Radarr',
         kind: 'switch',
       },
+      ...socksFields('radarr', 'Radarr'),
       {
         key: 'radarrCalendarLink',
         label: 'Address that the link of an event opens',
@@ -2556,6 +2585,7 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of Lidarr',
         kind: 'switch',
       },
+      ...socksFields('lidarr', 'Lidarr'),
       {
         key: 'lidarrCalendarLink',
         label: 'Address that the link of an event opens',

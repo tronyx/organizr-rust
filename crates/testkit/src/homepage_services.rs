@@ -2656,3 +2656,38 @@ pub async fn pages() -> StandIn {
     )
     .await
 }
+
+/// What the stand-in of an application behind the API SOCKS answers on every path but
+/// `/teapot` and `/moved`.
+pub const SOCKS_ANSWER: &str = "{\"records\":[{\"title\":\"The Show\"}]}";
+
+/// A stand-in for an application behind the API SOCKS, such as Sonarr. It answers every
+/// path and method with [`SOCKS_ANSWER`] as JSON, `/teapot` with the status 418 and
+/// HTML, and `/moved` with a redirect. Its log shows what Organizr passed on.
+pub async fn socks_app() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route(
+                "/teapot",
+                axum::routing::any(|| async {
+                    (
+                        StatusCode::IM_A_TEAPOT,
+                        [(header::CONTENT_TYPE, "text/html")],
+                        "<p>short and stout</p>",
+                    )
+                }),
+            )
+            .route(
+                "/moved",
+                axum::routing::any(|| async {
+                    (
+                        StatusCode::FOUND,
+                        [(header::LOCATION, "http://other.example/")],
+                        "",
+                    )
+                }),
+            )
+            .fallback(|| async { ([(header::CONTENT_TYPE, "application/json")], SOCKS_ANSWER) }),
+    )
+    .await
+}

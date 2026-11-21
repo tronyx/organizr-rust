@@ -224,3 +224,26 @@ describe('the settings of YouTube', () => {
     expect(field('youtubeAPI')).toMatchObject({ label: 'YouTube API key', kind: 'secret' });
   });
 });
+
+describe('the settings of the API SOCKS', () => {
+  it('stand after the connection of each application, as in PHP Organizr', () => {
+    const apps: [string, string][] = [
+      ['Sonarr', 'sonarr'],
+      ['Radarr', 'radarr'],
+      ['Lidarr', 'lidarr'],
+      ['SABnzbd', 'sabnzbd'],
+      ['NZBGet', 'nzbget'],
+      ['Tautulli', 'tautulli'],
+      ['qBittorrent', 'qBittorrent'],
+    ];
+    for (const [title, key] of apps) {
+      const keys = group(title)?.fields.map((one) => one.key) ?? [];
+      const at = keys.indexOf(`${key}DisableCertCheck`);
+
+      expect(at, title).toBeGreaterThan(-1);
+      expect(keys.slice(at + 1, at + 3)).toEqual([`${key}SocksEnabled`, `${key}SocksAuth`]);
+      expect(field(`${key}SocksEnabled`)?.kind).toBe('switch');
+      expect(field(`${key}SocksAuth`)?.kind).toBe('select');
+    }
+  });
+});

@@ -64,7 +64,7 @@ pub struct Permissions {
 
 /// Whether PHP takes a stored value for empty: `false`, `0`, an empty text, the text
 /// `0`, an empty list, or nothing.
-fn is_empty(value: Option<&Value>) -> bool {
+pub(crate) fn is_empty(value: Option<&Value>) -> bool {
     match value {
         None | Some(Value::Null) => true,
         Some(Value::Bool(on)) => !on,
@@ -77,7 +77,7 @@ fn is_empty(value: Option<&Value>) -> bool {
 
 /// The level that a setting holds. A value that is no level lets nobody in but the
 /// Admin, whose level is 0.
-fn level_of(value: Option<&Value>) -> u32 {
+pub(crate) fn level_of(value: Option<&Value>) -> u32 {
     match value {
         Some(Value::String(text)) => text.trim().parse().unwrap_or(0),
         Some(Value::Number(number)) => number

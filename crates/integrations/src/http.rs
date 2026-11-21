@@ -67,7 +67,13 @@ impl Outbound {
     /// the OpenID Connect login answers each request itself; a redirect could send the
     /// request with the code of a login to another place.
     pub fn direct_client_for(&self, url: &str) -> &Client {
-        if is_address_over_https(url) {
+        self.direct_client(url, false)
+    }
+
+    /// As [`Outbound::client`], with a client that follows no redirect. With
+    /// `never_check`, the certificate is not checked.
+    pub fn direct_client(&self, url: &str, never_check: bool) -> &Client {
+        if never_check || is_address_over_https(url) {
             &self.not_checking_direct
         } else {
             &self.checking_direct
