@@ -149,9 +149,9 @@ describe('the settings of the search items and of the monitors', () => {
     ]);
     expect(field('homepageOrderAdguard')).toBeDefined();
     expect(field('homepageOrderunifi')).toBeDefined();
-    // The server has no setting for a login of AdGuard Home.
-    expect(field('adGuardUsername')).toBeUndefined();
-    expect(field('adGuardPassword')).toBeUndefined();
+    // The login of AdGuard Home (D-102).
+    expect(field('adGuardUsername')).toBeDefined();
+    expect(field('adGuardPassword')?.kind).toBe('secret');
   });
 
   it('have a group for each of the seven charts of Netdata', () => {

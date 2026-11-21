@@ -753,6 +753,8 @@ settings! {
     adguard_domain_list_toggle: Flag = "adguardDomainListToggle", false;
     adguard_header_toggle: Flag = "adguardHeaderToggle", true;
     adguard_url: Text = "adguardURL", String::new();
+    adguard_username: Text = "adGuardUsername", String::new();
+    adguard_password: Secret = "adGuardPassword", String::new();
     homepage_monitorr_enabled: Flag = "homepageMonitorrEnabled", false;
     homepage_monitorr_auth: TextNumber<u32> = "homepageMonitorrAuth", 1;
     homepage_monitorr_refresh: TextNumber<u64> = "homepageMonitorrRefresh", 60_000;
@@ -1120,6 +1122,10 @@ mod tests {
     /// that, PHP reads them as empty.
     const WRITTEN_BY_THE_SET_UP: [&str; 3] = ["uuid", "organizrAPI", "license"];
 
+    /// Settings that the forms and the code of PHP read, but that the PHP defaults do not
+    /// have. Before an Admin saves them, PHP reads them as empty (D-102).
+    const READ_WITHOUT_A_PHP_DEFAULT: [&str; 2] = ["adGuardUsername", "adGuardPassword"];
+
     /// Settings whose default differs from PHP, each with the default here.
     fn changed_defaults() -> Vec<(&'static str, Value)> {
         // PHP ships a token of a third party as the default (D-12).
@@ -1185,13 +1191,17 @@ mod tests {
                 assert_eq!(Settings::defaults().get(key), Some(json!(false)), "`{key}`");
                 continue;
             }
+            let without_default =
+                WRITTEN_BY_THE_SET_UP.contains(key) || READ_WITHOUT_A_PHP_DEFAULT.contains(key);
             assert_ne!(
-                known,
-                WRITTEN_BY_THE_SET_UP.contains(key),
-                "`{key}` is a PHP default or is written by the set-up, and not both"
+                known, without_default,
+                "`{key}` is a PHP default or is read without one, and not both"
             );
         }
-        for key in WRITTEN_BY_THE_SET_UP {
+        for key in WRITTEN_BY_THE_SET_UP
+            .iter()
+            .chain(&READ_WITHOUT_A_PHP_DEFAULT)
+        {
             assert_eq!(Settings::defaults().get(key), Some(json!("")), "`{key}`");
         }
     }

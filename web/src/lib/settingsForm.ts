@@ -2439,8 +2439,15 @@ const MONITOR_ITEMS: FieldGroup[] = [
         key: 'adguardURL',
         label: 'Addresses of AdGuard Home',
         kind: 'text',
-        help: 'For more installs, put commas between the addresses. Organizr sends no user name and no password, so an install that asks for a login gives no numbers.',
+        help: 'For more installs, put commas between the addresses.',
       },
+      {
+        key: 'adGuardUsername',
+        label: 'User name of AdGuard Home',
+        kind: 'text',
+        help: 'The user name of the web interface. Organizr sends the same user name and password to each install.',
+      },
+      { key: 'adGuardPassword', label: 'Password of AdGuard Home', kind: 'secret' },
       { key: 'adguardHeaderToggle', label: 'Show the title of the item', kind: 'switch' },
       {
         key: 'homepageAdGuardCombine',

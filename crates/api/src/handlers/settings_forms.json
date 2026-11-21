@@ -7669,6 +7669,22 @@
       "value": {
        "$config": "adguardURL"
       }
+     },
+     {
+      "type": "input",
+      "label": "Username",
+      "name": "adGuardUsername",
+      "value": {
+       "$config": "adGuardUsername"
+      }
+     },
+     {
+      "type": "password",
+      "label": "Password",
+      "name": "adGuardPassword",
+      "value": {
+       "$config": "adGuardPassword"
+      }
      }
     ],
     "Misc": [

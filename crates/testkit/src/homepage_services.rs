@@ -2032,16 +2032,48 @@ pub async fn adguard() -> StandIn {
     .await
 }
 
-async fn adguard_refusal() -> Response {
-    (StatusCode::UNAUTHORIZED, "Unauthorized").into_response()
+/// The login of the AdGuard stand-in with a login: the user name, the password, and the
+/// header that a request with both carries.
+pub const ADGUARD_LOGIN: (&str, &str, &str) = (
+    "adguard",
+    "the password of AdGuard Home",
+    "Basic YWRndWFyZDp0aGUgcGFzc3dvcmQgb2YgQWRHdWFyZCBIb21l",
+);
+
+/// Whether a request carries the login of the AdGuard stand-in.
+fn has_adguard_login(headers: &HeaderMap) -> bool {
+    headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        == Some(ADGUARD_LOGIN.2)
 }
 
-/// A stand-in for AdGuard Home with a login: it refuses a request without one.
+/// A stand-in for AdGuard Home with a login: it refuses a request without the login
+/// [`ADGUARD_LOGIN`], and answers one with it as [`adguard`] does.
 pub async fn adguard_with_login() -> StandIn {
+    let refused = || (StatusCode::UNAUTHORIZED, "Unauthorized").into_response();
     StandIn::start(
         Router::new()
-            .route("/control/stats", get(adguard_refusal))
-            .route("/control/filtering/status", get(adguard_refusal)),
+            .route(
+                "/control/stats",
+                get(move |headers: HeaderMap| async move {
+                    if has_adguard_login(&headers) {
+                        adguard_stats().await
+                    } else {
+                        refused()
+                    }
+                }),
+            )
+            .route(
+                "/control/filtering/status",
+                get(move |headers: HeaderMap| async move {
+                    if has_adguard_login(&headers) {
+                        adguard_filters().await
+                    } else {
+                        refused()
+                    }
+                }),
+            ),
     )
     .await
 }

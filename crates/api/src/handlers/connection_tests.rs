@@ -9,6 +9,7 @@ use axum::Extension;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use organizr_domain::GroupLevel;
+use organizr_integrations::adguard;
 use organizr_integrations::downloaders::{
     self, Client as Downloader, DownloaderError, Login, TorrentQuery,
 };
@@ -557,11 +558,18 @@ async fn adguard(test: &Test<'_>) -> Outcome {
         return Err(Refusal::unprocessable("AdGuard URL is not defined"));
     }
     let mut errors = String::new();
+    let login = adguard::authorization(&settings.adguard_username, &settings.adguard_password);
+    let headers: Vec<(&str, &str)> = login
+        .as_deref()
+        .map(|login| ("Authorization", login))
+        .into_iter()
+        .collect();
     for address in settings.adguard_url.split(',') {
         let base = test.url(address);
         let url = format!("{base}/control/stats");
         let probe = Probe {
             url: &url,
+            headers: &headers,
             ..Probe::default()
         };
         let fault = match test.get(probe).await {

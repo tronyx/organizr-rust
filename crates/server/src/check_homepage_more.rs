@@ -403,6 +403,7 @@ async fn ask_indexers(settings: &Settings, http: &Outbound, lines: &mut Vec<Line
 
 async fn ask_monitors(settings: &Settings, http: &Outbound, lines: &mut Vec<Line>) {
     let installs: Vec<&str> = settings.adguard_url.split(',').collect();
+    let login = adguard::authorization(&settings.adguard_username, &settings.adguard_password);
     for (number, address) in installs.iter().enumerate() {
         if settings.adguard_url.is_empty() {
             break;
@@ -416,10 +417,10 @@ async fn ask_monitors(settings: &Settings, http: &Outbound, lines: &mut Vec<Line
             question,
             address,
             lines,
-            async |url| match adguard::statistics(http, &[url.to_owned()]).await {
-                Ok(statistics) if statistics.data.is_empty() => {
-                    failed("the application refused the request; the homepage asks without a login")
-                }
+            async |url| match adguard::statistics(http, &[url.to_owned()], login.as_deref()).await {
+                Ok(statistics) if statistics.data.is_empty() => failed(
+                    "the application refused the request; look at the user name and the password",
+                ),
                 Ok(_) => Outcome::Passed,
                 Err(error) => failed(error),
             },

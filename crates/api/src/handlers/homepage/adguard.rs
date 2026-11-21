@@ -42,7 +42,8 @@ pub async fn stats(
         .split(',')
         .map(|address| service_url(address, &headers, &client))
         .collect();
-    let statistics = adguard::statistics(http, &addresses)
+    let login = adguard::authorization(&settings.adguard_username, &settings.adguard_password);
+    let statistics = adguard::statistics(http, &addresses, login.as_deref())
         .await
         .map_err(|error| {
             tracing::warn!(%error, "AdGuard Home cannot be reached");

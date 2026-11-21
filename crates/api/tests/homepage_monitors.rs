@@ -13,7 +13,7 @@ use axum::http::StatusCode;
 use organizr_db::Database;
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::homepage_services::{
-    self, OCTOPRINT_INNER_KEY, OCTOPRINT_KEY, UNIFI_LOGIN, UNIFI_TOKEN,
+    self, ADGUARD_LOGIN, OCTOPRINT_INNER_KEY, OCTOPRINT_KEY, UNIFI_LOGIN, UNIFI_TOKEN,
 };
 use organizr_testkit::http::{Answer, As, call};
 use organizr_testkit::{installed_app_with, seed};
@@ -131,7 +131,7 @@ async fn adguard_gives_the_statistics_of_each_install_by_its_host() {
         );
         let paths: Vec<String> = first.seen().into_iter().map(|seen| seen.path).collect();
         assert_eq!(paths, ["/control/stats", "/control/filtering/status"]);
-        // The requests carry no login: PHP has no default for the two settings of it.
+        // Without a user name, the requests carry no login.
         assert_eq!(first.seen()[0].header("authorization"), None);
 
         // The test names the install that refused.
@@ -142,6 +142,37 @@ async fn adguard_gives_the_statistics_of_each_install_by_its_host() {
         let app = installed_app_with(database, &alone);
         let answer = call(&app, As::Admin, "POST", "/test/adguard", None).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+
+        // With the login of the settings, the install with a login answers too, and so
+        // does the test (D-102).
+        let (username, password, header) = ADGUARD_LOGIN;
+        let with_login = |password: &str| -> Settings {
+            let mut settings = settings.clone();
+            settings.push(("adGuardUsername", json!(username)));
+            settings.push(("adGuardPassword", json!(password)));
+            settings
+        };
+        let logged_in = installed_app_with(database, &with_login(password));
+        let answer = get(&logged_in, "/homepage/adguard/stats").await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(
+            answer.data()["data"]["localhost"]["num_dns_queries"],
+            json!(12000)
+        );
+        assert_eq!(
+            second
+                .seen()
+                .last()
+                .and_then(|seen| seen.header("authorization")),
+            Some(header)
+        );
+        let answer = call(&logged_in, As::Admin, "POST", "/test/adguard", None).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let wrong = installed_app_with(database, &with_login("a wrong password"));
+        let answer = call(&wrong, As::Admin, "POST", "/test/adguard", None).await;
+        assert_eq!(answer.message(), json!("localhost: Unknown Failure"));
+        assert!(!answer.body.contains("a wrong password"), "{}", answer.body);
+
         let user = seed::logged_in(database, &app, "Robin", 4).await;
         let answer = call(&app, As::User(&user), "POST", "/test/adguard", None).await;
         assert_eq!(answer.status, StatusCode::UNAUTHORIZED);

@@ -616,6 +616,10 @@ async fn config_routes_answer_like_php() {
                 json!(false),
             );
         }
+        // The login of AdGuard Home, which PHP reads but has no default for.
+        for key in ["adGuardUsername", "adGuardPassword"] {
+            replay = replay.deviation_adds_in_order("D-102", all, data, key, json!(""));
+        }
 
         // The install of the recorder at this point: set up, with a registration password.
         let app = installed_app_with(
