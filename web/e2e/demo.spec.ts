@@ -515,7 +515,13 @@ test('the Admin changes the name of the install and the registration password', 
   await expect(page.getByRole('banner')).toContainText('Media at home');
 
   // The registration password is in System Settings, Main, Login.
+  // As in PHP, System Settings opens About.
   await page.getByRole('tab', { name: 'System Settings' }).click();
+  await expect(page).toHaveURL(/#\/settings\/about$/);
+  await page
+    .getByRole('tablist', { name: 'System Settings' })
+    .getByRole('tab', { name: 'Main' })
+    .click();
   await expect(page).toHaveURL(/#\/settings\/general$/);
   await page.getByRole('tab', { name: 'Login', exact: true }).click();
   await page.getByLabel('Registration Password', { exact: true }).fill(NEW_REGISTRATION_PASSWORD);

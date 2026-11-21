@@ -1505,6 +1505,37 @@
     font-weight: 500;
   }
 
+  .org-about-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 12px 24px;
+  }
+
+  .org-about-list dd {
+    color: #ffffff;
+  }
+
+  .org-image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+  }
+
+  .org-image-grid li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    background: var(--color-base-100);
+  }
+
+  .org-image-grid img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+  }
+
   .org-login-box {
     padding: 50px;
   }

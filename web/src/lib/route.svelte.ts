@@ -24,7 +24,10 @@ export type SettingsSection =
   | 'theme-settings'
   | 'backups'
   | 'logs'
-  | 'updates';
+  | 'updates'
+  | 'about'
+  | 'donate'
+  | 'images';
 
 export type Route =
   | { page: 'home' }
@@ -72,6 +75,9 @@ export const PAGES = {
   backupSettings: '#/settings/backups',
   logSettings: '#/settings/logs',
   updateSettings: '#/settings/updates',
+  aboutSettings: '#/settings/about',
+  donateSettings: '#/settings/donate',
+  imageSettings: '#/settings/images',
   speedTest: '#/speedtest',
   invites: '#/invites',
   chat: '#/chat',
@@ -134,6 +140,12 @@ export function parseRoute(hash: string): Route {
       return { page: 'settings', section: 'login' };
     case '/settings/updates':
       return { page: 'settings', section: 'updates' };
+    case '/settings/about':
+      return { page: 'settings', section: 'about' };
+    case '/settings/donate':
+      return { page: 'settings', section: 'donate' };
+    case '/settings/images':
+      return { page: 'settings', section: 'images' };
     case '/settings/homepage':
       return { page: 'settings', section: 'homepage' };
     case '/settings/homepage/order':

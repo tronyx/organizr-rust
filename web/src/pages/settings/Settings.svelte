@@ -8,7 +8,10 @@
   import { session } from '../../lib/session.svelte';
   import type { Account, EditorData } from '../../lib/types';
   import BackupsEditor from './BackupsEditor.svelte';
+  import AboutPage from './AboutPage.svelte';
   import CategoriesEditor from './CategoriesEditor.svelte';
+  import DonatePage from './DonatePage.svelte';
+  import ImageManager from './ImageManager.svelte';
   import AppearanceSettings from './AppearanceSettings.svelte';
   import ExtensionsEditor from './ExtensionsEditor.svelte';
   import PhpSettingsForm from './PhpSettingsForm.svelte';
@@ -78,6 +81,11 @@
       ],
     },
     {
+      name: 'Image Manager',
+      icon: 'ti-image',
+      pages: [{ section: 'images', page: 'imageSettings', label: 'Image Manager' }],
+    },
+    {
       name: 'Plugins',
       icon: 'ti-plug',
       pages: [
@@ -91,11 +99,13 @@
       name: 'System Settings',
       icon: 'ti-settings',
       pages: [
+        { section: 'about', page: 'aboutSettings', label: 'About' },
         { section: 'general', page: 'generalSettings', label: 'Main' },
         { section: 'login', page: 'loginSettings', label: 'SSO' },
         { section: 'logs', page: 'logSettings', label: 'Logs' },
         { section: 'updates', page: 'updateSettings', label: 'Updates' },
         { section: 'backups', page: 'backupSettings', label: 'Backup' },
+        { section: 'donate', page: 'donateSettings', label: 'Donate' },
       ],
     },
   ];
@@ -189,6 +199,12 @@
       <AppearanceSettings ondone={(message) => (done = message)} />
     {:else if section === 'themes'}
       <ThemeMarketplace ondone={(message) => (done = message)} />
+    {:else if section === 'about'}
+      <AboutPage />
+    {:else if section === 'donate'}
+      <DonatePage />
+    {:else if section === 'images'}
+      <ImageManager ondone={(message) => (done = message)} />
     {:else if section === 'updates'}
       <UpdateCheck ondone={(message) => (done = message)} />
     {:else if section === 'login'}
