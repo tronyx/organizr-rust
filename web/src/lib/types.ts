@@ -154,6 +154,8 @@ export interface Launch {
         /** The titles that items show above their data. */
         titles?: { tautulli?: string };
       };
+      /** The media search of the top bar: whether the caller has it, and its server. */
+      search?: { enabled: boolean; type: string | null };
     };
     /** What the server says about single sign-on. */
     sso: {

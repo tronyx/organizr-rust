@@ -1989,6 +1989,31 @@
     }
   }
 
+  /* The results of the media search, as the posters of PHP Organizr. */
+  .org-search-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+    max-height: 60vh;
+    margin-top: 12px;
+    overflow-y: auto;
+  }
+
+  .org-search-results button {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  .org-search-results img,
+  .org-search-results .org-poster-empty {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+  }
+
   /* The filter menu of a row of posters, as the dropdown of PHP Organizr. */
   .org-caret {
     display: inline-block;

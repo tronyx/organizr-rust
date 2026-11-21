@@ -14,6 +14,7 @@
   import { pictureOf } from '../lib/picture';
   import { pingInterval, pingList, type PingResult } from '../lib/pings';
   import UpdateNotice from '../components/UpdateNotice.svelte';
+  import MediaSearch from './homepage/MediaSearch.svelte';
   import Menu from './Menu.svelte';
 
   let {
@@ -190,6 +191,12 @@
   }
 
   let avatarFailed = $state(false);
+
+  /** The server of the media search of the top bar, when the caller has the search. */
+  const mediaSearch = $derived.by(() => {
+    const search = session.launch?.settings.homepage.search;
+    return search?.enabled && search.type === 'plex' ? search.type : null;
+  });
   const avatar = $derived.by(() => {
     const image = session.launch?.user?.image;
     return !avatarFailed && typeof image === 'string' && /^https?:\/\//.test(image) ? image : null;
@@ -240,6 +247,9 @@
       </button>
     {/if}
     <span class="flex-1"></span>
+    {#if mediaSearch}
+      <MediaSearch service={mediaSearch} />
+    {/if}
     <button
       type="button"
       class="org-header-link max-sm:hidden"
