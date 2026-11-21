@@ -12,38 +12,39 @@ In both ways, only an account that you shared your Plex server with can log in.
 ## Set it up
 
 1. Log in as an Admin.
-2. Open **Settings**, and select the tab **Login**.
-3. Enter the Plex token of the owner of the server, and select **Save**. With the token, Organizr reads the list of the accounts that the server is shared with.
-4. Select **List the Plex servers**, and copy the id of your server into the field **Id of the Plex server**.
-5. Enter the Plex user name or the e-mail address of the owner. The owner is on no list of shared accounts, so this setting lets the owner log in.
-6. Select how a password is checked:
+2. Open **Settings**, then **System Settings**, then **Main**, and select the group **Authentication**.
+3. Set **Authentication Type**:
 
-   | Setting | Meaning |
+   | Choice | Meaning |
    |---|---|
-   | Organizr | Only the passwords that Organizr stores |
-   | The service, and then Organizr | Plex first. When Plex says no, or cannot be reached, the password that Organizr stores |
-   | The service only | Only Plex |
+   | Organizr DB | Only the passwords that Organizr stores |
+   | Organizr DB + Backend | Plex first. When Plex says no, or cannot be reached, the password that Organizr stores |
+   | Backend Only | Only Plex |
 
-7. Select **Plex** as the service.
-8. To show the button, switch **Show the button "Log in with Plex"** on.
-9. Select **Save**.
+4. Set **Authentication Backend** to **Plex**. The Plex fields appear.
+5. Next to **API Key/Token**, select **Retrieve** under **Get Plex Token**. Log in at Plex in the small window, as the owner of the server. Organizr puts the token of the owner into the field. With the token, Organizr reads the list of the accounts that the server is shared with.
+6. Select **Save**. The next step uses the saved token.
+7. Select **Retrieve** under **Get Plex Machine**. If the owner has one server, Organizr puts its id into **Plex Machine**. If the owner has more, choose the server in the list.
+8. Enter the Plex user name or the e-mail address of the owner in **Plex Admin Username or Email**. The owner is on no list of shared accounts, so this setting lets the owner log in.
+9. To show the button, switch **Enable Plex oAuth** on.
+10. Select **Save**.
 
-Do not select "The service only" before a Plex account can log in as an Admin. With that setting, the Admin account of the set-up cannot log in with its Organizr password.
+Do not select "Backend Only" before a Plex account can log in as an Admin. With that setting, the Admin account of the set-up cannot log in with its Organizr password.
 
 | Setting | Key |
 |---|---|
-| A password is checked by | `authType`: `internal`, `both` or `external` |
-| Service | `authBackend`: `plex` |
-| Plex token of the owner | `plexToken` |
-| Id of the Plex server | `plexID` |
-| Plex account of the owner | `plexAdmin` |
-| Only accounts that this server is shared with | `plexStrictFriends` |
-| Show the button | `plexoAuth` |
+| Authentication Type | `authType`: `internal`, `both` or `external` |
+| Authentication Backend | `authBackend`: `plex` |
+| API Key/Token | `plexToken` |
+| Plex Machine | `plexID` |
+| Plex Admin Username or Email | `plexAdmin` |
+| Strict Plex Friends | `plexStrictFriends` |
+| Enable Plex oAuth | `plexoAuth` |
 
 ## What a login does
 
 1. Plex confirms the account: by its password, or by the token of the small window.
-2. Organizr looks for the account in the list of the accounts that the server is shared with. With **Only accounts that this server is shared with** off, every friend of the owner passes, also one who has only another server of the owner.
+2. Organizr looks for the account in the list of the accounts that the server is shared with. With **Strict Plex Friends** off, every friend of the owner passes, also one who has only another server of the owner.
 3. Organizr looks for its own account with the user name of the Plex account, or else with its e-mail address.
 4. If there is no such account, Organizr makes one in the group of new users.
 5. Organizr stores the Plex token of the user, sealed. [Single sign-on](single-sign-on.md) uses it.
@@ -54,7 +55,7 @@ An account that Organizr made for a login with the button has a random password 
 
 ## The second factor
 
-An Organizr account with a [second factor](second-factor.md) needs its code after Plex confirmed the account. The setting **No code for a login with the button "Log in with Plex"** removes the code for that way of logging in: Plex has its own second factor.
+An Organizr account with a [second factor](second-factor.md) needs its code after Plex confirmed the account. The setting **Ignore 2FA if Plex OAuth** removes the code for that way of logging in: Plex has its own second factor.
 
 ## What the browser does for the button
 
