@@ -10,6 +10,7 @@ pub mod cron;
 pub mod device_cookie;
 pub mod envelope;
 pub mod error;
+pub mod fav_icon;
 mod handlers;
 pub mod log_files;
 pub mod php_json;

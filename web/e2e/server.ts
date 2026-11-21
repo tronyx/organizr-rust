@@ -27,6 +27,8 @@ export default async function startServer(): Promise<() => Promise<void>> {
       ...process.env,
       ORGANIZR_LISTEN: ADDRESS,
       ORGANIZR_DATA_DIR: dataFolder,
+      // The scripts of the Admin run, so a test can check that they load under the policy.
+      ORGANIZR_CUSTOM_JS: '1',
       NO_COLOR: '1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],

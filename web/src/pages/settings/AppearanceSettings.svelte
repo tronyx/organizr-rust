@@ -8,6 +8,8 @@
   import { appearanceGroups } from '../../lib/settingsForm';
   import { isNativeTheme, themeLabel } from '../../lib/theme';
   import { PAGES } from '../../lib/route.svelte';
+  import { session } from '../../lib/session.svelte';
+  import { ADMIN } from '../../lib/types';
   import SettingsForm from './SettingsForm.svelte';
 
   let {
@@ -18,6 +20,11 @@
   } = $props();
 
   let themes = $state<{ value: string; label: string }[] | null>(null);
+  /** Only the Admin sees and changes the scripts (D-07). */
+  const admin = $derived({
+    isAdmin: session.launch?.user?.groupID === ADMIN,
+    scriptsRun: session.launch?.appearance.customJsEnabled === true,
+  });
   let loadError = $state<string | null>(null);
 
   onMount(async () => {
@@ -36,7 +43,7 @@
   <p class="mb-4 max-w-2xl text-sm">
     More themes are in the <a class="link" href={PAGES.themeSettings}>theme marketplace</a>.
   </p>
-  <SettingsForm groups={appearanceGroups(themes)} {ondone} />
+  <SettingsForm groups={appearanceGroups(themes, admin)} {ondone} />
 {:else if loadError}
   <div role="alert" class="alert alert-error">
     <span>{loadError}</span>

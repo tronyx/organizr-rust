@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
+import { session } from '../../lib/session.svelte';
 import { stubApi } from '../../test-helpers';
 import AppearanceSettings from './AppearanceSettings.svelte';
 import ThemeMarketplace from './ThemeMarketplace.svelte';
@@ -155,5 +156,54 @@ describe('the appearance settings', () => {
         headerColor: '#112233',
       }),
     );
+  });
+});
+
+describe('the scripts on the appearance page', () => {
+  function launchOf(groupID: number, customJsEnabled: boolean) {
+    return {
+      data: {
+        ...LAUNCH.data,
+        user: { ...LAUNCH.data.user, groupID },
+        appearance: { title: 'Organizr', customJsEnabled },
+      },
+    };
+  }
+
+  async function open(groupID: number, customJsEnabled: boolean) {
+    stubApi({
+      'GET launch': launchOf(groupID, customJsEnabled),
+      'GET themes': { data: { Organizr: { name: 'Organizr' } } },
+      'GET config': { data: { theme: 'Organizr', customJava: 'window.x = 1;' } },
+    });
+    await session.load();
+    render(AppearanceSettings, { ondone: vi.fn() });
+    await screen.findByLabelText('Theme');
+  }
+
+  it('are for the Admin, with a note that the switch is off', async () => {
+    await open(0, false);
+
+    expect(screen.getByLabelText('Custom JavaScript')).toHaveValue('window.x = 1;');
+    expect(screen.getByLabelText('Theme JavaScript')).toBeInTheDocument();
+    expect(screen.getByText(/The scripts do not run now/)).toHaveTextContent(
+      'ORGANIZR_CUSTOM_JS=1',
+    );
+    expect(screen.getByText(/The scripts do not run now/)).toHaveTextContent(
+      'runs in the session of every person',
+    );
+  });
+
+  it('say so when the operator turned the switch on', async () => {
+    await open(0, true);
+
+    expect(screen.getByText(/The scripts run now/)).toBeInTheDocument();
+  });
+
+  it('are not shown to a Co-Admin', async () => {
+    await open(1, true);
+
+    expect(screen.queryByLabelText('Custom JavaScript')).toBeNull();
+    expect(screen.queryByLabelText('Theme JavaScript')).toBeNull();
   });
 });

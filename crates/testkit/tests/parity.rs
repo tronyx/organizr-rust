@@ -54,6 +54,21 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
             case,
             "/response/data/status/version",
             version,
+        )
+        // The switch for the scripts of the Admin, and the checked icon links (D-93).
+        .deviation_adds(
+            "D-93",
+            case,
+            "/response/data/appearance",
+            "customJsEnabled",
+            json!(false),
+        )
+        .deviation_adds(
+            "D-93",
+            case,
+            "/response/data/appearance",
+            "favIcons",
+            json!([]),
         );
     if cfg!(windows) {
         replay = replay.environment(

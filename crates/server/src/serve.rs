@@ -41,6 +41,18 @@ pub struct Args {
     #[arg(long, env = "ORGANIZR_EXTENSION_MARKETPLACE", default_value = "")]
     extension_marketplace: String,
 
+    /// Whether every page runs the scripts that an Admin stores in the settings "Custom
+    /// Javascript" and "Theme Javascript". Such a script runs in the session of every
+    /// person who opens the page, guests on the login page too. Off unless set to `1`.
+    /// The variable takes `1`, `true`, `yes` or `on`, and `0`, `false`, `no` or `off`.
+    #[arg(
+        long,
+        env = "ORGANIZR_CUSTOM_JS",
+        action = clap::ArgAction::SetTrue,
+        value_parser = clap::builder::BoolishValueParser::new()
+    )]
+    custom_js: bool,
+
     #[command(flatten)]
     storage: StorageArgs,
 }
@@ -111,7 +123,13 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .with_picture_folder(args.storage.data_dir.join("userTabs"))
         // The pictures of other applications that the server fetches and keeps.
         .with_picture_cache(args.storage.data_dir.join("cache"))
-        .with_data_folder(args.storage.data_dir.clone());
+        .with_data_folder(args.storage.data_dir.clone())
+        .with_custom_js(args.custom_js);
+    if args.custom_js {
+        tracing::warn!(
+            "ORGANIZR_CUSTOM_JS is on: every page runs the custom JavaScript of the Admin"
+        );
+    }
     // The log file follows the `logLevel` and `maxLogFiles` settings from now on.
     log_file.follow(state.settings_watch());
     #[cfg(feature = "wasm-plugins")]
@@ -271,7 +289,29 @@ async fn stop_requested() {
 mod tests {
     use std::path::Path;
 
-    use super::default_database_url;
+    use clap::Parser;
+
+    use super::{Args, default_database_url};
+
+    /// The options of `organizr serve`, as a command of their own.
+    #[derive(Debug, Parser)]
+    struct Serve {
+        #[command(flatten)]
+        args: Args,
+    }
+
+    #[test]
+    fn scripts_of_the_admin_are_off_unless_the_operator_turns_them_on() {
+        let parsed = |words: &[&str]| {
+            Serve::try_parse_from(words)
+                .unwrap_or_else(|error| panic!("{error}"))
+                .args
+                .custom_js
+        };
+        // The test does not read the environment: no `ORGANIZR_CUSTOM_JS` is set there.
+        assert!(!parsed(&["serve"]));
+        assert!(parsed(&["serve", "--custom-js"]));
+    }
 
     #[test]
     fn default_database_is_a_file_in_the_data_folder() {

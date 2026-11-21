@@ -1,15 +1,38 @@
-//! The themes, the theme marketplace and the style sheet of the Admin.
+//! The themes, the theme marketplace, and the style sheet, the scripts and the icons of
+//! the Admin.
 
 #![allow(
+    clippy::expect_used,
     clippy::indexing_slicing,
-    reason = "a test reads the fields of answers it knows"
+    reason = "a test reads the fields of answers it knows, and its helpers may panic"
 )]
 
+use axum::Router;
 use axum::http::{StatusCode, header};
+use organizr_db::Database;
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::http::{As, call};
-use organizr_testkit::{installed_app_with, seed};
+use organizr_testkit::{installed_app_with, installed_settings, seed, state_with};
 use serde_json::{Value, json};
+
+/// The application with the switch `ORGANIZR_CUSTOM_JS` on or off.
+fn app_with_custom_js(database: &Database, on: bool, settings: &[(&str, Value)]) -> Router {
+    let state = state_with(database, installed_settings(settings)).with_custom_js(on);
+    organizr_api::router(state).expect("the route table is valid")
+}
+
+/// Two scripts of the Admin.
+const SCRIPTS: [(&str, &str); 2] = [
+    ("customThemeJava", "window.themeScript = 1;"),
+    ("customJava", "window.customScript = 2;"),
+];
+
+fn scripts() -> Vec<(&'static str, Value)> {
+    SCRIPTS
+        .iter()
+        .map(|(key, script)| (*key, json!(script)))
+        .collect()
+}
 
 /// The routes of the themes, which need an Admin or a Co-Admin.
 const ROUTES: [(&str, &str); 4] = [
@@ -273,6 +296,94 @@ async fn custom_css_is_a_style_sheet_for_every_caller() {
         let answer = call(&empty, As::Guest, "GET", "/appearance/custom.css", None).await;
         assert_eq!(answer.status, StatusCode::OK);
         assert_eq!(answer.body, "");
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn scripts_of_the_admin_are_not_found_while_the_switch_is_off() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = app_with_custom_js(database, false, &scripts());
+
+        let answer = call(&app, As::Admin, "GET", "/appearance/custom.js", None).await;
+        assert_eq!(answer.status, StatusCode::NOT_FOUND);
+        let launch = call(&app, As::Guest, "GET", "/launch", None).await.data();
+        assert_eq!(launch["appearance"]["customJsEnabled"], json!(false));
+        // PHP gives the texts to every caller, and so does this application.
+        assert_eq!(
+            launch["appearance"]["customJava"],
+            json!("window.customScript = 2;")
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn scripts_of_the_admin_are_one_file_for_every_caller_while_the_switch_is_on() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = app_with_custom_js(database, true, &scripts());
+
+        // A guest gets it too: PHP runs the scripts on the login page.
+        let answer = call(&app, As::Guest, "GET", "/appearance/custom.js", None).await;
+        assert_eq!(answer.status, StatusCode::OK);
+        assert_eq!(
+            answer.headers[header::CONTENT_TYPE],
+            "text/javascript; charset=utf-8"
+        );
+        assert_eq!(answer.headers[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
+        assert_eq!(
+            answer.headers[header::CACHE_CONTROL],
+            "no-store, no-cache, must-revalidate"
+        );
+        // The theme script comes first, as in PHP.
+        assert_eq!(
+            answer.body,
+            "window.themeScript = 1;
+window.customScript = 2;
+"
+        );
+        let launch = call(&app, As::Guest, "GET", "/launch", None).await.data();
+        assert_eq!(launch["appearance"]["customJsEnabled"], json!(true));
+
+        // Without a script, there is no file.
+        let empty = app_with_custom_js(database, true, &[("customJava", json!("  "))]);
+        let answer = call(&empty, As::Admin, "GET", "/appearance/custom.js", None).await;
+        assert_eq!(answer.status, StatusCode::NOT_FOUND);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn launch_has_only_the_icon_links_of_the_fav_icon_setting() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let html = concat!(
+            r#"<link rel="icon" type="image/png" sizes="32x32" href="data/favicon/favicon-32x32.png">"#,
+            r#"<link rel="manifest" href="data/favicon/site.webmanifest">"#,
+            r#"<script>alert(1)</script>"#,
+            r#"<link rel="shortcut icon" href="javascript:alert(1)">"#,
+            r#"<link rel="apple-touch-icon" href="https://cdn.example.com/touch.png">"#,
+        );
+        let app = installed_app_with(database, &[("favIcon", json!(html))]);
+        let launch = call(&app, As::Guest, "GET", "/launch", None).await.data();
+        assert_eq!(
+            launch["appearance"]["favIcons"],
+            json!([
+                {
+                    "rel": "icon",
+                    "href": "data/favicon/favicon-32x32.png",
+                    "type": "image/png",
+                    "sizes": "32x32"
+                },
+                { "rel": "apple-touch-icon", "href": "https://cdn.example.com/touch.png" }
+            ])
+        );
+
+        let plain = installed_app_with(database, &[]);
+        let launch = call(&plain, As::Guest, "GET", "/launch", None).await.data();
+        assert_eq!(launch["appearance"]["favIcons"], json!([]));
     })
     .await;
 }

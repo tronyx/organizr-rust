@@ -16,6 +16,7 @@ use crate::caller::Caller;
 use crate::client::{Client, LocalNetworks};
 use crate::envelope::Envelope;
 use crate::error::ApiError;
+use crate::fav_icon::{IconLink, icon_links};
 use crate::handlers::launch_settings::Visitor;
 use crate::handlers::tabs::{CategoryRow, PageAddress, TabRow, TabVariables};
 use crate::handlers::token::{SessionSummary, UserObject, describe_caller};
@@ -97,6 +98,10 @@ struct TabObject {
 /// How the page looks. All values are settings.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the fields are those of the answer of PHP, and one switch of this application"
+)]
 struct Appearance {
     logo: String,
     title: String,
@@ -120,6 +125,12 @@ struct Appearance {
     custom_theme_css: String,
     custom_java: String,
     custom_theme_java: String,
+    /// Not in PHP: whether the page runs `customThemeJava` and `customJava`, from
+    /// `GET /appearance/custom.js`. The operator turns it on (D-93).
+    custom_js_enabled: bool,
+    /// Not in PHP: the icon links of the setting `favIcon`. PHP writes the setting into
+    /// the page as HTML (D-93).
+    fav_icons: Vec<IconLink>,
 }
 
 /// The state of the install. Most values exist for clients of the PHP application and
@@ -183,7 +194,7 @@ fn tab_object(
     TabObject { tab, access_url }
 }
 
-fn appearance(settings: &Settings) -> Appearance {
+fn appearance(settings: &Settings, custom_js_enabled: bool) -> Appearance {
     Appearance {
         logo: settings.logo.clone(),
         title: settings.title.clone(),
@@ -206,6 +217,8 @@ fn appearance(settings: &Settings) -> Appearance {
         custom_theme_css: settings.custom_theme_css.clone(),
         custom_java: settings.custom_java.clone(),
         custom_theme_java: settings.custom_theme_java.clone(),
+        custom_js_enabled,
+        fav_icons: icon_links(&settings.fav_icon),
     }
 }
 
@@ -281,7 +294,7 @@ pub async fn launch(
         version: VERSION,
         settings: visitor.settings(),
         plugins: visitor.plugins(),
-        appearance: appearance(&settings),
+        appearance: appearance(&settings, state.custom_js()),
         status: LaunchStatus {
             status: if is_set_up { "ok" } else { "wizard" },
             writable: "yes",

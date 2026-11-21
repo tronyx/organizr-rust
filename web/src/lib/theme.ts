@@ -1,5 +1,5 @@
-// The look of the page: the theme, the colours of the settings "Colors & Themes", and
-// the style sheet of the Admin.
+// The look of the page: the theme, the colours of the settings "Colors & Themes", the
+// style sheet, the scripts and the icons of the Admin.
 //
 // The page allows no style that is written into it (`style-src 'self'`). So a theme is a
 // `data-theme` of the style sheet of the interface, a colour is a CSS variable that a
@@ -7,7 +7,7 @@
 // of the server.
 
 import { apiUrl } from './api';
-import type { Appearance } from './types';
+import type { Appearance, IconLink } from './types';
 
 /** The daisyUI theme of each theme of PHP Organizr that this interface has rebuilt. */
 const THEME_IDS: Record<string, string> = {
@@ -145,4 +145,81 @@ export function applyAppearance(
     }
   }
   linkCustomCss(appearance);
+}
+
+/** The id of the script element of the scripts of the Admin. */
+const CUSTOM_JS_ID = 'org-custom-js';
+
+/** The texts of the scripts that the page loaded last, to load them again only after a change. */
+let loadedScript: string | null = null;
+/** A number that makes the address of each new version of the scripts differ. */
+let scriptVersion = 0;
+
+/**
+ * Loads the scripts of the Admin from the server, as PHP Organizr runs them: on every page
+ * of an install that is set up, the login page too. Only while the operator turned them
+ * on, and only when there is a script. The script comes from this site, so the policy of
+ * the page stays `script-src 'self'`.
+ */
+export function applyCustomScript(appearance: Partial<Appearance>, isSetUp: boolean): void {
+  const text = `${appearance.customThemeJava ?? ''}
+${appearance.customJava ?? ''}`;
+  const existing = document.getElementById(CUSTOM_JS_ID);
+  if (!isSetUp || appearance.customJsEnabled !== true || text.trim() === '') {
+    // A script that ran keeps what it did until the page loads again.
+    existing?.remove();
+    loadedScript = null;
+    return;
+  }
+  if (existing && loadedScript === text) {
+    return;
+  }
+  scriptVersion += 1;
+  const script = document.createElement('script');
+  script.id = CUSTOM_JS_ID;
+  script.src = `${apiUrl('appearance/custom.js')}?v=${scriptVersion}`;
+  existing?.remove();
+  document.body.append(script);
+  loadedScript = text;
+}
+
+/** The mark of the icon links that come from the settings. */
+const ICON_MARK = 'data-org-icon';
+
+/** The icon links of the page itself, taken out while the settings name icons. */
+let builtInIcons: HTMLLinkElement[] = [];
+
+/**
+ * Puts the icon links of the setting `favIcon` into the page, in place of the icon of the
+ * interface. The server sent only links that it checked. Each one becomes a link element
+ * of its own: no HTML of the setting reaches the page.
+ */
+export function applyIcons(icons: IconLink[] | undefined): void {
+  for (const old of document.head.querySelectorAll(`link[${ICON_MARK}]`)) {
+    old.remove();
+  }
+  const links = (icons ?? []).map((icon) => {
+    const link = document.createElement('link');
+    link.setAttribute(ICON_MARK, '');
+    link.rel = icon.rel;
+    link.setAttribute('href', icon.href);
+    if (icon.type) {
+      link.type = icon.type;
+    }
+    if (icon.sizes) {
+      link.setAttribute('sizes', icon.sizes);
+    }
+    return link;
+  });
+  if (links.length > 0) {
+    const shown = document.head.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]');
+    for (const link of shown) {
+      link.remove();
+      builtInIcons.push(link);
+    }
+    document.head.append(...links);
+  } else {
+    document.head.append(...builtInIcons);
+    builtInIcons = [];
+  }
 }

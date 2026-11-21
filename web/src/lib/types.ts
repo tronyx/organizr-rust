@@ -106,6 +106,21 @@ export interface Appearance {
   /** The style sheets of the Admin, which the server also hands out as one file. */
   customCss?: string;
   customThemeCss?: string;
+  /** The scripts of the Admin. The page runs them only while `customJsEnabled` is true. */
+  customJava?: string;
+  customThemeJava?: string;
+  /** Whether the operator turned the scripts of the Admin on (`ORGANIZR_CUSTOM_JS=1`). */
+  customJsEnabled?: boolean;
+  /** The icon links of the setting `favIcon`, which the server checked. */
+  favIcons?: IconLink[];
+}
+
+/** An icon link of the page. */
+export interface IconLink {
+  rel: string;
+  href: string;
+  type?: string;
+  sizes?: string;
 }
 
 /** Where the tabs without a heading stand in the menu. */
@@ -199,3 +214,6 @@ export interface EditorData {
 
 /** The level of a Co-Admin. Callers of this level, or one with more access, manage the install. */
 export const CO_ADMIN = 1;
+
+/** The level of the Admin. */
+export const ADMIN = 0;

@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   applyAppearance,
+  applyCustomScript,
+  applyIcons,
   colourVariables,
   isColour,
   isNativeTheme,
@@ -11,6 +13,8 @@ import {
 
 afterEach(() => {
   applyAppearance(undefined, {});
+  applyCustomScript({}, true);
+  applyIcons([]);
 });
 
 describe('the themes', () => {
@@ -122,5 +126,65 @@ describe('the look of the page', () => {
 
     applyAppearance('Organizr', { customCss: '', customThemeCss: '' });
     expect(link()).toBeNull();
+  });
+});
+
+describe('the scripts of the Admin', () => {
+  const script = () => document.getElementById('org-custom-js') as HTMLScriptElement | null;
+  const on = { customJsEnabled: true, customJava: 'window.x = 1;' };
+
+  it('load only while the operator turned them on and there is a script', () => {
+    applyCustomScript({ customJsEnabled: false, customJava: 'window.x = 1;' }, true);
+    expect(script()).toBeNull();
+    applyCustomScript({ customJsEnabled: true, customJava: ' ', customThemeJava: '' }, true);
+    expect(script()).toBeNull();
+    // The set-up wizard runs no script, as in PHP.
+    applyCustomScript(on, false);
+    expect(script()).toBeNull();
+
+    applyCustomScript(on, true);
+    expect(script()?.src).toMatch(/\/api\/v2\/appearance\/custom\.js\?v=\d+$/);
+    expect(document.querySelectorAll('script#org-custom-js')).toHaveLength(1);
+  });
+
+  it('load again after a change, and are dropped when the switch goes off', () => {
+    applyCustomScript(on, true);
+    const first = script()?.src;
+    applyCustomScript(on, true);
+    expect(script()?.src).toBe(first);
+    applyCustomScript({ ...on, customThemeJava: 'window.y = 2;' }, true);
+    expect(script()?.src).not.toBe(first);
+    expect(document.querySelectorAll('script#org-custom-js')).toHaveLength(1);
+
+    applyCustomScript({ ...on, customJsEnabled: false }, true);
+    expect(script()).toBeNull();
+  });
+});
+
+describe('the icons of the page', () => {
+  it('take the place of the icon of the interface, and give it back', () => {
+    const builtIn = document.createElement('link');
+    builtIn.rel = 'icon';
+    builtIn.href = './favicon.svg';
+    document.head.append(builtIn);
+    const icons = () =>
+      [
+        ...document.head.querySelectorAll<HTMLLinkElement>(
+          'link[rel~="icon"], link[rel="apple-touch-icon"]',
+        ),
+      ].map((link) => [link.rel, link.getAttribute('href'), link.type, link.getAttribute('sizes')]);
+
+    applyIcons([
+      { rel: 'icon', href: 'data/favicon/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { rel: 'apple-touch-icon', href: 'https://cdn.example.com/touch.png' },
+    ]);
+    expect(icons()).toEqual([
+      ['icon', 'data/favicon/favicon-32x32.png', 'image/png', '32x32'],
+      ['apple-touch-icon', 'https://cdn.example.com/touch.png', '', null],
+    ]);
+
+    applyIcons([]);
+    expect(icons()).toEqual([['icon', './favicon.svg', '', null]]);
+    builtIn.remove();
   });
 });

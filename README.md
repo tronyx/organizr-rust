@@ -59,6 +59,7 @@ To use PostgreSQL in place of SQLite, start from [docker/examples/compose.postgr
 | `ORGANIZR_TRUSTED_PROXIES` | The addresses of your reverse proxies. See [Forward auth](docs/forward-auth.md) | None |
 | `ORGANIZR_EXTENSION_MARKETPLACE` | The address of the list of a marketplace for extensions. An empty value switches the marketplace off. See [Extensions](docs/extensions.md) | The list of the project, in the image |
 | `ORGANIZR_SECRET_KEY`, `ORGANIZR_SECRET_KEY_FILE` | The key that seals the stored secrets. See [Secrets](docs/secrets.md) | A key file in the data folder |
+| `ORGANIZR_CUSTOM_JS` | `1` runs the custom JavaScript of the Admin on every page. **Warning:** the script runs in the session of every person who opens Organizr, guests too. See [Appearance](docs/appearance.md) | Off |
 
 All other settings are in the web interface.
 
@@ -73,6 +74,7 @@ All other settings are in the web interface.
 | Login | [Plex login](docs/plex-login.md), [LDAP, FTP, Emby and Jellyfin login](docs/login-services.md), [OpenID Connect login](docs/openid-connect.md), [Second factor](docs/second-factor.md), [Single sign-on](docs/single-sign-on.md), [Lock screen](docs/lock-screen.md) |
 | Reverse proxy | [Forward auth](docs/forward-auth.md), [API SOCKS](docs/socks.md) |
 | E-mail | [E-mail](docs/email.md) |
+| Look of the pages | [Appearance](docs/appearance.md) |
 | Homepage | [Homepage](docs/homepage.md), [Checking your services](docs/checking-your-services.md), [Tests of the settings](docs/settings-tests.md) |
 | Plugins | [Bookmarks](docs/bookmark-plugin.md), [Health checks](docs/health-checks-plugin.md), [Invites](docs/invites-plugin.md), [Speed test](docs/speed-test-plugin.md) |
 | Extensions of other authors | [Extensions](docs/extensions.md) |

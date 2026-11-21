@@ -519,6 +519,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         )?
         // Not a route of PHP: the style sheets of the Admin as a file (D-92).
         .route("/appearance/custom.css", &get(themes::custom_css))?
+        // Not a route of PHP: the scripts of the Admin, behind the switch of the operator (D-93).
+        .route("/appearance/custom.js", &get(themes::custom_js))?
         .route("/users", &get(users::list).post(users::add))?
         .route("/users/import/{type}", &post(users_import::import))?
         .route("/users/lock", &post(lock::lock_own))?

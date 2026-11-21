@@ -88,6 +88,9 @@ pub struct AppState {
     scheduler_beat: Arc<AtomicI64>,
     /// Held while settings are changed, so that two changes do not overwrite each other.
     settings_change: Arc<Mutex<()>>,
+    /// Whether the page runs the scripts of the Admin (`customJava`): the switch
+    /// `ORGANIZR_CUSTOM_JS` of the operator. Off unless the operator turns it on.
+    custom_js: bool,
 }
 
 /// The settings of a running application, as they are at each moment. Reading them is
@@ -162,6 +165,7 @@ impl AppState {
             scrapes_local_pages: false,
             scheduler_beat: Arc::default(),
             settings_change: Arc::new(Mutex::new(())),
+            custom_js: false,
         }
     }
 
@@ -188,6 +192,19 @@ impl AppState {
     pub fn with_picture_cache(mut self, folder: PathBuf) -> Self {
         self.picture_cache = Some(PictureCache::new(folder));
         self
+    }
+
+    /// The same state, with the switch for the scripts of the Admin on or off. With it
+    /// on, every page runs `customThemeJava` and `customJava` (D-93).
+    #[must_use]
+    pub const fn with_custom_js(mut self, enabled: bool) -> Self {
+        self.custom_js = enabled;
+        self
+    }
+
+    /// Whether the page runs the scripts of the Admin.
+    pub const fn custom_js(&self) -> bool {
+        self.custom_js
     }
 
     /// The same state, with the data folder of the install. A backup holds its files.

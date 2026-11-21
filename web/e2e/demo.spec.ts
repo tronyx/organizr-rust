@@ -561,6 +561,42 @@ test('the Admin installs a theme, picks it, and sets a colour and custom CSS', a
   await expect(header).not.toHaveCSS('border-bottom-color', 'rgb(1, 2, 3)');
 });
 
+test('the Admin adds a custom script, which every page runs while the switch is on', async ({
+  page,
+}) => {
+  await logIn(page);
+  await page.goto('./#/settings/appearance');
+  await expect(page.getByText(/The scripts run now/)).toBeVisible();
+  await page
+    .getByLabel('Custom JavaScript')
+    .fill("document.documentElement.setAttribute('data-custom-script', 'ran');");
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+
+  // The page loads the script from its own site, under `script-src 'self'`.
+  const root = page.locator('html');
+  await expect(root).toHaveAttribute('data-custom-script', 'ran');
+  await page.reload();
+  await expect(root).toHaveAttribute('data-custom-script', 'ran');
+  // A guest on the login page runs it too, as in PHP.
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('button', { name: 'Log out' }).click();
+  await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
+  await page.reload();
+  await expect(root).toHaveAttribute('data-custom-script', 'ran');
+
+  // Without a script there is no file, and the page loads none.
+  await logIn(page);
+  await page.goto('./#/settings/appearance');
+  await page.getByLabel('Custom JavaScript').fill('');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  await page.reload();
+  await expect(root).not.toHaveAttribute('data-custom-script', 'ran');
+  await expect(page.locator('script#org-custom-js')).toHaveCount(0);
+  expect((await page.request.get('./api/v2/appearance/custom.js')).status()).toBe(404);
+});
+
 test('a guest cannot open the settings', async ({ page }) => {
   await page.goto('./#/settings/tabs');
 

@@ -235,9 +235,35 @@ export const COLOUR_SETTINGS: { key: string; label: string }[] = [
 
 /**
  * The settings of Customize > Appearance that change the look of the page, with the
- * themes that the install offers.
+ * themes that the install offers. The scripts are for the Admin alone, who alone may
+ * change them (D-07). `scriptsRun` says whether the operator turned them on.
  */
-export function appearanceGroups(themes: { value: string; label: string }[]): FieldGroup[] {
+export function appearanceGroups(
+  themes: { value: string; label: string }[],
+  admin: { isAdmin: boolean; scriptsRun: boolean } = { isAdmin: false, scriptsRun: false },
+): FieldGroup[] {
+  const scriptHelp = `${scriptsNote(admin.scriptsRun)} A script runs in the session of every person who opens the page, guests on the login page too, and can do all that the person can do.`;
+  const scripts: FieldGroup[] = admin.isAdmin
+    ? [
+        {
+          title: 'Custom JavaScript',
+          fields: [
+            { key: 'customJava', label: 'Custom JavaScript', kind: 'textarea', help: scriptHelp },
+          ],
+        },
+        {
+          title: 'Theme JavaScript',
+          fields: [
+            {
+              key: 'customThemeJava',
+              label: 'Theme JavaScript',
+              kind: 'textarea',
+              help: 'A script that runs before the custom JavaScript, under the same switch.',
+            },
+          ],
+        },
+      ]
+    : [];
   return [
     {
       title: 'Colours and theme',
@@ -273,7 +299,26 @@ export function appearanceGroups(themes: { value: string; label: string }[]): Fi
         },
       ],
     },
+    {
+      title: 'Icons of the page',
+      fields: [
+        {
+          key: 'favIcon',
+          label: 'Icon code',
+          kind: 'textarea',
+          help: 'The HTML of a favicon generator. Only its icon links are used: rel "icon", "shortcut icon" or "apple-touch-icon", with an address on this site or one that starts with https://.',
+        },
+      ],
+    },
+    ...scripts,
   ];
+}
+
+/** What the page says about the switch of the operator for the scripts of the Admin. */
+export function scriptsNote(scriptsRun: boolean): string {
+  return scriptsRun
+    ? 'The scripts run now: the operator of the server set ORGANIZR_CUSTOM_JS=1.'
+    : 'The scripts do not run now. They run only when the operator of the server sets the environment variable ORGANIZR_CUSTOM_JS=1.';
 }
 
 const LEVELS = [

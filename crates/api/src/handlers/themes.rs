@@ -6,7 +6,7 @@
 //! rebuilt in the style sheet of the interface, and no file is downloaded. The marketplace
 //! lists them as the marketplace file of PHP Organizr does, and an install only marks a
 //! theme as installed: the interface then offers it. `docs/deviations.md` lists the
-//! differences as D-42 and D-92.
+//! differences as D-42, D-92 and D-93.
 
 use std::sync::LazyLock;
 
@@ -276,6 +276,56 @@ pub async fn custom_css(State(state): State<AppState>) -> Response {
         sheet,
     )
         .into_response()
+}
+
+/// The scripts of the Admin, `customThemeJava` and then `customJava`, as one text. Empty
+/// when the switch of the operator is off.
+pub fn custom_script(state: &AppState) -> String {
+    if !state.custom_js() {
+        return String::new();
+    }
+    let settings = state.settings();
+    let mut script = String::new();
+    for part in [&settings.custom_theme_java, &settings.custom_java] {
+        if !part.trim().is_empty() {
+            script.push_str(part);
+            script.push('\n');
+        }
+    }
+    script
+}
+
+/// `GET /appearance/custom.js`: the scripts of the Admin as one file, which the page loads
+/// from its own site, so that its policy stays `script-src 'self'`.
+///
+/// It exists only when the operator turned the switch `ORGANIZR_CUSTOM_JS` on and an Admin
+/// stored a script. Else the answer is "not found". Every caller gets it, as PHP runs the
+/// scripts for every caller of a set-up install, guests on the login page too (D-93).
+pub async fn custom_js(
+    State(state): State<AppState>,
+    uri: axum::http::Uri,
+) -> Result<Response, crate::error::ApiError> {
+    let script = custom_script(&state);
+    if script.is_empty() {
+        return Err(crate::error::ApiError::NotFound {
+            endpoint: uri.path().to_owned(),
+            method: "GET".to_owned(),
+        });
+    }
+    Ok((
+        [
+            (
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("text/javascript; charset=utf-8"),
+            ),
+            (
+                header::X_CONTENT_TYPE_OPTIONS,
+                HeaderValue::from_static("nosniff"),
+            ),
+        ],
+        script,
+    )
+        .into_response())
 }
 
 #[cfg(test)]
