@@ -70,7 +70,7 @@
 </script>
 
 {#if enabled}
-  <section class="card bg-base-200 mt-4" aria-labelledby="oidc-links-title">
+  <section class="card org-account-panel" aria-labelledby="oidc-links-title">
     <div class="card-body">
       <h2 id="oidc-links-title" class="card-title">Log in through a provider</h2>
       <p class="text-sm">

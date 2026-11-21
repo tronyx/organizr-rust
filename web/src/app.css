@@ -1470,6 +1470,23 @@
     background: var(--color-base-200);
   }
 
+  /* The panels of the account page, as the panels of PHP: a heading with a blue line. */
+  .org-account-panel {
+    margin-bottom: 30px;
+    border-radius: 0;
+    background: var(--color-base-100);
+  }
+
+  .org-account-panel .card-title {
+    margin: -2rem -2rem 1rem;
+    padding: 20px 25px;
+    border-bottom: 1px solid var(--color-info);
+    background: var(--color-base-300);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
   .org-login-box {
     padding: 50px;
   }

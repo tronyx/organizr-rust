@@ -96,11 +96,16 @@
   onMount(load);
 </script>
 
-<main class="mx-auto max-w-2xl p-4">
-  <h1 class="text-2xl font-bold">Account</h1>
-  <p class="mb-4 text-sm opacity-80">{session.launch?.user?.username}</p>
+<main class="org-settings">
+  <div class="org-page-title">
+    <h1>Account</h1>
+    <ol class="org-breadcrumb" aria-label="Where you are">
+      <li>Account Information</li>
+      <li>{session.launch?.user?.username}</li>
+    </ol>
+  </div>
 
-  <section class="card bg-base-200" aria-labelledby="second-factor-title">
+  <section class="card org-account-panel" aria-labelledby="second-factor-title">
     <div class="card-body">
       <h2 id="second-factor-title" class="card-title">Second factor</h2>
       <p class="text-sm">
