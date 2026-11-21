@@ -638,9 +638,12 @@ const RTORRENT_FIELDS: [&str; 27] = [
     "d.complete=",
     "d.ratio=",
     "d.chunk_size=",
-    "f.size_bytes=",
-    "f.size_chunks=",
-    "f.completed_chunks=",
+    // PHP asks for `f.size_bytes`, `f.size_chunks` and `f.completed_chunks`. Those are
+    // commands for a file, and rTorrent answers with a fault for the whole request as soon
+    // as there is a torrent. The same values of the torrent are asked instead (D-103).
+    "d.size_bytes=",
+    "d.size_chunks=",
+    "d.completed_chunks=",
     "d.custom=",
     "d.custom1=",
     "d.custom2=",

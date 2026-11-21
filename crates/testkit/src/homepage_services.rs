@@ -1367,6 +1367,15 @@ fn rtorrent_answer(body: &str) -> Response {
              <value><string>d.multicall2</string></value>"
                 .to_owned(),
         )
+    } else if body.contains("<methodName>d.multicall2</methodName>") && body.contains("<string>f.")
+    {
+        // A command for a file cannot run for each torrent. rTorrent 0.9 and later
+        // answer with a fault, as soon as there is a torrent.
+        (
+            [(header::CONTENT_TYPE, "text/xml")],
+            "<?xml version=\"1.0\"?><methodResponse><fault><value><struct>             <member><name>faultCode</name><value><i4>-500</i4></value></member>             <member><name>faultString</name><value><string>Target of wrong type to generic command.</string></value>             </member></struct></value></fault></methodResponse>",
+        )
+            .into_response()
     } else if body.contains("<methodName>d.multicall2</methodName>") {
         list(RTORRENT_ROWS.iter().map(RtorrentRow::xml).collect())
     } else {

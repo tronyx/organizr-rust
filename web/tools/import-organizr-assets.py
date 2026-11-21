@@ -38,7 +38,7 @@ REPOSITORY = Path(__file__).resolve().parent.parent.parent
 WEB = REPOSITORY / "web"
 
 # The folders of pictures that the application uses.
-PICTURE_FOLDERS = ("tabs", "categories", "groups", "organizr")
+PICTURE_FOLDERS = ("tabs", "categories", "groups", "homepage", "organizr")
 # Files in those folders that are no pictures.
 NOT_A_PICTURE = {"index.html", ".DS_Store"}
 
