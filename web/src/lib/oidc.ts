@@ -49,6 +49,20 @@ export function authorizeAddress(key: string, page?: string): string {
   return apiUrl(`oidc/${encodeURIComponent(key)}/authorize`, page);
 }
 
+/**
+ * The address that links the account of the session to a provider. Only a page of this
+ * site can start the link.
+ */
+export function linkAddress(key: string, page?: string): string {
+  return apiUrl(`oidc/${encodeURIComponent(key)}/link`, page);
+}
+
+/** The provider of a link that just finished, from the query of the page, or `null`. */
+export function linkedNotice(search: string): string | null {
+  const key = new URLSearchParams(search).get('oidcLinked');
+  return key === null || key === '' ? null : key;
+}
+
 /** Whether the browser keeps the wish to stay on the login page. */
 function staysHere(): boolean {
   try {

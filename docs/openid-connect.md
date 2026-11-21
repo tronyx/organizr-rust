@@ -130,13 +130,26 @@ With linking off, an account that exists already is used only when this provider
 
 Linking never gives a person an Admin or a Co-Admin account. Such an account logs in through a provider only when that provider made or linked it before, whatever the settings say. The level counts as it is stored at the time of the login. Switch linking on only when the provider decides the user names and the e-mail addresses, and people cannot choose them freely.
 
-### Link an Admin account
+### Link your account
 
-This version of Organizr has no button that links an account that exists already. An Admin or Co-Admin account gets a link to a provider in one of these ways:
+A person who is logged in can link the own account to a provider, also an Admin or a Co-Admin account:
 
-- Let the provider make the account: the person logs in through the provider once, with **Make an account at the first login** on, and gets an account of a normal level. Then an Admin moves that account into the group Admin or Co-Admin. The account stays linked.
-- Move the existing account into a group of a normal level for a moment, for example User, and let the person log in through the provider with linking on. Then move it back. Another Admin must do the moves, because an account that is no longer Admin cannot move itself back.
-- An account that PHP Organizr had linked (`auth_service` `oidc::<provider>`) keeps its link when the install is imported.
+1. Open **Account** in the menu.
+2. Under **Log in through a provider**, select **Link to** the provider.
+3. Log in at the provider. The browser comes back to the account page, which says that the account is linked.
+
+The link checks that the login at the provider fits the account, because a later login through the provider finds the account by the user name of the provider, or by its checked e-mail address:
+
+- The user name at the provider must be the user name of the account, or the provider must send the e-mail address of the account and not say that it has not checked it.
+- No other account may have the user name of the provider. A login through the provider would find that account first.
+
+The link is finished only in the session that started it, and it makes no account and no new session. After it, the account logs in through the provider whatever **Link existing accounts** says, and also when its user name differs, as long as the provider sends the checked e-mail address of the account.
+
+Organizr does not store the subject (`sub`) of the provider. The user name and the e-mail address are what connects the two accounts.
+
+The page has no button that takes a link away. An account that a provider made has a random password that nobody knows. Without the link, such an account could lose its only way in, and Organizr cannot tell whether the person knows the password. An account of a normal level also keeps logging in through the provider by its name while **Link existing accounts** is on, so the button would not do what it says.
+
+An account that PHP Organizr had linked (`auth_service` `oidc::<provider>`) keeps its link when the install is imported.
 
 A login through a provider does not ask for the [second factor](second-factor.md) of Organizr, as in PHP Organizr: the provider checks the person. The session lasts the days of the setting **Remember me** (`rememberMeDays`).
 
@@ -165,4 +178,4 @@ A login that fails shows a page **Login Failed** with the reason, and a link bac
 
 ## Differences from PHP Organizr
 
-The differences are entries D-87 to D-89 of [the list of deviations](deviations.md).
+The differences are entries D-87 to D-90 of [the list of deviations](deviations.md).

@@ -18,9 +18,11 @@ use axum::extract::{Path, RawQuery, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use organizr_auth::login;
-use organizr_auth::oidc::{self as accounts, OidcAccount, OidcAccountError};
+use organizr_auth::oidc::{
+    self as accounts, OidcAccount, OidcAccountError, OidcLink, OidcLinkError,
+};
 use organizr_auth::secrets::{PREFIX, SecretBox};
-use organizr_domain::GroupLevel;
+use organizr_domain::{GroupLevel, UserId};
 use organizr_integrations::oidc::{
     self, Application, Callback, Discovered, MappingMode, OidcError, Person,
 };
@@ -32,11 +34,13 @@ use crate::caller::{Caller, now_stamp, session_cookie_name};
 use crate::client::Client;
 use crate::cookies::{self, CookieScope, cookie_value};
 use crate::envelope::Envelope;
+use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
 use crate::handlers::login::device_of;
 use crate::handlers::mail::request_site;
 use crate::handlers::notice_page;
 use crate::router::API_BASE;
+use crate::same_origin::FromThisSite;
 use crate::state::AppState;
 
 /// The cookie that holds a login until the browser comes back from the provider.
@@ -231,14 +235,35 @@ pub async fn authorize(
     let Some(provider) = Provider::enabled(&settings, &key) else {
         return Err(Refusal::not_found(&format!("Provider not enabled: {key}")));
     };
+    start(
+        &state,
+        &client,
+        &headers,
+        &provider,
+        None,
+        START_PAGE.to_owned(),
+    )
+    .await
+}
+
+/// Starts a login at a provider: the address of its login page, and the login cookie.
+/// With `link_user`, the login links that account when it comes back.
+async fn start(
+    state: &AppState,
+    client: &Client,
+    headers: &HeaderMap,
+    provider: &Provider<'_>,
+    link_user: Option<i64>,
+    back: String,
+) -> Result<Response, Refusal> {
     let failed = || {
         Refusal::Request(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Failed to generate authorization URL".to_owned(),
         )
     };
-    let redirect = redirect_address(&headers, &client, provider.key).ok_or_else(failed)?;
-    let discovered = discover(&state, &provider).await.map_err(|_| failed())?;
+    let redirect = redirect_address(headers, client, provider.key).ok_or_else(failed)?;
+    let discovered = discover(state, provider).await.map_err(|_| failed())?;
     let started = oidc::start(&discovered, provider.application(&redirect), provider.scopes)
         .map_err(|error| {
             tracing::warn!(provider = provider.key, %error, "the login at the provider could not start");
@@ -249,7 +274,8 @@ pub async fn authorize(
         state: started.state,
         nonce: started.nonce,
         verifier: started.verifier,
-        back: START_PAGE.to_owned(),
+        back,
+        link_user,
         expires: now_seconds().saturating_add(LOGIN_TIME),
     };
     let cookie = login.seal(state.secrets()).ok_or_else(failed)?;
@@ -261,6 +287,57 @@ pub async fn authorize(
     Ok(response)
 }
 
+/// `GET /oidc/{provider}/link`: starts a login at the provider that links the account of
+/// the session to it. Only for a person who is logged in, and only from a page of this
+/// site, so that another site cannot start a link.
+pub async fn link(
+    State(state): State<AppState>,
+    Extension(client): Extension<Client>,
+    Extension(caller): Extension<Caller>,
+    _: FromThisSite,
+    headers: HeaderMap,
+    Path(key): Path<String>,
+) -> Result<Response, Refusal> {
+    let Some(user) = caller.user() else {
+        return Err(ApiError::NotAuthorized.into());
+    };
+    let user = user.authenticated.user.id;
+    let settings = state.settings();
+    if !settings.oidc_enabled {
+        return Err(Refusal::Request(
+            StatusCode::FORBIDDEN,
+            "OIDC is not enabled".to_owned(),
+        ));
+    }
+    let Some(provider) = Provider::enabled(&settings, &key) else {
+        return Err(Refusal::not_found(&format!("Provider not enabled: {key}")));
+    };
+    let back = format!("/?oidcLinked={}#/account", provider.key);
+    start(&state, &client, &headers, &provider, Some(user.get()), back).await
+}
+
+/// `GET /oidc/link`: the provider that the account of the session is linked to, as
+/// `{"provider": <key or null>, "name": <its name or null>}`.
+pub async fn linked(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+) -> Result<Envelope<Value>, Refusal> {
+    let Some(user) = caller.user() else {
+        return Err(ApiError::NotAuthorized.into());
+    };
+    let provider = accounts::linked_provider(state.database(), user.authenticated.user.id)
+        .await
+        .map_err(|error| Refusal::Api(error.into()))?;
+    let settings = state.settings();
+    let name = provider
+        .as_deref()
+        .and_then(|key| Provider::of(&settings, key))
+        .map(|provider| provider.name.to_owned());
+    Ok(Envelope::success(
+        json!({"provider": provider, "name": name}),
+    ))
+}
+
 /// `GET /oidc/{provider}/callback`: where the provider sends the browser back. After a
 /// good login, the browser gets the session cookie and goes to the start page. Any
 /// failure gets a page that says what failed, and no session. The answer is HTML, not
@@ -268,13 +345,21 @@ pub async fn authorize(
 pub async fn callback(
     State(state): State<AppState>,
     Extension(client): Extension<Client>,
+    Extension(caller): Extension<Caller>,
     headers: HeaderMap,
     Path(key): Path<String>,
     RawQuery(query): RawQuery,
 ) -> Response {
     let kept = cookie_value(&headers, LOGIN_COOKIE)
         .and_then(|cookie| LoginCookie::open(state.secrets(), cookie, now_seconds()));
-    let mut response = match finish(&state, &client, &headers, &key, query.as_deref(), kept).await {
+    let request = Request {
+        client: &client,
+        caller: &caller,
+        headers: &headers,
+        key: &key,
+        query: query.as_deref(),
+    };
+    let mut response = match finish(&state, request, kept).await {
         Ok(response) => response,
         Err(message) => notice_page::login_failed(&message),
     };
@@ -289,29 +374,18 @@ pub async fn callback(
 /// text of the page.
 async fn finish(
     state: &AppState,
-    client: &Client,
-    headers: &HeaderMap,
-    key: &str,
-    query: Option<&str>,
+    request: Request<'_>,
     kept: Option<LoginCookie>,
 ) -> Result<Response, String> {
-    if let Some(error) = query_field(query, "error").filter(|error| !error.is_empty()) {
-        tracing::warn!(
-            provider = key,
-            "the provider answered the login with an error"
-        );
-        // The PHP application shows the description of the provider. Anybody can write
-        // a link with any text there, so the page names only the error code, when it
-        // has the form of one.
-        let is_code = error.len() <= 64
-            && error
-                .bytes()
-                .all(|byte| byte.is_ascii_lowercase() || byte == b'_');
-        return Err(if is_code {
-            format!("The provider refused the login: {error}")
-        } else {
-            "The provider refused the login".to_owned()
-        });
+    let Request {
+        client,
+        caller,
+        headers,
+        key,
+        query,
+    } = request;
+    if let Some(refused) = provider_error(key, query) {
+        return Err(refused);
     }
     let code = query_field(query, "code").filter(|code| !code.is_empty());
     let sent_state = query_field(query, "state").filter(|state| !state.is_empty());
@@ -329,6 +403,17 @@ async fn finish(
     if !same_text(&kept.state, &sent_state) || kept.provider != key {
         tracing::warn!(provider = key, "the state of the login does not match");
         return Err(invalid_state());
+    }
+    // A link is finished by the session that started it, and by no other.
+    if let Some(owner) = kept.link_user {
+        let session_user = caller.user().map(|user| user.authenticated.user.id);
+        if session_user != Some(UserId::new(owner)) {
+            tracing::warn!(
+                provider = key,
+                "a link came back without the session that started it"
+            );
+            return Err("The link must be finished in the session that started it".to_owned());
+        }
     }
     let settings = state.settings();
     let Some(provider) = Provider::enabled(&settings, key) else {
@@ -366,7 +451,26 @@ async fn finish(
         }
     })?;
 
+    if let Some(owner) = kept.link_user {
+        return link_account(state, &provider, &person, UserId::new(owner), &kept.back).await;
+    }
+
     let user = account_of(state, &settings, &provider, &person).await?;
+    new_session(state, request, &provider, user, &kept.back).await
+}
+
+/// Starts the session of a login at a provider, and sends the browser to `back`.
+async fn new_session(
+    state: &AppState,
+    request: Request<'_>,
+    provider: &Provider<'_>,
+    user: organizr_domain::User,
+    back: &str,
+) -> Result<Response, String> {
+    let Request {
+        client, headers, ..
+    } = request;
+    let settings = state.settings();
     let now = SystemTime::now();
     let lifetime = ONE_DAY * settings.remember_me_days.min(MOST_DAYS);
     let authentication_failed = || "Authentication failed".to_owned();
@@ -391,13 +495,76 @@ async fn finish(
         .map_err(|_| authentication_failed())?;
     tracing::info!(user = %logged_in.user.username, provider = provider.key, client = %client.address, "a user logged in at a provider");
 
-    let mut response = (
-        StatusCode::FOUND,
-        [(header::LOCATION, safe_place(&kept.back))],
-    )
-        .into_response();
+    let mut response = (StatusCode::FOUND, [(header::LOCATION, safe_place(back))]).into_response();
     cookies::append(&mut response, session_cookie);
     Ok(response)
+}
+
+/// The text of the page when the provider answered with an error, or `None`.
+fn provider_error(key: &str, query: Option<&str>) -> Option<String> {
+    let error = query_field(query, "error").filter(|error| !error.is_empty())?;
+    tracing::warn!(
+        provider = key,
+        "the provider answered the login with an error"
+    );
+    // The PHP application shows the description of the provider. Anybody can write a
+    // link with any text there, so the page names only the error code, when it has the
+    // form of one.
+    let is_code = error.len() <= 64
+        && error
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte == b'_');
+    Some(if is_code {
+        format!("The provider refused the login: {error}")
+    } else {
+        "The provider refused the login".to_owned()
+    })
+}
+
+/// What the callback reads of its request.
+#[derive(Clone, Copy)]
+struct Request<'a> {
+    client: &'a Client,
+    caller: &'a Caller,
+    headers: &'a HeaderMap,
+    key: &'a str,
+    query: Option<&'a str>,
+}
+
+/// Links the account of the session to the provider, and sends the browser back to the
+/// account page. The session stays as it is; no account is made.
+async fn link_account(
+    state: &AppState,
+    provider: &Provider<'_>,
+    person: &Person,
+    user: UserId,
+    back: &str,
+) -> Result<Response, String> {
+    let failed = || "The account could not be linked".to_owned();
+    let Some(username) = person.username() else {
+        tracing::warn!(provider = provider.key, "the provider named no user name");
+        return Err(failed());
+    };
+    let link = OidcLink {
+        provider: provider.key,
+        user,
+        username,
+        email: person.email.as_deref().unwrap_or_default(),
+        email_verified: person.email_verified,
+    };
+    match accounts::link(state.database(), link).await {
+        Ok(_) => Ok((StatusCode::FOUND, [(header::LOCATION, safe_place(back))]).into_response()),
+        Err(OidcLinkError::NameTaken(name)) => Err(format!(
+            "Another account already has the user name {name} of the provider"
+        )),
+        Err(OidcLinkError::NotThisAccount(name)) => Err(format!(
+            "The provider names the user {name}, whose user name and e-mail address are not those of this account"
+        )),
+        Err(error) => {
+            tracing::error!(provider = provider.key, %error, "an account could not be linked to the provider");
+            Err(failed())
+        }
+    }
 }
 
 /// The account of the person, found, linked or made as the settings say.
@@ -517,6 +684,9 @@ struct LoginCookie {
     back: String,
     /// Until when the login may come back, in seconds since 1970.
     expires: i64,
+    /// The account that the login links, when the person started a link.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    link_user: Option<i64>,
 }
 
 impl LoginCookie {
@@ -598,6 +768,7 @@ mod tests {
             verifier: "v".to_owned(),
             back: "/".to_owned(),
             expires,
+            link_user: None,
         }
     }
 

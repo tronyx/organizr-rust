@@ -996,3 +996,260 @@ async fn account_of_a_normal_level_is_still_linked_by_its_name() {
     })
     .await;
 }
+
+/// Starts a link of the account of `session` to the stand-in, lets the stand-in approve
+/// it, and returns the callback path and the login cookie.
+async fn start_link(app: &Router, provider: &OidcProvider, session: &str) -> (String, String) {
+    let started = call(app, As::User(session), "GET", "/oidc/keycloak/link", None).await;
+    assert_eq!(started.status, StatusCode::FOUND, "{}", started.body);
+    let cookie = started
+        .cookie(LOGIN_COOKIE)
+        .expect("the login cookie is set");
+    let back = provider.approve(&location(&started)).await;
+    (back, cookie)
+}
+
+async fn finish_link(app: &Router, back: &str, cookies: &[&str]) -> Answer {
+    let cookies = cookies.join("; ");
+    send(app, request("GET", back, &[("cookie", &cookies)], "")).await
+}
+
+#[tokio::test]
+async fn admin_links_the_own_account_and_then_logs_in_through_the_provider() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        person(&provider, "chief", "chief@provider.example.com");
+        let app = app(database, &provider, &[]);
+        let session = seed::logged_in(database, &app, "chief", 0).await;
+        let users_before = database.users().count().await.expect("a count");
+
+        let (back, cookie) = start_link(&app, &provider, &session).await;
+        let answer = finish_link(&app, &back, &[&cookie, &session]).await;
+
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        assert_eq!(location(&answer), "/?oidcLinked=keycloak#/account");
+        assert_eq!(session_cookie(&answer), None, "the link made a new session");
+        assert_login_cookie_dropped(&answer);
+        assert_eq!(auth_service(&app, "chief").await, json!("oidc::keycloak"));
+        assert_eq!(
+            database.users().count().await.expect("a count"),
+            users_before
+        );
+        let linked = call(&app, As::User(&session), "GET", "/oidc/link", None).await;
+        assert_eq!(
+            linked.data(),
+            json!({"provider": "keycloak", "name": "Company login"})
+        );
+
+        // The link counts for the login through the provider, also with linking off.
+        let no_link = installed_app_with(
+            database,
+            &settings_for(
+                &provider.discovery_url(),
+                &[("oidcLinkExistingUsers", json!(false))],
+            ),
+        );
+        let answer = log_in(&no_link, &provider).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        let new_session = session_cookie(&answer).expect("the session cookie is set");
+        let me = call(&no_link, As::User(&new_session), "GET", "/token/me", None).await;
+        assert_eq!(me.data()["username"], json!("chief"));
+        assert_eq!(me.data()["groupID"], json!(0));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn link_is_found_by_the_checked_address_when_the_names_differ() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        let app = app(
+            database,
+            &provider,
+            &[("oidcLinkExistingUsers", json!(false))],
+        );
+        let session = seed::logged_in(database, &app, "deputy", 1).await;
+        let deputy = user(database, "deputy").await.expect("the account");
+        database
+            .users()
+            .update(
+                deputy.id,
+                organizr_domain::UserChanges {
+                    email: organizr_domain::Change::Set("deputy@example.com".to_owned()),
+                    ..organizr_domain::UserChanges::none()
+                },
+            )
+            .await
+            .expect("the address can be stored");
+        person(&provider, "dep.at.the.provider", "deputy@example.com");
+
+        let (back, cookie) = start_link(&app, &provider, &session).await;
+        let answer = finish_link(&app, &back, &[&cookie, &session]).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+
+        let answer = log_in(&app, &provider).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        let new_session = session_cookie(&answer).expect("the session cookie is set");
+        let me = call(&app, As::User(&new_session), "GET", "/token/me", None).await;
+        assert_eq!(me.data()["username"], json!("deputy"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn link_must_come_back_to_the_session_that_started_it() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        person(&provider, "chief", "chief@provider.example.com");
+        let app = app(database, &provider, &[]);
+        let chief = seed::logged_in(database, &app, "chief", 0).await;
+        let other = seed::logged_in(database, &app, "other", 4).await;
+
+        let (back, cookie) = start_link(&app, &provider, &chief).await;
+        let answer = finish_link(&app, &back, &[&cookie, &other]).await;
+        assert_failed(
+            &answer,
+            "The link must be finished in the session that started it",
+        );
+
+        let (back, cookie) = start_link(&app, &provider, &chief).await;
+        let answer = finish_link(&app, &back, &[&cookie]).await;
+        assert_failed(
+            &answer,
+            "The link must be finished in the session that started it",
+        );
+
+        assert!(provider.token_requests().is_empty(), "the code was traded");
+        assert_eq!(auth_service(&app, "chief").await, json!("internal"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn link_refuses_a_forged_or_an_expired_login_cookie() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        let app = app(database, &provider, &[]);
+        let chief = seed::logged_in(database, &app, "chief", 0).await;
+        let chief_id = user(database, "chief").await.expect("the account").id;
+        let (back, _) = start_link(&app, &provider, &chief).await;
+        let query = provider.last_authorize();
+
+        let forged = format!("{LOGIN_COOKIE}={}", "cd".repeat(90));
+        let answer = finish_link(&app, &back, &[&forged, &chief]).await;
+        assert_failed(&answer, "Invalid or expired state parameter");
+
+        let expired = json!({
+            "provider": "keycloak",
+            "state": query["state"],
+            "nonce": query["nonce"],
+            "verifier": "a verifier",
+            "back": "/#/account",
+            "expires": 1_000_000,
+            "link_user": chief_id.get(),
+        });
+        let sealed = seed::secrets()
+            .seal("oidc/login", &expired.to_string())
+            .expect("it seals");
+        let value = sealed.strip_prefix(PREFIX).expect("the prefix");
+        let expired = format!("{LOGIN_COOKIE}={value}");
+        let answer = finish_link(&app, &back, &[&expired, &chief]).await;
+        assert_failed(&answer, "Invalid or expired state parameter");
+        assert_eq!(auth_service(&app, "chief").await, json!("internal"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn link_never_makes_an_account() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        person(&provider, "stranger", "stranger@example.com");
+        let app = app(database, &provider, &[]);
+        let chief = seed::logged_in(database, &app, "chief", 0).await;
+        let users_before = database.users().count().await.expect("a count");
+
+        let (back, cookie) = start_link(&app, &provider, &chief).await;
+        let answer = finish_link(&app, &back, &[&cookie, &chief]).await;
+
+        assert_failed(
+            &answer,
+            "The provider names the user stranger, whose user name and e-mail address are not those of this account",
+        );
+        assert_eq!(database.users().count().await.expect("a count"), users_before);
+        assert!(user(database, "stranger").await.is_none());
+        assert_eq!(auth_service(&app, "chief").await, json!("internal"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn second_account_cannot_link_an_identity_that_belongs_to_another() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        person(&provider, "chief", "chief@provider.example.com");
+        let app = app(database, &provider, &[]);
+        let chief = seed::logged_in(database, &app, "chief", 0).await;
+        let deputy = seed::logged_in(database, &app, "deputy", 1).await;
+
+        let (back, cookie) = start_link(&app, &provider, &chief).await;
+        let answer = finish_link(&app, &back, &[&cookie, &chief]).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+
+        // The provider vouches for "chief", which is the name of another account.
+        let (back, cookie) = start_link(&app, &provider, &deputy).await;
+        let answer = finish_link(&app, &back, &[&cookie, &deputy]).await;
+        assert_failed(
+            &answer,
+            "Another account already has the user name chief of the provider",
+        );
+        assert_eq!(auth_service(&app, "deputy").await, json!("internal"));
+        assert_eq!(auth_service(&app, "chief").await, json!("oidc::keycloak"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn link_route_needs_a_session_of_this_site() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        let app = app(database, &provider, &[]);
+        let chief = seed::logged_in(database, &app, "chief", 0).await;
+
+        for who in [As::Guest, As::Admin] {
+            let answer = call(&app, who, "GET", "/oidc/keycloak/link", None).await;
+            assert_eq!(answer.status, StatusCode::UNAUTHORIZED, "{who:?}");
+            assert_eq!(answer.cookies_named(LOGIN_COOKIE), Vec::<&str>::new());
+        }
+        let answer = call(&app, As::Guest, "GET", "/oidc/link", None).await;
+        assert_eq!(answer.status, StatusCode::UNAUTHORIZED);
+
+        let cross_site = send(
+            &app,
+            request(
+                "GET",
+                "/api/v2/oidc/keycloak/link",
+                &[("cookie", &chief), ("sec-fetch-site", "cross-site")],
+                "",
+            ),
+        )
+        .await;
+        assert_ne!(cross_site.status, StatusCode::FOUND);
+        assert_eq!(cross_site.cookies_named(LOGIN_COOKIE), Vec::<&str>::new());
+
+        let answer = call(&app, As::User(&chief), "GET", "/oidc/zitadel/link", None).await;
+        assert_eq!(answer.status, StatusCode::NOT_FOUND);
+        assert_eq!(answer.message(), json!("Provider not enabled: zitadel"));
+
+        let linked = call(&app, As::User(&chief), "GET", "/oidc/link", None).await;
+        assert_eq!(linked.data(), json!({"provider": null, "name": null}));
+    })
+    .await;
+}

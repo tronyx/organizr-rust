@@ -57,6 +57,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/login", &post(login::login))?
         .route("/logout", &get(logout::logout))?
         .route("/oidc/providers", &get(oidc::providers))?
+        .route("/oidc/link", &get(oidc::linked))?
+        .route("/oidc/{provider}/link", &get(oidc::link))?
         .route("/oidc/{provider}/authorize", &get(oidc::authorize))?
         .route("/oidc/{provider}/callback", &get(oidc::callback))?
         .route("/oidc/{provider}/test", &get(oidc::test))?

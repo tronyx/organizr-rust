@@ -5,7 +5,7 @@
 //! the session.
 
 use organizr_db::{Database, DbError};
-use organizr_domain::{Change, GroupId, GroupLevel, Timestamp, User, UserChanges};
+use organizr_domain::{Change, GroupId, GroupLevel, Timestamp, User, UserChanges, UserId};
 use thiserror::Error;
 
 use crate::external::PLACEHOLDER_DOMAIN;
@@ -66,6 +66,91 @@ pub enum OidcAccountError {
     Database(#[from] DbError),
 }
 
+/// A person who is logged in links the own account to a provider, and the provider has
+/// checked who the person is.
+#[derive(Debug, Clone, Copy)]
+pub struct OidcLink<'a> {
+    /// The key of the provider, for example `keycloak`.
+    pub provider: &'a str,
+    /// The account of the session that started the link.
+    pub user: UserId,
+    /// The user name that the provider gives. It is not empty.
+    pub username: &'a str,
+    /// The e-mail address that the provider gives. Empty when it gives none.
+    pub email: &'a str,
+    /// Whether the provider has checked the address, when it says so.
+    pub email_verified: Option<bool>,
+}
+
+/// Why an account could not be linked.
+#[derive(Debug, Error)]
+pub enum OidcLinkError {
+    /// The account of the session is gone.
+    #[error("the account of the session does not exist")]
+    NoAccount,
+    /// Another account has the user name of the provider. A login through the provider
+    /// would find that account first.
+    #[error("another account has the user name `{0}` of the provider")]
+    NameTaken(String),
+    /// Neither the user name nor a checked e-mail address of the provider is the one of
+    /// the account, so a login through the provider would not find the account.
+    #[error(
+        "the provider names the user `{0}`, whose name and address are not those of the account"
+    )]
+    NotThisAccount(String),
+    /// The database failed.
+    #[error(transparent)]
+    Database(#[from] DbError),
+}
+
+/// Links the account of a session to a provider. The settings `oidcLinkExistingUsers`
+/// and the rule for Admin accounts do not count: the person is logged in to the account
+/// and has logged in at the provider. No account is made.
+///
+/// A later login through the provider finds an account by the user name of the
+/// provider, or by its checked e-mail address. So the link is made only when one of the
+/// two is the one of the account, and no other account has the user name.
+pub async fn link(database: &Database, link: OidcLink<'_>) -> Result<User, OidcLinkError> {
+    let users = database.users();
+    let user = users
+        .find(link.user)
+        .await?
+        .ok_or(OidcLinkError::NoAccount)?;
+    let by_name = users.find_by_username(link.username).await?;
+    let matches = match &by_name {
+        Some(found) if found.id != user.id => {
+            return Err(OidcLinkError::NameTaken(link.username.to_owned()));
+        }
+        Some(_) => true,
+        None => {
+            !link.email.is_empty()
+                && link.email_verified != Some(false)
+                && user
+                    .email
+                    .as_deref()
+                    .is_some_and(|email| email.eq_ignore_ascii_case(link.email))
+        }
+    };
+    if !matches {
+        return Err(OidcLinkError::NotThisAccount(link.username.to_owned()));
+    }
+    users
+        .set_auth_service(user.id, SERVICE, Some(link.provider))
+        .await?;
+    tracing::info!(user = %user.username, provider = link.provider, "a user linked the account to the provider");
+    Ok(user)
+}
+
+/// The provider that an account is linked to, when it is linked to one.
+pub async fn linked_provider(database: &Database, user: UserId) -> Result<Option<String>, DbError> {
+    Ok(database
+        .users()
+        .login_of(user)
+        .await?
+        .filter(|login| login.auth_service == SERVICE)
+        .and_then(|login| login.auth_provider))
+}
+
 /// The account of the person, with whether this login made it.
 #[derive(Debug)]
 pub struct Found {
@@ -81,9 +166,11 @@ pub struct Found {
 /// 3. With `auto_create`, a new account with a random password.
 ///
 /// An account found by its name is linked only with `link_existing`, or when this
-/// provider has linked or made it before. An Admin or a Co-Admin account is linked only
-/// when this provider has linked or made it before, whatever the settings. The account gets the service `oidc` and the
-/// provider. With `update_group`, a found account moves to the mapped group.
+/// provider has linked or made it before. An account that this provider has linked is
+/// also found by a checked e-mail address without `link_existing`. An Admin or a
+/// Co-Admin account is linked only when this provider has linked or made it before,
+/// whatever the settings. The account gets the service `oidc` and the provider. With
+/// `update_group`, a found account moves to the mapped group.
 pub async fn find_or_create(
     database: &Database,
     account: OidcAccount<'_>,
@@ -100,11 +187,16 @@ pub async fn find_or_create(
             }
             Some(user)
         }
-        None if account.link_existing
-            && !account.email.is_empty()
-            && account.email_verified != Some(false) =>
-        {
-            users.find_by_email(account.email).await?
+        None if !account.email.is_empty() && account.email_verified != Some(false) => {
+            match users.find_by_email(account.email).await? {
+                Some(user)
+                    if account.link_existing
+                        || is_linked(database, &user, account.provider).await? =>
+                {
+                    Some(user)
+                }
+                _ => None,
+            }
         }
         None => None,
     };
