@@ -7,6 +7,7 @@
 
   import { api, ApiError, failureText } from '../lib/api';
   import { session } from '../lib/session.svelte';
+  import ActiveTokens from './ActiveTokens.svelte';
   import OidcLinks from './OidcLinks.svelte';
   import UserInformation from './UserInformation.svelte';
 
@@ -107,6 +108,8 @@
   </div>
 
   <UserInformation />
+
+  <ActiveTokens />
 
   <section class="card org-account-panel" aria-labelledby="second-factor-title">
     <div class="card-body">

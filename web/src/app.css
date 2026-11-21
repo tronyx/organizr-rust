@@ -1536,6 +1536,12 @@
     object-fit: contain;
   }
 
+  /* The session of this browser in the list of the sessions, as PHP marks it. */
+  .org-current-token th,
+  .org-current-token td {
+    background: rgb(0 194 146 / 0.25);
+  }
+
   .org-login-box {
     padding: 50px;
   }
