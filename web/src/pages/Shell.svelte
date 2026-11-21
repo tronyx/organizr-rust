@@ -282,7 +282,10 @@
         </ul>
       </details>
     {:else}
-      <a class="org-header-link" href={PAGES.login}>Log in</a>
+      <a class="org-header-link gap-2" href={PAGES.login} aria-label="Log in">
+        <img class="size-6 rounded-full" src="plugins/images/default_user.png" alt="" />
+        <span>Guest</span>
+      </a>
     {/if}
   </header>
 {/if}
