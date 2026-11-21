@@ -3,6 +3,7 @@
   // asks the request service for the films and series that match the text (D-108); a
   // click on one asks, and then makes the request as the person.
   import Dialog from '../../components/Dialog.svelte';
+  import { takePopup, waitingPopup } from '../../lib/popups.svelte';
   import { api, failureText } from '../../lib/api';
   import { REQUEST_SERVICES, type RequestService } from '../../lib/requests';
 
@@ -81,6 +82,13 @@
   }
 
   const STATUS_WORDS = { available: 'Available', requested: 'Requested' } as const;
+
+  // A link of a custom HTML item asks for this pop-up, as it opens PHP's `#new-request`.
+  $effect(() => {
+    if (waitingPopup() === 'new-request' && takePopup('new-request')) {
+      open = true;
+    }
+  });
 </script>
 
 <button type="button" aria-label="Request a Show or Movie" onclick={() => (open = true)}>

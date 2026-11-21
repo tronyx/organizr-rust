@@ -3,6 +3,7 @@
   // that asks the media server as the person types, and shows the matches as posters.
   // A poster opens the details of its item.
   import Dialog from '../../components/Dialog.svelte';
+  import { takePopup, waitingPopup } from '../../lib/popups.svelte';
   import { api, failureText } from '../../lib/api';
   import {
     type MediaService,
@@ -54,6 +55,13 @@
       busy = false;
     }
   }
+
+  // A link of a custom HTML item asks for this pop-up, as it opens PHP's `#mediaSearch-area`.
+  $effect(() => {
+    if (waitingPopup() === 'mediaSearch-area' && takePopup('mediaSearch-area')) {
+      open = true;
+    }
+  });
 </script>
 
 <button

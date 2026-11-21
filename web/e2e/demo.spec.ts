@@ -909,6 +909,7 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
       '<p>Hello from custom HTML</p><p id="cookies"></p>' +
         '<div style="height: 400px"></div>' +
         '<a href="#/settings/groups">Open the groups</a>' +
+        '<button href="#account-area">My account</button>' +
         '<script>var seen; try { seen = "cookies: " + document.cookie; } catch (e) { seen = "no cookies for this frame"; }' +
         ' document.getElementById("cookies").textContent = seen;</script>',
     );
@@ -929,6 +930,11 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
   await frame.getByRole('link', { name: 'Open the groups' }).click();
   await expect(page).toHaveURL(/#\/settings\/groups$/);
   await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+
+  // A link to a pop-up of PHP opens what stands for it here (D-111).
+  await page.goto('./#Homepage');
+  await frame.getByRole('button', { name: 'My account' }).click();
+  await expect(page).toHaveURL(/#\/account$/);
 });
 
 test('the chat plugin shows a new message at once, as text', async ({ page }) => {

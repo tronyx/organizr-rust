@@ -58,6 +58,22 @@ const SIZE_SCRIPT: &str = "<script>(function () {\
     tell();\
 })();</script>";
 
+/// Turns a click on a link to a pop-up of PHP Organizr (`href="#new-request"`) into a
+/// message to the page of Organizr, which opens its own pop-up for it (D-111). Nothing
+/// else goes to the page: only the name of the pop-up, and only for the names above.
+const POPUP_SCRIPT: &str = "<script>(function () {\
+    var popups = ['new-request', 'mediaSearch-area', 'speedtest-area', 'account-area', 'invite-area'];\
+    document.addEventListener('click', function (event) {\
+        var link = event.target instanceof Element ? event.target.closest('[href]') : null;\
+        var href = link ? link.getAttribute('href') || '' : '';\
+        var name = href.charAt(0) === '#' ? href.slice(1) : '';\
+        if (popups.indexOf(name) < 0) { return; }\
+        event.preventDefault();\
+        event.stopPropagation();\
+        parent.postMessage({ organizrPopup: name }, '*');\
+    }, true);\
+})();</script>";
+
 /// The permissions of the item with the given number, or nothing when there is no
 /// such item.
 pub fn permissions(number: &str) -> Option<Permissions> {
@@ -93,7 +109,7 @@ fn document(custom: &str, style: Option<&str>) -> String {
         "<!doctype html>\n<html><head><meta charset=\"utf-8\">\
          <base href=\"/\" target=\"_top\">{link}\
          <style>{BASE_STYLE}</style>\
-         </head><body>\n{custom}\n{SIZE_SCRIPT}</body></html>\n"
+         </head><body>\n{custom}\n{SIZE_SCRIPT}{POPUP_SCRIPT}</body></html>\n"
     )
 }
 
@@ -139,7 +155,7 @@ pub async fn show(
 
 #[cfg(test)]
 mod tests {
-    use super::{POLICY, document, permissions, style_sheet};
+    use super::{POLICY, POPUP_SCRIPT, document, permissions, style_sheet};
 
     #[test]
     fn there_are_eight_items() {
@@ -184,6 +200,22 @@ mod tests {
         assert!(page.contains("<link rel=\"stylesheet\" href=\"/assets/x.css\">"));
         assert!(page.contains("<base href=\"/\" target=\"_top\">"));
         assert!(!document("x", None).contains("stylesheet"));
+    }
+
+    #[test]
+    fn document_sends_the_known_pop_ups_to_the_page_only() {
+        let page = document("<a href=\"#new-request\">Search</a>", None);
+
+        assert!(page.contains("organizrPopup"));
+        for name in [
+            "new-request",
+            "mediaSearch-area",
+            "speedtest-area",
+            "account-area",
+            "invite-area",
+        ] {
+            assert!(POPUP_SCRIPT.contains(&format!("'{name}'")), "{name}");
+        }
     }
 
     #[test]

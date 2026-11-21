@@ -1,6 +1,7 @@
 <script lang="ts">
   // One custom HTML item: HTML of the Admin, in a frame that keeps it apart from Organizr.
   import { customHtmlAddress, FRAME_SANDBOX, reportedHeight } from '../../lib/homepage';
+  import { openPopup, popupOf } from '../../lib/popups.svelte';
 
   let {
     id,
@@ -23,6 +24,11 @@
     const reported = reportedHeight(event.data);
     if (reported !== null) {
       height = reported;
+    }
+    // A link of the item to a pop-up of PHP Organizr, such as `#new-request` (D-111).
+    const popup = popupOf(event.data);
+    if (popup !== null) {
+      openPopup(popup);
     }
   }
 </script>

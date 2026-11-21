@@ -21,7 +21,7 @@ This is a rewrite of Organizr 2.1 in Rust. It keeps the API, the settings and th
 Each difference is in [the list of deviations](deviations.md), with its reason. The ones you are most likely to notice:
 
 - **Themes and custom CSS or JavaScript** written for the page structure of PHP do not apply as a whole (D-42). The pages carry PHP's ids and classes where custom CSS usually aims, such as the health checks, the calendar, the panels and the login page, so most custom CSS still works (D-110). The themes of the marketplace are rebuilt (D-92).
-- **Custom HTML items** run in a closed frame, unless you switch the item to trusted (D-61, D-76). Their links cannot open the pop-ups of the page.
+- **Custom HTML items** run in a closed frame, unless you switch the item to trusted (D-61, D-76). Their links to PHP's pop-ups, such as `#new-request` or `#speedtest-area`, open the matching search or page (D-111).
 - **Plugins of other authors** are WebAssembly extensions, not PHP files (D-75).
 - **Get Plex Token** uses the login page of Plex instead of a form for the Plex password (D-107).
 - **The search for new requests** asks Overseerr or Ombi on the server, not the TMDB from the browser, and has no lists of suggestions (D-108).
@@ -32,7 +32,6 @@ Each difference is in [the list of deviations](deviations.md), with its reason. 
 ## Not in this release
 
 - Moving homepage items by dragging: Homepage Order moves them with buttons.
-- Links in custom HTML items that open the pop-ups of the page, such as `#speedtest-area` or `#new-request`.
 
 ## Checks
 
