@@ -22,8 +22,9 @@ mod users;
 
 use std::time::Duration;
 
-use sea_orm::sqlx::sqlite::SqliteJournalMode;
-use sea_orm::{ConnectOptions, ConnectionTrait, DatabaseConnection};
+use sea_orm::sqlx::sqlite::SqliteConnectOptions;
+use sea_orm::sqlx::{ConnectOptions as _, Connection as _};
+use sea_orm::{ConnectOptions, ConnectionTrait, DatabaseConnection, DbErr};
 use sea_orm_migration::MigratorTrait;
 
 pub use crate::bookmarks::Bookmarks;
@@ -76,8 +77,10 @@ impl Database {
     /// - `sqlite:/path/to/organizr.db` opens that file and creates it when it is missing.
     /// - `postgres://user:password@host/database` connects to a `PostgreSQL` server.
     ///
-    /// On SQLite the connection uses write-ahead logging, enforces foreign keys and waits
-    /// a few seconds for a busy database instead of failing at once.
+    /// On SQLite the connection enforces foreign keys and waits a few seconds for a busy
+    /// database instead of failing at once. A new database file gets write-ahead logging.
+    /// The journal mode is kept in the file, so an existing file keeps the mode that it
+    /// has, also one that an Admin chose with [`Database::set_journal_mode`].
     pub async fn connect(url: &str) -> Result<Self, DbError> {
         let engine = Engine::from_url(url)?;
 
@@ -87,7 +90,6 @@ impl Database {
             options.map_sqlx_sqlite_opts(|sqlite| {
                 sqlite
                     .create_if_missing(true)
-                    .journal_mode(SqliteJournalMode::Wal)
                     .foreign_keys(true)
                     .busy_timeout(SQLITE_BUSY_TIMEOUT)
             });
@@ -96,7 +98,71 @@ impl Database {
         let connection = sea_orm::Database::connect(options)
             .await
             .map_err(DbError::Engine)?;
+        if engine == Engine::Sqlite {
+            // A new file has no pages yet. Write-ahead logging is then set once, and the
+            // file keeps it.
+            let pages = connection
+                .query_one_raw(sea_orm::Statement::from_string(
+                    connection.get_database_backend(),
+                    "PRAGMA page_count",
+                ))
+                .await?
+                .and_then(|row| row.try_get_by_index::<i64>(0).ok());
+            if pages == Some(0) {
+                connection
+                    .execute_unprepared("PRAGMA journal_mode = WAL")
+                    .await?;
+            }
+        }
         Ok(Self { connection, engine })
+    }
+
+    /// The journal mode of a database on `SQLite`, in lower case as `SQLite` names it, for
+    /// example `wal` or `delete`. `None` on `PostgreSQL`, which has no journal mode.
+    pub async fn journal_mode(&self) -> Result<Option<String>, DbError> {
+        if self.engine != Engine::Sqlite {
+            return Ok(None);
+        }
+        let row = self
+            .connection
+            .query_one_raw(sea_orm::Statement::from_string(
+                self.connection.get_database_backend(),
+                "PRAGMA journal_mode",
+            ))
+            .await?;
+        Ok(row.and_then(|row| row.try_get_by_index::<String>(0).ok()))
+    }
+
+    /// Sets the journal mode of a database on `SQLite` and returns the mode that it has
+    /// then, which `SQLite` may have kept. `None` on `PostgreSQL`. `mode` is `WAL` or
+    /// `DELETE`; any other text changes nothing and gives `None`.
+    ///
+    /// `SQLite` leaves write-ahead logging only while no other connection has the file
+    /// open. So the idle connections of the pool are closed first; the pool opens new
+    /// ones when it needs them, and they take the mode of the file. A request that uses
+    /// a connection at that moment can still keep the mode from changing: the change
+    /// then fails after the time that a busy database is waited for.
+    pub async fn set_journal_mode(&self, mode: &str) -> Result<Option<String>, DbError> {
+        let statement = match mode {
+            "WAL" => "PRAGMA journal_mode = WAL",
+            "DELETE" => "PRAGMA journal_mode = DELETE",
+            _ => return Ok(None),
+        };
+        if self.engine != Engine::Sqlite {
+            return Ok(None);
+        }
+        let failed =
+            |error: sea_orm::sqlx::Error| DbError::Engine(DbErr::Custom(error.to_string()));
+        let pool = self.connection.get_sqlite_connection_pool();
+        let mut own = pool.acquire().await.map_err(failed)?;
+        while let Some(idle) = pool.try_acquire() {
+            idle.close().await.map_err(failed)?;
+        }
+        let now: String = sea_orm::sqlx::query_scalar(statement)
+            .fetch_one(&mut *own)
+            .await
+            .map_err(failed)?;
+        Ok(Some(now))
     }
 
     /// The engine behind this database.
@@ -118,6 +184,22 @@ impl Database {
         self.connection
             .execute_unprepared(&format!("VACUUM INTO '{name}'"))
             .await?;
+        // The copy of `VACUUM INTO` has the journal mode `delete`. A restored copy keeps
+        // the mode of the database it came from.
+        if self.journal_mode().await?.as_deref() == Some("wal") {
+            let failed =
+                |error: sea_orm::sqlx::Error| DbError::Engine(DbErr::Custom(error.to_string()));
+            let mut copy = SqliteConnectOptions::new()
+                .filename(file)
+                .connect()
+                .await
+                .map_err(failed)?;
+            sea_orm::sqlx::query("PRAGMA journal_mode = WAL")
+                .execute(&mut copy)
+                .await
+                .map_err(failed)?;
+            copy.close().await.map_err(failed)?;
+        }
         Ok(true)
     }
 

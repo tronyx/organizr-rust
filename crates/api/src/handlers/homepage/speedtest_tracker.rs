@@ -32,7 +32,9 @@ pub async fn data(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.speedtest_use_custom_certificate)
+        .ok_or_else(no_requests)?;
 
     let url = service_url(&settings.speedtest_url, &headers, &client);
     let results = speedtest_tracker::latest(http, &url, settings.speedtest_disable_cert_check)

@@ -142,6 +142,19 @@ impl<'a> Tabs<'a> {
             .collect()
     }
 
+    /// Gives every tab the Admin as the level with the most access that sees it. This is
+    /// the reset of `group_id_max` of PHP Organizr, `UPDATE tabs SET group_id_max=0`.
+    pub async fn reset_most_access(&self) -> Result<(), DbError> {
+        tab::Entity::update_many()
+            .col_expr(
+                tab::Column::MostAccessLevel,
+                Expr::value(i32::from(GroupLevel::ADMIN.get())),
+            )
+            .exec(self.connection)
+            .await?;
+        Ok(())
+    }
+
     /// Deletes a tab. Returns whether the tab existed.
     pub async fn delete(&self, id: TabId) -> Result<bool, DbError> {
         let result = tab::Entity::delete_by_id(id.get())

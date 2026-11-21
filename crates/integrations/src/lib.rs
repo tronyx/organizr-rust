@@ -6,6 +6,7 @@
 pub mod adguard;
 pub mod arr;
 pub mod couchpotato;
+pub mod custom_certificate;
 pub mod downloaders;
 pub mod downloaders_more;
 pub mod emby;
@@ -33,6 +34,7 @@ pub mod plex;
 pub mod plex_server;
 pub mod probe;
 pub mod prompage;
+pub mod releases;
 pub mod scrape;
 pub mod sickrage;
 pub mod slack;

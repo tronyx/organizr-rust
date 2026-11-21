@@ -168,6 +168,8 @@ export interface Launch {
       unsortedTabs: UnsortedPlace;
       /** The id of the install. */
       uuid: string;
+      /** Whether Admins and Co-Admins hear of a new version. */
+      checkForUpdate?: boolean;
     };
     ping: {
       /** The level that may ask the server to check tabs, as text. */
@@ -179,6 +181,18 @@ export interface Launch {
     };
   };
   status: { status: 'ok' | 'wizard' };
+  /** What the last version check found, for Admins and Co-Admins; `null` for others. */
+  update?: UpdateStatus | null;
+}
+
+/** What a version check found: the answer of `GET /update/check`. */
+export interface UpdateStatus {
+  current: string;
+  /** The version of the newest release, or `null` before a check found one. */
+  latest: string | null;
+  updateAvailable: boolean;
+  /** The page of the newest release. */
+  releaseUrl: string | null;
 }
 
 /** The answer of `GET /status`. */

@@ -104,6 +104,18 @@ pub struct StandIn {
 impl StandIn {
     /// Starts a server with the given routes.
     pub async fn start(routes: Router) -> Self {
+        Self::start_on(routes, None).await
+    }
+
+    /// Starts a server with the given routes over HTTPS, with the certificate of
+    /// [`crate::tls::LOCALHOST_CERTIFICATE`] for the name `localhost`, which the
+    /// authority of [`crate::tls::AUTHORITY`] signed. [`StandIn::https_url`] is its
+    /// address.
+    pub async fn start_tls(routes: Router) -> Self {
+        Self::start_on(routes, Some(crate::tls::acceptor())).await
+    }
+
+    async fn start_on(routes: Router, tls: Option<tokio_rustls::TlsAcceptor>) -> Self {
         let seen = Log::default();
         let log = Arc::clone(&seen);
         let app = routes.layer(axum::middleware::from_fn(
@@ -143,7 +155,15 @@ impl StandIn {
             .expect("a local port can be opened");
         let address = listener.local_addr().expect("the port has an address");
         let task = tokio::spawn(async move {
-            let _ = axum::serve(listener, app).await;
+            match tls {
+                Some(acceptor) => {
+                    let _ =
+                        axum::serve(crate::tls::TlsListener::new(listener, acceptor), app).await;
+                }
+                None => {
+                    let _ = axum::serve(listener, app).await;
+                }
+            }
         });
         Self {
             address,
@@ -155,6 +175,12 @@ impl StandIn {
     /// The address of the stand-in, without a slash at the end.
     pub fn url(&self) -> String {
         format!("http://{}", self.address)
+    }
+
+    /// The address of a stand-in over HTTPS, by the name `localhost`, without a slash at
+    /// the end.
+    pub fn https_url(&self) -> String {
+        format!("https://localhost:{}", self.address.port())
     }
 
     /// The requests so far, oldest first.

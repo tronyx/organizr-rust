@@ -226,14 +226,16 @@ async fn sonarr_queue(headers: HeaderMap) -> Response {
 /// A stand-in for Sonarr: one episode in the calendar whose fan art only Sonarr has,
 /// and one download in the queue.
 pub async fn sonarr() -> StandIn {
-    StandIn::start(
-        Router::new()
-            .route("/api/v3/calendar", get(sonarr_calendar))
-            .route("/api/v3/queue", get(sonarr_queue))
-            .route("/api/v3/rootfolder", get(arr_root_folders))
-            .route("/MediaCover/1/fanart.jpg", get(arr_picture)),
-    )
-    .await
+    StandIn::start(sonarr_routes()).await
+}
+
+/// The routes of the stand-in for Sonarr, for a stand-in over HTTPS.
+pub fn sonarr_routes() -> Router {
+    Router::new()
+        .route("/api/v3/calendar", get(sonarr_calendar))
+        .route("/api/v3/queue", get(sonarr_queue))
+        .route("/api/v3/rootfolder", get(arr_root_folders))
+        .route("/MediaCover/1/fanart.jpg", get(arr_picture))
 }
 
 async fn radarr_calendar(headers: HeaderMap) -> Response {

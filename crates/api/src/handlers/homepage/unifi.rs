@@ -81,7 +81,9 @@ pub async fn data(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.unifi_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let health = health(&settings, http, &headers, &client)
         .await
         .map_err(|error| refusal(&error))?;

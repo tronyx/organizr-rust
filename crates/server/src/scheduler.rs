@@ -35,17 +35,20 @@ pub enum Job {
     HealthChecks,
     /// A backup of the install.
     Backup,
+    /// The version check (D-23).
+    UpdateCheck,
 }
 
 impl Job {
     /// Every job.
-    pub const ALL: [Self; 2] = [Self::HealthChecks, Self::Backup];
+    pub const ALL: [Self; 3] = [Self::HealthChecks, Self::Backup, Self::UpdateCheck];
 
     /// The name of the job in the log.
     pub const fn name(self) -> &'static str {
         match self {
             Self::HealthChecks => "health checks",
             Self::Backup => "backup",
+            Self::UpdateCheck => "version check",
         }
     }
 
@@ -58,6 +61,10 @@ impl Job {
             Self::Backup => settings
                 .auto_backup_cron_enabled
                 .then_some(settings.auto_backup_cron_schedule.as_str()),
+            // The schedule of the self-update of PHP is the schedule of the check.
+            Self::UpdateCheck => settings
+                .auto_update_cron_enabled
+                .then_some(settings.auto_update_cron_schedule.as_str()),
         }
     }
 
@@ -75,6 +82,10 @@ impl Job {
                 if let Err(error) = organizr_api::create_backup(state).await {
                     tracing::error!(error, "the scheduled backup could not be made");
                 }
+            }
+            Self::UpdateCheck => {
+                // The check logs what it found, and why it failed.
+                let _ = organizr_api::check_for_update(state).await;
             }
         }
     }
@@ -275,6 +286,33 @@ mod tests {
             [Job::Backup]
         );
         assert_eq!(due_jobs(&installed_settings(&nightly), &sunday), []);
+    }
+
+    #[test]
+    fn version_check_is_due_at_the_schedule_of_the_auto_update() {
+        // 22 November 2026 is a Sunday. The default schedule is `@weekly`.
+        let sunday = at("2026-11-22T00:00:00+00:00");
+        let on = [("autoUpdateCronEnabled", json!(true))];
+        assert_eq!(
+            due_jobs(&installed_settings(&on), &sunday),
+            [Job::UpdateCheck]
+        );
+        assert_eq!(
+            due_jobs(&installed_settings(&on), &at("2026-11-23T00:00:00+00:00")),
+            []
+        );
+        assert_eq!(due_jobs(&installed_settings(&[]), &sunday), []);
+        let daily = [
+            ("autoUpdateCronEnabled", json!(true)),
+            ("autoUpdateCronSchedule", json!("15 4 * * *")),
+        ];
+        assert_eq!(
+            due_jobs(
+                &installed_settings(&daily),
+                &at("2026-11-23T04:15:00+00:00")
+            ),
+            [Job::UpdateCheck]
+        );
     }
 
     #[test]

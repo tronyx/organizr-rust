@@ -192,9 +192,10 @@ async fn tautulli_names(
     client: &Client,
 ) -> Map<String, Value> {
     let mut names = Map::new();
-    let Some(http) = state.outbound() else {
+    let Some(http) = state.outbound_for(settings.tautulli_use_custom_certificate) else {
         return names;
     };
+    let http = &http;
     let address = settings.tautulli_url.split(',').next().unwrap_or_default();
     let url = service_url(address, headers, client);
     let install = Tautulli {
@@ -251,7 +252,9 @@ pub async fn streams(
     headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let asked = Asked::new(&state, &caller, &client, &headers, Part::Streams)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(asked.settings.plex_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let names = custom_names(&state, &asked.settings, &headers, &client).await;
     let xml = asked
         .server(Some(asked.settings.homepage_stream_refresh))
@@ -285,7 +288,9 @@ pub async fn recent(
     headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let asked = Asked::new(&state, &caller, &client, &headers, Part::Recent)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(asked.settings.plex_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let server = asked.server(Some(asked.settings.homepage_recent_refresh));
     let limit = asked.settings.homepage_recent_limit.to_string();
     let is_cached = cache_check(state.picture_cache());
@@ -326,7 +331,9 @@ pub async fn playlists(
     headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let asked = Asked::new(&state, &caller, &client, &headers, Part::Playlists)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(asked.settings.plex_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let server = asked.server(None);
     let xml = server
         .xml(http, "/playlists", &[])
@@ -381,7 +388,9 @@ async fn items_at(
     libraries: &[&str],
     ignored: &[&str],
 ) -> Result<Envelope<Value>, Refusal> {
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(asked.settings.plex_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let xml = asked
         .server(None)
         .xml(http, path, query)
@@ -530,7 +539,9 @@ pub async fn image(
     let (true, Some(width), Some(height)) = (is_path, side("width"), side("height")) else {
         return Err(not_found());
     };
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(asked.settings.plex_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let content = asked
         .server(None)
         .picture(http, picture, (width, height), PICTURE_LIMIT)

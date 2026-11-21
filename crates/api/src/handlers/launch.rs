@@ -21,6 +21,7 @@ use crate::handlers::launch_settings::Visitor;
 use crate::handlers::tabs::{CategoryRow, PageAddress, TabRow, TabVariables};
 use crate::handlers::token::{SessionSummary, UserObject, describe_caller};
 use crate::state::AppState;
+use crate::update_check::UpdateStatus;
 
 /// The version of this application.
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -66,6 +67,9 @@ pub struct LaunchData {
     sso: Value,
     /// Warnings of the server for the admin, for example about a full disk. None yet.
     warnings: Option<Vec<String>>,
+    /// What the last version check found, for Admins and Co-Admins; `null` for every
+    /// other caller (D-23).
+    update: Option<UpdateStatus>,
 }
 
 /// A list, or `false` on an install that is not set up, as PHP sends it.
@@ -308,6 +312,7 @@ pub async fn launch(
         },
         sso: visitor.sso_cookies(),
         warnings: None,
+        update: (caller.level() <= GroupLevel::CO_ADMIN).then(|| (*state.update_status()).clone()),
     }))
 }
 

@@ -224,7 +224,9 @@ pub async fn deluge_queue(
     deluge_permissions().check(&settings, &caller)?;
     let asked = Asked {
         settings: &settings,
-        http: state.outbound().ok_or_else(no_requests)?,
+        http: &state
+            .outbound_for(settings.deluge_use_custom_certificate)
+            .ok_or_else(no_requests)?,
         headers: &headers,
         client: &client,
         timeout: None,
@@ -257,7 +259,9 @@ pub async fn rtorrent_queue(
     rtorrent_permissions().check(&settings, &caller)?;
     let asked = Asked {
         settings: &settings,
-        http: state.outbound().ok_or_else(no_requests)?,
+        http: &state
+            .outbound_for(settings.rtorrent_use_custom_certificate)
+            .ok_or_else(no_requests)?,
         headers: &headers,
         client: &client,
         timeout: None,
@@ -291,7 +295,9 @@ pub async fn utorrent_queue(
     utorrent_permissions().check(&settings, &caller)?;
     let asked = Asked {
         settings: &settings,
-        http: state.outbound().ok_or_else(no_requests)?,
+        http: &state
+            .outbound_for(settings.utorrent_use_custom_certificate)
+            .ok_or_else(no_requests)?,
         headers: &headers,
         client: &client,
         timeout: None,
@@ -320,7 +326,9 @@ pub async fn jdownloader_queue(
     jdownloader_permissions().check(&settings, &caller)?;
     let asked = Asked {
         settings: &settings,
-        http: state.outbound().ok_or_else(no_requests)?,
+        http: &state
+            .outbound_for(settings.jdownloader_use_custom_certificate)
+            .ok_or_else(no_requests)?,
         headers: &headers,
         client: &client,
         timeout: None,

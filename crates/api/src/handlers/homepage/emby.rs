@@ -12,7 +12,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::Response;
 use organizr_integrations::emby::{self, EmbyError, ItemContext, Kind, Server};
-use organizr_integrations::http::time_limit;
+use organizr_integrations::http::{Outbound, time_limit};
 use organizr_settings::Settings;
 use serde_json::{Value, json};
 
@@ -93,6 +93,8 @@ pub(super) struct Install<'a> {
     pub(super) address: &'a str,
     pub(super) token: &'a str,
     pub(super) never_check: bool,
+    /// Whether the requests also trust the authority that an Admin uploaded.
+    pub(super) custom_certificate: bool,
     pub(super) link: &'a str,
     pub(super) open_tab: bool,
     pub(super) tab_name: &'a str,
@@ -104,6 +106,7 @@ pub(super) fn install(settings: &Settings, kind: Kind) -> Install<'_> {
             address: &settings.emby_url,
             token: &settings.emby_token,
             never_check: settings.emby_disable_cert_check,
+            custom_certificate: settings.emby_use_custom_certificate,
             link: &settings.homepage_emby_link,
             open_tab: !settings.emby_tab_url.is_empty() && !settings.emby_tab_name.is_empty(),
             tab_name: &settings.emby_tab_name,
@@ -112,6 +115,7 @@ pub(super) fn install(settings: &Settings, kind: Kind) -> Install<'_> {
             address: &settings.jellyfin_url,
             token: &settings.jellyfin_token,
             never_check: settings.jellyfin_disable_cert_check,
+            custom_certificate: settings.jellyfin_use_custom_certificate,
             link: &settings.homepage_jellyfin_link,
             open_tab: !settings.jellyfin_tab_name.is_empty(),
             tab_name: &settings.jellyfin_tab_name,
@@ -203,9 +207,16 @@ impl Asked {
         Refusal::Request(StatusCode::INTERNAL_SERVER_ERROR, error.to_string())
     }
 
+    /// The client for the requests to the server.
+    fn http(&self, state: &AppState) -> Result<Outbound, Refusal> {
+        state
+            .outbound_for(install(&self.settings, self.kind).custom_certificate)
+            .ok_or_else(no_requests)
+    }
+
     /// The id of the user of the server whose eyes the lists use.
     async fn user(&self, state: &AppState, server: &Server<'_>) -> Result<String, Refusal> {
-        let http = state.outbound().ok_or_else(no_requests)?;
+        let http = &self.http(state)?;
         let users = server
             .users(http)
             .await
@@ -254,7 +265,7 @@ impl Request<'_> {
 /// What plays on the server now.
 async fn streams(request: Request<'_>, kind: Kind) -> Result<Envelope<Value>, Refusal> {
     let asked = request.asked(kind, Part::Streams)?;
-    let http = request.state.outbound().ok_or_else(no_requests)?;
+    let http = &asked.http(request.state)?;
     let timeout = time_limit(&asked.settings.homepage_stream_refresh.to_string());
     let sessions = asked
         .server(timeout)
@@ -270,7 +281,7 @@ async fn streams(request: Request<'_>, kind: Kind) -> Result<Envelope<Value>, Re
 /// the caller did not play.
 async fn recent(request: Request<'_>, kind: Kind) -> Result<Envelope<Value>, Refusal> {
     let asked = request.asked(kind, Part::Recent)?;
-    let http = request.state.outbound().ok_or_else(no_requests)?;
+    let http = &asked.http(request.state)?;
     let timeout = time_limit(&asked.settings.homepage_recent_refresh.to_string());
     let server = asked.server(timeout);
     let user = asked.user(request.state, &server).await?;
@@ -302,7 +313,7 @@ async fn metadata(
             kind.name()
         )));
     }
-    let http = request.state.outbound().ok_or_else(no_requests)?;
+    let http = &asked.http(request.state)?;
     let server = asked.server(Some(DETAILS_TIME_LIMIT));
     let user = asked.user(request.state, &server).await?;
     let details = server
@@ -369,7 +380,7 @@ pub async fn image(
     {
         return picture_cache::picture_response(content).ok_or_else(not_found);
     }
-    let http = request.state.outbound().ok_or_else(no_requests)?;
+    let http = &asked.http(request.state)?;
     let content = asked
         .server(None)
         .picture(http, (item, picture), (width, height), PICTURE_LIMIT)

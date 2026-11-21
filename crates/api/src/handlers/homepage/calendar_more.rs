@@ -76,7 +76,9 @@ pub async fn sickrage_events(
     client: &Client,
 ) -> Result<Vec<Value>, Refusal> {
     let settings = state.settings();
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.sickrage_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let (now, zone) = (window(&settings).now, TimeZone::system());
     let mut all = Vec::new();
     let installs = installs(
@@ -118,7 +120,9 @@ pub async fn couchpotato_events(
     client: &Client,
 ) -> Result<Vec<Value>, Refusal> {
     let settings = state.settings();
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.couchpotato_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let window = window(&settings);
     let mut all = Vec::new();
     let installs = installs(

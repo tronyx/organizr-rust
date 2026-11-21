@@ -196,6 +196,30 @@ export const GENERAL: FieldGroup[] = [
     ],
   },
   {
+    title: 'Updates',
+    scheduler: true,
+    fields: [
+      {
+        key: 'checkForUpdate',
+        label: 'Tell Admins and Co-Admins about a new version',
+        kind: 'switch',
+      },
+      {
+        key: 'autoUpdateCronEnabled',
+        label: 'Look for a new version on a schedule',
+        kind: 'switch',
+        help: 'Organizr asks GitHub for the newest release. To update, pull the new image of the container.',
+      },
+      {
+        key: 'autoUpdateCronSchedule',
+        label: 'Schedule of the version check',
+        kind: 'text',
+        test: 'cron',
+        help: 'One of the words @daily, @weekly and @monthly, or the five fields of a cron schedule. The times are in the time zone of the server.',
+      },
+    ],
+  },
+  {
     title: 'Slack or Discord',
     test: 'slack-logs',
     fields: [
@@ -922,6 +946,12 @@ const SERVICE_ITEMS: FieldGroup[] = [
         kind: 'switch',
       },
       {
+        key: 'healthChecksUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
+      {
         key: 'homepageHealthChecksRefresh',
         label: 'Milliseconds between two loads of the health checks',
         kind: 'number',
@@ -994,6 +1024,12 @@ const PLEX_ITEMS: FieldGroup[] = [
         key: 'plexDisableCertCheck',
         label: 'Do not check the certificate of the Plex server',
         kind: 'switch',
+      },
+      {
+        key: 'plexUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       {
         key: 'plexTabURL',
@@ -1119,6 +1155,12 @@ const OVERSEERR_ITEMS: FieldGroup[] = [
         kind: 'switch',
       },
       {
+        key: 'overseerrUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
+      {
         key: 'overseerrLimitUser',
         label: 'Show a user only the own requests',
         kind: 'switch',
@@ -1171,6 +1213,12 @@ const OVERSEERR_ITEMS: FieldGroup[] = [
         key: 'ombiDisableCertCheck',
         label: 'Do not check the certificate of Ombi',
         kind: 'switch',
+      },
+      {
+        key: 'ombiUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       {
         key: 'ombiLimitUser',
@@ -1243,6 +1291,8 @@ interface MediaServerKeys {
   url: string;
   token: string;
   certificate: string;
+  /** The setting "use the custom certificate". */
+  customCertificate: string;
   link: string;
   tabName: string;
   /** Only Emby has this setting. */
@@ -1302,6 +1352,12 @@ function mediaServerItems(name: string, test: string, keys: MediaServerKeys): Fi
           kind: 'switch',
         },
         {
+          key: keys.customCertificate,
+          label: 'Trust the custom certificate',
+          kind: 'switch',
+          help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+        },
+        {
           key: keys.link,
           label: `Address of an item in the web interface of ${name}`,
           kind: 'text',
@@ -1332,6 +1388,7 @@ const MEDIA_SERVER_ITEMS: FieldGroup[] = [
     url: 'embyURL',
     token: 'embyToken',
     certificate: 'embyDisableCertCheck',
+    customCertificate: 'embyUseCustomCertificate',
     link: 'homepageEmbyLink',
     tabName: 'embyTabName',
     tabUrl: 'embyTabURL',
@@ -1344,6 +1401,7 @@ const MEDIA_SERVER_ITEMS: FieldGroup[] = [
     url: 'jellyfinURL',
     token: 'jellyfinToken',
     certificate: 'jellyfinDisableCertCheck',
+    customCertificate: 'jellyfinUseCustomCertificate',
     link: 'homepageJellyfinLink',
     tabName: 'jellyfinTabName',
     streams: [
@@ -1377,6 +1435,12 @@ const TAUTULLI_ITEMS: FieldGroup[] = [
         key: 'tautulliDisableCertCheck',
         label: 'Do not check the certificate of Tautulli',
         kind: 'switch',
+      },
+      {
+        key: 'tautulliUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       ...socksFields('tautulli', 'Tautulli'),
       { key: 'tautulliHeaderToggle', label: 'Show a title above the statistics', kind: 'switch' },
@@ -1691,6 +1755,12 @@ const MEDIA_STATISTICS_ITEMS: FieldGroup[] = [
         kind: 'switch',
       },
       {
+        key: 'jellyStatUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
+      {
         key: 'homepageJellyStatRefresh',
         label: 'Minutes between two loads of the statistics',
         kind: 'number',
@@ -1770,6 +1840,12 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of SABnzbd',
         kind: 'switch',
       },
+      {
+        key: 'sabnzbdUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
       ...socksFields('sabnzbd', 'SABnzbd'),
       {
         key: 'sabnzbdCombine',
@@ -1835,6 +1911,12 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of qBittorrent',
         kind: 'switch',
       },
+      {
+        key: 'qBittorrentUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
       ...socksFields('qBittorrent', 'qBittorrent'),
       {
         key: 'qBittorrentCombine',
@@ -1899,6 +1981,12 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of NZBGet',
         kind: 'switch',
       },
+      {
+        key: 'nzbgetUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
       ...socksFields('nzbget', 'NZBGet'),
       {
         key: 'nzbgetCombine',
@@ -1940,6 +2028,12 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         key: 'transmissionDisableCertCheck',
         label: 'Do not check the certificate of Transmission',
         kind: 'switch',
+      },
+      {
+        key: 'transmissionUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       {
         key: 'transmissionCombine',
@@ -1986,6 +2080,12 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         key: 'delugeDisableCertCheck',
         label: 'Do not check the certificate of Deluge',
         kind: 'switch',
+      },
+      {
+        key: 'delugeUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       {
         key: 'delugeRefresh',
@@ -2072,6 +2172,12 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         kind: 'switch',
       },
       {
+        key: 'rTorrentUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
+      {
         key: 'rTorrentRefresh',
         label: 'Milliseconds between two loads of rTorrent',
         kind: 'number',
@@ -2118,6 +2224,12 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         kind: 'switch',
       },
       {
+        key: 'uTorrentUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
+      {
         key: 'uTorrentRefresh',
         label: 'Milliseconds between two loads of uTorrent',
         kind: 'number',
@@ -2152,6 +2264,12 @@ const DOWNLOAD_ITEMS: FieldGroup[] = [
         key: 'jdownloaderDisableCertCheck',
         label: 'Do not check the certificate of the service',
         kind: 'switch',
+      },
+      {
+        key: 'jdownloaderUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       {
         key: 'jdownloaderRefresh',
@@ -2193,6 +2311,12 @@ const SEARCH_ITEMS: FieldGroup[] = [
         kind: 'switch',
       },
       {
+        key: 'jackettUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
+      {
         key: 'homepageJackettBackholeDownload',
         label: 'Download with the black hole folder of Jackett',
         kind: 'switch',
@@ -2216,6 +2340,12 @@ const SEARCH_ITEMS: FieldGroup[] = [
         key: 'ProwlarrDisableCertCheck',
         label: 'Do not check the certificate of Prowlarr',
         kind: 'switch',
+      },
+      {
+        key: 'ProwlarrUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       {
         key: 'homepageProwlarrBackholeDownload',
@@ -2345,6 +2475,12 @@ const MONITOR_ITEMS: FieldGroup[] = [
         kind: 'switch',
       },
       {
+        key: 'netdataUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
+      {
         key: 'netdataCustom',
         label: 'Custom charts',
         kind: 'textarea',
@@ -2369,6 +2505,12 @@ const MONITOR_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of Monitorr',
         kind: 'switch',
       },
+      {
+        key: 'monitorrUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
       { key: 'monitorrHeaderToggle', label: 'Show a title above the services', kind: 'switch' },
       { key: 'monitorrHeader', label: 'Title above the services', kind: 'text' },
       { key: 'monitorrCompact', label: 'Show the services in the small form', kind: 'switch' },
@@ -2390,6 +2532,12 @@ const MONITOR_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of Speedtest Tracker',
         kind: 'switch',
       },
+      {
+        key: 'speedtestUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
       { key: 'speedtestHeaderToggle', label: 'Show a title above the results', kind: 'switch' },
       { key: 'speedtestHeader', label: 'Title above the results', kind: 'text' },
       refreshField('homepageSpeedtestRefresh', 'Speedtest Tracker'),
@@ -2410,6 +2558,12 @@ const MONITOR_ITEMS: FieldGroup[] = [
         key: 'octoprintDisableCertCheck',
         label: 'Do not check the certificate of OctoPrint',
         kind: 'switch',
+      },
+      {
+        key: 'octoprintUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       { key: 'octoprintHeaderToggle', label: 'Show a title above the print job', kind: 'switch' },
       { key: 'octoprintHeader', label: 'Title above the print job', kind: 'text' },
@@ -2445,6 +2599,12 @@ const MONITOR_ITEMS: FieldGroup[] = [
         key: 'unifiDisableCertCheck',
         label: 'Do not check the certificate of the controller',
         kind: 'switch',
+      },
+      {
+        key: 'unifiUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       refreshField('homepageUnifiRefresh', 'UniFi'),
     ],
@@ -2544,6 +2704,12 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of Sonarr',
         kind: 'switch',
       },
+      {
+        key: 'sonarrUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
       ...socksFields('sonarr', 'Sonarr'),
       {
         key: 'sonarrCalendarLink',
@@ -2614,6 +2780,12 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         key: 'radarrDisableCertCheck',
         label: 'Do not check the certificate of Radarr',
         kind: 'switch',
+      },
+      {
+        key: 'radarrUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
       ...socksFields('radarr', 'Radarr'),
       {
@@ -2689,6 +2861,12 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of Lidarr',
         kind: 'switch',
       },
+      {
+        key: 'lidarrUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
       ...socksFields('lidarr', 'Lidarr'),
       {
         key: 'lidarrCalendarLink',
@@ -2727,6 +2905,12 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         label: 'Do not check the certificate of SickRage',
         kind: 'switch',
       },
+      {
+        key: 'sickrageUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
+      },
     ],
   },
   {
@@ -2759,6 +2943,12 @@ const CALENDAR_ITEMS: FieldGroup[] = [
         key: 'couchpotatoDisableCertCheck',
         label: 'Do not check the certificate of CouchPotato',
         kind: 'switch',
+      },
+      {
+        key: 'couchpotatoUseCustomCertificate',
+        label: 'Trust the custom certificate',
+        kind: 'switch',
+        help: 'Trust the certificate of the authority that the Admin uploaded in Settings, General.',
       },
     ],
   },

@@ -78,6 +78,10 @@ roxmltree = "0.21.2"
 rust-embed = "8.14.0"
 rustls = { version = "0.23.46", default-features = false, features = ["ring", "std"] }
 rustls-native-certs = "0.8.5"
+# The CA certificate that an Admin uploads: its PEM sections.
+rustls-pki-types = { version = "1.16.0", features = ["std"] }
+# The version check of the releases of this project.
+semver = "1.0.28"
 sea-orm = { version = "2.0.4", default-features = false, features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls", "macros"] }
 sea-orm-migration = { version = "2.0.4", default-features = false, features = ["sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls"] }
 serde = { version = "1.0.229", features = ["derive"] }
@@ -90,6 +94,8 @@ suppaftp = { version = "13.0.0", default-features = false, features = ["tokio-ru
 surge-ping = "0.9.1"
 tempfile = "3.27"
 # The runtime for extensions. It is the line with long support.
+# Whether an uploaded certificate is that of a certificate authority.
+x509-parser = "0.18.1"
 wasmtime = { version = "48.0.10", default-features = false, features = ["component-model", "cranelift", "runtime", "std"] }
 wasmtime-wasi = { version = "48.0.10", default-features = false, features = ["p2"] }
 zip = { version = "9.8.1", default-features = false, features = ["deflate-flate2-zlib-rs"] }

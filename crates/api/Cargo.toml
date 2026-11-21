@@ -33,6 +33,7 @@ http-body-util.workspace = true
 jiff.workspace = true
 zip.workspace = true
 md-5.workspace = true
+semver.workspace = true
 serde.workspace = true
 sha2 = { workspace = true, optional = true }
 serde_json.workspace = true

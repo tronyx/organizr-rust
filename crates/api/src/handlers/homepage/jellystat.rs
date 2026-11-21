@@ -115,7 +115,9 @@ pub async fn data(
     if settings.jelly_stat_url.is_empty() || settings.jelly_stat_apikey.is_empty() {
         return Err(failed("JellyStat URL or API key not configured"));
     }
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.jelly_stat_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let url = api_address(&settings, &headers, &client);
     let install = Install {
         url: &url,
@@ -225,7 +227,9 @@ pub async fn metadata(
             "JellyStat metadata key is not defined",
         ));
     }
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.jelly_stat_use_custom_certificate)
+        .ok_or_else(no_requests)?;
 
     let kind = media_server(&settings);
     let media_url =
@@ -240,7 +244,12 @@ pub async fn metadata(
             timeout: Some(DETAILS_TIME_LIMIT),
             never_check_certificate: install.never_check,
         };
-        details = details_of_server(http, &server, &key, settings.homepage_recent_limit).await;
+        // The media server has its own setting for the custom certificate, as in PHP.
+        let media_http = state
+            .outbound_for(install.custom_certificate)
+            .ok_or_else(no_requests)?;
+        details =
+            details_of_server(&media_http, &server, &key, settings.homepage_recent_limit).await;
     }
     if details.is_none() {
         let url = api_address(&settings, &headers, &client);

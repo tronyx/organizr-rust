@@ -65,6 +65,7 @@ describe('the settings of Ombi', () => {
       'homepageOrderombi',
       'ombiToken',
       'ombiDisableCertCheck',
+      'ombiUseCustomCertificate',
       'ombiLimitUser',
       'ombiLimit',
       'homepageOmbiRequestAuth',
@@ -89,6 +90,7 @@ describe('the settings of the calendar', () => {
       'sickrageURL',
       'sickrageToken',
       'sickrageDisableCertCheck',
+      'sickrageUseCustomCertificate',
     ]);
     expect(group('CouchPotato')?.test).toBeUndefined();
     expect(group('CouchPotato')?.fields.map((one) => one.key)).toEqual([
@@ -97,6 +99,7 @@ describe('the settings of the calendar', () => {
       'couchpotatoURL',
       'couchpotatoToken',
       'couchpotatoDisableCertCheck',
+      'couchpotatoUseCustomCertificate',
     ]);
     expect(field('sickrageToken')?.kind).toBe('secret');
     expect(field('couchpotatoToken')?.kind).toBe('secret');
@@ -141,6 +144,7 @@ describe('the settings of the search items and of the monitors', () => {
       'ProwlarrURL',
       'ProwlarrToken',
       'ProwlarrDisableCertCheck',
+      'ProwlarrUseCustomCertificate',
       'homepageProwlarrBackholeDownload',
     ]);
     expect(field('homepageOrderAdguard')).toBeDefined();
@@ -241,7 +245,12 @@ describe('the settings of the API SOCKS', () => {
       const at = keys.indexOf(`${key}DisableCertCheck`);
 
       expect(at, title).toBeGreaterThan(-1);
-      expect(keys.slice(at + 1, at + 3)).toEqual([`${key}SocksEnabled`, `${key}SocksAuth`]);
+      // PHP Organizr has the switch for the custom certificate in between.
+      expect(keys.slice(at + 1, at + 4)).toEqual([
+        `${key}UseCustomCertificate`,
+        `${key}SocksEnabled`,
+        `${key}SocksAuth`,
+      ]);
       expect(field(`${key}SocksEnabled`)?.kind).toBe('switch');
       expect(field(`${key}SocksAuth`)?.kind).toBe('select');
     }

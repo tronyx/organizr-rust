@@ -21,6 +21,8 @@ reqwest.workspace = true
 roxmltree.workspace = true
 rustls.workspace = true
 rustls-native-certs.workspace = true
+rustls-pki-types.workspace = true
+semver.workspace = true
 serde.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
 sha1.workspace = true
@@ -30,6 +32,7 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["time"] }
 tokio-rustls.workspace = true
 tracing.workspace = true
+x509-parser.workspace = true
 
 [dev-dependencies]
 organizr-testkit.workspace = true

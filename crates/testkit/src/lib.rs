@@ -21,6 +21,7 @@ pub mod replay;
 pub mod seed;
 pub mod services;
 pub mod smtp;
+pub mod tls;
 
 use axum::Router;
 use organizr_api::{AppState, router};

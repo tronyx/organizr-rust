@@ -78,7 +78,9 @@ async fn ask_sabnzbd(
 ) -> Result<Option<Value>, Refusal> {
     let settings = state.settings();
     sabnzbd_permissions().check(&settings, caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.sabnzbd_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let url = service_url(&settings.sabnzbd_url, headers, client);
     let install = Downloader {
         url: &url,
@@ -183,7 +185,9 @@ pub async fn qbittorrent_queue(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     qbittorrent_permissions().check(&settings, &caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.qbittorrent_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let url = service_url(&settings.qbittorrent_url, &headers, &client);
     let install = Downloader {
         url: &url,
@@ -219,7 +223,9 @@ pub async fn nzbget_queue(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     nzbget_permissions().check(&settings, &caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.nzbget_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let url = service_url(&settings.nzbget_url, &headers, &client);
     let install = Downloader {
         url: &url,
@@ -259,7 +265,9 @@ pub async fn transmission_queue(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     transmission_permissions().check(&settings, &caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.transmission_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let url = service_url(&settings.transmission_url, &headers, &client);
     let install = Downloader {
         url: &url,

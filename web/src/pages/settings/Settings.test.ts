@@ -661,6 +661,7 @@ describe('Settings, general', () => {
       'GET users': { data: USERS },
       'GET launch': LAUNCH,
       'GET config': { data: CONFIG },
+      'GET status': { data: { action: 'launch', database: 'postgresql' } },
       ...answers,
     });
     render(Settings, { section: 'general' });
@@ -755,6 +756,7 @@ describe('Settings, general', () => {
       'GET tabs': { data: DATA },
       'GET users': { data: USERS },
       'GET config': { status: 401, message: 'Not Authorized' },
+      'GET status': { data: { action: 'launch', database: 'postgresql' } },
     });
     render(Settings, { section: 'general' });
 

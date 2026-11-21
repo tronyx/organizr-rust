@@ -82,7 +82,7 @@ What two engines mean for the design:
 - **Caught by tests, not the compiler.** SeaORM does not check queries against the schema at compile time. Every database test and every parity test runs once per engine in CI.
 - **Engine-neutral types.** Booleans, timestamps (Unix seconds) and JSON are stored in forms both engines share. Case-insensitive uniqueness (user names, group names) uses a normalised lower-case column, not engine collations.
 - **Backups.** A backup is a zip file of the data folder. With SQLite it also holds a copy of the database, made with `VACUUM INTO`. With PostgreSQL the owner saves the database with the tools of PostgreSQL (decided on 2026-11-20). A backup never holds the key for the stored secrets. The command `organizr restore` puts a backup back. An export that moves an install from one engine to the other is not built.
-- **SQLite-only routes.** `GET /database/journal` and `PUT /database/journal/{option}` answer on PostgreSQL as the PHP app does on a non-SQLite database.
+- **SQLite-only routes.** `GET /database/journal` and `PUT /database/journal/{option}` answer on PostgreSQL with `409 "The journal mode applies only to a database on SQLite"` (D-97).
 - **Docker.** Two compose examples: single container with SQLite, and with a PostgreSQL sidecar.
 
 ## 4. Workspace and directory layout

@@ -22,4 +22,5 @@ thiserror.workspace = true
 organizr-settings.workspace = true
 organizr-testkit.workspace = true
 
+tempfile.workspace = true
 tokio.workspace = true

@@ -22,7 +22,9 @@ mod router;
 mod same_origin;
 pub mod slim_route;
 mod state;
+pub mod update_check;
 
 pub use crate::handlers::backups::create_backup;
 pub use crate::router::{API_BASE, router};
 pub use crate::state::{AppState, SettingsWatch, stored_settings};
+pub use crate::update_check::check_for_update;

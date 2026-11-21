@@ -116,7 +116,9 @@ async fn list(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.ombi_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let limit_of_settings = time_limit(&settings.ombi_refresh.to_string());
     let install = install(&settings, headers, client, limit_of_settings);
     let limit = limit.map_or_else(
@@ -254,7 +256,9 @@ async fn act(
         return Err(Refusal::unprocessable("Id was not supplied"));
     };
     let kind = kind(kind_text);
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.ombi_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let install = install(&settings, headers, client, Some(CHANGE_LIMIT));
     let body = json!({ "id": id });
     let (method, path, body, message) = match action {
@@ -386,7 +390,9 @@ pub async fn add_request(
     let Some(token) = cookie_value(&headers, "Auth").filter(|token| !token.is_empty()) else {
         return Err(failed("User does not have Auth Cookie"));
     };
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.ombi_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let install = install(&settings, &headers, &client, None);
     let send = async |method: Method, path: &str, body: Option<&Value>| {
         let reply = install

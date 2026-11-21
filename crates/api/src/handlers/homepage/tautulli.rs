@@ -133,7 +133,9 @@ pub async fn data(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.tautulli_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     // The setting can hold more than one address, for single sign-on. The homepage
     // shows the first install.
     let address = settings.tautulli_url.split(',').next().unwrap_or_default();

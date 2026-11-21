@@ -801,6 +801,37 @@ enum Service {
     JellyStat,
 }
 
+/// Whether the requests of the test of a service also trust the authority that an
+/// Admin uploaded: the setting "use the custom certificate" of the service.
+const fn uses_custom_certificate(service: Service, settings: &Settings) -> bool {
+    match service {
+        Service::Plex => settings.plex_use_custom_certificate,
+        Service::Sonarr => settings.sonarr_use_custom_certificate,
+        Service::Radarr => settings.radarr_use_custom_certificate,
+        Service::Lidarr => settings.lidarr_use_custom_certificate,
+        Service::Sabnzbd => settings.sabnzbd_use_custom_certificate,
+        Service::Qbittorrent => settings.qbittorrent_use_custom_certificate,
+        Service::Tautulli => settings.tautulli_use_custom_certificate,
+        Service::Overseerr => settings.overseerr_use_custom_certificate,
+        Service::Ombi => settings.ombi_use_custom_certificate,
+        Service::Sickrage => settings.sickrage_use_custom_certificate,
+        Service::Nzbget => settings.nzbget_use_custom_certificate,
+        Service::Transmission => settings.transmission_use_custom_certificate,
+        Service::Deluge => settings.deluge_use_custom_certificate,
+        Service::Rtorrent => settings.rtorrent_use_custom_certificate,
+        Service::Utorrent => settings.utorrent_use_custom_certificate,
+        Service::Jdownloader => settings.jdownloader_use_custom_certificate,
+        Service::Emby | Service::EmbyLiveTv => settings.emby_use_custom_certificate,
+        Service::Jellyfin => settings.jellyfin_use_custom_certificate,
+        Service::Jackett => settings.jackett_use_custom_certificate,
+        Service::Prowlarr => settings.prowlarr_use_custom_certificate,
+        Service::Unifi | Service::UnifiSites => settings.unifi_use_custom_certificate,
+        Service::JellyStat => settings.jelly_stat_use_custom_certificate,
+        // Pi-hole and AdGuard Home have no such setting.
+        Service::Pihole | Service::Adguard => false,
+    }
+}
+
 async fn run(
     state: &AppState,
     caller: &Caller,
@@ -809,14 +840,16 @@ async fn run(
     service: Service,
 ) -> Outcome {
     caller.require(GroupLevel::CO_ADMIN)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let settings = state.settings();
+    let http = &state
+        .outbound_for(uses_custom_certificate(service, &settings))
+        .ok_or_else(no_requests)?;
     let test = Test {
         state,
         headers,
         client,
         http,
     };
-    let settings = state.settings();
     match service {
         Service::Plex => plex(&test).await,
         Service::Sonarr => {

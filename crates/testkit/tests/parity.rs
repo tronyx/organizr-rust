@@ -93,6 +93,18 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
         "oidc",
         json!({"enabled": false, "autoRedirect": "", "logoutURL": ""}),
     );
+    // What the last version check found, for Admins and Co-Admins (D-23).
+    let update = if ["launch_as_admin", "launch_with_tabs"].contains(&case) {
+        json!({
+            "current": env!("CARGO_PKG_VERSION"),
+            "latest": null,
+            "updateAvailable": false,
+            "releaseUrl": null,
+        })
+    } else {
+        Value::Null
+    };
+    let replay = replay.deviation_adds("D-23", case, "/response/data", "update", update);
     // There is no configuration file whose path could be sent.
     replay.deviation_without("D-29", case, "/response/data/status/userConfigPath")
 }

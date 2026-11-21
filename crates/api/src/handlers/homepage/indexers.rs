@@ -91,6 +91,14 @@ pub fn address(kind: Kind, settings: &Settings, headers: &HeaderMap, client: &Cl
     service_url(stored, headers, client)
 }
 
+/// Whether the requests to a service also trust the authority that an Admin uploaded.
+const fn uses_custom_certificate(kind: Kind, settings: &Settings) -> bool {
+    match kind {
+        Kind::Jackett => settings.jackett_use_custom_certificate,
+        Kind::Prowlarr => settings.prowlarr_use_custom_certificate,
+    }
+}
+
 /// The install of the settings, at an address that [`address`] made.
 pub fn install<'a>(kind: Kind, settings: &'a Settings, url: &'a str) -> Install<'a> {
     let (key, never_check_certificate) = match kind {
@@ -131,7 +139,9 @@ async fn search(
     if query.is_empty() || query == "0" {
         return Err(Refusal::unprocessable("Query was not supplied"));
     }
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(uses_custom_certificate(kind, &settings))
+        .ok_or_else(no_requests)?;
     let url = address(kind, &settings, headers, client);
     let install = install(kind, &settings, &url);
     let reply = install
@@ -194,7 +204,9 @@ pub async fn jackett_download(
     let Some(link) = field(&data, "url") else {
         return Err(Refusal::unprocessable("URL was not supplied"));
     };
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(uses_custom_certificate(kind, &settings))
+        .ok_or_else(no_requests)?;
     let url = address(kind, &settings, &headers, &client);
     let install = install(kind, &settings, &url);
     // Only a black hole link of this install is asked for, with the key of the
@@ -240,7 +252,9 @@ pub async fn prowlarr_download(
     let Some(indexer) = field(&data, "indexerId").and_then(|text| text.parse::<i64>().ok()) else {
         return Err(Refusal::unprocessable("indexerId was not supplied"));
     };
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(uses_custom_certificate(kind, &settings))
+        .ok_or_else(no_requests)?;
     let url = address(kind, &settings, &headers, &client);
     let install = install(kind, &settings, &url);
     let reply = install

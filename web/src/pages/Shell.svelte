@@ -13,6 +13,7 @@
   import { session } from '../lib/session.svelte';
   import { pictureOf } from '../lib/picture';
   import { pingInterval, pingList, type PingResult } from '../lib/pings';
+  import UpdateNotice from '../components/UpdateNotice.svelte';
   import Menu from './Menu.svelte';
 
   let {
@@ -276,6 +277,9 @@
     hasMenu && 'org-with-menu',
   ]}
 >
+  {#if session.canManage && session.launch?.settings.misc.checkForUpdate !== false}
+    <UpdateNotice update={session.launch?.update} />
+  {/if}
   {#if error}
     <div role="alert" class="alert alert-error m-4">
       <span>{error}</span>

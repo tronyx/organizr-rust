@@ -9,11 +9,13 @@ use organizr_auth::login_limit::LoginLimiter;
 use organizr_auth::secrets::{SecretBox, SecretError};
 use organizr_auth::setup_code::SetupCode;
 use organizr_db::{Database, DbError, StoredSetting};
+use organizr_integrations::custom_certificate::{self, CustomCertificate};
 use organizr_integrations::http::Outbound;
 use organizr_integrations::ipinfo::IPINFO;
 use organizr_integrations::media_login::EMBY_CONNECT;
 use organizr_integrations::organizr_app::ORGANIZR_API;
 use organizr_integrations::plex::{PLEX_TV, PlexTv};
+use organizr_integrations::releases::latest_release_api;
 use organizr_integrations::sponsors::{GITHUB_SPONSORS, OPEN_COLLECTIVE};
 use organizr_integrations::stripe::STRIPE_API;
 use organizr_integrations::trakt::{TRAKT_API, TRAKT_SITE};
@@ -28,6 +30,7 @@ use crate::client::TrustedProxies;
 use crate::handlers::chat::ChatHub;
 use crate::picture_cache::PictureCache;
 use crate::ping::{Latency, PingTarget, Prober};
+use crate::update_check::UpdateStatus;
 use organizr_integrations::weather::BREEZOMETER;
 
 /// The shared state of the application.
@@ -94,6 +97,10 @@ pub struct AppState {
     custom_js: bool,
     /// The new messages of the chat plugin, and how many each sender sent lately.
     chat_hub: Arc<ChatHub>,
+    /// The address of the newest release in the releases API of GitHub.
+    releases_api: Arc<str>,
+    /// What the last version check found.
+    update_status: Arc<ArcSwap<UpdateStatus>>,
 }
 
 /// The settings of a running application, as they are at each moment. Reading them is
@@ -170,6 +177,8 @@ impl AppState {
             settings_change: Arc::new(Mutex::new(())),
             custom_js: false,
             chat_hub: Arc::default(),
+            releases_api: Arc::from(latest_release_api()),
+            update_status: Arc::new(ArcSwap::from_pointee(UpdateStatus::unchecked())),
         }
     }
 
@@ -217,10 +226,55 @@ impl AppState {
     }
 
     /// The same state, with the data folder of the install. A backup holds its files.
+    /// The certificate of an authority that an Admin uploaded is read from it, and the
+    /// requests that ask for it trust that authority.
     #[must_use]
     pub fn with_data_folder(mut self, folder: PathBuf) -> Self {
+        let file = folder.join(custom_certificate::FILE);
         self.data_folder = Some(Arc::new(folder));
+        if let (Ok(text), Some(outbound)) = (std::fs::read(&file), &self.outbound) {
+            let trusted = CustomCertificate::parse(&text)
+                .map_err(|error| error.to_string())
+                .and_then(|certificate| {
+                    outbound
+                        .set_custom_certificate(Some(&certificate))
+                        .map_err(|error| error.without_url().to_string())
+                });
+            if let Err(error) = trusted {
+                tracing::warn!(%error, "the uploaded certificate of an authority is not used");
+            }
+        }
         self
+    }
+
+    /// The file of the certificate of an authority that an Admin uploads, when the
+    /// application has a data folder.
+    pub fn custom_certificate_file(&self) -> Option<PathBuf> {
+        self.data_folder()
+            .map(|folder| folder.join(custom_certificate::FILE))
+    }
+
+    /// The same state, with another address for the newest release in the releases
+    /// API of GitHub. Only a test changes it.
+    #[must_use]
+    pub fn with_releases_api(mut self, address: &str) -> Self {
+        self.releases_api = Arc::from(address);
+        self
+    }
+
+    /// The address of the newest release in the releases API of GitHub.
+    pub fn releases_api(&self) -> &str {
+        &self.releases_api
+    }
+
+    /// What the last version check found.
+    pub fn update_status(&self) -> Arc<UpdateStatus> {
+        self.update_status.load_full()
+    }
+
+    /// Keeps what a version check found.
+    pub fn set_update_status(&self, status: UpdateStatus) {
+        self.update_status.store(Arc::new(status));
     }
 
     #[must_use]
@@ -524,6 +578,15 @@ impl AppState {
     /// The client for requests to other services.
     pub const fn outbound(&self) -> Option<&Outbound> {
         self.outbound.as_ref()
+    }
+
+    /// The client for the requests to a service, with its setting "use the custom
+    /// certificate": when it is on, those requests also trust the authority that an
+    /// Admin uploaded.
+    pub fn outbound_for(&self, custom_certificate: bool) -> Option<Outbound> {
+        self.outbound
+            .as_ref()
+            .map(|outbound| outbound.with_custom_certificate(custom_certificate))
     }
 
     /// The client for the account service of Plex.

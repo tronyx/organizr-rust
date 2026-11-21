@@ -8,6 +8,7 @@ Organizr runs its scheduled jobs itself, inside the server. PHP Organizr needs a
 |---|---|---|
 | Run of the [health checks plugin](health-checks-plugin.md) | `HEALTHCHECKS-cron-run-enabled` | `HEALTHCHECKS-cron-run-schedule` |
 | [Backup](backups.md) of the install | `autoBackupCronEnabled` | `autoBackupCronSchedule` |
+| Version check: is a newer release of Organizr out? (D-23 in [deviations](deviations.md)) | `autoUpdateCronEnabled` | `autoUpdateCronSchedule` |
 
 More jobs come with the features that need them.
 

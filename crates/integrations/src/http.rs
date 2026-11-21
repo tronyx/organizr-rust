@@ -8,12 +8,19 @@
 //! authority signs a certificate for a private address. The PHP application does not
 //! check the certificate of such a service, and neither does this client. The
 //! certificate of every service that is reached by a name is checked.
+//!
+//! An Admin can upload the certificate of an authority of their own (see
+//! [`crate::custom_certificate`]). The requests to a service whose setting "use the
+//! custom certificate" is on then also trust the certificates that this authority
+//! signed: [`Outbound::with_custom_certificate`] gives the client for them.
 
 use std::net::{IpAddr, SocketAddr};
-use std::sync::Once;
+use std::sync::{Arc, Once, PoisonError, RwLock};
 use std::time::Duration;
 
-use reqwest::Client;
+use reqwest::{Certificate, Client};
+
+use crate::custom_certificate::CustomCertificate;
 
 /// How long a connection may take to open.
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -31,6 +38,9 @@ pub struct Outbound {
     /// The same two clients without redirects, for the OpenID Connect login.
     checking_direct: Client,
     not_checking_direct: Client,
+    /// The client that checks certificates and also trusts the authority that the Admin
+    /// uploaded, when there is one. Every copy of this value shares it.
+    custom: Arc<RwLock<Option<Client>>>,
 }
 
 impl Outbound {
@@ -54,7 +64,53 @@ impl Outbound {
             not_checking: builder().danger_accept_invalid_certs(true).build()?,
             checking_direct: direct().build()?,
             not_checking_direct: direct().danger_accept_invalid_certs(true).build()?,
+            custom: Arc::default(),
         })
+    }
+
+    /// Trusts the authority of an uploaded certificate from now on, in the requests of
+    /// [`Outbound::with_custom_certificate`], or no such authority with `None`. Every
+    /// copy of this value sees the change.
+    pub fn set_custom_certificate(
+        &self,
+        certificate: Option<&CustomCertificate>,
+    ) -> Result<(), reqwest::Error> {
+        let client = certificate.map(custom_client).transpose()?;
+        *self.custom.write().unwrap_or_else(PoisonError::into_inner) = client;
+        Ok(())
+    }
+
+    /// Whether a client can be made that trusts the authority of a certificate, without
+    /// trusting it.
+    pub fn check_custom_certificate(certificate: &CustomCertificate) -> Result<(), reqwest::Error> {
+        custom_client(certificate).map(|_| ())
+    }
+
+    /// Whether an uploaded authority is trusted.
+    pub fn has_custom_certificate(&self) -> bool {
+        self.custom
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_some()
+    }
+
+    /// This client for the requests to one service. With `wanted`, the setting "use the
+    /// custom certificate" of the service, and an uploaded authority, the requests that
+    /// check certificates also trust that authority. The name in the certificate is
+    /// still checked.
+    #[must_use]
+    pub fn with_custom_certificate(&self, wanted: bool) -> Self {
+        let mut copy = self.clone();
+        if wanted
+            && let Some(client) = self
+                .custom
+                .read()
+                .unwrap_or_else(PoisonError::into_inner)
+                .clone()
+        {
+            copy.checking = client;
+        }
+        copy
     }
 
     /// The client for a URL: the one that checks certificates, unless the URL reaches a
@@ -102,6 +158,16 @@ impl Outbound {
             &self.checking
         }
     }
+}
+
+/// The client that checks certificates and also trusts the authority of a certificate.
+fn custom_client(certificate: &CustomCertificate) -> Result<Client, reqwest::Error> {
+    let roots = Certificate::from_pem_bundle(certificate.pem().as_bytes())?;
+    Client::builder()
+        .user_agent(user_agent())
+        .connect_timeout(CONNECT_TIMEOUT)
+        .tls_certs_merge(roots)
+        .build()
 }
 
 /// The text of an error of a request without the address of the request. The address

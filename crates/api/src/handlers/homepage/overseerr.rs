@@ -50,6 +50,13 @@ fn install(settings: &Settings, headers: &HeaderMap, client: &Client, with_limit
     }
 }
 
+/// The client for the requests to Overseerr.
+fn outbound(state: &AppState, settings: &Settings) -> Result<Outbound, Refusal> {
+    state
+        .outbound_for(settings.overseerr_use_custom_certificate)
+        .ok_or_else(no_requests)
+}
+
 /// The answer when Overseerr cannot be reached.
 fn unreachable(error: &OverseerrError) -> Refusal {
     tracing::warn!(%error, "Overseerr gave no answer");
@@ -240,7 +247,7 @@ async fn list(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &outbound(state, &settings)?;
     let install = install(&settings, headers, client, true);
     let (limit, offset) = paging(&settings, limit, offset);
     let (mut films, mut series) = (0_u32, 0_u32);
@@ -368,7 +375,7 @@ pub async fn metadata(
     let (Some(kind), Some(id)) = (kind(&kind_text), number(&id)) else {
         return Err(Refusal::unprocessable("Type was not supplied"));
     };
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &outbound(&state, &settings)?;
     let reply = install(&settings, &headers, &client, false)
         .get(http, &format!("{kind}/{id}"))
         .await
@@ -406,7 +413,7 @@ async fn act(
     let Some(id) = number(id) else {
         return Err(Refusal::unprocessable("Id was not supplied"));
     };
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &outbound(state, &settings)?;
     let install = install(&settings, headers, client, false);
     let send = async |method: Method, path: String| {
         install
@@ -553,7 +560,7 @@ async fn add(
     else {
         return Err(failed("User does not have Auth Cookie"));
     };
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &outbound(state, &settings)?;
     let install = install(&settings, headers, client, false);
     let read = async |path: &str, problem: &'static str| {
         let reply = install

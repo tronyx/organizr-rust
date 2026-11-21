@@ -24,12 +24,18 @@ use crate::picture_cache::Source;
 use crate::state::AppState;
 
 /// The settings of one of the three applications.
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "the switches are settings of PHP, each with its own meaning"
+)]
 struct App<'a> {
     /// The name in the keys of the settings: `Sonarr`, `Radarr` or `Lidarr`.
     name: &'static str,
     urls: &'a str,
     keys: &'a str,
     never_check_certificate: bool,
+    /// Whether the requests also trust the authority that an Admin uploaded.
+    custom_certificate: bool,
     unmonitored: bool,
     /// The time limit of a request for the calendar.
     calendar_limit: Option<Duration>,
@@ -47,6 +53,7 @@ fn app(settings: &Settings, kind: Kind) -> App<'_> {
             urls: &settings.sonarr_url,
             keys: &settings.sonarr_token,
             never_check_certificate: settings.sonarr_disable_cert_check,
+            custom_certificate: settings.sonarr_use_custom_certificate,
             unmonitored: settings.sonarr_unmonitored,
             calendar_limit: None,
             queue_limit: time_limit(&settings.homepage_sonarr_queue_refresh.to_string()),
@@ -59,6 +66,7 @@ fn app(settings: &Settings, kind: Kind) -> App<'_> {
             urls: &settings.radarr_url,
             keys: &settings.radarr_token,
             never_check_certificate: settings.radarr_disable_cert_check,
+            custom_certificate: settings.radarr_use_custom_certificate,
             unmonitored: settings.radarr_unmonitored,
             calendar_limit: time_limit(&settings.homepage_radarr_queue_refresh.to_string()),
             queue_limit: time_limit(&settings.homepage_radarr_queue_refresh.to_string()),
@@ -71,6 +79,7 @@ fn app(settings: &Settings, kind: Kind) -> App<'_> {
             urls: &settings.lidarr_url,
             keys: &settings.lidarr_token,
             never_check_certificate: settings.lidarr_disable_cert_check,
+            custom_certificate: settings.lidarr_use_custom_certificate,
             unmonitored: false,
             calendar_limit: None,
             queue_limit: None,
@@ -172,8 +181,10 @@ async fn events_of(
     (start, end): (&str, &str),
 ) -> Result<Vec<Value>, Refusal> {
     let settings = state.settings();
-    let http = state.outbound().ok_or_else(no_requests)?;
     let app = app(&settings, kind);
+    let http = &state
+        .outbound_for(app.custom_certificate)
+        .ok_or_else(no_requests)?;
     let now = Timestamp::try_from(SystemTime::now()).unwrap_or(Timestamp::UNIX_EPOCH);
     let zone = TimeZone::system();
     let base = if app.calendar_link.is_empty() {
@@ -372,8 +383,10 @@ async fn queue_of(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     queue_permissions(kind).check(&settings, caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
     let app = app(&settings, kind);
+    let http = &state
+        .outbound_for(app.custom_certificate)
+        .ok_or_else(no_requests)?;
     let mut items = Vec::new();
     for (url, key) in &installs(&app, headers, client) {
         let install = Install {

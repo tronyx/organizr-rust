@@ -15,11 +15,12 @@ use crate::client::identify_client;
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
-    backups, basics, bookmarks, categories, chat, config, connection_tests,
-    connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
-    homepage, icon, images, invites, ip, launch, lock, log, login, login_backends, logout, mail,
-    media_register, news, oidc, pages, ping, plex, plugins, register, settings_forms, socks,
-    speed_test, sponsors, tabs, themes, token, two_factor, users, users_import, wizard,
+    backups, basics, bookmarks, categories, certificate, chat, config, connection_tests,
+    connection_tests_more as more_tests, database, fields, forward_auth, groups,
+    health_checks_plugin, help, homepage, icon, images, invites, ip, launch, lock, log, login,
+    login_backends, logout, mail, media_register, news, oidc, pages, ping, plex, plugins, register,
+    settings_forms, socks, speed_test, sponsors, tabs, themes, token, two_factor, update, users,
+    users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -570,6 +571,24 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/appearance/custom.css", &get(themes::custom_css))?
         // Not a route of PHP: the scripts of the Admin, behind the switch of the operator (D-93).
         .route("/appearance/custom.js", &get(themes::custom_js))?
+        .route(
+            "/certificate/custom",
+            &post(certificate::upload.layer(DefaultBodyLimit::max(certificate::LARGEST + UPLOAD_OVERHEAD))),
+        )?
+        .route("/database/journal", &get(database::mode))?
+        .route("/database/journal/{option}", &put(database::set_mode))?
+        .route("/update", &get(update::by_script))?
+        .route("/update/docker", &get(update::by_script))?
+        .route("/update/download/{branch}", &get(update::by_script_for_branch))?
+        .route("/update/unzip/{branch}", &get(update::by_script_for_branch))?
+        .route("/update/move/{branch}", &get(update::by_script_for_branch))?
+        .route("/update/cleanup/{branch}", &get(update::by_script_for_branch))?
+        .route("/update/windows", &get(update::windows))?
+        .route("/update/linux", &get(update::linux))?
+        .route("/update/migrate/{version}", &get(update::migrate))?
+        .route("/update/reset/{feature}", &get(update::reset))?
+        // Not a route of PHP: the version check, at once (D-23).
+        .route("/update/check", &get(update::check))?
         .route("/users", &get(users::list).post(users::add))?
         .route("/users/import/{type}", &post(users_import::import))?
         .route("/users/lock", &post(lock::lock_own))?

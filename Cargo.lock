@@ -3139,6 +3139,7 @@ dependencies = [
  "organizr-plugins",
  "organizr-settings",
  "organizr-testkit",
+ "semver",
  "serde",
  "serde_json",
  "sha2 0.11.1",
@@ -3189,6 +3190,7 @@ dependencies = [
  "organizr-testkit",
  "sea-orm",
  "sea-orm-migration",
+ "tempfile",
  "thiserror 2.0.21",
  "tokio",
 ]
@@ -3240,6 +3242,8 @@ dependencies = [
  "roxmltree",
  "rustls",
  "rustls-native-certs",
+ "rustls-pki-types",
+ "semver",
  "serde",
  "serde_json",
  "sha1",
@@ -3248,6 +3252,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tracing",
+ "x509-parser",
 ]
 
 [[package]]
@@ -3292,12 +3297,14 @@ dependencies = [
  "organizr-domain",
  "organizr-plugins",
  "organizr-settings",
+ "rustls",
  "sea-orm",
  "serde",
  "serde_json",
  "sha2 0.11.1",
  "tempfile",
  "tokio",
+ "tokio-rustls",
  "tower",
 ]
 

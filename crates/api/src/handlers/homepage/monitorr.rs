@@ -37,7 +37,9 @@ pub async fn data(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.monitorr_use_custom_certificate)
+        .ok_or_else(no_requests)?;
 
     let url = service_url(&settings.monitorr_url, &headers, &client);
     let install = Install {

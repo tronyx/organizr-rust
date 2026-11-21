@@ -73,7 +73,9 @@ pub async fn stats(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.emby_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let url = address(&settings, &headers, &client);
     let numbers =
         emby_live_tv::stats(http, &server(&settings, &url), &TimeZone::system(), now()).await;
@@ -96,7 +98,9 @@ pub async fn activity(
             "Permission denied".to_owned(),
         ));
     }
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.emby_use_custom_certificate)
+        .ok_or_else(no_requests)?;
     let url = address(&settings, &headers, &client);
     let most = |number: u32| usize::try_from(number).unwrap_or(usize::MAX);
     let shown = Shown {

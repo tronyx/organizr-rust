@@ -54,7 +54,9 @@ async fn list(
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
-    let http = state.outbound().ok_or_else(no_requests)?;
+    let http = &state
+        .outbound_for(settings.health_checks_use_custom_certificate)
+        .ok_or_else(no_requests)?;
 
     let url = service_url(&settings.health_checks_url, &headers, &client);
     let checks = health_checks::checks(
