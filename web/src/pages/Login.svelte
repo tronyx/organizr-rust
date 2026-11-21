@@ -147,10 +147,10 @@
 
 <LoginLayout>
   {#if !minimal}
-    <!-- PHP shows no picture in its panel. -->
+    <!-- The panel shows the logo in its box, on phones only, as PHP does. -->
   {:else if logo}
     <img
-      class="max-h-56 max-w-[350px]"
+      class="loginLogo max-h-56 max-w-[350px]"
       src={logo}
       alt={title}
       onerror={() => (logoFailed = true)}
@@ -159,10 +159,27 @@
     <p class="text-2xl font-normal text-white">{title}</p>
   {/if}
   <form
-    class={minimal ? 'card bg-base-200 w-full shadow-[0_0_10px_rgb(0_0_0/0.6)]' : 'org-login-box'}
+    class={minimal
+      ? 'card bg-base-200 white-box w-full shadow-[0_0_10px_rgb(0_0_0/0.6)]'
+      : 'org-login-box white-box'}
     onsubmit={logIn}
   >
     <div class="card-body" class:p-0={!minimal}>
+      {#if !minimal}
+        <!-- PHP shows the logo or the title in its panel on phones only (visible-xs). -->
+        <div id="login-logo" class="visible-xs text-center">
+          {#if logo}
+            <img
+              class="loginLogo mx-auto"
+              src={logo}
+              alt={title}
+              onerror={() => (logoFailed = true)}
+            />
+          {:else}
+            <p class="text-2xl font-normal text-white">{title}</p>
+          {/if}
+        </div>
+      {/if}
       <h1 class="card-title" class:sr-only={!minimal}>Log in</h1>
       <fieldset class="fieldset">
         <label class="label" class:sr-only={!minimal} for="login-username">

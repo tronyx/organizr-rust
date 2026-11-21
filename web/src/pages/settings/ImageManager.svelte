@@ -73,11 +73,11 @@
   onMount(load);
 </script>
 
-<section class="org-panel" aria-labelledby="image-manager-title">
-  <div class="org-panel-heading">
+<section class="org-panel panel panel-default" aria-labelledby="image-manager-title">
+  <div class="org-panel-heading panel-heading">
     <h2 id="image-manager-title">Image Viewer</h2>
   </div>
-  <div class="org-panel-body">
+  <div class="org-panel-body panel-body">
     <div class="mb-6 flex flex-wrap items-center gap-2">
       <input
         bind:this={input}

@@ -132,7 +132,7 @@
 {:else}
   <main class="flex flex-col gap-2.5 px-[25px] pt-2.5 pb-[15px]" aria-label={title}>
     {#each items as item (item.key)}
-      <section data-item={item.key}>
+      <section id={item.key} data-item={item.key}>
         {#if item.kind === 'customhtml'}
           <CustomHtml id={item.id} trusted={item.options?.trusted === true} />
         {:else if item.kind === 'downloader'}

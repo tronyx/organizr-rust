@@ -103,8 +103,8 @@
   </div>
 {/if}
 
-<section class="org-panel" aria-labelledby="tab-editor-title">
-  <div class="org-panel-heading">
+<section class="org-panel panel panel-default" aria-labelledby="tab-editor-title">
+  <div class="org-panel-heading panel-heading">
     <h2 id="tab-editor-title">Tab Editor</h2>
     <button
       class="org-round-button org-round-info org-round-small"

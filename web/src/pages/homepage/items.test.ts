@@ -44,6 +44,9 @@ describe('HealthChecks', () => {
     expect(mail.textContent).not.toContain('runbook');
     expect(unnamed.textContent).toContain('New Item');
     expect(screen.getByRole('heading', { name: /Health Checks/ }).textContent).toContain('2');
+    // The ids and classes of PHP, for custom CSS (D-110).
+    const cards = document.querySelector('#allHealthChecks .healthCheckCards');
+    expect(cards?.querySelector('li.col-lg-3 .left-health')).not.toBeNull();
   });
 
   it('keeps the notes and the tags back when the options say so', async () => {

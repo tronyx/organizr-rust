@@ -91,11 +91,11 @@
 {/if}
 
 {#if part === 'import'}
-  <section class="org-panel" aria-labelledby="import-users">
-    <div class="org-panel-heading">
+  <section class="org-panel panel panel-default" aria-labelledby="import-users">
+    <div class="org-panel-heading panel-heading">
       <h2 id="import-users" class="uppercase">Import Users</h2>
     </div>
-    <div class="org-panel-body">
+    <div class="org-panel-body panel-body">
       <p class="mb-4 text-sm">
         Adds an account for each user of the media server who has none. The server must be set up in
         the settings. Each new account gets a random password, so its user logs in through the media
@@ -118,8 +118,8 @@
     </div>
   </section>
 {:else}
-  <section class="org-panel" aria-labelledby="manage-users-title">
-    <div class="org-panel-heading">
+  <section class="org-panel panel panel-default" aria-labelledby="manage-users-title">
+    <div class="org-panel-heading panel-heading">
       <h2 id="manage-users-title" class="uppercase">Manage Users</h2>
       <button
         class="org-round-button org-round-info org-round-small"

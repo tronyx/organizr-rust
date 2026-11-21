@@ -36,8 +36,12 @@
     </div>
   </main>
 {:else}
-  <main class="org-login-register" style:background-image={`url('${wallpaper}')`}>
-    <div class="org-login-sidebar">
+  <main
+    id="wrapper"
+    class="org-login-register login-register"
+    style:background-image={`url('${wallpaper}')`}
+  >
+    <div class="org-login-sidebar login-box login-sidebar">
       {@render children()}
     </div>
   </main>

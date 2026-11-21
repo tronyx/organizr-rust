@@ -2036,6 +2036,47 @@
     color: var(--color-info);
   }
 
+  /*
+   * Class names of PHP Organizr that custom CSS written for PHP aims at (D-110). The
+   * pages carry them next to their own classes; these rules give them PHP's meaning.
+   */
+  .bg-danger {
+    background-color: var(--color-error);
+  }
+
+  .text-danger {
+    color: var(--color-error);
+  }
+
+  @media (min-width: 768px) {
+    .visible-xs {
+      display: none;
+    }
+  }
+
+  /* The sizes that PHP's style sheet gives its login page, which custom CSS builds on. */
+  #wrapper.login-register {
+    width: 100%;
+  }
+
+  .login-box.login-sidebar {
+    height: 100%;
+    margin: 0 auto;
+  }
+
+  .org-card:has(.left-health) {
+    position: relative;
+    box-shadow: none;
+  }
+
+  .left-health {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 4px;
+  }
+
   /* The filter menu of a row of posters, as the dropdown of PHP Organizr. */
   .org-caret {
     display: inline-block;

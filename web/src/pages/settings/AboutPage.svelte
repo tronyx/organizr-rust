@@ -39,11 +39,11 @@
 </script>
 
 <div class="grid gap-6 lg:grid-cols-2">
-  <section class="org-panel" aria-labelledby="about-information-title">
-    <div class="org-panel-heading">
+  <section class="org-panel panel panel-default" aria-labelledby="about-information-title">
+    <div class="org-panel-heading panel-heading">
       <h2 id="about-information-title">Information</h2>
     </div>
-    <dl class="org-panel-body org-about-list">
+    <dl class="org-panel-body panel-body org-about-list">
       <dt>Organizr Version</dt>
       <dd>{session.launch?.version ?? '—'}</dd>
       <dt>Install</dt>
@@ -55,11 +55,11 @@
     </dl>
   </section>
 
-  <section class="org-panel" aria-labelledby="about-links-title">
-    <div class="org-panel-heading">
+  <section class="org-panel panel panel-default" aria-labelledby="about-links-title">
+    <div class="org-panel-heading panel-heading">
       <h2 id="about-links-title">Links</h2>
     </div>
-    <div class="org-panel-body">
+    <div class="org-panel-body panel-body">
       <p class="mb-4">
         Below you will find all the links for everything that has to do with Organizr
       </p>

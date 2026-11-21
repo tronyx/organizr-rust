@@ -68,11 +68,11 @@
   onMount(load);
 </script>
 
-<section class="org-panel" aria-labelledby="homepage-order-title">
-  <div class="org-panel-heading">
+<section class="org-panel panel panel-default" aria-labelledby="homepage-order-title">
+  <div class="org-panel-heading panel-heading">
     <h2 id="homepage-order-title">Homepage Order</h2>
   </div>
-  <div class="org-panel-body">
+  <div class="org-panel-body panel-body">
     {#if error}
       <div role="alert" class="alert alert-error mb-4"><span>{error}</span></div>
     {/if}

@@ -64,8 +64,8 @@
   </div>
 {/if}
 
-<section class="org-panel" aria-labelledby="category-editor-title">
-  <div class="org-panel-heading">
+<section class="org-panel panel panel-default" aria-labelledby="category-editor-title">
+  <div class="org-panel-heading panel-heading">
     <h2 id="category-editor-title">Category Editor</h2>
     <button
       class="org-round-button org-round-info org-round-small"

@@ -20,7 +20,7 @@ This is a rewrite of Organizr 2.1 in Rust. It keeps the API, the settings and th
 
 Each difference is in [the list of deviations](deviations.md), with its reason. The ones you are most likely to notice:
 
-- **Themes and custom CSS or JavaScript** that were written for the page structure of PHP do not apply (D-42). The themes of the marketplace are rebuilt (D-92).
+- **Themes and custom CSS or JavaScript** written for the page structure of PHP do not apply as a whole (D-42). The pages carry PHP's ids and classes where custom CSS usually aims, such as the health checks, the calendar, the panels and the login page, so most custom CSS still works (D-110). The themes of the marketplace are rebuilt (D-92).
 - **Custom HTML items** run in a closed frame, unless you switch the item to trusted (D-61, D-76). Their links cannot open the pop-ups of the page.
 - **Plugins of other authors** are WebAssembly extensions, not PHP files (D-75).
 - **Get Plex Token** uses the login page of Plex instead of a form for the Plex password (D-107).
