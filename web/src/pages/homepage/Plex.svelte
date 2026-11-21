@@ -1,17 +1,21 @@
 <script lang="ts">
   // A media server on the homepage: what plays now, what was added last, or the
   // playlists. Plex, Emby and Jellyfin show in the same way. Only Plex has playlists.
+  import Dialog from '../../components/Dialog.svelte';
   import { itemData } from '../../lib/itemData.svelte';
   import {
+    linkOf,
     type MediaService,
     pictureAddress,
     type PlexAnswer,
     type PlexItem,
     SERVICE_NAMES,
     streamIcon,
+    streamLines,
     streamsSummary,
     streamText,
   } from '../../lib/plex';
+  import MediaDetails from './MediaDetails.svelte';
   import PlexPosters from './PlexPosters.svelte';
 
   /** A playlist: its title, and its videos under the keys "0", "1" and so on. */
@@ -42,6 +46,12 @@
       ? Object.entries(item.data.content)
       : [],
   );
+
+  /** The stream whose pop-up is open: how it plays, or its details. */
+  let playing = $state.raw<PlexItem | null>(null);
+  let detailsOf = $state.raw<PlexItem | null>(null);
+  /** The wide pictures that were asked for anew, by the session of their stream. */
+  let renewed = $state<Record<string, string>>({});
 
   let chosen = $state<string | null>(null);
   const playlist = $derived(
@@ -76,11 +86,57 @@
       </h2>
       <ul class="org-cards" aria-label="Active {name} Streams">
         {#each items as stream, index (index)}
-          {@const picture = pictureAddress(stream.nowPlayingImageURL)}
+          {@const picture = renewed[stream.uid] ?? pictureAddress(stream.nowPlayingImageURL)}
+          {@const link = linkOf(stream)}
           <li class="org-stream" title={streamText(stream)}>
-            {#if picture}
-              <img class="aspect-video w-full object-cover" src={picture} alt="" loading="lazy" />
-            {/if}
+            <div class="org-stream-picture">
+              {#if picture}
+                <img class="aspect-video w-full object-cover" src={picture} alt="" loading="lazy" />
+              {:else}
+                <div class="aspect-video w-full"></div>
+              {/if}
+              <!-- The buttons of PHP Organizr that show over the picture. -->
+              <div class="org-stream-buttons">
+                <button
+                  type="button"
+                  aria-label="How {stream.nowPlayingTitle || stream.title} plays"
+                  onclick={() => (playing = stream)}
+                >
+                  <i class="oi oi-materialize mdi-server-network" aria-hidden="true"></i>
+                </button>
+                {#if stream.metadataKey}
+                  <button
+                    type="button"
+                    aria-label="Details of {stream.title}"
+                    onclick={() => (detailsOf = stream)}
+                  >
+                    <i class="oi oi-materialize mdi-information" aria-hidden="true"></i>
+                  </button>
+                {/if}
+                {#if link}
+                  <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Open {stream.title} in {name}"
+                  >
+                    <i
+                      class="oi oi-materialize mdi-{service === 'jellyfin' ? 'fish' : service}"
+                      aria-hidden="true"
+                    ></i>
+                  </a>
+                {/if}
+                {#if stream.nowPlayingOriginalImage}
+                  <button
+                    type="button"
+                    aria-label="Renew the picture of {stream.title}"
+                    onclick={() => (renewed[stream.uid] = stream.nowPlayingOriginalImage ?? '')}
+                  >
+                    <i class="oi oi-materialize mdi-refresh" aria-hidden="true"></i>
+                  </button>
+                {/if}
+              </div>
+            </div>
             <progress
               class="org-stream-progress"
               value={stream.watched}
@@ -118,6 +174,52 @@
           </li>
         {/each}
       </ul>
+    {/if}
+    {#if playing}
+      {@const lines = streamLines(playing)}
+      <Dialog title={playing.sessionType} onclose={() => (playing = null)}>
+        <p class="text-sm opacity-70">
+          <i class="oi oi-materialize mdi-network-upload" aria-hidden="true"></i>
+          {playing.bandwidth ?? 0} kbps
+        </p>
+        <dl class="org-stream-info">
+          {#if playing.bandwidthType}
+            <dt>Network</dt>
+            <dd class="uppercase">{playing.bandwidthType}</dd>
+          {/if}
+          {#if playing.userAddress}
+            <dt>Address</dt>
+            <dd>{playing.userAddress}</dd>
+          {/if}
+          <dt>Stream</dt>
+          <dd>{lines.stream}</dd>
+          {#if lines.video}
+            <dt>Video</dt>
+            <dd>{lines.video}</dd>
+          {/if}
+          <dt>Audio</dt>
+          <dd>{lines.audio}</dd>
+          <dt>Product</dt>
+          <dd>{playing.userStream?.product ?? ''}</dd>
+          <dt>Device</dt>
+          <dd>{playing.userStream?.device ?? ''}</dd>
+          <dt>Watched</dt>
+          <dd>{playing.watched}%</dd>
+        </dl>
+        <div class="modal-action">
+          <button type="button" class="btn btn-primary" onclick={() => (playing = null)}>
+            Close
+          </button>
+        </div>
+      </Dialog>
+    {/if}
+    {#if detailsOf}
+      <MediaDetails
+        item={detailsOf}
+        detailsPath="homepage/{service}/metadata"
+        serverName={name}
+        onclose={() => (detailsOf = null)}
+      />
     {/if}
   {:else if part === 'recent'}
     {#if items.length === 0}

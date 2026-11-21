@@ -127,6 +127,59 @@ describe('Plex', () => {
 });
 
 describe('plex helpers', () => {
+  it('shows how a stream plays and its details from the buttons over its picture', async () => {
+    stubApi({
+      'GET homepage/plex/streams': {
+        data: {
+          content: [
+            item('The Show', {
+              sessionType: 'Transcoding',
+              bandwidth: 5100,
+              bandwidthType: 'wan',
+              userAddress: '203.0.113.7',
+              nowPlayingOriginalImage: 'api/v2/homepage/image?source=plex&key=815-np$X',
+              userStream: {
+                stream: 'transcode',
+                videoDecision: 'Transcode',
+                sourceVideoCodec: 'hevc',
+                videoCodec: 'h264',
+                videoResolution: '1080',
+                audioDecision: 'Direct Play',
+                sourceAudioCodec: 'aac',
+                audioCodec: 'aac',
+                product: 'Plex Web',
+                device: 'Firefox',
+              },
+            }),
+          ],
+        },
+      },
+      'POST homepage/plex/metadata': {
+        data: { content: [item('The Show', { metadata: { tagline: 'Made-up tagline' } })] },
+      },
+    });
+    render(Plex, { part: 'streams' });
+
+    await fireEvent.click(await screen.findByRole('button', { name: 'How The Show plays' }));
+    const info = screen.getByRole('dialog');
+    expect(info).toHaveTextContent('5100 kbps');
+    expect(info).toHaveTextContent('203.0.113.7');
+    expect(info).toHaveTextContent('Transcode (hevc → h264 1080)');
+    expect(info).toHaveTextContent('Firefox');
+    await fireEvent.click(within(info).getByRole('button', { name: 'Close' }));
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Details of The Show' }));
+    expect(await screen.findByText('Made-up tagline')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open The Show in Plex' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/library/metadata/815'),
+    );
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Renew the picture of The Show' }));
+    const list = screen.getByRole('list', { name: 'Active Plex Streams' });
+    expect(list.querySelector('img')?.getAttribute('src')).toContain('815-np$X');
+  });
+
   it('know the picture that stands for no picture', () => {
     expect(pictureAddress('plugins/images/homepage/no-list.png')).toBeNull();
     expect(pictureAddress('')).toBeNull();

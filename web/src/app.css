@@ -1886,6 +1886,50 @@
     opacity: 0.85;
   }
 
+  /* The buttons over the picture of a stream, as the overlay of PHP Organizr. */
+  .org-stream-picture {
+    position: relative;
+  }
+
+  .org-stream-buttons {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgb(0 0 0 / 0.7);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .org-stream-picture:hover .org-stream-buttons,
+  .org-stream-buttons:focus-within {
+    opacity: 1;
+  }
+
+  .org-stream-buttons a,
+  .org-stream-buttons button {
+    display: inline-flex;
+    padding: 6px;
+    color: #ffffff;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .org-stream-info {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    margin-top: 12px;
+    font-size: 14px;
+    text-transform: uppercase;
+  }
+
+  .org-stream-info dt {
+    opacity: 0.6;
+  }
+
   /* The filter menu of a row of posters, as the dropdown of PHP Organizr. */
   .org-caret {
     display: inline-block;

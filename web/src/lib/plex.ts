@@ -45,7 +45,25 @@ export interface PlexItem {
   /** The address of the item in the web interface of the server, when there is one. */
   address: string | null;
   /** Plex sends the resolution as a text. Emby and Jellyfin send the width in pixels. */
-  userStream?: { platform?: string; product?: string; videoResolution?: string | number };
+  userStream?: {
+    platform?: string;
+    product?: string;
+    device?: string;
+    videoResolution?: string | number;
+    /** `directplay`, `copy` or `transcode`. */
+    stream?: string;
+    videoDecision?: string;
+    sourceVideoCodec?: string;
+    videoCodec?: string;
+    audioDecision?: string;
+    sourceAudioCodec?: string;
+    audioCodec?: string;
+  };
+  /** The address of the player, and the picture of the user. */
+  userAddress?: string | null;
+  userThumb?: string | null;
+  /** The address that asks the server for the wide picture anew. */
+  nowPlayingOriginalImage?: string | null;
   metadata?: {
     summary?: string;
     rating?: string;
@@ -149,4 +167,24 @@ export function streamsSummary(items: PlexItem[], service: MediaService): string
     parts.push(`Bandwidth: ${mbps(bandwidth.wan)}`);
   }
   return parts.join(' | ');
+}
+
+/** How a stream plays, as the lines Stream, Video and Audio of the pop-up of PHP Organizr. */
+export function streamLines(item: PlexItem): {
+  stream: string;
+  video: string | null;
+  audio: string;
+} {
+  const stream = item.userStream ?? {};
+  const hasVideo = stream.videoResolution !== undefined && stream.videoResolution !== '';
+  if (item.sessionType === 'Direct Playing') {
+    return { stream: 'Direct Play', video: hasVideo ? 'Direct Play' : null, audio: 'Direct Play' };
+  }
+  return {
+    stream: stream.stream ?? '',
+    video: hasVideo
+      ? `${stream.videoDecision ?? ''} (${stream.sourceVideoCodec ?? ''} → ${stream.videoCodec ?? ''} ${String(stream.videoResolution)})`
+      : null,
+    audio: `${stream.audioDecision ?? ''} (${stream.sourceAudioCodec ?? ''} → ${stream.audioCodec ?? ''})`,
+  };
 }
