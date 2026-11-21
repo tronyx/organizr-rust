@@ -39,3 +39,8 @@ __pycache__/
 # The example extension and the test extension have a build folder of their own.
 /examples/*/target/
 /crates/plugins/tests/guests/*/target/
+
+# The certificate authority, the certificate for localhost and its key that the
+# stand-in servers of the tests use. They are test-only and trusted by no system.
+!crates/testkit/fixtures/tls/*.pem
+!crates/testkit/fixtures/tls/*.key
