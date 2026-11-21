@@ -77,6 +77,7 @@
       pages: [
         { section: 'users', page: 'userSettings', label: 'Manage Users' },
         { section: 'groups', page: 'groupSettings', label: 'Manage Groups' },
+        { section: 'import', page: 'importUserSettings', label: 'Import Users' },
       ],
     },
     {
@@ -226,6 +227,8 @@
         <CategoriesEditor {data} {change} />
       {:else if section === 'groups'}
         <GroupsEditor {data} {change} />
+      {:else if section === 'import'}
+        <UsersEditor {data} {change} part="import" />
       {:else}
         <UsersEditor {data} {change} />
       {/if}

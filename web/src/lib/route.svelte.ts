@@ -13,6 +13,7 @@ export type SettingsSection =
   | 'categories'
   | 'groups'
   | 'users'
+  | 'import'
   | 'mail'
   | 'login'
   | 'homepage'
@@ -54,6 +55,7 @@ export const PAGES = {
   categorySettings: '#/settings/categories',
   groupSettings: '#/settings/groups',
   userSettings: '#/settings/users',
+  importUserSettings: '#/settings/import',
   mailSettings: '#/settings/mail',
   loginSettings: '#/settings/login',
   homepageSettings: '#/settings/homepage',
@@ -115,6 +117,8 @@ export function parseRoute(hash: string): Route {
       return { page: 'settings', section: 'groups' };
     case '/settings/users':
       return { page: 'settings', section: 'users' };
+    case '/settings/import':
+      return { page: 'settings', section: 'import' };
     case '/settings/mail':
       return { page: 'settings', section: 'mail' };
     case '/settings/login':

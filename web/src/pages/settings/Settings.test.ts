@@ -90,7 +90,10 @@ const LAUNCH: CannedAnswer = {
 type Answers = Record<string, CannedAnswer | ((request: SentRequest) => CannedAnswer)>;
 
 /** Shows the settings on a stand-in for the API, and waits for the table. */
-async function show(section: 'tabs' | 'categories' | 'groups' | 'users', answers: Answers = {}) {
+async function show(
+  section: 'tabs' | 'categories' | 'groups' | 'users' | 'import',
+  answers: Answers = {},
+) {
   const sent = stubApi({
     'GET tabs': { data: DATA },
     'GET users': { data: USERS },
@@ -98,7 +101,11 @@ async function show(section: 'tabs' | 'categories' | 'groups' | 'users', answers
     ...answers,
   });
   render(Settings, { section });
-  await screen.findByRole('table');
+  if (section === 'import') {
+    await screen.findByRole('heading', { name: 'Import Users' });
+  } else {
+    await screen.findByRole('table');
+  }
   return sent;
 }
 
@@ -331,7 +338,14 @@ describe('Settings, categories', () => {
 
     expect(within(rowOf('Unsorted')).getByRole('cell', { name: '2' })).toBeInTheDocument();
     expect(within(rowOf('Media')).getByRole('cell', { name: '1' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Put new tabs into Unsorted')).toBeChecked();
+    expect(screen.getByLabelText('Put new tabs into Unsorted')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByLabelText('Put new tabs into Media')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('adds a category', async () => {
@@ -395,13 +409,19 @@ describe('Settings, groups', () => {
 
     const rows = screen.getAllByRole('row').slice(1);
     expect(rows.map((row) => within(row).getByRole('rowheader').textContent?.trim())).toEqual([
-      'A Admin',
-      'C Co-Admin',
-      'U User',
-      'G Guest',
+      'Admin',
+      'Co-Admin',
+      'User',
+      'Guest',
     ]);
-    expect(within(rowOf('Guest')).getByRole('cell', { name: '999' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Put new users into User')).toBeChecked();
+    expect(screen.getByLabelText('Put new users into User')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByLabelText('Put new users into Co-Admin')).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('does not offer to delete the fixed groups or to put new users into them', async () => {
@@ -499,9 +519,9 @@ describe('Settings, users', () => {
 
     const rows = screen.getAllByRole('row').slice(1);
     expect(rows.map((row) => within(row).getByRole('rowheader').textContent?.trim())).toEqual([
-      'A admin',
-      'Z zoe',
-      'Y Yan',
+      'admin',
+      'zoe',
+      'Yan',
     ]);
     const yan = rowOf('Yan');
     expect(within(yan).getByText('yan@example.com')).toBeInTheDocument();
@@ -524,7 +544,7 @@ describe('Settings, users', () => {
   });
 
   it('imports the users of a media server and says how many it added', async () => {
-    const sent = await show('users', {
+    const sent = await show('import', {
       'POST users/import/jellyfin': { message: 'Imported 2 users' },
     });
 
@@ -538,7 +558,7 @@ describe('Settings, users', () => {
   });
 
   it('shows why an import failed', async () => {
-    await show('users', {
+    await show('import', {
       'POST users/import/plex': { status: 401, message: 'Not Authorized' },
     });
 

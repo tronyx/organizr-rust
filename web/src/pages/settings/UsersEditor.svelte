@@ -10,8 +10,11 @@
   let {
     data,
     change,
+    part = 'manage',
   }: {
     data: EditorData;
+    /** The table of the users, or the import of the users of a media server. */
+    part?: 'manage' | 'import';
     /** Runs a change on the server and loads the data again. Returns the failure, or `null`. */
     change: (request: () => Promise<unknown>, done: string) => Promise<string | null>;
   } = $props();
@@ -81,96 +84,113 @@
   }
 </script>
 
-<div class="mb-4 flex items-center justify-between gap-2">
-  <p class="opacity-80">
-    The people who can log in. The group of a user decides which tabs the user sees. A new user
-    joins the group for new users.
-  </p>
-  <button class="btn btn-primary btn-sm" onclick={() => (dialog = { user: null })}>
-    Add a user
-  </button>
-</div>
-
-<section class="mb-4" aria-labelledby="import-users">
-  <h2 id="import-users" class="font-semibold">Import users</h2>
-  <p class="mb-2 text-sm opacity-80">
-    Adds an account for each user of the media server who has none. The server must be set up in the
-    settings. Each new account gets a random password, so its user logs in through the media server.
-  </p>
-  <div class="flex flex-wrap items-center gap-2">
-    {#each IMPORTS as server (server.type)}
-      <button
-        class="btn btn-sm"
-        disabled={importing}
-        onclick={() => void importFrom(server.type, server.name)}
-      >
-        Import {server.name} users
-      </button>
-    {/each}
-    {#if imported}
-      <span class="text-sm">{imported}</span>
-    {/if}
-  </div>
-</section>
-
 {#if error}
   <div role="alert" class="alert alert-error mb-4">
     <span>{error}</span>
   </div>
 {/if}
 
-<div class="overflow-x-auto">
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Name</th>
-        <th scope="col">E-mail address</th>
-        <th scope="col">Group</th>
-        <th scope="col">Since</th>
-        <th scope="col">Locked</th>
-        <th scope="col"><span class="sr-only">Actions</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each data.users as user (user.id)}
-        <tr>
-          <th scope="row">
-            <span class="flex items-center gap-2 font-normal">
-              <Picture image={user.image} name={user.username} />
-              {user.username}
-            </span>
-          </th>
-          <td>{user.email ?? ''}</td>
-          <td>{user.group ?? ''}</td>
-          <td class="whitespace-nowrap">{dayOf(user)}</td>
-          <td>
-            <!-- Nobody locks the own account here: the way back in would be closed. -->
-            <input
-              type="checkbox"
-              class="toggle toggle-sm"
-              aria-label={`Lock ${user.username}`}
-              checked={user.locked === 1}
-              disabled={isOwn(user)}
-              onchange={(event) => setLocked(user, event.currentTarget.checked)}
-            />
-          </td>
-          <td class="whitespace-nowrap text-right">
-            <button class="btn btn-ghost btn-xs" onclick={() => (dialog = { user })}>
-              Change<span class="sr-only"> {user.username}</span>
-            </button>
-            <button
-              class="btn btn-ghost btn-xs text-error"
-              disabled={isOwn(user)}
-              onclick={() => remove(user)}
-            >
-              Delete<span class="sr-only"> {user.username}</span>
-            </button>
-          </td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
+{#if part === 'import'}
+  <section class="org-panel" aria-labelledby="import-users">
+    <div class="org-panel-heading">
+      <h2 id="import-users" class="uppercase">Import Users</h2>
+    </div>
+    <div class="org-panel-body">
+      <p class="mb-4 text-sm">
+        Adds an account for each user of the media server who has none. The server must be set up in
+        the settings. Each new account gets a random password, so its user logs in through the media
+        server.
+      </p>
+      <div class="flex flex-wrap items-center gap-2">
+        {#each IMPORTS as server (server.type)}
+          <button
+            class="btn btn-info btn-sm"
+            disabled={importing}
+            onclick={() => void importFrom(server.type, server.name)}
+          >
+            Import {server.name} users
+          </button>
+        {/each}
+        {#if imported}
+          <span class="text-sm">{imported}</span>
+        {/if}
+      </div>
+    </div>
+  </section>
+{:else}
+  <section class="org-panel" aria-labelledby="manage-users-title">
+    <div class="org-panel-heading">
+      <h2 id="manage-users-title" class="uppercase">Manage Users</h2>
+      <button
+        class="org-round-button org-round-info org-round-small"
+        aria-label="Add a user"
+        title="Add a user"
+        onclick={() => (dialog = { user: null })}
+      >
+        <i class="oi-themify ti-plus" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="org-table org-table-grid">
+        <thead>
+          <tr>
+            <th scope="col" class="text-center">Avatar</th>
+            <th scope="col">Username</th>
+            <th scope="col">Email</th>
+            <th scope="col" class="text-center">Date Registered</th>
+            <th scope="col" class="text-center">Group</th>
+            <th scope="col" class="text-center">Locked</th>
+            <th scope="col" class="text-center">Password</th>
+            <th scope="col" class="text-center">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each data.users as user (user.id)}
+            <tr>
+              <td class="text-center">
+                <span class="org-avatar"><Picture image={user.image} name={user.username} /></span>
+              </td>
+              <th scope="row">{user.username}</th>
+              <td>{user.email ?? ''}</td>
+              <td class="text-center whitespace-nowrap">{dayOf(user)}</td>
+              <td class="text-center">{user.group ?? ''}</td>
+              <td class="text-center">
+                <!-- Nobody locks the own account here: the way back in would be closed. -->
+                <label class="inline-flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    class="org-table-check"
+                    aria-label={`Lock ${user.username}`}
+                    checked={user.locked === 1}
+                    disabled={isOwn(user)}
+                    onchange={(event) => setLocked(user, event.currentTarget.checked)}
+                  />
+                  <span aria-hidden="true">{user.locked === 1 ? 'Yes' : 'No'}</span>
+                </label>
+              </td>
+              <td class="text-center">
+                <button class="org-icon-button" onclick={() => (dialog = { user })}>
+                  <i class="oi-simpleline icon-user-following" aria-hidden="true"></i>
+                  <span class="sr-only">Change {user.username}</span>
+                </button>
+              </td>
+              <td class="text-center">
+                <button
+                  class="org-icon-button org-icon-danger"
+                  disabled={isOwn(user)}
+                  onclick={() => remove(user)}
+                >
+                  <i class="oi-themify ti-trash" aria-hidden="true"></i>
+                  <span class="sr-only">Delete {user.username}</span>
+                </button>
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{/if}
 
 {#if dialog}
   {#key dialog.user?.id}

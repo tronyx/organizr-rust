@@ -58,90 +58,109 @@
   }
 </script>
 
-<div class="mb-4 flex items-center justify-between gap-2">
-  <p class="opacity-80">
-    The headings of the menu, in their order. The tabs of “Unsorted” stand in the menu without a
-    heading.
-  </p>
-  <button class="btn btn-primary btn-sm" onclick={() => (dialog = { category: null })}>
-    Add a category
-  </button>
-</div>
-
 {#if error}
   <div role="alert" class="alert alert-error mb-4">
     <span>{error}</span>
   </div>
 {/if}
 
-<div class="overflow-x-auto">
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Order</th>
-        <th scope="col">Name</th>
-        <th scope="col">Tabs</th>
-        <th scope="col">For new tabs</th>
-        <th scope="col"><span class="sr-only">Actions</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each categories as category, index (category.id)}
+<section class="org-panel" aria-labelledby="category-editor-title">
+  <div class="org-panel-heading">
+    <h2 id="category-editor-title">Category Editor</h2>
+    <button
+      class="org-round-button org-round-info org-round-small"
+      aria-label="Add a category"
+      title="Add a category"
+      onclick={() => (dialog = { category: null })}
+    >
+      <i class="oi-themify ti-plus" aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="org-table">
+      <thead>
         <tr>
-          <td class="whitespace-nowrap">
-            <button
-              class="btn btn-ghost btn-xs"
-              aria-label={`Move ${category.category} up`}
-              disabled={index === 0}
-              onclick={() => move(index, -1)}
-            >
-              ↑
-            </button>
-            <button
-              class="btn btn-ghost btn-xs"
-              aria-label={`Move ${category.category} down`}
-              disabled={index === categories.length - 1}
-              onclick={() => move(index, 1)}
-            >
-              ↓
-            </button>
-          </td>
-          <th scope="row">
-            <span class="flex items-center gap-2 font-normal">
-              <Picture image={category.image} name={category.category} />
-              {category.category}
-            </span>
-          </th>
-          <td>{tabCount(category)}</td>
-          <td>
-            <input
-              type="radio"
-              class="radio radio-sm"
-              name="default-category"
-              aria-label={`Put new tabs into ${category.category}`}
-              checked={category.default === 1}
-              onchange={() =>
-                run(
-                  () => api('PUT', `categories/${category.id}`, { default: 1 }),
-                  'The category is changed.',
-                )}
-            />
-          </td>
-          <td class="whitespace-nowrap text-right">
-            <button class="btn btn-ghost btn-xs" onclick={() => (dialog = { category })}>
-              Change<span class="sr-only"> {category.category}</span>
-            </button>
-            <button class="btn btn-ghost btn-xs text-error" onclick={() => remove(category)}>
-              Delete<span class="sr-only"> {category.category}</span>
-            </button>
-          </td>
+          <th scope="col">#</th>
+          <th scope="col">Name</th>
+          <th scope="col" class="text-center">Tabs</th>
+          <th scope="col" class="text-center">Default</th>
+          <th scope="col" class="text-center">Edit</th>
+          <th scope="col" class="text-center">Delete</th>
         </tr>
-      {:else}
-        <tr><td colspan="5">There is no category yet.</td></tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        {#each categories as category, index (category.id)}
+          <tr>
+            <td class="whitespace-nowrap">
+              <span class="flex items-center gap-2">
+                <span class="org-order">
+                  <button
+                    aria-label={`Move ${category.category} up`}
+                    disabled={index === 0}
+                    onclick={() => move(index, -1)}
+                  >
+                    <i class="oi-themify ti-angle-up" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    aria-label={`Move ${category.category} down`}
+                    disabled={index === categories.length - 1}
+                    onclick={() => move(index, 1)}
+                  >
+                    <i class="oi-themify ti-angle-down" aria-hidden="true"></i>
+                  </button>
+                </span>
+                <span class="org-table-picture">
+                  <Picture image={category.image} name={category.category} />
+                </span>
+              </span>
+            </td>
+            <th scope="row">{category.category}</th>
+            <td class="text-center">{tabCount(category)}</td>
+            <td class="text-center">
+              <button
+                class="org-round-button {category.default === 1
+                  ? 'org-round-info'
+                  : 'org-round-warning'}"
+                aria-label={`Put new tabs into ${category.category}`}
+                aria-pressed={category.default === 1}
+                disabled={category.default === 1}
+                onclick={() =>
+                  run(
+                    () => api('PUT', `categories/${category.id}`, { default: 1 }),
+                    'The category is changed.',
+                  )}
+              >
+                <i
+                  class="oi-simpleline {category.default === 1
+                    ? 'icon-user-following'
+                    : 'icon-user-follow'}"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </td>
+            <td class="text-center">
+              <button
+                class="org-round-button org-round-info"
+                onclick={() => (dialog = { category })}
+              >
+                <i class="oi-themify ti-pencil-alt" aria-hidden="true"></i>
+                <span class="sr-only">Change {category.category}</span>
+              </button>
+            </td>
+            <td class="text-center">
+              <button class="org-round-button org-round-danger" onclick={() => remove(category)}>
+                <i class="oi-themify ti-trash" aria-hidden="true"></i>
+                <span class="sr-only">Delete {category.category}</span>
+              </button>
+            </td>
+          </tr>
+        {:else}
+          <tr><td colspan="6">There is no category yet.</td></tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+</section>
 
 {#if dialog}
   {#key dialog.category?.id}

@@ -18,6 +18,11 @@
   // The server lists the groups from the most access to the least.
   const groups = $derived(data.groups);
 
+  /** How many users the group has. */
+  function userCount(group: Group): number {
+    return data.users.filter((user) => user.group_id === group.group_id).length;
+  }
+
   // The dialog: closed, open for a new group, or open for one that is changed.
   let dialog = $state<{ group: Group | null } | null>(null);
   let error = $state<string | null>(null);
@@ -45,75 +50,89 @@
   }
 </script>
 
-<div class="mb-4 flex items-center justify-between gap-2">
-  <p class="opacity-80">
-    The groups of users, from the most access to the least. A tab is for the groups between two
-    levels. The server gives a new group the level after the last one before “Guest”.
-  </p>
-  <button class="btn btn-primary btn-sm" onclick={() => (dialog = { group: null })}>
-    Add a group
-  </button>
-</div>
-
 {#if error}
   <div role="alert" class="alert alert-error mb-4">
     <span>{error}</span>
   </div>
 {/if}
 
-<div class="overflow-x-auto">
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Name</th>
-        <th scope="col">Level</th>
-        <th scope="col">For new users</th>
-        <th scope="col"><span class="sr-only">Actions</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each groups as group (group.id)}
+<section class="org-panel" aria-labelledby="manage-groups-title">
+  <div class="org-panel-heading">
+    <h2 id="manage-groups-title" class="uppercase">Manage Groups</h2>
+    <button
+      class="org-round-button org-round-info org-round-small"
+      aria-label="Add a group"
+      title="Add a group"
+      onclick={() => (dialog = { group: null })}
+    >
+      <i class="oi-themify ti-plus" aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="org-table">
+      <thead>
         <tr>
-          <th scope="row">
-            <span class="flex items-center gap-2 font-normal">
-              <Picture image={group.image} name={group.group} />
-              {group.group}
-            </span>
-          </th>
-          <td>{group.group_id}</td>
-          <td>
-            <!-- The groups of the Admin and of guests are never the group for new users. -->
-            <input
-              type="radio"
-              class="radio radio-sm"
-              name="default-group"
-              aria-label={`Put new users into ${group.group}`}
-              checked={group.default === 1}
-              disabled={isFixedGroup(group)}
-              onchange={() =>
-                run(
-                  () => api('PUT', `groups/${group.id}`, { default: 1 }),
-                  'The group is changed.',
-                )}
-            />
-          </td>
-          <td class="whitespace-nowrap text-right">
-            <button class="btn btn-ghost btn-xs" onclick={() => (dialog = { group })}>
-              Change<span class="sr-only"> {group.group}</span>
-            </button>
-            <button
-              class="btn btn-ghost btn-xs text-error"
-              disabled={isFixedGroup(group)}
-              onclick={() => remove(group)}
-            >
-              Delete<span class="sr-only"> {group.group}</span>
-            </button>
-          </td>
+          <th scope="col" class="text-center">#</th>
+          <th scope="col">Group Name</th>
+          <th scope="col" class="text-center">Users</th>
+          <th scope="col" class="text-center">Default</th>
+          <th scope="col" class="text-center">Edit</th>
+          <th scope="col" class="text-center">Delete</th>
         </tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        {#each groups as group (group.id)}
+          <tr>
+            <td class="org-table-picture text-center">
+              <Picture image={group.image} name={group.group} />
+            </td>
+            <th scope="row">{group.group}</th>
+            <td class="text-center">{userCount(group)}</td>
+            <td class="text-center">
+              <!-- The groups of the Admin and of guests are never the group for new users. -->
+              <button
+                class="org-round-button {group.default === 1
+                  ? 'org-round-info'
+                  : 'org-round-warning'}"
+                aria-label={`Put new users into ${group.group}`}
+                aria-pressed={group.default === 1}
+                disabled={group.default === 1 || isFixedGroup(group)}
+                onclick={() =>
+                  run(
+                    () => api('PUT', `groups/${group.id}`, { default: 1 }),
+                    'The group is changed.',
+                  )}
+              >
+                <i
+                  class="oi-simpleline {group.default === 1
+                    ? 'icon-user-following'
+                    : 'icon-user-follow'}"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </td>
+            <td class="text-center">
+              <button class="org-round-button org-round-info" onclick={() => (dialog = { group })}>
+                <i class="oi-themify ti-pencil-alt" aria-hidden="true"></i>
+                <span class="sr-only">Change {group.group}</span>
+              </button>
+            </td>
+            <td class="text-center">
+              <button
+                class="org-round-button org-round-danger"
+                disabled={isFixedGroup(group)}
+                onclick={() => remove(group)}
+              >
+                <i class="oi-themify ti-trash" aria-hidden="true"></i>
+                <span class="sr-only">Delete {group.group}</span>
+              </button>
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+</section>
 
 {#if dialog}
   {#key dialog.group?.id}

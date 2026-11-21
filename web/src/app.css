@@ -923,14 +923,60 @@
     color: var(--color-error);
   }
 
-  .org-round-info:not(.org-round-small):hover,
-  .org-round-info:not(.org-round-small):focus-visible {
+  .org-round-warning {
+    color: var(--color-warning);
+  }
+
+  .org-round-warning:not(:disabled):hover,
+  .org-round-warning:not(:disabled):focus-visible {
+    background: var(--color-warning);
+    color: var(--color-warning-content);
+  }
+
+  /* An icon that is a button, as in the grids of PHP. */
+  .org-icon-button {
+    padding: 4px 6px;
+    color: #ffffff;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .org-icon-danger {
+    color: var(--color-error);
+  }
+
+  .org-icon-button:disabled {
+    cursor: default;
+    opacity: 0.3;
+  }
+
+  .org-avatar img,
+  .org-avatar i {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    object-fit: cover;
+  }
+
+  .org-table-grid thead th {
+    font-size: 13px;
+    text-transform: none;
+  }
+
+  .org-round-info:not(.org-round-small, :disabled):hover,
+  .org-round-info:not(.org-round-small, :disabled):focus-visible {
     background: var(--color-info);
     color: var(--color-info-content);
   }
 
-  .org-round-danger:hover,
-  .org-round-danger:focus-visible {
+  .org-round-button:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  .org-round-danger:not(:disabled):hover,
+  .org-round-danger:not(:disabled):focus-visible {
     background: var(--color-error);
     color: var(--color-error-content);
   }

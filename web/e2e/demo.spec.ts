@@ -394,13 +394,13 @@ test('the Admin manages the groups, and the group for new users is not deleted',
   await added.getByLabel('Picture').fill('https://example.com/editors.png');
   await added.getByRole('button', { name: 'Save' }).click();
   await expect(status).toHaveText('The group is added.');
-  // The server gives the new group the level after "User", which has the level 4.
+  // The new group has no users yet.
   await expect(
     page
       .getByRole('row', { name: /Editors/ })
       .getByRole('cell')
-      .first(),
-  ).toHaveText('5');
+      .nth(1),
+  ).toHaveText('0');
 
   await page
     .getByRole('row', { name: /Editors/ })
@@ -416,7 +416,7 @@ test('the Admin manages the groups, and the group for new users is not deleted',
 
   // New users join the group "User". The server keeps that group.
   const user = page.getByRole('row', { name: /^User/ });
-  await expect(page.getByLabel('Put new users into User')).toBeChecked();
+  await expect(page.getByLabel('Put new users into User')).toHaveAttribute('aria-pressed', 'true');
   page.once('dialog', (dialog) => void dialog.accept());
   await user.getByRole('button', { name: /Delete/ }).click();
   await expect(page.getByRole('alert')).toHaveText(
