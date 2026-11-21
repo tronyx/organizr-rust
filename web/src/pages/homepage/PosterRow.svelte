@@ -62,6 +62,6 @@
     {/if}
   </div>
 </div>
-<ul class="org-posters" aria-label={label} bind:this={row}>
+<ul translate="no" class="org-posters" aria-label={label} bind:this={row}>
   {@render children()}
 </ul>

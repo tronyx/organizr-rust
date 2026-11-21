@@ -176,7 +176,7 @@
           <label class="label" for="tab-most-access">Shown to the groups from</label>
           <select id="tab-most-access" class="select w-full" bind:value={mostAccess}>
             {#each groups as group (group.id)}
-              <option value={group.group_id}>{group.group}</option>
+              <option value={group.group_id} translate="no">{group.group}</option>
             {/each}
           </select>
         </div>
@@ -184,7 +184,7 @@
           <label class="label" for="tab-least-access">down to</label>
           <select id="tab-least-access" class="select w-full" bind:value={leastAccess}>
             {#each groups as group (group.id)}
-              <option value={group.group_id}>{group.group}</option>
+              <option value={group.group_id} translate="no">{group.group}</option>
             {/each}
           </select>
         </div>

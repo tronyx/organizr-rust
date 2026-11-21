@@ -32,7 +32,7 @@
   {#if options?.titleToggle}
     <h2 class="org-item-title">{options.title}<span aria-hidden="true">:</span></h2>
   {/if}
-  <ul class="org-cards" aria-label={options?.title || 'Uptime Kuma'}>
+  <ul translate="no" class="org-cards" aria-label={options?.title || 'Uptime Kuma'}>
     {#each monitors as monitor, index (index)}
       {@const link = linkOf(monitor)}
       <li

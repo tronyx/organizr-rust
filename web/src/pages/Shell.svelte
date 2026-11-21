@@ -15,6 +15,7 @@
   import { pingInterval, pingList, type PingResult } from '../lib/pings';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import MediaSearch from './homepage/MediaSearch.svelte';
+  import LanguageMenu from './LanguageMenu.svelte';
   import Menu from './Menu.svelte';
 
   let {
@@ -258,6 +259,7 @@
     >
       <i class="oi oi-themify ti-fullscreen" aria-hidden="true"></i>
     </button>
+    <LanguageMenu />
     {#if session.loggedIn}
       <details class="dropdown dropdown-end" bind:this={userMenu}>
         <summary class="org-header-link gap-2 font-medium" aria-label="Menu of the user">
@@ -270,14 +272,14 @@
               onerror={() => (avatarFailed = true)}
             />
           {/if}
-          {session.launch?.user?.username}
+          <span translate="no">{session.launch?.user?.username}</span>
         </summary>
         <ul class="menu dropdown-content bg-neutral z-30 w-52 p-0 py-1 shadow">
           <li class="menu-title">{session.launch?.user?.group}</li>
           {#if session.canManage}
             <li><a href={PAGES.tabSettings} onclick={closeUserMenu}>Settings</a></li>
           {/if}
-          <li><a href={PAGES.account} onclick={closeUserMenu}>Account</a></li>
+          <li><a href={PAGES.account} onclick={closeUserMenu}>Account Settings</a></li>
           {#if canSpeedTest}
             <li><a href={PAGES.speedTest} onclick={closeUserMenu}>Speed test</a></li>
           {/if}
@@ -287,8 +289,8 @@
           {#if canChat}
             <li><a href={PAGES.chat} onclick={closeUserMenu}>Chat</a></li>
           {/if}
-          <li><button onclick={lock}>Lock the screen</button></li>
-          <li><button onclick={logOut}>Log out</button></li>
+          <li><button onclick={lock}>Lock Screen</button></li>
+          <li><button onclick={logOut}>Logout</button></li>
         </ul>
       </details>
     {:else}

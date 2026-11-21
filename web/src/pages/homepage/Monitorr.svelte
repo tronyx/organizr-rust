@@ -70,7 +70,7 @@
   {#if services.length === 0}
     <p class="text-sm">Monitorr named no service. Look at its address.</p>
   {:else if options?.compact}
-    <ul class="org-cards" aria-label={options.title || 'Monitorr'}>
+    <ul translate="no" class="org-cards" aria-label={options.title || 'Monitorr'}>
       {#each services as [text, service] (text)}
         {@const state = stateOf(service)}
         {@const picture = pictureOf(service)}

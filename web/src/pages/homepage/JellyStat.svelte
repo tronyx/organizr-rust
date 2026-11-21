@@ -166,7 +166,7 @@
             <th scope="col">Episodes</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody translate="no">
           {#each libraries as library, index (index)}
             <tr>
               <td>{library.name ?? ''}</td>
@@ -191,7 +191,7 @@
             <th scope="col">Last activity</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody translate="no">
           {#each users as user, index (index)}
             <tr>
               <td>{user.name ?? ''}</td>

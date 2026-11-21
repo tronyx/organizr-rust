@@ -131,7 +131,7 @@
             <th scope="col">Done</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody translate="no">
           {#each rows as row, index (index)}
             <tr>
               <td>{row.name}</td>

@@ -114,7 +114,7 @@
                 </span>
               </span>
             </td>
-            <th scope="row">{category.category}</th>
+            <th scope="row" translate="no">{category.category}</th>
             <td class="text-center">{tabCount(category)}</td>
             <td class="text-center">
               <button

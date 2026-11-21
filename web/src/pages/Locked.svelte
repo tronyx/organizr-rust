@@ -86,7 +86,7 @@
       disabled={busy}
       onclick={logOut}
     >
-      Log out
+      Logout
     </button>
   </form>
 </main>

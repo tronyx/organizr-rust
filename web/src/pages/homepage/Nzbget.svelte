@@ -77,7 +77,7 @@
                   <th scope="col">Done</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody translate="no">
                 {#each queue as download, index (index)}
                   <tr>
                     <td>{download.NZBName ?? ''}</td>
@@ -111,7 +111,7 @@
                   <th scope="col">Result</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody translate="no">
                 {#each history as done, index (index)}
                   <tr>
                     <td>{done.Name ?? ''}</td>

@@ -326,7 +326,7 @@
         <label class="label" for="bookmark-group">For the group, and groups with more access</label>
         <select id="bookmark-group" class="select w-full" bind:value={form.group_id}>
           {#each lists.groups as group (group.group_id)}
-            <option value={group.group_id}>{group.group}</option>
+            <option value={group.group_id} translate="no">{group.group}</option>
           {/each}
         </select>
 

@@ -201,6 +201,7 @@
                       class="block w-full cursor-pointer truncate text-left text-[13px]"
                       style:color={stateColour(event)}
                       title="{event.title}: {stateOf(event).word}"
+                      translate="no"
                       onclick={() => (open = event)}
                     >
                       {event.title}

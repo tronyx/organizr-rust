@@ -156,7 +156,7 @@
               </span>
             </td>
             <td class="org-table-picture"><Picture image={tab.image} name={tab.name} /></td>
-            <th scope="row">{tab.name}</th>
+            <th scope="row" translate="no">{tab.name}</th>
             <td>
               <select
                 class="org-table-select"
@@ -165,7 +165,7 @@
                 onchange={(event) => set(tab, { category_id: Number(event.currentTarget.value) })}
               >
                 {#each categories as category (category.id)}
-                  <option value={category.category_id}>{category.category}</option>
+                  <option value={category.category_id} translate="no">{category.category}</option>
                 {/each}
               </select>
             </td>
@@ -177,7 +177,7 @@
                 onchange={(event) => set(tab, { group_id: Number(event.currentTarget.value) })}
               >
                 {#each data.groups as group (group.id)}
-                  <option value={group.group_id}>{group.group}</option>
+                  <option value={group.group_id} translate="no">{group.group}</option>
                 {/each}
               </select>
             </td>
@@ -189,7 +189,7 @@
                 onchange={(event) => set(tab, { group_id_max: Number(event.currentTarget.value) })}
               >
                 {#each data.groups as group (group.id)}
-                  <option value={group.group_id}>{group.group}</option>
+                  <option value={group.group_id} translate="no">{group.group}</option>
                 {/each}
               </select>
             </td>

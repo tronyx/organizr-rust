@@ -51,6 +51,7 @@
         target="_blank"
         rel="noopener noreferrer"
         aria-label={tab.name}
+        translate="no"
         onclick={onpick}
       >
         <Picture image={tab.image} name={tab.name} large />
@@ -66,6 +67,7 @@
       <a
         href={tabHash(tab.name)}
         aria-label={tab.name}
+        translate="no"
         aria-current={tab.id === shown ? 'page' : undefined}
         onclick={onpick}
       >

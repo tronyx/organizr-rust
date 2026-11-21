@@ -88,14 +88,14 @@
       />
       <button type="button" class="btn btn-info btn-sm" disabled={busy} onclick={send}>
         {#if busy}<span class="loading loading-spinner loading-xs"></span>{/if}
-        Upload
+        Upload Image
       </button>
     </div>
     {#if error}
       <div role="alert" class="alert alert-error mb-4"><span>{error}</span></div>
     {/if}
     {#if images}
-      <ul class="org-image-grid">
+      <ul class="org-image-grid" translate="no">
         {#each images as path (path)}
           <li>
             <img src={path} alt={nameOf(path)} loading="lazy" />

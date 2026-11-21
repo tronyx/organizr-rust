@@ -99,7 +99,7 @@
             <th scope="col">Status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody translate="no">
           {#each scheduled as recording, index (index)}
             <tr>
               <td class="whitespace-nowrap">{momentText(recording.date)}</td>
@@ -136,7 +136,7 @@
               {#if options.showDuration}<th scope="col">Duration</th>{/if}
             </tr>
           </thead>
-          <tbody>
+          <tbody translate="no">
             {#each completed as recording, index (index)}
               <tr>
                 <td class="whitespace-nowrap">{momentText(recording.date)}</td>

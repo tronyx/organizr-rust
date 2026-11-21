@@ -107,7 +107,7 @@
         <label class="label" for="user-group">Group</label>
         <select id="user-group" class="select w-full" bind:value={level}>
           {#each choices as group (group.id)}
-            <option value={group.group_id}>{group.group}</option>
+            <option value={group.group_id} translate="no">{group.group}</option>
           {/each}
         </select>
 

@@ -38,7 +38,7 @@
   {#if services.length === 0}
     <p class="text-sm">PromPage lists no services.</p>
   {/if}
-  <ul class="org-cards" aria-label={options?.title || 'PromPage'}>
+  <ul translate="no" class="org-cards" aria-label={options?.title || 'PromPage'}>
     {#each services as service, index (index)}
       {@const up = service.status === true}
       {@const uptime = uptimeOf(service)}

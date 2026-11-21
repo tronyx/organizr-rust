@@ -160,7 +160,7 @@
             {#each card.rows as library, index (index)}
               <li>
                 <span class="org-stat-rank">{index + 1}</span>
-                <span class="flex-1 truncate">{library.section_name ?? ''}</span>
+                <span class="flex-1 truncate" translate="no">{library.section_name ?? ''}</span>
                 <span class="org-stat-count">{sizeOf(library)}</span>
               </li>
             {/each}
@@ -187,7 +187,7 @@
             {#each (statistic.rows ?? []).slice(0, ROWS) as row, index (index)}
               <li>
                 <span class="org-stat-rank">{index + 1}</span>
-                <span class="flex-1 truncate">{nameOf(statistic, row)}</span>
+                <span class="flex-1 truncate" translate="no">{nameOf(statistic, row)}</span>
                 <span class="org-stat-count">{countOf(row)}</span>
               </li>
             {/each}

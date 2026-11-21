@@ -179,7 +179,7 @@
         onclick={purge}
       >
         {#if busy}<span class="loading loading-spinner loading-xs"></span>{/if}
-        Purge this file
+        Purge Log
       </button>
     </div>
 

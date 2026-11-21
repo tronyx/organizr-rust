@@ -83,7 +83,7 @@
             <th scope="col">Time left</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody translate="no">
           {#each downloads as download, index (index)}
             <tr>
               <td>{nameOf(download)}</td>

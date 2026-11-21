@@ -238,7 +238,7 @@
             <th scope="col">Download</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody translate="no">
           {#each rows as row, index (index)}
             <tr>
               <td class="whitespace-nowrap">{fromNow(row.date) ?? ''}</td>

@@ -79,7 +79,7 @@ describe('Locked', () => {
   it('lets the person log out in place of the password', async () => {
     const sent = stubApi({ 'GET launch': launch(0), 'GET logout': {} });
     render(Locked);
-    await fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
     await waitFor(() => expect(sent.some((request) => request.path === 'logout')).toBe(true));
   });
 
@@ -93,7 +93,7 @@ describe('Locked', () => {
     stubApi({ 'GET launch': launch(0), 'GET logout': {} });
     render(Locked);
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
 
     await waitFor(() => expect(go).toHaveBeenCalledWith('https://id.example.com/logout'));
     go.mockRestore();

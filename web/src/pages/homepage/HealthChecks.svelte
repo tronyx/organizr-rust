@@ -51,7 +51,7 @@
   <h2 class="org-item-title">
     Health Checks : <span class="org-count">{checks.length}</span>
   </h2>
-  <ul class="org-cards" aria-label="Health checks">
+  <ul translate="no" class="org-cards" aria-label="Health checks">
     {#each checks as check, index (index)}
       {@const status = STATUS[check.status] ?? { ...OTHER, word: check.status }}
       {@const picture = pictureOf(check)}

@@ -2014,6 +2014,28 @@
     object-fit: cover;
   }
 
+  /* The language menu of the top bar, as the language box of PHP Organizr. */
+  .org-language-title {
+    padding: 10px 20px;
+    border-bottom: 1px solid rgb(120 130 140 / 0.13);
+    font-weight: 500;
+  }
+
+  .org-language {
+    display: block;
+    width: 100%;
+    padding: 8px 20px;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .org-language:hover,
+  .org-language[aria-current='true'] {
+    background: rgb(255 255 255 / 0.05);
+    color: var(--color-info);
+  }
+
   /* The filter menu of a row of posters, as the dropdown of PHP Organizr. */
   .org-caret {
     display: inline-block;

@@ -58,7 +58,7 @@
             <th scope="col">Done</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody translate="no">
           {#each torrents as torrent, index (index)}
             <tr>
               <td>{torrent.Name ?? ''}</td>

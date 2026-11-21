@@ -19,6 +19,10 @@ The pictures come with Organizr, which is published under the GNU General Public
 
 The server sends these pictures at the same paths as PHP Organizr does, for example `plugins/images/tabs/plex.png`.
 
+## Language files
+
+The folder `web/public/langpack` holds the 32 language files of Organizr, one for each language, with the English texts of the interface and their translations. The people of the Organizr community wrote the translations. They come with Organizr, which is published under the GNU General Public License, version 3. The script `web/tools/import-organizr-langpacks.py` copies them from the same source as the pictures.
+
 ## Icon fonts
 
 The folder `web/src/icons` holds five icon fonts. For each font, the script writes a style sheet with the names of the icons as PHP Organizr stores them.

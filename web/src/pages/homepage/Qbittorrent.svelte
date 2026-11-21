@@ -84,7 +84,7 @@
             <th scope="col">Time left</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody translate="no">
           {#each torrents as torrent, index (index)}
             <tr>
               <td>{torrent.name ?? ''}</td>

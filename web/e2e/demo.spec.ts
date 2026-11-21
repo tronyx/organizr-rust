@@ -119,7 +119,7 @@ test('the Admin logs out and sees the login page', async ({ page }) => {
   await logIn(page);
 
   await page.getByLabel('Menu of the user').click();
-  await page.getByRole('button', { name: 'Log out' }).click();
+  await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click();
 
   await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
   await expect(page.getByLabel('Menu of the user')).toHaveCount(0);
@@ -214,7 +214,7 @@ test('the Admin adds, changes, hides, moves and deletes a tab in the settings', 
   await logIn(page);
   await page.getByLabel('Menu of the user').click();
   // The menu of tabs has a link with the same name: the tab "Settings".
-  await page.getByRole('banner').getByRole('link', { name: 'Settings' }).click();
+  await page.getByRole('banner').getByRole('link', { name: 'Settings', exact: true }).click();
   await expect(page).toHaveURL(/#\/settings\/tabs$/);
   const menu = page.getByRole('navigation', { name: 'Tabs' });
   // The menu is a strip of pictures until the pointer is over it.
@@ -629,7 +629,7 @@ test('the Admin adds a custom script, which every page runs while the switch is 
   await expect(root).toHaveAttribute('data-custom-script', 'ran');
   // A guest on the login page runs it too, as in PHP.
   await page.getByLabel('Menu of the user').click();
-  await page.getByRole('button', { name: 'Log out' }).click();
+  await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click();
   await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
   await page.reload();
   await expect(root).toHaveAttribute('data-custom-script', 'ran');
@@ -685,7 +685,9 @@ test('a person with the registration password makes an account and sees the tabs
   // The tab "Settings" is for Admins and Co-Admins, and so are the settings.
   await expect(menu.getByRole('link', { name: 'Settings' })).toHaveCount(0);
   await page.getByLabel('Menu of the user').click();
-  await expect(page.getByRole('banner').getByRole('link', { name: 'Settings' })).toHaveCount(0);
+  await expect(
+    page.getByRole('banner').getByRole('link', { name: 'Settings', exact: true }),
+  ).toHaveCount(0);
   await page.goto('./#/settings/tabs');
   await expect(page.getByText('Only an Admin or a Co-Admin can open the settings.')).toBeVisible();
   const refused = await page.request.get('./api/v2/tabs');
@@ -762,7 +764,7 @@ function authenticatorCode(secret: string): string {
 test('a user sets a second factor up, and the login asks for its code', async ({ page }) => {
   await logIn(page);
   await page.getByLabel('Menu of the user').click();
-  await page.getByRole('banner').getByRole('link', { name: 'Account' }).click();
+  await page.getByRole('banner').getByRole('link', { name: 'Account Settings' }).click();
   await expect(page.getByRole('heading', { name: 'Second factor' })).toBeVisible();
   await expect(page.getByText('Your account has no second factor.')).toBeVisible();
 
@@ -783,7 +785,7 @@ test('a user sets a second factor up, and the login asks for its code', async ({
 
   // The next login needs the code.
   await page.getByLabel('Menu of the user').click();
-  await page.getByRole('button', { name: 'Log out' }).click();
+  await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click();
   // The logout is done when the login page shows.
   await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
   await expect(page.getByLabel('Menu of the user')).toHaveCount(0);
@@ -840,7 +842,7 @@ test('a new password by e-mail is offered only when the install sends e-mails', 
   await page.keyboard.press('Escape');
 
   await page.getByLabel('Menu of the user').click();
-  await page.getByRole('button', { name: 'Log out' }).click();
+  await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click();
   // The logout is done when the login page shows.
   await expect(page.getByRole('heading', { name: 'Log in' })).toBeVisible();
   await expect(page.getByLabel('Menu of the user')).toHaveCount(0);
@@ -1071,7 +1073,7 @@ test('the Admin makes a backup, sees it in the list and deletes it', async ({ pa
 test('a user locks the screen and opens it again with the password', async ({ page }) => {
   await logIn(page);
   await page.getByLabel('Menu of the user').click();
-  await page.getByRole('button', { name: 'Lock the screen' }).click();
+  await page.getByRole('button', { name: 'Lock Screen' }).click();
   await expect(page.getByRole('heading', { name: 'The screen is locked' })).toBeVisible();
   // The lock holds after the page is loaded again.
   await page.reload();

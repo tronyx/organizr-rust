@@ -150,7 +150,7 @@
               <td class="text-center">
                 <span class="org-avatar"><Picture image={user.image} name={user.username} /></span>
               </td>
-              <th scope="row">{user.username}</th>
+              <th scope="row" translate="no">{user.username}</th>
               <td>{user.email ?? ''}</td>
               <td class="text-center whitespace-nowrap">{dayOf(user)}</td>
               <td class="text-center">{user.group ?? ''}</td>

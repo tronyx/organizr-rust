@@ -102,7 +102,7 @@
                   {/if}
                 </tr>
               </thead>
-              <tbody>
+              <tbody translate="no">
                 {#each slots as slot (slot.nzo_id)}
                   {@const percent = Number(slot.percentage) || 0}
                   {@const paused = slot.status === 'Paused'}

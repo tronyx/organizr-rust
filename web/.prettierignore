@@ -7,3 +7,4 @@ src/icons/*.css
 !src/icons/base.css
 src/lib/iconNames.json
 public/plugins/
+public/langpack/

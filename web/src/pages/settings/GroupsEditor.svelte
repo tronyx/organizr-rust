@@ -86,7 +86,7 @@
             <td class="org-table-picture text-center">
               <Picture image={group.image} name={group.group} />
             </td>
-            <th scope="row">{group.group}</th>
+            <th scope="row" translate="no">{group.group}</th>
             <td class="text-center">{userCount(group)}</td>
             <td class="text-center">
               <!-- The groups of the Admin and of guests are never the group for new users. -->

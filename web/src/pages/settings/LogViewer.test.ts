@@ -106,10 +106,7 @@ describe('LogViewer', () => {
       target: { value: 'all' },
     });
     expect(await screen.findByText('everything')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Purge this file' })).toHaveProperty(
-      'disabled',
-      true,
-    );
+    expect(screen.getByRole('button', { name: 'Purge Log' })).toHaveProperty('disabled', true);
     expect(sent.map((request) => request.path)).toContain('log/all');
   });
 
@@ -149,7 +146,7 @@ describe('LogViewer', () => {
     const ondone = vi.fn();
     render(LogViewer, { ondone });
 
-    await fireEvent.click(await screen.findByRole('button', { name: 'Purge this file' }));
+    await fireEvent.click(await screen.findByRole('button', { name: 'Purge Log' }));
 
     expect(await screen.findByText('There is no log file yet.')).toBeTruthy();
     expect(ondone).toHaveBeenCalledWith('The log file is purged.');
