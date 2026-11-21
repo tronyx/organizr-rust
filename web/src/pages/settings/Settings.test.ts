@@ -1,10 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
+import { plexToken } from '../../lib/plexLogin';
 import { session } from '../../lib/session.svelte';
 import type { Account, EditorData, Tab } from '../../lib/types';
 import { stubApi, type CannedAnswer, type SentRequest } from '../../test-helpers';
 import Settings from './Settings.svelte';
+
+// The login at Plex itself happens in another window, at plex.tv.
+vi.mock('../../lib/plexLogin', () => ({ plexToken: vi.fn() }));
 
 function tab(id: number, name: string, changes: Partial<Tab> = {}): Tab {
   return {
@@ -901,51 +905,84 @@ describe('Settings, Main: the form of PHP', () => {
   });
 });
 
-describe('Settings, SSO: the form of PHP', () => {
-  it('lists the Plex servers of the token in the group Plex, or says why not', async () => {
-    let known = false;
-    stubApi({
+describe('Settings, SSO: the Plex buttons of PHP', () => {
+  const PLEX_FORM = {
+    Plex: [
+      { type: 'password-alt', label: 'API Key/Token', name: 'plexToken', value: '' },
+      { type: 'button', label: 'Get Plex Token', name: '', text: 'Retrieve' },
+      { type: 'password-alt', label: 'Plex Machine', name: 'plexID', value: '' },
+      { type: 'button', label: 'Get Plex Machine', name: '', text: 'Retrieve' },
+    ],
+  };
+  const SERVER = { address: '203.0.113.5', owned: 1 };
+
+  function showSso(servers: CannedAnswer | (() => CannedAnswer)) {
+    const sent = stubApi({
       'GET tabs': { data: DATA },
       'GET users': { data: USERS },
       'GET launch': LAUNCH,
-      'GET settings/sso': {
-        data: { Plex: [{ type: 'switch', label: 'Enable', name: 'ssoPlex', value: false }] },
-      },
-      'GET plex/servers': () =>
-        known
-          ? {
-              data: [
-                {
-                  name: 'Media',
-                  address: '203.0.113.5',
-                  machineIdentifier: 'made-up-id',
-                  owned: 1,
-                },
-                {
-                  name: 'Shared',
-                  address: '198.51.100.9',
-                  machineIdentifier: 'other-id',
-                  owned: 0,
-                },
-              ],
-            }
-          : { status: 422, message: 'Plex Token cannot be empty' },
+      'GET settings/sso': { data: PLEX_FORM },
+      'GET plex/servers': servers,
+      'PUT config': {},
     });
     render(Settings, { section: 'login' });
-    const button = await screen.findByRole('button', { name: 'List the Plex servers' });
-    expect(screen.getByRole('heading', { name: 'Single Sign-On' })).toBeInTheDocument();
+    return sent;
+  }
 
-    await fireEvent.click(button);
-    expect(await screen.findByRole('alert')).toHaveTextContent('Plex Token cannot be empty');
+  it('fills in the token of the login of Plex, which the Admin then saves', async () => {
+    const popup = { closed: false, close: vi.fn(), location: { href: '' } };
+    const open = vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
+    vi.mocked(plexToken).mockResolvedValue('made-up-plex-token');
+    const sent = showSso({ data: [] });
+    const buttons = await screen.findAllByRole('button', { name: 'Retrieve' });
 
-    known = true;
-    await fireEvent.click(button);
-    const row = (await screen.findByRole('rowheader', { name: 'Media' })).closest('tr');
-    expect(row).toHaveTextContent('made-up-id');
-    expect(row).toHaveTextContent('This account');
-    expect(screen.getByRole('rowheader', { name: 'Shared' }).closest('tr')).toHaveTextContent(
-      'Another account',
+    await fireEvent.click(buttons[0] as HTMLElement);
+
+    expect(await screen.findByText(/Plex gave a token/)).toHaveAttribute('role', 'status');
+    expect(open).toHaveBeenCalledWith('', 'Plex-OAuth', 'width=600,height=700');
+    expect(vi.mocked(plexToken).mock.calls[0]?.[0]).toEqual({
+      id: 'made-up-install-id',
+      product: 'Organizr',
+    });
+    // An unsaved token is not the one that the server would ask Plex with.
+    await fireEvent.click(buttons[1] as HTMLElement);
+    expect(await screen.findByText(/Save the token before/)).toHaveAttribute('role', 'alert');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+        plexToken: 'made-up-plex-token',
+      }),
     );
+    open.mockRestore();
+  });
+
+  it('sets the machine of the one owned server, or lets the Admin choose one', async () => {
+    let servers = [{ ...SERVER, name: 'Media', machineIdentifier: 'made-up-id' }];
+    const saved = showSso(() => ({ data: servers }));
+    const machine = (await screen.findAllByRole('button', { name: 'Retrieve' }))[1] as HTMLElement;
+
+    await fireEvent.click(machine);
+    expect(await screen.findByText(/The machine of Media is set/)).toHaveAttribute(
+      'role',
+      'status',
+    );
+
+    servers = [
+      { ...SERVER, name: 'Media', machineIdentifier: 'made-up-id' },
+      { ...SERVER, name: 'Other', machineIdentifier: 'other-id' },
+    ];
+    await fireEvent.click(machine);
+    const choice = await screen.findByRole('combobox', { name: 'Plex server' });
+    await fireEvent.change(choice, { target: { value: 'other-id' } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(saved.find((request) => request.method === 'PUT')?.body).toEqual({
+        plexID: 'other-id',
+      }),
+    );
+    // Only the servers of the account count.
+    expect(saved.find((request) => request.path === 'plex/servers')).toBeDefined();
   });
 });
 

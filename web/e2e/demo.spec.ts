@@ -1105,8 +1105,9 @@ test('the Admin switches the button "Log in with Plex" on, and the login page sh
     .click();
   await expect(page).toHaveURL(/#\/settings\/login$/);
 
-  // No Plex token is stored, so the server has no account to list the servers of.
-  await page.getByRole('button', { name: 'List the Plex servers' }).click();
+  // No Plex token is stored, so Get Plex Machine has no account to list the servers of.
+  await page.getByRole('tab', { name: 'Plex', exact: true }).click();
+  await page.getByRole('button', { name: 'Retrieve' }).nth(1).click();
   await expect(page.getByRole('alert')).toHaveText('Plex Token cannot be empty');
 
   // PHP shows "Enable Plex oAuth" under Main, Authentication, for the back end Plex.

@@ -218,6 +218,10 @@ export type PhpAction =
   | { kind: 'open'; url: string }
   /** A lookup whose answer the Admin reads. */
   | { kind: 'lookup'; path: string }
+  /** The token of a Plex account, from the login of Plex in a small window. */
+  | { kind: 'plex-token' }
+  /** The Plex servers that the account of the token owns, to choose the one of Organizr. */
+  | { kind: 'plex-machine' }
   /** A button that this application has no use for. */
   | { kind: 'none'; why: string };
 
@@ -274,6 +278,12 @@ export function actionOf(field: PhpField): PhpAction {
   }
   if (label === 'Reset Colors') {
     return { kind: 'reset-colours' };
+  }
+  if (label === 'Get Plex Token') {
+    return { kind: 'plex-token' };
+  }
+  if (label === 'Get Plex Machine') {
+    return { kind: 'plex-machine' };
   }
   if (label.startsWith('Grab Unifi Site')) {
     return { kind: 'lookup', path: 'test/unifi/site' };

@@ -22,6 +22,7 @@
     type PhpGroups,
     type PhpValue,
   } from '../../lib/phpForm';
+  import { plexToken } from '../../lib/plexLogin';
   import { randomKey } from '../../lib/random';
   import { session } from '../../lib/session.svelte';
   import { siteList, valueTestBody, type ValueTest } from '../../lib/settingsForm';
@@ -68,6 +69,15 @@
   let running = $state<string | null>(null);
   /** The name and the password of a login test, as the Admin typed them. */
   let login = $state({ username: '', password: '' });
+  /** The Plex servers that a button "Get Plex Machine" found, by the key of the button. */
+  let machines = $state<Record<string, PlexServer[]>>({});
+
+  /** A Plex server, as `GET plex/servers` lists it. */
+  interface PlexServer {
+    name: string;
+    address: string;
+    machineIdentifier: string;
+  }
 
   const names = $derived.by(() => {
     const all = [...Object.keys(groups ?? {}), ...Object.keys(extra)];
@@ -143,6 +153,14 @@
       answers[key] = { ok: false, text: action.why };
       return;
     }
+    if (action.kind === 'plex-token') {
+      await getPlexToken(key);
+      return;
+    }
+    if (action.kind === 'plex-machine') {
+      await getPlexMachine(key);
+      return;
+    }
     running = key;
     try {
       const answer =
@@ -154,6 +172,70 @@
         text: siteList(answer.data) ?? answer.message ?? 'The connection works.',
       };
     } catch (failure) {
+      answers[key] = { ok: false, text: failureText(failure) };
+    } finally {
+      running = null;
+    }
+  }
+
+  /**
+   * Lets the Admin log in at Plex in a small window, as the login page does, and puts the
+   * token of the account into the field Plex Token. The Admin saves it with the form.
+   */
+  async function getPlexToken(key: string) {
+    // The window opens in the click itself: a browser stops a window that opens later.
+    const popup = window.open('', 'Plex-OAuth', 'width=600,height=700');
+    if (!popup) {
+      answers[key] = {
+        ok: false,
+        text: 'The browser did not open the window of Plex. Allow pop-up windows for this page.',
+      };
+      return;
+    }
+    running = key;
+    try {
+      const launch = session.launch;
+      form.plexToken = await plexToken(
+        { id: launch?.settings.misc.uuid ?? '', product: launch?.appearance.title || 'Organizr' },
+        popup,
+      );
+      answers[key] = { ok: true, text: 'Plex gave a token. Save the settings to keep it.' };
+    } catch (failure) {
+      answers[key] = { ok: false, text: failureText(failure) };
+    } finally {
+      running = null;
+    }
+  }
+
+  /**
+   * Lists the Plex servers that the account of the saved token owns. With one server, its
+   * id goes into the field Plex Machine; with more, the Admin chooses one.
+   */
+  async function getPlexMachine(key: string) {
+    if ('plexToken' in changed) {
+      answers[key] = { ok: false, text: 'Save the token before you look for the machine.' };
+      return;
+    }
+    running = key;
+    try {
+      const servers = (await api<PlexServer[]>('GET', 'plex/servers?owned')).data;
+      if (servers.length === 0) {
+        machines[key] = [];
+        answers[key] = { ok: false, text: 'The Plex account owns no server.' };
+        return;
+      }
+      machines[key] = servers;
+      if (servers.length === 1 && servers[0]) {
+        form.plexID = servers[0].machineIdentifier;
+        answers[key] = {
+          ok: true,
+          text: `The machine of ${servers[0].name} is set. Save the settings to keep it.`,
+        };
+      } else {
+        answers[key] = { ok: true, text: 'Choose the server of Organizr.' };
+      }
+    } catch (failure) {
+      machines[key] = [];
       answers[key] = { ok: false, text: failureText(failure) };
     } finally {
       running = null;
@@ -392,6 +474,23 @@
         {#if running === key}<span class="loading loading-spinner loading-xs"></span>{/if}
         {field.text ?? field.label}
       </button>
+      {#if machines[key] && machines[key].length > 1}
+        <select
+          class="org-form-control w-auto"
+          aria-label="Plex server"
+          onchange={(event) => (form.plexID = event.currentTarget.value)}
+        >
+          <option value="">Choose a server</option>
+          {#each machines[key] as server (server.machineIdentifier)}
+            <option
+              value={server.machineIdentifier}
+              selected={form.plexID === server.machineIdentifier}
+            >
+              {server.name} ({server.address})
+            </option>
+          {/each}
+        </select>
+      {/if}
       {#if actionOf(field).kind === 'test' && hasChanges}
         <span class="text-sm">Save the settings before you test.</span>
       {:else if result}
