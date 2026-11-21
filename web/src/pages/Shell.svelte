@@ -162,9 +162,10 @@
   }
 </script>
 
-{#if hasMenu || session.loggedIn}
-  <header class={['org-header', hasMenu && 'org-with-menu']}>
-    {#if hasMenu}
+<!-- As in PHP, the bar and the menu stand on every page, the login page of a guest too. -->
+{#if session.launch}
+  <header class={['org-header', 'org-with-menu']}>
+    {#if hasMenu || !session.loggedIn}
       <button
         type="button"
         class="org-header-link lg:hidden"
@@ -246,7 +247,7 @@
   </header>
 {/if}
 
-{#if hasMenu}
+{#if hasMenu || !session.loggedIn}
   <aside class={['org-sidebar', menuOpen && 'org-open']}>
     <div class="org-sidebar-head">
       <button
@@ -267,16 +268,22 @@
       {shown}
       onpick={() => (menuOpen = false)}
     />
+    {#if !session.loggedIn}
+      <nav aria-label="Login" class="org-menu">
+        <ul>
+          <li>
+            <a href={PAGES.login} aria-label="Login" onclick={() => (menuOpen = false)}>
+              <i class="oi oi-fontawesome fa-sign-in text-xl" aria-hidden="true"></i>
+              <span class="org-wide truncate">Login</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    {/if}
   </aside>
 {/if}
 
-<div
-  class={[
-    'flex flex-col',
-    hasMenu || session.loggedIn ? 'org-content' : 'fixed inset-0',
-    hasMenu && 'org-with-menu',
-  ]}
->
+<div class={['flex flex-col', 'org-content', (hasMenu || !session.loggedIn) && 'org-with-menu']}>
   {#if session.canManage && session.launch?.settings.misc.checkForUpdate !== false}
     <UpdateNotice update={session.launch?.update} />
   {/if}

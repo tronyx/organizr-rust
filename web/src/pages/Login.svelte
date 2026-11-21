@@ -60,6 +60,27 @@
   }
 
   const title = $derived(session.launch?.appearance.title || 'Organizr');
+
+  /** The small box of PHP's minimal login screen, or PHP's panel on the right. */
+  const minimal = $derived(session.launch?.settings.misc.minimalLoginScreen === true);
+
+  /**
+   * The picture behind the login page: a picture of the media server, one of the
+   * addresses of the setting at random, or the picture of PHP.
+   */
+  const wallpaper = $derived.by(() => {
+    const appearance = session.launch?.appearance;
+    if (appearance?.randomMediaImage) {
+      return appearance.randomMediaImage;
+    }
+    const choices = (appearance?.loginWallpaper ?? '')
+      .split(',')
+      .map((address) => address.trim())
+      .filter((address) => address !== '');
+    return (
+      choices[Math.floor(Math.random() * choices.length)] ?? 'plugins/images/login-register.jpg'
+    );
+  });
   // The picture above the form, when the setting says so. A picture that does not load
   // gives way to the title.
   let logoFailed = $state(false);
@@ -140,9 +161,14 @@
   }
 </script>
 
-<main class="grid min-h-full place-items-center p-4">
-  <div class="flex w-full max-w-sm flex-col items-center gap-8">
-    {#if logo}
+<main
+  class={minimal ? 'grid min-h-full place-items-center p-4' : 'org-login-register'}
+  style:background-image={minimal ? undefined : `url('${wallpaper}')`}
+>
+  <div class={minimal ? 'flex w-full max-w-sm flex-col items-center gap-8' : 'org-login-sidebar'}>
+    {#if !minimal}
+      <!-- PHP shows no picture in its panel. -->
+    {:else if logo}
       <img
         class="max-h-56 max-w-[350px]"
         src={logo}
@@ -152,21 +178,28 @@
     {:else}
       <p class="text-2xl font-normal text-white">{title}</p>
     {/if}
-    <form class="card bg-base-200 w-full shadow-[0_0_10px_rgb(0_0_0/0.6)]" onsubmit={logIn}>
-      <div class="card-body">
-        <h1 class="card-title">Log in</h1>
+    <form
+      class={minimal ? 'card bg-base-200 w-full shadow-[0_0_10px_rgb(0_0_0/0.6)]' : 'org-login-box'}
+      onsubmit={logIn}
+    >
+      <div class="card-body" class:p-0={!minimal}>
+        <h1 class="card-title" class:sr-only={!minimal}>Log in</h1>
         <fieldset class="fieldset">
-          <label class="label" for="login-username">User name or e-mail address</label>
+          <label class="label" class:sr-only={!minimal} for="login-username">
+            User name or e-mail address
+          </label>
           <input
             id="login-username"
+            placeholder={minimal ? undefined : 'Username'}
             class="input w-full"
             bind:value={username}
             required={tokenOfPlex === null}
             autocomplete="username"
           />
-          <label class="label" for="login-password">Password</label>
+          <label class="label" class:sr-only={!minimal} for="login-password">Password</label>
           <input
             id="login-password"
+            placeholder={minimal ? undefined : 'Password'}
             class="input w-full"
             type="password"
             bind:value={password}
@@ -203,7 +236,7 @@
         {/if}
 
         <div class="card-actions">
-          <button class="btn btn-primary w-full" disabled={busy}>
+          <button class="btn btn-primary w-full" class:org-login-button={!minimal} disabled={busy}>
             {#if busy}<span class="loading loading-spinner loading-sm"></span>{/if}
             Log in
           </button>

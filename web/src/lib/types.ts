@@ -94,6 +94,10 @@ export interface Appearance {
   useLogo?: boolean;
   /** Whether the login page shows its picture and not the title. */
   useLogoLogin?: boolean;
+  /** The addresses of the pictures behind the login page, with commas between them. */
+  loginWallpaper?: string;
+  /** A picture of the media server for the login page, when PHP chose one. */
+  randomMediaImage?: string | false;
   /** The colours of the settings "Colors & Themes". An empty text means the colour of the theme. */
   headerColor?: string;
   headerTextColor?: string;
@@ -170,6 +174,8 @@ export interface Launch {
       uuid: string;
       /** Whether Admins and Co-Admins hear of a new version. */
       checkForUpdate?: boolean;
+      /** Whether the login page is the small box of PHP, and not the panel on the right. */
+      minimalLoginScreen?: boolean;
     };
     ping: {
       /** The level that may ask the server to check tabs, as text. */

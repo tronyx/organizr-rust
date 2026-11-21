@@ -1417,6 +1417,45 @@
     background-color: #707cd2;
   }
 
+  /* The login page of PHP: the wallpaper fills the page under the bar, and the form
+     stands in a dark panel of 400 pixels on the right. */
+  .org-login-register {
+    position: relative;
+    min-height: 100%;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+
+  .org-login-sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(400px, 100%);
+    overflow-y: auto;
+    background: var(--color-base-200);
+  }
+
+  .org-login-box {
+    padding: 50px;
+  }
+
+  .org-login-box .input {
+    height: 38px;
+    border-radius: 4px;
+    background: var(--color-base-200);
+  }
+
+  .org-login-button {
+    height: auto;
+    padding: 10px 16px;
+    border-radius: 3px;
+    font-size: 18px;
+    font-weight: 400;
+    text-transform: uppercase;
+  }
+
   .org-notice {
     padding: 15px 20px;
     border-left: 3px solid var(--color-info);
