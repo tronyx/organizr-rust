@@ -19,7 +19,7 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use organizr_auth::login;
 use organizr_auth::oidc::{
-    self as accounts, OidcAccount, OidcAccountError, OidcLink, OidcLinkError,
+    self as accounts, OidcAccount, OidcAccountError, OidcLink, OidcLinkError, OidcUnlinkError,
 };
 use organizr_auth::secrets::{PREFIX, SecretBox};
 use organizr_domain::{GroupLevel, UserId};
@@ -30,10 +30,11 @@ use organizr_settings::Settings;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
+use crate::api_data::ApiData;
 use crate::caller::{Caller, now_stamp, session_cookie_name};
 use crate::client::Client;
 use crate::cookies::{self, CookieScope, cookie_value};
-use crate::envelope::Envelope;
+use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
 use crate::handlers::login::device_of;
@@ -336,6 +337,42 @@ pub async fn linked(
     Ok(Envelope::success(
         json!({"provider": provider, "name": name}),
     ))
+}
+
+/// `DELETE /oidc/link`: unlinks the account of the session from its provider, with the
+/// password of the account in the field `password`. Only for a person who is logged in,
+/// and only from a page of this site (D-105).
+pub async fn unlink(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    _: FromThisSite,
+    data: ApiData,
+) -> Result<Envelope<NoData>, Refusal> {
+    let Some(user) = caller.user() else {
+        return Err(ApiError::NotAuthorized.into());
+    };
+    let given = data.text("password").unwrap_or_default();
+    if given.is_empty() {
+        return Err(Refusal::unprocessable("Enter the password of the account"));
+    }
+    match accounts::unlink(state.database(), user.authenticated.user.id, &given).await {
+        Ok(_) => Ok(Envelope::success(NoData)
+            .with_message("The account is no longer linked to the provider")),
+        Err(OidcUnlinkError::NotLinked) => {
+            Err(Refusal::conflict("The account is not linked to a provider"))
+        }
+        Err(OidcUnlinkError::WrongPassword) => Err(Refusal::unprocessable(
+            "The password is not the password of the account",
+        )),
+        Err(OidcUnlinkError::NoAccount) => Err(ApiError::NotAuthorized.into()),
+        Err(error) => {
+            tracing::error!(%error, "an account could not be unlinked from its provider");
+            Err(Refusal::Request(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "The account could not be unlinked".to_owned(),
+            ))
+        }
+    }
 }
 
 /// `GET /oidc/{provider}/callback`: where the provider sends the browser back. After a

@@ -19,6 +19,24 @@
   let linked = $state<Linked | null>(null);
   let error = $state<string | null>(null);
   let done = $state<string | null>(null);
+  let password = $state('');
+  let busy = $state(false);
+
+  /** Unlinks the account, with its password, so that it logs in with the password again. */
+  async function unlink(event: SubmitEvent) {
+    event.preventDefault();
+    busy = true;
+    try {
+      const answer = await api('DELETE', 'oidc/link', { password });
+      password = '';
+      await load();
+      done = answer.message ?? 'Your account is no longer linked.';
+    } catch (failure) {
+      error = failureText(failure);
+    } finally {
+      busy = false;
+    }
+  }
 
   async function load() {
     try {
@@ -73,6 +91,27 @@
             Your account is not linked to a provider.
           {/if}
         </p>
+        {#if linked.provider}
+          <form class="flex flex-wrap items-end gap-2" onsubmit={unlink}>
+            <label class="form-control">
+              <span class="label-text">Password of this account</span>
+              <input
+                class="input input-bordered input-sm"
+                type="password"
+                autocomplete="current-password"
+                required
+                bind:value={password}
+              />
+            </label>
+            <button class="btn btn-outline btn-error btn-sm" type="submit" disabled={busy}>
+              Unlink from {linked.name ?? linked.provider}
+            </button>
+          </form>
+          <p class="text-xs opacity-70">
+            After the unlink you log in with this password. An account that the provider made has a
+            random password: reset it by e-mail first.
+          </p>
+        {/if}
         <div class="card-actions">
           {#each providers.filter((provider) => provider.key !== linked?.provider) as provider (provider.key)}
             <a class="btn btn-secondary" href={linkAddress(provider.key)}>

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { linkAddress, linkedNotice } from '../lib/oidc';
@@ -53,6 +53,36 @@ describe('the links to providers on the account page', () => {
     const button = screen.getByRole('link', { name: 'Link to Company login' });
     expect(button.getAttribute('href')).toMatch(/\/api\/v2\/oidc\/keycloak\/link$/);
     expect(screen.getByRole('link', { name: 'Link to PocketID' })).toBeInTheDocument();
+  });
+
+  it('unlinks the account with its password', async () => {
+    let linkedTo: string | null = 'keycloak';
+    const sent = await logIn(true, {
+      'GET oidc/providers': PROVIDERS,
+      'GET oidc/link': () => ({
+        data: { provider: linkedTo, name: linkedTo ? 'Company login' : null },
+      }),
+      'DELETE oidc/link': () => {
+        linkedTo = null;
+        return { message: 'The account is no longer linked to the provider' };
+      },
+    });
+    render(OidcLinks);
+
+    const field = await screen.findByLabelText('Password of this account');
+    await fireEvent.input(field, { target: { value: 'my password' } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Unlink from Company login' }));
+
+    expect(await screen.findByText('Your account is not linked to a provider.')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe(
+        'The account is no longer linked to the provider',
+      ),
+    );
+    expect(sent.find((request) => request.method === 'DELETE')?.body).toEqual({
+      password: 'my password',
+    });
+    expect(screen.queryByRole('button', { name: /^Unlink/ })).toBeNull();
   });
 
   it('names the provider of the link, and says when a link just finished', async () => {

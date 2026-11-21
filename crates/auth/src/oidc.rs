@@ -9,6 +9,7 @@ use organizr_domain::{Change, GroupId, GroupLevel, Timestamp, User, UserChanges,
 use thiserror::Error;
 
 use crate::external::PLACEHOLDER_DOMAIN;
+use crate::password::{self, PasswordCheck};
 use crate::recovery::{self, RecoveryError};
 use crate::registration::{self, NewAccount, RegistrationError};
 
@@ -136,6 +137,58 @@ pub async fn link(database: &Database, link: OidcLink<'_>) -> Result<User, OidcL
         .await?;
     tracing::info!(user = %user.username, provider = link.provider, subject = link.subject, "a user linked the account to the provider");
     Ok(user)
+}
+
+/// Why an account could not be unlinked from its provider.
+#[derive(Debug, Error)]
+pub enum OidcUnlinkError {
+    /// The account of the session is gone.
+    #[error("the account of the session does not exist")]
+    NoAccount,
+    /// The account is not linked to a provider.
+    #[error("the account is not linked to a provider")]
+    NotLinked,
+    /// The password is not the password of the account.
+    #[error("the password is wrong")]
+    WrongPassword,
+    /// The check of the password could not run.
+    #[error("the password could not be checked")]
+    Task,
+    /// The database failed.
+    #[error(transparent)]
+    Database(#[from] DbError),
+}
+
+/// Unlinks an account from its provider, so that it logs in with its password again.
+/// The password of the account must be given: it proves that the person can still log
+/// in once the link is gone. An account that a login of the provider made has a random
+/// password, which the person sets first, for example with a reset by e-mail (D-105).
+pub async fn unlink(
+    database: &Database,
+    user: UserId,
+    given: &str,
+) -> Result<User, OidcUnlinkError> {
+    let users = database.users();
+    let account = users.find(user).await?.ok_or(OidcUnlinkError::NoAccount)?;
+    let login = users
+        .login_of(user)
+        .await?
+        .ok_or(OidcUnlinkError::NoAccount)?;
+    if login.auth_service != SERVICE {
+        return Err(OidcUnlinkError::NotLinked);
+    }
+    let (candidate, stored) = (given.to_owned(), account.password_hash.clone());
+    let check = tokio::task::spawn_blocking(move || password::verify(&candidate, &stored))
+        .await
+        .map_err(|_| OidcUnlinkError::Task)?;
+    if !matches!(check, PasswordCheck::Correct { .. }) {
+        return Err(OidcUnlinkError::WrongPassword);
+    }
+    users
+        .set_auth_service(account.id, "internal", None, None)
+        .await?;
+    tracing::info!(user = %account.username, provider = ?login.auth_provider, "a user unlinked the account from the provider");
+    Ok(account)
 }
 
 /// The provider that an account is linked to, when it is linked to one.

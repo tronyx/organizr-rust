@@ -92,6 +92,59 @@ async fn only_the_admin_uploads_a_certificate() {
     .await;
 }
 
+/// `GET /certificate/custom` says to the Admin whether a certificate is in use, as the
+/// settings page of PHP does, without the place of the file (D-104).
+#[tokio::test]
+async fn admin_sees_whether_a_certificate_is_in_use() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let app = app_in(database, folder.path(), &[]);
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+        let admin = seed::logged_in(database, &app, "ada", 0).await;
+        let status = async |cookie: &str| {
+            send(
+                &app,
+                request(
+                    "GET",
+                    "/api/v2/certificate/custom",
+                    &[("cookie", cookie)],
+                    "",
+                ),
+            )
+            .await
+        };
+
+        let refused = status(&co_admin).await;
+        assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+        let none = status(&admin).await;
+        assert_eq!(none.status, StatusCode::OK, "{}", none.body);
+        assert_eq!(none.data(), json!({"loaded": false, "certificates": 0}));
+
+        let answer = upload(&app, &[("cookie", &admin)], "ca.pem", AUTHORITY.as_bytes()).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let loaded = status(&admin).await;
+        assert_eq!(loaded.data(), json!({"loaded": true, "certificates": 1}));
+        assert!(!loaded.body.contains("custom.pem"), "{}", loaded.body);
+
+        // A certificate that the server read when it started counts as well.
+        let again = app_in(database, folder.path(), &[]);
+        let admin = seed::logged_in(database, &again, "ada2", 0).await;
+        let answer = send(
+            &again,
+            request(
+                "GET",
+                "/api/v2/certificate/custom",
+                &[("cookie", &admin)],
+                "",
+            ),
+        )
+        .await;
+        assert_eq!(answer.data(), json!({"loaded": true, "certificates": 1}));
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn only_the_certificate_of_an_authority_is_taken() {
     on_each_engine(async |database| {

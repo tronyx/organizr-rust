@@ -75,6 +75,31 @@ async fn read_file(mut parts: Multipart) -> Result<Option<(String, Vec<u8>)>, Re
     }
 }
 
+/// `GET /certificate/custom`: whether the requests trust an uploaded authority, and how
+/// many certificates its file holds. Only the Admin asks, as only the Admin uploads. PHP
+/// shows this on its settings page, with the place of the file; the place is left out
+/// here (D-104).
+pub async fn status(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+) -> Result<Envelope<serde_json::Value>, Refusal> {
+    caller.require(GroupLevel::ADMIN)?;
+    let loaded = state
+        .outbound()
+        .is_some_and(organizr_integrations::http::Outbound::has_custom_certificate);
+    let mut certificates = 0;
+    if loaded
+        && let Some(file) = state.custom_certificate_file()
+        && let Ok(text) = tokio::fs::read(&file).await
+    {
+        certificates = CustomCertificate::parse(&text).map_or(0, |certificate| certificate.count());
+    }
+    Ok(Envelope::success(serde_json::json!({
+        "loaded": loaded,
+        "certificates": certificates,
+    })))
+}
+
 /// `POST /certificate/custom`: stores the certificate of the field `file` and trusts
 /// its authority from now on.
 pub async fn upload(

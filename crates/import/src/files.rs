@@ -7,6 +7,8 @@
 //!   Organizr itself. So each other picture that a record uses, and each other picture
 //!   for tabs, is copied to the uploaded pictures, and the records point there.
 //! - The custom favicon files (`data/favicon`) are copied as they are.
+//! - The custom certificate of an authority (`data/cert/custom.pem`) is copied to
+//!   `cert/custom.pem`, where the server reads it, unless it holds a private key.
 //! - PHP files that a person added (custom pages, routes and plugins) are listed in the
 //!   report. They are never copied and never run.
 
@@ -34,9 +36,22 @@ const UPLOADED: &str = "userTabs";
 /// The folder of the custom favicon files, in the PHP install and in the data folder.
 const FAVICON: &str = "favicon";
 
+/// The folder of the custom certificate, in the PHP install and in the data folder.
+const CERTIFICATE_FOLDER: &str = "cert";
+
+/// The name of the custom certificate in its folder.
+const CERTIFICATE_FILE: &str = "custom.pem";
+
 /// The folders of `data` that an import reads or leaves out on purpose.
-const KNOWN_DATA_FOLDERS: [&str; 7] = [
-    "cache", "config", FAVICON, "pages", "plugins", "routes", UPLOADED,
+const KNOWN_DATA_FOLDERS: [&str; 8] = [
+    "cache",
+    CERTIFICATE_FOLDER,
+    "config",
+    FAVICON,
+    "pages",
+    "plugins",
+    "routes",
+    UPLOADED,
 ];
 
 /// One file to copy.
@@ -230,6 +245,8 @@ pub fn plan_files(
         to: Path::new(FAVICON).join(name),
     }));
 
+    copies.extend(custom_certificate(web_root, report));
+
     for folder in ["pages", "plugins", "routes"] {
         php_files_in(
             web_root,
@@ -240,6 +257,41 @@ pub fn plan_files(
     report.php_files.sort();
     other_data_folders(web_root, database_file, report);
     copies
+}
+
+/// The copy of the custom certificate of the PHP install, if it has one. The server
+/// checks the certificate when it starts, and its log says when it does not use it. A
+/// file that holds a private key is not copied, and the report says so.
+fn custom_certificate(web_root: &Path, report: &mut Report) -> Option<FileCopy> {
+    let from = web_root
+        .join("data")
+        .join(CERTIFICATE_FOLDER)
+        .join(CERTIFICATE_FILE);
+    if !from.is_file() {
+        return None;
+    }
+    let name = format!("data/{CERTIFICATE_FOLDER}/{CERTIFICATE_FILE}");
+    let Ok(text) = std::fs::read(&from) else {
+        report.notes.push(format!(
+            "The custom certificate {name} of the PHP install cannot be read, so it is not copied."
+        ));
+        return None;
+    };
+    if text
+        .windows(b"PRIVATE KEY-----".len())
+        .any(|part| part == b"PRIVATE KEY-----")
+    {
+        report.notes.push(format!(
+            "The custom certificate {name} of the PHP install holds a private key, so it is \
+             not copied. Upload the certificate of the authority alone in Settings, General."
+        ));
+        return None;
+    }
+    report.other_files += 1;
+    Some(FileCopy {
+        from,
+        to: Path::new(CERTIFICATE_FOLDER).join(CERTIFICATE_FILE),
+    })
 }
 
 /// Adds the PHP files of a folder and of the folders in it, by their path from the

@@ -1092,6 +1092,7 @@ async fn legacy_with_files() -> Legacy {
         "data/userTabs/second.JPG",
         "data/favicon/favicon.ico",
         "data/favicon/site.webmanifest",
+        "data/cert/custom.pem",
         "data/cache/poster.jpg",
         "data/pages/custom.php",
         "data/pages/help.html",
@@ -1129,6 +1130,7 @@ async fn pictures_and_files_of_the_install_are_copied() {
         assert_eq!(
             files_below(&data_dir),
             [
+                "cert/custom.pem",
                 "favicon/favicon.ico",
                 "favicon/site.webmanifest",
                 "userTabs/custom.png",
@@ -1199,7 +1201,7 @@ async fn pictures_and_files_of_the_install_are_copied() {
             Some(json!("plugins/images/organizr/organizr-logo-h.png"))
         );
 
-        assert_eq!((report.pictures, report.other_files), (9, 2));
+        assert_eq!((report.pictures, report.other_files), (9, 3));
         assert_eq!(
             report.php_files,
             ["data/pages/custom.php", "data/routes/more/extra.PHP"]
@@ -1223,6 +1225,46 @@ async fn pictures_and_files_of_the_install_are_copied() {
     .await;
 }
 
+/// The custom certificate of PHP goes to `cert/custom.pem`, where the server reads it.
+/// A file that holds a private key is not copied, so that no key comes into the data
+/// folder.
+#[tokio::test]
+async fn custom_certificate_is_copied_unless_it_holds_a_private_key() {
+    on_each_engine(async |database| {
+        let legacy = Legacy::build(CONFIG, "data/parity-db/parity.db", OWN_PICTURES).await;
+        let file = legacy.root().join("data/cert/custom.pem");
+        std::fs::create_dir_all(file.parent().expect("the file is in a folder"))
+            .expect("the folder can be made");
+        std::fs::write(
+            &file,
+            concat!(
+                "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n",
+                "-----BEGIN PRIVATE KEY-----\nMIIE\n-----END PRIVATE KEY-----\n",
+            ),
+        )
+        .expect("the file can be written");
+        let data_dir = legacy.data_dir();
+
+        let report = run(legacy.request(), database, &seed::secrets(), &data_dir)
+            .await
+            .expect("the import runs");
+
+        assert!(!data_dir.join("cert/custom.pem").exists());
+        assert_eq!(report.other_files, 0);
+        assert!(
+            report.notes.contains(
+                &"The custom certificate data/cert/custom.pem of the PHP install holds a \
+                  private key, so it is not copied. Upload the certificate of the authority \
+                  alone in Settings, General."
+                    .to_owned()
+            ),
+            "{:?}",
+            report.notes
+        );
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn dry_run_counts_the_files_and_copies_none() {
     let legacy = legacy_with_files().await;
@@ -1232,7 +1274,7 @@ async fn dry_run_counts_the_files_and_copies_none() {
         .await
         .expect("the dry run works");
 
-    assert_eq!((report.pictures, report.other_files), (9, 2));
+    assert_eq!((report.pictures, report.other_files), (9, 3));
     assert_eq!(report.php_files.len(), 2);
     assert_eq!(report.notes.len(), 4);
     assert_eq!(files_below(legacy.root()), before);

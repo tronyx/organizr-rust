@@ -64,7 +64,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/login", &post(login::login))?
         .route("/logout", &get(logout::logout))?
         .route("/oidc/providers", &get(oidc::providers))?
-        .route("/oidc/link", &get(oidc::linked))?
+        .route("/oidc/link", &get(oidc::linked).delete(oidc::unlink))?
         .route("/oidc/{provider}/link", &get(oidc::link))?
         .route("/oidc/{provider}/authorize", &get(oidc::authorize))?
         .route("/oidc/{provider}/callback", &get(oidc::callback))?
@@ -573,7 +573,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/appearance/custom.js", &get(themes::custom_js))?
         .route(
             "/certificate/custom",
-            &post(certificate::upload.layer(DefaultBodyLimit::max(certificate::LARGEST + UPLOAD_OVERHEAD))),
+            &get(certificate::status).post(certificate::upload.layer(DefaultBodyLimit::max(certificate::LARGEST + UPLOAD_OVERHEAD))),
         )?
         .route("/database/journal", &get(database::mode))?
         .route("/database/journal/{option}", &put(database::set_mode))?

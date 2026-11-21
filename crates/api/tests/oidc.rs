@@ -1067,6 +1067,72 @@ async fn admin_links_the_own_account_and_then_logs_in_through_the_provider() {
     .await;
 }
 
+/// `DELETE /oidc/link` unlinks the account of the session, with its password (D-105).
+#[tokio::test]
+async fn linked_account_is_unlinked_with_its_password() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        person(&provider, "chief", "chief@provider.example.com");
+        let app = app(database, &provider, &[]);
+        let session = seed::logged_in(database, &app, "chief", 0).await;
+        let unlink = async |password: &str| {
+            call(
+                &app,
+                As::User(&session),
+                "DELETE",
+                "/oidc/link",
+                Some(json!({ "password": password })),
+            )
+            .await
+        };
+
+        // An account that is not linked has nothing to unlink.
+        let free = unlink(seed::USER_PASSWORD).await;
+        assert_eq!(free.status, StatusCode::CONFLICT, "{}", free.body);
+        assert_eq!(
+            free.message(),
+            json!("The account is not linked to a provider")
+        );
+
+        let (back, cookie) = start_link(&app, &provider, &session).await;
+        let answer = finish_link(&app, &back, &[&cookie, &session]).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        assert_eq!(auth_service(&app, "chief").await, json!("oidc::keycloak"));
+
+        let empty = unlink("").await;
+        assert_eq!(empty.status, StatusCode::UNPROCESSABLE_ENTITY);
+        assert_eq!(empty.message(), json!("Enter the password of the account"));
+        let wrong = unlink("not the password").await;
+        assert_eq!(wrong.status, StatusCode::UNPROCESSABLE_ENTITY);
+        assert_eq!(
+            wrong.message(),
+            json!("The password is not the password of the account")
+        );
+        assert_eq!(auth_service(&app, "chief").await, json!("oidc::keycloak"));
+        let guest = call(
+            &app,
+            As::Guest,
+            "DELETE",
+            "/oidc/link",
+            Some(json!({"password": "x"})),
+        )
+        .await;
+        assert_eq!(guest.status, StatusCode::UNAUTHORIZED);
+
+        let done = unlink(seed::USER_PASSWORD).await;
+        assert_eq!(done.status, StatusCode::OK, "{}", done.body);
+        assert_eq!(
+            done.message(),
+            json!("The account is no longer linked to the provider")
+        );
+        assert_eq!(auth_service(&app, "chief").await, json!("internal"));
+        let linked = call(&app, As::User(&session), "GET", "/oidc/link", None).await;
+        assert_eq!(linked.data(), json!({"provider": null, "name": null}));
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn link_is_found_by_the_checked_address_when_the_names_differ() {
     on_each_engine(async |database| {

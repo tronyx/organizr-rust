@@ -85,6 +85,14 @@ describe('CustomCertificate', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (_address: string, init: RequestInit = {}) => {
+        if ((init.method ?? 'GET') === 'GET') {
+          const loaded = field !== null;
+          const status = { loaded, certificates: loaded ? 1 : 0 };
+          return new Response(
+            JSON.stringify({ response: { result: 'success', message: null, data: status } }),
+            { status: 200 },
+          );
+        }
         field = (init.body as FormData).get('file');
         const envelope = {
           response: { result: 'success', message: 'ca.pem has been uploaded', data: null },
@@ -94,6 +102,9 @@ describe('CustomCertificate', () => {
     );
     const ondone = vi.fn();
     render(CustomCertificate, { ondone });
+    expect((await screen.findByTestId('certificate-status')).textContent).toContain(
+      'Custom Certificate not found - please upload below',
+    );
     const file = new File(['-----BEGIN CERTIFICATE-----'], 'ca.pem');
     await fireEvent.change(screen.getByLabelText('Certificate file'), {
       target: { files: [file] },
@@ -103,6 +114,13 @@ describe('CustomCertificate', () => {
 
     await vi.waitFor(() => expect(ondone).toHaveBeenCalledWith('ca.pem has been uploaded'));
     expect((field as File).name).toBe('ca.pem');
+    // The status is loaded again after the upload.
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('certificate-status').textContent).toContain(
+        'Custom Certificate Loaded',
+      ),
+    );
+    expect(screen.getByTestId('certificate-status').textContent).toContain('(1 certificate)');
   });
 
   it('asks for a file, and shows why the server refused one', async () => {
