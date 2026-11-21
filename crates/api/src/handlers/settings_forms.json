@@ -4975,6 +4975,15 @@
        "$config": "customHTML01"
       },
       "mode": "html"
+     },
+     {
+      "type": "switch",
+      "label": "Trust custom HTML 01: show it as a page of this site",
+      "help": "Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.",
+      "name": "homepageCustomHTML01Trusted",
+      "value": {
+       "$config": "homepageCustomHTML01Trusted"
+      }
      }
     ],
     "Custom HTML 02": [
@@ -5006,6 +5015,15 @@
        "$config": "customHTML02"
       },
       "mode": "html"
+     },
+     {
+      "type": "switch",
+      "label": "Trust custom HTML 02: show it as a page of this site",
+      "help": "Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.",
+      "name": "homepageCustomHTML02Trusted",
+      "value": {
+       "$config": "homepageCustomHTML02Trusted"
+      }
      }
     ],
     "Custom HTML 03": [
@@ -5037,6 +5055,15 @@
        "$config": "customHTML03"
       },
       "mode": "html"
+     },
+     {
+      "type": "switch",
+      "label": "Trust custom HTML 03: show it as a page of this site",
+      "help": "Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.",
+      "name": "homepageCustomHTML03Trusted",
+      "value": {
+       "$config": "homepageCustomHTML03Trusted"
+      }
      }
     ],
     "Custom HTML 04": [
@@ -5068,6 +5095,15 @@
        "$config": "customHTML04"
       },
       "mode": "html"
+     },
+     {
+      "type": "switch",
+      "label": "Trust custom HTML 04: show it as a page of this site",
+      "help": "Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.",
+      "name": "homepageCustomHTML04Trusted",
+      "value": {
+       "$config": "homepageCustomHTML04Trusted"
+      }
      }
     ],
     "Custom HTML 05": [
@@ -5099,6 +5135,15 @@
        "$config": "customHTML05"
       },
       "mode": "html"
+     },
+     {
+      "type": "switch",
+      "label": "Trust custom HTML 05: show it as a page of this site",
+      "help": "Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.",
+      "name": "homepageCustomHTML05Trusted",
+      "value": {
+       "$config": "homepageCustomHTML05Trusted"
+      }
      }
     ],
     "Custom HTML 06": [
@@ -5130,6 +5175,15 @@
        "$config": "customHTML06"
       },
       "mode": "html"
+     },
+     {
+      "type": "switch",
+      "label": "Trust custom HTML 06: show it as a page of this site",
+      "help": "Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.",
+      "name": "homepageCustomHTML06Trusted",
+      "value": {
+       "$config": "homepageCustomHTML06Trusted"
+      }
      }
     ],
     "Custom HTML 07": [
@@ -5161,6 +5215,15 @@
        "$config": "customHTML07"
       },
       "mode": "html"
+     },
+     {
+      "type": "switch",
+      "label": "Trust custom HTML 07: show it as a page of this site",
+      "help": "Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.",
+      "name": "homepageCustomHTML07Trusted",
+      "value": {
+       "$config": "homepageCustomHTML07Trusted"
+      }
      }
     ],
     "Custom HTML 08": [
@@ -5192,6 +5255,15 @@
        "$config": "customHTML08"
       },
       "mode": "html"
+     },
+     {
+      "type": "switch",
+      "label": "Trust custom HTML 08: show it as a page of this site",
+      "help": "Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.",
+      "name": "homepageCustomHTML08Trusted",
+      "value": {
+       "$config": "homepageCustomHTML08Trusted"
+      }
      }
     ]
    }

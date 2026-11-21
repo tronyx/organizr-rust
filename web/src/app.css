@@ -1307,6 +1307,7 @@
 
   .org-plugin-card h3 {
     overflow: hidden;
+    text-transform: uppercase;
     color: #ffffff;
     font-size: 16px;
     font-weight: 500;
@@ -1319,6 +1320,101 @@
     padding-bottom: 10px;
     font-size: 11px;
     text-transform: uppercase;
+  }
+
+  /* The tiles of Homepage Order, with the colours of PHP. */
+  .org-order-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+  }
+
+  .org-order-tile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 5px 10px;
+    border-radius: 3px;
+    background-position: right 10px center;
+    background-repeat: no-repeat;
+    background-size: 30px;
+    color: #ffffff;
+  }
+
+  .org-order-tile.org-faded {
+    opacity: 0.4;
+  }
+
+  .org-order-number {
+    min-width: 30px;
+    padding: 2px 6px;
+    border-radius: 9999px;
+    background: var(--color-base-100);
+    text-align: center;
+    font-size: 12px;
+  }
+
+  .org-order-name {
+    flex: 1 1 auto;
+    font-weight: 500;
+  }
+
+  .org-order-moves {
+    display: inline-flex;
+    margin-right: 36px;
+  }
+
+  .org-order-moves button {
+    padding: 2px 4px;
+    cursor: pointer;
+  }
+
+  .org-order-moves button:disabled {
+    opacity: 0.3;
+  }
+
+  .bg-plex {
+    background-color: #e5a00d;
+  }
+  .bg-emby {
+    background-color: #4caf50;
+  }
+  .bg-jellyfin {
+    background-color: #a15dc3;
+  }
+  .bg-sonarr {
+    background-color: #35c5f2;
+  }
+  .bg-radarr {
+    background-color: #8f7128;
+  }
+  .bg-transmission {
+    background-color: #950000;
+  }
+  .bg-nzbget {
+    background-color: #3e8c25;
+  }
+  .bg-sab {
+    background-color: #ffb300;
+  }
+  .bg-deluge {
+    background-color: #425570;
+  }
+  .bg-qbit {
+    background-color: #2f67ba;
+  }
+  .bg-healthchecks {
+    background-color: #56b059;
+  }
+  .bg-bookmarks {
+    background-color: #d90101;
+  }
+  .bg-inverse {
+    background-color: #4c5667;
+  }
+  .bg-primary {
+    background-color: #707cd2;
   }
 
   .org-notice {

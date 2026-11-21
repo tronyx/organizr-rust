@@ -890,10 +890,13 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
   await page.getByRole('tab', { name: 'Homepage Items' }).click();
   await expect(page).toHaveURL(/#\/settings\/homepage$/);
 
-  await page.getByLabel('Show custom HTML 01').check();
+  await page.getByRole('button', { name: 'Settings of CustomHTML' }).click();
+  const item = page.getByRole('dialog', { name: 'CustomHTML' });
+  await item.getByRole('tab', { name: 'Custom HTML 01' }).click();
+  await item.getByLabel('Enable', { exact: true }).check();
   // The script tries to read the cookies of Organizr, which hold the session.
-  await page
-    .getByLabel('HTML of item 01')
+  await item
+    .getByLabel('Custom HTML Code')
     .fill(
       '<p>Hello from custom HTML</p><p id="cookies"></p>' +
         '<div style="height: 400px"></div>' +
@@ -901,8 +904,7 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
         '<script>var seen; try { seen = "cookies: " + document.cookie; } catch (e) { seen = "no cookies for this frame"; }' +
         ' document.getElementById("cookies").textContent = seen;</script>',
     );
-  await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  await saveSettings(page);
 
   await page.goto('./#Homepage');
   await page.reload();

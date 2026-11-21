@@ -1,4 +1,6 @@
+plugins/images/bookmark.png
 plugins/images/categories/unsorted.png
+plugins/images/default_user.png
 plugins/images/groups/admin.png
 plugins/images/groups/b1.png
 plugins/images/groups/b2.png
@@ -28,6 +30,7 @@ plugins/images/homepage/no-list.png
 plugins/images/homepage/no-np.png
 plugins/images/homepage/no-request.png
 plugins/images/homepage/userWatchStats.png
+plugins/images/login-register.jpg
 plugins/images/organizr/logo-no-border.png
 plugins/images/organizr/logo-purple-square.png
 plugins/images/organizr/logo-wide.png

@@ -6,7 +6,6 @@
   import { api, failureText } from '../../lib/api';
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
-  import { HOMEPAGE } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
   import BackupsEditor from './BackupsEditor.svelte';
   import CategoriesEditor from './CategoriesEditor.svelte';
@@ -16,9 +15,10 @@
   import PluginCards from './PluginCards.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
+  import HomepageItems from './HomepageItems.svelte';
+  import HomepageOrder from './HomepageOrder.svelte';
   import LogViewer from './LogViewer.svelte';
   import LoginSettings from './LoginSettings.svelte';
-  import SettingsForm from './SettingsForm.svelte';
   import TabsEditor from './TabsEditor.svelte';
   import ThemeMarketplace from './ThemeMarketplace.svelte';
   import UpdateCheck from './UpdateCheck.svelte';
@@ -52,6 +52,7 @@
         { section: 'tabs', page: 'tabSettings', label: 'Tabs' },
         { section: 'categories', page: 'categorySettings', label: 'Categories' },
         { section: 'homepage', page: 'homepageSettings', label: 'Homepage Items' },
+        { section: 'homepage-order', page: 'homepageOrderSettings', label: 'Homepage Order' },
       ],
     },
     {
@@ -193,7 +194,9 @@
     {:else if section === 'login'}
       <LoginSettings ondone={(message) => (done = message)} />
     {:else if section === 'homepage'}
-      <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
+      <HomepageItems ondone={(message) => (done = message)} />
+    {:else if section === 'homepage-order'}
+      <HomepageOrder ondone={(message) => (done = message)} />
     {:else if section === 'backups'}
       <BackupsEditor ondone={(message) => (done = message)} />
     {:else if section === 'logs'}

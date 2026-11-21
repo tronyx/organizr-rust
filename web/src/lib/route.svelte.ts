@@ -16,6 +16,7 @@ export type SettingsSection =
   | 'import'
   | 'login'
   | 'homepage'
+  | 'homepage-order'
   | 'plugins'
   | 'plugins-inactive'
   | 'plugin-settings'
@@ -62,6 +63,7 @@ export const PAGES = {
   importUserSettings: '#/settings/import',
   loginSettings: '#/settings/login',
   homepageSettings: '#/settings/homepage',
+  homepageOrderSettings: '#/settings/homepage/order',
   pluginSettings: '#/settings/plugins',
   inactivePluginSettings: '#/settings/plugins/inactive',
   pluginMarketplaceSettings: '#/settings/plugins/settings',
@@ -134,6 +136,8 @@ export function parseRoute(hash: string): Route {
       return { page: 'settings', section: 'updates' };
     case '/settings/homepage':
       return { page: 'settings', section: 'homepage' };
+    case '/settings/homepage/order':
+      return { page: 'settings', section: 'homepage-order' };
     case '/settings/plugins':
     case '/settings/mail':
       return { page: 'settings', section: 'plugins' };
