@@ -3,6 +3,7 @@
   import { api, failureText } from '../../lib/api';
   import { itemData } from '../../lib/itemData.svelte';
   import { session } from '../../lib/session.svelte';
+  import QueueTabs from './QueueTabs.svelte';
 
   interface Slot {
     nzo_id: string;
@@ -71,92 +72,88 @@
 {#if item.error}
   <div role="alert" class="alert alert-error"><span>SABnzbd: {item.error}</span></div>
 {:else if item.data}
-  <div class="mb-2 flex flex-wrap items-center gap-2">
-    <h2 class="text-lg font-semibold">
-      Downloads of SABnzbd <span class="badge badge-info">{slots.length}</span>
-    </h2>
-    {#if queue?.speed}
-      <span class="text-sm opacity-70">{queue.speed}B/s</span>
-    {/if}
-    {#if session.canManage && queue}
-      <button
-        type="button"
-        class="btn btn-sm ml-auto"
-        disabled={busy}
-        onclick={() => change(queue.paused ? 'resume' : 'pause', 'main')}
-      >
-        {queue.paused ? 'Resume all' : 'Pause all'}
-      </button>
-    {/if}
-  </div>
+  <h2 class="sr-only">Downloads of SABnzbd: {slots.length}</h2>
   {#if error}
     <div role="alert" class="alert alert-error mb-2"><span>{error}</span></div>
   {/if}
   {#if !content}
     <p class="text-sm">SABnzbd gave no answer. Look at its address and its API key.</p>
-  {:else if slots.length === 0}
-    <p class="text-sm">The queue is empty.</p>
   {:else}
-    <div class="overflow-x-auto">
-      <table class="table-sm table" aria-label="Downloads of SABnzbd">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">State</th>
-            <th scope="col">Done</th>
-            <th scope="col">Time left</th>
-            {#if session.canManage}
-              <th scope="col"><span class="sr-only">Actions</span></th>
-            {/if}
-          </tr>
-        </thead>
-        <tbody>
-          {#each slots as slot (slot.nzo_id)}
-            {@const percent = Number(slot.percentage) || 0}
-            {@const paused = slot.status === 'Paused'}
-            <tr>
-              <td>{slot.filename ?? ''}</td>
-              <td>{slot.status ?? ''}</td>
-              <td>
-                <progress
-                  class="progress w-24"
-                  value={percent}
-                  max="100"
-                  aria-label="{percent} percent of {slot.filename ?? 'the download'}"
-                ></progress>
-                {percent} %
-              </td>
-              <td>{slot.timeleft ?? ''}</td>
-              {#if session.canManage}
-                <td>
-                  <button
-                    type="button"
-                    class="btn btn-ghost btn-xs"
-                    disabled={busy}
-                    aria-label="{paused ? 'Resume' : 'Pause'} {slot.filename ?? 'the download'}"
-                    onclick={() => change(paused ? 'resume' : 'pause', slot.nzo_id)}
-                  >
-                    {paused ? 'Resume' : 'Pause'}
-                  </button>
-                </td>
-              {/if}
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
-  {/if}
-  {#if done.length > 0}
-    <details class="mt-2">
-      <summary class="cursor-pointer text-sm">The last {done.length} downloads</summary>
-      <ul class="mt-1 text-sm" aria-label="Last downloads of SABnzbd">
-        {#each done as one, index (one.nzo_id ?? index)}
-          <li class="flex justify-between gap-2">
-            <span class="truncate">{one.name ?? ''}</span>
-            <span class="opacity-70">{one.status ?? ''} {one.size ?? ''}</span>
-          </li>
-        {/each}
-      </ul>
-    </details>
+    <QueueTabs
+      name="SABnzbd"
+      paused={session.canManage && queue ? (queue.paused ?? false) : null}
+      {busy}
+      onpause={() => change(queue?.paused ? 'resume' : 'pause', 'main')}
+    >
+      {#snippet queuePart()}
+        {#if slots.length === 0}
+          <p class="org-queue-empty">Nothing in queue</p>
+        {:else}
+          <div class="overflow-x-auto">
+            <table class="table-sm table" aria-label="Downloads of SABnzbd">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">State</th>
+                  <th scope="col">Done</th>
+                  <th scope="col">Time left</th>
+                  {#if session.canManage}
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                  {/if}
+                </tr>
+              </thead>
+              <tbody>
+                {#each slots as slot (slot.nzo_id)}
+                  {@const percent = Number(slot.percentage) || 0}
+                  {@const paused = slot.status === 'Paused'}
+                  <tr>
+                    <td>{slot.filename ?? ''}</td>
+                    <td>{slot.status ?? ''}</td>
+                    <td>
+                      <progress
+                        class="progress w-24"
+                        value={percent}
+                        max="100"
+                        aria-label="{percent} percent of {slot.filename ?? 'the download'}"
+                      ></progress>
+                      {percent} %
+                    </td>
+                    <td>{slot.timeleft ?? ''}</td>
+                    {#if session.canManage}
+                      <td>
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-xs"
+                          disabled={busy}
+                          aria-label="{paused ? 'Resume' : 'Pause'} {slot.filename ??
+                            'the download'}"
+                          onclick={() => change(paused ? 'resume' : 'pause', slot.nzo_id)}
+                        >
+                          {paused ? 'Resume' : 'Pause'}
+                        </button>
+                      </td>
+                    {/if}
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      {/snippet}
+      {#snippet historyPart()}
+        {#if done.length === 0}
+          <p class="org-queue-empty">Nothing in history</p>
+        {:else}
+          <ul class="text-sm" aria-label="Last downloads of SABnzbd">
+            {#each done as one, index (one.nzo_id ?? index)}
+              <li class="flex justify-between gap-2 px-4 py-2">
+                <span class="truncate">{one.name ?? ''}</span>
+                <span class="opacity-70">{one.status ?? ''} {one.size ?? ''}</span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      {/snippet}
+    </QueueTabs>
   {/if}
 {/if}

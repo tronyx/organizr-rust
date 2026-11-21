@@ -71,7 +71,7 @@
     Downloads of {name} <span class="badge badge-info">{downloads.length}</span>
   </h2>
   {#if downloads.length === 0}
-    <p class="text-sm">The queue is empty.</p>
+    <p class="org-queue-empty">Nothing in queue</p>
   {:else}
     <div class="overflow-x-auto">
       <table class="table-sm table" aria-label="Downloads of {name}">

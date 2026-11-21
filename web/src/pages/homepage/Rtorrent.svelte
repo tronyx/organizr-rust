@@ -52,7 +52,7 @@
   {#if content === null}
     <p class="text-sm">rTorrent gave no answer. Look at its address and its login.</p>
   {:else if torrents.length === 0}
-    <p class="text-sm">There are no torrents to show.</p>
+    <p class="org-queue-empty">Nothing in queue</p>
   {:else}
     <div class="overflow-x-auto">
       <table class="table-sm table" aria-label="Torrents of rTorrent">

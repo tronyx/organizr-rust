@@ -1833,13 +1833,22 @@
   }
 
   .org-tabs img {
-    width: 31px;
-    height: 31px;
+    width: 40px;
+    height: 40px;
     object-fit: contain;
   }
 
+  /* PHP Organizr puts the number at the top right of the picture. */
+  .org-tabs button:has(.org-tab-count) {
+    position: relative;
+    padding-right: 30px;
+  }
+
   .org-tab-count {
-    padding: 3px 7px;
+    position: absolute;
+    top: 10px;
+    left: 55px;
+    padding: 3px 5px;
     border-radius: 10px;
     background: var(--color-base-100);
     font-size: 12px;
@@ -1928,6 +1937,56 @@
 
   .org-stream-info dt {
     opacity: 0.6;
+  }
+
+  /* The tabs QUEUE and HISTORY of a Usenet downloader, as the custom tabs of PHP. */
+  .org-queue-tabs {
+    display: flex;
+    align-items: center;
+    margin-top: 5px;
+    border-bottom: 1px solid rgb(120 130 140 / 0.13);
+  }
+
+  .org-queue-tabs [role='tablist'] {
+    display: flex;
+  }
+
+  .org-queue-tabs [role='tab'],
+  .org-queue-pause {
+    padding: 10px 15px;
+    font-size: 13px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    cursor: pointer;
+  }
+
+  .org-queue-tabs [role='tab'] i {
+    display: none;
+  }
+
+  .org-queue-tabs [role='tab'][aria-selected='true'] {
+    border-bottom: 2px solid var(--color-info);
+    color: var(--color-info);
+    opacity: 1;
+  }
+
+  .org-queue-empty {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  @media (max-width: 767px) {
+    .org-queue-tabs [role='tab'] i {
+      display: inline;
+    }
+
+    .org-queue-tabs [role='tab'] span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
   }
 
   /* The filter menu of a row of posters, as the dropdown of PHP Organizr. */

@@ -72,7 +72,7 @@
     Torrents of qBittorrent <span class="badge badge-info">{torrents.length}</span>
   </h2>
   {#if torrents.length === 0}
-    <p class="text-sm">There are no torrents to show.</p>
+    <p class="org-queue-empty">Nothing in queue</p>
   {:else}
     <div class="overflow-x-auto">
       <table class="table-sm table" aria-label="Torrents of qBittorrent">

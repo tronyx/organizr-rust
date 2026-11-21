@@ -195,7 +195,7 @@ describe('ArrQueue', () => {
     });
     render(ArrQueue, { application: 'radarr' });
 
-    expect(await screen.findByText('The queue is empty.')).toBeTruthy();
+    expect(await screen.findByText('Nothing in queue')).toBeTruthy();
     expect(screen.getByRole('heading', { name: /Downloads of Radarr/ })).toBeTruthy();
   });
 });

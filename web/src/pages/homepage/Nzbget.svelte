@@ -1,6 +1,7 @@
 <script lang="ts">
   // The NZBGet item: the downloads in the queue, and the last downloads of the history.
   import { itemData } from '../../lib/itemData.svelte';
+  import QueueTabs from './QueueTabs.svelte';
 
   interface Download {
     NZBName?: string;
@@ -58,65 +59,70 @@
 {#if item.error}
   <div role="alert" class="alert alert-error"><span>NZBGet: {item.error}</span></div>
 {:else if item.data}
-  <h2 class="mb-2 text-lg font-semibold">
-    Downloads of NZBGet <span class="badge badge-info">{queue.length}</span>
-  </h2>
+  <h2 class="sr-only">Downloads of NZBGet: {queue.length}</h2>
   {#if content === null}
     <p class="text-sm">NZBGet gave no answer. Look at its address, user name and password.</p>
   {:else}
-    {#if queue.length === 0}
-      <p class="text-sm">The queue is empty.</p>
-    {:else}
-      <div class="overflow-x-auto">
-        <table class="table-sm table" aria-label="Queue of NZBGet">
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">State</th>
-              <th scope="col">Done</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each queue as download, index (index)}
-              <tr>
-                <td>{download.NZBName ?? ''}</td>
-                <td>{statusText(download.Status)}</td>
-                <td>
-                  <progress
-                    class="progress w-24"
-                    value={percentOf(download)}
-                    max="100"
-                    aria-label="{percentOf(download)} percent of {download.NZBName ??
-                      'the download'}"
-                  ></progress>
-                  {percentOf(download)} %
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    {/if}
-    {#if history.length > 0}
-      <h3 class="mt-3 font-medium">History</h3>
-      <div class="overflow-x-auto">
-        <table class="table-sm table" aria-label="History of NZBGet">
-          <thead>
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Result</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each history as done, index (index)}
-              <tr>
-                <td>{done.Name ?? ''}</td>
-                <td>{statusText(done.Status)}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    {/if}
+    <QueueTabs name="NZBGet">
+      {#snippet queuePart()}
+        {#if queue.length === 0}
+          <p class="org-queue-empty">Nothing in queue</p>
+        {:else}
+          <div class="overflow-x-auto">
+            <table class="table-sm table" aria-label="Queue of NZBGet">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">State</th>
+                  <th scope="col">Done</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each queue as download, index (index)}
+                  <tr>
+                    <td>{download.NZBName ?? ''}</td>
+                    <td>{statusText(download.Status)}</td>
+                    <td>
+                      <progress
+                        class="progress w-24"
+                        value={percentOf(download)}
+                        max="100"
+                        aria-label="{percentOf(download)} percent of {download.NZBName ??
+                          'the download'}"
+                      ></progress>
+                      {percentOf(download)} %
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      {/snippet}
+      {#snippet historyPart()}
+        {#if history.length === 0}
+          <p class="org-queue-empty">Nothing in history</p>
+        {:else}
+          <div class="overflow-x-auto">
+            <table class="table-sm table" aria-label="History of NZBGet">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {#each history as done, index (index)}
+                  <tr>
+                    <td>{done.Name ?? ''}</td>
+                    <td>{statusText(done.Status)}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      {/snippet}
+    </QueueTabs>
   {/if}
 {/if}

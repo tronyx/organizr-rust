@@ -76,12 +76,13 @@ describe('Sabnzbd', () => {
     expect(first.textContent).toContain('The.Show.S02E03');
     expect(first.textContent).toContain('40 %');
     expect(first.textContent).toContain('0:10:00');
-    expect(screen.getByText('1.2 MB/s')).toBeTruthy();
+    // The history is the second tab, as in PHP Organizr.
+    await fireEvent.click(screen.getByRole('tab', { name: 'History' }));
     expect(screen.getByRole('list', { name: 'Last downloads of SABnzbd' }).textContent).toContain(
       'An.Old.Film',
     );
     // A user sees the queue and cannot stop it.
-    expect(screen.queryByRole('button', { name: 'Pause all' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Pause all of SABnzbd' })).toBeNull();
   });
 
   it('lets an Admin pause the queue and resume one download', async () => {
@@ -94,7 +95,7 @@ describe('Sabnzbd', () => {
     });
     render(Sabnzbd);
 
-    await fireEvent.click(await screen.findByRole('button', { name: 'Pause all' }));
+    await fireEvent.click(await screen.findByRole('button', { name: 'Pause all of SABnzbd' }));
     await fireEvent.click(await screen.findByRole('button', { name: 'Resume A.Film' }));
 
     const changes = sent.filter((request) => request.method === 'POST');
@@ -156,7 +157,7 @@ describe('Qbittorrent', () => {
     });
     render(Qbittorrent);
 
-    expect(await screen.findByText('There are no torrents to show.')).toBeTruthy();
+    expect(await screen.findByText('Nothing in queue')).toBeTruthy();
   });
 });
 
@@ -190,6 +191,7 @@ describe('Nzbget', () => {
     expect(rows[1]?.textContent).toContain('75 %');
     // A download without a size is at the start.
     expect(rows[2]?.textContent).toContain('0 %');
+    await fireEvent.click(screen.getByRole('tab', { name: 'History' }));
     const history = screen.getByRole('table', { name: 'History of NZBGet' });
     expect(history.textContent).toContain('An.Old.Film');
     expect(history.textContent).toContain('Success, all');
@@ -205,7 +207,7 @@ describe('Nzbget', () => {
       'GET homepage/nzbget/queue': { data: { content: { queueItems: { result: [] } } } },
     });
     render(Nzbget);
-    expect(await screen.findByText('The queue is empty.')).toBeTruthy();
+    expect(await screen.findByText('Nothing in queue')).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
   });
 });
@@ -253,7 +255,7 @@ describe('Transmission', () => {
       },
     });
     const { unmount } = render(Transmission);
-    expect(await screen.findByText('There are no torrents to show.')).toBeTruthy();
+    expect(await screen.findByText('Nothing in queue')).toBeTruthy();
     unmount();
 
     stubApi({ 'GET homepage/transmission/queue': { data: { content: false } } });
@@ -302,7 +304,7 @@ describe('Deluge', () => {
       'GET homepage/deluge/queue': { data: { content: { queueItems: [], historyItems: false } } },
     });
     const { unmount } = render(Deluge);
-    expect(await screen.findByText('There are no torrents to show.')).toBeTruthy();
+    expect(await screen.findByText('Nothing in queue')).toBeTruthy();
     unmount();
 
     stubApi({ 'GET homepage/deluge/queue': { status: 500, message: 'Login failed' } });
@@ -363,7 +365,7 @@ describe('Rtorrent', () => {
       'GET homepage/rtorrent/queue': { data: { content: { queueItems: [], historyItems: false } } },
     });
     render(Rtorrent);
-    expect(await screen.findByText('There are no torrents to show.')).toBeTruthy();
+    expect(await screen.findByText('Nothing in queue')).toBeTruthy();
   });
 });
 
@@ -403,7 +405,7 @@ describe('Utorrent', () => {
 
     stubApi({ 'GET homepage/utorrent/queue': { data: { content: { queueItems: [] } } } });
     render(Utorrent);
-    expect(await screen.findByText('There are no torrents to show.')).toBeTruthy();
+    expect(await screen.findByText('Nothing in queue')).toBeTruthy();
   });
 });
 
