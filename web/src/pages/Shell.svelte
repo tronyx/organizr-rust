@@ -32,6 +32,46 @@
 
   const hasMenu = $derived(session.tabs.length > 0);
 
+  /** The switches of the links that PHP adds at the end of the menu. */
+  const links = $derived.by(() => {
+    const menu = session.launch?.settings.menuLink ?? {};
+    return {
+      signout: menu.organizrSignoutMenuLink !== false,
+      github: menu.githubMenuLink !== false,
+      support: menu.organizrSupportMenuLink !== false,
+      docs: menu.organizrDocsMenuLink !== false,
+      feature: menu.organizrFeatureRequestLink !== false,
+    };
+  });
+
+  /** The links of Organizr that PHP shows to Admins and Co-Admins (`menuExtraTabs()`). */
+  const extraLinks = $derived(
+    session.canManage
+      ? [
+          links.github && {
+            name: 'Github Repo',
+            url: 'https://github.com/causefx/organizr',
+            icon: 'oi-fontawesome fa-github',
+          },
+          links.support && {
+            name: 'Organizr Support',
+            url: 'https://organizr.app/support',
+            icon: 'oi-fontawesome fa-life-ring',
+          },
+          links.docs && {
+            name: 'Organizr Docs',
+            url: 'https://docs.organizr.app',
+            icon: 'oi-simpleline icon-docs',
+          },
+          links.feature && {
+            name: 'Feature Request',
+            url: 'https://feature.organizr.app',
+            icon: 'oi-simpleline icon-arrow-up-circle',
+          },
+        ].filter((link) => link !== false)
+      : [],
+  );
+
   // Whether the applications behind the tabs answer. The server is asked at once, and
   // then again and again, as long as the menu has a tab with the check switched on.
   let pings = $state<Record<string, PingResult>>({});
@@ -268,15 +308,32 @@
       {shown}
       onpick={() => (menuOpen = false)}
     />
-    {#if !session.loggedIn}
-      <nav aria-label="Login" class="org-menu">
+    {#if links.signout || extraLinks.length > 0}
+      <nav aria-label="Organizr" class="org-menu org-menu-extras">
         <ul>
-          <li>
-            <a href={PAGES.login} aria-label="Login" onclick={() => (menuOpen = false)}>
-              <i class="oi oi-fontawesome fa-sign-in text-xl" aria-hidden="true"></i>
-              <span class="org-wide truncate">Login</span>
-            </a>
-          </li>
+          {#if links.signout && session.loggedIn}
+            <li>
+              <button type="button" class="w-full" aria-label="Logout" onclick={logOut}>
+                <i class="oi oi-fontawesome fa-sign-out text-xl" aria-hidden="true"></i>
+                <span class="org-wide truncate">Logout</span>
+              </button>
+            </li>
+          {:else if links.signout}
+            <li>
+              <a href={PAGES.login} aria-label="Login/Register" onclick={() => (menuOpen = false)}>
+                <i class="oi oi-materialize mdi-login text-xl" aria-hidden="true"></i>
+                <span class="org-wide truncate">Login/Register</span>
+              </a>
+            </li>
+          {/if}
+          {#each extraLinks as link (link.name)}
+            <li>
+              <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.name}>
+                <i class="oi {link.icon} text-xl" aria-hidden="true"></i>
+                <span class="org-wide truncate">{link.name}</span>
+              </a>
+            </li>
+          {/each}
         </ul>
       </nav>
     {/if}

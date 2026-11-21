@@ -162,6 +162,14 @@ export interface Launch {
         oAuthEnabled: boolean;
       };
     };
+    /** The switches of the links that PHP adds at the end of the menu. */
+    menuLink?: {
+      githubMenuLink?: boolean;
+      organizrSupportMenuLink?: boolean;
+      organizrDocsMenuLink?: boolean;
+      organizrSignoutMenuLink?: boolean;
+      organizrFeatureRequestLink?: boolean;
+    };
     /** The settings of the login page. */
     login?: {
       /** The login with an OpenID Connect provider. */

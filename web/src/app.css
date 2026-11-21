@@ -697,7 +697,8 @@
   }
 
   .org-menu a,
-  .org-menu summary {
+  .org-menu summary,
+  .org-menu button {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -715,6 +716,8 @@
 
   .org-menu a:hover,
   .org-menu a:focus-visible,
+  .org-menu button:hover,
+  .org-menu button:focus-visible,
   .org-menu summary:hover,
   .org-menu summary:focus-visible {
     color: var(--org-sidebar-active, #ffffff);
@@ -1454,6 +1457,11 @@
     font-size: 18px;
     font-weight: 400;
     text-transform: uppercase;
+  }
+
+  /* The links that PHP adds at the end of the menu, after a line. */
+  .org-menu-extras {
+    border-top: 1px solid rgb(120 130 140 / 0.13);
   }
 
   .org-notice {
