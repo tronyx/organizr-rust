@@ -29,10 +29,6 @@ Each difference is in [the list of deviations](deviations.md), with its reason. 
 - **Secrets** are sealed in the database, and the API shows them masked.
 - The page has a strict security policy: it loads nothing from other sites. So the About page shows no news of Organizr.
 
-## Not in this release
-
-- Moving homepage items by dragging: Homepage Order moves them with buttons.
-
 ## Checks
 
 Each image passes the checks in [Releases](releases.md) before it is published.

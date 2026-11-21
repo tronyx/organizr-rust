@@ -1349,6 +1349,30 @@
     opacity: 0.4;
   }
 
+  /* The tiles are dragged, as with the sorting of PHP: by the mouse anywhere on a tile,
+     by the handle on a touch screen, so the page still scrolls elsewhere. */
+  .org-order-tile {
+    cursor: grab;
+  }
+
+  .org-dragging,
+  .org-dragging .org-order-tile {
+    cursor: grabbing;
+    user-select: none;
+  }
+
+  .org-order-tile.org-dragged {
+    outline: 2px dashed #ffffff;
+    outline-offset: -2px;
+    opacity: 0.7;
+  }
+
+  .org-order-handle {
+    padding: 4px;
+    font-size: 16px;
+    touch-action: none;
+  }
+
   .org-order-number {
     min-width: 30px;
     padding: 2px 6px;
