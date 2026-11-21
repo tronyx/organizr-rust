@@ -5,4 +5,4 @@ allow-panic-in-tests = true
 allow-indexing-slicing-in-tests = true
 
 # Names of products that are no code. ".." keeps the names that clippy knows already.
-doc-valid-idents = ["AdGuard", "BreezoMeter", "CouchPotato", "JDownloader", "JellyStat", "LibreSpeed", "NZBGet", "OctoPrint", "PromPage", "SABnzbd", "SickRage", "UniFi", "YouTube", ".."]
+doc-valid-idents = ["AdGuard", "BreezoMeter", "CouchPotato", "JDownloader", "JellyStat", "LibreSpeed", "NZBGet", "OctoPrint", "OpenID", "PocketID", "PromPage", "SABnzbd", "SickRage", "UniFi", "YouTube", ".."]

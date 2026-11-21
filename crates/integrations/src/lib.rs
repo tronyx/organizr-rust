@@ -24,6 +24,7 @@ pub mod media_login;
 pub mod monitorr;
 pub mod netdata;
 pub mod octoprint;
+pub mod oidc;
 pub mod ombi;
 pub mod organizr_app;
 pub mod overseerr;

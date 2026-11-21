@@ -166,6 +166,7 @@ impl Visitor<'_> {
                 "wanDomain": self.stored("wanDomain"),
                 "localAddress": self.stored("localAddress"),
                 "enableLocalAddressForward": self.stored("enableLocalAddressForward"),
+                "oidc": crate::handlers::oidc::login_page(settings),
             },
             "misc": self.miscellaneous(),
             "menuLink": {

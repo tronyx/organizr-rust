@@ -16,6 +16,7 @@ base64.workspace = true
 jiff.workspace = true
 ldap3.workspace = true
 md-5.workspace = true
+openidconnect.workspace = true
 reqwest.workspace = true
 roxmltree.workspace = true
 rustls.workspace = true

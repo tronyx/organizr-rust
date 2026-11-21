@@ -2,6 +2,7 @@
   // The lock screen: the account is logged in, and the pages stay closed until the
   // person enters the password.
   import { api, failureText } from '../lib/api';
+  import { afterLogout, browser } from '../lib/oidc';
   import { PAGES, router } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
 
@@ -29,7 +30,13 @@
 
   function logOut() {
     void act(async () => {
+      const oidc = session.launch?.settings.login?.oidc;
       await api('GET', 'logout');
+      const away = afterLogout(oidc);
+      if (away !== null) {
+        browser.go(away);
+        return;
+      }
       router.go(PAGES.home);
     });
   }

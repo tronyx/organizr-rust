@@ -18,7 +18,7 @@ use crate::handlers::{
     backups, basics, bookmarks, categories, config, connection_tests,
     connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
     homepage, icon, images, invites, ip, launch, lock, log, login, login_backends, logout, mail,
-    media_register, news, pages, ping, plex, register, speed_test, sponsors, tabs, token,
+    media_register, news, oidc, pages, ping, plex, register, speed_test, sponsors, tabs, token,
     two_factor, users, users_import, wizard,
 };
 use crate::picture_cache;
@@ -56,6 +56,10 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/wizard", &post(wizard::wizard))?
         .route("/login", &post(login::login))?
         .route("/logout", &get(logout::logout))?
+        .route("/oidc/providers", &get(oidc::providers))?
+        .route("/oidc/{provider}/authorize", &get(oidc::authorize))?
+        .route("/oidc/{provider}/callback", &get(oidc::callback))?
+        .route("/oidc/{provider}/test", &get(oidc::test))?
         // The PHP router tries `/users/{id}` for the other methods of this fixed path.
         .route(
             "/users/register",

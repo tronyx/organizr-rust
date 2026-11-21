@@ -5,6 +5,7 @@ pub mod external;
 pub mod install;
 pub mod login;
 pub mod login_limit;
+pub mod oidc;
 pub mod password;
 pub mod recovery;
 pub mod registration;

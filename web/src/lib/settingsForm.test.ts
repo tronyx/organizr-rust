@@ -7,6 +7,7 @@ import {
   hasSecret,
   LOGIN,
   MAIL,
+  OIDC,
   SECURE,
   type FieldGroup,
 } from './settingsForm';
@@ -123,7 +124,37 @@ describe('GENERAL and MAIL', () => {
       'plexToken',
       'ombiFallbackPassword',
       'overseerrFallbackPassword',
+      'oidcAuthentikClientSecret',
+      'oidcKeycloakClientSecret',
+      'oidcPocketidClientSecret',
+      'oidcZitadelClientSecret',
     ]);
+  });
+
+  it('group the OpenID Connect login as PHP Organizr does, with a test for each provider', () => {
+    const titles = OIDC.map((group) => group.title);
+    expect(titles).toEqual([
+      'OpenID Connect',
+      'OpenID Connect: Authentik',
+      'OpenID Connect: Keycloak',
+      'OpenID Connect: PocketID',
+      'OpenID Connect: Zitadel',
+    ]);
+    expect(OIDC.map((group) => group.getTest)).toEqual([
+      undefined,
+      'oidc/authentik/test',
+      'oidc/keycloak/test',
+      'oidc/pocketid/test',
+      'oidc/zitadel/test',
+    ]);
+    const keys = OIDC.flatMap((group) => group.fields.map((field) => field.key));
+    expect(keys).toHaveLength(11 + 4 * 7);
+    expect(keys).toContain('oidcGroupMappings');
+    expect(keys).toContain('oidcZitadelGroupClaim');
+    // The login page shows them with the other settings of the login.
+    for (const group of OIDC) {
+      expect(LOGIN).toContain(group);
+    }
   });
 
   it('keep the password of the mail server a secret, and the texts of e-mails long', () => {

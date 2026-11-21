@@ -38,6 +38,34 @@ describe('the connection test of a group of settings', () => {
     ).toBe(true);
   });
 
+  it('asks with GET for a test of a provider of the OpenID Connect login', async () => {
+    const groups: FieldGroup[] = [
+      {
+        title: 'OpenID Connect: Keycloak',
+        getTest: 'oidc/keycloak/test',
+        fields: [{ key: 'oidcKeycloakClientId', label: 'Client ID', kind: 'text' }],
+      },
+    ];
+    const sent = stubApi({
+      'GET config': { data: { oidcKeycloakClientId: 'organizr' } },
+      'GET oidc/keycloak/test': {
+        message: 'OIDC connection successful - Issuer: https://id.example.com/realms/home',
+      },
+    });
+    render(SettingsForm, { groups, ondone: () => {} });
+
+    await fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Test the connection of OpenID Connect: Keycloak',
+      }),
+    );
+
+    expect((await screen.findByRole('status')).textContent).toContain(
+      'Issuer: https://id.example.com/realms/home',
+    );
+    expect(sent.at(-1)).toEqual({ method: 'GET', path: 'oidc/keycloak/test', body: undefined });
+  });
+
   it('has a text of its own when the server sends none', async () => {
     stubApi({ 'GET config': CONFIG, 'POST test/sonarr': {} });
     render(SettingsForm, { groups: GROUPS, ondone: () => {} });

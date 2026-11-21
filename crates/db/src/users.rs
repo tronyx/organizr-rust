@@ -260,6 +260,23 @@ impl<'a> Users<'a> {
         Ok(result.rows_affected > 0)
     }
 
+    /// Sets the service that a user logs in with, and its provider: for example `oidc`
+    /// and `authentik`. Returns whether the user exists.
+    pub async fn set_auth_service(
+        &self,
+        id: UserId,
+        service: &str,
+        provider: Option<&str>,
+    ) -> Result<bool, DbError> {
+        let result = user::Entity::update_many()
+            .col_expr(user::Column::AuthService, Expr::value(service))
+            .col_expr(user::Column::AuthProvider, Expr::value(provider))
+            .filter(user::Column::Id.eq(id.get()))
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected > 0)
+    }
+
     /// Sets or removes the second factor of a user. Returns whether the user exists.
     pub async fn set_two_factor(
         &self,

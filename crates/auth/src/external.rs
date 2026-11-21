@@ -17,7 +17,7 @@ use crate::secrets::plex_token_name;
 
 /// The domain of the address that an account gets when the service names none. The PHP
 /// application uses it for the same purpose.
-const PLACEHOLDER_DOMAIN: &str = "placeholder.eml";
+pub(crate) const PLACEHOLDER_DOMAIN: &str = "placeholder.eml";
 
 /// An account as the other service describes it.
 #[derive(Clone, Copy)]

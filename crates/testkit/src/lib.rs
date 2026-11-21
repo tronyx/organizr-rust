@@ -15,6 +15,7 @@ pub mod engines;
 pub mod homepage_services;
 pub mod http;
 pub mod login_servers;
+pub mod oidc_provider;
 pub mod outbox;
 pub mod replay;
 pub mod seed;

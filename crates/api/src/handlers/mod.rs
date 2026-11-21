@@ -31,6 +31,7 @@ pub mod mail;
 pub mod media_register;
 pub mod news;
 pub mod notice_page;
+pub mod oidc;
 pub mod pages;
 pub mod ping;
 pub mod plex;

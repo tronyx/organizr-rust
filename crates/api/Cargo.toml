@@ -36,6 +36,7 @@ md-5.workspace = true
 serde.workspace = true
 sha2 = { workspace = true, optional = true }
 serde_json.workspace = true
+subtle.workspace = true
 surge-ping.workspace = true
 thiserror.workspace = true
 # The lock that puts changes of the settings in a row, the files of uploaded pictures

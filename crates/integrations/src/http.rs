@@ -28,6 +28,9 @@ pub fn user_agent() -> String {
 pub struct Outbound {
     checking: Client,
     not_checking: Client,
+    /// The same two clients without redirects, for the OpenID Connect login.
+    checking_direct: Client,
+    not_checking_direct: Client,
 }
 
 impl Outbound {
@@ -45,9 +48,12 @@ impl Outbound {
                 .user_agent(user_agent())
                 .connect_timeout(CONNECT_TIMEOUT)
         };
+        let direct = || builder().redirect(reqwest::redirect::Policy::none());
         Ok(Self {
             checking: builder().build()?,
             not_checking: builder().danger_accept_invalid_certs(true).build()?,
+            checking_direct: direct().build()?,
+            not_checking_direct: direct().danger_accept_invalid_certs(true).build()?,
         })
     }
 
@@ -55,6 +61,17 @@ impl Outbound {
     /// service by its address over HTTPS.
     pub fn client_for(&self, url: &str) -> &Client {
         self.client(url, false)
+    }
+
+    /// As [`Outbound::client_for`], with a client that follows no redirect. A provider of
+    /// the OpenID Connect login answers each request itself; a redirect could send the
+    /// request with the code of a login to another place.
+    pub fn direct_client_for(&self, url: &str) -> &Client {
+        if is_address_over_https(url) {
+            &self.not_checking_direct
+        } else {
+            &self.checking_direct
+        }
     }
 
     /// A client for one request to an address that a caller of the API named. It

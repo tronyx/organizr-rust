@@ -70,6 +70,14 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
             replay = replay.deviation_sorts_keys("D-50", case, &format!("/response/data/{list}"));
         }
     }
+    // The login page and the logout read the settings of the OpenID Connect login here.
+    let replay = replay.deviation_adds(
+        "D-88",
+        case,
+        "/response/data/settings/login",
+        "oidc",
+        json!({"enabled": false, "autoRedirect": "", "logoutURL": ""}),
+    );
     // There is no configuration file whose path could be sent.
     replay.deviation_without("D-29", case, "/response/data/status/userConfigPath")
 }

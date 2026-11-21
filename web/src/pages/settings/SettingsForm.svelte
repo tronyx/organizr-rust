@@ -90,9 +90,10 @@
     }
   }
 
-  /** Asks the server to try the stored settings of a service. */
-  function test(service: string) {
-    return run(service, 'POST', `test/${service}`);
+  /** Asks the server to try the stored settings of a service: with `POST test/<service>`,
+   * or with `GET <path>` for a test of `getTest`. */
+  function test(service: string, method: 'GET' | 'POST') {
+    return run(service, method, method === 'GET' ? service : `test/${service}`);
   }
 
   /** Asks the server to try a login with the name and the password that the Admin typed. */
@@ -137,14 +138,14 @@
   {/if}
 {/snippet}
 
-{#snippet tester(service: string, label: string)}
+{#snippet tester(service: string, label: string, method: 'GET' | 'POST' = 'POST')}
   {@const result = tested[service]}
   <div class="mt-2 flex flex-wrap items-center gap-3">
     <button
       type="button"
       class="btn btn-sm"
       disabled={hasChanges || testing !== null}
-      onclick={() => test(service)}
+      onclick={() => test(service, method)}
     >
       {#if testing === service}<span class="loading loading-spinner loading-xs"></span>{/if}
       {label}
@@ -261,6 +262,9 @@
         {/if}
         {#if group.test}
           {@render tester(group.test, `Test the connection of ${group.title}`)}
+        {/if}
+        {#if group.getTest}
+          {@render tester(group.getTest, `Test the connection of ${group.title}`, 'GET')}
         {/if}
         {#if group.loginTest}
           {@const login = group.loginTest}

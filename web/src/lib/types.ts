@@ -1,5 +1,14 @@
 // The shapes of the answers of the API that the interface reads.
 
+/** What the `launch` answer says about the OpenID Connect login, under `settings.login.oidc`. */
+export interface OidcLaunch {
+  enabled: boolean;
+  /** The provider of the automatic redirect, or an empty text. */
+  autoRedirect: string;
+  /** Where the browser goes after a logout, or an empty text. */
+  logoutURL: string;
+}
+
 /** A switch as the API sends it: 0 is off, 1 is on. */
 export type Switch = 0 | 1;
 
@@ -119,6 +128,11 @@ export interface Launch {
         /** Whether a person can log in with a Plex account, without a password here. */
         oAuthEnabled: boolean;
       };
+    };
+    /** The settings of the login page. */
+    login?: {
+      /** The login with an OpenID Connect provider. */
+      oidc?: OidcLaunch;
     };
     misc: {
       /** Whether the tabs without a heading stand above the categories or below them. */

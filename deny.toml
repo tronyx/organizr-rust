@@ -11,6 +11,11 @@ ignore = [
     # sea-orm-migration, which turns on the default date types of SeaORM. The code of
     # this project does not use chrono. Remove this entry when SeaORM drops it.
     { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained; it is a dependency of sea-orm-migration and is not used by this project's code" },
+    # The Marvin timing attack on private-key operations of the rsa crate. rsa arrives
+    # through openidconnect, and the OpenID Connect login only checks signatures with the
+    # public keys of a provider; this project holds no private RSA key. Remove this entry
+    # when openidconnect moves to an rsa release with the fix.
+    { id = "RUSTSEC-2023-0071", reason = "rsa is used only to verify signatures with public keys; no private RSA key is held" },
 ]
 
 [licenses]

@@ -41,6 +41,11 @@ export interface FieldGroup {
   fields: Field[];
   /** The service whose connection test the group offers: the name in `POST /test/<name>`. */
   test?: string;
+  /**
+   * A connection test that the server runs with `GET <path>`: the path after `api/v2/`, for
+   * example `oidc/keycloak/test`.
+   */
+  getTest?: string;
   /** A second test, whose answer holds values for a field of the group. */
   lookup?: { test: string; label: string };
   /**
@@ -196,6 +201,155 @@ const LEVELS = [
   { value: '3', label: 'Power User and above' },
   { value: '4', label: 'User and above' },
   { value: '999', label: 'Everybody' },
+];
+
+/** The groups of a new account of the OpenID Connect login, by their level. */
+const GROUPS = [
+  { value: '0', label: 'Admin' },
+  { value: '1', label: 'Co-Admin' },
+  { value: '2', label: 'Super User' },
+  { value: '3', label: 'Power User' },
+  { value: '4', label: 'User' },
+  { value: '999', label: 'Guest' },
+];
+
+/** The settings of one provider of the OpenID Connect login, as PHP Organizr groups them. */
+function oidcProvider(
+  prefix: string,
+  key: string,
+  name: string,
+  example: string,
+  claimHelp: string,
+): FieldGroup {
+  return {
+    title: `OpenID Connect: ${name}`,
+    getTest: `oidc/${key}/test`,
+    fields: [
+      { key: `${prefix}Enabled`, label: `Log in with ${name}`, kind: 'switch' },
+      { key: `${prefix}Name`, label: 'Name on the login page', kind: 'text' },
+      {
+        key: `${prefix}DiscoveryUrl`,
+        label: 'Discovery address',
+        kind: 'text',
+        help: `For example ${example}`,
+      },
+      { key: `${prefix}ClientId`, label: 'Client ID', kind: 'text' },
+      { key: `${prefix}ClientSecret`, label: 'Client secret', kind: 'secret' },
+      {
+        key: `${prefix}Scopes`,
+        label: 'Scopes',
+        kind: 'text',
+        help: 'With commas between them. The login always asks for openid.',
+      },
+      { key: `${prefix}GroupClaim`, label: 'Claim of the groups', kind: 'text', help: claimHelp },
+    ],
+  };
+}
+
+/** The settings of the login with an OpenID Connect provider, in the groups of PHP Organizr. */
+export const OIDC: FieldGroup[] = [
+  {
+    title: 'OpenID Connect',
+    fields: [
+      { key: 'oidcEnabled', label: 'Log in with an OpenID Connect provider', kind: 'switch' },
+      {
+        key: 'oidcAutoRedirect',
+        label: 'Go to the provider from the login page by itself',
+        kind: 'switch',
+        help: 'Add #noredirect to the address of the login page to stay on it.',
+      },
+      {
+        key: 'oidcAutoRedirectProvider',
+        label: 'Provider of the automatic redirect',
+        kind: 'select',
+        options: [
+          { value: '', label: 'None' },
+          { value: 'authentik', label: 'Authentik' },
+          { value: 'keycloak', label: 'Keycloak' },
+          { value: 'pocketid', label: 'PocketID' },
+          { value: 'zitadel', label: 'Zitadel' },
+        ],
+      },
+      {
+        key: 'oidcAutoRedirectLogoutUrl',
+        label: 'Address after a logout',
+        kind: 'text',
+        help: 'For example the logout page of the provider. Leave it empty to stay in Organizr.',
+      },
+      {
+        key: 'oidcAutoCreateUsers',
+        label: 'Make an account at the first login',
+        kind: 'switch',
+      },
+      {
+        key: 'oidcLinkExistingUsers',
+        label: 'Link existing accounts by user name or e-mail address',
+        kind: 'switch',
+        help: 'Off: only accounts that this provider made or linked before can log in.',
+      },
+      {
+        key: 'oidcUpdateGroupsOnLogin',
+        label: 'Set the group again at each login',
+        kind: 'switch',
+      },
+      {
+        key: 'oidcDefaultGroupId',
+        label: 'Group when no mapping matches',
+        kind: 'select',
+        options: GROUPS,
+      },
+      {
+        key: 'oidcGroupClaimName',
+        label: 'Claim of the groups',
+        kind: 'text',
+        help: 'The claim of the token that holds the groups of the person, for example groups.',
+      },
+      {
+        key: 'oidcGroupMappingMode',
+        label: 'When more groups match',
+        kind: 'select',
+        options: [
+          { value: 'first', label: 'The first match' },
+          { value: 'highest_privilege', label: 'The most access (lowest level)' },
+          { value: 'lowest_privilege', label: 'The least access (highest level)' },
+        ],
+      },
+      {
+        key: 'oidcGroupMappings',
+        label: 'Group mappings, as JSON',
+        kind: 'textarea',
+        help: 'From a group of the provider to the level of a group here, for example {"oidc-admins": 0, "oidc-users": 4}.',
+      },
+    ],
+  },
+  oidcProvider(
+    'oidcAuthentik',
+    'authentik',
+    'Authentik',
+    'https://authentik.example.com/application/o/organizr/.well-known/openid-configuration',
+    'Leave it empty to use the claim of the groups above.',
+  ),
+  oidcProvider(
+    'oidcKeycloak',
+    'keycloak',
+    'Keycloak',
+    'https://keycloak.example.com/realms/master/.well-known/openid-configuration',
+    'Leave it empty to use the claim of the groups above.',
+  ),
+  oidcProvider(
+    'oidcPocketid',
+    'pocketid',
+    'PocketID',
+    'https://pocketid.example.com/.well-known/openid-configuration',
+    'Leave it empty to use the claim of the groups above.',
+  ),
+  oidcProvider(
+    'oidcZitadel',
+    'zitadel',
+    'Zitadel',
+    'https://zitadel.example.com/.well-known/openid-configuration',
+    'Zitadel sends its roles in the claim urn:zitadel:iam:org:project:roles.',
+  ),
 ];
 
 /** The settings of the login through Plex, and of single sign-on. */
@@ -431,6 +585,7 @@ export const LOGIN: FieldGroup[] = [
       { key: 'ssoTautulliAuth', label: 'For users of the level', kind: 'select', options: LEVELS },
     ],
   },
+  ...OIDC,
 ];
 
 const PLACEHOLDERS =

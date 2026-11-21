@@ -228,6 +228,7 @@ reqwest = { version = "0.13.5", features = ["cookies", "json", "gzip", "socks", 
 diqwest = "3.2.0"                 # HTTP digest auth (Komga)
 ldap3 = { version = "0.12.1", default-features = false, features = ["tls-rustls-ring"] }
 suppaftp = { version = "13.0.0", default-features = false, features = ["tokio-rustls-ring"] }
+openidconnect = { version = "4.1.0", default-features = false }   # OIDC login; requests go through reqwest above
 lettre = { version = "0.11.24", default-features = false, features = ["smtp-transport", "builder", "pool", "hostname", "tokio1-rustls", "aws-lc-rs", "rustls-platform-verifier"] }
 minijinja = "3.1.0"               # mail and custom-page templates
 icalendar = { version = "0.17.17", features = ["recurrence"] }

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { browser } from '../lib/oidc';
 import { session } from '../lib/session.svelte';
 import { stubApi } from '../test-helpers';
 import Locked from './Locked.svelte';
@@ -80,5 +81,21 @@ describe('Locked', () => {
     render(Locked);
     await fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
     await waitFor(() => expect(sent.some((request) => request.path === 'logout')).toBe(true));
+  });
+
+  it('goes to the logout address of the OpenID Connect login after the logout', async () => {
+    const go = vi.spyOn(browser, 'go').mockImplementation(() => undefined);
+    const locked = launch(1);
+    const oidc = { enabled: true, autoRedirect: '', logoutURL: 'https://id.example.com/logout' };
+    const data = { ...locked.data, settings: { ...locked.data.settings, login: { oidc } } };
+    stubApi({ 'GET launch': { data } });
+    await session.load();
+    stubApi({ 'GET launch': launch(0), 'GET logout': {} });
+    render(Locked);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
+
+    await waitFor(() => expect(go).toHaveBeenCalledWith('https://id.example.com/logout'));
+    go.mockRestore();
   });
 });

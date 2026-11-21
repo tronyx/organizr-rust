@@ -8,6 +8,7 @@
   import { api, failureText } from '../lib/api';
   import { frames } from '../lib/frames.svelte';
   import { opensNewWindow } from '../lib/menu';
+  import { afterLogout, browser } from '../lib/oidc';
   import { PAGES, router } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
   import { pictureOf } from '../lib/picture';
@@ -58,7 +59,13 @@
   async function logOut() {
     error = null;
     try {
+      const oidc = session.launch?.settings.login?.oidc;
       await api('GET', 'logout');
+      const away = afterLogout(oidc);
+      if (away !== null) {
+        browser.go(away);
+        return;
+      }
       await session.load();
       router.go(PAGES.home);
     } catch (failure) {

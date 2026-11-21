@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { browser, NO_REDIRECT } from '../lib/oidc';
 import { plexToken } from '../lib/plexLogin';
 import { PAGES, router } from '../lib/route.svelte';
 import { session } from '../lib/session.svelte';
@@ -141,6 +142,71 @@ describe('Login', () => {
       'href',
       PAGES.recover,
     );
+  });
+
+  /** Shows the login page of an install with the OpenID Connect login of `oidc`. */
+  async function showWithOidc(
+    oidc: { enabled: boolean; autoRedirect: string; logoutURL: string },
+    answers: Parameters<typeof stubApi>[0] = {},
+  ) {
+    const launch = LAUNCH['GET launch'].data;
+    const data = { ...launch, user: null, settings: { ...launch.settings, login: { oidc } } };
+    const sent = stubApi({ 'GET launch': { data }, ...answers });
+    await session.load();
+    render(Login);
+    return sent;
+  }
+
+  it('offers a button for each provider that the server has switched on', async () => {
+    const go = vi.spyOn(browser, 'go').mockImplementation(() => undefined);
+    await showWithOidc(
+      { enabled: true, autoRedirect: '', logoutURL: '' },
+      {
+        'GET oidc/providers': {
+          data: {
+            keycloak: { name: 'Company login', enabled: true },
+            pocketid: { name: 'PocketID', enabled: true },
+          },
+        },
+      },
+    );
+
+    const button = await screen.findByRole('link', { name: 'Log in with Company login' });
+    expect(button.getAttribute('href')).toMatch(/\/api\/v2\/oidc\/keycloak\/authorize$/);
+    expect(screen.getByRole('link', { name: 'Log in with PocketID' })).toBeInTheDocument();
+    expect(go).not.toHaveBeenCalled();
+    go.mockRestore();
+  });
+
+  it('asks for no providers while the login is switched off', async () => {
+    const sent = await showWithOidc({ enabled: false, autoRedirect: '', logoutURL: '' });
+    expect(sent.map((request) => request.path)).toEqual(['launch']);
+    expect(screen.queryByRole('link', { name: /^Log in with/ })).not.toBeInTheDocument();
+  });
+
+  it('goes to the provider by itself, unless the address says #noredirect', async () => {
+    const go = vi.spyOn(browser, 'go').mockImplementation(() => undefined);
+    const oidc = { enabled: true, autoRedirect: 'keycloak', logoutURL: '' };
+    const { unmount } = render(Login);
+    unmount();
+    await showWithOidc(oidc);
+    expect(go).toHaveBeenCalledWith(expect.stringMatching(/\/api\/v2\/oidc\/keycloak\/authorize$/));
+    cleanup();
+
+    go.mockClear();
+    window.location.hash = '#noredirect';
+    await showWithOidc(oidc, { 'GET oidc/providers': { data: [] } });
+    expect(go).not.toHaveBeenCalled();
+    window.location.hash = '';
+    cleanup();
+
+    window.sessionStorage.setItem(NO_REDIRECT, '1');
+    await showWithOidc(oidc, { 'GET oidc/providers': { data: [] } });
+    expect(go).not.toHaveBeenCalled();
+    window.sessionStorage.clear();
+    go.mockRestore();
+    // The next test starts without the settings of the redirect.
+    session.launch = null;
   });
 
   /** Shows the login page of an install with or without the login through Plex. */

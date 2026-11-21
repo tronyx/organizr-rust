@@ -1,6 +1,15 @@
 <script lang="ts">
   // The login page.
+  import { onMount } from 'svelte';
+
   import { api, ApiError, failureText } from '../lib/api';
+  import {
+    authorizeAddress,
+    browser,
+    providerList,
+    redirectTarget,
+    type OidcProvider,
+  } from '../lib/oidc';
   import { pictureOf } from '../lib/picture';
   import { plexToken } from '../lib/plexLogin';
   import { takeReturn } from '../lib/returnTo';
@@ -24,6 +33,31 @@
   // The server sends a new password by e-mail only when its mail plugin is on.
   const canRecover = $derived(session.launch?.plugins['PHPMAILER-enabled'] === true);
   const canUsePlex = $derived(session.launch?.settings.sso.plex.oAuthEnabled === true);
+  // The providers of the OpenID Connect login that the server has switched on.
+  let providers = $state<OidcProvider[]>([]);
+
+  onMount(() => {
+    const oidc = session.launch?.settings.login?.oidc;
+    // The settings may send the person to a provider at once. `#noredirect` in the
+    // address keeps the person here.
+    const target = redirectTarget(oidc, window.location.hash);
+    if (target !== null) {
+      browser.go(authorizeAddress(target));
+      return;
+    }
+    if (oidc?.enabled) {
+      void loadProviders();
+    }
+  });
+
+  async function loadProviders() {
+    try {
+      providers = providerList((await api('GET', 'oidc/providers')).data);
+    } catch {
+      // Without the list, the page offers the login with a password only.
+      providers = [];
+    }
+  }
 
   const title = $derived(session.launch?.appearance.title || 'Organizr');
   // The picture above the form, when the setting says so. A picture that does not load
@@ -183,6 +217,11 @@
               Log in with Plex
             </button>
           {/if}
+          {#each providers as provider (provider.key)}
+            <a class="btn btn-secondary w-full" href={authorizeAddress(provider.key)}>
+              Log in with {provider.name}
+            </a>
+          {/each}
           {#if canRecover}
             <a class="link link-hover w-full text-center text-sm" href={PAGES.recover}>
               Forgot your password?
