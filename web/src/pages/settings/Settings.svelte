@@ -6,27 +6,19 @@
   import { api, failureText } from '../../lib/api';
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { session } from '../../lib/session.svelte';
-  import {
-    BOOKMARK_PLUGIN,
-    CHAT_PLUGIN,
-    HEALTH_CHECKS_PLUGIN,
-    HOMEPAGE,
-    INVITES_PLUGIN,
-    SPEED_TEST_PLUGIN,
-  } from '../../lib/settingsForm';
+  import { HOMEPAGE } from '../../lib/settingsForm';
   import type { Account, EditorData } from '../../lib/types';
   import BackupsEditor from './BackupsEditor.svelte';
-  import BookmarksEditor from './BookmarksEditor.svelte';
   import CategoriesEditor from './CategoriesEditor.svelte';
   import AppearanceSettings from './AppearanceSettings.svelte';
   import ExtensionsEditor from './ExtensionsEditor.svelte';
+  import PhpSettingsForm from './PhpSettingsForm.svelte';
+  import PluginCards from './PluginCards.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
-  import HealthCheckServices from './HealthCheckServices.svelte';
   import LogViewer from './LogViewer.svelte';
   import LoginSettings from './LoginSettings.svelte';
   import SettingsForm from './SettingsForm.svelte';
-  import MailSettings from './MailSettings.svelte';
   import TabsEditor from './TabsEditor.svelte';
   import ThemeMarketplace from './ThemeMarketplace.svelte';
   import UpdateCheck from './UpdateCheck.svelte';
@@ -67,6 +59,11 @@
       icon: 'ti-paint-bucket',
       pages: [
         { section: 'appearance', page: 'appearanceSettings', label: 'Appearance' },
+        {
+          section: 'theme-settings',
+          page: 'themeMarketplaceSettings',
+          label: 'Marketplace Settings',
+        },
         { section: 'themes', page: 'themeSettings', label: 'Marketplace' },
       ],
     },
@@ -83,8 +80,10 @@
       name: 'Plugins',
       icon: 'ti-plug',
       pages: [
-        { section: 'plugins', page: 'pluginSettings', label: 'Settings' },
-        { section: 'mail', page: 'mailSettings', label: 'PHP Mailer' },
+        { section: 'plugins', page: 'pluginSettings', label: 'Active' },
+        { section: 'plugins-inactive', page: 'inactivePluginSettings', label: 'Inactive' },
+        { section: 'plugin-settings', page: 'pluginMarketplaceSettings', label: 'Settings' },
+        { section: 'plugin-marketplace', page: 'pluginMarketplace', label: 'Marketplace' },
       ],
     },
     {
@@ -189,8 +188,6 @@
       <AppearanceSettings ondone={(message) => (done = message)} />
     {:else if section === 'themes'}
       <ThemeMarketplace ondone={(message) => (done = message)} />
-    {:else if section === 'mail'}
-      <MailSettings ondone={(message) => (done = message)} />
     {:else if section === 'updates'}
       <UpdateCheck ondone={(message) => (done = message)} />
     {:else if section === 'login'}
@@ -201,23 +198,22 @@
       <BackupsEditor ondone={(message) => (done = message)} />
     {:else if section === 'logs'}
       <LogViewer ondone={(message) => (done = message)} />
-    {:else if section === 'plugins'}
-      <SettingsForm
-        groups={[
-          ...BOOKMARK_PLUGIN,
-          ...SPEED_TEST_PLUGIN,
-          ...INVITES_PLUGIN,
-          ...CHAT_PLUGIN,
-          ...HEALTH_CHECKS_PLUGIN,
-        ]}
+    {:else if section === 'plugins' || section === 'plugins-inactive'}
+      <PluginCards active={section === 'plugins'} ondone={(message) => (done = message)} />
+    {:else if section === 'plugin-settings'}
+      <PhpSettingsForm
+        path="settings/plugin"
+        title="Plugin Settings"
         ondone={(message) => (done = message)}
-      >
-        <HealthCheckServices ondone={(message) => (done = message)} />
-        {#if session.launch?.plugins['BOOKMARK-enabled'] === true}
-          <BookmarksEditor ondone={(message) => (done = message)} />
-        {/if}
-        <ExtensionsEditor ondone={(message) => (done = message)} />
-      </SettingsForm>
+      />
+    {:else if section === 'plugin-marketplace'}
+      <ExtensionsEditor ondone={(message) => (done = message)} />
+    {:else if section === 'theme-settings'}
+      <PhpSettingsForm
+        path="settings/theme"
+        title="Theme Settings"
+        ondone={(message) => (done = message)}
+      />
     {:else if data}
       {#if section === 'tabs'}
         <TabsEditor {data} {change} />

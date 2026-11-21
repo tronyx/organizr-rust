@@ -36,6 +36,12 @@ plugins/images/organizr/organizr-logo-h-d.png
 plugins/images/organizr/organizr-logo-h.png
 plugins/images/organizr/organizr_logo.png
 plugins/images/organizr/organizr_logo_d.png
+plugins/images/plugins/bookmark.png
+plugins/images/plugins/chat.png
+plugins/images/plugins/healthChecks.png
+plugins/images/plugins/invites.png
+plugins/images/plugins/php-mailer.png
+plugins/images/plugins/speedTest.png
 plugins/images/tabs/AdGuardHome.png
 plugins/images/tabs/Docsify.png
 plugins/images/tabs/Duplicati.png

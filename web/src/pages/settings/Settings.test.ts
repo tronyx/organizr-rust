@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
 import { session } from '../../lib/session.svelte';
@@ -959,96 +959,99 @@ describe('Settings', () => {
   });
 });
 
-describe('Settings, e-mail', () => {
-  const CONFIG = {
-    'PHPMAILER-enabled': false,
-    'PHPMAILER-smtpHost': '',
-    'PHPMAILER-smtpHostPort': '',
-    'PHPMAILER-smtpHostType': 'tls',
-    'PHPMAILER-verifyCert': true,
-    'PHPMAILER-smtpHostAuth': true,
-    'PHPMAILER-smtpHostUsername': '',
-    'PHPMAILER-smtpHostPassword': '',
-    'PHPMAILER-smtpHostSenderName': 'Organizr',
-    'PHPMAILER-smtpHostSenderEmail': 'no-reply@Organizr.tld',
-    'PHPMAILER-domain': '',
-    'PHPMAILER-template': 'default',
-    'PHPMAILER-logo': 'https://example.com/logo.png',
-    'PHPMAILER-emailTemplateResetSubject': 'Password Reset',
-    'PHPMAILER-emailTemplateReset': '<h2>Hey there {user}!</h2>',
-    'PHPMAILER-emailTemplateRegisterUserEnabled': true,
-    'PHPMAILER-emailTemplateRegisterUserSubject': 'Thank you For Registering',
-    'PHPMAILER-emailTemplateRegisterUser': '<h2>Welcome {user}!</h2>',
+describe('Settings, plugins: the cards of PHP', () => {
+  const PLUGINS = {
+    'PHP Mailer': {
+      name: 'PHP Mailer',
+      category: 'Mail',
+      image: 'api/plugins/php-mailer/logo.png',
+      configPrefix: 'PHPMAILER',
+      settings: true,
+      enabled: true,
+    },
+    Speedtest: {
+      name: 'Speedtest',
+      category: 'Utilities',
+      image: 'api/plugins/speedTest/logo.png',
+      configPrefix: 'SPEEDTEST',
+      settings: true,
+      enabled: false,
+    },
   };
 
-  async function showMail(answers: Answers = {}) {
+  const MAILER = {
+    Host: [{ type: 'input', label: 'SMTP Host', name: 'PHPMAILER-smtpHost', value: '' }],
+    'Test & Options': [{ type: 'button', label: 'Send Test', text: 'Send' }],
+    Templates: [
+      {
+        type: 'accordion',
+        label: 'Edit Template',
+        override: 12,
+        options: [
+          {
+            id: 'reset',
+            header: 'Reset Password',
+            body: [
+              {
+                type: 'textbox',
+                name: 'PHPMAILER-emailTemplateReset',
+                smallLabel: 'Body',
+                value: '<h2>Hey there {user}!</h2>',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  async function showPlugins(section: 'plugins' | 'plugins-inactive', answers: Answers = {}) {
     const sent = stubApi({
       'GET tabs': { data: DATA },
       'GET users': { data: USERS },
       'GET launch': LAUNCH,
-      'GET config': { data: CONFIG },
+      'GET plugins': { data: PLUGINS },
       ...answers,
     });
-    render(Settings, { section: 'mail' });
-    await screen.findByLabelText('SMTP server');
+    render(Settings, { section });
+    await screen.findByRole('heading', { level: 3 });
     return sent;
   }
 
-  it('saves the server, its password and the text of an e-mail', async () => {
-    const sent = await showMail({ 'PUT config': {} });
-    expect(screen.getByRole('tab', { name: 'PHP Mailer' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    expect(screen.getByLabelText('Password')).toHaveAttribute('placeholder', 'No value is stored');
-    const texts = screen.getAllByLabelText('Text, as HTML');
-    expect(texts[0]).toHaveValue('<h2>Hey there {user}!</h2>');
+  it('shows the active plugins, and switches an inactive one on', async () => {
+    await showPlugins('plugins');
+    expect(screen.getByRole('heading', { name: 'Active Plugins' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'PHP Mailer' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Speedtest' })).toBeNull();
+    cleanup();
 
-    await fireEvent.click(screen.getByLabelText('Send e-mails'));
-    await fireEvent.input(screen.getByLabelText('SMTP server'), {
-      target: { value: 'smtp.example.com' },
-    });
-    await fireEvent.change(screen.getByLabelText('Encryption'), { target: { value: 'ssl' } });
-    await fireEvent.input(screen.getByLabelText('Password'), {
-      target: { value: 'the password of the mailbox' },
-    });
-    await fireEvent.input(texts[0] as HTMLElement, { target: { value: '<p>New: {password}</p>' } });
-    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await statusSays('The settings are saved.');
-    expect(changes(sent)).toEqual([
-      [
-        'PUT config',
-        {
-          'PHPMAILER-enabled': true,
-          'PHPMAILER-smtpHost': 'smtp.example.com',
-          'PHPMAILER-smtpHostType': 'ssl',
-          'PHPMAILER-smtpHostPassword': 'the password of the mailbox',
-          'PHPMAILER-emailTemplateReset': '<p>New: {password}</p>',
-        },
-      ],
-    ]);
+    const sent = await showPlugins('plugins-inactive', { 'PUT config': {} });
+    await fireEvent.click(screen.getByRole('button', { name: 'Switch Speedtest on' }));
+    await statusSays('The plugin Speedtest is switched on.');
+    expect(changes(sent)).toEqual([['PUT config', { 'SPEEDTEST-enabled': true }]]);
   });
 
-  it('sends a test e-mail and says where it went, or why it was not sent', async () => {
-    let works = false;
-    const sent = await showMail({
-      'GET plugins/php-mailer/email/test': () =>
-        works
-          ? { message: 'Email sent' }
-          : { status: 500, message: 'the SMTP server did not take the e-mail: refused' },
+  it('opens the settings of a plugin, saves a template and sends a test e-mail', async () => {
+    const sent = await showPlugins('plugins', {
+      'GET plugins/php-mailer/settings': { data: MAILER },
+      'PUT config': {},
+      'GET plugins/php-mailer/email/test': { message: 'Email sent' },
     });
-    const button = screen.getByRole('button', { name: 'Send a test e-mail' });
 
-    await fireEvent.click(button);
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The test e-mail was not sent: the SMTP server did not take the e-mail: refused',
-    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Settings of PHP Mailer' }));
+    const dialog = await screen.findByRole('dialog', { name: 'PHP Mailer Settings' });
+    await fireEvent.click(await within(dialog).findByRole('tab', { name: 'Templates' }));
+    await fireEvent.input(within(dialog).getByLabelText('Body'), {
+      target: { value: '<p>New: {password}</p>' },
+    });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await statusSays('The settings are saved.');
 
-    works = true;
-    await fireEvent.click(button);
-    await statusSays('The test e-mail was sent to the address of your account.');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(sent.filter((request) => request.path.endsWith('email/test'))).toHaveLength(2);
+    await fireEvent.click(within(dialog).getByRole('tab', { name: 'Test & Options' }));
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
+    expect(await within(dialog).findByText('Email sent')).toBeInTheDocument();
+    expect(changes(sent)).toEqual([
+      ['PUT config', { 'PHPMAILER-emailTemplateReset': '<p>New: {password}</p>' }],
+    ]);
   });
 });

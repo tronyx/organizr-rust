@@ -8,6 +8,7 @@
 
   import { api, apiUrl, failureText } from '../../lib/api';
   import {
+    accordionParts,
     actionOf,
     changedValues,
     formValues,
@@ -402,6 +403,20 @@
         </span>
       {/if}
     </div>
+  {:else if field.type === 'accordion'}
+    <span class="org-form-label">{field.label}</span>
+    {#each accordionParts(field) as part (part.id)}
+      <details class="org-accordion">
+        <summary>{part.header}</summary>
+        <div class="org-accordion-body">
+          {#each part.body as inner, index (`${part.id}-${index}`)}
+            <div class="mb-4">
+              {@render input(group, { ...inner, label: inner.label ?? inner.smallLabel })}
+            </div>
+          {/each}
+        </div>
+      </details>
+    {/each}
   {:else if field.type === 'notice'}
     <div
       class="org-notice"

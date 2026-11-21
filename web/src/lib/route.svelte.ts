@@ -14,10 +14,13 @@ export type SettingsSection =
   | 'groups'
   | 'users'
   | 'import'
-  | 'mail'
   | 'login'
   | 'homepage'
   | 'plugins'
+  | 'plugins-inactive'
+  | 'plugin-settings'
+  | 'plugin-marketplace'
+  | 'theme-settings'
   | 'backups'
   | 'logs'
   | 'updates';
@@ -57,10 +60,13 @@ export const PAGES = {
   groupSettings: '#/settings/groups',
   userSettings: '#/settings/users',
   importUserSettings: '#/settings/import',
-  mailSettings: '#/settings/mail',
   loginSettings: '#/settings/login',
   homepageSettings: '#/settings/homepage',
   pluginSettings: '#/settings/plugins',
+  inactivePluginSettings: '#/settings/plugins/inactive',
+  pluginMarketplaceSettings: '#/settings/plugins/settings',
+  pluginMarketplace: '#/settings/plugins/marketplace',
+  themeMarketplaceSettings: '#/settings/themes/settings',
   backupSettings: '#/settings/backups',
   logSettings: '#/settings/logs',
   updateSettings: '#/settings/updates',
@@ -121,8 +127,6 @@ export function parseRoute(hash: string): Route {
       return { page: 'settings', section: 'users' };
     case '/settings/import':
       return { page: 'settings', section: 'import' };
-    case '/settings/mail':
-      return { page: 'settings', section: 'mail' };
     case '/settings/login':
     case '/settings/sso':
       return { page: 'settings', section: 'login' };
@@ -131,7 +135,16 @@ export function parseRoute(hash: string): Route {
     case '/settings/homepage':
       return { page: 'settings', section: 'homepage' };
     case '/settings/plugins':
+    case '/settings/mail':
       return { page: 'settings', section: 'plugins' };
+    case '/settings/plugins/inactive':
+      return { page: 'settings', section: 'plugins-inactive' };
+    case '/settings/plugins/settings':
+      return { page: 'settings', section: 'plugin-settings' };
+    case '/settings/plugins/marketplace':
+      return { page: 'settings', section: 'plugin-marketplace' };
+    case '/settings/themes/settings':
+      return { page: 'settings', section: 'theme-settings' };
     case '/settings/backups':
       return { page: 'settings', section: 'backups' };
     case '/settings/logs':

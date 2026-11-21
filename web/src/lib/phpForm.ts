@@ -36,6 +36,8 @@ export interface PhpField {
   body?: string;
   /** The text of the type `about`. */
   about?: string;
+  /** The short label of a field inside a part of an accordion. */
+  smallLabel?: string;
   disabled?: boolean;
 }
 
@@ -49,7 +51,18 @@ export type PhpValue = string | boolean | string[];
 const SECRET_TYPES = new Set(['password', 'password-alt', 'password-alt-copy']);
 
 /** The types that are no setting: they hold text, a picture or a button. */
-const NO_SETTING = new Set(['blank', 'button', 'notice', 'about', 'socks', 'cronfile', 'html']);
+const NO_SETTING = new Set([
+  'blank',
+  'button',
+  'notice',
+  'about',
+  'socks',
+  'cronfile',
+  'html',
+  'accordion',
+  // The services of the health checks: the page has its own editor for them.
+  'arrayMultiple',
+]);
 
 /** Whether a field stores a setting, and so has a value in the form. */
 export function holdsSetting(field: PhpField): field is PhpField & { name: string } {
@@ -94,9 +107,26 @@ export function formValue(field: PhpField): PhpValue {
   return typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
 
-/** Every field of the groups that holds a setting. */
+/** A part of an accordion: its heading and its fields. */
+export interface AccordionPart {
+  id: string;
+  header: string;
+  body: PhpField[];
+}
+
+/** The parts of an accordion, for example the templates of the e-mails. */
+export function accordionParts(field: PhpField): AccordionPart[] {
+  return field.type === 'accordion' && Array.isArray(field.options)
+    ? (field.options as unknown as AccordionPart[])
+    : [];
+}
+
+/** Every field of the groups that holds a setting, also those inside an accordion. */
 export function settingFields(groups: PhpGroups): (PhpField & { name: string })[] {
-  return Object.values(groups).flat().filter(holdsSetting);
+  return Object.values(groups)
+    .flat()
+    .flatMap((field) => [field, ...accordionParts(field).flatMap((part) => part.body)])
+    .filter(holdsSetting);
 }
 
 /** The values of the form, by the key of each setting. */
@@ -232,6 +262,9 @@ export function actionOf(field: PhpField): PhpAction {
   }
   if (SERVICE_TESTS.has(name)) {
     return { kind: 'test', path: `test/${name}`, method: 'POST' };
+  }
+  if (label === 'Send Test') {
+    return { kind: 'test', path: 'plugins/php-mailer/email/test', method: 'GET' };
   }
   if (label === 'Test Login') {
     return { kind: 'login-test', path: 'test/ldap/login' };

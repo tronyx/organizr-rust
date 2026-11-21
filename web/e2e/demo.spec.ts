@@ -10,13 +10,22 @@ import { ADDRESS, SETUP_CODE_VARIABLE } from './server';
 
 test.describe.configure({ mode: 'serial' });
 
+/** Switches a plugin on with its card under Plugins, Inactive, as in PHP. */
+async function switchPluginOn(page: Page, name: string) {
+  await page.goto('./#/settings/plugins/inactive');
+  await page.getByRole('button', { name: `Switch ${name} on` }).click();
+  await expect(page.getByRole('status')).toHaveText(`The plugin ${name} is switched on.`);
+}
+
 /** Saves a form of the settings, and waits until the server stored it and the form loaded again. */
 async function saveSettings(page: Page) {
   const stored = page.waitForResponse(
     (answer) => answer.url().endsWith('/api/v2/config') && answer.request().method() === 'PUT',
   );
   const loaded = page.waitForResponse(
-    (answer) => answer.url().includes('/api/v2/settings/') && answer.request().method() === 'GET',
+    (answer) =>
+      /\/api\/v2\/(settings\/|plugins\/[a-z-]+\/settings)/.test(answer.url()) &&
+      answer.request().method() === 'GET',
   );
   await page.getByRole('button', { name: 'Save' }).click();
   expect((await stored).ok()).toBe(true);
@@ -803,18 +812,26 @@ test('a new password by e-mail is offered only when the install sends e-mails', 
   await page.getByRole('button', { name: 'Send the e-mail' }).click();
   await expect(page.getByRole('alert')).toHaveText('Email functionality is not enabled');
 
-  // The Admin switches it on. No mail server listens at the address of the test.
+  // The Admin switches the plugin PHP Mailer on, as in PHP, and sets it up in its
+  // dialog. No mail server listens at the address of the test.
   await logIn(page);
-  await page.goto('./#/settings/mail');
-  await page.getByLabel('Send e-mails').check();
-  await page.getByLabel('SMTP server').fill('127.0.0.1');
-  await page.getByLabel('Port').fill('1');
-  await page.getByLabel('Encryption').selectOption('n/a');
-  await page.getByLabel('The server asks for a login').uncheck();
-  await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
-  await page.getByRole('button', { name: 'Send a test e-mail' }).click();
-  await expect(page.getByRole('alert')).toContainText('The test e-mail was not sent');
+  await page.goto('./#/settings/plugins/inactive');
+  await page.getByRole('button', { name: 'Switch PHP Mailer on' }).click();
+  await expect(page.getByRole('status')).toHaveText('The plugin PHP Mailer is switched on.');
+  await page.goto('./#/settings/plugins');
+  await page.getByRole('button', { name: 'Settings of PHP Mailer' }).click();
+  const mailer = page.getByRole('dialog', { name: 'PHP Mailer Settings' });
+  await mailer.getByRole('tab', { name: 'Host' }).click();
+  await mailer.getByLabel('SMTP Host').fill('127.0.0.1');
+  await mailer.getByLabel('SMTP Port').fill('1');
+  await mailer.getByRole('tab', { name: 'Authentication', exact: true }).click();
+  await mailer.getByLabel('Authentication Type').selectOption('n/a');
+  await mailer.getByLabel('Authentication', { exact: true }).uncheck();
+  await saveSettings(page);
+  await mailer.getByRole('tab', { name: 'Test & Options' }).click();
+  await mailer.getByRole('button', { name: 'Send' }).click();
+  await expect(mailer.getByRole('alert')).toBeVisible();
+  await page.keyboard.press('Escape');
 
   await page.getByLabel('Menu of the user').click();
   await page.getByRole('button', { name: 'Log out' }).click();
@@ -906,10 +923,7 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
 
 test('the chat plugin shows a new message at once, as text', async ({ page }) => {
   await logIn(page);
-  await page.goto('./#/settings/plugins');
-  await page.getByLabel('Use the chat plugin').check();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  await switchPluginOn(page, 'Chat');
 
   await page.getByLabel('Menu of the user').click();
   await page.getByRole('link', { name: 'Chat' }).click();
@@ -929,10 +943,7 @@ test('the speed test plugin measures the connection to the server', async ({ pag
   // The run itself takes about twenty seconds.
   test.setTimeout(90_000);
   await logIn(page);
-  await page.goto('./#/settings/plugins');
-  await page.getByLabel('Use the speed test plugin').check();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  await switchPluginOn(page, 'SpeedTest');
 
   // The menu of the user has the entry now.
   await page.getByLabel('Menu of the user').click();
@@ -956,17 +967,20 @@ test('the Admin adds a bookmark, and the page of the bookmarks shows it as a til
   page,
 }) => {
   await logIn(page);
+  await switchPluginOn(page, 'Bookmark');
   await page.goto('./#/settings/plugins');
-  await page.getByLabel('Use the bookmark plugin').check();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  await page.getByRole('button', { name: 'Settings of Bookmark' }).click();
+  await page
+    .getByRole('dialog', { name: 'Bookmark Settings' })
+    .getByRole('tab', { name: 'Bookmarks' })
+    .click();
 
   // The editor shows once the plugin is on.
   await page.getByLabel('Name of a new category').fill('Reading');
   await page.getByRole('button', { name: 'Add a category' }).click();
   await expect(page.getByRole('status')).toHaveText('The category is added.');
   await page.getByRole('button', { name: 'Add a bookmark' }).click();
-  const dialog = page.getByRole('dialog');
+  const dialog = page.getByRole('dialog', { name: 'Add a bookmark' });
   await dialog.getByLabel('Name', { exact: true }).fill('Example');
   await dialog.getByLabel('Address').fill('https://example.com/');
   await dialog.getByLabel('Colour of the tile').fill('#804020');
@@ -992,10 +1006,7 @@ test('the Admin adds a bookmark, and the page of the bookmarks shows it as a til
 // starts with "Log in".
 test('the Admin makes an invite, and a guest finds the page for its code', async ({ page }) => {
   await logIn(page);
-  await page.goto('./#/settings/plugins');
-  await page.getByLabel('Use the invites plugin').check();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  await switchPluginOn(page, 'Invites');
 
   await page.getByLabel('Menu of the user').click();
   await page.getByRole('link', { name: 'Invites' }).click();
