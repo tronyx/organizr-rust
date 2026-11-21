@@ -8,6 +8,7 @@
   import { api, ApiError, failureText } from '../lib/api';
   import { session } from '../lib/session.svelte';
   import OidcLinks from './OidcLinks.svelte';
+  import UserInformation from './UserInformation.svelte';
 
   /** What `POST 2fa/google` answers: a new secret, and its QR code as a picture. */
   interface NewFactor {
@@ -104,6 +105,8 @@
       <li>{session.launch?.user?.username}</li>
     </ol>
   </div>
+
+  <UserInformation />
 
   <section class="card org-account-panel" aria-labelledby="second-factor-title">
     <div class="card-body">
