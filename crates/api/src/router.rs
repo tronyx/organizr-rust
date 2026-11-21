@@ -19,7 +19,7 @@ use crate::handlers::{
     connection_tests_more as more_tests, fields, forward_auth, groups, health_checks_plugin, help,
     homepage, icon, images, invites, ip, launch, lock, log, login, login_backends, logout, mail,
     media_register, news, oidc, pages, ping, plex, register, socks, speed_test, sponsors, tabs,
-    token, two_factor, users, users_import, wizard,
+    themes, token, two_factor, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -511,6 +511,14 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/plugins/php-mailer/email/list", &get(mail::list))?
         .route("/plugins/php-mailer/email/send", &post(mail::send))?
         .route("/plugins/php-mailer/email/test", &get(mail::test))?
+        .route("/themes", &get(themes::list))?
+        .route("/themes/marketplace", &get(themes::marketplace_list))?
+        .route(
+            "/themes/manage/{theme}",
+            &post(themes::install).delete(themes::remove),
+        )?
+        // Not a route of PHP: the style sheets of the Admin as a file (D-92).
+        .route("/appearance/custom.css", &get(themes::custom_css))?
         .route("/users", &get(users::list).post(users::add))?
         .route("/users/import/{type}", &post(users_import::import))?
         .route("/users/lock", &post(lock::lock_own))?

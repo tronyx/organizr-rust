@@ -1,6 +1,7 @@
 // What the interface knows about the install and the caller: the answer of `GET /launch`.
 
 import { api, failureText } from './api';
+import { applyAppearance } from './theme';
 import {
   CO_ADMIN,
   type Launch,
@@ -35,6 +36,7 @@ class Session {
       this.launch = data;
       this.error = null;
       document.title = data.appearance.title || 'Organizr';
+      applyAppearance(data.theme, data.appearance);
     } catch (failure) {
       this.error = failureText(failure);
     } finally {

@@ -653,7 +653,9 @@ settings! {
     theme_installed: Text = "themeInstalled", String::new();
     theme_version: Text = "themeVersion", String::new();
     installed_plugins: List = "installedPlugins", Vec::new();
-    installed_themes: Text = "installedThemes", String::new();
+    /// The installed themes of the marketplace: an object from the name of each theme to
+    /// its details, as PHP stores it, or the empty text while none is installed.
+    installed_themes: Anything = "installedThemes", Value::String(String::new());
     auth_debug: Flag = "authDebug", false;
     minimal_login_screen: Flag = "minimalLoginScreen", false;
     cache_image_size: TextNumber<u32> = "cacheImageSize", 2;

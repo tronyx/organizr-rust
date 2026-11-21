@@ -40,6 +40,7 @@ pub mod socks;
 pub mod speed_test;
 pub mod sponsors;
 pub mod tabs;
+pub mod themes;
 pub mod token;
 pub mod two_factor;
 pub mod users;

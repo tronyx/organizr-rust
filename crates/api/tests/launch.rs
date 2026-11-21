@@ -267,6 +267,11 @@ async fn settings_change_the_order_and_the_look() {
                 ("unsortedTabs", json!("bottom")),
                 ("title", json!("Home")),
                 ("theme", json!("Plex")),
+                // The page shows a theme of the marketplace only when it is installed (D-92).
+                (
+                    "installedThemes",
+                    json!({ "Plex": { "name": "Plex", "version": "3.0.0" } }),
+                ),
                 ("style", json!("light")),
                 ("useLogo", json!(true)),
                 ("logo", json!("https://example.com/logo.png")),

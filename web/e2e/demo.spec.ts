@@ -519,6 +519,48 @@ test('the Admin reads the log of the server on the settings page', async ({ page
   await expect(log).toContainText(/Request ID\s*None/);
 });
 
+test('the Admin installs a theme, picks it, and sets a colour and custom CSS', async ({ page }) => {
+  await logIn(page);
+  const root = page.locator('html');
+  const header = page.getByRole('banner');
+  await expect(root).toHaveCSS('background-color', 'rgb(31, 31, 31)');
+
+  await page.goto('./#/settings/themes');
+  await page.getByRole('button', { name: 'Install Nord' }).click();
+  await expect(page.getByRole('status')).toHaveText('The theme Nord is installed.');
+
+  await page.getByRole('tab', { name: 'Appearance' }).click();
+  const theme = page.getByLabel('Theme', { exact: true });
+  await theme.selectOption('Nord');
+  await expect(page.getByRole('img', { name: 'Preview of the theme Nord' })).toBeVisible();
+  await page.getByLabel('Colour of the bar at the top', { exact: true }).fill('#112233');
+  await page
+    .getByLabel('Custom CSS')
+    .fill('.org-header { border-bottom: 3px solid rgb(1, 2, 3); }');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+
+  // The page has the colours of Nord, the colour of the setting, and the style sheet of
+  // the Admin, all without a style that the security policy of the page would stop.
+  await expect(root).toHaveAttribute('data-theme', 'org-nord');
+  await expect(root).toHaveCSS('background-color', 'rgb(46, 52, 64)');
+  await expect(header).toHaveCSS('background-color', 'rgb(17, 34, 51)');
+  await expect(header).toHaveCSS('border-bottom-color', 'rgb(1, 2, 3)');
+  await page.reload();
+  await expect(header).toHaveCSS('border-bottom-color', 'rgb(1, 2, 3)');
+  await expect(root).toHaveCSS('background-color', 'rgb(46, 52, 64)');
+
+  // Back to the look of a new install, for the tests after this one.
+  await page.getByLabel('Theme', { exact: true }).selectOption('Organizr');
+  await page.getByLabel('Colour of the bar at the top', { exact: true }).fill('');
+  await page.getByLabel('Custom CSS').fill('');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  await expect(root).toHaveAttribute('data-theme', 'organizr');
+  await expect(root).toHaveCSS('background-color', 'rgb(31, 31, 31)');
+  await expect(header).not.toHaveCSS('border-bottom-color', 'rgb(1, 2, 3)');
+});
+
 test('a guest cannot open the settings', async ({ page }) => {
   await page.goto('./#/settings/tabs');
 

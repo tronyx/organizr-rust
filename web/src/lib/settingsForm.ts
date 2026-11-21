@@ -34,7 +34,11 @@ export type Field =
   | (FieldBase & { kind: 'switch' })
   | (FieldBase & { kind: 'select'; options: { value: string; label: string }[] })
   /** A password or a key. `generate` adds a button that makes a random key. */
-  | (FieldBase & { kind: 'secret'; generate?: boolean });
+  | (FieldBase & { kind: 'secret'; generate?: boolean })
+  /** A colour, or the empty text for the colour of the theme. */
+  | (FieldBase & { kind: 'color' })
+  /** The theme of the page, with a preview of the chosen one. */
+  | (FieldBase & { kind: 'theme'; options: { value: string; label: string }[] });
 
 export interface FieldGroup {
   title: string;
@@ -216,6 +220,61 @@ export const GENERAL: FieldGroup[] = [
     ],
   },
 ];
+
+/** The colour settings of "Colors & Themes", in the order of PHP Organizr. */
+export const COLOUR_SETTINGS: { key: string; label: string }[] = [
+  { key: 'headerColor', label: 'Colour of the bar at the top' },
+  { key: 'headerTextColor', label: 'Colour of the text in the bar at the top' },
+  { key: 'sidebarColor', label: 'Colour of the menu' },
+  { key: 'sidebarTextColor', label: 'Colour of the text in the menu' },
+  { key: 'accentColor', label: 'Colour of the highlights' },
+  { key: 'accentTextColor', label: 'Colour of the text on the highlights' },
+  { key: 'buttonColor', label: 'Colour of the buttons' },
+  { key: 'buttonTextColor', label: 'Colour of the text on the buttons' },
+];
+
+/**
+ * The settings of Customize > Appearance that change the look of the page, with the
+ * themes that the install offers.
+ */
+export function appearanceGroups(themes: { value: string; label: string }[]): FieldGroup[] {
+  return [
+    {
+      title: 'Colours and theme',
+      fields: [
+        { key: 'theme', label: 'Theme', kind: 'theme', options: themes },
+        ...COLOUR_SETTINGS.map(({ key, label }): Field => ({
+          key,
+          label,
+          kind: 'color',
+          help: 'For example #987654. Leave the field empty for the colour of the theme.',
+        })),
+      ],
+    },
+    {
+      title: 'Custom CSS',
+      fields: [
+        {
+          key: 'customCss',
+          label: 'Custom CSS',
+          kind: 'textarea',
+          help: 'A style sheet for every page, after the theme. Rules for the page of PHP Organizr do not fit this interface. Files from other sites, such as fonts and @import, are not loaded.',
+        },
+      ],
+    },
+    {
+      title: 'Theme CSS',
+      fields: [
+        {
+          key: 'customThemeCss',
+          label: 'Theme CSS',
+          kind: 'textarea',
+          help: 'A style sheet that comes before the custom CSS.',
+        },
+      ],
+    },
+  ];
+}
 
 const LEVELS = [
   { value: '0', label: 'Admin' },

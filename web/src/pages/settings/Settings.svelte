@@ -19,6 +19,7 @@
   import BackupsEditor from './BackupsEditor.svelte';
   import BookmarksEditor from './BookmarksEditor.svelte';
   import CategoriesEditor from './CategoriesEditor.svelte';
+  import AppearanceSettings from './AppearanceSettings.svelte';
   import ExtensionsEditor from './ExtensionsEditor.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
@@ -28,6 +29,7 @@
   import SettingsForm from './SettingsForm.svelte';
   import MailSettings from './MailSettings.svelte';
   import TabsEditor from './TabsEditor.svelte';
+  import ThemeMarketplace from './ThemeMarketplace.svelte';
   import UsersEditor from './UsersEditor.svelte';
 
   let { section }: { section: SettingsSection } = $props();
@@ -82,6 +84,24 @@
       href={PAGES.generalSettings}
     >
       General
+    </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'appearance'}
+      aria-selected={section === 'appearance'}
+      href={PAGES.appearanceSettings}
+    >
+      Appearance
+    </a>
+    <a
+      role="tab"
+      class="tab"
+      class:tab-active={section === 'themes'}
+      aria-selected={section === 'themes'}
+      href={PAGES.themeSettings}
+    >
+      Themes
     </a>
     <a
       role="tab"
@@ -179,6 +199,10 @@
 
   {#if section === 'general'}
     <GeneralSettings ondone={(message) => (done = message)} />
+  {:else if section === 'appearance'}
+    <AppearanceSettings ondone={(message) => (done = message)} />
+  {:else if section === 'themes'}
+    <ThemeMarketplace ondone={(message) => (done = message)} />
   {:else if section === 'mail'}
     <MailSettings ondone={(message) => (done = message)} />
   {:else if section === 'login'}

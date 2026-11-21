@@ -275,7 +275,8 @@ pub async fn launch(
         tabs,
         user: describe_caller(&state, &caller, client).await?,
         branch: settings.branch.clone(),
-        theme: settings.theme.clone(),
+        // The theme that the page shows, which PHP works out the same way (D-92).
+        theme: crate::handlers::themes::applied_theme(&settings),
         style: settings.style.clone(),
         version: VERSION,
         settings: visitor.settings(),

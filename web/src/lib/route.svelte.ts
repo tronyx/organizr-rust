@@ -7,6 +7,8 @@ import type { MenuTab } from './types';
 /** The parts of the settings. */
 export type SettingsSection =
   | 'general'
+  | 'appearance'
+  | 'themes'
   | 'tabs'
   | 'categories'
   | 'groups'
@@ -44,6 +46,8 @@ export const PAGES = {
   recover: '#/recover',
   account: '#/account',
   generalSettings: '#/settings/general',
+  appearanceSettings: '#/settings/appearance',
+  themeSettings: '#/settings/themes',
   tabSettings: '#/settings/tabs',
   categorySettings: '#/settings/categories',
   groupSettings: '#/settings/groups',
@@ -96,6 +100,10 @@ export function parseRoute(hash: string): Route {
       return { page: 'settings', section: 'tabs' };
     case '/settings/general':
       return { page: 'settings', section: 'general' };
+    case '/settings/appearance':
+      return { page: 'settings', section: 'appearance' };
+    case '/settings/themes':
+      return { page: 'settings', section: 'themes' };
     case '/settings/categories':
       return { page: 'settings', section: 'categories' };
     case '/settings/groups':

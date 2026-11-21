@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
 
   import { api, apiUrl, failureText } from '../../lib/api';
+  import ThemePreview from '../../components/ThemePreview.svelte';
   import { randomKey } from '../../lib/random';
   import { session } from '../../lib/session.svelte';
   import {
@@ -18,6 +19,7 @@
     type FormValue,
     type ValueTest,
   } from '../../lib/settingsForm';
+  import { isColour } from '../../lib/theme';
 
   let {
     groups,
@@ -191,6 +193,48 @@
                   <option value={option.value}>{option.label}</option>
                 {/each}
               </select>
+            {:else if field.kind === 'theme'}
+              <div class="flex flex-wrap items-start gap-4">
+                <select
+                  {id}
+                  class="select w-full max-w-xs"
+                  value={form[field.key]}
+                  aria-describedby={hint}
+                  onchange={(event) => (form[field.key] = event.currentTarget.value)}
+                >
+                  {#each field.options as option (option.value)}
+                    <option value={option.value}>{option.label}</option>
+                  {/each}
+                </select>
+                <ThemePreview theme={String(form[field.key] ?? '')} />
+              </div>
+            {:else if field.kind === 'color'}
+              {@const text = String(form[field.key] ?? '')}
+              {@const wrong = text.trim() !== '' && !isColour(text)}
+              <div class="flex gap-2">
+                <input
+                  {id}
+                  class={['input w-full', wrong && 'input-error']}
+                  value={form[field.key]}
+                  placeholder="#987654"
+                  autocomplete="off"
+                  aria-invalid={wrong}
+                  aria-describedby={hint}
+                  oninput={(event) => (form[field.key] = event.currentTarget.value)}
+                />
+                <input
+                  type="color"
+                  class="h-10 w-12 shrink-0 cursor-pointer"
+                  value={/^#[0-9a-f]{6}$/i.test(text) ? text : '#987654'}
+                  aria-label={`Pick the ${field.label.toLowerCase()}`}
+                  oninput={(event) => (form[field.key] = event.currentTarget.value)}
+                />
+              </div>
+              {#if wrong}
+                <p class="text-error text-sm">
+                  This is no colour. The page keeps the colour of the theme.
+                </p>
+              {/if}
             {:else if field.kind === 'secret'}
               <div class="flex gap-2">
                 <input

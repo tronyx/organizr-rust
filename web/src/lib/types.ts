@@ -94,6 +94,18 @@ export interface Appearance {
   useLogo?: boolean;
   /** Whether the login page shows its picture and not the title. */
   useLogoLogin?: boolean;
+  /** The colours of the settings "Colors & Themes". An empty text means the colour of the theme. */
+  headerColor?: string;
+  headerTextColor?: string;
+  sidebarColor?: string;
+  sidebarTextColor?: string;
+  accentColor?: string;
+  accentTextColor?: string;
+  buttonColor?: string;
+  buttonTextColor?: string;
+  /** The style sheets of the Admin, which the server also hands out as one file. */
+  customCss?: string;
+  customThemeCss?: string;
 }
 
 /** Where the tabs without a heading stand in the menu. */
@@ -107,6 +119,8 @@ export interface Launch {
   /** `null` right after the server has dropped a session cookie that is not valid. */
   user: User | null;
   version: string;
+  /** The theme that the page shows, for example `Organizr` or `Nord`. */
+  theme?: string;
   appearance: Appearance;
   /** The switch of each plugin, for example `PHPMAILER-enabled`, and what plugins add. */
   plugins: Record<string, unknown>;
