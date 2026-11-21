@@ -196,6 +196,7 @@ async fn store<C: ConnectionTrait>(connection: &C, data: ImportData) -> Result<(
             created_at: ActiveValue::Set(user.created_at.unix_seconds()),
             auth_service: ActiveValue::Set(login.auth_service),
             auth_provider: ActiveValue::Set(login.auth_provider),
+            auth_subject: ActiveValue::Set(login.auth_subject),
             two_factor_kind: ActiveValue::Set(two_factor_kind),
             two_factor_secret: ActiveValue::Set(two_factor_secret),
             plex_token: ActiveValue::Set(login.sealed_plex_token),

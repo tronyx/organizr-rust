@@ -20,6 +20,8 @@ pub const SERVICE: &str = "oidc";
 pub struct OidcAccount<'a> {
     /// The key of the provider, for example `authentik`.
     pub provider: &'a str,
+    /// The subject (`sub`) of the checked ID token.
+    pub subject: &'a str,
     /// The user name. It is not empty.
     pub username: &'a str,
     /// The e-mail address. Empty when the provider gives none.
@@ -49,6 +51,16 @@ pub enum OidcAccountError {
         "the account `{0}` is an Admin or a Co-Admin account, which is never linked by its name or its address"
     )]
     Protected(String),
+    /// The account with the name or the address is linked to another account of this
+    /// provider: another subject.
+    #[error("the account `{0}` is linked to another account of the provider")]
+    OtherSubject(String),
+    /// The account with the name or the address is linked to another provider.
+    #[error("the account `{0}` is linked to another provider")]
+    LinkedElsewhere(String),
+    /// Another account is linked to the subject.
+    #[error("another account is linked to this account of the provider")]
+    SubjectTaken,
     /// No account fits, and the settings make none.
     #[error("no account is named `{0}`, and the automatic creation of accounts is off")]
     NoAccount(String),
@@ -74,12 +86,8 @@ pub struct OidcLink<'a> {
     pub provider: &'a str,
     /// The account of the session that started the link.
     pub user: UserId,
-    /// The user name that the provider gives. It is not empty.
-    pub username: &'a str,
-    /// The e-mail address that the provider gives. Empty when it gives none.
-    pub email: &'a str,
-    /// Whether the provider has checked the address, when it says so.
-    pub email_verified: Option<bool>,
+    /// The subject (`sub`) of the checked ID token.
+    pub subject: &'a str,
 }
 
 /// Why an account could not be linked.
@@ -88,56 +96,45 @@ pub enum OidcLinkError {
     /// The account of the session is gone.
     #[error("the account of the session does not exist")]
     NoAccount,
-    /// Another account has the user name of the provider. A login through the provider
-    /// would find that account first.
-    #[error("another account has the user name `{0}` of the provider")]
-    NameTaken(String),
-    /// Neither the user name nor a checked e-mail address of the provider is the one of
-    /// the account, so a login through the provider would not find the account.
-    #[error(
-        "the provider names the user `{0}`, whose name and address are not those of the account"
-    )]
-    NotThisAccount(String),
+    /// Another account is linked to the same account at the provider.
+    #[error("another account is linked to this account of the provider")]
+    SubjectTaken,
     /// The database failed.
     #[error(transparent)]
-    Database(#[from] DbError),
+    Database(DbError),
 }
 
-/// Links the account of a session to a provider. The settings `oidcLinkExistingUsers`
-/// and the rule for Admin accounts do not count: the person is logged in to the account
-/// and has logged in at the provider. No account is made.
+impl From<DbError> for OidcLinkError {
+    fn from(error: DbError) -> Self {
+        match error {
+            DbError::Duplicate => Self::SubjectTaken,
+            other => Self::Database(other),
+        }
+    }
+}
+
+/// Links the account of a session to the account of the person at a provider: the
+/// subject of the checked ID token. The settings `oidcLinkExistingUsers` and the rule for
+/// Admin accounts do not count, and the names may differ: the person is logged in to the
+/// account and has logged in at the provider. No account is made.
 ///
-/// A later login through the provider finds an account by the user name of the
-/// provider, or by its checked e-mail address. So the link is made only when one of the
-/// two is the one of the account, and no other account has the user name.
+/// The link is refused when another account is linked to the same subject of the
+/// provider. A link to another provider, or to another subject, is replaced.
 pub async fn link(database: &Database, link: OidcLink<'_>) -> Result<User, OidcLinkError> {
     let users = database.users();
     let user = users
         .find(link.user)
         .await?
         .ok_or(OidcLinkError::NoAccount)?;
-    let by_name = users.find_by_username(link.username).await?;
-    let matches = match &by_name {
-        Some(found) if found.id != user.id => {
-            return Err(OidcLinkError::NameTaken(link.username.to_owned()));
-        }
-        Some(_) => true,
-        None => {
-            !link.email.is_empty()
-                && link.email_verified != Some(false)
-                && user
-                    .email
-                    .as_deref()
-                    .is_some_and(|email| email.eq_ignore_ascii_case(link.email))
-        }
-    };
-    if !matches {
-        return Err(OidcLinkError::NotThisAccount(link.username.to_owned()));
+    if let Some(other) = users.find_by_subject(link.provider, link.subject).await?
+        && other.id != user.id
+    {
+        return Err(OidcLinkError::SubjectTaken);
     }
     users
-        .set_auth_service(user.id, SERVICE, Some(link.provider))
+        .set_auth_service(user.id, SERVICE, Some(link.provider), Some(link.subject))
         .await?;
-    tracing::info!(user = %user.username, provider = link.provider, "a user linked the account to the provider");
+    tracing::info!(user = %user.username, provider = link.provider, subject = link.subject, "a user linked the account to the provider");
     Ok(user)
 }
 
@@ -158,19 +155,32 @@ pub struct Found {
     pub created: bool,
 }
 
-/// Finds, links or makes the account of a person, as the PHP application does:
+/// How an account is linked, as seen from one provider.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum LinkState {
+    /// The account is not linked to any provider.
+    Free,
+    /// Linked to this provider before the subject was stored, for example by PHP.
+    ThisProviderWithoutSubject,
+    /// Linked to this provider, to the account with the stored subject.
+    ThisProvider,
+    /// Linked to another provider.
+    OtherProvider,
+}
+
+/// Finds, links or makes the account of a person:
 ///
-/// 1. The account with the user name, whatever the letter case.
-/// 2. With `link_existing`, the account with the e-mail address, unless the provider
-///    says that it has not checked the address.
-/// 3. With `auto_create`, a new account with a random password.
+/// 1. The account that is linked to the subject of the ID token at this provider.
+/// 2. Else the account with the user name, whatever the letter case, or else, unless
+///    the provider says that it has not checked it, the account with the e-mail address.
+///    Such an account is used only when it is linked to no provider yet (and then only
+///    with `link_existing`, and never an Admin or a Co-Admin account), or when it is
+///    linked to this provider without a stored subject, as an imported account is. The
+///    subject is stored then, so this first login decides. An account linked to another
+///    subject or another provider is refused.
+/// 3. Else, with `auto_create`, a new account with a random password and the subject.
 ///
-/// An account found by its name is linked only with `link_existing`, or when this
-/// provider has linked or made it before. An account that this provider has linked is
-/// also found by a checked e-mail address without `link_existing`. An Admin or a
-/// Co-Admin account is linked only when this provider has linked or made it before,
-/// whatever the settings. The account gets the service `oidc` and the provider. With
-/// `update_group`, a found account moves to the mapped group.
+/// With `update_group`, a found account moves to the mapped group.
 pub async fn find_or_create(
     database: &Database,
     account: OidcAccount<'_>,
@@ -179,50 +189,47 @@ pub async fn find_or_create(
     let users = database.users();
     let group = group_for(database, account.level).await?;
 
-    let by_name = users.find_by_username(account.username).await?;
-    let found = match by_name {
-        Some(user) => {
-            if !account.link_existing && !is_linked(database, &user, account.provider).await? {
-                return Err(OidcAccountError::NotLinked(user.username));
-            }
-            Some(user)
-        }
+    if let Some(user) = users
+        .find_by_subject(account.provider, account.subject)
+        .await?
+    {
+        let user = regroup(database, user, group, account.update_group).await?;
+        return Ok(Found {
+            user,
+            created: false,
+        });
+    }
+
+    let candidate = match users.find_by_username(account.username).await? {
+        Some(user) => Some(user),
         None if !account.email.is_empty() && account.email_verified != Some(false) => {
-            match users.find_by_email(account.email).await? {
-                Some(user)
-                    if account.link_existing
-                        || is_linked(database, &user, account.provider).await? =>
-                {
-                    Some(user)
-                }
-                _ => None,
-            }
+            users.find_by_email(account.email).await?
         }
         None => None,
     };
 
-    // An Admin or a Co-Admin account is never linked by its name or its address: only
-    // an account that this provider linked or made before logs in.
-    if let Some(user) = &found
-        && !is_linked(database, user, account.provider).await?
-        && is_privileged(database, user).await?
-    {
-        return Err(OidcAccountError::Protected(user.username.clone()));
-    }
-
-    if let Some(user) = found {
-        users
-            .set_auth_service(user.id, SERVICE, Some(account.provider))
-            .await?;
-        let user = if account.update_group && user.group != group {
-            let changes = UserChanges {
-                group: Change::Set(group),
-                ..UserChanges::none()
-            };
-            users.update(user.id, changes).await?.unwrap_or(user)
-        } else {
-            user
-        };
+    if let Some(user) = candidate {
+        match link_state(database, &user, account.provider).await? {
+            LinkState::ThisProvider => {
+                return Err(OidcAccountError::OtherSubject(user.username));
+            }
+            LinkState::OtherProvider => {
+                return Err(OidcAccountError::LinkedElsewhere(user.username));
+            }
+            LinkState::ThisProviderWithoutSubject => {}
+            LinkState::Free => {
+                if !account.link_existing {
+                    return Err(OidcAccountError::NotLinked(user.username));
+                }
+                // An Admin or a Co-Admin account is never linked by its name or its
+                // address.
+                if is_privileged(database, &user).await? {
+                    return Err(OidcAccountError::Protected(user.username));
+                }
+            }
+        }
+        store_subject(database, &user, account).await?;
+        let user = regroup(database, user, group, account.update_group).await?;
         tracing::info!(user = %user.username, provider = account.provider, "an account was linked to the provider");
         return Ok(Found {
             user,
@@ -246,9 +253,7 @@ pub async fn find_or_create(
     let user = registration::create_account(database, new, now)
         .await
         .map_err(OidcAccountError::Account)?;
-    users
-        .set_auth_service(user.id, SERVICE, Some(account.provider))
-        .await?;
+    store_subject(database, &user, account).await?;
     let picture = account.picture.filter(|address| is_web_address(address));
     let changes = UserChanges {
         group: if user.group == group {
@@ -269,6 +274,58 @@ pub async fn find_or_create(
     })
 }
 
+/// Links an account to the provider and the subject of the person.
+async fn store_subject(
+    database: &Database,
+    user: &User,
+    account: OidcAccount<'_>,
+) -> Result<(), OidcAccountError> {
+    database
+        .users()
+        .set_auth_service(
+            user.id,
+            SERVICE,
+            Some(account.provider),
+            Some(account.subject),
+        )
+        .await
+        .map_err(|error| match error {
+            // Another login stored the same subject in between.
+            DbError::Duplicate => OidcAccountError::SubjectTaken,
+            other => OidcAccountError::Database(other),
+        })?;
+    // The subject names an account at the provider; it is no secret. The log lets an
+    // Admin check which account of the provider a first login linked.
+    tracing::info!(
+        user = %user.username,
+        provider = account.provider,
+        subject = account.subject,
+        "the account was linked to an account of the provider"
+    );
+    Ok(())
+}
+
+/// The account, moved to `group` when `update` says so.
+async fn regroup(
+    database: &Database,
+    user: User,
+    group: GroupId,
+    update: bool,
+) -> Result<User, OidcAccountError> {
+    if !update || user.group == group {
+        return Ok(user);
+    }
+    let changes = UserChanges {
+        group: Change::Set(group),
+        ..UserChanges::none()
+    };
+    Ok(database
+        .users()
+        .update(user.id, changes)
+        .await?
+        .unwrap_or(user))
+}
+
 /// Whether the account is in a group of the level Admin or Co-Admin, as it is stored
 /// now. An account whose group is gone counts as one.
 async fn is_privileged(database: &Database, user: &User) -> Result<bool, DbError> {
@@ -279,15 +336,24 @@ async fn is_privileged(database: &Database, user: &User) -> Result<bool, DbError
         .is_none_or(|group| group.level <= GroupLevel::CO_ADMIN))
 }
 
-/// Whether this provider has linked or made the account before.
-async fn is_linked(database: &Database, user: &User, provider: &str) -> Result<bool, DbError> {
-    Ok(database
-        .users()
-        .login_of(user.id)
-        .await?
-        .is_some_and(|login| {
-            login.auth_service == SERVICE && login.auth_provider.as_deref() == Some(provider)
-        }))
+/// How the account is linked, as seen from `provider`.
+async fn link_state(
+    database: &Database,
+    user: &User,
+    provider: &str,
+) -> Result<LinkState, DbError> {
+    let Some(login) = database.users().login_of(user.id).await? else {
+        return Ok(LinkState::Free);
+    };
+    if login.auth_service != SERVICE {
+        return Ok(LinkState::Free);
+    }
+    Ok(match (login.auth_provider.as_deref(), login.auth_subject) {
+        (Some(linked), None) if linked == provider => LinkState::ThisProviderWithoutSubject,
+        (Some(linked), Some(_)) if linked == provider => LinkState::ThisProvider,
+        (Some(_), _) => LinkState::OtherProvider,
+        (None, _) => LinkState::Free,
+    })
 }
 
 /// The group of a level. When no group has the level, the default group, so that the

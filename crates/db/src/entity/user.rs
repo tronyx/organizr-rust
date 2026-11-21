@@ -26,6 +26,9 @@ pub struct Model {
     pub created_at: i64,
     pub auth_service: String,
     pub auth_provider: Option<String>,
+    /// The subject (`sub`) of the account at the provider of an `oidc` login. The pair
+    /// of provider and subject is unique.
+    pub auth_subject: Option<String>,
     pub two_factor_kind: Option<String>,
     pub two_factor_secret: Option<String>,
     pub plex_token: Option<String>,

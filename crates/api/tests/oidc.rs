@@ -594,6 +594,10 @@ async fn group_mapping_takes_the_first_the_highest_or_the_lowest_privilege() {
             let provider = OidcProvider::start().await;
             let name = format!("person{number}");
             provider.set(|behaviour| {
+                // Each person is another account of the provider.
+                behaviour
+                    .person
+                    .insert("sub".to_owned(), json!(format!("subject-of-{name}")));
                 behaviour
                     .person
                     .insert("preferred_username".to_owned(), json!(name));
@@ -624,6 +628,9 @@ async fn group_mapping_takes_the_first_the_highest_or_the_lowest_privilege() {
             behaviour
                 .person
                 .insert("preferred_username".to_owned(), json!("nomap"));
+            behaviour
+                .person
+                .insert("sub".to_owned(), json!("subject-of-nomap"));
             behaviour
                 .person
                 .insert("email".to_owned(), json!("nomap@example.com"));
@@ -953,7 +960,7 @@ async fn admin_account_that_this_provider_linked_logs_in() {
         let chief = store_user(database, "chief", "chief@example.com", 0).await;
         database
             .users()
-            .set_auth_service(chief.id, "oidc", Some("keycloak"))
+            .set_auth_service(chief.id, "oidc", Some("keycloak"), None)
             .await
             .expect("the service can be stored");
         let provider = OidcProvider::start().await;
@@ -970,7 +977,7 @@ async fn admin_account_that_this_provider_linked_logs_in() {
         // A link to another provider does not count for this one.
         database
             .users()
-            .set_auth_service(chief.id, "oidc", Some("authentik"))
+            .set_auth_service(chief.id, "oidc", Some("authentik"), None)
             .await
             .expect("the service can be stored");
         let answer = log_in(&app, &provider).await;
@@ -1165,25 +1172,32 @@ async fn link_refuses_a_forged_or_an_expired_login_cookie() {
 }
 
 #[tokio::test]
-async fn link_never_makes_an_account() {
+async fn link_with_another_name_works_and_never_makes_an_account() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let provider = OidcProvider::start().await;
         person(&provider, "stranger", "stranger@example.com");
-        let app = app(database, &provider, &[]);
+        let app = app(database, &provider, &[("oidcAutoCreateUsers", json!(true))]);
         let chief = seed::logged_in(database, &app, "chief", 0).await;
         let users_before = database.users().count().await.expect("a count");
 
         let (back, cookie) = start_link(&app, &provider, &chief).await;
         let answer = finish_link(&app, &back, &[&cookie, &chief]).await;
 
-        assert_failed(
-            &answer,
-            "The provider names the user stranger, whose user name and e-mail address are not those of this account",
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        assert_eq!(
+            database.users().count().await.expect("a count"),
+            users_before
         );
-        assert_eq!(database.users().count().await.expect("a count"), users_before);
         assert!(user(database, "stranger").await.is_none());
-        assert_eq!(auth_service(&app, "chief").await, json!("internal"));
+        assert_eq!(auth_service(&app, "chief").await, json!("oidc::keycloak"));
+
+        // The login through the provider finds the account by the subject.
+        let answer = log_in(&app, &provider).await;
+        let session = session_cookie(&answer).expect("the session cookie is set");
+        let me = call(&app, As::User(&session), "GET", "/token/me", None).await;
+        assert_eq!(me.data()["username"], json!("chief"));
+        assert!(user(database, "stranger").await.is_none());
     })
     .await;
 }
@@ -1202,12 +1216,12 @@ async fn second_account_cannot_link_an_identity_that_belongs_to_another() {
         let answer = finish_link(&app, &back, &[&cookie, &chief]).await;
         assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
 
-        // The provider vouches for "chief", which is the name of another account.
+        // The same account of the provider, for a second Organizr account.
         let (back, cookie) = start_link(&app, &provider, &deputy).await;
         let answer = finish_link(&app, &back, &[&cookie, &deputy]).await;
         assert_failed(
             &answer,
-            "Another account already has the user name chief of the provider",
+            "Another account is already linked to this account of the provider",
         );
         assert_eq!(auth_service(&app, "deputy").await, json!("internal"));
         assert_eq!(auth_service(&app, "chief").await, json!("oidc::keycloak"));
@@ -1250,6 +1264,140 @@ async fn link_route_needs_a_session_of_this_site() {
 
         let linked = call(&app, As::User(&chief), "GET", "/oidc/link", None).await;
         assert_eq!(linked.data(), json!({"provider": null, "name": null}));
+    })
+    .await;
+}
+
+/// Sets the subject of the person of the stand-in.
+fn subject(provider: &OidcProvider, sub: &str) {
+    provider.set(|behaviour| {
+        behaviour.person.insert("sub".to_owned(), json!(sub));
+    });
+}
+
+async fn stored_subject(database: &Database, name: &str) -> Option<String> {
+    let found = user(database, name).await.expect("the account");
+    database
+        .users()
+        .login_of(found.id)
+        .await
+        .expect("the lookup works")
+        .expect("the account exists")
+        .auth_subject
+}
+
+#[tokio::test]
+async fn admin_name_with_another_subject_is_refused_after_the_link() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        person(&provider, "chief", "chief@example.com");
+        let app = app(database, &provider, &[]);
+        let chief = seed::logged_in(database, &app, "chief", 0).await;
+        let (back, cookie) = start_link(&app, &provider, &chief).await;
+        let answer = finish_link(&app, &back, &[&cookie, &chief]).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        assert_eq!(
+            stored_subject(database, "chief").await.as_deref(),
+            Some("subject-1")
+        );
+
+        // Somebody else at the provider takes the name and the address of the Admin.
+        subject(&provider, "subject-of-somebody-else");
+        let answer = log_in(&app, &provider).await;
+
+        assert_failed(&answer, "Failed to create or link user");
+        assert_eq!(
+            stored_subject(database, "chief").await.as_deref(),
+            Some("subject-1")
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn right_subject_logs_in_after_the_name_changed_at_the_provider() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        let app = app(database, &provider, &[]);
+
+        // The first login makes the account, with the subject.
+        let answer = log_in(&app, &provider).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        assert_eq!(
+            stored_subject(database, "robin").await.as_deref(),
+            Some("subject-1")
+        );
+
+        person(&provider, "robin.new", "robin.new@example.com");
+        let answer = log_in(&app, &provider).await;
+
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        let session = session_cookie(&answer).expect("the session cookie is set");
+        let me = call(&app, As::User(&session), "GET", "/token/me", None).await;
+        assert_eq!(me.data()["username"], json!("robin"));
+        assert!(user(database, "robin.new").await.is_none());
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn imported_link_without_a_subject_gets_it_at_the_first_login() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let imported = store_user(database, "imported", "imported@example.com", 0).await;
+        // As the importer stores an account that PHP linked: `oidc::keycloak`, no subject.
+        database
+            .users()
+            .set_auth_service(imported.id, "oidc", Some("keycloak"), None)
+            .await
+            .expect("the service can be stored");
+        let provider = OidcProvider::start().await;
+        person(&provider, "imported", "imported@example.com");
+        let app = app(
+            database,
+            &provider,
+            &[("oidcLinkExistingUsers", json!(false))],
+        );
+
+        let answer = log_in(&app, &provider).await;
+
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        assert_eq!(
+            stored_subject(database, "imported").await.as_deref(),
+            Some("subject-1")
+        );
+
+        // From now on, only that subject logs in.
+        subject(&provider, "subject-2");
+        let answer = log_in(&app, &provider).await;
+        assert_failed(&answer, "Failed to create or link user");
+        assert_eq!(
+            stored_subject(database, "imported").await.as_deref(),
+            Some("subject-1")
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn account_linked_to_another_provider_is_not_taken_by_name() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let robin = store_user(database, "robin", "robin@example.com", 4).await;
+        database
+            .users()
+            .set_auth_service(robin.id, "oidc", Some("authentik"), Some("authentik-sub"))
+            .await
+            .expect("the service can be stored");
+        let provider = OidcProvider::start().await;
+        let app = app(database, &provider, &[]);
+
+        let answer = log_in(&app, &provider).await;
+
+        assert_failed(&answer, "Failed to create or link user");
+        assert_eq!(auth_service(&app, "robin").await, json!("oidc::authentik"));
     })
     .await;
 }

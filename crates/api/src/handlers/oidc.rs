@@ -541,25 +541,20 @@ async fn link_account(
     back: &str,
 ) -> Result<Response, String> {
     let failed = || "The account could not be linked".to_owned();
-    let Some(username) = person.username() else {
-        tracing::warn!(provider = provider.key, "the provider named no user name");
-        return Err(failed());
-    };
     let link = OidcLink {
         provider: provider.key,
         user,
-        username,
-        email: person.email.as_deref().unwrap_or_default(),
-        email_verified: person.email_verified,
+        subject: &person.subject,
     };
     match accounts::link(state.database(), link).await {
         Ok(_) => Ok((StatusCode::FOUND, [(header::LOCATION, safe_place(back))]).into_response()),
-        Err(OidcLinkError::NameTaken(name)) => Err(format!(
-            "Another account already has the user name {name} of the provider"
-        )),
-        Err(OidcLinkError::NotThisAccount(name)) => Err(format!(
-            "The provider names the user {name}, whose user name and e-mail address are not those of this account"
-        )),
+        Err(OidcLinkError::SubjectTaken) => {
+            tracing::warn!(
+                provider = provider.key,
+                "a link names an account of the provider that another account is linked to"
+            );
+            Err("Another account is already linked to this account of the provider".to_owned())
+        }
         Err(error) => {
             tracing::error!(provider = provider.key, %error, "an account could not be linked to the provider");
             Err(failed())
@@ -592,6 +587,7 @@ async fn account_of(
         .unwrap_or_else(|| GroupLevel::new(3).unwrap_or(GroupLevel::GUEST));
     let account = OidcAccount {
         provider: provider.key,
+        subject: &person.subject,
         username,
         email: person.email.as_deref().unwrap_or_default(),
         email_verified: person.email_verified,
@@ -607,7 +603,10 @@ async fn account_of(
         Err(
             error @ (OidcAccountError::NotLinked(_)
             | OidcAccountError::NoAccount(_)
-            | OidcAccountError::Protected(_)),
+            | OidcAccountError::Protected(_)
+            | OidcAccountError::OtherSubject(_)
+            | OidcAccountError::LinkedElsewhere(_)
+            | OidcAccountError::SubjectTaken),
         ) => {
             tracing::warn!(provider = provider.key, %error, "a login at the provider has no account");
             Err(failed())

@@ -1018,3 +1018,67 @@ async fn users_are_listed_in_the_order_in_which_they_were_stored() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn subject_of_a_provider_belongs_to_one_user_and_many_have_none() {
+    on_each_engine(async |database| {
+        let group = insert_group(database, 4, "User").await;
+        let users = database.users();
+        let mut stored = Vec::new();
+        for name in ["first", "second", "third"] {
+            stored.push(
+                users
+                    .insert(new_user(name, group.id))
+                    .await
+                    .expect("the user can be stored"),
+            );
+        }
+        let [first, second, third] = [&stored[0], &stored[1], &stored[2]];
+
+        // Accounts without a subject, linked to the same provider or not, are many.
+        for user in [first, second] {
+            assert!(
+                users
+                    .set_auth_service(user.id, "oidc", Some("keycloak"), None)
+                    .await
+                    .expect("the service can be stored")
+            );
+        }
+        let login = users
+            .login_of(first.id)
+            .await
+            .expect("the lookup works")
+            .expect("the user exists");
+        assert_eq!(login.auth_subject, None);
+
+        users
+            .set_auth_service(first.id, "oidc", Some("keycloak"), Some("sub-1"))
+            .await
+            .expect("the subject can be stored");
+        let found = users
+            .find_by_subject("keycloak", "sub-1")
+            .await
+            .expect("the lookup works")
+            .expect("the user is found");
+        assert_eq!(found.id, first.id);
+        assert!(
+            users
+                .find_by_subject("authentik", "sub-1")
+                .await
+                .expect("the lookup works")
+                .is_none()
+        );
+
+        // The same subject at another provider is another account of a person.
+        users
+            .set_auth_service(third.id, "oidc", Some("authentik"), Some("sub-1"))
+            .await
+            .expect("the subject can be stored");
+        // The same pair a second time is refused.
+        let taken = users
+            .set_auth_service(second.id, "oidc", Some("keycloak"), Some("sub-1"))
+            .await;
+        assert!(matches!(taken, Err(DbError::Duplicate)), "{taken:?}");
+    })
+    .await;
+}

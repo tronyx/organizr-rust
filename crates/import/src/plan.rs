@@ -433,6 +433,8 @@ fn plan_users(
             login: UserLogin {
                 auth_service: login.service,
                 auth_provider: login.provider,
+                // PHP Organizr stores no subject of the provider.
+                auth_subject: None,
                 two_factor,
                 sealed_plex_token,
             },

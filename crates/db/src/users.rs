@@ -169,6 +169,20 @@ impl<'a> Users<'a> {
         Ok(result.rows_affected > 0)
     }
 
+    /// The user whose `oidc` login is the account with `subject` at `provider`.
+    pub async fn find_by_subject(
+        &self,
+        provider: &str,
+        subject: &str,
+    ) -> Result<Option<User>, DbError> {
+        let row = user::Entity::find()
+            .filter(user::Column::AuthProvider.eq(provider))
+            .filter(user::Column::AuthSubject.eq(subject))
+            .one(self.connection)
+            .await?;
+        Ok(row.map(User::from))
+    }
+
     /// The first user, by id, with the given e-mail address, whatever the letter case.
     pub async fn find_by_email(&self, email: &str) -> Result<Option<User>, DbError> {
         let row = user::Entity::find()
@@ -260,17 +274,23 @@ impl<'a> Users<'a> {
         Ok(result.rows_affected > 0)
     }
 
-    /// Sets the service that a user logs in with, and its provider: for example `oidc`
-    /// and `authentik`. Returns whether the user exists.
+    /// Sets the service that a user logs in with, its provider and the subject of the
+    /// account there: for example `oidc`, `authentik` and the `sub` of the ID token.
+    /// Returns whether the user exists.
+    ///
+    /// Fails with [`DbError::Duplicate`] when another user has the provider and the
+    /// subject.
     pub async fn set_auth_service(
         &self,
         id: UserId,
         service: &str,
         provider: Option<&str>,
+        subject: Option<&str>,
     ) -> Result<bool, DbError> {
         let result = user::Entity::update_many()
             .col_expr(user::Column::AuthService, Expr::value(service))
             .col_expr(user::Column::AuthProvider, Expr::value(provider))
+            .col_expr(user::Column::AuthSubject, Expr::value(subject))
             .filter(user::Column::Id.eq(id.get()))
             .exec(self.connection)
             .await?;
@@ -330,6 +350,8 @@ pub struct UserLogin {
     pub auth_service: String,
     /// The provider of an `oidc` login.
     pub auth_provider: Option<String>,
+    /// The subject (`sub`) of the account at that provider, once a login stored it.
+    pub auth_subject: Option<String>,
     /// The second factor, when the user has one.
     pub two_factor: Option<SealedTwoFactor>,
     /// The token of the Plex account, sealed.
@@ -341,6 +363,7 @@ impl From<user::Model> for UserLogin {
         Self {
             auth_service: row.auth_service,
             auth_provider: row.auth_provider,
+            auth_subject: row.auth_subject,
             two_factor: row.two_factor_kind.zip(row.two_factor_secret).map(
                 |(kind, sealed_secret)| SealedTwoFactor {
                     kind,
@@ -383,6 +406,7 @@ pub(crate) async fn insert_in<C: ConnectionTrait>(
         created_at: ActiveValue::Set(new.created_at.unix_seconds()),
         auth_service: ActiveValue::Set("internal".to_owned()),
         auth_provider: ActiveValue::Set(None),
+        auth_subject: ActiveValue::Set(None),
         two_factor_kind: ActiveValue::Set(None),
         two_factor_secret: ActiveValue::Set(None),
         plex_token: ActiveValue::Set(None),

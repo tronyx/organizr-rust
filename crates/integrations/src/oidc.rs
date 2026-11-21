@@ -326,6 +326,8 @@ pub struct Callback<'a> {
 /// when the provider gives none, from the ID token.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Person {
+    /// The subject (`sub`) of the checked ID token, also when the other claims come from
+    /// the user info.
     pub subject: String,
     pub preferred_username: Option<String>,
     pub name: Option<String>,
@@ -417,7 +419,7 @@ pub async fn finish(
         request.request_async(&http).await;
     match info {
         Ok(info) => Ok(Person {
-            subject: info.subject().to_string(),
+            subject: claims.subject().to_string(),
             preferred_username: info.preferred_username().map(|name| name.to_string()),
             name: info
                 .name()

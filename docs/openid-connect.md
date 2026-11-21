@@ -120,15 +120,19 @@ A value that is not a level from 0 to 999 does not count. When no group of Organ
 | Make an account at the first login | `oidcAutoCreateUsers` | A person with no account gets one, with a random password |
 | Link existing accounts by user name or e-mail address | `oidcLinkExistingUsers` | An account of Organizr with the user name, or the e-mail address, of the person becomes the account of the person |
 
-Organizr looks for the account in this order:
+Organizr stores, for each linked account, the subject (`sub`) of the person at the provider: the identifier of the account there, from the checked ID token. It looks for the account in this order:
 
-1. The account with the user name of the person, in any letter case. The user name is the claim `preferred_username`, or else `name`, or else `sub`.
-2. With linking on, the account with the e-mail address of the person. A provider that says it has not checked the address (`email_verified` is `false`) links no account by the address.
-3. With accounts on, a new account in the group of the mappings. Its picture is the claim `picture` when that is a web address.
+1. The account linked to this subject at this provider. A new user name or e-mail address at the provider does not matter.
+2. Else the account with the user name of the person, in any letter case, or else, unless the provider says that it has not checked it (`email_verified` is `false`), the account with the e-mail address. The user name is the claim `preferred_username`, or else `name`, or else `sub`. Such an account is used only:
+   - when it is linked to no provider yet, and **Link existing accounts** is on, and it is not an Admin or a Co-Admin account; or
+   - when it is linked to this provider but has no subject yet, as an account that PHP Organizr linked, or that this application linked before it stored subjects.
 
-With linking off, an account that exists already is used only when this provider made or linked it before.
+   An account linked to another subject, or to another provider, is refused, also when the name and the address match.
+3. Else, with accounts on, a new account in the group of the mappings, with the subject. Its picture is the claim `picture` when that is a web address.
 
-Linking never gives a person an Admin or a Co-Admin account. Such an account logs in through a provider only when that provider made or linked it before, whatever the settings say. The level counts as it is stored at the time of the login. Switch linking on only when the provider decides the user names and the e-mail addresses, and people cannot choose them freely.
+The first login of a linked account without a subject decides: the subject of that login is stored, and from then on only that subject logs in to the account. The log of Organizr names the user, the provider and the subject each time a subject is stored, so an Admin can check that the right person made that first login.
+
+Linking never gives a person an Admin or a Co-Admin account by name or address. Such an account logs in through a provider only when it is linked to it, whatever the settings say. The level counts as it is stored at the time of the login. Switch linking on only when the provider decides the user names and the e-mail addresses, and people cannot choose them freely.
 
 ### Link your account
 
@@ -138,18 +142,13 @@ A person who is logged in can link the own account to a provider, also an Admin 
 2. Under **Log in through a provider**, select **Link to** the provider.
 3. Log in at the provider. The browser comes back to the account page, which says that the account is linked.
 
-The link checks that the login at the provider fits the account, because a later login through the provider finds the account by the user name of the provider, or by its checked e-mail address:
+The link stores the subject of the login at the provider. The user names and the e-mail addresses may differ, because the person has logged in to both accounts. The link is refused when another Organizr account is linked to the same account of the provider. It is finished only in the session that started it, and it makes no account and no new session. A link to another provider, or to another account of the same provider, replaces the old link.
 
-- The user name at the provider must be the user name of the account, or the provider must send the e-mail address of the account and not say that it has not checked it.
-- No other account may have the user name of the provider. A login through the provider would find that account first.
+After the link, the account logs in through the provider whatever **Link existing accounts** says, by the subject.
 
-The link is finished only in the session that started it, and it makes no account and no new session. After it, the account logs in through the provider whatever **Link existing accounts** says, and also when its user name differs, as long as the provider sends the checked e-mail address of the account.
+The page has no button that takes a link away. An account that a provider made has a random password that nobody knows. Without the link, such an account could lose its only way in, and Organizr cannot tell whether the person knows the password.
 
-Organizr does not store the subject (`sub`) of the provider. The user name and the e-mail address are what connects the two accounts.
-
-The page has no button that takes a link away. An account that a provider made has a random password that nobody knows. Without the link, such an account could lose its only way in, and Organizr cannot tell whether the person knows the password. An account of a normal level also keeps logging in through the provider by its name while **Link existing accounts** is on, so the button would not do what it says.
-
-An account that PHP Organizr had linked (`auth_service` `oidc::<provider>`) keeps its link when the install is imported.
+An account that PHP Organizr had linked (`auth_service` `oidc::<provider>`) keeps its link when the install is imported. PHP stores no subject, so the first login through the provider stores it, as above.
 
 A login through a provider does not ask for the [second factor](second-factor.md) of Organizr, as in PHP Organizr: the provider checks the person. The session lasts the days of the setting **Remember me** (`rememberMeDays`).
 
@@ -173,7 +172,9 @@ A login that fails shows a page **Login Failed** with the reason, and a link bac
 | Failed to exchange authorization code | The provider refused the code or the client secret, or cannot be reached |
 | Invalid ID token | The signature, the issuer, the audience or the time of the ID token is wrong |
 | Invalid nonce | The ID token belongs to another login |
-| Failed to create or link user | No account fits and the settings make none, or the user name or the e-mail address is taken |
+| Failed to create or link user | No account fits and the settings make none, the user name or the e-mail address is taken, or the account with that name or address is linked to another account of the provider, or to another provider |
+| Another account is already linked to this account of the provider | A link names an account of the provider that another Organizr account is linked to |
+| The link must be finished in the session that started it | The browser came back from a link without the session that started it |
 | The provider refused the login | The provider sent an error, for example `access_denied` |
 
 ## Differences from PHP Organizr
