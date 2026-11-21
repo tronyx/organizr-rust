@@ -128,14 +128,31 @@ describe('Settings, tabs', () => {
 
     const rows = screen.getAllByRole('row').slice(1);
     expect(rows.map((row) => within(row).getByRole('rowheader').textContent?.trim())).toEqual([
-      'S Settings',
-      'P Plex',
-      'S Sonarr',
+      'Settings',
+      'Plex',
+      'Sonarr',
     ]);
-    expect(within(rowOf('Plex')).getByText('Media')).toBeInTheDocument();
-    expect(within(rowOf('Plex')).getByText('Admin to User')).toBeInTheDocument();
-    expect(within(rowOf('Sonarr')).getByText('Guest')).toBeInTheDocument();
-    expect(within(rowOf('Settings')).getByText('Page of Organizr')).toBeInTheDocument();
+    const chosen = (label: string) =>
+      (screen.getByLabelText(label) as HTMLSelectElement).selectedOptions[0]?.textContent;
+    expect(chosen('Category of Plex')).toBe('Media');
+    expect(chosen('Least group that sees Plex')).toBe('User');
+    expect(chosen('Most group that sees Plex')).toBe('Admin');
+    expect(chosen('Least group that sees Sonarr')).toBe('Guest');
+    expect(chosen('Type of Settings')).toBe('Organizr');
+  });
+
+  it('changes a field of a tab in its row, as PHP does', async () => {
+    const sent = await show('tabs', { 'PUT tabs/3': {} });
+
+    await fireEvent.change(screen.getByLabelText('Type of Plex'), { target: { value: '2' } });
+    await fireEvent.click(screen.getByLabelText('Ping Plex'));
+
+    await waitFor(() =>
+      expect(changes(sent)).toEqual([
+        ['PUT tabs/3', { type: 2 }],
+        ['PUT tabs/3', { ping: 1 }],
+      ]),
+    );
   });
 
   it('takes a tab out of the menu and loads the table and the menu again', async () => {

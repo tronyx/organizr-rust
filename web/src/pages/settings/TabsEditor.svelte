@@ -15,7 +15,17 @@
     change: (request: () => Promise<unknown>, done: string) => Promise<string | null>;
   } = $props();
 
-  const KINDS = ['Page of Organizr', 'Inside Organizr', 'New window'] as const;
+  /** The kinds of tab, with the names that the Tab Editor of PHP gives them. */
+  const KINDS = ['Organizr', 'iFrame', 'New Window'] as const;
+
+  /** The switches of a tab that the table changes at once, with the column of PHP. */
+  const SWITCHES = [
+    ['enabled', 'Active'],
+    ['splash', 'Splash'],
+    ['ping', 'Ping'],
+    ['preload', 'Preload'],
+    ['add_to_admin', 'Add to Admin'],
+  ] as const;
 
   const tabs = $derived(inMenuOrder(data.tabs));
 
@@ -23,14 +33,27 @@
   let dialog = $state<{ tab: Tab | null } | null>(null);
   let error = $state<string | null>(null);
 
-  function categoryName(tab: Tab): string {
-    return (
-      data.categories.find((category) => category.category_id === tab.category_id)?.category ?? '—'
-    );
+  const categories = $derived(inMenuOrder(data.categories));
+
+  /** Changes one field of a tab at once, as the Tab Editor of PHP does. */
+  function set(tab: Tab, fields: Record<string, unknown>) {
+    void run(() => api('PUT', `tabs/${tab.id}`, fields), 'The tab is changed.');
   }
 
-  function groupName(level: number): string {
-    return data.groups.find((group) => group.group_id === level)?.group ?? String(level);
+  /** The label of a switch for a person who cannot see the column. */
+  function switchLabel(key: string, name: string): string {
+    switch (key) {
+      case 'enabled':
+        return `Show ${name} in the menu`;
+      case 'splash':
+        return `Show ${name} on the splash page`;
+      case 'ping':
+        return `Ping ${name}`;
+      case 'preload':
+        return `Preload ${name}`;
+      default:
+        return `Add ${name} to the menu of the Admin`;
+    }
   }
 
   async function run(request: () => Promise<unknown>, done: string) {
@@ -74,115 +97,161 @@
   }
 </script>
 
-<div class="mb-4 flex items-center justify-between gap-2">
-  <p class="opacity-80">The tabs of the menu, in their order.</p>
-  <button class="btn btn-primary btn-sm" onclick={() => (dialog = { tab: null })}>Add a tab</button>
-</div>
-
 {#if error}
   <div role="alert" class="alert alert-error mb-4">
     <span>{error}</span>
   </div>
 {/if}
 
-<div class="overflow-x-auto">
-  <table class="table">
-    <thead>
-      <tr>
-        <th scope="col">Order</th>
-        <th scope="col">Name</th>
-        <th scope="col">Category</th>
-        <th scope="col">Opens</th>
-        <th scope="col">Shown to</th>
-        <th scope="col">In the menu</th>
-        <th scope="col">At the start</th>
-        <th scope="col"><span class="sr-only">Actions</span></th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each tabs as tab, index (tab.id)}
+<section class="org-panel" aria-labelledby="tab-editor-title">
+  <div class="org-panel-heading">
+    <h2 id="tab-editor-title">Tab Editor</h2>
+    <button
+      class="org-round-button org-round-info org-round-small"
+      aria-label="Add a tab"
+      title="Add a tab"
+      onclick={() => (dialog = { tab: null })}
+    >
+      <i class="oi-themify ti-plus" aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="org-table">
+      <thead>
         <tr>
-          <td class="whitespace-nowrap">
-            <button
-              class="btn btn-ghost btn-xs"
-              aria-label={`Move ${tab.name} up`}
-              disabled={index === 0}
-              onclick={() => move(index, -1)}
-            >
-              ↑
-            </button>
-            <button
-              class="btn btn-ghost btn-xs"
-              aria-label={`Move ${tab.name} down`}
-              disabled={index === tabs.length - 1}
-              onclick={() => move(index, 1)}
-            >
-              ↓
-            </button>
-          </td>
-          <th scope="row">
-            <span class="flex items-center gap-2 font-normal">
-              <Picture image={tab.image} name={tab.name} />
-              {tab.name}
-            </span>
-          </th>
-          <td>{categoryName(tab)}</td>
-          <td>{KINDS[tab.type]}</td>
-          <td>
-            {#if tab.group_id === tab.group_id_max}
-              {groupName(tab.group_id)}
-            {:else}
-              {groupName(tab.group_id_max)} to {groupName(tab.group_id)}
-            {/if}
-          </td>
-          <td>
-            <input
-              type="checkbox"
-              class="toggle toggle-sm"
-              aria-label={`Show ${tab.name} in the menu`}
-              checked={tab.enabled === 1}
-              onchange={(event) =>
-                run(
-                  () =>
-                    api('PUT', `tabs/${tab.id}`, {
-                      enabled: asSwitch(event.currentTarget.checked),
-                    }),
-                  'The tab is changed.',
-                )}
-            />
-          </td>
-          <td>
-            <input
-              type="radio"
-              class="radio radio-sm"
-              name="default-tab"
-              aria-label={`Open ${tab.name} at the start`}
-              checked={tab.default === 1}
-              onchange={() =>
-                run(() => api('PUT', `tabs/${tab.id}`, { default: 1 }), 'The tab is changed.')}
-            />
-          </td>
-          <td class="whitespace-nowrap text-right">
-            <button class="btn btn-ghost btn-xs" onclick={() => edit(tab)}>
-              Change<span class="sr-only"> {tab.name}</span>
-            </button>
-            <button class="btn btn-ghost btn-xs text-error" onclick={() => remove(tab)}>
-              Delete<span class="sr-only"> {tab.name}</span>
-            </button>
-          </td>
+          <th scope="col"><span class="sr-only">Order</span></th>
+          <th scope="col"><span class="sr-only">Picture</span></th>
+          <th scope="col">Name</th>
+          <th scope="col">Category</th>
+          <th scope="col">Min Group</th>
+          <th scope="col">Max Group</th>
+          <th scope="col">Type</th>
+          <th scope="col" class="text-center">Default</th>
+          {#each SWITCHES as [key, label] (key)}
+            <th scope="col" class="text-center">{label}</th>
+          {/each}
+          <th scope="col" class="text-center">Edit</th>
+          <th scope="col" class="text-center">Delete</th>
         </tr>
-      {:else}
-        <tr><td colspan="8">There is no tab yet.</td></tr>
-      {/each}
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        {#each tabs as tab, index (tab.id)}
+          <tr>
+            <td class="whitespace-nowrap">
+              <span class="org-order">
+                <button
+                  aria-label={`Move ${tab.name} up`}
+                  disabled={index === 0}
+                  onclick={() => move(index, -1)}
+                >
+                  <i class="oi-themify ti-angle-up" aria-hidden="true"></i>
+                </button>
+                <button
+                  aria-label={`Move ${tab.name} down`}
+                  disabled={index === tabs.length - 1}
+                  onclick={() => move(index, 1)}
+                >
+                  <i class="oi-themify ti-angle-down" aria-hidden="true"></i>
+                </button>
+              </span>
+            </td>
+            <td class="org-table-picture"><Picture image={tab.image} name={tab.name} /></td>
+            <th scope="row">{tab.name}</th>
+            <td>
+              <select
+                class="org-table-select"
+                aria-label={`Category of ${tab.name}`}
+                value={tab.category_id ?? 0}
+                onchange={(event) => set(tab, { category_id: Number(event.currentTarget.value) })}
+              >
+                {#each categories as category (category.id)}
+                  <option value={category.category_id}>{category.category}</option>
+                {/each}
+              </select>
+            </td>
+            <td>
+              <select
+                class="org-table-select"
+                aria-label={`Least group that sees ${tab.name}`}
+                value={tab.group_id}
+                onchange={(event) => set(tab, { group_id: Number(event.currentTarget.value) })}
+              >
+                {#each data.groups as group (group.id)}
+                  <option value={group.group_id}>{group.group}</option>
+                {/each}
+              </select>
+            </td>
+            <td>
+              <select
+                class="org-table-select"
+                aria-label={`Most group that sees ${tab.name}`}
+                value={tab.group_id_max}
+                onchange={(event) => set(tab, { group_id_max: Number(event.currentTarget.value) })}
+              >
+                {#each data.groups as group (group.id)}
+                  <option value={group.group_id}>{group.group}</option>
+                {/each}
+              </select>
+            </td>
+            <td>
+              <select
+                class="org-table-select"
+                aria-label={`Type of ${tab.name}`}
+                value={tab.type}
+                onchange={(event) => set(tab, { type: Number(event.currentTarget.value) })}
+              >
+                {#each KINDS as kind, value (kind)}
+                  <option {value}>{kind}</option>
+                {/each}
+              </select>
+            </td>
+            <td class="text-center">
+              <input
+                type="radio"
+                class="org-table-check"
+                name="default-tab"
+                aria-label={`Open ${tab.name} at the start`}
+                checked={tab.default === 1}
+                onchange={() => set(tab, { default: 1 })}
+              />
+            </td>
+            {#each SWITCHES as [key] (key)}
+              <td class="text-center">
+                <input
+                  type="checkbox"
+                  class="org-table-check"
+                  aria-label={switchLabel(key, tab.name)}
+                  checked={tab[key] === 1}
+                  onchange={(event) => set(tab, { [key]: asSwitch(event.currentTarget.checked) })}
+                />
+              </td>
+            {/each}
+            <td class="text-center">
+              <button class="org-round-button org-round-info" onclick={() => edit(tab)}>
+                <i class="oi-themify ti-pencil-alt" aria-hidden="true"></i>
+                <span class="sr-only">Change {tab.name}</span>
+              </button>
+            </td>
+            <td class="text-center">
+              <button class="org-round-button org-round-danger" onclick={() => remove(tab)}>
+                <i class="oi-themify ti-trash" aria-hidden="true"></i>
+                <span class="sr-only">Delete {tab.name}</span>
+              </button>
+            </td>
+          </tr>
+        {:else}
+          <tr><td colspan="15">There is no tab yet.</td></tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+</section>
 
 {#if dialog}
   {#key dialog.tab?.id}
     <TabDialog
       tab={dialog.tab}
-      categories={inMenuOrder(data.categories)}
+      {categories}
       groups={data.groups}
       onsave={save}
       onclose={() => (dialog = null)}
