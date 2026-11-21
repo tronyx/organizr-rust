@@ -811,7 +811,10 @@ describe('Settings, e-mail', () => {
 
   it('saves the server, its password and the text of an e-mail', async () => {
     const sent = await showMail({ 'PUT config': {} });
-    expect(screen.getByRole('tab', { name: 'E-mail' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'PHP Mailer' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     expect(screen.getByLabelText('Password')).toHaveAttribute('placeholder', 'No value is stored');
     const texts = screen.getAllByLabelText('Text, as HTML');
     expect(texts[0]).toHaveValue('<h2>Hey there {user}!</h2>');

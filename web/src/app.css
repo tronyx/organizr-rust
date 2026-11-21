@@ -755,6 +755,115 @@
 
   /* The preview of a theme on the settings pages: a small page in the colours of the
      theme. */
+  /* The settings of PHP Organizr: a bar with the title and the place, the main tabs
+     with their pictures, and the tabs of each part as rounded buttons. */
+  .org-settings {
+    padding: 0 25px 15px;
+  }
+
+  .org-page-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 63px;
+    margin: 0 -25px 25px;
+    padding: 15px 35px 9px;
+    border-bottom: 1px solid rgb(120 130 140 / 0.13);
+    background: var(--color-base-200);
+  }
+
+  .org-page-title h1 {
+    margin: 6px 0 10px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 22px;
+    text-transform: uppercase;
+  }
+
+  .org-breadcrumb {
+    display: flex;
+    gap: 5px;
+    margin: 8px 0 0;
+    font-size: 14px;
+  }
+
+  .org-breadcrumb li + li::before {
+    content: '/';
+    padding-right: 5px;
+    opacity: 0.6;
+  }
+
+  .org-breadcrumb li:last-child {
+    color: var(--color-base-content);
+  }
+
+  .org-main-tabs {
+    display: flex;
+    height: 44px;
+  }
+
+  .org-main-tabs a {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 7px 0;
+    border-radius: 20px 20px 0 0;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .org-main-tabs a i {
+    font-size: 20px;
+  }
+
+  .org-main-tabs a:hover,
+  .org-main-tabs a:focus-visible {
+    color: var(--color-base-content);
+  }
+
+  .org-main-tabs a.org-current {
+    background: var(--color-base-200);
+    color: #ffffff;
+  }
+
+  .org-tab-body {
+    padding: 25px;
+    background: var(--color-base-200);
+  }
+
+  .org-sub-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-bottom: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgb(120 130 140 / 0.13);
+  }
+
+  .org-sub-tabs a {
+    padding: 10px 15px;
+    border: 1px solid transparent;
+    border-radius: 20px;
+  }
+
+  .org-sub-tabs a:hover,
+  .org-sub-tabs a:focus-visible {
+    color: var(--color-base-content);
+  }
+
+  .org-sub-tabs a.org-current {
+    border-color: rgb(120 130 140 / 0.13);
+    background: var(--color-base-200);
+    color: #ffffff;
+  }
+
   .org-theme-preview {
     display: flex;
     flex-direction: column;

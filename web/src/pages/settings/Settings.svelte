@@ -35,6 +35,75 @@
 
   let { section }: { section: SettingsSection } = $props();
 
+  /** A page of the settings: its section, the name of its address and its label. */
+  interface MenuPage {
+    section: SettingsSection;
+    page: keyof typeof PAGES;
+    label: string;
+  }
+
+  /**
+   * The settings in the main tabs and the tabs under them of PHP Organizr, with its
+   * names and its pictures. A section of this application is under the tab of PHP that
+   * holds the same settings.
+   */
+  interface MenuGroup {
+    name: string;
+    icon: string;
+    pages: [MenuPage, ...MenuPage[]];
+  }
+
+  const MENU: [MenuGroup, ...MenuGroup[]] = [
+    {
+      name: 'Tab Editor',
+      icon: 'ti-layout-tab-v',
+      pages: [
+        { section: 'tabs', page: 'tabSettings', label: 'Tabs' },
+        { section: 'categories', page: 'categorySettings', label: 'Categories' },
+        { section: 'homepage', page: 'homepageSettings', label: 'Homepage Items' },
+      ],
+    },
+    {
+      name: 'Customize',
+      icon: 'ti-paint-bucket',
+      pages: [
+        { section: 'appearance', page: 'appearanceSettings', label: 'Appearance' },
+        { section: 'themes', page: 'themeSettings', label: 'Marketplace' },
+      ],
+    },
+    {
+      name: 'User Management',
+      icon: 'ti-user',
+      pages: [
+        { section: 'users', page: 'userSettings', label: 'Manage Users' },
+        { section: 'groups', page: 'groupSettings', label: 'Manage Groups' },
+      ],
+    },
+    {
+      name: 'Plugins',
+      icon: 'ti-plug',
+      pages: [
+        { section: 'plugins', page: 'pluginSettings', label: 'Settings' },
+        { section: 'mail', page: 'mailSettings', label: 'PHP Mailer' },
+      ],
+    },
+    {
+      name: 'System Settings',
+      icon: 'ti-settings',
+      pages: [
+        { section: 'general', page: 'generalSettings', label: 'Main' },
+        { section: 'login', page: 'loginSettings', label: 'Login' },
+        { section: 'logs', page: 'logSettings', label: 'Logs' },
+        { section: 'backups', page: 'backupSettings', label: 'Backup' },
+      ],
+    },
+  ];
+
+  const group = $derived(
+    MENU.find((entry) => entry.pages.some((item) => item.section === section)) ?? MENU[0],
+  );
+  const page = $derived(group.pages.find((item) => item.section === section) ?? group.pages[0]);
+
   let data = $state<EditorData | null>(null);
   let loadError = $state<string | null>(null);
   // What the last change did, for a person who cannot see the table change.
@@ -73,183 +142,99 @@
   onMount(load);
 </script>
 
-<main class="mx-auto max-w-6xl p-4">
-  <h1 class="text-2xl font-bold">Settings</h1>
-
-  <div role="tablist" class="tabs tabs-border mt-2 mb-4">
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'general'}
-      aria-selected={section === 'general'}
-      href={PAGES.generalSettings}
-    >
-      General
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'appearance'}
-      aria-selected={section === 'appearance'}
-      href={PAGES.appearanceSettings}
-    >
-      Appearance
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'themes'}
-      aria-selected={section === 'themes'}
-      href={PAGES.themeSettings}
-    >
-      Themes
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'tabs'}
-      aria-selected={section === 'tabs'}
-      href={PAGES.tabSettings}
-    >
-      Tabs
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'categories'}
-      aria-selected={section === 'categories'}
-      href={PAGES.categorySettings}
-    >
-      Categories
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'groups'}
-      aria-selected={section === 'groups'}
-      href={PAGES.groupSettings}
-    >
-      Groups
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'users'}
-      aria-selected={section === 'users'}
-      href={PAGES.userSettings}
-    >
-      Users
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'mail'}
-      aria-selected={section === 'mail'}
-      href={PAGES.mailSettings}
-    >
-      E-mail
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'login'}
-      aria-selected={section === 'login'}
-      href={PAGES.loginSettings}
-    >
-      Login
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'homepage'}
-      aria-selected={section === 'homepage'}
-      href={PAGES.homepageSettings}
-    >
-      Homepage
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'plugins'}
-      aria-selected={section === 'plugins'}
-      href={PAGES.pluginSettings}
-    >
-      Plugins
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'backups'}
-      aria-selected={section === 'backups'}
-      href={PAGES.backupSettings}
-    >
-      Backups
-    </a>
-    <a
-      role="tab"
-      class="tab"
-      class:tab-active={section === 'logs'}
-      aria-selected={section === 'logs'}
-      href={PAGES.logSettings}
-    >
-      Logs
-    </a>
+<main class="org-settings">
+  <div class="org-page-title">
+    <h1>Organizr Settings</h1>
+    <ol class="org-breadcrumb" aria-label="Where you are">
+      <li>Settings</li>
+      <li>{group.name}</li>
+      <li>{page.label}</li>
+    </ol>
   </div>
 
-  <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
+  <div role="tablist" aria-label="Settings" class="org-main-tabs">
+    {#each MENU as entry (entry.name)}
+      <a
+        role="tab"
+        class:org-current={entry === group}
+        aria-selected={entry === group}
+        href={PAGES[entry.pages[0].page]}
+      >
+        <i class="oi-themify {entry.icon}" aria-hidden="true"></i>
+        <span>{entry.name}</span>
+      </a>
+    {/each}
+  </div>
 
-  {#if section === 'general'}
-    <GeneralSettings ondone={(message) => (done = message)} />
-  {:else if section === 'appearance'}
-    <AppearanceSettings ondone={(message) => (done = message)} />
-  {:else if section === 'themes'}
-    <ThemeMarketplace ondone={(message) => (done = message)} />
-  {:else if section === 'mail'}
-    <MailSettings ondone={(message) => (done = message)} />
-  {:else if section === 'login'}
-    <LoginSettings ondone={(message) => (done = message)} />
-  {:else if section === 'homepage'}
-    <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
-  {:else if section === 'backups'}
-    <SettingsForm groups={BACKUPS} ondone={(message) => (done = message)}>
-      <BackupsEditor ondone={(message) => (done = message)} />
-    </SettingsForm>
-  {:else if section === 'logs'}
-    <SettingsForm groups={LOGS} ondone={(message) => (done = message)}>
-      <LogViewer ondone={(message) => (done = message)} />
-    </SettingsForm>
-  {:else if section === 'plugins'}
-    <SettingsForm
-      groups={[
-        ...BOOKMARK_PLUGIN,
-        ...SPEED_TEST_PLUGIN,
-        ...INVITES_PLUGIN,
-        ...CHAT_PLUGIN,
-        ...HEALTH_CHECKS_PLUGIN,
-      ]}
-      ondone={(message) => (done = message)}
-    >
-      <HealthCheckServices ondone={(message) => (done = message)} />
-      {#if session.launch?.plugins['BOOKMARK-enabled'] === true}
-        <BookmarksEditor ondone={(message) => (done = message)} />
-      {/if}
-      <ExtensionsEditor ondone={(message) => (done = message)} />
-    </SettingsForm>
-  {:else if data}
-    {#if section === 'tabs'}
-      <TabsEditor {data} {change} />
-    {:else if section === 'categories'}
-      <CategoriesEditor {data} {change} />
-    {:else if section === 'groups'}
-      <GroupsEditor {data} {change} />
-    {:else}
-      <UsersEditor {data} {change} />
-    {/if}
-  {:else if loadError}
-    <div role="alert" class="alert alert-error">
-      <span>{loadError}</span>
+  <div class="org-tab-body">
+    <div role="tablist" aria-label={group.name} class="org-sub-tabs">
+      {#each group.pages as entry (entry.section)}
+        <a
+          role="tab"
+          class:org-current={entry.section === section}
+          aria-selected={entry.section === section}
+          href={PAGES[entry.page]}
+        >
+          {entry.label}
+        </a>
+      {/each}
     </div>
-  {:else}
-    <span class="loading loading-spinner" aria-label="Loading"></span>
-  {/if}
+
+    <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
+
+    {#if section === 'general'}
+      <GeneralSettings ondone={(message) => (done = message)} />
+    {:else if section === 'appearance'}
+      <AppearanceSettings ondone={(message) => (done = message)} />
+    {:else if section === 'themes'}
+      <ThemeMarketplace ondone={(message) => (done = message)} />
+    {:else if section === 'mail'}
+      <MailSettings ondone={(message) => (done = message)} />
+    {:else if section === 'login'}
+      <LoginSettings ondone={(message) => (done = message)} />
+    {:else if section === 'homepage'}
+      <SettingsForm groups={HOMEPAGE} ondone={(message) => (done = message)} />
+    {:else if section === 'backups'}
+      <SettingsForm groups={BACKUPS} ondone={(message) => (done = message)}>
+        <BackupsEditor ondone={(message) => (done = message)} />
+      </SettingsForm>
+    {:else if section === 'logs'}
+      <SettingsForm groups={LOGS} ondone={(message) => (done = message)}>
+        <LogViewer ondone={(message) => (done = message)} />
+      </SettingsForm>
+    {:else if section === 'plugins'}
+      <SettingsForm
+        groups={[
+          ...BOOKMARK_PLUGIN,
+          ...SPEED_TEST_PLUGIN,
+          ...INVITES_PLUGIN,
+          ...CHAT_PLUGIN,
+          ...HEALTH_CHECKS_PLUGIN,
+        ]}
+        ondone={(message) => (done = message)}
+      >
+        <HealthCheckServices ondone={(message) => (done = message)} />
+        {#if session.launch?.plugins['BOOKMARK-enabled'] === true}
+          <BookmarksEditor ondone={(message) => (done = message)} />
+        {/if}
+        <ExtensionsEditor ondone={(message) => (done = message)} />
+      </SettingsForm>
+    {:else if data}
+      {#if section === 'tabs'}
+        <TabsEditor {data} {change} />
+      {:else if section === 'categories'}
+        <CategoriesEditor {data} {change} />
+      {:else if section === 'groups'}
+        <GroupsEditor {data} {change} />
+      {:else}
+        <UsersEditor {data} {change} />
+      {/if}
+    {:else if loadError}
+      <div role="alert" class="alert alert-error">
+        <span>{loadError}</span>
+      </div>
+    {:else}
+      <span class="loading loading-spinner" aria-label="Loading"></span>
+    {/if}
+  </div>
 </main>

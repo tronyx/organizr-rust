@@ -382,7 +382,8 @@ test('the Admin manages the groups, and the group for new users is not deleted',
 }) => {
   await logIn(page);
   await page.goto('./#/settings/tabs');
-  await page.getByRole('tab', { name: 'Groups' }).click();
+  await page.getByRole('tab', { name: 'User Management' }).click();
+  await page.getByRole('tab', { name: 'Manage Groups' }).click();
   await expect(page).toHaveURL(/#\/settings\/groups$/);
   const status = page.getByRole('status');
   await expect(page.getByRole('row', { name: /Guest/ })).toBeVisible();
@@ -434,7 +435,8 @@ test('the Admin manages the groups, and the group for new users is not deleted',
 test('the Admin manages the users, and cannot delete the own account', async ({ page }) => {
   await logIn(page);
   await page.goto('./#/settings/tabs');
-  await page.getByRole('tab', { name: 'Users' }).click();
+  await page.getByRole('tab', { name: 'User Management' }).click();
+  await page.getByRole('tab', { name: 'Manage Users' }).click();
   await expect(page).toHaveURL(/#\/settings\/users$/);
   const status = page.getByRole('status');
   const own = page.getByRole('row', { name: new RegExp(ADMIN.username) });
@@ -474,7 +476,8 @@ test('the Admin changes the name of the install and the registration password', 
 }) => {
   await logIn(page);
   await page.goto('./#/settings/tabs');
-  await page.getByRole('tab', { name: 'General' }).click();
+  await page.getByRole('tab', { name: 'System Settings' }).click();
+  await page.getByRole('tab', { name: 'Main' }).click();
   await expect(page).toHaveURL(/#\/settings\/general$/);
   const name = page.getByLabel('Name of this install');
   await expect(name).toHaveValue('Organizr V2');
@@ -502,6 +505,7 @@ test('the Admin changes the name of the install and the registration password', 
 test('the Admin reads the log of the server on the settings page', async ({ page }) => {
   await logIn(page);
   await page.goto('./#/settings/tabs');
+  await page.getByRole('tab', { name: 'System Settings' }).click();
   await page.getByRole('tab', { name: 'Logs' }).click();
   await expect(page).toHaveURL(/#\/settings\/logs$/);
 
@@ -835,7 +839,7 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
   // The set-up makes the tab "Homepage" and leaves it out of the menu.
   await page.getByLabel('Show Homepage in the menu').check();
   await expect(page.getByRole('status')).toHaveText('The tab is changed.');
-  await page.getByRole('tab', { name: 'Homepage' }).click();
+  await page.getByRole('tab', { name: 'Homepage Items' }).click();
   await expect(page).toHaveURL(/#\/settings\/homepage$/);
 
   await page.getByLabel('Show custom HTML 01').check();
@@ -1044,6 +1048,7 @@ test('the Admin switches the button "Log in with Plex" on, and the login page sh
 
   await logIn(page);
   await page.goto('./#/settings/tabs');
+  await page.getByRole('tab', { name: 'System Settings' }).click();
   await page.getByRole('tab', { name: 'Login' }).click();
   await expect(page).toHaveURL(/#\/settings\/login$/);
 
