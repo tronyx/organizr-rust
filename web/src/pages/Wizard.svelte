@@ -61,15 +61,23 @@
   }
 </script>
 
-<main class="mx-auto max-w-2xl p-4 py-10">
-  <h1 class="text-3xl font-bold">Set up Organizr</h1>
+<main class="org-settings min-h-screen">
+  <div class="org-page-title">
+    <h1>Organizr Setup Wizard</h1>
+    <ol class="org-breadcrumb" aria-label="Where you are">
+      <li>Install Type</li>
+      <li>Admin Info</li>
+      <li>Security</li>
+      <li>Verify</li>
+    </ol>
+  </div>
   <p class="mt-2 opacity-80">
     This install is new. Fill in this page once to make the first Admin account.
   </p>
 
-  <form class="mt-6 space-y-6" onsubmit={setUp}>
-    <fieldset class="fieldset bg-base-200 rounded-box p-4">
-      <legend class="fieldset-legend">Proof that this is your server</legend>
+  <form class="mx-auto max-w-3xl space-y-6" onsubmit={setUp}>
+    <fieldset class="fieldset org-wizard-panel">
+      <legend class="org-wizard-heading">Proof that this is your server</legend>
       <label class="label" for="setup-code">Set-up code</label>
       <input
         id="setup-code"
@@ -88,8 +96,8 @@
       </p>
     </fieldset>
 
-    <fieldset class="fieldset bg-base-200 rounded-box p-4">
-      <legend class="fieldset-legend">The Admin account</legend>
+    <fieldset class="fieldset org-wizard-panel">
+      <legend class="org-wizard-heading">The Admin account</legend>
       <label class="label" for="username">User name</label>
       <input
         id="username"
@@ -134,8 +142,8 @@
       </p>
     </fieldset>
 
-    <fieldset class="fieldset bg-base-200 rounded-box p-4">
-      <legend class="fieldset-legend">The install</legend>
+    <fieldset class="fieldset org-wizard-panel">
+      <legend class="org-wizard-heading">The install</legend>
       <label class="label" for="license">Use</label>
       <select id="license" class="select w-full" bind:value={license}>
         <option value="personal">Personal</option>

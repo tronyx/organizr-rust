@@ -76,7 +76,7 @@ function setupCode(): string {
 test('a new install shows the set-up wizard with a working style sheet', async ({ page }) => {
   await page.goto('./');
 
-  await expect(page.getByRole('heading', { name: 'Set up Organizr' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Organizr Setup Wizard' })).toBeVisible();
   await expect(page.getByText('SQLite')).toBeVisible();
   // The style sheet is in use: the page has the dark background of the theme.
   const background = await page.evaluate(
