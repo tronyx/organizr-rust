@@ -1,5 +1,6 @@
 <script lang="ts">
-  // A dialog on top of the page. It is open as long as it is part of the page.
+  // A dialog on top of the page. It is open as long as it is part of the page. The ×
+  // in its corner closes it, as in PHP, and so does the Escape key.
   import type { Snippet } from 'svelte';
 
   let {
@@ -33,7 +34,15 @@
 
 <dialog class="modal" bind:this={dialog} {onclose} aria-labelledby={titleId}>
   <div class="modal-box max-w-2xl">
-    <h2 id={titleId} class="text-lg font-bold">{title}</h2>
+    <button
+      type="button"
+      class="btn btn-sm btn-circle btn-ghost absolute top-2 right-2"
+      aria-label="Close the window"
+      onclick={() => dialog?.close()}
+    >
+      <span class="text-xl leading-none" aria-hidden="true">×</span>
+    </button>
+    <h2 id={titleId} class="pr-8 text-lg font-bold">{title}</h2>
     {@render children()}
   </div>
 </dialog>
