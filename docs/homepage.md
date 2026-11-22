@@ -466,7 +466,7 @@ PHP Organizr needs the Deluge plugin WebAPI. This version uses the plugin when D
 
 Organizr logs in to Deluge with the password each time it loads the torrents. Deluge has ten seconds to answer.
 
-The setting `delugeHideCompleted` of PHP Organizr has no effect. The settings show it as **Hide Completed**, but the switch does nothing. PHP Organizr hides a torrent as "completed" only when Deluge sends its progress as the text `100`. Deluge sends a number.
+**Hide Completed** (`delugeHideCompleted`) leaves out the torrents that are complete and do not seed. A complete torrent that seeds is left out by the switch for seeding torrents. In PHP Organizr this switch does nothing, because PHP expects the progress as the text `100` and Deluge sends a number (D-113).
 
 The connection test of Deluge needs the switch of the item, as in PHP Organizr.
 

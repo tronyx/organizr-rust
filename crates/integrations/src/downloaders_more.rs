@@ -272,8 +272,10 @@ async fn deluge_without_plugin<'a>(
 }
 
 /// The state of a torrent of Deluge for the "hide" settings, by the rules of the PHP
-/// application. A torrent counts as finished only when Deluge sends its progress as the
-/// text `100`. Deluge sends a number, so a torrent is either seeding or downloading.
+/// application: a complete torrent out of the queue counts as seeding, and another
+/// complete torrent as finished. PHP counts a torrent as finished only when Deluge sends
+/// its progress as the text `100`, and Deluge sends a number, so in PHP the setting
+/// `delugeHideCompleted` hides nothing. Here the number counts too (D-113).
 fn deluge_status(torrent: &Value) -> &'static str {
     let part = |name: &str| torrent.get(name).unwrap_or(&Value::Null);
     let state = part("state").as_str().unwrap_or_default();
@@ -282,7 +284,7 @@ fn deluge_status(torrent: &Value) -> &'static str {
         && matches!(state, "Seeding" | "Queued" | "Paused")
     {
         "Seeding"
-    } else if part("progress").as_str() == Some("100") {
+    } else if is_number(part("progress"), 100.0) || part("progress").as_str() == Some("100") {
         "Finished"
     } else {
         "Downloading"
@@ -1081,9 +1083,13 @@ mod tests {
         let shown = shown_deluge(all.clone(), view(true, false, true));
         assert_eq!(names(&shown, "name"), ["loads", "checks"]);
         assert_eq!(shown[0]["tracker_status"], json!(""));
-        // Deluge sends the progress as a number, so nothing counts as finished.
+        // A complete torrent that does not seed counts as finished, with the progress as
+        // the number that Deluge sends or as a text (D-113).
         let shown = shown_deluge(all, view(false, true, false));
-        assert_eq!(shown.len(), 4);
+        assert_eq!(
+            names(&shown, "name"),
+            ["loads", "uploads", "paused and complete"]
+        );
         let text = vec![json!({"name": "odd", "queue": 2, "progress": "100", "state": "Error"})];
         assert_eq!(shown_deluge(text, view(false, true, false)).len(), 0);
     }
