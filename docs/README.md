@@ -7,6 +7,9 @@ The [README](../README.md) tells you what this rewrite of Organizr is and how to
 | Page | Contents |
 | --- | --- |
 | [📦 Release notes](release-notes.md) | What this version is, what works, and what is different from PHP Organizr |
+| [🚀 Installation](installation.md) | How to start the container, the set-up wizard, the data folder, the settings of the container, and updates |
+| [🔀 Reverse proxy](reverse-proxy.md) | nginx, Traefik and Caddy in front of Organizr, `ORGANIZR_TRUSTED_PROXIES`, and tabs through the proxy |
+| [🧳 Moving from PHP Organizr](moving-from-php.md) | A checklist for the move: import, proxy, appearance, homepage, and what works differently |
 | [🗄️ Choosing a database](choosing-a-database.md) | SQLite or PostgreSQL, how to choose, and how to set each one up |
 | [🚚 Importing](importing.md) | How to move the users, tabs, settings and pictures of a PHP install into a new install |
 | [🔐 Secrets](secrets.md) | How Organizr seals the API keys and passwords that it stores, and the key that it uses |
@@ -14,9 +17,10 @@ The [README](../README.md) tells you what this rewrite of Organizr is and how to
 | [🎨 Appearance](appearance.md) | Themes, colours, custom CSS and JavaScript, and the icons of the page |
 | [🖌️ Custom CSS](custom-css.md) | The CSS variables and classes to use, and how to change CSS written for PHP |
 | [🏠 Homepage](homepage.md) | The items of the homepage, their settings, and how to test the connections |
-| [🩺 Checking your services](checking-your-services.md) | The `organizr check` command, which asks your services what Organizr asks them |
+| [📡 Checking your services](checking-your-services.md) | The `organizr check` command, which asks your services what Organizr asks them |
 | [🧪 Tests of the settings](settings-tests.md) | The test buttons of the settings, and what their answers mean |
 | [✉️ E-mail](email.md) | The SMTP server, the e-mails that Organizr sends, and password recovery |
+| [🩺 Troubleshooting](troubleshooting.md) | Common problems, what causes them, and what to do |
 
 ## Logging in
 
