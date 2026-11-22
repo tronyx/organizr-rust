@@ -122,8 +122,7 @@ organizr-rust/
 ├── docker/                    Dockerfile, compose.sqlite.yml, compose.postgres.yml, .hadolint.yaml
 ├── docs/                      audit.md, architecture.md, deviations.md, stack-research.md,
 │                              choosing-a-database.md, importing.md
-├── .github/workflows/         ci.yml, build.yml, scan.yml, lint.yml
-└── .forgejo/workflows/        ci.yml, lint.yml (the same checks, for Forgejo Actions)
+└── .github/workflows/         ci.yml, build.yml, scan.yml, lint.yml
 ```
 
 Dependency direction: `domain` ← `settings` ← `db` ← `auth`, `integrations`, `plugins` ← `api` ← `server`. `import` uses `domain`, `settings`, `db` and `auth`, which seals the secrets of the old install again. Nothing depends on `api` except `server` and `testkit`.
