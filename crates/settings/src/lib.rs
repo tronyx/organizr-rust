@@ -10,4 +10,4 @@ mod registry;
 
 pub use crate::choices::{AuthType, UnsortedTabs};
 pub use crate::codec::{Choice, Codec, Flag, List, Number, Secret, Text, TextChoice, TextNumber};
-pub use crate::registry::{Settings, SettingsError};
+pub use crate::registry::{RENAMED_SETTINGS, Settings, SettingsError};

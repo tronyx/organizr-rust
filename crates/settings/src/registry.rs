@@ -12,6 +12,20 @@ use thiserror::Error;
 use crate::choices::{AuthType, UnsortedTabs};
 use crate::codec::{Anything, Choice, Codec, Flag, List, Number, Secret, Text, TextNumber};
 
+/// Settings that the defaults of PHP name differently from the key that PHP reads and its
+/// form writes: each default of PHP with the key that holds its value here (D-112). PHP's
+/// defaults have `ProwlarrURL`, but its form and its code use `prowlarrURL`, so in PHP the
+/// value that an Admin saves is in the second key.
+pub const RENAMED_SETTINGS: [(&str, &str); 4] = [
+    ("ProwlarrURL", "prowlarrURL"),
+    ("ProwlarrToken", "prowlarrToken"),
+    (
+        "ProwlarrUseCustomCertificate",
+        "prowlarrUseCustomCertificate",
+    ),
+    ("ProwlarrDisableCertCheck", "prowlarrDisableCertCheck"),
+];
+
 /// Why a setting cannot be read or changed.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum SettingsError {
@@ -374,10 +388,10 @@ settings! {
     homepage_prowlarr_backhole_download: Flag = "homepageProwlarrBackholeDownload", false;
     homepage_prowlarr_enabled: Flag = "homepageProwlarrEnabled", false;
     homepage_prowlarr_auth: TextNumber<u32> = "homepageProwlarrAuth", 1;
-    prowlarr_url: Text = "ProwlarrURL", String::new();
-    prowlarr_token: Secret = "ProwlarrToken", String::new();
-    prowlarr_use_custom_certificate: Flag = "ProwlarrUseCustomCertificate", false;
-    prowlarr_disable_cert_check: Flag = "ProwlarrDisableCertCheck", false;
+    prowlarr_url: Text = "prowlarrURL", String::new();
+    prowlarr_token: Secret = "prowlarrToken", String::new();
+    prowlarr_use_custom_certificate: Flag = "prowlarrUseCustomCertificate", false;
+    prowlarr_disable_cert_check: Flag = "prowlarrDisableCertCheck", false;
     homepage_calendar_enabled: Flag = "homepageCalendarEnabled", false;
     homepage_calendar_auth: TextNumber<u32> = "homepageCalendarAuth", 4;
     calendar_ical: Text = "calendariCal", String::new();
@@ -1126,6 +1140,17 @@ mod tests {
     /// have. Before an Admin saves them, PHP reads them as empty (D-102).
     const READ_WITHOUT_A_PHP_DEFAULT: [&str; 2] = ["adGuardUsername", "adGuardPassword"];
 
+    #[test]
+    fn prowlarr_is_stored_under_the_keys_that_php_reads() {
+        let defaults = Settings::defaults();
+        for (php_default, read) in crate::RENAMED_SETTINGS {
+            assert_eq!(defaults.get(php_default), None, "`{php_default}`");
+            assert!(defaults.get(read).is_some(), "`{read}`");
+        }
+        assert_eq!(defaults.get("prowlarrURL"), Some(json!("")));
+        assert!(Settings::is_secret("prowlarrToken"));
+    }
+
     /// Settings whose default differs from PHP, each with the default here.
     fn changed_defaults() -> Vec<(&'static str, Value)> {
         // PHP ships a token of a third party as the default (D-12).
@@ -1144,9 +1169,15 @@ mod tests {
                 assert_eq!(defaults.get(key), None, "`{key}` is no setting");
                 continue;
             }
+            // A default of PHP under another name than the key that PHP reads has its
+            // default under that key here.
+            let key = crate::RENAMED_SETTINGS
+                .iter()
+                .find(|(php_default, _)| php_default == key)
+                .map_or(key.as_str(), |(_, read)| read);
             let expected = changed
                 .iter()
-                .find(|(changed_key, _)| changed_key == key)
+                .find(|(changed_key, _)| *changed_key == key)
                 .map_or(value, |(_, own)| own);
             assert_eq!(
                 defaults.get(key).as_ref(),
@@ -1189,6 +1220,13 @@ mod tests {
                 );
                 // A setting of this application only is off until the Admin changes it.
                 assert_eq!(Settings::defaults().get(key), Some(json!(false)), "`{key}`");
+                continue;
+            }
+            if crate::RENAMED_SETTINGS.iter().any(|(_, read)| read == key) {
+                assert!(
+                    !known,
+                    "`{key}` is listed as a PHP default under another name"
+                );
                 continue;
             }
             let without_default =

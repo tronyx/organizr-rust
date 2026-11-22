@@ -18,7 +18,7 @@ use organizr_domain::{
     GroupLevel, Invite, LevelRange, PasswordHash, Tab, TabId, TabKind, Timestamp, User, UserId,
     is_hex_color,
 };
-use organizr_settings::{Settings, SettingsError};
+use organizr_settings::{RENAMED_SETTINGS, Settings, SettingsError};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -859,7 +859,7 @@ fn plan_settings(
     let mut stored: BTreeMap<String, String> = BTreeMap::new();
     let mut legacy: BTreeMap<String, String> = BTreeMap::new();
 
-    for (key, value) in config {
+    for (key, value) in &under_read_names(config) {
         if RETIRED_SETTINGS.contains(&key.as_str()) {
             report.retired_settings.push(key.clone());
             continue;
@@ -911,6 +911,25 @@ fn plan_settings(
             .collect()
     };
     Ok((list(stored), list(legacy)))
+}
+
+/// The settings of the old install, each default of PHP that PHP reads under another name
+/// under that name (D-112). PHP reads only the second name, so when the old install has
+/// both, the value under the second name is the one that counts.
+fn under_read_names(config: &[(String, Value)]) -> Vec<(String, Value)> {
+    config
+        .iter()
+        .filter_map(|(key, value)| {
+            let renamed = RENAMED_SETTINGS
+                .iter()
+                .find(|(php_default, _)| php_default == key);
+            match renamed {
+                Some((_, read)) if config.iter().any(|(other, _)| other == read) => None,
+                Some((_, read)) => Some(((*read).to_owned(), value.clone())),
+                None => Some((key.clone(), value.clone())),
+            }
+        })
+        .collect()
 }
 
 /// The value of a setting in plain text. PHP encrypts each text whose key holds the word
@@ -1306,6 +1325,35 @@ mod tests {
             "{:#?}",
             plan.report.repairs
         );
+        assert_eq!(plan.report.legacy_settings, [] as [String; 0]);
+    }
+
+    #[test]
+    fn prowlarr_takes_the_value_that_php_reads() {
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let setting = |key: &str, value: serde_json::Value| (key.to_owned(), value);
+        // PHP's defaults name the address `ProwlarrURL`, and its form saves it as
+        // `prowlarrURL`, which PHP reads. A value only under the first name comes along too.
+        let install = LegacyInstall {
+            config: vec![
+                setting("ProwlarrURL", json!("")),
+                setting("prowlarrURL", json!("http://prowlarr:9696")),
+                setting("ProwlarrToken", json!("only-under-the-default-name")),
+                setting("ProwlarrDisableCertCheck", json!(false)),
+                setting("prowlarrDisableCertCheck", json!(true)),
+            ],
+            ..LegacyInstall::default()
+        };
+
+        let plan = plan(&install, &secrets).expect("a plan can be made");
+
+        let keys: Vec<&str> = plan.data.settings.iter().map(|s| s.key.as_str()).collect();
+        assert_eq!(
+            keys,
+            ["prowlarrDisableCertCheck", "prowlarrToken", "prowlarrURL"]
+        );
+        assert_eq!(plan.data.settings[2].value, "\"http://prowlarr:9696\"");
+        assert_eq!(plan.data.legacy_settings, []);
         assert_eq!(plan.report.legacy_settings, [] as [String; 0]);
     }
 

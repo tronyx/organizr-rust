@@ -690,8 +690,8 @@ mod tests {
             ("jdownloaderPassword", json!(JDOWNLOADER_LOGIN.1)),
             ("jackettURL", json!(jackett.url())),
             ("jackettToken", json!(JACKETT_KEY)),
-            ("ProwlarrURL", json!(prowlarr.url())),
-            ("ProwlarrToken", json!(PROWLARR_KEY)),
+            ("prowlarrURL", json!(prowlarr.url())),
+            ("prowlarrToken", json!(PROWLARR_KEY)),
             ("adguardURL", json!(adguard.url())),
             ("netdataURL", json!(netdata.url())),
             ("monitorrURL", json!(monitorr.url())),
@@ -788,8 +788,8 @@ mod tests {
             ("jdownloaderPassword", wrong.clone()),
             ("jackettURL", json!(jackett.url())),
             ("jackettToken", wrong.clone()),
-            ("ProwlarrURL", json!(prowlarr.url())),
-            ("ProwlarrToken", wrong.clone()),
+            ("prowlarrURL", json!(prowlarr.url())),
+            ("prowlarrToken", wrong.clone()),
             // This AdGuard Home needs a login, which the homepage does not send.
             ("adguardURL", json!(adguard.url())),
             // Each of these three is asked at an application that does not know the path.

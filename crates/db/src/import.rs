@@ -95,6 +95,15 @@ impl<'a> Import<'a> {
         Ok(rows)
     }
 
+    /// Removes a setting of an imported install that this application did not know.
+    /// Returns whether it was there.
+    pub async fn forget_legacy_setting(&self, key: &str) -> Result<bool, DbError> {
+        let result = legacy_setting::Entity::delete_by_id(key.to_owned())
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected > 0)
+    }
+
     /// Stores everything, or nothing. Fails with [`DbError::NotEmpty`] when the database
     /// holds records already.
     pub async fn run(&self, data: ImportData) -> Result<(), DbError> {

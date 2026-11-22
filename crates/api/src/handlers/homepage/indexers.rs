@@ -22,8 +22,8 @@ use crate::state::AppState;
 /// What must hold before a caller gets the item.
 ///
 /// The PHP application reads the address and the key of Prowlarr from `prowlarrURL`
-/// and `prowlarrToken`. Its defaults name them `ProwlarrURL` and `ProwlarrToken`, and
-/// these are the settings that exist here.
+/// and `prowlarrToken`, as these settings are named here. Its defaults name them
+/// `ProwlarrURL` and `ProwlarrToken` (D-112).
 pub fn permissions(kind: Kind) -> Permissions {
     let keys = |enabled: &str, auth: &str, url: &str, token: &str| Permissions {
         enabled: vec![enabled.to_owned()],
@@ -40,8 +40,8 @@ pub fn permissions(kind: Kind) -> Permissions {
         Kind::Prowlarr => keys(
             "homepageProwlarrEnabled",
             "homepageProwlarrAuth",
-            "ProwlarrURL",
-            "ProwlarrToken",
+            "prowlarrURL",
+            "prowlarrToken",
         ),
     }
 }

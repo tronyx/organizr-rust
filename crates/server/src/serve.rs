@@ -109,6 +109,14 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     let database = open_database(&args.storage).await?;
     let secrets = args.storage.secrets()?;
+    // Settings that PHP's defaults name differently from the key that PHP reads move to
+    // that key before the settings are read (D-112).
+    let notes = organizr_api::adopt_renamed_settings(&database, &secrets)
+        .await
+        .context("cannot move the values of renamed settings")?;
+    for note in &notes {
+        tracing::info!("{note}");
+    }
     let settings = load_settings(&database, &secrets).await?;
     let trusted_proxies: TrustedProxies = args
         .trusted_proxies

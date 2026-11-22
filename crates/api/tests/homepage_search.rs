@@ -28,8 +28,8 @@ fn jackett_settings(url: &str, key: &str) -> Vec<(&'static str, Value)> {
 fn prowlarr_settings(url: &str, key: &str) -> Vec<(&'static str, Value)> {
     vec![
         ("homepageProwlarrEnabled", json!(true)),
-        ("ProwlarrURL", json!(url)),
-        ("ProwlarrToken", json!(key)),
+        ("prowlarrURL", json!(url)),
+        ("prowlarrToken", json!(key)),
     ]
 }
 

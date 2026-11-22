@@ -943,12 +943,13 @@ This item searches the indexers of [Prowlarr](https://prowlarr.com/) for a text,
 | Switch | `homepageProwlarrEnabled` |
 | Level | `homepageProwlarrAuth` |
 | Place | `homepageOrderProwlarr` |
-| Address of Prowlarr | `ProwlarrURL` |
-| API key | `ProwlarrToken` |
-| Do not check the certificate | `ProwlarrDisableCertCheck` |
+| Address of Prowlarr | `prowlarrURL` |
+| API key | `prowlarrToken` |
+| Do not check the certificate | `prowlarrDisableCertCheck` |
+| Use a certificate of your own | `prowlarrUseCustomCertificate` |
 | Download with the download client of Prowlarr | `homepageProwlarrBackholeDownload` |
 
-The keys of the address, the API key and the certificate switch start with a capital letter. These are the names in the default settings of PHP Organizr.
+Enter the address and the API key on the tab **Connection** of the item. The default settings of PHP Organizr name these keys with a capital letter, `ProwlarrURL`, but PHP reads and saves the keys above. An install that holds a value under the old name moves it to the new name when it starts (D-112).
 
 The table shows the date, the indexer, the title, the size, the grabs, the seeders and the leechers of each release. The release with the most seeders stands first.
 

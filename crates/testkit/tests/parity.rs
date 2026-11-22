@@ -620,6 +620,16 @@ async fn config_routes_answer_like_php() {
         for key in ["adGuardUsername", "adGuardPassword"] {
             replay = replay.deviation_adds_in_order("D-102", all, data, key, json!(""));
         }
+        // The settings of Prowlarr are under the names that PHP reads, not the names of
+        // its defaults.
+        for (php_default, read) in organizr_settings::RENAMED_SETTINGS {
+            let default = organizr_settings::Settings::defaults()
+                .get(read)
+                .expect("a setting");
+            replay = replay
+                .deviation_without("D-112", all, &format!("{data}/{php_default}"))
+                .deviation_adds_in_order("D-112", all, data, read, default);
+        }
 
         // The install of the recorder at this point: set up, with a registration password.
         let app = installed_app_with(

@@ -5393,6 +5393,42 @@
       }
      }
     ],
+    "Connection": [
+     {
+      "type": "input",
+      "label": "URL",
+      "help": "Please make sure to use local IP address and port - You also may use local dns name too.",
+      "placeholder": "http(s)://hostname:port",
+      "name": "prowlarrURL",
+      "value": {
+       "$config": "prowlarrURL"
+      }
+     },
+     {
+      "type": "password-alt",
+      "label": "API Key/Token",
+      "name": "prowlarrToken",
+      "value": {
+       "$config": "prowlarrToken"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Disable Certificate Check",
+      "name": "prowlarrDisableCertCheck",
+      "value": {
+       "$config": "prowlarrDisableCertCheck"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Use Custom Certificate",
+      "name": "prowlarrUseCustomCertificate",
+      "value": {
+       "$config": "prowlarrUseCustomCertificate"
+      }
+     }
+    ],
     "Options": [
      {
       "type": "switch",

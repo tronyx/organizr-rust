@@ -271,3 +271,31 @@ async fn the_shuck_stop_plugin_has_no_form() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn the_form_of_prowlarr_has_its_connection_as_in_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app_with(database, &[("prowlarrURL", json!("http://prowlarr:9696"))]);
+        let answer = call(&app, As::Admin, "GET", "/settings/homepage/prowlarr", None).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let connection = &answer.data()["settings"]["Connection"];
+        let names: Vec<&str> = connection
+            .as_array()
+            .expect("the group Connection")
+            .iter()
+            .map(|field| field["name"].as_str().expect("a name"))
+            .collect();
+        assert_eq!(
+            names,
+            [
+                "prowlarrURL",
+                "prowlarrToken",
+                "prowlarrDisableCertCheck",
+                "prowlarrUseCustomCertificate"
+            ]
+        );
+        assert_eq!(connection[0]["value"], json!("http://prowlarr:9696"));
+    })
+    .await;
+}

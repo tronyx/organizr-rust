@@ -17,6 +17,7 @@ pub mod php_json;
 pub mod php_url;
 pub mod picture_cache;
 pub mod ping;
+mod renamed_settings;
 pub mod request_id;
 mod router;
 mod same_origin;
@@ -25,6 +26,7 @@ mod state;
 pub mod update_check;
 
 pub use crate::handlers::backups::create_backup;
+pub use crate::renamed_settings::adopt_renamed_settings;
 pub use crate::router::{API_BASE, router};
 pub use crate::state::{AppState, SettingsWatch, stored_settings};
 pub use crate::update_check::check_for_update;
