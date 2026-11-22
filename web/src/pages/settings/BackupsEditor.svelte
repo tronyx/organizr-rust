@@ -1,6 +1,6 @@
 <script lang="ts">
-  // The backups of the install: make one, save one to this computer, delete one. Only an
-  // Admin can use them (D-74), so a Co-Admin is told so instead of the list.
+  // The backups of the install: make one, save one to this computer, delete one. Admins and
+  // Co-Admins can use them, as in PHP (D-74); anybody else is told so instead of the list.
   import { onMount } from 'svelte';
 
   import { api, apiUrl, failureText } from '../../lib/api';
@@ -29,11 +29,11 @@
   let error = $state<string | null>(null);
   let busy = $state(false);
 
-  /** Whether the person is an Admin, who alone may see the backups. */
-  const isAdmin = $derived(session.launch?.user?.groupID === 0);
+  /** Whether the person is an Admin or a Co-Admin, who may use the backups, as in PHP. */
+  const mayBackUp = $derived((session.launch?.user?.groupID ?? Infinity) <= 1);
 
   async function load() {
-    if (!isAdmin) {
+    if (!mayBackUp) {
       return;
     }
     try {
@@ -73,11 +73,12 @@
     backup never holds the key for the stored secrets: keep a copy of the file secret.key at a safe
     place.
   </p>
-  {#if !isAdmin}
+  {#if !mayBackUp}
     <div role="status" class="alert alert-info mb-4">
       <span>
-        Only an Admin can make, download and delete backups, because a backup holds the password
-        hashes of every user. You are signed in as {session.launch?.user?.group ?? 'a user'}.
+        Only an Admin or a Co-Admin can make, download and delete backups, because a backup holds
+        the password hashes of every user. You are signed in as {session.launch?.user?.group ??
+          'a user'}.
       </span>
     </div>
   {/if}

@@ -69,7 +69,6 @@ The forward auth routes of PHP Organizr work as before, also the old forms such 
 ## 7. Things that work differently
 
 - **Scheduled jobs** run inside the server. Remove the cron entry for `cron.php`. See [Scheduled jobs](scheduled-jobs.md).
-- **Backups** are for an Admin only, because a backup holds the password hashes of every user. A Co-Admin sees a note instead. See [Backups](backups.md).
 - **Password recovery** sends a new password that works for 24 hours, next to the old password. The old password stays good until somebody logs in with the new one. See [E-mail](email.md).
 - **Plugins of other authors** are WebAssembly extensions, not PHP files. See [Extensions](extensions.md).
 - **The log** goes to the output of the container and to the folder `logs` in the data folder. See [The log](log.md).

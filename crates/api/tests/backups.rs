@@ -299,14 +299,14 @@ async fn only_a_backup_in_the_folder_is_sent_or_deleted() {
 }
 
 #[tokio::test]
-async fn only_an_admin_uses_the_backup_routes() {
+async fn admins_and_co_admins_use_the_backup_routes() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let folder = tempfile::tempdir().expect("a temporary folder can be made");
         write(&folder.path().join("backups/old.zip"), "PK an old backup");
         let app = app_in(database, folder.path(), &[]);
-        let boss = seed::logged_in(database, &app, "pat", 1).await;
-        let admin = seed::logged_in(database, &app, "zed", 0).await;
+        let power = seed::logged_in(database, &app, "pia", 2).await;
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
         let requests = [
             ("GET", "/backup"),
             ("POST", "/backup"),
@@ -314,14 +314,23 @@ async fn only_an_admin_uses_the_backup_routes() {
             ("DELETE", "/backup/old.zip"),
         ];
         for (method, path) in requests {
-            for who in [As::Guest, As::User(&boss)] {
+            for who in [As::Guest, As::User(&power)] {
                 let answer = call(&app, who, method, path, None).await;
                 assert_eq!(answer.status, StatusCode::UNAUTHORIZED, "{method} {path}");
             }
         }
         assert!(folder.path().join("backups/old.zip").exists());
-        let answer = call(&app, As::User(&admin), "GET", "/backup", None).await;
-        assert_eq!(answer.status, StatusCode::OK);
+        // A Co-Admin uses all four, as in PHP (D-74).
+        for (method, path) in requests {
+            let answer = call(&app, As::User(&co_admin), method, path, None).await;
+            assert_eq!(
+                answer.status,
+                StatusCode::OK,
+                "{method} {path}: {}",
+                answer.body
+            );
+        }
+        assert!(!folder.path().join("backups/old.zip").exists());
 
         // An application without a data folder has no backups.
         let bare = installed_app_with(database, &[]);

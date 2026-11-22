@@ -22,8 +22,8 @@ use crate::envelope::{Envelope, NoData};
 use crate::handlers::fields::Refusal;
 use crate::state::AppState;
 
-/// The level that the backup routes ask for.
-const MANAGER: GroupLevel = GroupLevel::ADMIN;
+/// The level that the backup routes ask for: Admins and Co-Admins, as in PHP (D-74).
+const MANAGER: GroupLevel = GroupLevel::CO_ADMIN;
 
 /// The version of the application, for the name of a backup.
 const VERSION: &str = env!("CARGO_PKG_VERSION");

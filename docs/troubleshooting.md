@@ -99,7 +99,7 @@ That is intended. The new password from the e-mail works for 24 hours next to th
 
 ### Backup says that I am not authorized
 
-Backups are for an Admin only, because a backup holds the password hashes of every user. A Co-Admin sees a note instead of the backups. Log in with an account of the group Admin. See [Backups](backups.md).
+Only an Admin or a Co-Admin can use the backups, because a backup holds the password hashes of every user. Log in with an account of one of these groups. See [Backups](backups.md).
 
 ### My custom CSS does nothing
 

@@ -33,17 +33,27 @@ describe('BackupsEditor', () => {
     session.launch = null;
   });
 
-  it('tells a Co-Admin that only an Admin can use the backups, and asks nothing', async () => {
-    signIn(1, 'Co-Admin');
+  it('tells a group below Co-Admin that it cannot use the backups, and asks nothing', async () => {
+    signIn(2, 'Super User');
     const sent = stubApi({});
     render(BackupsEditor, { ondone: () => {} });
 
     expect((await screen.findByRole('status')).textContent).toContain(
-      'Only an Admin can make, download and delete backups',
+      'Only an Admin or a Co-Admin can make, download and delete backups',
     );
-    expect(screen.getByRole('status').textContent).toContain('signed in as Co-Admin');
+    expect(screen.getByRole('status').textContent).toContain('signed in as Super User');
     expect(screen.queryByRole('button', { name: 'Make a backup now' })).toBeNull();
     expect(sent).toEqual([]);
+  });
+
+  it('lets a Co-Admin use the backups, as PHP does', async () => {
+    signIn(1, 'Co-Admin');
+    stubApi({ 'GET backup': listOf([NAME]) });
+    render(BackupsEditor, { ondone: () => {} });
+
+    expect(await screen.findByRole('table', { name: 'Backups' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Make a backup now' })).toBeTruthy();
+    expect(screen.queryByRole('status')).toBeNull();
   });
 
   it('lists the backups with a link that saves the file', async () => {

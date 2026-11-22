@@ -14,11 +14,11 @@ Organizr can make a backup of an install, and it can restore one. A backup is on
 
 A backup does not hold the key, so a person who gets a backup cannot read the passwords and tokens of your other services. They are sealed in the database. Without the key, a restored install cannot read them either. Keep a copy of the file `secret.key` at a safe place that is not the place of your backups. [Secrets](secrets.md) tells you more about the key.
 
-A backup holds the password hashes of all users. Only an Admin can make, save and delete backups.
+A backup holds the password hashes of all users. Only an Admin or a Co-Admin can make, save and delete backups, as in PHP Organizr. Keep this in mind when you make somebody a Co-Admin.
 
 ## Make a backup
 
-1. Log in as the Admin.
+1. Log in as an Admin or a Co-Admin.
 2. Open **Settings** > **System Settings** > **Backup**.
 3. Select **Make a backup now**. The list shows the new backup.
 4. To copy a backup to your computer, select **Save** in its row.
