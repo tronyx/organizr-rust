@@ -7,6 +7,7 @@
 
   import { api, failureText } from '../lib/api';
   import { frames } from '../lib/frames.svelte';
+  import { browserStorage, clearJellyfinLogin } from '../lib/jellyfinSso';
   import { opensNewWindow } from '../lib/menu';
   import { afterLogout, browser } from '../lib/oidc';
   import { PAGES, router } from '../lib/route.svelte';
@@ -103,7 +104,9 @@
     error = null;
     try {
       const oidc = session.launch?.settings.login?.oidc;
+      const jellyfin = session.launch?.settings.sso.jellyfin;
       await api('GET', 'logout');
+      clearJellyfinLogin(jellyfin, location.origin, browserStorage);
       const away = afterLogout(oidc);
       if (away !== null) {
         browser.go(away);

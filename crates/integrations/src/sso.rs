@@ -129,6 +129,79 @@ async fn ombi_request(
     answer.access_token.filter(|token| !token.is_empty())
 }
 
+/// The login of the web client of Jellyfin, as the cookies of PHP Organizr hand it over.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JellyfinSession {
+    /// The name under which the web client keeps the user: `user-<user id>-<server id>`.
+    pub user_key: String,
+    /// The user, as JSON.
+    pub user: String,
+    /// What the web client keeps as `jellyfin_credentials`: the server, its address in the
+    /// browser, the user and the access token, as JSON.
+    pub credentials: String,
+}
+
+/// The device of the single sign-on to Jellyfin. PHP sends it in `X-Emby-Authorization`,
+/// which Jellyfin 12 refuses (D-99), so it goes in `Authorization`.
+const JELLYFIN_SSO_DEVICE: &str = r#"MediaBrowser Client="Organizr Jellyfin Tab", Device="Organizr", DeviceId="Organizr_SSO", Version="1.0""#;
+
+#[derive(Deserialize)]
+struct JellyfinAnswer {
+    #[serde(rename = "AccessToken")]
+    access_token: String,
+    #[serde(rename = "ServerId")]
+    server_id: String,
+    #[serde(rename = "User")]
+    user: serde_json::Value,
+}
+
+/// Asks Jellyfin at `url` for a session of the user with the name and the password of the
+/// login. `address` is the address of Jellyfin in the browser, the setting
+/// `jellyfinSSOURL`. Returns `None` when Jellyfin gives none.
+pub async fn jellyfin_session(
+    http: &Outbound,
+    url: &str,
+    address: &str,
+    login: Login<'_>,
+    timeout: Duration,
+) -> Option<JellyfinSession> {
+    let target = format!("{url}/Users/authenticatebyname");
+    let response = http
+        .client_for(&target)
+        .post(&target)
+        .timeout(timeout)
+        .header("Authorization", JELLYFIN_SSO_DEVICE)
+        .header("Accept", "application/json")
+        .header("X-Forwarded-For", login.client_ip)
+        .json(&json!({"Username": login.username, "Pw": login.password}))
+        .send()
+        .await
+        .map_err(
+            |error| tracing::warn!(error = %without_address(error), "Jellyfin cannot be reached"),
+        )
+        .ok()?;
+    if !response.status().is_success() {
+        tracing::warn!("Jellyfin gave no token");
+        return None;
+    }
+    let answer: JellyfinAnswer = response.json().await.ok()?;
+    let user_id = answer.user.get("Id")?.as_str()?.to_owned();
+    if answer.access_token.is_empty() {
+        return None;
+    }
+    let credentials = json!({"Servers": [{
+        "ManualAddress": address,
+        "Id": answer.server_id,
+        "UserId": user_id,
+        "AccessToken": answer.access_token,
+    }]});
+    Some(JellyfinSession {
+        user_key: format!("user-{user_id}-{}", answer.server_id),
+        user: answer.user.to_string(),
+        credentials: credentials.to_string(),
+    })
+}
+
 /// Asks Overseerr at `url` for a session and returns the value of its `connect.sid`
 /// cookie. Returns `None` when Overseerr gives none.
 pub async fn overseerr_session(

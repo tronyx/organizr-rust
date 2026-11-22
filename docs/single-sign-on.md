@@ -1,6 +1,6 @@
 # Single sign-on
 
-With single sign-on, a person who logs in to Organizr is logged in to your other applications too: Plex Web, Ombi, Overseerr and Tautulli.
+With single sign-on, a person who logs in to Organizr is logged in to your other applications too: Plex Web, Ombi, Overseerr, Tautulli and Jellyfin.
 
 ## How it works
 
@@ -29,6 +29,7 @@ A logout of Organizr makes the browser drop the cookies.
 | Ombi | `ssoOmbi` | `ombiURL` | `Auth` |
 | Overseerr | `ssoOverseerr` | `overseerrURL` | `connect.sid` |
 | Tautulli | `ssoTautulli` | `tautulliURL` | `tautulli_token_<id of the install>` |
+| Jellyfin | `ssoJellyfin` | `jellyfinURL` and `jellyfinSSOURL` | `jellyfin_credentials` and `user-<user>-<server>`. See [Jellyfin](#jellyfin) |
 
 ### Fallback users
 
@@ -42,6 +43,46 @@ For Overseerr, the fallback user is an e-mail address.
 
 `ssoTautulliAuth` is a level. Only users of that level, or with more access, get a session of Tautulli.
 
+### Jellyfin
+
+Jellyfin keeps its login in the storage of the browser, not in a cookie. So Organizr does two things:
+
+1. At a login with a password, it asks Jellyfin for a session with the user name and the password. It hands the session to the browser as two cookies, as PHP Organizr does: `jellyfin_credentials`, with the address of Jellyfin, the user and the access token, and `user-<user>-<server>`, with the user.
+2. The page of Organizr copies the two cookies into the storage of the browser. Jellyfin reads them there and shows the user as logged in.
+
+The storage of the browser belongs to one site. So the copy of step 2 works only when Jellyfin is a path of the site of Organizr, for example `https://organizr.example.com/jellyfin`. The settings:
+
+| Setting | Meaning |
+|---|---|
+| **Jellyfin API URL** (`jellyfinURL`) | The address that Organizr asks, for example `http://jellyfin:8096` |
+| **Jellyfin SSO URL** (`jellyfinSSOURL`) | The address of Jellyfin in the browser, for example `https://organizr.example.com/jellyfin` |
+
+In Jellyfin, enter the path as the **Base URL** in **Dashboard**, **Networking**. The [Reverse proxy](reverse-proxy.md#a-tab-with-a-path) page tells you how to send a path to an application.
+
+#### Jellyfin on a site of its own
+
+When Jellyfin has a site of its own, for example `https://jellyfin.example.com`, the page of Organizr cannot write into its storage. A script on the pages of Jellyfin then does the copy. With nginx, add this to the location of Jellyfin:
+
+```nginx
+location / {
+    proxy_pass http://jellyfin:8096;
+    proxy_set_header Host $host;
+    # The page must come uncompressed, so that nginx can add the script.
+    proxy_set_header Accept-Encoding "";
+    sub_filter '</head>' '<script>(function(){var c=document.cookie.split("; ");for(var i=0;i<c.length;i++){var at=c[i].indexOf("="),n=c[i].slice(0,at);if(n==="jellyfin_credentials"||n.indexOf("user-")===0){try{localStorage.setItem(n,decodeURIComponent(c[i].slice(at+1)));}catch(e){}}}})();</script></head>';
+    sub_filter_once on;
+}
+```
+
+The script holds no `$`: nginx reads `$` in `sub_filter` as the start of a variable. Set **Jellyfin SSO URL** to the address of that site. Organizr and Jellyfin must share the domain, as for every application of single sign-on.
+
+#### What to know about Jellyfin
+
+- A login through Plex or OpenID Connect brings no password, so it gets no session of Jellyfin. The user logs in to Jellyfin as usual.
+- A logout of Organizr drops the cookies, and the page of Organizr takes the login of Jellyfin out of the storage of the browser.
+- With Jellyfin on a site of its own, the page of Organizr cannot reach the storage of that site. After a logout of Organizr, Jellyfin stays logged in until the person logs out in Jellyfin. And while the cookies are there, the script copies the login again, also after a logout in Jellyfin.
+- The access token of Jellyfin is in a cookie that scripts of the pages on your domain can read, as in PHP Organizr, and Jellyfin keeps it in the storage of the browser itself.
+
 ## Good to know
 
 - An application that does not answer does not stop the login. Organizr waits for each application for at most one minute, divided by the number of applications that are switched on.
@@ -50,4 +91,4 @@ For Overseerr, the fallback user is an e-mail address.
 
 ## Not built yet
 
-PHP Organizr also has single sign-on for Jellyfin, Petio and Komga. This application does not have these yet. The groups of Petio and Komga on the page **SSO** say so at their top.
+PHP Organizr also has single sign-on for Petio and Komga. This application does not have these yet. Their groups on the page **SSO** say so at their top.

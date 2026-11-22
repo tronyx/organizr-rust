@@ -1,6 +1,7 @@
 // What the interface knows about the install and the caller: the answer of `GET /launch`.
 
 import { api, failureText } from './api';
+import { browserStorage, copyJellyfinLogin } from './jellyfinSso';
 import { applyAppearance, applyCustomScript, applyIcons } from './theme';
 import {
   CO_ADMIN,
@@ -39,6 +40,14 @@ class Session {
       applyAppearance(data.theme, data.appearance);
       applyIcons(data.appearance.favIcons);
       applyCustomScript(data.appearance, data.status.status === 'ok');
+      if (data.user?.loggedin) {
+        copyJellyfinLogin(
+          data.settings.sso.jellyfin,
+          document.cookie,
+          location.origin,
+          browserStorage,
+        );
+      }
     } catch (failure) {
       this.error = failureText(failure);
     } finally {

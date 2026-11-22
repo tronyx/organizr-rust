@@ -1,5 +1,7 @@
 // The shapes of the answers of the API that the interface reads.
 
+import type { JellyfinSso } from './jellyfinSso';
+
 /** What the `launch` answer says about the OpenID Connect login, under `settings.login.oidc`. */
 export interface OidcLaunch {
   enabled: boolean;
@@ -166,6 +168,8 @@ export interface Launch {
         /** Whether a person can log in with a Plex account, without a password here. */
         oAuthEnabled: boolean;
       };
+      /** Single sign-on to Jellyfin (D-114). */
+      jellyfin?: JellyfinSso;
     };
     /** The switches of the links that PHP adds at the end of the menu. */
     menuLink?: {

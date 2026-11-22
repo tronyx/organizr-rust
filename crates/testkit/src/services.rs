@@ -460,6 +460,29 @@ pub async fn ombi() -> StandIn {
     .await
 }
 
+/// The id of the stand-in Jellyfin server.
+pub const JELLYFIN_SERVER_ID: &str = "4f2a-made-up-jellyfin-server";
+
+async fn jellyfin_login(axum::Json(body): axum::Json<Value>) -> Response {
+    // Jellyfin compares the name without the letter case.
+    let name = body["Username"].as_str().unwrap_or_default().to_lowercase();
+    if name != "robin" || body["Pw"].as_str() != Some("the password of robin in organizr") {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    axum::Json(json!({
+        "User": {"Name": "Robin", "Id": "jellyfin-user-robin", "ServerId": JELLYFIN_SERVER_ID},
+        "SessionInfo": {"Id": "made-up-session"},
+        "AccessToken": "jellyfin-token-of-robin",
+        "ServerId": JELLYFIN_SERVER_ID,
+    }))
+    .into_response()
+}
+
+/// Starts a stand-in for Jellyfin, which knows the user robin.
+pub async fn jellyfin() -> StandIn {
+    StandIn::start(Router::new().route("/Users/authenticatebyname", post(jellyfin_login))).await
+}
+
 fn overseerr_session(name: &str) -> Response {
     // The real application signs its session id. The value holds characters that a
     // cookie writes with `%`.

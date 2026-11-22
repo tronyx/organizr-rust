@@ -5,6 +5,7 @@ use std::time::{Duration, SystemTime};
 
 use axum::http::{HeaderMap, HeaderValue, header};
 use organizr_domain::{GroupLevel, User};
+use organizr_integrations::http::Outbound;
 use organizr_integrations::plex::PlexAccount;
 use organizr_integrations::sso::{self, Fallback, Login};
 use organizr_settings::Settings;
@@ -191,24 +192,9 @@ pub async fn hand_off(
         )
         .await
     };
-    let tautulli = async {
-        // Only users of the level of the `ssoTautulliAuth` setting, or more access.
-        if !settings.sso_tautulli || u32::from(login.level.get()) > settings.sso_tautulli_auth {
-            return Vec::new();
-        }
-        let installs: Vec<(String, String)> = settings
-            .tautulli_url
-            .split(',')
-            .filter(|address| !address.trim().is_empty())
-            .map(|address| {
-                let url = qualified(address);
-                let path = path_of(&url);
-                (url, path)
-            })
-            .collect();
-        sso::tautulli_sessions(http, &installs, who, timeout).await
-    };
-    let (ombi, overseerr, tautulli) = tokio::join!(ombi, overseerr, tautulli);
+    let tautulli = tautulli_sessions(http, &settings, &qualified, who, login.level, timeout);
+    let jellyfin = jellyfin_session(http, &settings, &qualified, who, timeout);
+    let (ombi, overseerr, tautulli, jellyfin) = tokio::join!(ombi, overseerr, tautulli, jellyfin);
 
     let scope = CookieScope::of(headers, client.https);
     let mut cookies = Vec::new();
@@ -231,7 +217,61 @@ pub async fn hand_off(
     if let Some(session) = overseerr {
         add("connect.sid", &session, false, "/");
     }
+    // The web client of Jellyfin keeps its login in the storage of the browser. The
+    // interface copies these cookies there, so a script must read them (D-114).
+    if let Some(session) = jellyfin {
+        add(&session.user_key, &session.user, false, "/");
+        add("jellyfin_credentials", &session.credentials, false, "/");
+    }
     cookies
+}
+
+/// Asks each Tautulli install for a session, for users of the level of the
+/// `ssoTautulliAuth` setting, or with more access.
+async fn tautulli_sessions(
+    http: &Outbound,
+    settings: &Settings,
+    qualified: &impl Fn(&str) -> String,
+    who: Login<'_>,
+    level: GroupLevel,
+    timeout: Duration,
+) -> Vec<sso::TautulliSession> {
+    if !settings.sso_tautulli || u32::from(level.get()) > settings.sso_tautulli_auth {
+        return Vec::new();
+    }
+    let installs: Vec<(String, String)> = settings
+        .tautulli_url
+        .split(',')
+        .filter(|address| !address.trim().is_empty())
+        .map(|address| {
+            let url = qualified(address);
+            let path = path_of(&url);
+            (url, path)
+        })
+        .collect();
+    sso::tautulli_sessions(http, &installs, who, timeout).await
+}
+
+/// Asks Jellyfin for the login of its web client, when its single sign-on is on (D-114).
+/// Jellyfin takes the name and the password; a login with a Plex token has none.
+async fn jellyfin_session(
+    http: &Outbound,
+    settings: &Settings,
+    qualified: &impl Fn(&str) -> String,
+    who: Login<'_>,
+    timeout: Duration,
+) -> Option<sso::JellyfinSession> {
+    if !settings.sso_jellyfin || who.password.is_empty() || settings.jellyfin_url.is_empty() {
+        return None;
+    }
+    sso::jellyfin_session(
+        http,
+        &qualified(&settings.jellyfin_url),
+        &qualified(&settings.jellyfin_ssourl),
+        who,
+        timeout,
+    )
+    .await
 }
 
 /// The time that each application of single sign-on has to answer: one minute, shared

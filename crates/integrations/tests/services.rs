@@ -13,10 +13,11 @@ use std::time::Duration;
 use organizr_integrations::http::{Outbound, user_agent};
 use organizr_integrations::plex::{PlexError, PlexTv};
 use organizr_integrations::sso::{
-    Fallback, Login, TautulliSession, ombi_token, overseerr_session, tautulli_sessions,
+    Fallback, JellyfinSession, Login, TautulliSession, jellyfin_session, ombi_token,
+    overseerr_session, tautulli_sessions,
 };
 use organizr_testkit::services::{
-    self, LOCAL_ACCOUNT, OWNER_TOKEN, PLEX_USERS, SERVER_ID, StandIn,
+    self, JELLYFIN_SERVER_ID, LOCAL_ACCOUNT, OWNER_TOKEN, PLEX_USERS, SERVER_ID, StandIn,
 };
 
 const TIMEOUT: Duration = Duration::from_secs(10);
@@ -218,6 +219,57 @@ async fn ombi_gives_a_token_for_a_plex_token_or_for_the_fallback_account() {
     let last = stand_in.seen().pop().expect("a request was sent");
     assert_eq!(last.path, "/api/v1/Token");
     assert_eq!(last.json()["username"], LOCAL_ACCOUNT.0);
+}
+
+#[tokio::test]
+async fn jellyfin_gives_the_login_of_its_web_client() {
+    let stand_in = services::jellyfin().await;
+    let http = outbound();
+    let url = stand_in.url();
+    let address = "https://organizr.example.com/jellyfin";
+
+    let session = jellyfin_session(&http, &url, address, login(None), TIMEOUT)
+        .await
+        .expect("Jellyfin knows robin");
+
+    let seen = &stand_in.seen()[0];
+    assert_eq!(seen.json()["Username"], "robin");
+    assert_eq!(seen.json()["Pw"], "the password of robin in organizr");
+    assert_eq!(seen.header("x-forwarded-for"), Some("203.0.113.9"));
+    // Jellyfin 12 refuses the device in `X-Emby-Authorization` (D-99).
+    let device = seen.header("authorization").expect("the device is named");
+    assert!(device.contains("DeviceId=\"Organizr_SSO\""), "{device}");
+    let JellyfinSession {
+        user_key,
+        user,
+        credentials,
+    } = session;
+    assert_eq!(
+        user_key,
+        format!("user-jellyfin-user-robin-{JELLYFIN_SERVER_ID}")
+    );
+    let user: serde_json::Value = serde_json::from_str(&user).expect("JSON");
+    assert_eq!(user["Name"], "Robin");
+    let credentials: serde_json::Value = serde_json::from_str(&credentials).expect("JSON");
+    assert_eq!(
+        credentials,
+        serde_json::json!({"Servers": [{
+            "ManualAddress": address,
+            "Id": JELLYFIN_SERVER_ID,
+            "UserId": "jellyfin-user-robin",
+            "AccessToken": "jellyfin-token-of-robin",
+        }]})
+    );
+
+    // A password that Jellyfin does not take gives no session.
+    let wrong = Login {
+        password: "another password",
+        ..login(None)
+    };
+    assert_eq!(
+        jellyfin_session(&http, &url, address, wrong, TIMEOUT).await,
+        None
+    );
 }
 
 #[tokio::test]
