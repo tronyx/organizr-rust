@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, within } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { parseRoute } from '../../lib/route.svelte';
+import { session } from '../../lib/session.svelte';
+import type { Launch } from '../../lib/types';
 import { stubApi } from '../../test-helpers';
 import BackupsEditor from './BackupsEditor.svelte';
 
@@ -20,7 +22,30 @@ function listOf(names: string[]) {
   };
 }
 
+/** Signs in a person of the group with the given level. */
+function signIn(groupID: number, group: string) {
+  session.launch = { user: { groupID, group, loggedin: true } } as unknown as Launch;
+}
+
 describe('BackupsEditor', () => {
+  beforeEach(() => signIn(0, 'Admin'));
+  afterEach(() => {
+    session.launch = null;
+  });
+
+  it('tells a Co-Admin that only an Admin can use the backups, and asks nothing', async () => {
+    signIn(1, 'Co-Admin');
+    const sent = stubApi({});
+    render(BackupsEditor, { ondone: () => {} });
+
+    expect((await screen.findByRole('status')).textContent).toContain(
+      'Only an Admin can make, download and delete backups',
+    );
+    expect(screen.getByRole('status').textContent).toContain('signed in as Co-Admin');
+    expect(screen.queryByRole('button', { name: 'Make a backup now' })).toBeNull();
+    expect(sent).toEqual([]);
+  });
+
   it('lists the backups with a link that saves the file', async () => {
     stubApi({ 'GET backup': listOf([NAME]) });
     render(BackupsEditor, { ondone: () => {} });

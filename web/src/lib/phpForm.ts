@@ -22,6 +22,8 @@ export interface PhpField {
   placeholder?: string;
   class?: string;
   options?: PhpOption[] | string;
+  /** The options of PHP's select2, as the text of a JavaScript object. */
+  settings?: string;
   /** The text of a button. */
   text?: string;
   /** The picture of a button, as classes of PHP. */
@@ -82,6 +84,16 @@ export function optionsOf(field: PhpField): PhpOption[] {
 /** Whether a list takes several values: PHP's `select2` with the class `select2-multiple`. */
 export function isMultiple(field: PhpField): boolean {
   return field.type === 'select2';
+}
+
+/** Whether a list takes values that the Admin types: PHP's select2 with `tags: true`. */
+export function isTags(field: PhpField): boolean {
+  return isMultiple(field) && /\btags:\s*true\b/.test(field.settings ?? '');
+}
+
+/** Whether the values of a list are secrets, which PHP shows as dots (`password-alt`). */
+export function hidesValues(field: PhpField): boolean {
+  return /password-alt/.test(field.settings ?? '');
 }
 
 /** The value of a field in the form, from the value that the server sent. */

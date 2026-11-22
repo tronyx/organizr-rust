@@ -1146,6 +1146,66 @@
     min-height: 38px;
   }
 
+  /* The lines of the log: the size of PHP's log table, larger than a small table. */
+  .org-log-table {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .org-log-table td {
+    padding-block: 8px;
+  }
+
+  /* A list of typed values, as PHP's select2 with tags: chips and a box after them. */
+  .org-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    height: auto;
+    min-height: 38px;
+    padding: 4px 6px;
+    cursor: text;
+  }
+
+  .org-tag {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    border-radius: 3px;
+    background: var(--color-info);
+    color: #ffffff;
+    font-size: 13px;
+    line-height: 22px;
+  }
+
+  .org-tag-text {
+    overflow: hidden;
+    padding: 0 6px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .org-tags-hidden .org-tag-text {
+    -webkit-text-security: disc;
+  }
+
+  .org-tag-remove {
+    padding: 0 6px;
+    border-left: 1px solid rgb(255 255 255 / 0.3);
+    cursor: pointer;
+  }
+
+  .org-tags-input {
+    flex: 1 1 120px;
+    min-width: 120px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    outline: none;
+  }
+
   .org-input-group {
     display: flex;
   }
@@ -2419,14 +2479,17 @@
       transform: none;
     }
 
+    /* The strip opens under the pointer, and for the keyboard. A link that was
+       clicked keeps the focus, but not a visible one, so the strip closes when the
+       pointer leaves it, as in PHP. */
     .org-sidebar:hover,
-    .org-sidebar:focus-within {
+    .org-sidebar:has(:focus-visible) {
       width: 240px;
     }
 
     /* The closed strip shows the pictures only. */
-    .org-sidebar:not(:hover, :focus-within) .org-wide,
-    .org-sidebar:not(:hover, :focus-within) details > ul {
+    .org-sidebar:not(:hover, :has(:focus-visible)) .org-wide,
+    .org-sidebar:not(:hover, :has(:focus-visible)) details > ul {
       display: none !important;
     }
   }

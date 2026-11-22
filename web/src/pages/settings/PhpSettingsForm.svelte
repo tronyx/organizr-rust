@@ -14,7 +14,9 @@
     formValues,
     hasStoredSecret,
     holdsSetting,
+    hidesValues,
     isMultiple,
+    isTags,
     isSecret,
     isShown,
     optionsOf,
@@ -22,6 +24,7 @@
     type PhpGroups,
     type PhpValue,
   } from '../../lib/phpForm';
+  import TagsField from '../../components/TagsField.svelte';
   import { plexToken } from '../../lib/plexLogin';
   import { randomKey } from '../../lib/random';
   import { session } from '../../lib/session.svelte';
@@ -304,6 +307,16 @@
         <option value={String(option.value)} disabled={option.disabled}>{option.name}</option>
       {/each}
     </select>
+  {:else if isTags(field) && holdsSetting(field)}
+    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <TagsField
+      {id}
+      values={form[field.name] as string[]}
+      placeholder={field.placeholder}
+      hidden={hidesValues(field)}
+      describedby={hint}
+      onchange={(values) => (form[field.name] = values)}
+    />
   {:else if isMultiple(field) && holdsSetting(field) && optionsOf(field).some((option) => !option.disabled)}
     <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
     <select

@@ -1,8 +1,10 @@
 <script lang="ts">
-  // The backups of the install: make one, save one to this computer, delete one.
+  // The backups of the install: make one, save one to this computer, delete one. Only an
+  // Admin can use them (D-74), so a Co-Admin is told so instead of the list.
   import { onMount } from 'svelte';
 
   import { api, apiUrl, failureText } from '../../lib/api';
+  import { session } from '../../lib/session.svelte';
 
   interface Backup {
     name: string;
@@ -27,7 +29,13 @@
   let error = $state<string | null>(null);
   let busy = $state(false);
 
+  /** Whether the person is an Admin, who alone may see the backups. */
+  const isAdmin = $derived(session.launch?.user?.groupID === 0);
+
   async function load() {
+    if (!isAdmin) {
+      return;
+    }
     try {
       list = (await api<List>('GET', 'backup')).data;
       error = null;
@@ -65,6 +73,14 @@
     backup never holds the key for the stored secrets: keep a copy of the file secret.key at a safe
     place.
   </p>
+  {#if !isAdmin}
+    <div role="status" class="alert alert-info mb-4">
+      <span>
+        Only an Admin can make, download and delete backups, because a backup holds the password
+        hashes of every user. You are signed in as {session.launch?.user?.group ?? 'a user'}.
+      </span>
+    </div>
+  {/if}
   {#if error}
     <div role="alert" class="alert alert-error mb-4"><span>{error}</span></div>
   {/if}

@@ -190,7 +190,7 @@
         {page.pageInfo.results} records. Page {current} of {pages}.
       </p>
       <div class="overflow-x-auto">
-        <table class="table-sm table" aria-label="Log">
+        <table class="org-log-table table" aria-label="Log">
           <thead>
             <tr>
               <th scope="col">Time</th>
@@ -213,7 +213,7 @@
                 </td>
                 <td class="whitespace-nowrap">{record.channel}</td>
                 <td>{record.message}</td>
-                <td class="font-mono text-xs">{record.remote_ip_address ?? ''}</td>
+                <td class="font-mono">{record.remote_ip_address ?? ''}</td>
                 <td>{record.username}</td>
                 <td>
                   <button
