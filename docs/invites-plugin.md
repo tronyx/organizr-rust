@@ -2,7 +2,7 @@
 
 The invites plugin gives a person access to your Plex server with a code. A member of your install makes an invite, which is a record with a code. The invited person enters the code and the name of the own Plex account. Organizr then shares the Plex server with that account.
 
-The plugin works with Plex. The parts of PHP Organizr for Emby, Komga, Nextcloud and Plex Home are not built yet.
+The plugin works with Plex. The invited person can also make a new Plex account, or a user on your Emby server with the settings of the tab **Emby Settings**. The parts of PHP Organizr for Komga, Nextcloud and the Plex Home are not built yet: their tabs and switches say so, and nothing uses their settings.
 
 ## Set it up
 

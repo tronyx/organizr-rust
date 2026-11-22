@@ -41,6 +41,19 @@ pub const RETIRED_SETTINGS: [&str; 9] = [
     "organizrHash",
 ];
 
+/// Switches of PHP for parts that this application has not built, each with the part, in
+/// the order of the keys. The import keeps them, and the report names the ones that are on.
+const NOT_BUILT: [(&str, &str); 5] = [
+    (
+        "INVITES-add-plex-home",
+        "adding an invited person to the Plex Home",
+    ),
+    ("INVITES-komga-enabled", "invites with Komga"),
+    ("INVITES-nextcloud-enabled", "invites with Nextcloud"),
+    ("ssoKomga", "single sign-on for Komga"),
+    ("ssoPetio", "single sign-on for Petio"),
+];
+
 /// The level of the group "User" of a new install.
 const USER_LEVEL: u16 = 4;
 
@@ -905,6 +918,14 @@ fn plan_settings(
         }
     }
 
+    for (key, part) in NOT_BUILT {
+        if settings.get(key) == Some(Value::Bool(true)) {
+            report.notes.push(format!(
+                "`{key}` is on, but {part} is not built yet in this version. The setting is kept, and nothing uses it."
+            ));
+        }
+    }
+
     let list = |map: BTreeMap<String, String>| {
         map.into_iter()
             .map(|(key, value)| StoredSetting { key, value })
@@ -1355,6 +1376,34 @@ mod tests {
         assert_eq!(plan.data.settings[2].value, "\"http://prowlarr:9696\"");
         assert_eq!(plan.data.legacy_settings, []);
         assert_eq!(plan.report.legacy_settings, [] as [String; 0]);
+    }
+
+    #[test]
+    fn report_names_the_parts_that_are_switched_on_and_not_built() {
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let install = LegacyInstall {
+            config: vec![
+                ("ssoPetio".to_owned(), json!(true)),
+                ("ssoKomga".to_owned(), json!(false)),
+                ("INVITES-nextcloud-enabled".to_owned(), json!(true)),
+            ],
+            ..LegacyInstall::default()
+        };
+
+        let plan = plan(&install, &secrets).expect("a plan can be made");
+
+        let notes: Vec<&String> = plan
+            .report
+            .notes
+            .iter()
+            .filter(|note| note.contains("not built yet"))
+            .collect();
+        assert_eq!(notes.len(), 2, "{:#?}", plan.report.notes);
+        assert!(
+            notes[0].contains("`INVITES-nextcloud-enabled`"),
+            "{notes:#?}"
+        );
+        assert!(notes[1].contains("`ssoPetio`"), "{notes:#?}");
     }
 
     #[test]

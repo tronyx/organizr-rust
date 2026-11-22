@@ -365,3 +365,44 @@ async fn the_form_of_netdata_has_the_charts_of_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn parts_that_are_not_built_say_so_at_their_top() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app_with(database, &[]);
+        let notice_of = |form: &Value, group: &str| -> Value {
+            form[group]
+                .as_array()
+                .expect("the group")
+                .iter()
+                .find(|field| field["type"] == json!("notice"))
+                .cloned()
+                .unwrap_or(Value::Null)
+        };
+
+        let sso = call(&app, As::Admin, "GET", "/settings/sso", None)
+            .await
+            .data();
+        for group in ["Petio", "Komga"] {
+            assert_eq!(
+                notice_of(&sso, group)["title"],
+                json!("Not built yet"),
+                "{group}"
+            );
+        }
+        assert_eq!(notice_of(&sso, "Plex"), Value::Null);
+        let invites = call(&app, As::Admin, "GET", "/plugins/invites/settings", None)
+            .await
+            .data();
+        for group in ["Komga Settings", "Nextcloud Settings", "Plex Settings"] {
+            assert_eq!(
+                notice_of(&invites, group)["title"],
+                json!("Not built yet"),
+                "{group}"
+            );
+        }
+        assert_eq!(notice_of(&invites, "Emby Settings"), Value::Null);
+    })
+    .await;
+}

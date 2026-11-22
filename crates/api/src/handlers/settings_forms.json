@@ -2244,6 +2244,16 @@
    ],
    "Petio": [
     {
+     "type": "notice",
+     "override": 12,
+     "label": "",
+     "name": null,
+     "value": "",
+     "notice": "warning",
+     "title": "Not built yet",
+     "body": "Single sign-on for Petio is not built yet in this version of Organizr. The settings are kept, but nothing uses them."
+    },
+    {
      "type": "input",
      "label": "URL",
      "help": "Please make sure to use local IP address and port - You also may use local dns name too.",
@@ -2363,6 +2373,16 @@
     }
    ],
    "Komga": [
+    {
+     "type": "notice",
+     "override": 12,
+     "label": "",
+     "name": null,
+     "value": "",
+     "notice": "warning",
+     "title": "Not built yet",
+     "body": "Single sign-on for Komga is not built yet in this version of Organizr. The settings are kept, but nothing uses them."
+    },
     {
      "type": "input",
      "label": "URL",
@@ -14711,6 +14731,16 @@
    ],
    "Plex Settings": [
     {
+     "type": "notice",
+     "override": 12,
+     "label": "",
+     "name": null,
+     "value": "",
+     "notice": "warning",
+     "title": "Not built yet",
+     "body": "Adding an invited person to the Plex Home is not built yet in this version of Organizr: the switch \"When user subscribe add him to Plex Home\" does nothing. Sharing the Plex server works."
+    },
+    {
      "type": "password-alt",
      "name": "plexToken",
      "label": "Plex Token",
@@ -14796,6 +14826,16 @@
    ],
    "Komga Settings": [
     {
+     "type": "notice",
+     "override": 12,
+     "label": "",
+     "name": null,
+     "value": "",
+     "notice": "warning",
+     "title": "Not built yet",
+     "body": "Invites with Komga are not built yet in this version of Organizr. The settings are kept, but nothing uses them."
+    },
+    {
      "type": "switch",
      "name": "INVITES-komga-enabled",
      "label": "Enable Komga for auto create account",
@@ -14877,6 +14917,16 @@
     }
    ],
    "Nextcloud Settings": [
+    {
+     "type": "notice",
+     "override": 12,
+     "label": "",
+     "name": null,
+     "value": "",
+     "notice": "warning",
+     "title": "Not built yet",
+     "body": "Invites with Nextcloud are not built yet in this version of Organizr. The settings are kept, but nothing uses them."
+    },
     {
      "type": "switch",
      "name": "INVITES-nextcloud-enabled",

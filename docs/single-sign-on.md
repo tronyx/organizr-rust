@@ -50,4 +50,4 @@ For Overseerr, the fallback user is an e-mail address.
 
 ## Not built yet
 
-PHP Organizr also has single sign-on for Jellyfin, Petio and Komga. This application does not have these yet.
+PHP Organizr also has single sign-on for Jellyfin, Petio and Komga. This application does not have these yet. The groups of Petio and Komga on the page **SSO** say so at their top.
