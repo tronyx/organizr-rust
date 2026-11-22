@@ -19,22 +19,24 @@ A backup holds the password hashes of all users. Only an Admin can make, save an
 ## Make a backup
 
 1. Log in as the Admin.
-2. Open **Settings**, and select the tab **Backups**.
+2. Open **Settings** > **System Settings** > **Backup**.
 3. Select **Make a backup now**. The list shows the new backup.
 4. To copy a backup to your computer, select **Save** in its row.
 
-The backups are in the folder `backups` of the data folder. To use another folder, enter it in the field **Folder for the backups**. The folder must exist, and the user of the server must be able to write to it. Select **Test the folder** to see whether the folder exists.
+The backups are in the folder `backups` of the data folder. To use another folder, enter it in the field **Backup Save Path**, on the tab **Cron** of **Settings** > **System Settings** > **Main**. The folder must exist, and the user of the server must be able to write to it. Select **Test Backup Save Path** to see whether the folder exists.
 
 ## Backups on a schedule
 
+These settings are on the tab **Cron** of **Settings** > **System Settings** > **Main**.
+
 | Setting | Key | Default |
 |---|---|---|
-| Make backups on a schedule | `autoBackupCronEnabled` | Off |
-| Schedule | `autoBackupCronSchedule` | `@weekly` |
-| Number of backups to keep | `keepBackupsCountCron` | 20 |
-| Folder for the backups | `backupLocation` | Empty: the folder `backups` in the data folder |
+| Auto-Backup Organizr | `autoBackupCronEnabled` | Off |
+| Cron Schedule | `autoBackupCronSchedule` | `@weekly` |
+| # Backups Keep | `keepBackupsCountCron` | 20 |
+| Backup Save Path | `backupLocation` | Empty: the folder `backups` in the data folder |
 
-After each new backup, Organizr deletes the oldest backups over the number to keep. The number 0 keeps every backup. [Scheduled jobs](scheduled-jobs.md) tells you how to write a schedule. Select **Test the schedule** to see whether the scheduler can read it, and **Check that the scheduler runs** to see whether the scheduler runs.
+After each new backup, Organizr deletes the oldest backups over the number to keep. The number 0 keeps every backup. [Scheduled jobs](scheduled-jobs.md) tells you how to write a schedule. Select **Test Cron Schedule** to see whether the scheduler can read it. [Tests of the settings](settings-tests.md) tells you how a script checks that the scheduler runs.
 
 ## Restore a backup
 

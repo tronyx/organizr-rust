@@ -30,24 +30,24 @@ Organizr builds this address from the address that the browser used, as PHP Orga
 
 1. Make a client for Organizr at the provider. See the section of your provider below. Write down the client ID, the client secret and the discovery address.
 2. Log in to Organizr as an Admin.
-3. Open **Settings**, and select the tab **Login**.
-4. In the group **OpenID Connect**, switch on **Log in with an OpenID Connect provider**.
-5. In the group of your provider, switch on **Log in with** the provider, and enter the discovery address, the client ID and the client secret.
+3. Open **Settings**, then **System Settings**, then **SSO**.
+4. In the group **OIDC Global**, switch on **Enable OIDC Authentication**.
+5. In the group of your provider, for example **OIDC: Keycloak**, switch on **Enable** and the name of the provider, for example **Enable Keycloak**, and enter the discovery address, the client ID and the client secret.
 6. Select **Save**.
-7. Select **Test the connection** of the group of the provider. Organizr reads the discovery document and the signing keys of the provider, and shows the issuer.
+7. Select **Test** under **Test Connection** in the group of the provider. Organizr reads the discovery document and the signing keys of the provider, and shows the issuer.
 8. Log out, and try the button on the login page.
 
 ### The settings of each provider
 
 | Field | Setting | Meaning |
 |---|---|---|
-| Log in with … | `oidc<Provider>Enabled` | Shows the button of the provider on the login page |
-| Name on the login page | `oidc<Provider>Name` | The text of the button: **Log in with** and this name |
-| Discovery address | `oidc<Provider>DiscoveryUrl` | The address of the discovery document of the provider. It ends with `/.well-known/openid-configuration` |
+| Enable … | `oidc<Provider>Enabled` | Shows the button of the provider on the login page |
+| Display Name | `oidc<Provider>Name` | The text of the button: **Log in with** and this name |
+| Discovery URL | `oidc<Provider>DiscoveryUrl` | The address of the discovery document of the provider. It ends with `/.well-known/openid-configuration` |
 | Client ID | `oidc<Provider>ClientId` | The ID of the client of Organizr at the provider |
-| Client secret | `oidc<Provider>ClientSecret` | The secret of that client. Organizr stores it sealed, as every secret setting (see [Secrets](secrets.md)), and never shows it again |
+| Client Secret | `oidc<Provider>ClientSecret` | The secret of that client. Organizr stores it sealed, as every secret setting (see [Secrets](secrets.md)), and never shows it again |
 | Scopes | `oidc<Provider>Scopes` | What Organizr asks the provider for, with commas between the scopes. `openid` is always asked for |
-| Claim of the groups | `oidc<Provider>GroupClaim` | The claim of the token that holds the groups. Empty: the global **Claim of the groups** |
+| Group Claim Override | `oidc<Provider>GroupClaim` | The claim of the token that holds the groups. Empty: the global **Group Claim Name** |
 
 `<Provider>` is `Authentik`, `Keycloak`, `Pocketid` or `Zitadel`. Organizr sends the client secret in the body of the token request (`client_secret_post`), as PHP Organizr does. The provider must allow that.
 
@@ -99,11 +99,11 @@ A login can put the person in a group of Organizr, from the groups or roles that
 
 | Field | Setting | Meaning |
 |---|---|---|
-| Claim of the groups | `oidcGroupClaimName` | The claim that holds the groups, when the provider has no claim of its own. Default: `groups` |
-| Group mappings, as JSON | `oidcGroupMappings` | From a group of the provider to the level of a group of Organizr |
-| When more groups match | `oidcGroupMappingMode` | **The first match**, **The most access** (the lowest level) or **The least access** (the highest level) |
-| Group when no mapping matches | `oidcDefaultGroupId` | The group for a person with no mapped group |
-| Set the group again at each login | `oidcUpdateGroupsOnLogin` | Off: only a new account gets the group of the mappings |
+| Group Claim Name | `oidcGroupClaimName` | The claim that holds the groups, when the provider has no claim of its own. Default: `groups` |
+| Group Mappings (JSON) | `oidcGroupMappings` | From a group of the provider to the level of a group of Organizr |
+| Group Mapping Mode | `oidcGroupMappingMode` | **First Match**, **Highest Privilege (lowest ID)** (the most access) or **Lowest Privilege (highest ID)** (the least access) |
+| Default Group | `oidcDefaultGroupId` | The group for a person with no mapped group |
+| Update Groups on Login | `oidcUpdateGroupsOnLogin` | Off: only a new account gets the group of the mappings |
 
 A mapping names levels, not names of groups: 0 is Admin, 1 Co-Admin, 2 Super User, 3 Power User, 4 User and 999 Guest. For example:
 
@@ -117,14 +117,14 @@ A value that is not a level from 0 to 999 does not count. When no group of Organ
 
 | Field | Setting | Meaning |
 |---|---|---|
-| Make an account at the first login | `oidcAutoCreateUsers` | A person with no account gets one, with a random password |
-| Link existing accounts by user name or e-mail address | `oidcLinkExistingUsers` | An account of Organizr with the user name, or the e-mail address, of the person becomes the account of the person |
+| Auto-Create Users | `oidcAutoCreateUsers` | A person with no account gets one, with a random password |
+| Link Existing Users | `oidcLinkExistingUsers` | An account of Organizr with the user name, or the e-mail address, of the person becomes the account of the person |
 
 Organizr stores, for each linked account, the subject (`sub`) of the person at the provider: the identifier of the account there, from the checked ID token. It looks for the account in this order:
 
 1. The account linked to this subject at this provider. A new user name or e-mail address at the provider does not matter.
 2. Else the account with the user name of the person, in any letter case, or else, unless the provider says that it has not checked it (`email_verified` is `false`), the account with the e-mail address. The user name is the claim `preferred_username`, or else `name`, or else `sub`. Such an account is used only:
-   - when it is linked to no provider yet, and **Link existing accounts** is on, and it is not an Admin or a Co-Admin account; or
+   - when it is linked to no provider yet, and **Link Existing Users** is on, and it is not an Admin or a Co-Admin account; or
    - when it is linked to this provider but has no subject yet, as an account that PHP Organizr linked, or that this application linked before it stored subjects.
 
    An account linked to another subject, or to another provider, is refused, also when the name and the address match.
@@ -138,27 +138,27 @@ Linking never gives a person an Admin or a Co-Admin account by name or address. 
 
 A person who is logged in can link the own account to a provider, also an Admin or a Co-Admin account:
 
-1. Open **Account** in the menu.
+1. Open **Account Settings** in the menu with your name.
 2. Under **Log in through a provider**, select **Link to** the provider.
 3. Log in at the provider. The browser comes back to the account page, which says that the account is linked.
 
 The link stores the subject of the login at the provider. The user names and the e-mail addresses may differ, because the person has logged in to both accounts. The link is refused when another Organizr account is linked to the same account of the provider. It is finished only in the session that started it, and it makes no account and no new session. A link to another provider, or to another account of the same provider, replaces the old link.
 
-After the link, the account logs in through the provider whatever **Link existing accounts** says, by the subject.
+After the link, the account logs in through the provider whatever **Link Existing Users** says, by the subject.
 
-The page has no button that takes a link away. An account that a provider made has a random password that nobody knows. Without the link, such an account could lose its only way in, and Organizr cannot tell whether the person knows the password.
+To take the link away, enter the password of the account in **Password of this account**, and select **Unlink from** the provider. The account then logs in with its password again. An account that a provider made has a random password that nobody knows: get a new password by e-mail first.
 
 An account that PHP Organizr had linked (`auth_service` `oidc::<provider>`) keeps its link when the install is imported. PHP stores no subject, so the first login through the provider stores it, as above.
 
-A login through a provider does not ask for the [second factor](second-factor.md) of Organizr, as in PHP Organizr: the provider checks the person. The session lasts the days of the setting **Remember me** (`rememberMeDays`).
+A login through a provider does not ask for the [second factor](second-factor.md) of Organizr, as in PHP Organizr: the provider checks the person. The session lasts the days of the setting **Remember Me Length** (`rememberMeDays`).
 
 ## The login page and the logout
 
 | Field | Setting | Meaning |
 |---|---|---|
-| Go to the provider from the login page by itself | `oidcAutoRedirect` | The login page sends the browser to the provider at once |
-| Provider of the automatic redirect | `oidcAutoRedirectProvider` | The provider for that |
-| Address after a logout | `oidcAutoRedirectLogoutUrl` | Where the browser goes after a logout, for example the logout page of the provider |
+| Auto-Redirect to OIDC | `oidcAutoRedirect` | The login page sends the browser to the provider at once |
+| Auto-Redirect Provider | `oidcAutoRedirectProvider` | The provider for that |
+| Custom Logout URL | `oidcAutoRedirectLogoutUrl` | Where the browser goes after a logout, for example the logout page of the provider |
 
 To reach the login page with the redirect on, for example to log in with the password of the Admin, add `#noredirect` to the address: `https://organizr.example.com/#noredirect`. After a logout, the login page of that browser tab does not send the person to the provider again, so the person is not logged in again at once.
 

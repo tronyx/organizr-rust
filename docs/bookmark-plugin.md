@@ -7,11 +7,12 @@ Bookmarks are apart from the tabs of the menu. A tab opens an application inside
 ## Set it up
 
 1. Log in as an Admin.
-2. Open **Settings**, and select the tab **Plugins**.
-3. Switch **Use the bookmark plugin** on, and select **Save**. The editor of the bookmarks shows below.
-4. Enter the name of a category, and select **Add a category**.
-5. Select **Add a bookmark**, and fill in the form.
-6. Select **Make the tab Bookmarks**. The menu then has a tab that shows the page.
+2. Open **Settings**, select the tab **Plugins**, and select **Inactive**.
+3. Point at the card **Bookmark**, and select the button with the plug.
+4. Select **Active**. Point at the card **Bookmark**, and select the button with the panel. The window **Bookmark Settings** opens. The tab **Bookmarks** shows the editor of the bookmarks.
+5. Enter the name of a category, and select **Add a category**.
+6. Select **Add a bookmark**, and fill in the form.
+7. Select **Make the tab Bookmarks**. The menu then has a tab that shows the page.
 
 | Field of a bookmark | Meaning |
 |---|---|
@@ -19,7 +20,7 @@ Bookmarks are apart from the tabs of the menu. A tab opens an application inside
 | Address | The address that the tile opens |
 | Picture | A picture or an icon, as for a tab |
 | Category | The heading that the tile stands under |
-| Group | The group with the least access that sees the bookmark |
+| For the group, and groups with more access | The group with the least access that sees the bookmark |
 | Colour of the tile | The page shows the tile in shades of this colour |
 | Colour of the name | The colour of the text on the tile |
 | Show the bookmark on the page | A bookmark that is switched off stays in the editor only |

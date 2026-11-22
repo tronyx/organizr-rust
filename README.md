@@ -41,40 +41,33 @@ You need Docker. The image is for the architectures `amd64` and `arm64`.
 
 5. Complete the wizard.
 
-Organizr stores its data in the volume `/config`. The container runs as the user with the UID 65532, and not as root.
+Organizr stores its data in the volume `/config`. The container runs as the user with the UID 65532, and not as root. [Installation](docs/installation.md) tells you more: `docker run`, the data folder, updates, and the settings of the container.
 
 To use PostgreSQL in place of SQLite, start from [docker/examples/compose.postgres.yaml](docker/examples/compose.postgres.yaml). [Choosing a database](docs/choosing-a-database.md) tells you which one fits your install.
 
 ## Move from PHP Organizr
 
-[Importing](docs/importing.md) tells you how to bring the users, tabs, settings and pictures of your PHP install into a new install. The import does not change the old install.
+[Moving from PHP Organizr](docs/moving-from-php.md) is a checklist for the move. [Importing](docs/importing.md) tells you how to bring the users, tabs, settings and pictures of your PHP install into a new install. The import does not change the old install.
 
 Custom CSS written for PHP Organizr needs changes, because the pages use other ids and classes. [Custom CSS](docs/custom-css.md) lists the names to use, with a table that turns the names of PHP into them.
 
 ## Settings of the container
 
-| Variable | Meaning | Default |
-| --- | --- | --- |
-| `ORGANIZR_DATA_DIR` | The data folder | `/config` in the image |
-| `ORGANIZR_DATABASE_URL` | The database. See [Choosing a database](docs/choosing-a-database.md) | SQLite in the data folder |
-| `ORGANIZR_LISTEN` | The address and the port that the server listens on | Port 8080 on all addresses |
-| `ORGANIZR_TRUSTED_PROXIES` | The addresses of your reverse proxies. See [Forward auth](docs/forward-auth.md) | None |
-| `ORGANIZR_EXTENSION_MARKETPLACE` | The address of the list of a marketplace for extensions. An empty value switches the marketplace off. See [Extensions](docs/extensions.md) | The list of the project, in the image |
-| `ORGANIZR_SECRET_KEY`, `ORGANIZR_SECRET_KEY_FILE` | The key that seals the stored secrets. See [Secrets](docs/secrets.md) | A key file in the data folder |
-| `ORGANIZR_CUSTOM_JS` | `1` runs the custom JavaScript of the Admin on every page. **Warning:** the script runs in the session of every person who opens Organizr, guests too. See [Appearance](docs/appearance.md) | Off |
+Most settings are in the web interface. A few are environment variables, because Organizr needs them before it can read its database: the data folder, the database, the port, the trusted reverse proxies, the marketplace for extensions, the key for the stored secrets, and custom JavaScript. [Installation](docs/installation.md#settings-of-the-container) lists them.
 
-All other settings are in the web interface.
+Behind a reverse proxy, set `ORGANIZR_TRUSTED_PROXIES`. [Reverse proxy](docs/reverse-proxy.md) tells you why, with examples for nginx, Traefik and Caddy.
 
 ## Documentation
 
 | Subject | Page |
 | --- | --- |
+| Start and update | [Installation](docs/installation.md), [Troubleshooting](docs/troubleshooting.md) |
 | Database | [Choosing a database](docs/choosing-a-database.md) |
-| Import from PHP Organizr | [Importing](docs/importing.md) |
+| Move from PHP Organizr | [Moving from PHP Organizr](docs/moving-from-php.md), [Importing](docs/importing.md) |
 | Stored secrets and their key | [Secrets](docs/secrets.md) |
 | Backup and restore | [Backups](docs/backups.md) |
 | Login | [Plex login](docs/plex-login.md), [LDAP, FTP, Emby and Jellyfin login](docs/login-services.md), [OpenID Connect login](docs/openid-connect.md), [Second factor](docs/second-factor.md), [Single sign-on](docs/single-sign-on.md), [Lock screen](docs/lock-screen.md) |
-| Reverse proxy | [Forward auth](docs/forward-auth.md), [API SOCKS](docs/socks.md) |
+| Reverse proxy | [Reverse proxy](docs/reverse-proxy.md), [Forward auth](docs/forward-auth.md), [API SOCKS](docs/socks.md) |
 | E-mail | [E-mail](docs/email.md) |
 | Look of the pages | [Appearance](docs/appearance.md), [Custom CSS](docs/custom-css.md) |
 | Homepage | [Homepage](docs/homepage.md), [Checking your services](docs/checking-your-services.md), [Tests of the settings](docs/settings-tests.md) |

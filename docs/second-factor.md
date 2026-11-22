@@ -9,7 +9,7 @@ The code is a time-based one-time password (TOTP): six digits that change every 
 Each user does this for the own account.
 
 1. Log in.
-2. Open the menu with your name at the top right, and select **Account**.
+2. Open the menu with your name at the top right, and select **Account Settings**.
 3. Select **Set a second factor up**.
 4. Scan the picture with the authenticator app. If you cannot scan it, type the key below the picture into the app.
 5. Enter the code that the app shows, and select **Switch the second factor on**.
@@ -21,7 +21,7 @@ Your next login asks for the password first and then for the code.
 ## Switch the second factor off
 
 1. Log in.
-2. Open the menu with your name, and select **Account**.
+2. Open the menu with your name, and select **Account Settings**.
 3. Select **Switch the second factor off**, and confirm.
 
 ## If a user lost the phone

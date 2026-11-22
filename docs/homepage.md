@@ -5,8 +5,8 @@ The homepage is a page of Organizr that shows items. An item shows data of anoth
 The set-up makes a tab with the name "Homepage" and leaves it out of the menu. To use the homepage, show the tab in the menu:
 
 1. Log in as an Admin.
-2. Open **Settings**, and select the tab **Tabs**.
-3. Switch **Show Homepage in the menu** on.
+2. Open **Settings**, then **Tab Editor**, then **Tabs**.
+3. In the row of **Homepage**, switch **Active** on.
 
 ## The items
 
@@ -55,18 +55,18 @@ This version has these items:
 - [JellyStat](#jellystat)
 - [Donate](#donate)
 
-You set all items up in **Settings**, on the tab **Homepage**.
+You set all items up in **Settings**, then **Tab Editor**, then **Homepage Items**. The picture of an item opens its settings.
 
 The homepage loads the data of an item again after the time that the item has in its settings. The shortest time is five seconds.
 
 
 ## Test the connection of a service
 
-The settings of these services have a button **Test the connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Ombi, Sonarr, Radarr, Lidarr, SickRage, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, rTorrent, uTorrent, JDownloader, Pi-hole, Jackett, Prowlarr, AdGuard Home, UniFi, Emby live TV and JellyStat. The settings of UniFi have a second button, **Read the sites of the controller**, which is the test `unifi/site`.
+The settings of these services have a button **Test Connection**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Ombi, Sonarr, Radarr, Lidarr, SickRage, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, rTorrent, uTorrent, JDownloader, Pi-hole, Jackett, Prowlarr, AdGuard Home, UniFi, Emby live TV and JellyStat. The settings of UniFi have a second button, **Get Unifi Site**, which is the test `unifi/site`.
 
 1. Enter the address and the key or the login of the service.
 2. Select **Save**. The test reads the settings that are stored.
-3. Select **Test the connection**. The page shows whether the service answered, or what is wrong.
+3. Select **Test Connection**. The page shows whether the service answered, or what is wrong.
 
 Only an Admin or a Co-Admin can run a test. A script can run it with `POST /api/v2/test/<service>`, where the service is the name in lower case without the hyphen, for example `pihole`. The test of Emby live TV has the name `embyLiveTVTracker`.
 
@@ -76,8 +76,8 @@ Only an Admin or a Co-Admin can run a test. A script can run it with `POST /api/
 
 There are eight custom HTML items, with the numbers 01 to 08. Each one holds HTML that you write.
 
-1. Open **Settings**, and select the tab **Homepage**.
-2. Switch **Show custom HTML 01** on.
+1. Open **Settings**, then **Tab Editor**, then **Homepage Items**, and select **CustomHTML**.
+2. In the group **Custom HTML 01**, switch **Enable** on.
 3. Select the level of the users who see the item.
 4. Enter the HTML.
 5. Select **Save**.
@@ -306,15 +306,15 @@ Organizr needs an API application at Trakt, and the permission of the account:
 1. Log in at Trakt, and open the page **Your API Apps** of the settings. Add a new application.
 2. Enter a name. For the redirect URI, enter the address of Organizr with `api/v2/oauth/trakt` after it, for example `https://organizr.example.com/api/v2/oauth/trakt`.
 3. Copy the client id and the client secret of the application.
-4. In Organizr, open **Settings**, and select the tab **Homepage**. Enter the client id and the client secret in the group **Trakt**, and select **Save**.
-5. Select **Connect the Trakt account**. A new window opens the page of Trakt.
+4. In Organizr, open **Settings**, then **Tab Editor**, then **Homepage Items**, and select **Trakt**. Enter the client id and the client secret in the group **Connection**, and select **Save**.
+5. Select **Connect Account**. A new window opens the page of Trakt.
 6. Allow the access at Trakt. The window comes back to Organizr and shows **Details Saved**.
-7. Switch **Show Trakt in the calendar** on, and select **Save**.
+7. In the group **Enable**, switch **Enable** on, and select **Save**.
 
 Only an Admin or a Co-Admin can connect the account. Organizr stores the access token and the refresh token of the account as secrets. The settings page does not show them.
 
 - When the access token is over, Organizr asks Trakt for new tokens before it loads the calendar. You do not connect the account again.
-- If Trakt refuses the tokens, the calendar shows no event of Trakt. Select **Connect the Trakt account** again.
+- If Trakt refuses the tokens, the calendar shows no event of Trakt. Select **Connect Account** again.
 - Trakt gives 33 days at most: the days before today and the days after today together.
 - An event of Trakt has no picture.
 - Trakt does not know your files. An episode that was aired shows as missing. An episode and a film to come show as not monitored. The first episode of a season to come shows as a premiere.
@@ -466,7 +466,7 @@ PHP Organizr needs the Deluge plugin WebAPI. This version uses the plugin when D
 
 Organizr logs in to Deluge with the password each time it loads the torrents. Deluge has ten seconds to answer.
 
-The setting `delugeHideCompleted` of PHP Organizr has no effect, and the settings page does not show it. PHP Organizr hides a torrent as "completed" only when Deluge sends its progress as the text `100`. Deluge sends a number.
+The setting `delugeHideCompleted` of PHP Organizr has no effect. The settings show it as **Hide Completed**, but the switch does nothing. PHP Organizr hides a torrent as "completed" only when Deluge sends its progress as the text `100`. Deluge sends a number.
 
 The connection test of Deluge needs the switch of the item, as in PHP Organizr.
 
@@ -621,7 +621,7 @@ This item shows statistics of your Plex server from Tautulli: the films and seri
 | Title | `tautulliHeader` |
 | Milliseconds between two loads | `homepageTautulliRefresh` |
 
-The address of Tautulli is the one of [single sign-on](single-sign-on.md), on the tab **Login** of the settings. If that setting holds more than one address, the homepage shows the first install.
+The address of Tautulli is the one of [single sign-on](single-sign-on.md), on the page **SSO** of **System Settings**. If that setting holds more than one address, the homepage shows the first install.
 
 The statistics are in three groups. Each group has a level of its own, so you can show a user what is watched and keep back who watches.
 
@@ -652,7 +652,7 @@ All three need these settings:
 | Id of the Plex server | `plexID` |
 | Do not check the certificate | `plexDisableCertCheck` |
 
-The token and the id are the ones of [the login through Plex](plex-login.md), on the tab **Login**. The address is the address of the Plex server itself, for example `http://192.168.1.10:32400`.
+The token and the id are the ones of [the login through Plex](plex-login.md), in **System Settings**, **Main**, group **Authentication**. The address is the address of the Plex server itself, for example `http://192.168.1.10:32400`.
 
 Each item has a switch, a level and a place of its own:
 
@@ -839,7 +839,7 @@ This item shows the requests for films and series in Overseerr, the newest first
 | Most requests that are loaded | `overseerrLimit` |
 | Milliseconds between two loads | `overseerrRefresh` |
 
-The address of Overseerr is the one of [single sign-on](single-sign-on.md), on the tab **Login** of the settings.
+The address of Overseerr is the one of [single sign-on](single-sign-on.md), on the page **SSO** of **System Settings**.
 
 With `overseerrLimitUser`, a user sees the requests that the user made, and the requests of the fallback user of single sign-on. Organizr compares the user name in Organizr with the user name in Overseerr. An Admin and a Co-Admin see all requests.
 
@@ -876,7 +876,7 @@ This item shows the requests for films and series in Ombi, the newest first.
 | Show the alias of a user in place of the user name | `ombiAlias` |
 | Milliseconds between two loads | `ombiRefresh` |
 
-The address of Ombi is the one of [single sign-on](single-sign-on.md), on the tab **Login** of the settings.
+The address of Ombi is the one of [single sign-on](single-sign-on.md), on the page **SSO** of **System Settings**.
 
 With `ombiLimitUser`, a user sees the requests that the user made, and the requests of the fallback user of single sign-on. Organizr compares the user name in Organizr with the user name in Ombi. An Admin and a Co-Admin see all requests.
 
@@ -927,7 +927,7 @@ Type a text and select **Search**. The table shows the date, the tracker, the na
 
 The last column has the download:
 
-- With **Download with the black hole folder** on, a release has a button. The button makes Jackett put the torrent file into its black hole folder. Set this folder in Jackett, and let your download client watch it.
+- With **Prefer black hole download** on, a release has a button. The button makes Jackett put the torrent file into its black hole folder. Set this folder in Jackett, and let your download client watch it.
 - Without the switch, a release has a link: its magnet link, or its page at the tracker.
 
 The API key of Jackett stays on the server. Jackett puts its key into its download links. Organizr cuts the key out of the answer before the answer goes to the browser, and puts the key back when it asks Jackett for a black hole download. So the download link of Jackett itself does not work from the browser, and the interface does not show it.
@@ -954,7 +954,7 @@ The table shows the date, the indexer, the title, the size, the grabs, the seede
 
 The last column has the download:
 
-- With **Download with the download client of Prowlarr** on, a release has a button. The button makes Prowlarr send the release to the download client that you set up in Prowlarr.
+- With **Prefer black hole download** on, a release has a button. The button makes Prowlarr send the release to the download client that you set up in Prowlarr.
 - Without the switch, a release has a link to its page at the indexer, or its magnet link when the indexer gives one. The download link of Prowlarr holds the API key of Prowlarr, so the interface does not show it.
 
 The API key goes to Prowlarr in a header, and it stays on the server, as for Jackett.
@@ -1132,11 +1132,11 @@ There are two kinds of controller, and Organizr finds out which one it talks to:
 | A console with UniFi OS, for example a Dream Machine or a Cloud Key of the second generation | The start page sends a header `x-csrf-token`. | Always the site `default`. |
 | The classic controller, for example the software on a computer | The start page sends no such header. | The site of the setting `unifiSiteName`. |
 
-For the classic controller, the name of the site is its short name, not its description. The first site has the name `default`. To see the names, save the address and the login, and select **Read the sites of the controller**.
+For the classic controller, the name of the site is its short name, not its description. The first site has the name `default`. To see the names, save the address and the login, and select **Get Unifi Site**.
 
 Organizr logs in for each load, uses the cookie of the login for one request, and does not store it. The setting `unifiCookie` is not used.
 
-The controller of most installs has a certificate that no authority signed. So the switch **Do not check the certificate** is on in the default settings.
+The controller of most installs has a certificate that no authority signed. So the switch **Disable Certificate Check** is on in the default settings.
 
 ## PromPage
 
@@ -1179,7 +1179,7 @@ The item uses the address and the API key of [Emby](#emby): `embyURL` and `embyT
 
 The time between two loads is in minutes. Most other items have it in milliseconds.
 
-The button **Test the connection** shows the name of the server, and whether the server has live television. A script runs the test with `POST /api/v2/test/embyLiveTVTracker`.
+The button **Test Connection** shows the name of the server, and whether the server has live television. A script runs the test with `POST /api/v2/test/embyLiveTVTracker`.
 
 If the server does not answer a request, the numbers of that request are 0 and its list is empty. The item shows no error then. PHP Organizr does the same.
 
@@ -1250,7 +1250,7 @@ A person enters an amount in whole US dollars and selects **Donate**. A new wind
 - The amount is at least the smallest amount of the settings.
 - Only a person with the level of the item can start a payment. In PHP Organizr, everybody can, also when the item is off.
 - The item shows its text as text. HTML in the text is not read.
-- With **Let a person see the own donations**, a person sees the payments with the e-mail address of the own account. An Admin sees the payments of everybody, with the e-mail addresses.
+- With **Show User Donate History**, a person sees the payments with the e-mail address of the own account. An Admin sees the payments of everybody, with the e-mail addresses.
 - The secret key is a secret of the settings. No answer of Organizr holds it.
 
 Use a test key of Stripe first. Stripe then takes no money, and you can pay with a test card.
@@ -1265,5 +1265,5 @@ PHP Organizr has three more routes that help its pages. This application has the
 | `POST /api/v2/homepage/scrape` | Fetches the page at the address `url` of the body. | An Admin or a Co-Admin |
 | `POST /api/v2/homepage/weather/coordinates` | Searches the latitude and the longitude of a place. It finds nothing here. | An Admin or a Co-Admin |
 
-- The trailer search needs your own API key of YouTube. PHP Organizr falls back on keys of its author. This application does not, so the answer is an error without a key. Enter your key in the group **YouTube** of the settings of the homepage.
+- The trailer search needs your own API key of YouTube. PHP Organizr falls back on keys of its author. This application does not, so the answer is an error without a key. Enter your key in the group **YouTube** of the homepage item **Misc**.
 - The fetch of a page takes an address of the wide web only. It does not fetch an address of the server itself or of a private network, it follows no redirect, and a page has 2 MB at most. In PHP Organizr, everybody can use the route without a login.

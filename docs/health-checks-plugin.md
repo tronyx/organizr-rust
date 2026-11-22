@@ -19,13 +19,14 @@ A service works when it answers with a success. A service that sends the browser
 
 1. Make one check at Healthchecks for each service, and copy the id of each check. The id is the last part of the ping address of the check.
 2. Log in to Organizr as an Admin.
-3. Open **Settings**, and select the tab **Plugins**.
-4. Switch **Use the health checks plugin** on.
-5. Enter the address that the results go to. For healthchecks.io, this is `https://hc-ping.com/`. For your own install of Healthchecks, enter its address. Organizr adds `/ping`.
-6. Select **Save**.
-7. Under **Services of the health checks**, select **Add a service** for each service. Enter its name, the id of its check, and one address or both.
-8. Select **Save the services**.
-9. Select **Run the checks now**, and make sure that each service shows the result that you expect.
+3. Open **Settings**, select the tab **Plugins**, and select **Inactive**.
+4. Point at the card **HealthChecks**, and select the button with the plug.
+5. Select **Active**. Point at the card **HealthChecks**, and select the button with the panel. The window **HealthChecks Settings** opens.
+6. On the tab **Options**, enter in **URL** the address that the results go to. For healthchecks.io, this is `https://hc-ping.com/`. For your own install of Healthchecks, enter its address. Organizr adds `/ping`.
+7. Select **Save**.
+8. On the tab **Services**, select **Add a service** for each service. Enter its name, the id of its check, and one address or both.
+9. Select **Save the services**.
+10. Select **Run the checks now**, and make sure that each service shows the result that you expect.
 
 | Setting | Key |
 |---|---|
@@ -40,7 +41,7 @@ A service works when it answers with a success. A service that sends the browser
 
 ## Run the checks on a schedule
 
-Switch **Run the checks on a schedule** on, and enter a schedule. The default is `*/5 * * * *`, which is every five minutes. [Scheduled jobs](scheduled-jobs.md) describes the form of a schedule.
+On the tab **Cron**, switch **Enable** on, and enter a schedule in **Cron Schedule**. The default is `*/5 * * * *`, which is every five minutes. [Scheduled jobs](scheduled-jobs.md) describes the form of a schedule.
 
 Organizr runs the checks itself. You need no entry in the cron table of your system, which PHP Organizr needs.
 
@@ -54,7 +55,7 @@ A request to a service carries the API key of Organizr in the header `Token`. A 
 
 This means that every address on the list gets the API key of Organizr, which has all rights of an Admin. Put only addresses of your own services on the list.
 
-If you do not want that for a service, you can count a refusal as an answer: switch **Count the answer 401** or **Count the answer 403** on. The check then shows that the service is there, and not that it works behind its login.
+If you do not want that for a service, you can count a refusal as an answer: on the tab **Options**, switch **401 Error as Success** or **403 Error as Success** on. The check then shows that the service is there, and not that it works behind its login.
 
 ## Good to know
 

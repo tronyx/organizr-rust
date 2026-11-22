@@ -9,19 +9,19 @@ The plugin works with Plex. The parts of PHP Organizr for Emby, Komga, Nextcloud
 The plugin shares the server with the Plex token and the Plex ID of the install. The Plex token is the key of the owner of the Plex server. The Plex ID is the machine identifier of the Plex server.
 
 1. Log in as an Admin.
-2. Open **Settings**, and select the tab **Login**.
-3. Make sure that the fields **Plex token of the owner of the server** and **Id of the Plex server** hold a value.
-4. Select the tab **Plugins**.
-5. Switch **Use the invites plugin** on.
+2. Open **Settings**, select the tab **Plugins**, and select **Inactive**.
+3. Point at the card **Invites**, and select the button with the plug.
+4. Select **Active**. Point at the card **Invites**, and select the button with the panel. The window **Invites Settings** opens.
+5. On the tab **Plex Settings**, make sure that the fields **Plex Token** and **Plex Machine** hold a value. **System Settings**, **SSO**, tab **Plex** has the same two fields.
 6. Fill in the other fields of the plugin, and select **Save**.
 
 | Field | Meaning |
 |---|---|
-| Invites are made by users of the level | The group with the least access that can make invites |
-| Most invites of one user | The most invites that one user can have. The number 0 means no limit. An Admin and a Co-Admin have no limit |
-| A user can delete the own invites | Without this switch, only an Admin or a Co-Admin deletes invites |
-| Plex libraries to share | The ids of the libraries, with commas between them. An empty field shares every library |
-| Labels of the shows, the films and the music to share | With labels, the person sees only the items that have one of the labels |
+| Minimum Authentication | The group with the least access that can make invites |
+| Maximum number of invites permitted for users. | The most invites that one user can have. The number 0 means no limit. An Admin and a Co-Admin have no limit |
+| Allow users to delete invites | Without this switch, only an Admin or a Co-Admin deletes invites |
+| Libraries | The ids of the libraries, with commas between them. An empty field shares every library |
+| TV Labels (comma separated), Movies Labels (comma separated), Music Labels (comma separated) | With labels, the person sees only the items that have one of the labels |
 
 ## Make an invite
 

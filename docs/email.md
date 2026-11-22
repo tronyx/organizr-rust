@@ -5,29 +5,30 @@ The application sends e-mail through an SMTP server that you name in the setting
 ## Set e-mail up
 
 1. Log in as an Admin or a Co-Admin.
-2. Open **Settings**, and select the tab **E-mail**.
-3. Enter the SMTP server, the port and the kind of encryption of your mail provider.
-4. If the server asks for a login, enter the user name and the password. The password is stored sealed.
-5. Enter the name and the address of the sender.
-6. Enter the address of this site, for example `https://organizr.example.com/`. E-mails use it for their links.
-7. Switch **Send e-mails** on, and select **Save**.
-8. Select **Send a test e-mail**. The test e-mail goes to the address of your own account.
+2. Open **Settings** > **Plugins** > **Inactive**. Point at the card **PHP Mailer**, and select the button with the plug. The plugin moves to **Active**.
+3. Open **Settings** > **Plugins** > **Active**. Point at the card **PHP Mailer**, and select the button with the panel. The window **PHP Mailer Settings** opens.
+4. On the tab **Host**, enter the SMTP server in **SMTP Host** and the port in **SMTP Port**.
+5. On the tab **Authentication**, choose the kind of encryption of your mail provider in **Authentication Type**. If the server asks for a login, switch **Authentication** on, and enter **Username** and **Password**. The password is stored sealed.
+6. On the tab **Sender Information**, enter **Sender Name** and **Sender Email**.
+7. On the tab **Test & Options**, enter the address of this site in **Domain Link Override**, for example `https://organizr.example.com/`. E-mails use it for their links.
+8. Select **Save**.
+9. On the tab **Test & Options**, select **Send** next to **Send Test**. The test e-mail goes to the address of your own account.
 
 If the test fails, the page shows the reason that the SMTP server gave.
 
 | Setting | Key | Notes |
 |---|---|---|
-| Send e-mails | `PHPMAILER-enabled` | The switch for all e-mail |
-| SMTP server | `PHPMAILER-smtpHost` | A host name or an address |
-| Port | `PHPMAILER-smtpHostPort` | Without a port: 587, 465 or 25, by the kind of encryption |
-| Encryption | `PHPMAILER-smtpHostType` | `tls` is STARTTLS. `ssl` is TLS from the start. `n/a` uses encryption only when the server offers it |
-| The certificate must be valid | `PHPMAILER-verifyCert` | Switch it off only for a server with a certificate that it signed itself |
-| The server asks for a login | `PHPMAILER-smtpHostAuth` | |
-| User name, password | `PHPMAILER-smtpHostUsername`, `PHPMAILER-smtpHostPassword` | |
-| Name and address of the sender | `PHPMAILER-smtpHostSenderName`, `PHPMAILER-smtpHostSenderEmail` | |
-| Address of this site | `PHPMAILER-domain` | See [The address of the site](#the-address-of-the-site) |
-| Layout | `PHPMAILER-template` | `default`, `dark`, `light`, `gray` or `plehex`. These are the layouts of PHP Organizr |
-| Picture at the top | `PHPMAILER-logo` | An address that mail programs can load |
+| The switch of the plugin on its card | `PHPMAILER-enabled` | The switch for all e-mail |
+| SMTP Host | `PHPMAILER-smtpHost` | A host name or an address |
+| SMTP Port | `PHPMAILER-smtpHostPort` | Without a port: 587, 465 or 25, by the kind of encryption |
+| Authentication Type | `PHPMAILER-smtpHostType` | `tls` is STARTTLS. `ssl` is TLS from the start. `off`, stored as `n/a`, uses encryption only when the server offers it |
+| Verify Certificate | `PHPMAILER-verifyCert` | Switch it off only for a server with a certificate that it signed itself |
+| Authentication | `PHPMAILER-smtpHostAuth` | |
+| Username, Password | `PHPMAILER-smtpHostUsername`, `PHPMAILER-smtpHostPassword` | |
+| Sender Name, Sender Email | `PHPMAILER-smtpHostSenderName`, `PHPMAILER-smtpHostSenderEmail` | |
+| Domain Link Override | `PHPMAILER-domain` | See [The address of the site](#the-address-of-the-site) |
+| Theme | `PHPMAILER-template` | `default`, `dark`, `light`, `gray` or `plehex`. These are the layouts of PHP Organizr |
+| WAN Logo URL | `PHPMAILER-logo` | An address that mail programs can load |
 
 The keys are those of the mail plugin of PHP Organizr, so an imported install keeps its e-mail settings.
 
@@ -35,10 +36,10 @@ The keys are those of the mail plugin of PHP Organizr, so an imported install ke
 
 | E-mail | When | Text |
 |---|---|---|
-| New password | A person asked for one. See [A new password](#a-new-password) | The settings **E-mail with a new password** |
-| Welcome | A person made an account, and the switch **Welcome each new account with an e-mail** is on | The settings **E-mail for a new account** |
+| New password | A person asked for one. See [A new password](#a-new-password) | The template **Reset Password** on the tab **Templates** |
+| Welcome | A person made an account, and the switch **Send Welcome E-Mail** is on | The template **New Registration** on the tab **Templates** |
 | Login from a new device | A user logged in from a browser that has no other session of the account | Fixed |
-| Test | An Admin selected **Send a test e-mail** | Fixed |
+| Test | An Admin selected **Send** next to **Send Test** | Fixed |
 | E-mail of an Admin | A call of `POST /api/v2/plugins/php-mailer/email/send` | From the request |
 
 In the subject and in the text of an e-mail, these placeholders stand for values:
@@ -55,7 +56,7 @@ The text of an e-mail is HTML. A value that comes from a person, for example the
 
 ## A new password
 
-A person who forgot the password selects **Forgot your password?** on the login page and enters the e-mail address of the account. The link shows only when **Send e-mails** is on.
+A person who forgot the password selects **Forgot your password?** on the login page and enters the e-mail address of the account. The link shows only when the plugin **PHP Mailer** is on.
 
 1. The application sends a new password to that address.
 2. The new password works for 24 hours.
@@ -74,7 +75,7 @@ A new password does not remove a [second factor](second-factor.md).
 
 ## The address of the site
 
-An e-mail holds the address of the site, as a link and for `{domain}`. If the setting **Address of this site in e-mails** is empty, the application uses the address of the request that caused the e-mail.
+An e-mail holds the address of the site, as a link and for `{domain}`. If the setting **Domain Link Override** is empty, the application uses the address of the request that caused the e-mail.
 
 Set the address. The address of a request comes from the browser of the person who sent the request, and that person is not always the recipient of the e-mail.
 

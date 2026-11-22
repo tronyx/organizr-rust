@@ -53,14 +53,14 @@ A backup holds the log files, because they are in the data folder.
 
 ## Settings
 
-Open **Settings**, and select the tab **Logs**.
+Open **Settings** > **System Settings** > **Main**, and select the tab **Logs**.
 
 | Setting | Key | Default |
 |---|---|---|
-| Lowest level in the log file | `logLevel` | `INFO` |
-| Number of log files to keep | `maxLogFiles` | 7 |
-| Time between two loads of the live log | `logLiveUpdateRefresh` | 5 seconds |
-| Records on a page of the log | `logPageSize` | 50 |
+| Log Level | `logLevel` | `INFO` |
+| Maximum Log Files | `maxLogFiles` | 7 |
+| Live Update Refresh | `logLiveUpdateRefresh` | 5 seconds |
+| Log Page Size | `logPageSize` | 50 |
 
 `logLevel` has the eight levels of PHP Organizr. Organizr writes records of four of them: `DEBUG`, `INFO`, `WARNING` and `ERROR`. A level above `ERROR`, for example `CRITICAL`, keeps every record out of the file. When there are more files than `maxLogFiles`, Organizr deletes the oldest ones. A change of either setting counts from the next record on. The server does not need a restart.
 
@@ -72,13 +72,13 @@ When the server cannot write to the folder, it says so once on its standard erro
 
 ## Read the log in the web interface
 
-An Admin or a Co-Admin can read the log on the page **Settings** > **Logs**, below the settings:
+An Admin or a Co-Admin can read the log on the page **Settings** > **System Settings** > **Logs**:
 
 - **File** chooses the file of a day, or **All** for all of them.
 - **Level** shows the records of one level only.
 - **Reload** loads the page again. **Live update** loads it again and again, in the time of `logLiveUpdateRefresh`.
 - **Details** shows the trace id, the request id, the place in the source code and the context of a record.
-- **Purge this file** deletes the chosen file. The server makes a new file with the next record of the day.
+- **Purge Log** deletes the chosen file. The server makes a new file with the next record of the day.
 
 ## The API
 

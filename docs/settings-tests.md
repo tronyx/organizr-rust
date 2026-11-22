@@ -2,16 +2,16 @@
 
 Organizr has tests that tell you whether a value of the settings works, before you depend on it. Only an Admin or a Co-Admin can run a test. The tests of the services of the homepage are in [The homepage](homepage.md#test-the-connection-of-a-service).
 
-Each test is a route below `/api/v2`. A script can send the request with the API key. The settings pages have a button for each test, in the place where PHP Organizr has it:
+Each test is a route below `/api/v2`. A script can send the request with the API key. The settings pages have a button for most tests, in the place where PHP Organizr has it:
 
 | Test | Button |
 |---|---|
 | A page in a frame | **Test the tab**, below the address in the dialog of a tab. The test uses the address in the dialog, also before you save. |
-| A folder | **Test the folder**, next to the folder of the backups. The test uses the folder in the field, also before you save. |
-| A cron schedule | **Test the schedule**, next to the schedule of the backups and next to the schedule of the health checks plugin. The test uses the schedule in the field, also before you save. |
-| The scheduler | **Check that the scheduler runs**, below the settings of the backups and of the health checks plugin. |
-| The webhook for the logs | **Test the connection of Slack or Discord**, in the group "Slack or Discord" of the general settings. Save the settings before you test. |
-| The LDAP server | **Test the connection of LDAP** and **Test a login**, in the group "LDAP" of the login settings. Save the settings before you test. See [Logging in with LDAP, FTP, Emby or Jellyfin](login-services.md#the-two-tests). |
+| A folder | **Test Backup Save Path**, below the field **Backup Save Path** in the group "Cron" of **System Settings**, **Main**. The test uses the folder in the field, also before you save. |
+| A cron schedule | **Test Cron Schedule**, below each field **Cron Schedule**: in the group "Cron" of **System Settings**, **Main**, and in the group "Cron" of the health checks plugin. The test uses the schedule in the field, also before you save. |
+| The scheduler | No button. A script sends `GET /test/cron`. |
+| The webhook for the logs | **Test Slack**, in the group "Logs" of **System Settings**, **Main**. Save the settings before you test. |
+| The LDAP server | **Test Connection** and **Test Login**, in the group "Authentication" of **System Settings**, **Main**, when the authentication backend is LDAP. Save the settings before you test. See [Logging in with LDAP, FTP, Emby or Jellyfin](login-services.md#the-two-tests). |
 
 The routes and their bodies:
 

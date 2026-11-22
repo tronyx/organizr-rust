@@ -7,10 +7,11 @@ The test tells you about the path from your device to the server of Organizr. It
 ## Set it up
 
 1. Log in as an Admin.
-2. Open **Settings**, and select the tab **Plugins**.
-3. Switch **Use the speed test plugin** on.
-4. Select the level of the users who can run the test.
-5. Select **Save**.
+2. Open **Settings**, select the tab **Plugins**, and select **Inactive**.
+3. Point at the card **SpeedTest**, and select the button with the plug.
+4. Select **Active**. Point at the card **SpeedTest**, and select the button with the panel. The window **SpeedTest Settings** opens.
+5. In **Minimum Authentication**, select the level of the users who can run the test.
+6. Select **Save**.
 
 | Setting | Key |
 |---|---|

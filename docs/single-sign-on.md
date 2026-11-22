@@ -18,8 +18,8 @@ A logout of Organizr makes the browser drop the cookies.
 ## Set it up
 
 1. Log in as an Admin.
-2. Open **Settings**, and select the tab **Login**.
-3. For each application, switch its single sign-on on and enter its address.
+2. Open **Settings**, then **System Settings**, then **SSO**.
+3. For each application, select its group, switch **Enable** on, and enter its address.
 4. Select **Save**.
 5. Log out and log in again. The sessions are made at a login.
 

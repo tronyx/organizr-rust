@@ -20,10 +20,10 @@ Organizr never adds the key from its own settings. The script brings the key, as
 
 ## Switching it on
 
-On the settings page of the homepage, each of the seven applications has two settings below its address:
+Open **Settings**, then **Tab Editor**, then **Homepage Items**, and select the picture of the application. Each of the seven applications has two settings in the group **API SOCKS**:
 
-- **Pass requests on to the API of ... (API SOCKS)** switches the API SOCKS of the application on. It is off at the start.
-- **The API SOCKS of ... is for users of the level** names the group with the least access that may use it. At the start it is the guest level, so everybody may use it once it is on. Choose a level with more access unless the application asks for a key itself.
+- **Enable** switches the API SOCKS of the application on. It is off at the start.
+- **Minimum Authentication** names the group with the least access that may use it. At the start it is the guest level, so everybody may use it once it is on. Choose a level with more access unless the application asks for a key itself.
 
 Use a full address with its host, such as `http://192.168.1.20:8989`. An address that is only a path, such as `/sonarr`, works as in PHP Organizr: Organizr puts the scheme and the host of the request in front. The host then comes from the `Host` header of the caller, so a caller can choose where such a request goes.
 
