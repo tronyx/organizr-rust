@@ -1001,6 +1001,8 @@ This item shows up to seven charts. Each chart shows one number of an install of
 | Custom charts | `netdataCustom` |
 | Milliseconds between two loads | `homepageNetdataRefresh` |
 
+The settings of the item have a tab for each chart, **Chart 1** to **Chart 7**, the tab **Custom data** with **Custom definitions**, and the tab **Options** with **Refresh Seconds**, as in PHP Organizr.
+
 Each chart has these settings, where `<N>` is the number of the chart from 1 to 7:
 
 | Setting | Key | Values |

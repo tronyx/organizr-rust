@@ -6779,6 +6779,1337 @@
        "$config": "netdataUseCustomCertificate"
       }
      }
+    ],
+    "Chart 1": [
+     {
+      "type": "switch",
+      "label": "Enable",
+      "name": "netdata1Enabled",
+      "value": {
+       "$config": "netdata1Enabled"
+      }
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "input",
+      "label": "Title",
+      "name": "netdata1Title",
+      "value": {
+       "$config": "netdata1Title"
+      },
+      "help": "Title for the netdata graph"
+     },
+     {
+      "type": "select",
+      "label": "Data",
+      "name": "netdata1Data",
+      "value": {
+       "$config": "netdata1Data"
+      },
+      "options": [
+       {
+        "name": "Disk Read",
+        "value": "disk-read"
+       },
+       {
+        "name": "Disk Write",
+        "value": "disk-write"
+       },
+       {
+        "name": "CPU",
+        "value": "cpu"
+       },
+       {
+        "name": "Network Inbound",
+        "value": "net-in"
+       },
+       {
+        "name": "Network Outbound",
+        "value": "net-out"
+       },
+       {
+        "name": "Used RAM",
+        "value": "ram-used"
+       },
+       {
+        "name": "Used Swap",
+        "value": "swap-used"
+       },
+       {
+        "name": "Disk space used",
+        "value": "disk-used"
+       },
+       {
+        "name": "Disk space available",
+        "value": "disk-avail"
+       },
+       {
+        "name": "Custom",
+        "value": "custom"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Chart",
+      "name": "netdata1Chart",
+      "value": {
+       "$config": "netdata1Chart"
+      },
+      "options": [
+       {
+        "name": "Easy Pie Chart",
+        "value": "easypiechart"
+       },
+       {
+        "name": "Gauge",
+        "value": "gauge"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Colour",
+      "name": "netdata1Colour",
+      "value": {
+       "$config": "netdata1Colour"
+      },
+      "options": [
+       {
+        "name": "Red",
+        "value": "fe3912"
+       },
+       {
+        "name": "Green",
+        "value": "46e302"
+       },
+       {
+        "name": "Purple",
+        "value": "CC22AA"
+       },
+       {
+        "name": "Blue",
+        "value": "5054e6"
+       },
+       {
+        "name": "Yellow",
+        "value": "dddd00"
+       },
+       {
+        "name": "Orange",
+        "value": "d66300"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Size",
+      "name": "netdata1Size",
+      "value": {
+       "$config": "netdata1Size"
+      },
+      "options": [
+       {
+        "name": "Large",
+        "value": "lg"
+       },
+       {
+        "name": "Medium",
+        "value": "md"
+       },
+       {
+        "name": "Small",
+        "value": "sm"
+       }
+      ]
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "switch",
+      "label": "Show on large screens",
+      "name": "netdata1lg",
+      "value": {
+       "$config": "netdata1lg"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on medium screens",
+      "name": "netdata1md",
+      "value": {
+       "$config": "netdata1md"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on small screens",
+      "name": "netdata1sm",
+      "value": {
+       "$config": "netdata1sm"
+      }
+     }
+    ],
+    "Chart 2": [
+     {
+      "type": "switch",
+      "label": "Enable",
+      "name": "netdata2Enabled",
+      "value": {
+       "$config": "netdata2Enabled"
+      }
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "input",
+      "label": "Title",
+      "name": "netdata2Title",
+      "value": {
+       "$config": "netdata2Title"
+      },
+      "help": "Title for the netdata graph"
+     },
+     {
+      "type": "select",
+      "label": "Data",
+      "name": "netdata2Data",
+      "value": {
+       "$config": "netdata2Data"
+      },
+      "options": [
+       {
+        "name": "Disk Read",
+        "value": "disk-read"
+       },
+       {
+        "name": "Disk Write",
+        "value": "disk-write"
+       },
+       {
+        "name": "CPU",
+        "value": "cpu"
+       },
+       {
+        "name": "Network Inbound",
+        "value": "net-in"
+       },
+       {
+        "name": "Network Outbound",
+        "value": "net-out"
+       },
+       {
+        "name": "Used RAM",
+        "value": "ram-used"
+       },
+       {
+        "name": "Used Swap",
+        "value": "swap-used"
+       },
+       {
+        "name": "Disk space used",
+        "value": "disk-used"
+       },
+       {
+        "name": "Disk space available",
+        "value": "disk-avail"
+       },
+       {
+        "name": "Custom",
+        "value": "custom"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Chart",
+      "name": "netdata2Chart",
+      "value": {
+       "$config": "netdata2Chart"
+      },
+      "options": [
+       {
+        "name": "Easy Pie Chart",
+        "value": "easypiechart"
+       },
+       {
+        "name": "Gauge",
+        "value": "gauge"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Colour",
+      "name": "netdata2Colour",
+      "value": {
+       "$config": "netdata2Colour"
+      },
+      "options": [
+       {
+        "name": "Red",
+        "value": "fe3912"
+       },
+       {
+        "name": "Green",
+        "value": "46e302"
+       },
+       {
+        "name": "Purple",
+        "value": "CC22AA"
+       },
+       {
+        "name": "Blue",
+        "value": "5054e6"
+       },
+       {
+        "name": "Yellow",
+        "value": "dddd00"
+       },
+       {
+        "name": "Orange",
+        "value": "d66300"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Size",
+      "name": "netdata2Size",
+      "value": {
+       "$config": "netdata2Size"
+      },
+      "options": [
+       {
+        "name": "Large",
+        "value": "lg"
+       },
+       {
+        "name": "Medium",
+        "value": "md"
+       },
+       {
+        "name": "Small",
+        "value": "sm"
+       }
+      ]
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "switch",
+      "label": "Show on large screens",
+      "name": "netdata2lg",
+      "value": {
+       "$config": "netdata2lg"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on medium screens",
+      "name": "netdata2md",
+      "value": {
+       "$config": "netdata2md"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on small screens",
+      "name": "netdata2sm",
+      "value": {
+       "$config": "netdata2sm"
+      }
+     }
+    ],
+    "Chart 3": [
+     {
+      "type": "switch",
+      "label": "Enable",
+      "name": "netdata3Enabled",
+      "value": {
+       "$config": "netdata3Enabled"
+      }
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "input",
+      "label": "Title",
+      "name": "netdata3Title",
+      "value": {
+       "$config": "netdata3Title"
+      },
+      "help": "Title for the netdata graph"
+     },
+     {
+      "type": "select",
+      "label": "Data",
+      "name": "netdata3Data",
+      "value": {
+       "$config": "netdata3Data"
+      },
+      "options": [
+       {
+        "name": "Disk Read",
+        "value": "disk-read"
+       },
+       {
+        "name": "Disk Write",
+        "value": "disk-write"
+       },
+       {
+        "name": "CPU",
+        "value": "cpu"
+       },
+       {
+        "name": "Network Inbound",
+        "value": "net-in"
+       },
+       {
+        "name": "Network Outbound",
+        "value": "net-out"
+       },
+       {
+        "name": "Used RAM",
+        "value": "ram-used"
+       },
+       {
+        "name": "Used Swap",
+        "value": "swap-used"
+       },
+       {
+        "name": "Disk space used",
+        "value": "disk-used"
+       },
+       {
+        "name": "Disk space available",
+        "value": "disk-avail"
+       },
+       {
+        "name": "Custom",
+        "value": "custom"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Chart",
+      "name": "netdata3Chart",
+      "value": {
+       "$config": "netdata3Chart"
+      },
+      "options": [
+       {
+        "name": "Easy Pie Chart",
+        "value": "easypiechart"
+       },
+       {
+        "name": "Gauge",
+        "value": "gauge"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Colour",
+      "name": "netdata3Colour",
+      "value": {
+       "$config": "netdata3Colour"
+      },
+      "options": [
+       {
+        "name": "Red",
+        "value": "fe3912"
+       },
+       {
+        "name": "Green",
+        "value": "46e302"
+       },
+       {
+        "name": "Purple",
+        "value": "CC22AA"
+       },
+       {
+        "name": "Blue",
+        "value": "5054e6"
+       },
+       {
+        "name": "Yellow",
+        "value": "dddd00"
+       },
+       {
+        "name": "Orange",
+        "value": "d66300"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Size",
+      "name": "netdata3Size",
+      "value": {
+       "$config": "netdata3Size"
+      },
+      "options": [
+       {
+        "name": "Large",
+        "value": "lg"
+       },
+       {
+        "name": "Medium",
+        "value": "md"
+       },
+       {
+        "name": "Small",
+        "value": "sm"
+       }
+      ]
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "switch",
+      "label": "Show on large screens",
+      "name": "netdata3lg",
+      "value": {
+       "$config": "netdata3lg"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on medium screens",
+      "name": "netdata3md",
+      "value": {
+       "$config": "netdata3md"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on small screens",
+      "name": "netdata3sm",
+      "value": {
+       "$config": "netdata3sm"
+      }
+     }
+    ],
+    "Chart 4": [
+     {
+      "type": "switch",
+      "label": "Enable",
+      "name": "netdata4Enabled",
+      "value": {
+       "$config": "netdata4Enabled"
+      }
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "input",
+      "label": "Title",
+      "name": "netdata4Title",
+      "value": {
+       "$config": "netdata4Title"
+      },
+      "help": "Title for the netdata graph"
+     },
+     {
+      "type": "select",
+      "label": "Data",
+      "name": "netdata4Data",
+      "value": {
+       "$config": "netdata4Data"
+      },
+      "options": [
+       {
+        "name": "Disk Read",
+        "value": "disk-read"
+       },
+       {
+        "name": "Disk Write",
+        "value": "disk-write"
+       },
+       {
+        "name": "CPU",
+        "value": "cpu"
+       },
+       {
+        "name": "Network Inbound",
+        "value": "net-in"
+       },
+       {
+        "name": "Network Outbound",
+        "value": "net-out"
+       },
+       {
+        "name": "Used RAM",
+        "value": "ram-used"
+       },
+       {
+        "name": "Used Swap",
+        "value": "swap-used"
+       },
+       {
+        "name": "Disk space used",
+        "value": "disk-used"
+       },
+       {
+        "name": "Disk space available",
+        "value": "disk-avail"
+       },
+       {
+        "name": "Custom",
+        "value": "custom"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Chart",
+      "name": "netdata4Chart",
+      "value": {
+       "$config": "netdata4Chart"
+      },
+      "options": [
+       {
+        "name": "Easy Pie Chart",
+        "value": "easypiechart"
+       },
+       {
+        "name": "Gauge",
+        "value": "gauge"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Colour",
+      "name": "netdata4Colour",
+      "value": {
+       "$config": "netdata4Colour"
+      },
+      "options": [
+       {
+        "name": "Red",
+        "value": "fe3912"
+       },
+       {
+        "name": "Green",
+        "value": "46e302"
+       },
+       {
+        "name": "Purple",
+        "value": "CC22AA"
+       },
+       {
+        "name": "Blue",
+        "value": "5054e6"
+       },
+       {
+        "name": "Yellow",
+        "value": "dddd00"
+       },
+       {
+        "name": "Orange",
+        "value": "d66300"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Size",
+      "name": "netdata4Size",
+      "value": {
+       "$config": "netdata4Size"
+      },
+      "options": [
+       {
+        "name": "Large",
+        "value": "lg"
+       },
+       {
+        "name": "Medium",
+        "value": "md"
+       },
+       {
+        "name": "Small",
+        "value": "sm"
+       }
+      ]
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "switch",
+      "label": "Show on large screens",
+      "name": "netdata4lg",
+      "value": {
+       "$config": "netdata4lg"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on medium screens",
+      "name": "netdata4md",
+      "value": {
+       "$config": "netdata4md"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on small screens",
+      "name": "netdata4sm",
+      "value": {
+       "$config": "netdata4sm"
+      }
+     }
+    ],
+    "Chart 5": [
+     {
+      "type": "switch",
+      "label": "Enable",
+      "name": "netdata5Enabled",
+      "value": {
+       "$config": "netdata5Enabled"
+      }
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "input",
+      "label": "Title",
+      "name": "netdata5Title",
+      "value": {
+       "$config": "netdata5Title"
+      },
+      "help": "Title for the netdata graph"
+     },
+     {
+      "type": "select",
+      "label": "Data",
+      "name": "netdata5Data",
+      "value": {
+       "$config": "netdata5Data"
+      },
+      "options": [
+       {
+        "name": "Disk Read",
+        "value": "disk-read"
+       },
+       {
+        "name": "Disk Write",
+        "value": "disk-write"
+       },
+       {
+        "name": "CPU",
+        "value": "cpu"
+       },
+       {
+        "name": "Network Inbound",
+        "value": "net-in"
+       },
+       {
+        "name": "Network Outbound",
+        "value": "net-out"
+       },
+       {
+        "name": "Used RAM",
+        "value": "ram-used"
+       },
+       {
+        "name": "Used Swap",
+        "value": "swap-used"
+       },
+       {
+        "name": "Disk space used",
+        "value": "disk-used"
+       },
+       {
+        "name": "Disk space available",
+        "value": "disk-avail"
+       },
+       {
+        "name": "Custom",
+        "value": "custom"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Chart",
+      "name": "netdata5Chart",
+      "value": {
+       "$config": "netdata5Chart"
+      },
+      "options": [
+       {
+        "name": "Easy Pie Chart",
+        "value": "easypiechart"
+       },
+       {
+        "name": "Gauge",
+        "value": "gauge"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Colour",
+      "name": "netdata5Colour",
+      "value": {
+       "$config": "netdata5Colour"
+      },
+      "options": [
+       {
+        "name": "Red",
+        "value": "fe3912"
+       },
+       {
+        "name": "Green",
+        "value": "46e302"
+       },
+       {
+        "name": "Purple",
+        "value": "CC22AA"
+       },
+       {
+        "name": "Blue",
+        "value": "5054e6"
+       },
+       {
+        "name": "Yellow",
+        "value": "dddd00"
+       },
+       {
+        "name": "Orange",
+        "value": "d66300"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Size",
+      "name": "netdata5Size",
+      "value": {
+       "$config": "netdata5Size"
+      },
+      "options": [
+       {
+        "name": "Large",
+        "value": "lg"
+       },
+       {
+        "name": "Medium",
+        "value": "md"
+       },
+       {
+        "name": "Small",
+        "value": "sm"
+       }
+      ]
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "switch",
+      "label": "Show on large screens",
+      "name": "netdata5lg",
+      "value": {
+       "$config": "netdata5lg"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on medium screens",
+      "name": "netdata5md",
+      "value": {
+       "$config": "netdata5md"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on small screens",
+      "name": "netdata5sm",
+      "value": {
+       "$config": "netdata5sm"
+      }
+     }
+    ],
+    "Chart 6": [
+     {
+      "type": "switch",
+      "label": "Enable",
+      "name": "netdata6Enabled",
+      "value": {
+       "$config": "netdata6Enabled"
+      }
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "input",
+      "label": "Title",
+      "name": "netdata6Title",
+      "value": {
+       "$config": "netdata6Title"
+      },
+      "help": "Title for the netdata graph"
+     },
+     {
+      "type": "select",
+      "label": "Data",
+      "name": "netdata6Data",
+      "value": {
+       "$config": "netdata6Data"
+      },
+      "options": [
+       {
+        "name": "Disk Read",
+        "value": "disk-read"
+       },
+       {
+        "name": "Disk Write",
+        "value": "disk-write"
+       },
+       {
+        "name": "CPU",
+        "value": "cpu"
+       },
+       {
+        "name": "Network Inbound",
+        "value": "net-in"
+       },
+       {
+        "name": "Network Outbound",
+        "value": "net-out"
+       },
+       {
+        "name": "Used RAM",
+        "value": "ram-used"
+       },
+       {
+        "name": "Used Swap",
+        "value": "swap-used"
+       },
+       {
+        "name": "Disk space used",
+        "value": "disk-used"
+       },
+       {
+        "name": "Disk space available",
+        "value": "disk-avail"
+       },
+       {
+        "name": "Custom",
+        "value": "custom"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Chart",
+      "name": "netdata6Chart",
+      "value": {
+       "$config": "netdata6Chart"
+      },
+      "options": [
+       {
+        "name": "Easy Pie Chart",
+        "value": "easypiechart"
+       },
+       {
+        "name": "Gauge",
+        "value": "gauge"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Colour",
+      "name": "netdata6Colour",
+      "value": {
+       "$config": "netdata6Colour"
+      },
+      "options": [
+       {
+        "name": "Red",
+        "value": "fe3912"
+       },
+       {
+        "name": "Green",
+        "value": "46e302"
+       },
+       {
+        "name": "Purple",
+        "value": "CC22AA"
+       },
+       {
+        "name": "Blue",
+        "value": "5054e6"
+       },
+       {
+        "name": "Yellow",
+        "value": "dddd00"
+       },
+       {
+        "name": "Orange",
+        "value": "d66300"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Size",
+      "name": "netdata6Size",
+      "value": {
+       "$config": "netdata6Size"
+      },
+      "options": [
+       {
+        "name": "Large",
+        "value": "lg"
+       },
+       {
+        "name": "Medium",
+        "value": "md"
+       },
+       {
+        "name": "Small",
+        "value": "sm"
+       }
+      ]
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "switch",
+      "label": "Show on large screens",
+      "name": "netdata6lg",
+      "value": {
+       "$config": "netdata6lg"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on medium screens",
+      "name": "netdata6md",
+      "value": {
+       "$config": "netdata6md"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on small screens",
+      "name": "netdata6sm",
+      "value": {
+       "$config": "netdata6sm"
+      }
+     }
+    ],
+    "Chart 7": [
+     {
+      "type": "switch",
+      "label": "Enable",
+      "name": "netdata7Enabled",
+      "value": {
+       "$config": "netdata7Enabled"
+      }
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "input",
+      "label": "Title",
+      "name": "netdata7Title",
+      "value": {
+       "$config": "netdata7Title"
+      },
+      "help": "Title for the netdata graph"
+     },
+     {
+      "type": "select",
+      "label": "Data",
+      "name": "netdata7Data",
+      "value": {
+       "$config": "netdata7Data"
+      },
+      "options": [
+       {
+        "name": "Disk Read",
+        "value": "disk-read"
+       },
+       {
+        "name": "Disk Write",
+        "value": "disk-write"
+       },
+       {
+        "name": "CPU",
+        "value": "cpu"
+       },
+       {
+        "name": "Network Inbound",
+        "value": "net-in"
+       },
+       {
+        "name": "Network Outbound",
+        "value": "net-out"
+       },
+       {
+        "name": "Used RAM",
+        "value": "ram-used"
+       },
+       {
+        "name": "Used Swap",
+        "value": "swap-used"
+       },
+       {
+        "name": "Disk space used",
+        "value": "disk-used"
+       },
+       {
+        "name": "Disk space available",
+        "value": "disk-avail"
+       },
+       {
+        "name": "Custom",
+        "value": "custom"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Chart",
+      "name": "netdata7Chart",
+      "value": {
+       "$config": "netdata7Chart"
+      },
+      "options": [
+       {
+        "name": "Easy Pie Chart",
+        "value": "easypiechart"
+       },
+       {
+        "name": "Gauge",
+        "value": "gauge"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Colour",
+      "name": "netdata7Colour",
+      "value": {
+       "$config": "netdata7Colour"
+      },
+      "options": [
+       {
+        "name": "Red",
+        "value": "fe3912"
+       },
+       {
+        "name": "Green",
+        "value": "46e302"
+       },
+       {
+        "name": "Purple",
+        "value": "CC22AA"
+       },
+       {
+        "name": "Blue",
+        "value": "5054e6"
+       },
+       {
+        "name": "Yellow",
+        "value": "dddd00"
+       },
+       {
+        "name": "Orange",
+        "value": "d66300"
+       }
+      ]
+     },
+     {
+      "type": "select",
+      "label": "Size",
+      "name": "netdata7Size",
+      "value": {
+       "$config": "netdata7Size"
+      },
+      "options": [
+       {
+        "name": "Large",
+        "value": "lg"
+       },
+       {
+        "name": "Medium",
+        "value": "md"
+       },
+       {
+        "name": "Small",
+        "value": "sm"
+       }
+      ]
+     },
+     {
+      "type": "blank",
+      "label": "",
+      "name": null,
+      "value": ""
+     },
+     {
+      "type": "switch",
+      "label": "Show on large screens",
+      "name": "netdata7lg",
+      "value": {
+       "$config": "netdata7lg"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on medium screens",
+      "name": "netdata7md",
+      "value": {
+       "$config": "netdata7md"
+      }
+     },
+     {
+      "type": "switch",
+      "label": "Show on small screens",
+      "name": "netdata7sm",
+      "value": {
+       "$config": "netdata7sm"
+      }
+     }
+    ],
+    "Custom data": [
+     {
+      "type": "notice",
+      "override": 12,
+      "label": "",
+      "name": null,
+      "value": "",
+      "notice": "info",
+      "title": "Custom data",
+      "body": "This is where you can define custom data sources for your netdata charts. To use a custom source, you need to select \"Custom\" in the data field for the chart. Add an entry to the JSON below, where the key is the chart number, for example {\"1\": {\"url\": \"/api/v1/data?chart=system.ram&format=array\", \"value\": \"result,0\", \"units\": \"%\", \"max\": 100}}. url (required): the netdata API endpoint, appended to your netdata URL. value (required): comma-separated keys that select the value from the netdata response. units: the units of the chart, % by default. max: the maximum possible value, 100 by default. mutator: simple operations on the result (+, -, /, *), comma-separated, for example /1000. netdata: another netdata instance to read the data from, in the format http://IP:PORT."
+     },
+     {
+      "type": "code-editor",
+      "label": "Custom definitions",
+      "name": "netdataCustom",
+      "value": {
+       "$config": "netdataCustom"
+      },
+      "override": 12,
+      "mode": "json"
+     }
+    ],
+    "Options": [
+     {
+      "type": "select",
+      "label": "Refresh Seconds",
+      "options": [
+       {
+        "name": "2.5",
+        "value": "2500"
+       },
+       {
+        "name": "5",
+        "value": "5000"
+       },
+       {
+        "name": "10",
+        "value": "10000"
+       },
+       {
+        "name": "15",
+        "value": "15000"
+       },
+       {
+        "name": "30",
+        "value": "30000"
+       },
+       {
+        "name": "60 [1 Minute]",
+        "value": "60000"
+       },
+       {
+        "name": "300 [5 Minutes]",
+        "value": "300000"
+       },
+       {
+        "name": "600 [10 Minutes]",
+        "value": "600000"
+       },
+       {
+        "name": "900 [15 Minutes]",
+        "value": "900000"
+       },
+       {
+        "name": "1800 [30 Minutes]",
+        "value": "1800000"
+       },
+       {
+        "name": "3600 [1 Hour]",
+        "value": "3600000"
+       }
+      ],
+      "name": "homepageNetdataRefresh",
+      "value": {
+       "$config": "homepageNetdataRefresh"
+      }
+     }
     ]
    }
   },

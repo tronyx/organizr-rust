@@ -299,3 +299,69 @@ async fn the_form_of_prowlarr_has_its_connection_as_in_php() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn the_form_of_netdata_has_the_charts_of_php() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app_with(
+            database,
+            &[
+                ("netdata3Title", json!("CPU of the server")),
+                ("netdataCustom", json!("{\"1\": {}}")),
+            ],
+        );
+        let answer = call(&app, As::Admin, "GET", "/settings/homepage/netdata", None).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let settings = &answer.data()["settings"];
+        let groups: Vec<&String> = settings.as_object().expect("groups").keys().collect();
+        assert_eq!(
+            groups,
+            [
+                "Enable",
+                "Connection",
+                "Chart 1",
+                "Chart 2",
+                "Chart 3",
+                "Chart 4",
+                "Chart 5",
+                "Chart 6",
+                "Chart 7",
+                "Custom data",
+                "Options"
+            ]
+        );
+        let names = |group: &str| -> Vec<Value> {
+            settings[group]
+                .as_array()
+                .expect("a group")
+                .iter()
+                .map(|field| field["name"].clone())
+                .collect()
+        };
+        assert_eq!(
+            names("Chart 3"),
+            [
+                json!("netdata3Enabled"),
+                Value::Null,
+                json!("netdata3Title"),
+                json!("netdata3Data"),
+                json!("netdata3Chart"),
+                json!("netdata3Colour"),
+                json!("netdata3Size"),
+                Value::Null,
+                json!("netdata3lg"),
+                json!("netdata3md"),
+                json!("netdata3sm")
+            ]
+        );
+        assert_eq!(settings["Chart 3"][2]["value"], json!("CPU of the server"));
+        let data = &settings["Chart 3"][3]["options"];
+        assert_eq!(data[2], json!({"name": "CPU", "value": "cpu"}));
+        assert_eq!(names("Options"), [json!("homepageNetdataRefresh")]);
+        let custom = &settings["Custom data"][1];
+        assert_eq!(custom["name"], json!("netdataCustom"));
+        assert_eq!(custom["value"], json!("{\"1\": {}}"));
+    })
+    .await;
+}
