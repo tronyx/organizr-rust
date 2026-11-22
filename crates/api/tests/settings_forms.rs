@@ -384,13 +384,8 @@ async fn parts_that_are_not_built_say_so_at_their_top() {
         let sso = call(&app, As::Admin, "GET", "/settings/sso", None)
             .await
             .data();
-        for group in ["Komga"] {
-            assert_eq!(
-                notice_of(&sso, group)["title"],
-                json!("Not built yet"),
-                "{group}"
-            );
-        }
+        assert_eq!(notice_of(&sso, "Komga")["title"], json!("Not built yet"));
+        assert_eq!(notice_of(&sso, "Petio"), Value::Null);
         assert_eq!(notice_of(&sso, "Plex"), Value::Null);
         let invites = call(&app, As::Admin, "GET", "/plugins/invites/settings", None)
             .await
