@@ -105,6 +105,8 @@ impl StorageArgs {
 
 /// Runs the server until the process is asked to stop.
 pub async fn run(args: Args) -> anyhow::Result<()> {
+    // Before the log files, the database and the key go into the folder.
+    prepare_data_dir(&args.storage.data_dir)?;
     let log_file = start_logging(&args.storage.data_dir);
 
     let database = open_database(&args.storage).await?;
@@ -221,6 +223,42 @@ fn start_logging(data_dir: &Path) -> FileLog {
     log_file
 }
 
+/// The user that runs the server in the container image (`USER` of docker/Dockerfile).
+const IMAGE_USER: u32 = 65_532;
+
+/// Makes the data folder when it is missing, and makes sure that the server can write to
+/// it. Without this check, a folder that belongs to another user stops the server later
+/// with an error of SQLite that does not name the cause.
+pub fn prepare_data_dir(data_dir: &Path) -> anyhow::Result<()> {
+    let hint = || {
+        format!(
+            "The user that runs Organizr must be able to write to it. In the container \
+             image that is the user {IMAGE_USER}: give it the folder on the host, for \
+             example with `chown -R {IMAGE_USER}:{IMAGE_USER} /path/on/the/host`."
+        )
+    };
+    std::fs::create_dir_all(data_dir).with_context(|| {
+        format!(
+            "cannot make the data folder {}. {}",
+            data_dir.display(),
+            hint()
+        )
+    })?;
+    let probe = data_dir.join(format!(".organizr-write-test-{}", std::process::id()));
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&probe)
+        .and_then(|_| std::fs::remove_file(&probe))
+        .with_context(|| {
+            format!(
+                "cannot write to the data folder {}. {}",
+                data_dir.display(),
+                hint()
+            )
+        })
+}
+
 /// Opens the database and brings its schema up to date.
 pub async fn open_database(args: &StorageArgs) -> anyhow::Result<Database> {
     let url = if let Some(url) = &args.database_url {
@@ -304,7 +342,7 @@ mod tests {
 
     use clap::Parser;
 
-    use super::{Args, default_database_url};
+    use super::{Args, default_database_url, prepare_data_dir};
 
     /// The options of `organizr serve`, as a command of their own.
     #[derive(Debug, Parser)]
@@ -336,6 +374,36 @@ mod tests {
             default_database_url(Path::new("data")),
             "sqlite:data/organizr.db"
         );
+    }
+
+    #[test]
+    fn data_folder_is_made_and_left_without_the_test_file() {
+        let parent = tempfile::tempdir().expect("a folder");
+        let data = parent.path().join("data");
+
+        prepare_data_dir(&data).expect("the folder can be used");
+
+        assert!(data.is_dir());
+        let left: Vec<_> = std::fs::read_dir(&data).expect("readable").collect();
+        assert_eq!(left.len(), 0, "the test file is removed");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn data_folder_that_the_server_cannot_write_to_stops_it_with_the_reason() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let data = tempfile::tempdir().expect("a folder");
+        let read_only = std::fs::Permissions::from_mode(0o555);
+        std::fs::set_permissions(data.path(), read_only).expect("permissions can be set");
+
+        let error = prepare_data_dir(data.path()).expect_err("the folder is read-only");
+        let text = format!("{error:#}");
+
+        std::fs::set_permissions(data.path(), std::fs::Permissions::from_mode(0o755))
+            .expect("permissions can be set back");
+        assert!(text.contains("cannot write to the data folder"), "{text}");
+        assert!(text.contains("65532"), "{text}");
     }
 
     #[test]

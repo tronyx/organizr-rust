@@ -2,7 +2,6 @@
 
 use std::path::{Path, PathBuf};
 
-use anyhow::Context;
 use organizr_api::backup::{self, RestoreOptions};
 
 use crate::serve::StorageArgs;
@@ -82,8 +81,7 @@ fn report(restored: &backup::Restored, data_dir: &Path, keeps_a_file: bool) -> S
 pub fn run(args: &Args) -> anyhow::Result<()> {
     let data_dir = args.storage.data_dir();
     let database_file = database_file(&args.storage);
-    std::fs::create_dir_all(data_dir)
-        .with_context(|| format!("cannot create the data folder {}", data_dir.display()))?;
+    crate::serve::prepare_data_dir(data_dir)?;
     let options = RestoreOptions {
         data_dir,
         database_file: database_file.as_deref(),

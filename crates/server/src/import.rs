@@ -6,7 +6,7 @@ use anyhow::Context;
 use organizr_auth::secrets::SecretBox;
 use organizr_import::ImportRequest;
 
-use crate::serve::{StorageArgs, open_database};
+use crate::serve::{StorageArgs, open_database, prepare_data_dir};
 
 /// The options of `organizr import`.
 #[derive(Debug, clap::Args)]
@@ -47,6 +47,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     // The PHP install is read before anything is created for the new one.
     let source = organizr_import::read(request).await?;
+    prepare_data_dir(args.storage.data_dir())?;
     let database = open_database(&args.storage).await?;
     let secrets = args.storage.secrets()?;
     let report =

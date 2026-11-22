@@ -12,6 +12,22 @@ The code is in the log of the container. Each start makes a new code, so read th
 docker logs organizr 2>&1 | grep "set-up code"
 ```
 
+### The container stops with "cannot write to the data folder"
+
+The container runs as the user `65532`, not as root. The log says:
+
+```text
+Error: cannot write to the data folder /config. The user that runs Organizr must be able to write to it.
+```
+
+A folder of the host that you mount as `/config` must belong to that user:
+
+```sh
+sudo chown -R 65532:65532 /path/to/the/folder
+```
+
+A named Docker volume needs nothing. See [Installation](installation.md#the-data-folder).
+
 ### After a restore or a move, settings with passwords and keys are empty
 
 Organizr seals the stored passwords, tokens and keys with the key in the file `secret.key`. The new container has another key. The log has a line like this one for each value:

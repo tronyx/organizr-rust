@@ -23,7 +23,16 @@ docker run --rm \
   import --from /old --data-dir /config --dry-run
 ```
 
-Read the report of the dry run, then run the same command without `--dry-run`. [Importing](importing.md) tells you what the import takes, what it repairs, and what the report means.
+Read the report of the dry run, then run the same command without `--dry-run`.
+
+For a new install with PostgreSQL, start only the database first, and run the import with the settings of the container of Organizr, so that it writes into PostgreSQL. With [compose.postgres.yaml](../docker/examples/compose.postgres.yaml):
+
+```sh
+docker compose -f compose.postgres.yaml up -d database
+docker compose -f compose.postgres.yaml run --rm -v /path/to/old/config:/old:ro organizr import --from /old --data-dir /config --dry-run
+```
+
+Then run the second command again without `--dry-run`, and start everything with `docker compose -f compose.postgres.yaml up -d`. Do not start Organizr before the import: the import needs an empty database. The volume `/config` still holds the key for the stored secrets and the pictures, so keep it also with PostgreSQL. [Importing](importing.md) tells you what the import takes, what it repairs, and what the report means.
 
 The import brings the users with their passwords and second factors, the groups, categories and tabs, the settings, the API key, the pictures, and the records of the bookmark, invite and chat plugins. Every user logs in again, with the old password.
 
