@@ -111,15 +111,15 @@
   onMount(load);
 </script>
 
-<section class="org-panel panel panel-default" aria-labelledby="homepage-order-title">
-  <div class="org-panel-heading panel-heading">
+<section class="org-panel" aria-labelledby="homepage-order-title">
+  <div class="org-panel-heading">
     <h2 id="homepage-order-title">Homepage Order</h2>
     <button type="button" class="btn btn-info btn-sm" disabled={!changed || busy} onclick={save}>
       {#if busy}<span class="loading loading-spinner loading-xs"></span>{/if}
       Save
     </button>
   </div>
-  <div class="org-panel-body panel-body">
+  <div class="org-panel-body">
     {#if error}
       <div role="alert" class="alert alert-error mb-4"><span>{error}</span></div>
     {/if}

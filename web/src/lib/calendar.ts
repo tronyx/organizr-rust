@@ -365,15 +365,23 @@ export function shortTime(start: string): string | null {
   return `${hour % 12 === 0 ? 12 : hour % 12}:${pad(moment.getMinutes())}${hour < 12 ? 'a' : 'p'}`;
 }
 
+/** The class of each state of an event, which colours its title, its icon and its time. */
+const STATE_CLASSES: Record<string, string> = {
+  'text-success': 'org-event-downloaded',
+  'text-info': 'org-event-unreleased',
+  'text-danger': 'org-event-missing',
+  'text-primary': 'org-event-premiere',
+  'text-dark': 'org-event-unmonitored',
+  'ical-upcoming': 'org-event-upcoming',
+  'ical-over': 'org-event-over',
+};
+
 /**
- * The class of PHP Organizr for the state of an event, which colours its icon and its
- * time: `text-success`, `text-info`, `text-danger`, `text-primary` or `text-dark`. Custom
- * CSS written for PHP aims at these (D-110).
+ * The class of the state of an event: `org-event-downloaded`, `org-event-unreleased`,
+ * `org-event-missing`, `org-event-premiere`, `org-event-unmonitored`, `org-event-upcoming`
+ * or `org-event-over`. The documentation of custom CSS names them.
  */
 export function stateClass(event: CalendarEvent): string {
   const first = event.downloadFilter.split(' ')[0] ?? '';
-  if (first.startsWith('text-')) {
-    return first;
-  }
-  return event.downloadFilter === 'ical-upcoming' ? 'text-info' : 'text-dark';
+  return STATE_CLASSES[first] ?? STATE_CLASSES[event.downloadFilter] ?? 'org-event-unmonitored';
 }

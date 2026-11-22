@@ -38,8 +38,8 @@
   });
 </script>
 
-<section class="org-panel panel panel-default" aria-labelledby="homepage-items-title">
-  <div class="org-panel-heading panel-heading">
+<section class="org-panel" aria-labelledby="homepage-items-title">
+  <div class="org-panel-heading">
     <h2 id="homepage-items-title">Homepage Items</h2>
   </div>
   {#if error}

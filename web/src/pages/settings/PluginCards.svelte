@@ -92,8 +92,8 @@
   <BookmarksEditor {ondone} />
 {/snippet}
 
-<section class="org-panel panel panel-default" aria-labelledby="plugin-cards-title">
-  <div class="org-panel-heading panel-heading">
+<section class="org-panel" aria-labelledby="plugin-cards-title">
+  <div class="org-panel-heading">
     <h2 id="plugin-cards-title">{active ? 'Active Plugins' : 'Inactive Plugins'}</h2>
   </div>
   {#if error}

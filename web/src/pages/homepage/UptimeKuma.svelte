@@ -29,21 +29,14 @@
 {#if item.error}
   <div role="alert" class="alert alert-error"><span>Uptime Kuma: {item.error}</span></div>
 {:else if item.data}
-  <!-- The ids and classes of PHP Organizr, for custom CSS (D-110). -->
-  <div id="allUptimeKuma">
+  <div>
     {#if options?.titleToggle}
       <h2 class="org-item-title">{options.title}<span aria-hidden="true">:</span></h2>
     {/if}
-    <ul
-      translate="no"
-      class="org-cards uptimeKumaCards"
-      aria-label={options?.title || 'Uptime Kuma'}
-    >
+    <ul translate="no" class="org-cards" aria-label={options?.title || 'Uptime Kuma'}>
       {#each monitors as monitor, index (index)}
         {@const link = linkOf(monitor)}
-        <li class="org-card col-xl-2 col-lg-3 col-md-4 col-sm-6 col-xs-12">
-          <span class="left-health {monitor.status ? 'bg-success' : 'bg-danger'}" aria-hidden="true"
-          ></span>
+        <li class="org-card {monitor.status ? 'org-tone-success' : 'org-tone-error'}">
           <div class="org-card-row">
             <span class="flex min-w-0 flex-1 items-baseline gap-3">
               {#if link}
@@ -59,8 +52,8 @@
             </span>
             <i
               class="oi oi-fontawesome {monitor.status
-                ? 'fa-check-circle text-success'
-                : 'fa-times-circle text-danger'} text-xl"
+                ? 'fa-check-circle'
+                : 'fa-times-circle'} org-card-icon text-xl"
               aria-hidden="true"
             ></i>
             <span class="sr-only">{monitor.status ? 'Online' : 'Offline'}</span>

@@ -937,6 +937,64 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
   await expect(page).toHaveURL(/#\/account$/);
 });
 
+test('custom CSS reaches the classes and variables that its documentation names', async ({
+  page,
+}) => {
+  // docs/custom-css.md promises these names. A rule for each one must apply, also over the
+  // style sheet of the interface and the colours of the theme.
+  const css = [
+    ':root { --color-primary: rgb(1, 2, 3); --org-event-premiere: rgb(4, 5, 6); }',
+    '.org-item-customhtml, .org-panel-heading, .org-lock-box, .org-login-sidebar,',
+    '.org-login-box { outline: 2px solid rgb(7, 8, 9); }',
+  ].join(' ');
+  const outlined = 'rgb(7, 8, 9)';
+  const variable = (name: string) =>
+    page.evaluate(
+      (wanted) => getComputedStyle(document.documentElement).getPropertyValue(wanted).trim(),
+      name,
+    );
+
+  await logIn(page);
+  await page.goto('./#/settings/appearance');
+  await page.getByRole('tab', { name: 'Custom CSS' }).click();
+  await page.getByLabel('Custom CSS', { exact: true }).fill(css);
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+
+  await expect.poll(() => variable('--color-primary')).toBe('rgb(1, 2, 3)');
+  await expect.poll(() => variable('--org-event-premiere')).toBe('rgb(4, 5, 6)');
+  await expect(page.locator('.org-panel-heading').first()).toHaveCSS('outline-color', outlined);
+
+  await page.goto('./#Homepage');
+  await expect(page.locator('section.org-item.org-item-customhtml')).toHaveCSS(
+    'outline-color',
+    outlined,
+  );
+
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('button', { name: 'Lock Screen' }).click();
+  await expect(page.locator('form.org-lock-box')).toHaveCSS('outline-color', outlined);
+  await page.getByLabel('Password').fill(ADMIN.password);
+  await page.getByRole('button', { name: 'Unlock' }).click();
+
+  await page.getByLabel('Menu of the user').click();
+  await page.getByRole('banner').getByRole('button', { name: 'Logout' }).click();
+  await expect(page.locator('.org-login-register .org-login-sidebar')).toHaveCSS(
+    'outline-color',
+    outlined,
+  );
+  await expect(page.locator('form.org-login-box')).toHaveCSS('outline-color', outlined);
+
+  // Back to no custom CSS, for the tests after this one.
+  await logIn(page);
+  await page.goto('./#/settings/appearance');
+  await page.getByRole('tab', { name: 'Custom CSS' }).click();
+  await page.getByLabel('Custom CSS', { exact: true }).fill('');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+  await expect.poll(() => variable('--org-event-premiere')).not.toBe('rgb(4, 5, 6)');
+});
+
 test('the chat plugin shows a new message at once, as text', async ({ page }) => {
   await logIn(page);
   await switchPluginOn(page, 'Chat');

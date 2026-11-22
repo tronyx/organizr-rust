@@ -50,11 +50,11 @@ describe('Monitorr', () => {
 
     const list = await screen.findByRole('list', { name: 'Monitorr' });
     const cards = within(list).getAllByRole('listitem');
-    // The edge has PHP's class, which custom CSS may colour.
-    const edge = (index: number) => at(cards, index).querySelector('.left-health');
-    expect(edge(0)?.classList.contains('bg-danger')).toBe(true);
-    expect(edge(1)?.classList.contains('bg-success')).toBe(true);
-    expect(edge(2)?.classList.contains('bg-warning')).toBe(true);
+    // The class of the tone colours the edge, and custom CSS may change it.
+    const tone = (index: number) => at(cards, index).classList;
+    expect(tone(0).contains('org-tone-error')).toBe(true);
+    expect(tone(1).contains('org-tone-success')).toBe(true);
+    expect(tone(2).contains('org-tone-warning')).toBe(true);
     expect(at(cards, 2).textContent).toContain('Unresponsive');
     expect(screen.queryByRole('heading')).toBeNull();
   });

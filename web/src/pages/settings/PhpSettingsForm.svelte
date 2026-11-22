@@ -562,8 +562,8 @@
 {/snippet}
 
 {#if groups}
-  <section class="org-panel panel panel-default" aria-labelledby="php-form-title">
-    <div class="org-panel-heading panel-heading">
+  <section class="org-panel" aria-labelledby="php-form-title">
+    <div class="org-panel-heading">
       <h2 id="php-form-title">{title}</h2>
       <button
         type="button"

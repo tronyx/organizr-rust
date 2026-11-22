@@ -19,11 +19,10 @@
   }
 
   /** How each status shows, as in PHP Organizr: its colour, its icon, and its word. */
-  // The tone is the word of PHP's classes `bg-<tone>` and `text-<tone>`, which custom CSS
-  // may change.
+  // The tone names the class `org-tone-<tone>`, whose colour custom CSS may change.
   const STATUS: Record<string, { tone: string; icon: string; word: string }> = {
     up: { tone: 'success', icon: 'oi-themify ti-link', word: 'Up' },
-    down: { tone: 'danger', icon: 'oi-themify ti-unlink', word: 'Down' },
+    down: { tone: 'error', icon: 'oi-themify ti-unlink', word: 'Down' },
     grace: { tone: 'warning', icon: 'oi-themify ti-alert', word: 'Late' },
     paused: { tone: 'primary', icon: 'oi-themify ti-control-pause', word: 'Paused' },
     new: { tone: 'info', icon: 'oi-themify ti-time', word: 'New' },
@@ -50,17 +49,15 @@
 {#if item.error}
   <div role="alert" class="alert alert-error"><span>Health checks: {item.error}</span></div>
 {:else if checks.length > 0}
-  <!-- The ids and classes of PHP Organizr, for custom CSS (D-110). -->
-  <div id="allHealthChecks">
+  <div>
     <h2 class="org-item-title">
       Health Checks : <span class="org-count">{checks.length}</span>
     </h2>
-    <ul translate="no" class="org-cards healthCheckCards" aria-label="Health checks">
+    <ul translate="no" class="org-cards" aria-label="Health checks">
       {#each checks as check, index (index)}
         {@const status = STATUS[check.status] ?? { ...OTHER, word: check.status }}
         {@const picture = pictureOf(check)}
-        <li class="org-card col-xl-2 col-lg-3 col-md-4 col-sm-6 col-xs-12">
-          <span class="left-health bg-{status.tone}" aria-hidden="true"></span>
+        <li class="org-card org-tone-{status.tone}">
           <!-- A click shows the times of the check, as in PHP Organizr. -->
           <details>
             <summary class="org-card-row cursor-pointer">
@@ -68,7 +65,7 @@
                 <img src={picture} alt="" loading="lazy" />
               {/if}
               <span class="min-w-0 flex-1 truncate">{check.name || 'New Item'}</span>
-              <i class="oi {status.icon} text-xl text-{status.tone}" aria-hidden="true"></i>
+              <i class="oi {status.icon} org-card-icon text-xl" aria-hidden="true"></i>
               <span class="sr-only">{status.word}</span>
             </summary>
             <div class="org-card-more">
@@ -86,7 +83,7 @@
               {#if item.data?.options.tags}
                 <p class="flex flex-wrap gap-1">
                   {#each tagsOf(check) as tag (tag)}
-                    <span class="badge badge-outline badge-sm">{tag}</span>
+                    <span class="org-card-tag badge badge-outline badge-sm">{tag}</span>
                   {/each}
                 </p>
               {/if}

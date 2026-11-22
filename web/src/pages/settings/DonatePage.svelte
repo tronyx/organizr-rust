@@ -25,11 +25,11 @@
   ];
 </script>
 
-<section class="org-panel panel panel-default" aria-labelledby="donate-title">
-  <div class="org-panel-heading panel-heading">
+<section class="org-panel" aria-labelledby="donate-title">
+  <div class="org-panel-heading">
     <h2 id="donate-title">Donate</h2>
   </div>
-  <div class="org-panel-body panel-body">
+  <div class="org-panel-body">
     <p class="mb-4">Organizr is made by its community. These are the ways to support it.</p>
     <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {#each WAYS as way (way.name)}

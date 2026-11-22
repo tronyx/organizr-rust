@@ -2121,53 +2121,77 @@
   }
 
   /*
-   * Class names of PHP Organizr that custom CSS written for PHP aims at (D-110). The
-   * pages carry them next to their own classes; these rules give them PHP's meaning.
+   * The tones of the cards of the homepage. Each sets the colour of the edge and of the
+   * icon of its card, which custom CSS may change (docs/custom-css.md).
    */
-  .bg-danger {
-    background-color: var(--color-error);
+  .org-tone-success {
+    --org-state: var(--color-success);
   }
 
-  .text-danger {
-    color: var(--color-error);
+  .org-tone-warning {
+    --org-state: var(--color-warning);
   }
 
-  /* The colours of the states of the calendar, as PHP's classes give them. */
-  .org-calendar .text-primary {
-    color: #00ccff;
+  .org-tone-error {
+    --org-state: var(--color-error);
   }
 
-  .org-calendar .text-dark {
-    color: #96a2b4;
+  .org-tone-info {
+    --org-state: var(--color-info);
   }
 
+  .org-tone-primary {
+    --org-state: var(--color-primary);
+  }
+
+  .org-card-icon {
+    color: var(--org-state);
+  }
+
+  /* The colours of the states of the events of the calendar, as PHP Organizr gives them. */
+  :root {
+    --org-event-downloaded: var(--color-success);
+    --org-event-unreleased: var(--color-info);
+    --org-event-missing: var(--color-error);
+    --org-event-premiere: #00ccff;
+    --org-event-unmonitored: #96a2b4;
+    --org-event-upcoming: var(--color-info);
+    --org-event-over: #96a2b4;
+  }
+
+  .org-event-downloaded {
+    color: var(--org-event-downloaded);
+  }
+
+  .org-event-unreleased {
+    color: var(--org-event-unreleased);
+  }
+
+  .org-event-missing {
+    color: var(--org-event-missing);
+  }
+
+  .org-event-premiere {
+    color: var(--org-event-premiere);
+  }
+
+  .org-event-unmonitored {
+    color: var(--org-event-unmonitored);
+  }
+
+  .org-event-upcoming {
+    color: var(--org-event-upcoming);
+  }
+
+  .org-event-over {
+    color: var(--org-event-over);
+  }
+
+  /* The logo in the box of the login panel shows on phones only, as in PHP Organizr. */
   @media (min-width: 768px) {
-    .visible-xs {
+    .org-login-box-logo {
       display: none;
     }
-  }
-
-  /* The sizes that PHP's style sheet gives its login page, which custom CSS builds on. */
-  #wrapper.login-register {
-    width: 100%;
-  }
-
-  .login-box.login-sidebar {
-    height: 100%;
-    margin: 0 auto;
-  }
-
-  .org-card:has(.left-health) {
-    position: relative;
-    box-shadow: none;
-  }
-
-  .left-health {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 4px;
   }
 
   /* The filter menu of a row of posters, as the dropdown of PHP Organizr. */

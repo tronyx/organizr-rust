@@ -150,7 +150,7 @@
     <!-- The panel shows the logo in its box, on phones only, as PHP does. -->
   {:else if logo}
     <img
-      class="loginLogo max-h-56 max-w-[350px]"
+      class="org-login-logo max-h-56 max-w-[350px]"
       src={logo}
       alt={title}
       onerror={() => (logoFailed = true)}
@@ -160,17 +160,17 @@
   {/if}
   <form
     class={minimal
-      ? 'card bg-base-200 white-box w-full shadow-[0_0_10px_rgb(0_0_0/0.6)]'
-      : 'org-login-box white-box'}
+      ? 'org-login-card card bg-base-200 w-full shadow-[0_0_10px_rgb(0_0_0/0.6)]'
+      : 'org-login-box'}
     onsubmit={logIn}
   >
     <div class="card-body" class:p-0={!minimal}>
       {#if !minimal}
-        <!-- PHP shows the logo or the title in its panel on phones only (visible-xs). -->
-        <div id="login-logo" class="visible-xs text-center">
+        <!-- PHP shows the logo or the title in its panel on phones only. -->
+        <div class="org-login-box-logo text-center">
           {#if logo}
             <img
-              class="loginLogo mx-auto"
+              class="org-login-logo mx-auto"
               src={logo}
               alt={title}
               onerror={() => (logoFailed = true)}

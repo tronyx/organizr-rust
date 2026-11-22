@@ -114,8 +114,8 @@
 {#if item.error}
   <div role="alert" class="alert alert-error"><span>Calendar: {item.error}</span></div>
 {:else if item.data}
-  <div class="org-calendar fc fc-unthemed">
-    <div class="org-calendar-bar fc-toolbar">
+  <div class="org-calendar">
+    <div class="org-calendar-bar">
       <div class="org-calendar-buttons">
         <button type="button" aria-label="Earlier" onclick={() => move(-1)}>
           <i class="oi oi-fontawesome fa-chevron-left" aria-hidden="true"></i>
@@ -190,7 +190,6 @@
                 <td
                   class="h-24 p-1"
                   class:org-today={day.day === now}
-                  class:fc-today={day.day === now}
                   aria-current={day.day === now ? 'date' : undefined}
                 >
                   <div class="text-right text-xs" class:opacity-40={!day.inMonth}>
@@ -225,7 +224,7 @@
         <thead>
           <tr>
             {#each columns as day (day)}
-              <th scope="col" class:org-today={day === now} class:fc-today={day === now}>
+              <th scope="col" class:org-today={day === now}>
                 {shortDay(day)}
               </th>
             {/each}
@@ -237,7 +236,6 @@
               <td
                 class="h-40"
                 class:org-today={day === now}
-                class:fc-today={day === now}
                 aria-current={day === now ? 'date' : undefined}
               >
                 {#each byDay.get(day) ?? [] as event (event.id)}
@@ -248,9 +246,8 @@
                     title={stateOf(event).word}
                     onclick={() => (open = event)}
                   >
-                    <span class="fc-time font-medium {icon} {stateClass(event)}">
-                      <i class="oi oi-fontawesome fa-{icon} {stateClass(event)}" aria-hidden="true"
-                      ></i>
+                    <span class="org-calendar-time font-medium {stateClass(event)}">
+                      <i class="oi oi-fontawesome fa-{icon}" aria-hidden="true"></i>
                       {shortTime(event.start) ?? ''}
                     </span>
                     <span class="block truncate">{event.details.topTitle}</span>

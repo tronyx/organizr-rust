@@ -163,13 +163,15 @@ describe('weeks and days', () => {
 });
 
 describe('stateClass', () => {
-  it('gives the class of PHP for each state, which custom CSS aims at', () => {
-    expect(stateClass(event('a', '2026-11-22', 'tv', 'text-success'))).toBe('text-success');
-    expect(stateClass(event('a', '2026-11-22', 'tv', 'text-info'))).toBe('text-info');
-    expect(stateClass(event('a', '2026-11-22', 'tv', 'text-primary animated flash'))).toBe(
-      'text-primary',
-    );
-    expect(stateClass(event('a', '2026-11-22', 'ical', 'ical-upcoming'))).toBe('text-info');
-    expect(stateClass(event('a', '2026-11-22', 'ical', 'ical-over'))).toBe('text-dark');
+  it('gives each state its own class, which custom CSS aims at', () => {
+    const of = (kind: string, state: string) => stateClass(event('a', '2026-11-22', kind, state));
+    expect(of('tv', 'text-success')).toBe('org-event-downloaded');
+    expect(of('tv', 'text-info')).toBe('org-event-unreleased');
+    expect(of('tv', 'text-danger')).toBe('org-event-missing');
+    expect(of('tv', 'text-primary animated flash')).toBe('org-event-premiere');
+    expect(of('tv', 'text-dark')).toBe('org-event-unmonitored');
+    expect(of('ical', 'ical-upcoming')).toBe('org-event-upcoming');
+    expect(of('ical', 'ical-over')).toBe('org-event-over');
+    expect(of('tv', 'something-new')).toBe('org-event-unmonitored');
   });
 });

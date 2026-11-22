@@ -44,9 +44,9 @@ describe('HealthChecks', () => {
     expect(mail.textContent).not.toContain('runbook');
     expect(unnamed.textContent).toContain('New Item');
     expect(screen.getByRole('heading', { name: /Health Checks/ }).textContent).toContain('2');
-    // The ids and classes of PHP, for custom CSS (D-110).
-    const cards = document.querySelector('#allHealthChecks .healthCheckCards');
-    expect(cards?.querySelector('li.col-lg-3 .left-health')).not.toBeNull();
+    // The classes that the documentation of custom CSS names.
+    expect(mail.classList).toContain('org-tone-error');
+    expect(mail.querySelector('.org-card-icon')).not.toBeNull();
   });
 
   it('keeps the notes and the tags back when the options say so', async () => {
@@ -128,13 +128,11 @@ describe('UptimeKuma', () => {
     render(UptimeKuma);
 
     const list = await screen.findByRole('list', { name: 'Monitors' });
-    expect(list.closest('#allUptimeKuma')).not.toBeNull();
-    expect(list.classList).toContain('uptimeKumaCards');
+    expect(list.classList).toContain('org-cards');
     const [router, blog] = within(list).getAllByRole('listitem') as [HTMLElement, HTMLElement];
-    expect(router.querySelector('.left-health.bg-success')).not.toBeNull();
-    expect(router.querySelector('i.text-success')).not.toBeNull();
-    expect(blog.querySelector('.left-health.bg-danger')).not.toBeNull();
-    expect(blog.querySelector('i.text-danger')).not.toBeNull();
+    expect(router.classList).toContain('org-tone-success');
+    expect(blog.classList).toContain('org-tone-error');
+    expect(blog.querySelector('i.org-card-icon')).not.toBeNull();
   });
 
   it('leaves out the title and the latency when the options say so', async () => {

@@ -26,19 +26,19 @@
     online: {
       colour: 'var(--color-success)',
       tone: 'success',
-      icon: 'fa-check-circle text-success',
+      icon: 'fa-check-circle',
       word: 'Online',
     },
     unresponsive: {
       colour: 'var(--color-warning)',
       tone: 'warning',
-      icon: 'fa-times-circle text-warning',
+      icon: 'fa-times-circle',
       word: 'Unresponsive',
     },
     offline: {
       colour: 'var(--color-error)',
-      tone: 'danger',
-      icon: 'fa-times-circle text-danger',
+      tone: 'error',
+      icon: 'fa-times-circle',
       word: 'Offline',
     },
   };
@@ -68,8 +68,7 @@
 {#if item.error}
   <div role="alert" class="alert alert-error"><span>Monitorr: {item.error}</span></div>
 {:else if item.data}
-  <!-- The ids and classes of PHP Organizr, for custom CSS (D-110). -->
-  <div id="allMonitorr">
+  <div>
     {#if options?.titleToggle}
       <h2 class="org-item-title">
         {options.title}<span aria-hidden="true">:</span>
@@ -79,18 +78,18 @@
     {#if services.length === 0}
       <p class="text-sm">Monitorr named no service. Look at its address.</p>
     {:else if options?.compact}
-      <ul translate="no" class="org-cards monitorrCards" aria-label={options.title || 'Monitorr'}>
+      <ul translate="no" class="org-cards" aria-label={options.title || 'Monitorr'}>
         {#each services as [text, service] (text)}
           {@const state = stateOf(service)}
           {@const picture = pictureOf(service)}
-          <li class="org-card col-xl-2 col-lg-3 col-md-4 col-sm-6 col-xs-12">
-            <span class="left-health bg-{state.tone}" aria-hidden="true"></span>
+          <li class="org-card org-tone-{state.tone}">
             <div class="org-card-row">
               {#if picture}
                 <img src={picture} alt="" />
               {/if}
               {@render name(text, service, 'min-w-0 flex-1 truncate')}
-              <i class="oi oi-fontawesome {state.icon} text-xl" aria-hidden="true"></i>
+              <i class="oi oi-fontawesome {state.icon} org-card-icon text-xl" aria-hidden="true"
+              ></i>
               <span class="sr-only">{state.word}</span>
             </div>
           </li>

@@ -52,12 +52,8 @@
   }
 </script>
 
-<main
-  id="lockScreen"
-  class="org-lock-screen lock-screen"
-  style:background-image={`url('${wallpaper}')`}
->
-  <form class="org-lock-box white-box" onsubmit={unlock}>
+<main class="org-lock-screen" style:background-image={`url('${wallpaper}')`}>
+  <form class="org-lock-box" onsubmit={unlock}>
     <h1 class="sr-only">The screen is locked</h1>
     <div class="text-center">
       <img
