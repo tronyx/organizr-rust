@@ -123,3 +123,18 @@ debug = "line-tables-only"
 
 [profile.dev.package."*"]
 debug = false
+
+# Hashing a password with Argon2 takes seconds without optimisation. The browser tests
+# hash a password for each login and new user, and on a slow build machine a page then
+# waits longer than the tests do. These crates are built optimised even in a test build.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
+
+[profile.dev.package.bcrypt]
+opt-level = 3
+
+[profile.dev.package.blowfish]
+opt-level = 3
