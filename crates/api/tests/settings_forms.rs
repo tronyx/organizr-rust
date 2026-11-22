@@ -367,36 +367,15 @@ async fn the_form_of_netdata_has_the_charts_of_php() {
 }
 
 #[tokio::test]
-async fn parts_that_are_not_built_say_so_at_their_top() {
+async fn no_part_of_a_form_says_that_it_is_not_built() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let app = installed_app_with(database, &[]);
-        let notice_of = |form: &Value, group: &str| -> Value {
-            form[group]
-                .as_array()
-                .expect("the group")
-                .iter()
-                .find(|field| field["type"] == json!("notice"))
-                .cloned()
-                .unwrap_or(Value::Null)
-        };
-
-        let sso = call(&app, As::Admin, "GET", "/settings/sso", None)
-            .await
-            .data();
-        for group in ["Petio", "Komga", "Jellyfin"] {
-            assert_eq!(notice_of(&sso, group), Value::Null, "{group}");
-        }
-        assert_eq!(notice_of(&sso, "Plex"), Value::Null);
-        let invites = call(&app, As::Admin, "GET", "/plugins/invites/settings", None)
-            .await
-            .data();
-        assert_eq!(
-            notice_of(&invites, "Plex Settings")["title"],
-            json!("Not built yet")
-        );
-        for group in ["Emby Settings", "Komga Settings", "Nextcloud Settings"] {
-            assert_eq!(notice_of(&invites, group), Value::Null, "{group}");
+        // Single sign-on to Petio, Komga and Jellyfin and the invites with Komga,
+        // Nextcloud and the Plex Home are built; their notices are gone.
+        for path in ROUTES {
+            let answer = call(&app, As::Admin, "GET", path, None).await;
+            assert!(!answer.body.contains("Not built yet"), "{path}");
         }
     })
     .await;

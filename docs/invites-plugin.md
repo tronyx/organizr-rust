@@ -2,7 +2,7 @@
 
 The invites plugin gives a person access to your Plex server with a code. A member of your install makes an invite, which is a record with a code. The invited person enters the code and the name of the own Plex account. Organizr then shares the Plex server with that account.
 
-The plugin works with Plex. The invited person can also make a new Plex account, or a user on your Emby server with the settings of the tab **Emby Settings**. When an invite shares the Plex server, it can also make an account in Komga and in Nextcloud, see [Komga](#komga) and [Nextcloud](#nextcloud). Adding the person to the Plex Home is not built yet: its switch says so, and nothing uses it.
+The plugin works with Plex. The invited person can also make a new Plex account, or a user on your Emby server with the settings of the tab **Emby Settings**. When an invite shares the Plex server, it can also add the person to your Plex Home, and make an account in Komga and in Nextcloud, see [Plex Home](#plex-home), [Komga](#komga) and [Nextcloud](#nextcloud).
 
 ## Set it up
 
@@ -52,6 +52,10 @@ A code works one time. When Plex refuses the share, the code stays good, and the
 | Libraries not setup correct | Plex does not know the Plex ID or one of the library ids |
 | Plex Token/ID not set | The install has no Plex token or no Plex ID |
 | User is locked out | This browser sent too many wrong codes. See below |
+
+## Plex Home
+
+With **When user subscribe add him to Plex Home** (`INVITES-add-plex-home`) on the tab **Plex Settings**, a used invite also invites the e-mail address of the invite to the Plex Home of the owner of the Plex token. The person accepts that invitation at Plex. Plex decides who may join a Home; when it refuses, the log has the reason, and the invite stays used.
 
 ## Komga
 

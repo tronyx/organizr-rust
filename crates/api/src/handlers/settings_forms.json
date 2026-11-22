@@ -14711,16 +14711,6 @@
    ],
    "Plex Settings": [
     {
-     "type": "notice",
-     "override": 12,
-     "label": "",
-     "name": null,
-     "value": "",
-     "notice": "warning",
-     "title": "Not built yet",
-     "body": "Adding an invited person to the Plex Home is not built yet in this version of Organizr: the switch \"When user subscribe add him to Plex Home\" does nothing. Sharing the Plex server works."
-    },
-    {
      "type": "password-alt",
      "name": "plexToken",
      "label": "Plex Token",

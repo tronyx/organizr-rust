@@ -41,13 +41,6 @@ pub const RETIRED_SETTINGS: [&str; 9] = [
     "organizrHash",
 ];
 
-/// Switches of PHP for parts that this application has not built, each with the part, in
-/// the order of the keys. The import keeps them, and the report names the ones that are on.
-const NOT_BUILT: [(&str, &str); 1] = [(
-    "INVITES-add-plex-home",
-    "adding an invited person to the Plex Home",
-)];
-
 /// The level of the group "User" of a new install.
 const USER_LEVEL: u16 = 4;
 
@@ -912,14 +905,6 @@ fn plan_settings(
         }
     }
 
-    for (key, part) in NOT_BUILT {
-        if settings.get(key) == Some(Value::Bool(true)) {
-            report.notes.push(format!(
-                "`{key}` is on, but {part} is not built yet in this version. The setting is kept, and nothing uses it."
-            ));
-        }
-    }
-
     let list = |map: BTreeMap<String, String>| {
         map.into_iter()
             .map(|(key, value)| StoredSetting { key, value })
@@ -1370,52 +1355,6 @@ mod tests {
         assert_eq!(plan.data.settings[2].value, "\"http://prowlarr:9696\"");
         assert_eq!(plan.data.legacy_settings, []);
         assert_eq!(plan.report.legacy_settings, [] as [String; 0]);
-    }
-
-    #[test]
-    fn report_names_the_parts_that_are_switched_on_and_not_built() {
-        let secrets = SecretBox::with_random_key().expect("a key can be made");
-        let install = LegacyInstall {
-            config: vec![
-                ("INVITES-add-plex-home".to_owned(), json!(true)),
-                ("INVITES-komga-enabled".to_owned(), json!(true)),
-                ("INVITES-nextcloud-enabled".to_owned(), json!(true)),
-            ],
-            ..LegacyInstall::default()
-        };
-
-        let plan = plan(&install, &secrets).expect("a plan can be made");
-
-        let notes: Vec<&String> = plan
-            .report
-            .notes
-            .iter()
-            .filter(|note| note.contains("not built yet"))
-            .collect();
-        // Komga and Nextcloud are built, so only the Plex Home is named.
-        assert_eq!(notes.len(), 1, "{:#?}", plan.report.notes);
-        assert!(notes[0].contains("`INVITES-add-plex-home`"), "{notes:#?}");
-    }
-
-    #[test]
-    fn settings_of_shuck_stop_are_left_out_as_not_needed() {
-        let secrets = SecretBox::with_random_key().expect("a key can be made");
-        let install = LegacyInstall {
-            config: vec![
-                ("SHUCKSTOP-enabled".to_owned(), json!(true)),
-                ("SHUCKSTOP-emails".to_owned(), json!("me@example.com")),
-            ],
-            ..LegacyInstall::default()
-        };
-
-        let plan = plan(&install, &secrets).expect("a plan can be made");
-
-        assert_eq!(plan.data.settings, []);
-        assert_eq!(plan.data.legacy_settings, []);
-        assert_eq!(
-            plan.report.retired_settings,
-            ["SHUCKSTOP-enabled", "SHUCKSTOP-emails"]
-        );
     }
 
     #[test]

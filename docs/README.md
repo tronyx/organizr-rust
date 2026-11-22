@@ -62,7 +62,7 @@ The [README](../README.md) tells you what this rewrite of Organizr is and how to
 
 | Page | Contents |
 | --- | --- |
-| [🏗️ Architecture](architecture.md) | The design of the rewrite, and the parts of PHP Organizr that are not built yet |
+| [🏗️ Architecture](architecture.md) | The design of the rewrite, and the order in which it was built |
 | [🔍 Audit of PHP Organizr](audit.md) | What PHP Organizr does, route by route, as the rewrite found it |
 | [↔️ Deviations](deviations.md) | Every place where this version answers differently from PHP Organizr, and why |
 | [📚 Stack research](stack-research.md) | How the libraries of the rewrite were chosen |

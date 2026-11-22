@@ -320,6 +320,51 @@ async fn nextcloud_user_of_the_plex_app_has_the_id_of_the_plex_invite() {
 }
 
 #[tokio::test]
+async fn used_invite_adds_the_address_of_the_invite_to_the_plex_home() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let (app, _outbox) = app_with(database, &plex, &[("INVITES-add-plex-home", json!(true))]);
+        invite(&app, As::Admin, "one").await;
+
+        let used = use_code(&app, "one", "Sam").await;
+
+        assert_eq!(used.status, StatusCode::OK, "{used:?}");
+        let home = plex
+            .seen()
+            .into_iter()
+            .find(|seen| seen.path.starts_with("/api/home/users"))
+            .expect("plex.tv was asked to add the account to the home");
+        assert_eq!(
+            home.path,
+            "/api/home/users?invitedEmail=sam%40example.com&skipFriendship=1"
+        );
+        assert_eq!(home.header("x-plex-token"), Some(OWNER_TOKEN));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn plex_home_is_left_alone_without_its_switch() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let (app, _outbox) = app_with(database, &plex, &[]);
+        invite(&app, As::Admin, "one").await;
+
+        use_code(&app, "one", "Sam").await;
+
+        assert!(
+            !plex
+                .seen()
+                .iter()
+                .any(|seen| seen.path.starts_with("/api/home/users"))
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn komga_account_is_not_made_without_its_settings() {
     on_each_engine(async |database| {
         seed::installed(database).await;

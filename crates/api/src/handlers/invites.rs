@@ -395,6 +395,9 @@ pub(crate) async fn after_share(
     email: &str,
     display_name: &str,
 ) {
+    if settings.invites_add_plex_home {
+        add_to_plex_home(state, settings, email).await;
+    }
     let Some(http) = state.outbound() else {
         return;
     };
@@ -403,6 +406,24 @@ pub(crate) async fn after_share(
     }
     if settings.invites_nextcloud_enabled {
         make_nextcloud_user(state, http, settings, email, display_name).await;
+    }
+}
+
+/// PHP's `_addUserPlexHome`: invites the address of the invite to the Plex Home of the
+/// owner of the Plex token of the settings.
+async fn add_to_plex_home(state: &AppState, settings: &Settings, email: &str) {
+    if email.is_empty() || settings.plex_token.is_empty() {
+        tracing::warn!(
+            "no one is added to the Plex Home: the address or the Plex token is missing"
+        );
+        return;
+    }
+    let Some(plex) = state.plex() else {
+        return;
+    };
+    match plex.add_to_home(&settings.plex_token, email).await {
+        Ok(()) => tracing::info!("an invited account was added to the Plex Home"),
+        Err(error) => tracing::warn!(%error, "an invited account was not added to the Plex Home"),
     }
 }
 
