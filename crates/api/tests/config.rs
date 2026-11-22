@@ -509,7 +509,7 @@ async fn search_without_a_term_finds_every_setting() {
             found
                 .data()
                 .as_object()
-                .is_some_and(|settings| settings.len() > 900)
+                .is_some_and(|settings| settings.len() > 850)
         );
         // The keys are sorted, capital letters first.
         let data = everything.data();

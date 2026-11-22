@@ -142,7 +142,8 @@ async fn the_marketplace_is_for_admins_and_lists_no_php_plugin() {
 async fn shuck_stop_routes_are_unknown() {
     on_each_engine(async |database| {
         seed::installed(database).await;
-        let app = installed_app_with(database, &[("SHUCKSTOP-enabled", json!(true))]);
+        // Shuck Stop was removed with its settings (D-116).
+        let app = installed_app_with(database, &[]);
         for path in ["/plugins/shuck-stop/settings", "/plugins/shuck-stop/run"] {
             let answer = call(&app, As::Admin, "GET", path, None).await;
             assert_eq!(answer.status, StatusCode::NOT_FOUND, "{path}");

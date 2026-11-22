@@ -26,6 +26,19 @@ pub const RENAMED_SETTINGS: [(&str, &str); 4] = [
     ("ProwlarrDisableCertCheck", "prowlarrDisableCertCheck"),
 ];
 
+/// Beginnings of the keys of PHP's settings for parts that were removed, because the
+/// service behind them shut down: Shuck Stop, a watcher of drive prices (D-116). Such a
+/// setting is no setting here; the import leaves it out, and a stored value is deleted
+/// at start-up.
+pub const REMOVED_SETTING_PREFIXES: [&str; 1] = ["SHUCKSTOP-"];
+
+/// Whether a key belongs to a removed part (see [`REMOVED_SETTING_PREFIXES`]).
+pub fn is_removed_setting(key: &str) -> bool {
+    REMOVED_SETTING_PREFIXES
+        .iter()
+        .any(|prefix| key.starts_with(prefix))
+}
+
 /// Why a setting cannot be read or changed.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum SettingsError {
@@ -1056,20 +1069,6 @@ settings! {
     mailer_email_template_custom_include_four_name: Text = "PHPMAILER-emailTemplateCustom-include-FourName", "Template #4".to_owned();
     mailer_email_template_custom_include_four_subject: Text = "PHPMAILER-emailTemplateCustom-include-FourSubject", String::new();
     mailer_verify_cert: Flag = "PHPMAILER-verifyCert", true;
-    shuck_stop_enabled: Flag = "SHUCKSTOP-enabled", false;
-    shuck_stop_cron_run_enabled: Flag = "SHUCKSTOP-cron-run-enabled", false;
-    shuck_stop_cron_run_schedule: Text = "SHUCKSTOP-cron-run-schedule", "*/5 * * * *".to_owned();
-    shuck_stop_emails: Text = "SHUCKSTOP-emails", String::new();
-    shuck_stop_easystore: Flag = "SHUCKSTOP-easystore", false;
-    shuck_stop_my_book: Flag = "SHUCKSTOP-my-book", false;
-    shuck_stop_elements: Flag = "SHUCKSTOP-elements", false;
-    shuck_stop_8: Flag = "SHUCKSTOP-8", false;
-    shuck_stop_10: Flag = "SHUCKSTOP-10", false;
-    shuck_stop_12: Flag = "SHUCKSTOP-12", false;
-    shuck_stop_14: Flag = "SHUCKSTOP-14", false;
-    shuck_stop_16: Flag = "SHUCKSTOP-16", false;
-    shuck_stop_18: Flag = "SHUCKSTOP-18", false;
-    shuck_stop_20: Flag = "SHUCKSTOP-20", false;
     speed_test_enabled: Flag = "SPEEDTEST-enabled", false;
     speed_test_auth_include: TextNumber<u32> = "SPEEDTEST-Auth-include", 1;
     speed_test_option2_include: Text = "SPEEDTEST-option2-include", String::new();
@@ -1165,7 +1164,7 @@ mod tests {
         assert!(php.len() > 900, "the fixture holds every default");
 
         for (key, value) in &php {
-            if NOT_SETTINGS.contains(&key.as_str()) {
+            if NOT_SETTINGS.contains(&key.as_str()) || crate::is_removed_setting(key) {
                 assert_eq!(defaults.get(key), None, "`{key}` is no setting");
                 continue;
             }

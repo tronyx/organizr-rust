@@ -328,7 +328,7 @@ Each numbered item is one or more vertical slices. A slice is finished when its 
 | 12 | Homepage framework | Permissions pattern, ordering, refresh, image cache, custom HTML blocks, combined calendar, widget framework in the front end |
 | 13 | Homepage integrations, live ones first | Plex, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, Overseerr, Tautulli, Uptime Kuma, health checks, weather, Netdata. Then: Emby, Jellyfin, JellyStat, Emby Live TV Tracker, Ombi, NZBGet, Deluge, Transmission, rTorrent, uTorrent, JDownloader, Pi-hole, AdGuard, UniFi, Monitorr, PromPage, Speedtest, OctoPrint, Jackett, Prowlarr, Trakt, iCal, CouchPotato, SickRage, bookmarks, donate, YouTube and scrape. Each with its `/test/*` route and widget |
 | 14 | SOCKS proxy | Both route forms, streaming, per-app auth |
-| 15 | Remaining plugins | Invites (with Plex, Emby, Komga, Nextcloud), bookmarks, health checks, speed test, shuck-stop, chat, Plex Libraries |
+| 15 | Remaining plugins | Invites (with Plex, Emby, Komga, Nextcloud), bookmarks, health checks, speed test, chat, Plex Libraries. Shuck Stop was dropped: its service shut down (D-116) |
 | 16 | Scheduler and upkeep | Auto-backup, plugin jobs, session purge, version check, `/update/*` |
 | 17 | Themes and customisation | Appearance settings, native themes, theme marketplace, custom CSS/JS, languages (32 packs reused) |
 | 18 | Release pipeline | Per-architecture image builds, manifest, Trivy gate, SBOM and provenance, weekly rebuild, dependency updates, both compose examples, user docs including `choosing-a-database.md` |

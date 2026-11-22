@@ -105,9 +105,34 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
         Value::Null
     };
     let replay = replay.deviation_adds("D-23", case, "/response/data", "update", update);
+    // The switches of Shuck Stop, which was removed (D-116).
+    let replay = SHUCK_STOP_SWITCHES.iter().fold(replay, |replay, key| {
+        replay.deviation_without("D-116", case, &format!("/response/data/plugins/{key}"))
+    });
     // There is no configuration file whose path could be sent.
     replay.deviation_without("D-29", case, "/response/data/status/userConfigPath")
 }
+
+/// The switches of Shuck Stop that PHP lists among the switches of the plugins.
+const SHUCK_STOP_SWITCHES: [&str; 2] = ["SHUCKSTOP-enabled", "SHUCKSTOP-cron-run-enabled"];
+
+/// The settings of Shuck Stop of PHP's defaults, which were removed with it (D-116).
+const SHUCK_STOP_SETTINGS: [&str; 14] = [
+    "SHUCKSTOP-enabled",
+    "SHUCKSTOP-cron-run-enabled",
+    "SHUCKSTOP-cron-run-schedule",
+    "SHUCKSTOP-emails",
+    "SHUCKSTOP-easystore",
+    "SHUCKSTOP-my-book",
+    "SHUCKSTOP-elements",
+    "SHUCKSTOP-8",
+    "SHUCKSTOP-10",
+    "SHUCKSTOP-12",
+    "SHUCKSTOP-14",
+    "SHUCKSTOP-16",
+    "SHUCKSTOP-18",
+    "SHUCKSTOP-20",
+];
 
 /// The launch cases that were recorded before PHP wrote its configuration file anew.
 const UNSORTED_LAUNCHES: [&str; 5] = [
@@ -605,6 +630,9 @@ async fn config_routes_answer_like_php() {
             );
         for key in PHP_ONLY_CONFIG {
             replay = replay.deviation_without("D-53", all, &format!("{data}/{key}"));
+        }
+        for key in SHUCK_STOP_SETTINGS {
+            replay = replay.deviation_without("D-116", all, &format!("{data}/{key}"));
         }
         // Each custom HTML item has a switch that PHP does not have.
         for number in 1..=8 {

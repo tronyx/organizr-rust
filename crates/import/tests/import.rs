@@ -137,8 +137,14 @@ async fn install_of_php_is_imported_whole() {
         assert_eq!(report.sessions, 1);
         assert_eq!(report.tables_not_imported, [("options".to_owned(), 0)]);
         assert_eq!(report.legacy_settings, ["MB-URL"]);
+        // The settings of Shuck Stop, whose service shut down (D-116), are not needed either.
+        let (shuck_stop, retired): (Vec<&String>, Vec<&String>) = report
+            .retired_settings
+            .iter()
+            .partition(|key| key.starts_with("SHUCKSTOP-"));
+        assert_eq!(shuck_stop.len(), 14, "{shuck_stop:?}");
         assert_eq!(
-            report.retired_settings,
+            retired,
             [
                 "configVersion",
                 "dbHost",

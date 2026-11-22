@@ -10,11 +10,12 @@
 //!   example `prowlarrURL`. The import kept such a value, sealed, in the table
 //!   `legacy_settings`. It moves to the settings.
 //!
-//! A setting that already has a value under the new name keeps it.
+//! A setting that already has a value under the new name keeps it. A stored value of a
+//! part that was removed, such as Shuck Stop (D-116), is deleted.
 
 use organizr_auth::secrets::{SecretBox, legacy_setting_name};
 use organizr_db::{Database, DbError, StoredSetting};
-use organizr_settings::{RENAMED_SETTINGS, Settings};
+use organizr_settings::{RENAMED_SETTINGS, Settings, is_removed_setting};
 use serde_json::Value;
 
 /// Moves the values, and tells what it did and what it could not do, one line each.
@@ -51,6 +52,20 @@ pub async fn adopt_renamed_settings(
     }
 
     let stored = database.settings().all().await?;
+    let removed: Vec<String> = stored
+        .iter()
+        .filter(|setting| is_removed_setting(&setting.key))
+        .map(|setting| setting.key.clone())
+        .collect();
+    if !removed.is_empty() {
+        database.settings().apply(&[], &removed).await?;
+        notes.push(format!(
+            "the values of {} settings of removed parts are deleted: {}",
+            removed.len(),
+            removed.join(", ")
+        ));
+    }
+
     for legacy in database.import().legacy_settings().await? {
         let key = legacy.key.as_str();
         let wanted = RENAMED_SETTINGS.iter().any(|(_, new)| *new == key);

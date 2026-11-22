@@ -140,3 +140,25 @@ async fn values_that_an_earlier_import_kept_aside_are_used() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn stored_values_of_removed_parts_are_deleted() {
+    on_each_engine(async |database| {
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let settings = database.settings();
+        settings
+            .put("SHUCKSTOP-enabled", "true")
+            .await
+            .expect("stored");
+        settings.put("title", "\"Kept\"").await.expect("stored");
+
+        let notes = adopt_renamed_settings(database, &secrets)
+            .await
+            .expect("the values are cleaned up");
+
+        assert_eq!(notes.len(), 1, "{notes:#?}");
+        assert_eq!(row(database, "SHUCKSTOP-enabled").await, None);
+        assert_eq!(row(database, "title").await.as_deref(), Some("\"Kept\""));
+    })
+    .await;
+}

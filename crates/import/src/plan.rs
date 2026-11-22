@@ -18,7 +18,7 @@ use organizr_domain::{
     GroupLevel, Invite, LevelRange, PasswordHash, Tab, TabId, TabKind, Timestamp, User, UserId,
     is_hex_color,
 };
-use organizr_settings::{RENAMED_SETTINGS, Settings, SettingsError};
+use organizr_settings::{RENAMED_SETTINGS, Settings, SettingsError, is_removed_setting};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -873,7 +873,7 @@ fn plan_settings(
     let mut legacy: BTreeMap<String, String> = BTreeMap::new();
 
     for (key, value) in &under_read_names(config) {
-        if RETIRED_SETTINGS.contains(&key.as_str()) {
+        if RETIRED_SETTINGS.contains(&key.as_str()) || is_removed_setting(key) {
             report.retired_settings.push(key.clone());
             continue;
         }
@@ -1404,6 +1404,27 @@ mod tests {
             "{notes:#?}"
         );
         assert!(notes[1].contains("`ssoPetio`"), "{notes:#?}");
+    }
+
+    #[test]
+    fn settings_of_shuck_stop_are_left_out_as_not_needed() {
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let install = LegacyInstall {
+            config: vec![
+                ("SHUCKSTOP-enabled".to_owned(), json!(true)),
+                ("SHUCKSTOP-emails".to_owned(), json!("me@example.com")),
+            ],
+            ..LegacyInstall::default()
+        };
+
+        let plan = plan(&install, &secrets).expect("a plan can be made");
+
+        assert_eq!(plan.data.settings, []);
+        assert_eq!(plan.data.legacy_settings, []);
+        assert_eq!(
+            plan.report.retired_settings,
+            ["SHUCKSTOP-enabled", "SHUCKSTOP-emails"]
+        );
     }
 
     #[test]
