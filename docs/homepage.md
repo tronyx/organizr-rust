@@ -694,9 +694,19 @@ The server fetches the pictures of the Plex server in the size that the homepage
 
 A person needs the level of Plex on the homepage to load a picture.
 
-### Not built yet
+### Search my media
 
-PHP Organizr has a search of the Plex server in its top bar. The server of this application has the route for it. The interface does not show the search yet.
+The top bar can have a search of the Plex server. The search button opens the window **Search My Media**. It asks Plex as the person types, and shows the matches as posters. A poster opens the details of its item.
+
+| Setting | Key |
+|---|---|
+| Enable | `mediaSearch` |
+| Minimum Authentication | `mediaSearchAuth` |
+| Media Search Server | `mediaSearchType`: `plex` |
+
+The settings are in the group **Media Search** of the Plex item. As in PHP Organizr, the search works with Plex only: PHP lists Emby as not available.
+
+A script can search with `GET /api/v2/homepage/plex/search/<text>`.
 
 ## Emby
 
