@@ -172,8 +172,48 @@ fn custom_client(certificate: &CustomCertificate) -> Result<Client, reqwest::Err
 
 /// The text of an error of a request without the address of the request. The address
 /// of some services holds their API key, which must not go into a log or an answer.
+///
+/// The text names the cause in plain words, with the deepest technical cause after it,
+/// for example "the name of the server cannot be found (failed to lookup address
+/// information: Name or service not known)". The top message of `reqwest`, "error
+/// sending request", names no cause.
 pub fn without_address(error: reqwest::Error) -> String {
-    error.without_url().to_string()
+    let error = error.without_url();
+    let mut causes = Vec::new();
+    let mut source = std::error::Error::source(&error);
+    while let Some(cause) = source {
+        causes.push(cause.to_string());
+        source = cause.source();
+    }
+    let all = causes.join(" ").to_lowercase();
+    let has = |words: &[&str]| words.iter().any(|word| all.contains(word));
+    let reason = if error.is_timeout() || has(&["timed out", "deadline has elapsed"]) {
+        "the server did not answer in time"
+    } else if has(&[
+        "dns error",
+        "failed to lookup address",
+        "no such host",
+        "name or service not known",
+    ]) {
+        "the name of the server cannot be found: check the address, and that Organizr is on a network where the name resolves"
+    } else if has(&["connection refused", "actively refused"]) {
+        "the server refused the connection: nothing answers at that port"
+    } else if has(&["certificate", "unknownissuer", "unknown issuer"]) {
+        "the certificate of the server is not trusted: switch on the setting that skips the check, or give Organizr the certificate of its authority"
+    } else if has(&["unreachable", "no route to host"]) {
+        "the server cannot be reached from Organizr"
+    } else if error.is_connect() {
+        "Organizr cannot connect to the server"
+    } else {
+        return match causes.last() {
+            Some(detail) => format!("{error}: {detail}"),
+            None => error.to_string(),
+        };
+    };
+    match causes.last() {
+        Some(detail) => format!("{reason} ({detail})"),
+        None => reason.to_owned(),
+    }
 }
 
 /// A text for a place in an address: every byte that is no letter, digit, `-`, `.`, `_`
