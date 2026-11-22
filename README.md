@@ -49,6 +49,8 @@ To use PostgreSQL in place of SQLite, start from [docker/examples/compose.postgr
 
 [Importing](docs/importing.md) tells you how to bring the users, tabs, settings and pictures of your PHP install into a new install. The import does not change the old install.
 
+Custom CSS written for PHP Organizr needs changes, because the pages use other ids and classes. [Custom CSS](docs/custom-css.md) lists the names to use, with a table that turns the names of PHP into them.
+
 ## Settings of the container
 
 | Variable | Meaning | Default |
@@ -74,7 +76,7 @@ All other settings are in the web interface.
 | Login | [Plex login](docs/plex-login.md), [LDAP, FTP, Emby and Jellyfin login](docs/login-services.md), [OpenID Connect login](docs/openid-connect.md), [Second factor](docs/second-factor.md), [Single sign-on](docs/single-sign-on.md), [Lock screen](docs/lock-screen.md) |
 | Reverse proxy | [Forward auth](docs/forward-auth.md), [API SOCKS](docs/socks.md) |
 | E-mail | [E-mail](docs/email.md) |
-| Look of the pages | [Appearance](docs/appearance.md) |
+| Look of the pages | [Appearance](docs/appearance.md), [Custom CSS](docs/custom-css.md) |
 | Homepage | [Homepage](docs/homepage.md), [Checking your services](docs/checking-your-services.md), [Tests of the settings](docs/settings-tests.md) |
 | Plugins | [Bookmarks](docs/bookmark-plugin.md), [Health checks](docs/health-checks-plugin.md), [Invites](docs/invites-plugin.md), [Speed test](docs/speed-test-plugin.md) |
 | Extensions of other authors | [Extensions](docs/extensions.md) |

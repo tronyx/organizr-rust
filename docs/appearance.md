@@ -18,6 +18,8 @@ Each colour field takes a colour, for example `#987654`, `rgb(20, 40, 60)` or `t
 
 The page loads styles only from its own server. An `@import` or a font from another site in the custom CSS does not load.
 
+Custom CSS written for PHP Organizr aims at names that these pages do not have. [Custom CSS](custom-css.md) lists the names to use, and how to change a PHP rule.
+
 ## Custom JavaScript
 
 **Custom JavaScript** and **Theme JavaScript** are scripts that run on every page. Only the Admin sees and changes them.
