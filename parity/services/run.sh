@@ -26,6 +26,28 @@ stop_all() {
 trap stop_all EXIT
 stop_all
 
+# Pulls an image, and tries again when the registry refuses, for example because of its
+# rate limit: four tries, with 10, 20 and 40 seconds between them.
+pull() {
+    local wait=10
+    for try in 1 2 3 4; do
+        if docker pull --quiet "$1" >/dev/null; then
+            return 0
+        fi
+        if [ "$try" -lt 4 ]; then
+            echo "The pull of $1 failed; trying again in $wait seconds." >&2
+            sleep "$wait"
+            wait=$((wait * 2))
+        fi
+    done
+    echo "The pull of $1 failed four times." >&2
+    return 1
+}
+
+for image in "$SONARR" "$RADARR" "$SABNZBD" "$QBITTORRENT"; do
+    pull "$image"
+done
+
 docker run --detach --rm --name organizr-real-sonarr \
     --env "SONARR__AUTH__APIKEY=$ARR_KEY" --env SONARR__AUTH__METHOD=External \
     --publish 127.0.0.1:58989:8989 "$SONARR" >/dev/null
