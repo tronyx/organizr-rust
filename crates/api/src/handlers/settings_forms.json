@@ -14884,16 +14884,6 @@
    ],
    "Nextcloud Settings": [
     {
-     "type": "notice",
-     "override": 12,
-     "label": "",
-     "name": null,
-     "value": "",
-     "notice": "warning",
-     "title": "Not built yet",
-     "body": "Invites with Nextcloud are not built yet in this version of Organizr. The settings are kept, but nothing uses them."
-    },
-    {
      "type": "switch",
      "name": "INVITES-nextcloud-enabled",
      "label": "Enable Nextcloud for auto create account",
@@ -14950,13 +14940,9 @@
      "value": {
       "$config": "INVITES-nextcloud-groups-member"
      },
-     "options": [
-      {
-       "name": "Refresh page to update List",
-       "value": "",
-       "disabled": true
-      }
-     ]
+     "options": {
+      "$source": "nextcloudGroups"
+     }
     }
    ],
    "Emby Settings": [

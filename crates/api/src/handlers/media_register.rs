@@ -103,7 +103,7 @@ pub async fn plex(
     if shares {
         match invites::share_plex_server(&plex, &settings, &new.email).await {
             Ok(Access::Given | Access::AlreadyHad) => {
-                invites::after_share(&state, &settings, &invite_email).await;
+                invites::after_share(&state, &settings, &invite_email, &new.username).await;
             }
             Err(message) => {
                 // The account exists. The code stays usable, so that the person can ask

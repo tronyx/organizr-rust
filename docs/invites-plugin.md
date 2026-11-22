@@ -2,7 +2,7 @@
 
 The invites plugin gives a person access to your Plex server with a code. A member of your install makes an invite, which is a record with a code. The invited person enters the code and the name of the own Plex account. Organizr then shares the Plex server with that account.
 
-The plugin works with Plex. The invited person can also make a new Plex account, or a user on your Emby server with the settings of the tab **Emby Settings**. When an invite shares the Plex server, it can also make an account in Komga, see [Komga](#komga). The parts of PHP Organizr for Nextcloud and the Plex Home are not built yet: their tabs and switches say so, and nothing uses their settings.
+The plugin works with Plex. The invited person can also make a new Plex account, or a user on your Emby server with the settings of the tab **Emby Settings**. When an invite shares the Plex server, it can also make an account in Komga and in Nextcloud, see [Komga](#komga) and [Nextcloud](#nextcloud). Adding the person to the Plex Home is not built yet: its switch says so, and nothing uses it.
 
 ## Set it up
 
@@ -69,6 +69,23 @@ Set it up on the tab **Komga Settings** of the settings of the plugin:
 | Libraries | `INVITES-komga-libraryIds` | The libraries that the new account sees. The list comes from Komga when the settings open |
 
 Every field must hold a value, as in PHP Organizr; otherwise no account is made, and the log says why. The invite is used also when Komga does not make the account: the log has the reason.
+
+## Nextcloud
+
+When the Plex server is shared with an invited person, the plugin can also make a user for that person in [Nextcloud](https://nextcloud.com/). The user gets the e-mail address of the invite as its id and address, the name that the person typed at the invite, and a random password that nobody is told. The person sets a password with the "Forgot password" link of Nextcloud, or logs in through the Plex app of Nextcloud.
+
+Set it up on the tab **Nextcloud Settings** of the settings of the plugin:
+
+| Field | Key | Meaning |
+|---|---|---|
+| Enable Nextcloud for auto create account | `INVITES-nextcloud-enabled` | The switch |
+| Enable if you have Plex SSO app installed on Nextcloud | `INVITES-nextcloud-plex-sso` | The id of the user is then `PlexTv-` and the id of the invite of Plex for that address, which the Plex app of Nextcloud expects |
+| Nextcloud URI | `INVITES-nextcloud-url` | The address of Nextcloud |
+| Nextcloud Admin User, Nextcloud Admin Password | `INVITES-nextcloud-admin-user`, `INVITES-nextcloud-admin-password` | An Admin account of Nextcloud, which makes the users |
+| Storage quota for user after subscription | `INVITES-nextcloud-quota` | For example `10GB`. Empty for no limit |
+| Nextcloud Groups after subscription | `INVITES-nextcloud-groups-member` | The groups that the user joins. The list comes from Nextcloud when the settings open |
+
+The invite is used also when Nextcloud does not make the user, for example because a user with that id exists: the log has the reason.
 
 ## The limit for wrong codes
 

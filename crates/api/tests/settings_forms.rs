@@ -391,14 +391,11 @@ async fn parts_that_are_not_built_say_so_at_their_top() {
         let invites = call(&app, As::Admin, "GET", "/plugins/invites/settings", None)
             .await
             .data();
-        for group in ["Nextcloud Settings", "Plex Settings"] {
-            assert_eq!(
-                notice_of(&invites, group)["title"],
-                json!("Not built yet"),
-                "{group}"
-            );
-        }
-        for group in ["Emby Settings", "Komga Settings"] {
+        assert_eq!(
+            notice_of(&invites, "Plex Settings")["title"],
+            json!("Not built yet")
+        );
+        for group in ["Emby Settings", "Komga Settings", "Nextcloud Settings"] {
             assert_eq!(notice_of(&invites, group), Value::Null, "{group}");
         }
     })
@@ -442,6 +439,44 @@ async fn invites_form_lists_the_libraries_of_komga() {
         assert_eq!(
             libraries(bare).await,
             json!([{"name": "Refresh page to update List", "value": "", "disabled": true}])
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn invites_form_lists_the_groups_of_nextcloud() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let nextcloud = organizr_testkit::services::nextcloud().await;
+        let (user, password) = organizr_testkit::services::NEXTCLOUD_ADMIN;
+        let app = installed_app_with(
+            database,
+            &[
+                ("INVITES-nextcloud-enabled", json!(true)),
+                ("INVITES-nextcloud-url", json!(nextcloud.url())),
+                ("INVITES-nextcloud-admin-user", json!(user)),
+                ("INVITES-nextcloud-admin-password", json!(password)),
+            ],
+        );
+
+        let answer = call(&app, As::Admin, "GET", "/plugins/invites/settings", None).await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let groups = answer.data()["Nextcloud Settings"]
+            .as_array()
+            .expect("the group")
+            .iter()
+            .find(|field| field["name"] == json!("INVITES-nextcloud-groups-member"))
+            .expect("the groups field")["options"]
+            .clone();
+        assert_eq!(
+            groups,
+            json!([
+                {"name": "admin", "value": "admin"},
+                {"name": "family", "value": "family"},
+                {"name": "friends", "value": "friends"},
+            ])
         );
     })
     .await;

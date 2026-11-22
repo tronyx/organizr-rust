@@ -191,6 +191,38 @@ async fn service_that_is_away_is_an_error_and_no_wrong_login() {
 }
 
 #[tokio::test]
+async fn plex_finds_the_id_of_an_invite_by_its_address_and_adds_it_to_the_home() {
+    let (plex, stand_in) = plex().await;
+
+    let id = plex
+        .requested_invite_id(OWNER_TOKEN, "ROBIN@example.com")
+        .await
+        .expect("plex.tv answers");
+    assert_eq!(id.as_deref(), Some("5550001"));
+    let none = plex
+        .requested_invite_id(OWNER_TOKEN, "nobody@example.com")
+        .await
+        .expect("plex.tv answers");
+    assert_eq!(none, None);
+
+    plex.add_to_home(OWNER_TOKEN, "robin@example.com")
+        .await
+        .expect("the account is invited to the home");
+    let seen = stand_in.seen().pop().expect("a request");
+    assert_eq!(
+        seen.path,
+        "/api/home/users?invitedEmail=robin%40example.com&skipFriendship=1"
+    );
+    // The token goes in a header, not in the address as in PHP.
+    assert_eq!(seen.header("x-plex-token"), Some(OWNER_TOKEN));
+    assert!(
+        plex.add_to_home("a wrong token", "robin@example.com")
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
 async fn ombi_gives_a_token_for_a_plex_token_or_for_the_fallback_account() {
     let stand_in = services::ombi().await;
     let http = outbound();

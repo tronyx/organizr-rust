@@ -43,13 +43,10 @@ pub const RETIRED_SETTINGS: [&str; 9] = [
 
 /// Switches of PHP for parts that this application has not built, each with the part, in
 /// the order of the keys. The import keeps them, and the report names the ones that are on.
-const NOT_BUILT: [(&str, &str); 2] = [
-    (
-        "INVITES-add-plex-home",
-        "adding an invited person to the Plex Home",
-    ),
-    ("INVITES-nextcloud-enabled", "invites with Nextcloud"),
-];
+const NOT_BUILT: [(&str, &str); 1] = [(
+    "INVITES-add-plex-home",
+    "adding an invited person to the Plex Home",
+)];
 
 /// The level of the group "User" of a new install.
 const USER_LEVEL: u16 = 4;
@@ -1395,12 +1392,9 @@ mod tests {
             .iter()
             .filter(|note| note.contains("not built yet"))
             .collect();
-        assert_eq!(notes.len(), 2, "{:#?}", plan.report.notes);
+        // Komga and Nextcloud are built, so only the Plex Home is named.
+        assert_eq!(notes.len(), 1, "{:#?}", plan.report.notes);
         assert!(notes[0].contains("`INVITES-add-plex-home`"), "{notes:#?}");
-        assert!(
-            notes[1].contains("`INVITES-nextcloud-enabled`"),
-            "{notes:#?}"
-        );
     }
 
     #[test]

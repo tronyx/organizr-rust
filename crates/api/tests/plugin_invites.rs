@@ -14,7 +14,9 @@ use organizr_db::Database;
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::http::{Answer, As, call};
 use organizr_testkit::outbox::Outbox;
-use organizr_testkit::services::{self, KOMGA_API_KEY, OWNER_TOKEN, SERVER_ID, StandIn};
+use organizr_testkit::services::{
+    self, KOMGA_API_KEY, NEXTCLOUD_ADMIN, OWNER_TOKEN, SERVER_ID, StandIn,
+};
 use organizr_testkit::{NO_LOGIN_LIMIT, installed_settings, seed, state_with};
 use serde_json::{Value, json};
 
@@ -229,6 +231,89 @@ async fn used_invite_makes_a_komga_account_for_the_address_of_the_invite() {
                 "roles": ["FILE_DOWNLOAD", "PAGE_STREAMING"],
                 "sharedLibraries": {"all": false, "libraryIds": ["0A1B"]},
             })
+        );
+    })
+    .await;
+}
+
+/// The settings of Nextcloud in the invites plugin, for the stand-in at `url`.
+fn nextcloud_settings(url: &str, plex_sso: bool) -> Vec<(&'static str, Value)> {
+    vec![
+        ("INVITES-nextcloud-enabled", json!(true)),
+        ("INVITES-nextcloud-plex-sso", json!(plex_sso)),
+        ("INVITES-nextcloud-url", json!(url)),
+        ("INVITES-nextcloud-admin-user", json!(NEXTCLOUD_ADMIN.0)),
+        ("INVITES-nextcloud-admin-password", json!(NEXTCLOUD_ADMIN.1)),
+        ("INVITES-nextcloud-groups-member", json!("family,friends")),
+        ("INVITES-nextcloud-quota", json!("10GB")),
+    ]
+}
+
+/// The form that the Nextcloud stand-in got for a new user.
+fn nextcloud_form(nextcloud: &StandIn) -> Vec<(String, String)> {
+    let made = nextcloud
+        .seen()
+        .into_iter()
+        .find(|seen| seen.path == "/ocs/v1.php/cloud/users")
+        .expect("Nextcloud was asked for a user");
+    form_urlencoded::parse(made.body.as_bytes())
+        .into_owned()
+        .collect()
+}
+
+#[tokio::test]
+async fn used_invite_makes_a_nextcloud_user_in_each_group() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let nextcloud = services::nextcloud().await;
+        let (app, _outbox) = app_with(
+            database,
+            &plex,
+            &nextcloud_settings(&nextcloud.url(), false),
+        );
+        invite(&app, As::Admin, "one").await;
+
+        let used = use_code(&app, "one", "Sam").await;
+
+        assert_eq!(used.status, StatusCode::OK, "{used:?}");
+        let form = nextcloud_form(&nextcloud);
+        let field = |key: &str| -> Vec<&str> {
+            form.iter()
+                .filter(|(name, _)| name == key)
+                .map(|(_, value)| value.as_str())
+                .collect()
+        };
+        assert_eq!(field("userid"), ["sam@example.com"]);
+        assert_eq!(field("email"), ["sam@example.com"]);
+        assert_eq!(field("displayName"), ["Sam"]);
+        assert_eq!(field("groups[]"), ["family", "friends"]);
+        assert_eq!(field("quota"), ["10GB"]);
+        assert_eq!(field("password")[0].len(), 32);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn nextcloud_user_of_the_plex_app_has_the_id_of_the_plex_invite() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let nextcloud = services::nextcloud().await;
+        let (app, _outbox) = app_with(database, &plex, &nextcloud_settings(&nextcloud.url(), true));
+        // The stand-in of plex.tv has a waiting invite for robin@example.com.
+        let body = json!({"code": "two", "username": "Robin", "email": "robin@example.com"});
+        call(&app, As::Admin, "POST", "/plugins/invites", Some(body)).await;
+
+        // The person who uses the code names another Plex account; the id comes from
+        // the address of the invite.
+        let used = use_code(&app, "two", "Sam").await;
+
+        assert_eq!(used.status, StatusCode::OK, "{used:?}");
+        let form = nextcloud_form(&nextcloud);
+        assert!(
+            form.contains(&("userid".to_owned(), "PlexTv-5550001".to_owned())),
+            "{form:?}"
         );
     })
     .await;

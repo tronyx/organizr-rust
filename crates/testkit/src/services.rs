@@ -402,9 +402,41 @@ pub async fn plex_tv() -> StandIn {
             .route("/users/account.json", get(plex_account_of_token))
             .route("/api/users", get(plex_friends))
             .route("/pms/servers", get(plex_servers))
-            .route("/api/servers/{server}/shared_servers/", post(plex_share)),
+            .route("/api/servers/{server}/shared_servers/", post(plex_share))
+            .route("/api/invites/requested", get(plex_requested_invites))
+            .route("/api/home/users", post(plex_home_invite)),
     )
     .await
+}
+
+fn is_owner(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-plex-token")
+        .and_then(|value| value.to_str().ok())
+        == Some(OWNER_TOKEN)
+}
+
+/// The invites of the owner that wait for an answer: robin's, with the id of robin.
+async fn plex_requested_invites(headers: HeaderMap) -> Response {
+    if !is_owner(&headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    (
+        [(header::CONTENT_TYPE, "text/xml")],
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer friendlyName="myPlex" identifier="com.plexapp.plugins.myplex" size="1">
+  <Invite id="5550001" createdAt="1800000000" friend="1" home="0" server="1" username="Robin" email="robin@example.com" thumb="" friendlyName="Robin"/>
+</MediaContainer>"#,
+    )
+        .into_response()
+}
+
+/// Adds an invited account to the Plex Home of the owner.
+async fn plex_home_invite(headers: HeaderMap) -> Response {
+    if !is_owner(&headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    axum::Json(json!({"id": 5_550_001, "title": "robin@example.com"})).into_response()
 }
 
 /// The Plex account of a token that an application of the stand-ins knows. The owner
@@ -504,6 +536,83 @@ async fn komga_me(headers: HeaderMap) -> Response {
         Some(_) => axum::Json(json!({})).into_response(),
         None => StatusCode::UNAUTHORIZED.into_response(),
     }
+}
+
+/// The Admin account of the Nextcloud stand-in: the name and the password.
+pub const NEXTCLOUD_ADMIN: (&str, &str) = ("admin", "the password of the nextcloud admin");
+
+fn nextcloud_admin(headers: &HeaderMap) -> bool {
+    use base64::Engine as _;
+    let expected = format!("{}:{}", NEXTCLOUD_ADMIN.0, NEXTCLOUD_ADMIN.1);
+    headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Basic "))
+        .and_then(|encoded| {
+            base64::engine::general_purpose::STANDARD
+                .decode(encoded)
+                .ok()
+        })
+        .is_some_and(|bytes| bytes == expected.as_bytes())
+}
+
+/// An answer of the OCS API of Nextcloud, version 1: HTTP 200 with the status in `meta`.
+fn ocs_answer(statuscode: u16, message: &str, data: &Value) -> Response {
+    axum::Json(json!({
+        "ocs": {
+            "meta": {"status": if statuscode == 100 { "ok" } else { "failure" },
+                     "statuscode": statuscode, "message": message},
+            "data": data,
+        }
+    }))
+    .into_response()
+}
+
+/// Starts a stand-in for Nextcloud: three groups, and accounts made once each.
+pub async fn nextcloud() -> StandIn {
+    let made: Arc<Mutex<Vec<String>>> = Arc::default();
+    StandIn::start(
+        Router::new()
+            .route(
+                "/ocs/v1.php/cloud/groups",
+                get(|headers: HeaderMap| async move {
+                    if !nextcloud_admin(&headers) {
+                        return StatusCode::UNAUTHORIZED.into_response();
+                    }
+                    ocs_answer(
+                        100,
+                        "OK",
+                        &json!({"groups": ["admin", "family", "friends"]}),
+                    )
+                }),
+            )
+            .route(
+                "/ocs/v1.php/cloud/users",
+                post(move |headers: HeaderMap, body: Bytes| {
+                    let made = Arc::clone(&made);
+                    async move {
+                        if !nextcloud_admin(&headers) {
+                            return StatusCode::UNAUTHORIZED.into_response();
+                        }
+                        let form: Vec<(String, String)> =
+                            form_urlencoded::parse(&body).into_owned().collect();
+                        let user = form
+                            .iter()
+                            .find(|(key, _)| key == "userid")
+                            .map_or_else(String::new, |(_, value)| value.clone());
+                        let mut made = made
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner);
+                        if made.contains(&user) {
+                            return ocs_answer(102, "User already exists", &json!([]));
+                        }
+                        made.push(user.clone());
+                        ocs_answer(100, "OK", &json!({"id": user}))
+                    }
+                }),
+            ),
+    )
+    .await
 }
 
 /// The API key of the Komga stand-in, for the invites plugin.

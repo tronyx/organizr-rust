@@ -160,6 +160,75 @@ impl PlexTv {
         format!("{}{path}", self.base)
     }
 
+    /// The address of a route of `clients.plex.tv`, which serves the invites and the Plex
+    /// Home. A stand-in of a test serves them at its own address.
+    fn clients_url(&self, path: &str) -> String {
+        if self.base == PLEX_TV {
+            format!("https://clients.plex.tv{path}")
+        } else {
+            self.url(path)
+        }
+    }
+
+    /// The id of the waiting invite of the owner of `owner_token` for `email`, in any
+    /// letter case, as the invites plugin of PHP reads it for Nextcloud.
+    pub async fn requested_invite_id(
+        &self,
+        owner_token: &str,
+        email: &str,
+    ) -> Result<Option<String>, PlexError> {
+        let url = self.clients_url("/api/invites/requested");
+        let response = self
+            .http
+            .client_for(&url)
+            .get(&url)
+            .timeout(TIMEOUT)
+            .header("X-Plex-Token", owner_token)
+            .send()
+            .await
+            .map_err(PlexError::Unreachable)?;
+        if !response.status().is_success() {
+            return Err(PlexError::Status(response.status().as_u16()));
+        }
+        let text = response
+            .text()
+            .await
+            .map_err(|error| PlexError::Unreadable(error.to_string()))?;
+        let document = parsed(&text)?;
+        Ok(document
+            .descendants()
+            .filter(|node| node.has_tag_name("Invite"))
+            .find(|node| {
+                node.attribute("email")
+                    .is_some_and(|found| found.eq_ignore_ascii_case(email))
+            })
+            .and_then(|node| node.attribute("id"))
+            .map(str::to_owned))
+    }
+
+    /// Invites an account to the Plex Home of the owner of `owner_token`, without a
+    /// friendship, as the setting `INVITES-add-plex-home` asks. PHP sends the token in
+    /// the address; here it goes in the header `X-Plex-Token`.
+    pub async fn add_to_home(&self, owner_token: &str, email: &str) -> Result<(), PlexError> {
+        let url = self.clients_url("/api/home/users");
+        let response = self
+            .http
+            .client_for(&url)
+            .post(&url)
+            .timeout(TIMEOUT)
+            .query(&[("invitedEmail", email), ("skipFriendship", "1")])
+            .header("X-Plex-Token", owner_token)
+            .header("Accept", "application/json")
+            .send()
+            .await
+            .map_err(PlexError::Unreachable)?;
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(PlexError::Status(response.status().as_u16()))
+        }
+    }
+
     /// Logs in with the name, or the e-mail address, and the password of a Plex account.
     /// `client_id` is the id of this install. Returns `None` when the service does not
     /// take the login.

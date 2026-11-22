@@ -74,6 +74,8 @@ struct Fill<'a> {
     tabs: Vec<organizr_domain::Tab>,
     /// The libraries of Komga for the invites plugin, when Komga was asked.
     komga_libraries: Option<Vec<Value>>,
+    /// The groups of Nextcloud for the invites plugin, when Nextcloud was asked.
+    nextcloud_groups: Option<Vec<Value>>,
 }
 
 impl<'a> Fill<'a> {
@@ -107,6 +109,7 @@ impl<'a> Fill<'a> {
             users,
             tabs,
             komga_libraries: None,
+            nextcloud_groups: None,
         })
     }
 
@@ -165,6 +168,13 @@ impl<'a> Fill<'a> {
             ),
             "getIframeTabs" => self.frame_tabs(args.first().and_then(Value::as_str)),
             // PHP's `_getKomgaLibraries()`, with its one choice when Komga gives none.
+            // PHP's `_getNextcloudGroups()`, likewise.
+            "nextcloudGroups" => match &self.nextcloud_groups {
+                Some(groups) if !groups.is_empty() => Value::Array(groups.clone()),
+                _ => {
+                    json!([{"name": "Refresh page to update List", "value": "", "disabled": true}])
+                }
+            },
             "komgaLibraries" => match &self.komga_libraries {
                 Some(libraries) if !libraries.is_empty() => Value::Array(libraries.clone()),
                 _ => {
@@ -469,11 +479,48 @@ pub async fn invites_plugin(
     caller.require(MANAGER)?;
     let settings = state.settings();
     let mut fill = Fill::new(&state, &settings, &caller).await?;
-    fill.komga_libraries = komga_libraries(&state, &settings).await;
+    let (komga, nextcloud) = tokio::join!(
+        komga_libraries(&state, &settings),
+        nextcloud_groups(&state, &settings)
+    );
+    fill.komga_libraries = komga;
+    fill.nextcloud_groups = nextcloud;
     Ok(Envelope::success(filled_form(
         &fill,
         part(part(&TABLE, "plugins"), "invites"),
     )))
+}
+
+/// The groups of the Nextcloud of the invites plugin as choices, or nothing when it is
+/// not set up or does not answer, as PHP's `_checkNextcloudVar` asks.
+async fn nextcloud_groups(state: &AppState, settings: &Settings) -> Option<Vec<Value>> {
+    use organizr_integrations::nextcloud::{Admin, groups};
+
+    if !settings.invites_nextcloud_enabled
+        || settings.invites_nextcloud_url.is_empty()
+        || settings.invites_nextcloud_admin_user.is_empty()
+        || settings.invites_nextcloud_admin_password.is_empty()
+    {
+        return None;
+    }
+    let http = state.outbound()?;
+    let admin = Admin {
+        url: settings.invites_nextcloud_url.trim_end_matches('/'),
+        user: &settings.invites_nextcloud_admin_user,
+        password: &settings.invites_nextcloud_admin_password,
+    };
+    match groups(http, admin, KOMGA_TIME).await {
+        Ok(found) => Some(
+            found
+                .into_iter()
+                .map(|group| json!({ "name": group, "value": group }))
+                .collect(),
+        ),
+        Err(error) => {
+            tracing::warn!(%error, "the groups of Nextcloud cannot be read");
+            None
+        }
+    }
 }
 
 /// The longest wait for the libraries of Komga.

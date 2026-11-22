@@ -325,12 +325,12 @@ pub async fn use_code(
     };
     match share_plex_server(&plex, &settings, &account).await {
         Ok(Access::Given) => {
-            after_share(&state, &settings, &invite_email).await;
+            after_share(&state, &settings, &invite_email, &account).await;
             Ok(Envelope::success(NoData).with_message("Plex User now has access to system"))
         }
         // The account has the access, so the invite did its work.
         Ok(Access::AlreadyHad) => {
-            after_share(&state, &settings, &invite_email).await;
+            after_share(&state, &settings, &invite_email, &account).await;
             Err(Refusal::conflict("Plex User already has access"))
         }
         Err(message) => {
@@ -389,12 +389,71 @@ const EXTRA_TIME: Duration = Duration::from_secs(30);
 /// What PHP's `_invitesPluginAction` does after it shares the Plex server: the accounts
 /// in other services, each when its switch is on. A failure is logged; the invite stays
 /// used, as in PHP.
-pub(crate) async fn after_share(state: &AppState, settings: &Settings, email: &str) {
+pub(crate) async fn after_share(
+    state: &AppState,
+    settings: &Settings,
+    email: &str,
+    display_name: &str,
+) {
     let Some(http) = state.outbound() else {
         return;
     };
     if settings.invites_komga_enabled {
         make_komga_account(http, settings, email).await;
+    }
+    if settings.invites_nextcloud_enabled {
+        make_nextcloud_user(state, http, settings, email, display_name).await;
+    }
+}
+
+/// PHP's `_createNextcloudAccount`: a user in Nextcloud for the address of the invite,
+/// with the name that the person typed, a random password, the groups and the quota of
+/// the settings. With the setting for the Plex app of Nextcloud, the id of the user is
+/// `PlexTv-` and the id of the invite of Plex for that address.
+async fn make_nextcloud_user(
+    state: &AppState,
+    http: &organizr_integrations::http::Outbound,
+    settings: &Settings,
+    email: &str,
+    display_name: &str,
+) {
+    use organizr_integrations::nextcloud::{Admin, NewUser, create_user};
+
+    if settings.invites_nextcloud_url.is_empty()
+        || settings.invites_nextcloud_admin_user.is_empty()
+        || settings.invites_nextcloud_admin_password.is_empty()
+    {
+        tracing::info!("no Nextcloud user is made: its address or its Admin account is not set");
+        return;
+    }
+    let mut user_id = email.to_owned();
+    if settings.invites_nextcloud_plex_sso
+        && let Some(plex) = state.plex()
+    {
+        match plex.requested_invite_id(&settings.plex_token, email).await {
+            Ok(Some(id)) => user_id = format!("PlexTv-{id}"),
+            Ok(None) => tracing::warn!("no invite of Plex has the address of the invite"),
+            Err(error) => tracing::warn!(%error, "the invites of Plex cannot be read"),
+        }
+    }
+    let password = uuid::Uuid::new_v4().simple().to_string();
+    let groups = list_of(&settings.invites_nextcloud_groups_member);
+    let admin = Admin {
+        url: settings.invites_nextcloud_url.trim_end_matches('/'),
+        user: &settings.invites_nextcloud_admin_user,
+        password: &settings.invites_nextcloud_admin_password,
+    };
+    let user = NewUser {
+        user_id: &user_id,
+        password: &password,
+        email,
+        display_name,
+        groups: &groups,
+        quota: &settings.invites_nextcloud_quota,
+    };
+    match create_user(http, admin, user, EXTRA_TIME).await {
+        Ok(()) => tracing::info!("a Nextcloud user was made for an invite"),
+        Err(error) => tracing::warn!(%error, "no Nextcloud user was made for an invite"),
     }
 }
 
