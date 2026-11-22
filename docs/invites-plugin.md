@@ -2,7 +2,7 @@
 
 The invites plugin gives a person access to your Plex server with a code. A member of your install makes an invite, which is a record with a code. The invited person enters the code and the name of the own Plex account. Organizr then shares the Plex server with that account.
 
-The plugin works with Plex. The invited person can also make a new Plex account, or a user on your Emby server with the settings of the tab **Emby Settings**. The parts of PHP Organizr for Komga, Nextcloud and the Plex Home are not built yet: their tabs and switches say so, and nothing uses their settings.
+The plugin works with Plex. The invited person can also make a new Plex account, or a user on your Emby server with the settings of the tab **Emby Settings**. When an invite shares the Plex server, it can also make an account in Komga, see [Komga](#komga). The parts of PHP Organizr for Nextcloud and the Plex Home are not built yet: their tabs and switches say so, and nothing uses their settings.
 
 ## Set it up
 
@@ -52,6 +52,23 @@ A code works one time. When Plex refuses the share, the code stays good, and the
 | Libraries not setup correct | Plex does not know the Plex ID or one of the library ids |
 | Plex Token/ID not set | The install has no Plex token or no Plex ID |
 | User is locked out | This browser sent too many wrong codes. See below |
+
+## Komga
+
+When the Plex server is shared with an invited person, the plugin can also make an account for that person in [Komga](https://komga.org/). The account gets the e-mail address of the invite, a first password, roles and libraries.
+
+Set it up on the tab **Komga Settings** of the settings of the plugin:
+
+| Field | Key | Meaning |
+|---|---|---|
+| Enable Komga for auto create account | `INVITES-komga-enabled` | The switch |
+| URL | `INVITES-komga-uri` | The address of Komga |
+| Komga Api Key | `INVITES-komga-api-key` | An API key of an Admin account of Komga. Make it in Komga, in the settings of the account |
+| Default password for new user | `INVITES-komga-default-user-password` | The first password of each new account. Tell the person to change it |
+| Roles | `INVITES-komga-roles` | For example **File download** and **Page streaming** |
+| Libraries | `INVITES-komga-libraryIds` | The libraries that the new account sees. The list comes from Komga when the settings open |
+
+Every field must hold a value, as in PHP Organizr; otherwise no account is made, and the log says why. The invite is used also when Komga does not make the account: the log has the reason.
 
 ## The limit for wrong codes
 

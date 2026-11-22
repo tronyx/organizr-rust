@@ -315,6 +315,8 @@ pub async fn use_code(
         None
     };
 
+    // The extras of a share go to the address of the invite, as in PHP.
+    let invite_email = invite_email(&state, &code).await?;
     reserve(&state, &client, &code, used_by.as_deref()).await?;
     tracing::info!(client = %client.address, "an invite was used");
     let (Some(plex), Some(account)) = (plex, used_by) else {
@@ -323,10 +325,14 @@ pub async fn use_code(
     };
     match share_plex_server(&plex, &settings, &account).await {
         Ok(Access::Given) => {
+            after_share(&state, &settings, &invite_email).await;
             Ok(Envelope::success(NoData).with_message("Plex User now has access to system"))
         }
         // The account has the access, so the invite did its work.
-        Ok(Access::AlreadyHad) => Err(Refusal::conflict("Plex User already has access")),
+        Ok(Access::AlreadyHad) => {
+            after_share(&state, &settings, &invite_email).await;
+            Err(Refusal::conflict("Plex User already has access"))
+        }
         Err(message) => {
             state.database().invites().restore(&code).await?;
             Err(Refusal::conflict(message))
@@ -365,6 +371,90 @@ pub(crate) enum Access {
     Given,
     /// The account had the access already.
     AlreadyHad,
+}
+
+/// The e-mail address of the invite with `code`, or the empty text.
+pub(crate) async fn invite_email(state: &AppState, code: &str) -> Result<String, DbError> {
+    Ok(state
+        .database()
+        .invites()
+        .find(code)
+        .await?
+        .map_or_else(String::new, |invite| invite.email))
+}
+
+/// The longest wait for each service that a share sets up.
+const EXTRA_TIME: Duration = Duration::from_secs(30);
+
+/// What PHP's `_invitesPluginAction` does after it shares the Plex server: the accounts
+/// in other services, each when its switch is on. A failure is logged; the invite stays
+/// used, as in PHP.
+pub(crate) async fn after_share(state: &AppState, settings: &Settings, email: &str) {
+    let Some(http) = state.outbound() else {
+        return;
+    };
+    if settings.invites_komga_enabled {
+        make_komga_account(http, settings, email).await;
+    }
+}
+
+/// The parts of a list of the settings. The form saves a list with commas; PHP splits
+/// it at semicolons, so both separate (D-118).
+fn list_of(text: &str) -> Vec<String> {
+    text.split([',', ';'])
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+/// PHP's `_createKomgaAccount`: an account in Komga for the address of the invite, when
+/// every setting of it holds a value, as `_checkKomgaVar` asks.
+async fn make_komga_account(
+    http: &organizr_integrations::http::Outbound,
+    settings: &Settings,
+    email: &str,
+) {
+    let roles = list_of(&settings.invites_komga_roles);
+    let library_ids = list_of(&settings.invites_komga_library_ids);
+    if settings.invites_komga_uri.is_empty()
+        || settings.invites_komga_api_key.is_empty()
+        || settings.invites_komga_default_user_password.is_empty()
+        || roles.is_empty()
+        || library_ids.is_empty()
+    {
+        tracing::info!(
+            "no Komga account is made: a setting of Komga in the invites plugin is empty"
+        );
+        return;
+    }
+    if email.is_empty() {
+        tracing::info!("no Komga account is made: the invite has no e-mail address");
+        return;
+    }
+    let account = organizr_integrations::komga::NewAccount {
+        email,
+        password: &settings.invites_komga_default_user_password,
+        roles: &roles,
+        library_ids: &library_ids,
+    };
+    let url = settings.invites_komga_uri.trim_end_matches('/');
+    match organizr_integrations::komga::create_account(
+        http,
+        url,
+        &settings.invites_komga_api_key,
+        account,
+        EXTRA_TIME,
+    )
+    .await
+    {
+        Ok(()) => {
+            tracing::info!(roles = %roles.join(","), "a Komga account was made for an invite");
+        }
+        Err(error) => {
+            tracing::warn!(%error, "no Komga account was made for an invite");
+        }
+    }
 }
 
 /// Shares the Plex server of the settings with an account, with the libraries and the

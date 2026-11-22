@@ -43,12 +43,11 @@ pub const RETIRED_SETTINGS: [&str; 9] = [
 
 /// Switches of PHP for parts that this application has not built, each with the part, in
 /// the order of the keys. The import keeps them, and the report names the ones that are on.
-const NOT_BUILT: [(&str, &str); 3] = [
+const NOT_BUILT: [(&str, &str); 2] = [
     (
         "INVITES-add-plex-home",
         "adding an invited person to the Plex Home",
     ),
-    ("INVITES-komga-enabled", "invites with Komga"),
     ("INVITES-nextcloud-enabled", "invites with Nextcloud"),
 ];
 
@@ -1381,8 +1380,8 @@ mod tests {
         let secrets = SecretBox::with_random_key().expect("a key can be made");
         let install = LegacyInstall {
             config: vec![
+                ("INVITES-add-plex-home".to_owned(), json!(true)),
                 ("INVITES-komga-enabled".to_owned(), json!(true)),
-                ("INVITES-add-plex-home".to_owned(), json!(false)),
                 ("INVITES-nextcloud-enabled".to_owned(), json!(true)),
             ],
             ..LegacyInstall::default()
@@ -1397,7 +1396,7 @@ mod tests {
             .filter(|note| note.contains("not built yet"))
             .collect();
         assert_eq!(notes.len(), 2, "{:#?}", plan.report.notes);
-        assert!(notes[0].contains("`INVITES-komga-enabled`"), "{notes:#?}");
+        assert!(notes[0].contains("`INVITES-add-plex-home`"), "{notes:#?}");
         assert!(
             notes[1].contains("`INVITES-nextcloud-enabled`"),
             "{notes:#?}"

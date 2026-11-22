@@ -20,6 +20,7 @@ pub mod ical;
 pub mod indexers;
 pub mod ipinfo;
 pub mod jellystat;
+pub mod komga;
 pub mod ldap;
 pub mod media_login;
 pub mod monitorr;

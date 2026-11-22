@@ -14806,16 +14806,6 @@
    ],
    "Komga Settings": [
     {
-     "type": "notice",
-     "override": 12,
-     "label": "",
-     "name": null,
-     "value": "",
-     "notice": "warning",
-     "title": "Not built yet",
-     "body": "Invites with Komga are not built yet in this version of Organizr. The settings are kept, but nothing uses them."
-    },
-    {
      "type": "switch",
      "name": "INVITES-komga-enabled",
      "label": "Enable Komga for auto create account",
@@ -14887,13 +14877,9 @@
      "value": {
       "$config": "INVITES-komga-libraryIds"
      },
-     "options": [
-      {
-       "name": "Refresh page to update List",
-       "value": "",
-       "disabled": true
-      }
-     ]
+     "options": {
+      "$source": "komgaLibraries"
+     }
     }
    ],
    "Nextcloud Settings": [

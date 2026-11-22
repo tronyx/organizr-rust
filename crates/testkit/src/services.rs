@@ -506,11 +506,45 @@ async fn komga_me(headers: HeaderMap) -> Response {
     }
 }
 
-/// Starts a stand-in for Komga, which knows robin and the fallback account.
+/// The API key of the Komga stand-in, for the invites plugin.
+pub const KOMGA_API_KEY: &str = "the-api-key-of-komga";
+
+fn komga_keyed(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-api-key")
+        .and_then(|value| value.to_str().ok())
+        == Some(KOMGA_API_KEY)
+}
+
+/// Starts a stand-in for Komga, which knows robin and the fallback account, and which
+/// lists two libraries and makes accounts for the API key [`KOMGA_API_KEY`].
 pub async fn komga() -> StandIn {
     StandIn::start(
         Router::new()
             .route("/api/v2/users/me", get(komga_me))
+            .route(
+                "/api/v1/libraries",
+                get(|headers: HeaderMap| async move {
+                    if !komga_keyed(&headers) {
+                        return StatusCode::UNAUTHORIZED.into_response();
+                    }
+                    axum::Json(json!([
+                        {"id": "0A1B", "name": "Comics"},
+                        {"id": "2C3D", "name": "Manga"},
+                    ]))
+                    .into_response()
+                }),
+            )
+            .route(
+                "/api/v2/users",
+                post(|headers: HeaderMap| async move {
+                    if komga_keyed(&headers) {
+                        StatusCode::CREATED
+                    } else {
+                        StatusCode::UNAUTHORIZED
+                    }
+                }),
+            )
             .route("/api/logout", post(|| async { StatusCode::NO_CONTENT })),
     )
     .await

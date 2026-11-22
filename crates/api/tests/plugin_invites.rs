@@ -14,7 +14,7 @@ use organizr_db::Database;
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::http::{Answer, As, call};
 use organizr_testkit::outbox::Outbox;
-use organizr_testkit::services::{self, OWNER_TOKEN, SERVER_ID, StandIn};
+use organizr_testkit::services::{self, KOMGA_API_KEY, OWNER_TOKEN, SERVER_ID, StandIn};
 use organizr_testkit::{NO_LOGIN_LIMIT, installed_settings, seed, state_with};
 use serde_json::{Value, json};
 
@@ -185,6 +185,82 @@ async fn share_without_libraries_sends_the_empty_text_as_php_does() {
         let body = shares(&plex)[0].json();
         assert_eq!(body["shared_server"]["library_section_ids"], json!(""));
         assert_eq!(body["shared_server"]["invited_email"], json!("Sam"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn used_invite_makes_a_komga_account_for_the_address_of_the_invite() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let komga = services::komga().await;
+        let (app, _outbox) = app_with(
+            database,
+            &plex,
+            &[
+                ("INVITES-komga-enabled", json!(true)),
+                ("INVITES-komga-uri", json!(komga.url())),
+                ("INVITES-komga-api-key", json!(KOMGA_API_KEY)),
+                (
+                    "INVITES-komga-default-user-password",
+                    json!("first password"),
+                ),
+                // The form joins a list with commas; PHP splits it at semicolons.
+                ("INVITES-komga-roles", json!("FILE_DOWNLOAD,PAGE_STREAMING")),
+                ("INVITES-komga-libraryIds", json!("0A1B")),
+            ],
+        );
+        invite(&app, As::Admin, "one").await;
+
+        let used = use_code(&app, "one", "Sam").await;
+
+        assert_eq!(used.status, StatusCode::OK, "{used:?}");
+        let made = komga
+            .seen()
+            .into_iter()
+            .find(|seen| seen.path == "/api/v2/users")
+            .expect("Komga was asked for an account");
+        assert_eq!(
+            made.json(),
+            json!({
+                "email": "sam@example.com",
+                "password": "first password",
+                "roles": ["FILE_DOWNLOAD", "PAGE_STREAMING"],
+                "sharedLibraries": {"all": false, "libraryIds": ["0A1B"]},
+            })
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn komga_account_is_not_made_without_its_settings() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let komga = services::komga().await;
+        // Switched on, but without roles: PHP's `_checkKomgaVar` stops here.
+        let (app, _outbox) = app_with(
+            database,
+            &plex,
+            &[
+                ("INVITES-komga-enabled", json!(true)),
+                ("INVITES-komga-uri", json!(komga.url())),
+                ("INVITES-komga-api-key", json!(KOMGA_API_KEY)),
+                (
+                    "INVITES-komga-default-user-password",
+                    json!("first password"),
+                ),
+                ("INVITES-komga-libraryIds", json!("0A1B")),
+            ],
+        );
+        invite(&app, As::Admin, "one").await;
+
+        let used = use_code(&app, "one", "Sam").await;
+
+        assert_eq!(used.status, StatusCode::OK, "{used:?}");
+        assert!(komga.seen().is_empty(), "Komga is not asked");
     })
     .await;
 }

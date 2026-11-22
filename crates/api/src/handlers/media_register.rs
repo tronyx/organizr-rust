@@ -72,6 +72,7 @@ pub async fn plex(
         return Err(Refusal::conflict("Plex cannot be asked"));
     };
 
+    let invite_email = invites::invite_email(&state, &code).await?;
     invites::reserve(&state, &client, &code, Some(&new.username)).await?;
     let joined = plex
         .join(
@@ -101,7 +102,9 @@ pub async fn plex(
 
     if shares {
         match invites::share_plex_server(&plex, &settings, &new.email).await {
-            Ok(Access::Given | Access::AlreadyHad) => {}
+            Ok(Access::Given | Access::AlreadyHad) => {
+                invites::after_share(&state, &settings, &invite_email).await;
+            }
             Err(message) => {
                 // The account exists. The code stays usable, so that the person can ask
                 // for the access with it.

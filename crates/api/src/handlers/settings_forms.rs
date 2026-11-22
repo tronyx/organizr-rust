@@ -72,6 +72,8 @@ struct Fill<'a> {
     groups: Vec<Value>,
     users: Vec<Value>,
     tabs: Vec<organizr_domain::Tab>,
+    /// The libraries of Komga for the invites plugin, when Komga was asked.
+    komga_libraries: Option<Vec<Value>>,
 }
 
 impl<'a> Fill<'a> {
@@ -104,6 +106,7 @@ impl<'a> Fill<'a> {
             groups,
             users,
             tabs,
+            komga_libraries: None,
         })
     }
 
@@ -161,6 +164,13 @@ impl<'a> Fill<'a> {
                 args.get(2).and_then(Value::as_str),
             ),
             "getIframeTabs" => self.frame_tabs(args.first().and_then(Value::as_str)),
+            // PHP's `_getKomgaLibraries()`, with its one choice when Komga gives none.
+            "komgaLibraries" => match &self.komga_libraries {
+                Some(libraries) if !libraries.is_empty() => Value::Array(libraries.clone()),
+                _ => {
+                    json!([{"name": "Refresh page to update List", "value": "", "disabled": true}])
+                }
+            },
             "getAllThemes" => Value::Array(
                 all_themes(self.settings)
                     .keys()
@@ -450,12 +460,56 @@ pub async fn health_checks_plugin(
     answer_plugin(&state, &caller, "healthchecks").await
 }
 
-/// `GET /plugins/invites/settings`.
+/// `GET /plugins/invites/settings`. The libraries of Komga come from Komga, as PHP asks
+/// for them for each form.
 pub async fn invites_plugin(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
 ) -> Result<Envelope<Value>, Refusal> {
-    answer_plugin(&state, &caller, "invites").await
+    caller.require(MANAGER)?;
+    let settings = state.settings();
+    let mut fill = Fill::new(&state, &settings, &caller).await?;
+    fill.komga_libraries = komga_libraries(&state, &settings).await;
+    Ok(Envelope::success(filled_form(
+        &fill,
+        part(part(&TABLE, "plugins"), "invites"),
+    )))
+}
+
+/// The longest wait for the libraries of Komga.
+const KOMGA_TIME: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// The libraries of the Komga of the invites plugin as choices, or nothing when it is not
+/// set up or does not answer. PHP asks the address of single sign-on, `komgaURL`; the
+/// address of the plugin, `INVITES-komga-uri`, comes first here, as its account goes
+/// there too (D-118).
+async fn komga_libraries(state: &AppState, settings: &Settings) -> Option<Vec<Value>> {
+    let url = [&settings.invites_komga_uri, &settings.komga_url]
+        .into_iter()
+        .find(|url| !url.is_empty())?;
+    if settings.invites_komga_api_key.is_empty() {
+        return None;
+    }
+    let http = state.outbound()?;
+    match organizr_integrations::komga::libraries(
+        http,
+        url.trim_end_matches('/'),
+        &settings.invites_komga_api_key,
+        KOMGA_TIME,
+    )
+    .await
+    {
+        Ok(libraries) => Some(
+            libraries
+                .into_iter()
+                .map(|library| json!({ "name": library.name, "value": library.id }))
+                .collect(),
+        ),
+        Err(error) => {
+            tracing::warn!(%error, "the libraries of Komga cannot be read");
+            None
+        }
+    }
 }
 
 /// `GET /plugins/php-mailer/settings`.

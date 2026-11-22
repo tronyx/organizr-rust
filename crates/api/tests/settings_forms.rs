@@ -391,14 +391,58 @@ async fn parts_that_are_not_built_say_so_at_their_top() {
         let invites = call(&app, As::Admin, "GET", "/plugins/invites/settings", None)
             .await
             .data();
-        for group in ["Komga Settings", "Nextcloud Settings", "Plex Settings"] {
+        for group in ["Nextcloud Settings", "Plex Settings"] {
             assert_eq!(
                 notice_of(&invites, group)["title"],
                 json!("Not built yet"),
                 "{group}"
             );
         }
-        assert_eq!(notice_of(&invites, "Emby Settings"), Value::Null);
+        for group in ["Emby Settings", "Komga Settings"] {
+            assert_eq!(notice_of(&invites, group), Value::Null, "{group}");
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn invites_form_lists_the_libraries_of_komga() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let komga = organizr_testkit::services::komga().await;
+        let libraries = |app: axum::Router| async move {
+            let answer = call(&app, As::Admin, "GET", "/plugins/invites/settings", None).await;
+            assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+            answer.data()["Komga Settings"]
+                .as_array()
+                .expect("the group")
+                .iter()
+                .find(|field| field["name"] == json!("INVITES-komga-libraryIds"))
+                .expect("the libraries field")["options"]
+                .clone()
+        };
+
+        let set_up = installed_app_with(
+            database,
+            &[
+                ("INVITES-komga-uri", json!(komga.url())),
+                (
+                    "INVITES-komga-api-key",
+                    json!(organizr_testkit::services::KOMGA_API_KEY),
+                ),
+            ],
+        );
+        assert_eq!(
+            libraries(set_up).await,
+            json!([{"name": "Comics", "value": "0A1B"}, {"name": "Manga", "value": "2C3D"}])
+        );
+
+        // Without Komga, the one choice of PHP.
+        let bare = installed_app_with(database, &[]);
+        assert_eq!(
+            libraries(bare).await,
+            json!([{"name": "Refresh page to update List", "value": "", "disabled": true}])
+        );
     })
     .await;
 }
