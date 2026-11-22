@@ -13,11 +13,12 @@ use std::time::Duration;
 use organizr_integrations::http::{Outbound, user_agent};
 use organizr_integrations::plex::{PlexError, PlexTv};
 use organizr_integrations::sso::{
-    Fallback, JellyfinSession, Login, TautulliSession, jellyfin_session, ombi_token,
+    Fallback, JellyfinSession, Login, TautulliSession, jellyfin_session, komga_token, ombi_token,
     overseerr_session, petio_token, tautulli_sessions,
 };
 use organizr_testkit::services::{
-    self, JELLYFIN_SERVER_ID, LOCAL_ACCOUNT, OWNER_TOKEN, PLEX_USERS, SERVER_ID, StandIn,
+    self, JELLYFIN_SERVER_ID, KOMGA_MASTER_PASSWORD, KOMGA_ROBIN, LOCAL_ACCOUNT, OWNER_TOKEN,
+    PLEX_USERS, SERVER_ID, StandIn,
 };
 
 const TIMEOUT: Duration = Duration::from_secs(10);
@@ -306,6 +307,44 @@ async fn petio_gives_a_token_for_a_plex_token_or_for_the_fallback_account() {
     let last = stand_in.seen().pop().expect("a request was sent");
     assert_eq!(last.path, "/api/login");
     assert_eq!(last.json()["token"], serde_json::Value::Null);
+}
+
+#[tokio::test]
+async fn komga_gives_its_session_token_for_the_email_and_the_password() {
+    let stand_in = services::komga().await;
+    let http = outbound();
+    let url = stand_in.url();
+    let robin = Fallback {
+        user: KOMGA_ROBIN.0,
+        password: KOMGA_ROBIN.1,
+    };
+
+    let token = komga_token(&http, &url, robin, None, TIMEOUT).await;
+    assert_eq!(token.as_deref(), Some("komga-session-of-robin"));
+    let seen = &stand_in.seen()[0];
+    assert_eq!(seen.path, "/api/v2/users/me");
+    assert_eq!(seen.header("x-auth-token"), Some("organizrSSO"));
+
+    // A wrong password gives nothing, and then the fallback account is tried.
+    let wrong = Fallback {
+        user: KOMGA_ROBIN.0,
+        password: "another password",
+    };
+    assert_eq!(komga_token(&http, &url, wrong, None, TIMEOUT).await, None);
+    let fallback = Fallback {
+        user: LOCAL_ACCOUNT.1,
+        password: LOCAL_ACCOUNT.2,
+    };
+    let token = komga_token(&http, &url, wrong, Some(fallback), TIMEOUT).await;
+    assert_eq!(token.as_deref(), Some("komga-session-of-fallback"));
+
+    // The master password works as the password of the account.
+    let master = Fallback {
+        user: KOMGA_ROBIN.0,
+        password: KOMGA_MASTER_PASSWORD,
+    };
+    let token = komga_token(&http, &url, master, None, TIMEOUT).await;
+    assert_eq!(token.as_deref(), Some("komga-session-of-robin"));
 }
 
 #[tokio::test]

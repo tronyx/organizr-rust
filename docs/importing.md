@@ -122,7 +122,7 @@ The report has these parts. A part without lines is not printed.
 | Records | The number of records of each kind, and the number of copied files |
 | Repairs | Records that the import changed. The section [Repairs](#repairs) tells you why |
 | Left out | Records that the import did not store |
-| To look at | Pictures that moved or that are missing, folders that the import did not copy, and switches that are on for parts that this version has not built yet, such as single sign-on for Komga |
+| To look at | Pictures that moved or that are missing, folders that the import did not copy, and switches that are on for parts that this version has not built yet, such as invites with Komga |
 | Tables that this version does not import yet | The name and the number of rows of each table |
 | Settings that this application does not know | The names of the settings in `legacy_settings` |
 | Settings that this application does not need | The names of the settings that were not stored |

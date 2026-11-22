@@ -2364,16 +2364,6 @@
    ],
    "Komga": [
     {
-     "type": "notice",
-     "override": 12,
-     "label": "",
-     "name": null,
-     "value": "",
-     "notice": "warning",
-     "title": "Not built yet",
-     "body": "Single sign-on for Komga is not built yet in this version of Organizr. The settings are kept, but nothing uses them."
-    },
-    {
      "type": "input",
      "label": "URL",
      "help": "Please make sure to use local IP address and port - You also may use local dns name too.",

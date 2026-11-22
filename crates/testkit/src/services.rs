@@ -460,6 +460,62 @@ pub async fn ombi() -> StandIn {
     .await
 }
 
+/// The e-mail address and the password of the Komga account of robin.
+pub const KOMGA_ROBIN: (&str, &str) = ("robin@example.com", "the password of robin in organizr");
+
+/// The master password of the Komga stand-in: robin's account also takes it.
+pub const KOMGA_MASTER_PASSWORD: &str = "the master password of komga";
+
+async fn komga_me(headers: HeaderMap) -> Response {
+    use base64::Engine as _;
+    let accounts = [
+        (KOMGA_ROBIN.0, KOMGA_ROBIN.1, "robin"),
+        (KOMGA_ROBIN.0, KOMGA_MASTER_PASSWORD, "robin"),
+        (LOCAL_ACCOUNT.1, LOCAL_ACCOUNT.2, "fallback"),
+    ];
+    let given = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.strip_prefix("Basic "))
+        .and_then(|encoded| {
+            base64::engine::general_purpose::STANDARD
+                .decode(encoded)
+                .ok()
+        })
+        .and_then(|bytes| String::from_utf8(bytes).ok());
+    let Some(given) = given else {
+        // Komga asks for Basic authentication.
+        return (
+            StatusCode::UNAUTHORIZED,
+            [(header::WWW_AUTHENTICATE, "Basic realm=\"Realm\"")],
+        )
+            .into_response();
+    };
+    match accounts
+        .iter()
+        .find(|(email, password, _)| given == format!("{email}:{password}"))
+    {
+        // Komga answers a request with the header X-Auth-Token with the token of its session.
+        Some((_, _, name)) if headers.contains_key("x-auth-token") => (
+            [("x-auth-token", format!("komga-session-of-{name}"))],
+            axum::Json(json!({"email": format!("{name}@example.com")})),
+        )
+            .into_response(),
+        Some(_) => axum::Json(json!({})).into_response(),
+        None => StatusCode::UNAUTHORIZED.into_response(),
+    }
+}
+
+/// Starts a stand-in for Komga, which knows robin and the fallback account.
+pub async fn komga() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/api/v2/users/me", get(komga_me))
+            .route("/api/logout", post(|| async { StatusCode::NO_CONTENT })),
+    )
+    .await
+}
+
 async fn petio_login(axum::Json(body): axum::Json<Value>) -> Response {
     let user = &body["user"];
     if is_local_account(user["username"].as_str(), user["password"].as_str()) {

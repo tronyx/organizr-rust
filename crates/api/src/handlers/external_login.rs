@@ -195,8 +195,9 @@ pub async fn hand_off(
     let tautulli = tautulli_sessions(http, &settings, &qualified, who, login.level, timeout);
     let jellyfin = jellyfin_session(http, &settings, &qualified, who, timeout);
     let petio = petio_token(http, &settings, &qualified, who, timeout);
-    let (ombi, overseerr, tautulli, jellyfin, petio) =
-        tokio::join!(ombi, overseerr, tautulli, jellyfin, petio);
+    let komga = komga_token(http, &settings, &qualified, who, login.level, timeout);
+    let (ombi, overseerr, tautulli, jellyfin, petio, komga) =
+        tokio::join!(ombi, overseerr, tautulli, jellyfin, petio, komga);
 
     let scope = CookieScope::of(headers, client.https);
     let mut cookies = Vec::new();
@@ -221,6 +222,9 @@ pub async fn hand_off(
     }
     if let Some(token) = petio {
         add("petio_jwt", &token, false, "/");
+    }
+    if let Some(token) = komga {
+        add("komga_token", &token, false, "/");
     }
     // The web client of Jellyfin keeps its login in the storage of the browser. The
     // interface copies these cookies there, so a script must read them (D-114).
@@ -279,6 +283,48 @@ async fn petio_token(
         http,
         &qualified(&settings.petio_url),
         who,
+        fallback,
+        timeout,
+    )
+    .await
+}
+
+/// Asks Komga for a session, when its single sign-on is on and the user has the level of
+/// `ssoKomgaAuth`. Komga knows its users by their e-mail address. A login without a
+/// password, through Plex or OpenID Connect, uses the master password of the settings.
+async fn komga_token(
+    http: &Outbound,
+    settings: &Settings,
+    qualified: &impl Fn(&str) -> String,
+    who: Login<'_>,
+    level: GroupLevel,
+    timeout: Duration,
+) -> Option<String> {
+    if !settings.sso_komga
+        || settings.komga_url.is_empty()
+        || u32::from(level.get()) > settings.sso_komga_auth
+    {
+        return None;
+    }
+    let password = if who.password.is_empty() {
+        settings.komga_sso_master_password.as_str()
+    } else {
+        who.password
+    };
+    let account = Fallback {
+        user: who.email,
+        password,
+    };
+    let fallback = (!settings.komga_fallback_user.is_empty()
+        && !settings.komga_fallback_password.is_empty())
+    .then(|| Fallback {
+        user: &settings.komga_fallback_user,
+        password: &settings.komga_fallback_password,
+    });
+    sso::komga_token(
+        http,
+        &qualified(&settings.komga_url),
+        account,
         fallback,
         timeout,
     )

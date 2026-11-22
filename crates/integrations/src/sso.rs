@@ -129,6 +129,84 @@ async fn ombi_request(
     answer.access_token.filter(|token| !token.is_empty())
 }
 
+/// Asks Komga at `url` for the token of a session of `account`, an e-mail address and a
+/// password, and then of the fallback account. Returns `None` when Komga gives none.
+///
+/// PHP sends the request with curl's `CURLAUTH_ANY`, which answers the Basic
+/// authentication that Komga asks for. The header `X-Auth-Token` makes Komga send the
+/// token of the session in the same header. Komga keeps it in its cookie `komga_token`.
+pub async fn komga_token(
+    http: &Outbound,
+    url: &str,
+    account: Fallback<'_>,
+    fallback: Option<Fallback<'_>>,
+    timeout: Duration,
+) -> Option<String> {
+    if let Some(token) = komga_request(http, url, account, timeout).await {
+        return Some(token);
+    }
+    if let Some(fallback) = fallback {
+        tracing::warn!("Komga gave no token; trying the fallback account");
+        komga_request(http, url, fallback, timeout).await
+    } else {
+        tracing::warn!("Komga gave no token");
+        None
+    }
+}
+
+async fn komga_request(
+    http: &Outbound,
+    url: &str,
+    account: Fallback<'_>,
+    timeout: Duration,
+) -> Option<String> {
+    let target = format!("{url}/api/v2/users/me");
+    let response = http
+        .client_for(&target)
+        .get(&target)
+        .timeout(timeout)
+        .basic_auth(account.user, Some(account.password))
+        .header("X-Auth-Token", "organizrSSO")
+        .send()
+        .await
+        .map_err(|error| tracing::warn!(error = %without_address(error), "Komga cannot be reached"))
+        .ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+    response
+        .headers()
+        .get("x-auth-token")
+        .and_then(|value| value.to_str().ok())
+        .filter(|token| !token.is_empty())
+        .map(str::to_owned)
+}
+
+/// Ends the session of `token` at Komga, at a logout of Organizr, as PHP does. PHP asks
+/// `/api/v1/users/logout`, which a current Komga answers with 404 and the session lives
+/// on; Komga ends a session at `/api/logout` (D-117).
+pub async fn komga_logout(http: &Outbound, url: &str, token: &str, timeout: Duration) {
+    let target = format!("{url}/api/logout");
+    let sent = http
+        .client_for(&target)
+        .post(&target)
+        .timeout(timeout)
+        .header("X-Auth-Token", token)
+        .send()
+        .await;
+    match sent {
+        Ok(response) if response.status().is_success() => {
+            tracing::info!("the session of Komga was ended");
+        }
+        Ok(response) => {
+            tracing::warn!(status = %response.status(), "Komga did not end its session");
+        }
+        Err(error) => {
+            tracing::warn!(error = %without_address(error), "Komga cannot be reached");
+        }
+    }
+}
+
 #[derive(Deserialize)]
 struct PetioAnswer {
     token: Option<String>,

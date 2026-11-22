@@ -21,6 +21,26 @@ use crate::state::AppState;
 /// them: the tokens of Plex, Ombi, Overseerr, Petio and Jellyfin.
 const SINGLE_SIGN_ON_COOKIES: [&str; 5] = ["mpt", "Auth", "oAuth", "connect.sid", "petio_jwt"];
 
+/// The longest wait for Komga at a logout.
+const KOMGA_LOGOUT_TIME: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// Asks Komga to end the session of `token`, as PHP's `clearKomgaToken` does.
+async fn end_komga_session(state: &AppState, client: &Client, headers: &HeaderMap, token: &str) {
+    let settings = state.settings();
+    let Some(http) = state.outbound() else {
+        return;
+    };
+    if settings.komga_url.is_empty() {
+        return;
+    }
+    let host = headers
+        .get(axum::http::header::HOST)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+    let url = crate::php_url::qualify(settings.komga_url.trim(), client.https, host);
+    organizr_integrations::sso::komga_logout(http, &url, token, KOMGA_LOGOUT_TIME).await;
+}
+
 /// `GET /logout`: deletes the session of the request and makes the browser drop the
 /// session cookie and the cookies of other applications. The browser gets a new device
 /// id.
@@ -54,6 +74,12 @@ pub async fn logout(
     dropped.extend(sent().filter(|name| name.contains("tautulli")));
     dropped.extend(sent().filter(|name| name.contains("user-")));
     dropped.push("jellyfin_credentials");
+    // A session of Komga ends at Komga too, and its cookie is dropped only when the
+    // browser sent it, as in PHP.
+    if let Some(token) = cookies::cookie_value(&headers, "komga_token") {
+        end_komga_session(&state, &client, &headers, token).await;
+        dropped.push("komga_token");
+    }
     dropped.push(DEVICE_COOKIE);
 
     let now = SystemTime::now();

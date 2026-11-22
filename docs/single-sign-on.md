@@ -1,6 +1,6 @@
 # Single sign-on
 
-With single sign-on, a person who logs in to Organizr is logged in to your other applications too: Plex Web, Ombi, Overseerr, Tautulli, Petio and Jellyfin.
+With single sign-on, a person who logs in to Organizr is logged in to your other applications too: Plex Web, Ombi, Overseerr, Tautulli, Petio, Komga and Jellyfin.
 
 ## How it works
 
@@ -30,6 +30,7 @@ A logout of Organizr makes the browser drop the cookies.
 | Overseerr | `ssoOverseerr` | `overseerrURL` | `connect.sid` |
 | Tautulli | `ssoTautulli` | `tautulliURL` | `tautulli_token_<id of the install>` |
 | Petio | `ssoPetio` | `petioURL` | `petio_jwt` |
+| Komga | `ssoKomga` | `komgaURL` | `komga_token`. See [Komga](#komga) |
 | Jellyfin | `ssoJellyfin` | `jellyfinURL` and `jellyfinSSOURL` | `jellyfin_credentials` and `user-<user>-<server>`. See [Jellyfin](#jellyfin) |
 
 ### Fallback users
@@ -43,6 +44,18 @@ For Overseerr, the fallback user is an e-mail address.
 `tautulliURL` can hold more than one address, with commas between them. Each Tautulli install gets its own cookie, at the path of the install.
 
 `ssoTautulliAuth` is a level. Only users of that level, or with more access, get a session of Tautulli.
+
+### Komga
+
+Komga knows its users by their e-mail address. Organizr asks Komga for a session with the e-mail address of the user and the password of the login.
+
+| Setting | Meaning |
+|---|---|
+| `ssoKomgaAuth` | A level. Only users of that level, or with more access, get a session of Komga |
+| `komgaSSOMasterPassword` | **Komga Master Password**: the password for a login that brings none, through Plex or OpenID Connect |
+| `komgaFallbackUser`, `komgaFallbackPassword` | The fallback account, an e-mail address and its password |
+
+A logout of Organizr also ends the session at Komga. PHP Organizr asks an address that a current Komga no longer has, so there the session lives on (D-117).
 
 ### Jellyfin
 
@@ -89,7 +102,3 @@ The script holds no `$`: nginx reads `$` in `sub_filter` as the start of a varia
 - An application that does not answer does not stop the login. Organizr waits for each application for at most one minute, divided by the number of applications that are switched on.
 - Organizr checks the certificate of an application that it reaches by a name over HTTPS. It does not check the certificate of an application that it reaches by an IP address over HTTPS, because no authority signs a certificate for such an address.
 - The Plex cookie holds the Plex token of the user, and scripts of the pages on your domain can read it. Plex Web needs that. Switch `ssoPlex` on only when you trust every application on the domain.
-
-## Not built yet
-
-PHP Organizr also has single sign-on for Komga. This application does not have it yet. Its group on the page **SSO** says so at its top.
