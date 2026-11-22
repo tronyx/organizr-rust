@@ -129,6 +129,83 @@ async fn ombi_request(
     answer.access_token.filter(|token| !token.is_empty())
 }
 
+#[derive(Deserialize)]
+struct PetioAnswer {
+    token: Option<String>,
+}
+
+/// Asks Petio at `url` for a token: with the Plex token of the login when there is one,
+/// else with the name and the password, and then with the fallback account. Returns
+/// `None` when Petio gives none. Petio keeps the token in its cookie `petio_jwt`.
+pub async fn petio_token(
+    http: &Outbound,
+    url: &str,
+    login: Login<'_>,
+    fallback: Option<Fallback<'_>>,
+    timeout: Duration,
+) -> Option<String> {
+    let token = petio_request(http, url, login.username, login.password, login, timeout).await;
+    match (token, fallback) {
+        (Some(token), _) => Some(token),
+        (None, Some(fallback)) => {
+            tracing::warn!("Petio gave no token; trying the fallback account");
+            let without_plex = Login {
+                plex_token: None,
+                ..login
+            };
+            petio_request(
+                http,
+                url,
+                fallback.user,
+                fallback.password,
+                without_plex,
+                timeout,
+            )
+            .await
+        }
+        (None, None) => {
+            tracing::warn!("Petio gave no token");
+            None
+        }
+    }
+}
+
+async fn petio_request(
+    http: &Outbound,
+    url: &str,
+    username: &str,
+    password: &str,
+    login: Login<'_>,
+    timeout: Duration,
+) -> Option<String> {
+    // The body of PHP: with a Plex token, the name and the password are empty.
+    let (path, username, password) = match login.plex_token {
+        Some(_) => ("/api/login/plex_login", "", ""),
+        None => ("/api/login", username, password),
+    };
+    let body = json!({
+        "user": {"username": username, "password": password, "type": 1},
+        "authToken": false,
+        "token": login.plex_token,
+    });
+    let target = format!("{url}{path}");
+    let response = http
+        .client_for(&target)
+        .post(&target)
+        .timeout(timeout)
+        .header("X-Forwarded-For", login.client_ip)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|error| tracing::warn!(error = %without_address(error), "Petio cannot be reached"))
+        .ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+    let answer: PetioAnswer = response.json().await.ok()?;
+    answer.token.filter(|token| !token.is_empty())
+}
+
 /// The login of the web client of Jellyfin, as the cookies of PHP Organizr hand it over.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JellyfinSession {

@@ -776,3 +776,30 @@ async fn servers_of_the_stored_token_are_listed_for_admins() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn login_with_a_plex_token_gets_a_session_of_petio() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let petio = services::petio().await;
+        let settings = plex_settings(&[
+            ("plexoAuth", json!(true)),
+            ("ssoPetio", json!(true)),
+            ("petioURL", json!(petio.url())),
+        ]);
+        let app = app_with(database, &plex, &settings);
+
+        let answer = log_in_with_token(&app, ROBIN.token).await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let petio_cookie = cookie(&answer, "petio_jwt").expect("the Petio cookie is set");
+        assert!(
+            petio_cookie.starts_with("petio_jwt=petio-token-of-robin;"),
+            "{petio_cookie}"
+        );
+        assert!(!petio_cookie.contains("HttpOnly"), "{petio_cookie}");
+        assert_eq!(petio.seen()[0].json()["token"], ROBIN.token);
+    })
+    .await;
+}

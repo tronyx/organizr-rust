@@ -194,7 +194,9 @@ pub async fn hand_off(
     };
     let tautulli = tautulli_sessions(http, &settings, &qualified, who, login.level, timeout);
     let jellyfin = jellyfin_session(http, &settings, &qualified, who, timeout);
-    let (ombi, overseerr, tautulli, jellyfin) = tokio::join!(ombi, overseerr, tautulli, jellyfin);
+    let petio = petio_token(http, &settings, &qualified, who, timeout);
+    let (ombi, overseerr, tautulli, jellyfin, petio) =
+        tokio::join!(ombi, overseerr, tautulli, jellyfin, petio);
 
     let scope = CookieScope::of(headers, client.https);
     let mut cookies = Vec::new();
@@ -216,6 +218,9 @@ pub async fn hand_off(
     }
     if let Some(session) = overseerr {
         add("connect.sid", &session, false, "/");
+    }
+    if let Some(token) = petio {
+        add("petio_jwt", &token, false, "/");
     }
     // The web client of Jellyfin keeps its login in the storage of the browser. The
     // interface copies these cookies there, so a script must read them (D-114).
@@ -250,6 +255,34 @@ async fn tautulli_sessions(
         })
         .collect();
     sso::tautulli_sessions(http, &installs, who, timeout).await
+}
+
+/// Asks Petio for a token, when its single sign-on is on, with the fallback account of
+/// the settings when Petio does not know the user.
+async fn petio_token(
+    http: &Outbound,
+    settings: &Settings,
+    qualified: &impl Fn(&str) -> String,
+    who: Login<'_>,
+    timeout: Duration,
+) -> Option<String> {
+    if !settings.sso_petio || settings.petio_url.is_empty() {
+        return None;
+    }
+    let fallback = (!settings.petio_fallback_user.is_empty()
+        && !settings.petio_fallback_password.is_empty())
+    .then(|| Fallback {
+        user: &settings.petio_fallback_user,
+        password: &settings.petio_fallback_password,
+    });
+    sso::petio_token(
+        http,
+        &qualified(&settings.petio_url),
+        who,
+        fallback,
+        timeout,
+    )
+    .await
 }
 
 /// Asks Jellyfin for the login of its web client, when its single sign-on is on (D-114).

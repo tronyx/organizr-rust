@@ -14,7 +14,7 @@ use organizr_integrations::http::{Outbound, user_agent};
 use organizr_integrations::plex::{PlexError, PlexTv};
 use organizr_integrations::sso::{
     Fallback, JellyfinSession, Login, TautulliSession, jellyfin_session, ombi_token,
-    overseerr_session, tautulli_sessions,
+    overseerr_session, petio_token, tautulli_sessions,
 };
 use organizr_testkit::services::{
     self, JELLYFIN_SERVER_ID, LOCAL_ACCOUNT, OWNER_TOKEN, PLEX_USERS, SERVER_ID, StandIn,
@@ -270,6 +270,42 @@ async fn jellyfin_gives_the_login_of_its_web_client() {
         jellyfin_session(&http, &url, address, wrong, TIMEOUT).await,
         None
     );
+}
+
+#[tokio::test]
+async fn petio_gives_a_token_for_a_plex_token_or_for_the_fallback_account() {
+    let stand_in = services::petio().await;
+    let http = outbound();
+    let url = stand_in.url();
+
+    let token = petio_token(&http, &url, login(Some(PLEX_USERS[1].token)), None, TIMEOUT).await;
+    assert_eq!(token.as_deref(), Some("petio-token-of-robin"));
+    let seen = &stand_in.seen()[0];
+    assert_eq!(seen.path, "/api/login/plex_login");
+    assert_eq!(seen.json()["token"], PLEX_USERS[1].token);
+    // The name and the password are empty with a Plex token, as in PHP.
+    assert_eq!(seen.json()["user"]["password"], "");
+    assert_eq!(seen.json()["user"]["type"], 1);
+    assert_eq!(seen.json()["authToken"], false);
+    assert_eq!(seen.header("x-forwarded-for"), Some("203.0.113.9"));
+
+    // Without a Plex token: the name and the password, which Petio does not know here.
+    let none = petio_token(&http, &url, login(None), None, TIMEOUT).await;
+    assert_eq!(none, None);
+    let seen = &stand_in.seen()[1];
+    assert_eq!(seen.path, "/api/login");
+    assert_eq!(seen.json()["user"]["username"], "robin");
+    assert_eq!(
+        seen.json()["user"]["password"],
+        "the password of robin in organizr"
+    );
+
+    // The fallback account is tried after the user, with its name and password.
+    let token = petio_token(&http, &url, login(None), Some(FALLBACK), TIMEOUT).await;
+    assert_eq!(token.as_deref(), Some("petio-token-of-fallback"));
+    let last = stand_in.seen().pop().expect("a request was sent");
+    assert_eq!(last.path, "/api/login");
+    assert_eq!(last.json()["token"], serde_json::Value::Null);
 }
 
 #[tokio::test]

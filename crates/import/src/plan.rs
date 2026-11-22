@@ -43,7 +43,7 @@ pub const RETIRED_SETTINGS: [&str; 9] = [
 
 /// Switches of PHP for parts that this application has not built, each with the part, in
 /// the order of the keys. The import keeps them, and the report names the ones that are on.
-const NOT_BUILT: [(&str, &str); 5] = [
+const NOT_BUILT: [(&str, &str); 4] = [
     (
         "INVITES-add-plex-home",
         "adding an invited person to the Plex Home",
@@ -51,7 +51,6 @@ const NOT_BUILT: [(&str, &str); 5] = [
     ("INVITES-komga-enabled", "invites with Komga"),
     ("INVITES-nextcloud-enabled", "invites with Nextcloud"),
     ("ssoKomga", "single sign-on for Komga"),
-    ("ssoPetio", "single sign-on for Petio"),
 ];
 
 /// The level of the group "User" of a new install.
@@ -1383,8 +1382,8 @@ mod tests {
         let secrets = SecretBox::with_random_key().expect("a key can be made");
         let install = LegacyInstall {
             config: vec![
-                ("ssoPetio".to_owned(), json!(true)),
-                ("ssoKomga".to_owned(), json!(false)),
+                ("ssoKomga".to_owned(), json!(true)),
+                ("INVITES-komga-enabled".to_owned(), json!(false)),
                 ("INVITES-nextcloud-enabled".to_owned(), json!(true)),
             ],
             ..LegacyInstall::default()
@@ -1403,7 +1402,7 @@ mod tests {
             notes[0].contains("`INVITES-nextcloud-enabled`"),
             "{notes:#?}"
         );
-        assert!(notes[1].contains("`ssoPetio`"), "{notes:#?}");
+        assert!(notes[1].contains("`ssoKomga`"), "{notes:#?}");
     }
 
     #[test]

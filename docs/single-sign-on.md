@@ -1,6 +1,6 @@
 # Single sign-on
 
-With single sign-on, a person who logs in to Organizr is logged in to your other applications too: Plex Web, Ombi, Overseerr, Tautulli and Jellyfin.
+With single sign-on, a person who logs in to Organizr is logged in to your other applications too: Plex Web, Ombi, Overseerr, Tautulli, Petio and Jellyfin.
 
 ## How it works
 
@@ -29,11 +29,12 @@ A logout of Organizr makes the browser drop the cookies.
 | Ombi | `ssoOmbi` | `ombiURL` | `Auth` |
 | Overseerr | `ssoOverseerr` | `overseerrURL` | `connect.sid` |
 | Tautulli | `ssoTautulli` | `tautulliURL` | `tautulli_token_<id of the install>` |
+| Petio | `ssoPetio` | `petioURL` | `petio_jwt` |
 | Jellyfin | `ssoJellyfin` | `jellyfinURL` and `jellyfinSSOURL` | `jellyfin_credentials` and `user-<user>-<server>`. See [Jellyfin](#jellyfin) |
 
 ### Fallback users
 
-Ombi and Overseerr can have a fallback user: `ombiFallbackUser` with `ombiFallbackPassword`, and `overseerrFallbackUser` with `overseerrFallbackPassword`. A user whom the application does not know is then logged in as the fallback user. Without a fallback user, such a user gets no session of that application.
+Ombi, Overseerr and Petio can have a fallback user: `ombiFallbackUser` with `ombiFallbackPassword`, `overseerrFallbackUser` with `overseerrFallbackPassword`, and `petioFallbackUser` with `petioFallbackPassword`. A user whom the application does not know is then logged in as the fallback user. Without a fallback user, such a user gets no session of that application.
 
 For Overseerr, the fallback user is an e-mail address.
 
@@ -91,4 +92,4 @@ The script holds no `$`: nginx reads `$` in `sub_filter` as the start of a varia
 
 ## Not built yet
 
-PHP Organizr also has single sign-on for Petio and Komga. This application does not have these yet. Their groups on the page **SSO** say so at their top.
+PHP Organizr also has single sign-on for Komga. This application does not have it yet. Its group on the page **SSO** says so at its top.

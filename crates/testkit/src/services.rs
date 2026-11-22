@@ -460,6 +460,39 @@ pub async fn ombi() -> StandIn {
     .await
 }
 
+async fn petio_login(axum::Json(body): axum::Json<Value>) -> Response {
+    let user = &body["user"];
+    if is_local_account(user["username"].as_str(), user["password"].as_str()) {
+        axum::Json(json!({"user": {"username": "fallback"}, "token": "petio-token-of-fallback"}))
+            .into_response()
+    } else {
+        StatusCode::UNAUTHORIZED.into_response()
+    }
+}
+
+async fn petio_plex_login(axum::Json(body): axum::Json<Value>) -> Response {
+    match known_by_token(body["token"].as_str()) {
+        Some(user) => {
+            let name = user.username.to_lowercase();
+            axum::Json(
+                json!({"user": {"username": name}, "token": format!("petio-token-of-{name}")}),
+            )
+            .into_response()
+        }
+        None => StatusCode::UNAUTHORIZED.into_response(),
+    }
+}
+
+/// Starts a stand-in for Petio.
+pub async fn petio() -> StandIn {
+    StandIn::start(
+        Router::new()
+            .route("/api/login", post(petio_login))
+            .route("/api/login/plex_login", post(petio_plex_login)),
+    )
+    .await
+}
+
 /// The id of the stand-in Jellyfin server.
 pub const JELLYFIN_SERVER_ID: &str = "4f2a-made-up-jellyfin-server";
 
