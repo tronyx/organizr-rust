@@ -54,6 +54,7 @@ This version has these items:
 - [Emby live TV](#emby-live-tv)
 - [JellyStat](#jellystat)
 - [Donate](#donate)
+- [Bookmarks](#bookmarks)
 
 You set all items up in **Settings**, then **Tab Editor**, then **Homepage Items**. The picture of an item opens its settings.
 
@@ -1280,3 +1281,16 @@ PHP Organizr has three more routes that help its pages. This application has the
 
 - The trailer search needs your own API key of YouTube. PHP Organizr falls back on keys of its author. This application does not, so the answer is an error without a key. Enter your key in the group **YouTube** of the homepage item **Misc**.
 - The fetch of a page takes an address of the wide web only. It does not fetch an address of the server itself or of a private network, it follows no redirect, and a page has 2 MB at most. In PHP Organizr, everybody can use the route without a login.
+
+## Bookmarks
+
+This item shows the bookmarks of the [bookmark plugin](bookmark-plugin.md) on the homepage, as tiles in their categories, as the page of the plugin shows them. Each person sees the bookmarks of the own group.
+
+| Setting | Key |
+|---|---|
+| Switch | `homepageBookmarksEnabled` |
+| Level | `homepageBookmarksAuth` |
+| Place | `homepageOrderBookmarks` |
+| Milliseconds between two loads | `homepageBookmarksRefresh` |
+
+The item needs the bookmark plugin to be on. Without the plugin there are no bookmarks, so the homepage leaves the item out (D-115).

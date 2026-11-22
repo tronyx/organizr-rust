@@ -135,6 +135,19 @@ pub struct Item {
     options: Value,
 }
 
+/// What the Bookmarks item needs: its switch and its level, as in PHP, and the bookmark
+/// plugin, whose page gives the bookmarks (D-115).
+fn bookmarks_permissions() -> Permissions {
+    Permissions {
+        enabled: vec![
+            "homepageBookmarksEnabled".to_owned(),
+            "BOOKMARK-enabled".to_owned(),
+        ],
+        auth: vec!["homepageBookmarksAuth".to_owned()],
+        not_empty: Vec::new(),
+    }
+}
+
 /// The kind and the permissions of the item behind an order key, or nothing for an
 /// item that this application does not show.
 fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
@@ -178,6 +191,7 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderunifi" => ("unifi", unifi::permissions()),
         "homepageOrderPromPage" => ("prompage", prompage::permissions()),
         "homepageOrderDonate" => ("donate", donate::permissions()),
+        "homepageOrderBookmarks" => ("bookmarks", bookmarks_permissions()),
         "homepageOrderEmbyLiveTVTracker" => ("embylivetv", emby_live_tv::permissions()),
         // What the item needs depends on its settings, see `visible_items`.
         "homepageOrderJellyStat" => ("jellystat", jellystat::details_permissions()),

@@ -25,6 +25,10 @@ Bookmarks are apart from the tabs of the menu. A tab opens an application inside
 | Colour of the name | The colour of the text on the tile |
 | Show the bookmark on the page | A bookmark that is switched off stays in the editor only |
 
+## On the homepage
+
+The homepage can show the bookmarks too: switch on the homepage item **Bookmarks**. See [Bookmarks](homepage.md#bookmarks) on the homepage page.
+
 ## Who sees what
 
 The page is for the people who see its tab in the menu. You set that on the tab **Tabs** of the settings, as for each tab.

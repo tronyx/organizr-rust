@@ -419,3 +419,42 @@ async fn downloaders_with_the_combine_switch_show_as_one_item() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn bookmarks_item_needs_its_switch_its_level_and_the_bookmark_plugin() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let item = json!({"key": "homepageOrderBookmarks", "kind": "bookmarks", "id": ""});
+        let listed = |settings: &[(&str, serde_json::Value)]| {
+            let app = installed_app_with(database, settings);
+            async move {
+                call(&app, As::Admin, "GET", "/homepage/items", None)
+                    .await
+                    .data()
+            }
+        };
+
+        let on = [
+            ("homepageBookmarksEnabled", json!(true)),
+            ("BOOKMARK-enabled", json!(true)),
+        ];
+        assert_eq!(listed(&on).await, json!([item]));
+        // Without the plugin, the item would have no bookmarks to show.
+        assert_eq!(listed(&on[..1]).await, json!([]));
+        assert_eq!(listed(&on[1..]).await, json!([]));
+
+        // The level of the item counts.
+        let app = installed_app_with(
+            database,
+            &[
+                on[0].clone(),
+                on[1].clone(),
+                ("homepageBookmarksAuth", json!("0")),
+            ],
+        );
+        let user = seed::logged_in(database, &app, "uma", 1).await;
+        let seen = call(&app, As::User(&user), "GET", "/homepage/items", None).await;
+        assert_eq!(seen.data(), json!([]));
+    })
+    .await;
+}

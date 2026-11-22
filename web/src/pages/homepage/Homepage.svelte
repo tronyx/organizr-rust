@@ -1,5 +1,6 @@
 <script lang="ts">
   // The homepage: the items that the server lists for this person, in their order.
+  import BookmarksItem from './BookmarksItem.svelte';
   import { onMount } from 'svelte';
 
   import Notice from '../../components/Notice.svelte';
@@ -82,6 +83,7 @@
     'donate',
     'embylivetv',
     'jellystat',
+    'bookmarks',
   ]);
 
   /** How the calendar shows, from the options of its item. */
@@ -135,6 +137,8 @@
       <section class="org-item org-item-{item.kind}" data-item={item.key}>
         {#if item.kind === 'customhtml'}
           <CustomHtml id={item.id} trusted={item.options?.trusted === true} />
+        {:else if item.kind === 'bookmarks'}
+          <BookmarksItem />
         {:else if item.kind === 'downloader'}
           <Downloaders members={membersOf(item)} />
         {:else if item.kind === 'healthchecks'}
