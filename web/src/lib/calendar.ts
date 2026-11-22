@@ -365,14 +365,15 @@ export function shortTime(start: string): string | null {
   return `${hour % 12 === 0 ? 12 : hour % 12}:${pad(moment.getMinutes())}${hour < 12 ? 'a' : 'p'}`;
 }
 
-/** The colour of the state of an event, as a value of CSS. */
-export function stateColour(event: CalendarEvent): string {
-  const colours: Record<string, string> = {
-    'badge-success': 'var(--color-success)',
-    'badge-info': 'var(--color-info)',
-    'badge-error': 'var(--color-error)',
-    'badge-primary': '#00ccff',
-    'badge-neutral': '#96a2b4',
-  };
-  return colours[stateOf(event).badge] ?? '#96a2b4';
+/**
+ * The class of PHP Organizr for the state of an event, which colours its icon and its
+ * time: `text-success`, `text-info`, `text-danger`, `text-primary` or `text-dark`. Custom
+ * CSS written for PHP aims at these (D-110).
+ */
+export function stateClass(event: CalendarEvent): string {
+  const first = event.downloadFilter.split(' ')[0] ?? '';
+  if (first.startsWith('text-')) {
+    return first;
+  }
+  return event.downloadFilter === 'ical-upcoming' ? 'text-info' : 'text-dark';
 }

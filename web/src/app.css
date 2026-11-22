@@ -2132,6 +2132,15 @@
     color: var(--color-error);
   }
 
+  /* The colours of the states of the calendar, as PHP's classes give them. */
+  .org-calendar .text-primary {
+    color: #00ccff;
+  }
+
+  .org-calendar .text-dark {
+    color: #96a2b4;
+  }
+
   @media (min-width: 768px) {
     .visible-xs {
       display: none;

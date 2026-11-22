@@ -13,6 +13,7 @@ import {
   shortDay,
   shortTime,
   shownEvents,
+  stateClass,
   stateOf,
   timeOf,
   viewOf,
@@ -158,5 +159,17 @@ describe('weeks and days', () => {
     expect(at(12, 30)).toBe('12:30p');
     expect(at(20, 0)).toBe('8:00p');
     expect(shortTime('2026-11-20')).toBeNull();
+  });
+});
+
+describe('stateClass', () => {
+  it('gives the class of PHP for each state, which custom CSS aims at', () => {
+    expect(stateClass(event('a', '2026-11-22', 'tv', 'text-success'))).toBe('text-success');
+    expect(stateClass(event('a', '2026-11-22', 'tv', 'text-info'))).toBe('text-info');
+    expect(stateClass(event('a', '2026-11-22', 'tv', 'text-primary animated flash'))).toBe(
+      'text-primary',
+    );
+    expect(stateClass(event('a', '2026-11-22', 'ical', 'ical-upcoming'))).toBe('text-info');
+    expect(stateClass(event('a', '2026-11-22', 'ical', 'ical-over'))).toBe('text-dark');
   });
 });

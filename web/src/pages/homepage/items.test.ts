@@ -116,6 +116,27 @@ describe('UptimeKuma', () => {
     expect(screen.getByRole('heading', { name: 'Monitors' })).toBeTruthy();
   });
 
+  it('carries the ids and classes of PHP, for custom CSS', async () => {
+    stubApi({
+      'GET homepage/kuma/data': {
+        data: {
+          data,
+          options: { title: 'Monitors', titleToggle: true, compact: true, showLatency: true },
+        },
+      },
+    });
+    render(UptimeKuma);
+
+    const list = await screen.findByRole('list', { name: 'Monitors' });
+    expect(list.closest('#allUptimeKuma')).not.toBeNull();
+    expect(list.classList).toContain('uptimeKumaCards');
+    const [router, blog] = within(list).getAllByRole('listitem') as [HTMLElement, HTMLElement];
+    expect(router.querySelector('.left-health.bg-success')).not.toBeNull();
+    expect(router.querySelector('i.text-success')).not.toBeNull();
+    expect(blog.querySelector('.left-health.bg-danger')).not.toBeNull();
+    expect(blog.querySelector('i.text-danger')).not.toBeNull();
+  });
+
   it('leaves out the title and the latency when the options say so', async () => {
     stubApi({
       'GET homepage/kuma/data': {

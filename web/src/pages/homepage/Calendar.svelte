@@ -21,7 +21,7 @@
     shortDay,
     shortTime,
     shownEvents,
-    stateColour,
+    stateClass,
     stateOf,
     STATES,
     timeOf,
@@ -199,8 +199,9 @@
                   {#each events.slice(0, options.limit) as event (event.id)}
                     <button
                       type="button"
-                      class="block w-full cursor-pointer truncate text-left text-[13px]"
-                      style:color={stateColour(event)}
+                      class="block w-full cursor-pointer truncate text-left text-[13px] {stateClass(
+                        event,
+                      )}"
                       title="{event.title}: {stateOf(event).word}"
                       translate="no"
                       onclick={() => (open = event)}
@@ -247,8 +248,9 @@
                     title={stateOf(event).word}
                     onclick={() => (open = event)}
                   >
-                    <span class="font-medium" style:color={stateColour(event)}>
-                      <i class="oi oi-fontawesome fa-{icon}" aria-hidden="true"></i>
+                    <span class="fc-time font-medium {icon} {stateClass(event)}">
+                      <i class="oi oi-fontawesome fa-{icon} {stateClass(event)}" aria-hidden="true"
+                      ></i>
                       {shortTime(event.start) ?? ''}
                     </span>
                     <span class="block truncate">{event.details.topTitle}</span>
@@ -285,7 +287,7 @@
                         <span class="opacity-70">{event.details.bottomTitle}</span>
                       {/if}
                     </span>
-                    <span class="text-xs" style:color={stateColour(event)}>
+                    <span class="text-xs {stateClass(event)}">
                       {stateOf(event).word}
                     </span>
                   </button>
