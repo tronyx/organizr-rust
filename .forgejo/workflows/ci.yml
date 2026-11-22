@@ -1,0 +1,199 @@
+# The CI of .github/workflows/ci.yml, for Forgejo Actions. Forgejo reads this folder
+# instead of .github/workflows when it exists, so only these workflows run there.
+#
+# The runner of Forgejo has the label "docker" and runs each job in a container. The
+# container has Node, which the actions need, and the toolchains are installed in it.
+# The services of a job are reached by their names, not on localhost. The job with the
+# real applications is left out: it needs a Docker of its own.
+
+name: ci
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: Format, lint and test
+    runs-on: docker
+    container:
+      image: node:24-bookworm
+    # The database tests run on SQLite always, and on PostgreSQL when this URL is set.
+    env:
+      ORGANIZR_TEST_POSTGRES_URL: postgres://postgres:organizr-test@postgres:5432/postgres
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_PASSWORD: organizr-test
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Check out the repository
+        uses: https://github.com/actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install rustup
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        run: rustup toolchain install
+
+      - name: Cache the cargo registry and build output
+        uses: https://github.com/Swatinem/rust-cache@v2.9.3
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Run clippy with warnings as errors
+        run: cargo clippy --workspace --all-targets --locked --features organizr/wasm-plugins -- -D warnings
+
+      - name: Run the tests
+        run: cargo test --workspace --locked
+
+      # The runtime for extensions makes each test program large. With it in every test
+      # program, the linker runs out of space on the runner. So only the tests of the
+      # extensions are built with it.
+      - name: Run the tests of the extensions
+        run: |
+          cargo test --locked -p organizr-plugins --features wasm-plugins --test extension
+          cargo test --locked -p organizr-api --features wasm-plugins --lib --test extensions
+
+  deny:
+    name: Advisories, licences and banned crates
+    runs-on: docker
+    container:
+      image: node:24-bookworm
+    steps:
+      - name: Check out the repository
+        uses: https://github.com/actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run cargo-deny
+        uses: https://github.com/EmbarkStudios/cargo-deny-action@v2.1.2
+
+  web:
+    name: Web interface (format, types, lint, test and build)
+    runs-on: docker
+    container:
+      image: node:24-bookworm
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Check out the repository
+        uses: https://github.com/actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Node
+        uses: https://github.com/actions/setup-node@v7.1.0
+        with:
+          node-version: 26.13.1
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install the packages named in package-lock.json
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Check the types with warnings as errors
+        run: npm run check
+
+      - name: Run ESLint with warnings as errors
+        run: npm run lint
+
+      - name: Run the tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  browser:
+    name: Browser tests against the real server
+    runs-on: docker
+    container:
+      image: node:24-bookworm
+    steps:
+      - name: Check out the repository
+        uses: https://github.com/actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install rustup
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install the toolchain pinned in rust-toolchain.toml
+        run: rustup toolchain install
+
+      - name: Cache the cargo registry and build output
+        uses: https://github.com/Swatinem/rust-cache@v2.9.3
+
+      - name: Install Node
+        uses: https://github.com/actions/setup-node@v7.1.0
+        with:
+          node-version: 26.13.1
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install the packages named in package-lock.json
+        working-directory: web
+        run: npm ci
+
+      - name: Build the web interface
+        working-directory: web
+        run: npm run build
+
+      # The other job lints and tests the server without the interface. The code that
+      # hands out the built interface is compiled only with this feature.
+      - name: Run clippy on the server with the interface built in
+        run: cargo clippy -p organizr --features embedded-web --all-targets --locked -- -D warnings
+
+      - name: Test the server with the interface built in
+        run: cargo test -p organizr --features embedded-web --locked
+
+      - name: Build the server with the interface built in
+        run: cargo build -p organizr --features embedded-web --locked
+
+      - name: Install the browser
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the browser tests
+        working-directory: web
+        run: npm run e2e
+
+      - name: Keep the report of failed browser tests
+        if: ${{ failure() }}
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: web/playwright-report/
+          retention-days: 7

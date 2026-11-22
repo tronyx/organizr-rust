@@ -1,0 +1,53 @@
+# The lint of .github/workflows/lint.yml, for Forgejo Actions. The job runs in a
+# container without Docker, so the tools are downloaded and checked against their
+# published checksums instead of run as images.
+
+name: lint
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Dockerfile and workflows
+    runs-on: docker
+    container:
+      image: node:24-bookworm
+    steps:
+      - name: Check out the repository
+        uses: https://github.com/actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install hadolint and actionlint
+        run: |
+          curl -sSfL -o /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/download/v2.15.1/hadolint-linux-x86_64
+          echo "c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507  /usr/local/bin/hadolint" | sha256sum -c -
+          chmod +x /usr/local/bin/hadolint
+          curl -sSfL -o /tmp/actionlint.tgz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  /tmp/actionlint.tgz" | sha256sum -c -
+          tar -xzf /tmp/actionlint.tgz -C /usr/local/bin actionlint
+
+      - name: hadolint
+        run: hadolint --config docker/.hadolint.yaml docker/Dockerfile
+
+      - name: hadolint (parity reference)
+        run: hadolint --config docker/.hadolint.yaml parity/oracle/Dockerfile
+
+      # actionlint checks the workflows of GitHub, which are the source of these.
+      - name: actionlint
+        run: actionlint -color
