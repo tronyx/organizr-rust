@@ -12,14 +12,14 @@ These parts work:
 
 - Users, groups, tabs, categories, settings and the set-up wizard
 - Login with a password, with Plex, with a second factor, and password recovery by e-mail
-- Forward auth for a reverse proxy, and single sign-on to Plex, Ombi, Overseerr and Tautulli
+- Forward auth for a reverse proxy, and single sign-on to Plex, Jellyfin, Ombi, Overseerr, Petio, Tautulli and Komga
 - The import of an install of PHP Organizr
 - The homepage with Plex, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission, Pi-hole, Healthchecks, Uptime Kuma, weather and custom HTML
-- The plugins for bookmarks, health checks, invites, e-mail and the speed test
+- The plugins for bookmarks, health checks, invites, e-mail, Plex Libraries and the speed test
 - Backup and restore, also on a schedule
-- Extensions of other authors, which run in a sandbox
+- Extensions of other authors, which run in a sandbox and reach only the sites that you approve
 
-Parts of PHP Organizr that are not built yet are named in [Architecture](docs/architecture.md), section 10.
+Where this application works differently from PHP Organizr, and the few parts of PHP that it leaves out on purpose, are listed in [Deviations](docs/deviations.md).
 
 ## Start it
 
