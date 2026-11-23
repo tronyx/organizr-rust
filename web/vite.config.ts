@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
@@ -6,6 +8,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   // Relative addresses, so the interface works at the root of a host and in a sub-folder.
   base: './',
+  resolve: { alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) } },
   plugins: [tailwindcss(), svelte(), svelteTesting({ autoCleanup: false })],
   build: {
     outDir: 'dist',

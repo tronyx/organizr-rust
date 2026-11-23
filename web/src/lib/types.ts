@@ -1,6 +1,7 @@
 // The shapes of the answers of the API that the interface reads.
 
 import type { JellyfinSso } from './jellyfinSso';
+import type { Look } from './look';
 
 /** What the `launch` answer says about the OpenID Connect login, under `settings.login.oidc`. */
 export interface OidcLaunch {
@@ -142,6 +143,8 @@ export interface Launch {
   version: string;
   /** The theme that the page shows, for example `Organizr` or `Nord`. */
   theme?: string;
+  /** The layout and theme that apply to the caller. Absent on an older server (then OG). */
+  look?: Look;
   appearance: Appearance;
   /** The switch of each plugin, for example `PHPMAILER-enabled`, and what plugins add. */
   plugins: Record<string, unknown>;

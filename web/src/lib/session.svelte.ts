@@ -2,7 +2,8 @@
 
 import { api, failureText } from './api';
 import { browserStorage, copyJellyfinLogin } from './jellyfinSso';
-import { applyAppearance, applyCustomScript, applyIcons } from './theme';
+import { applyLook, type Look } from './look';
+import { applyCustomScript, applyIcons, DEFAULT_THEME } from './theme';
 import {
   CO_ADMIN,
   type Launch,
@@ -17,6 +18,16 @@ class Session {
   /** Why the last load failed. */
   error = $state<string | null>(null);
   loading = $state(false);
+
+  /** The layout and theme of the caller. An older server sends none: that is OG. */
+  look = $derived<Look>(
+    this.launch?.look ?? {
+      layout: 'og',
+      theme: this.launch?.theme ?? DEFAULT_THEME,
+      colourSet: 'dark',
+      source: 'default',
+    },
+  );
 
   /** Whether the install waits for the set-up wizard. */
   needsSetUp = $derived(this.launch?.status.status === 'wizard');
@@ -37,7 +48,7 @@ class Session {
       this.launch = data;
       this.error = null;
       document.title = data.appearance.title || 'Organizr';
-      applyAppearance(data.theme, data.appearance);
+      applyLook(this.look, data.theme, data.appearance);
       applyIcons(data.appearance.favIcons);
       applyCustomScript(data.appearance, data.status.status === 'ok');
       if (data.user?.loggedin) {

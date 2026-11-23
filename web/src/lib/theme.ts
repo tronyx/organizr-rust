@@ -107,7 +107,7 @@ let cssVersion = 0;
  * Links the style sheet of the Admin, after the style sheet of the interface, so that its
  * rules win. Without one, the page links nothing.
  */
-function linkCustomCss(appearance: Partial<Appearance>): void {
+export function linkCustomCss(appearance: Partial<Appearance>): void {
   const text = `${appearance.customThemeCss ?? ''}\n${appearance.customCss ?? ''}`;
   const existing = document.getElementById(CUSTOM_CSS_ID);
   if (text.trim() === '') {
