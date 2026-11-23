@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 
 use organizr_db::entity::{
     bookmark_category, bookmark_tab, category, chat_message, extension, group, invite,
-    legacy_setting, session, setting, tab, user,
+    legacy_setting, session, setting, tab, user, user_preference,
 };
 use organizr_db::{COPIED_TABLES, Database, DbError};
 use organizr_testkit::engines::fresh_postgres;
@@ -40,10 +40,10 @@ fn session_row(id: i64, user_id: i64) -> session::ActiveModel {
     }
 }
 
-/// Puts at least one row in each of the 12 tables. The ids are not 1, 2, 3.
+/// Puts at least one row in each of the 13 tables. The ids are not 1, 2, 3.
 #[allow(
     clippy::too_many_lines,
-    reason = "the seed lists one row for each of the 12 tables"
+    reason = "the seed lists one row for each of the 13 tables"
 )]
 async fn seed(database: &Database) {
     let connection = database.connection();
@@ -92,6 +92,17 @@ async fn seed(database: &Database) {
     .insert(connection)
     .await
     .expect("a user is stored");
+    user_preference::ActiveModel {
+        user_id: Set(5),
+        layout: Set(Some("modern".to_owned())),
+        og_theme: Set(Some("Organizr".to_owned())),
+        og_style: Set(Some("dark".to_owned())),
+        modern_theme: Set(Some(AWKWARD_TEXT.to_owned())),
+        modern_colour_set: Set(None),
+    }
+    .insert(connection)
+    .await
+    .expect("a look is stored");
     category::ActiveModel {
         id: Set(3),
         number: Set(10),
@@ -278,12 +289,13 @@ async fn copy_gives_postgres_every_row_of_every_table() {
         .await
         .expect("the copy succeeds");
 
-    assert_eq!(counts.len(), 12);
+    assert_eq!(counts.len(), 13);
     assert_eq!(counts, source.row_counts().await.expect("rows are counted"));
     assert!(counts.iter().all(|entry| entry.rows >= 1));
     let target = &postgres.database;
     same_rows::<group::Entity, _>(&source, target, group::Column::Id).await;
     same_rows::<user::Entity, _>(&source, target, user::Column::Id).await;
+    same_rows::<user_preference::Entity, _>(&source, target, user_preference::Column::UserId).await;
     same_rows::<category::Entity, _>(&source, target, category::Column::Id).await;
     same_rows::<tab::Entity, _>(&source, target, tab::Column::Id).await;
     same_rows::<setting::Entity, _>(&source, target, setting::Column::Name).await;
@@ -449,7 +461,7 @@ async fn copy_accepts_a_migrated_empty_target() {
         .await
         .expect("the copy succeeds");
 
-    assert_eq!(counts.len(), 12);
+    assert_eq!(counts.len(), 13);
     source.close().await.expect("the file closes");
     writer.close().await.expect("the writer closes");
     postgres.remove().await;

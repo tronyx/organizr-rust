@@ -25,3 +25,4 @@ pub mod session;
 pub mod setting;
 pub mod tab;
 pub mod user;
+pub mod user_preference;

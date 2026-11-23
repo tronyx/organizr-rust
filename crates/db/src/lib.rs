@@ -16,6 +16,7 @@ mod groups;
 mod import;
 mod install;
 mod invites;
+mod looks;
 mod migration;
 mod sessions;
 mod stored_settings;
@@ -39,6 +40,7 @@ pub use crate::groups::Groups;
 pub use crate::import::{Import, ImportData, ImportedUser};
 pub use crate::install::{Install, NewInstall};
 pub use crate::invites::Invites;
+pub use crate::looks::{Looks, StoredLook};
 pub use crate::sessions::Sessions;
 pub use crate::stored_settings::{StoredSetting, StoredSettings};
 pub use crate::tabs::Tabs;
@@ -289,6 +291,11 @@ impl Database {
     /// The sessions.
     pub const fn sessions(&self) -> Sessions<'_> {
         Sessions::new(&self.connection)
+    }
+
+    /// The layout and theme that each person chose.
+    pub const fn looks(&self) -> Looks<'_> {
+        Looks::new(&self.connection)
     }
 
     /// The stored settings.

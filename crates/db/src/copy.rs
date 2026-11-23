@@ -7,15 +7,16 @@ use sea_orm::{
 
 use crate::entity::{
     bookmark_category, bookmark_tab, category, chat_message, extension, group, invite,
-    legacy_setting, session, setting, tab, user,
+    legacy_setting, session, setting, tab, user, user_preference,
 };
 use crate::{Database, DbError, Engine};
 
 /// The tables of the schema, in the order that the foreign keys need for a copy: a table
 /// comes after the tables it points at.
-pub const COPIED_TABLES: [&str; 12] = [
+pub const COPIED_TABLES: [&str; 13] = [
     "groups",
     "users",
+    "user_preferences",
     "categories",
     "tabs",
     "settings",
@@ -85,6 +86,7 @@ async fn counts<C: ConnectionTrait>(connection: &C) -> Result<Vec<TableCount>, D
     let rows = [
         count::<group::Entity, C>(connection).await?,
         count::<user::Entity, C>(connection).await?,
+        count::<user_preference::Entity, C>(connection).await?,
         count::<category::Entity, C>(connection).await?,
         count::<tab::Entity, C>(connection).await?,
         count::<setting::Entity, C>(connection).await?,
@@ -174,6 +176,7 @@ impl Database {
         let source = self.connection.begin().await?;
         copy_table::<group::Entity, _, _>(&source, &transaction).await?;
         copy_table::<user::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<user_preference::Entity, _, _>(&source, &transaction).await?;
         copy_table::<category::Entity, _, _>(&source, &transaction).await?;
         copy_table::<tab::Entity, _, _>(&source, &transaction).await?;
         copy_table::<setting::Entity, _, _>(&source, &transaction).await?;
