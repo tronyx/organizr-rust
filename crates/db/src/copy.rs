@@ -152,6 +152,10 @@ impl Database {
         if self.engine != Engine::Sqlite || target.engine != Engine::Postgres {
             return Err(DbError::WrongEngines);
         }
+        // A database that holds an install is refused before any migration touches it.
+        if target.holds_records().await? {
+            return Err(DbError::NotEmpty);
+        }
         target.migrate().await?;
 
         let transaction = target.connection.begin().await?;

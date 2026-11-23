@@ -661,3 +661,65 @@ async fn holds_records_is_false_until_a_table_has_a_row() {
 
     postgres.remove().await;
 }
+
+#[tokio::test]
+async fn copy_refuses_an_older_install_before_it_migrates_it() {
+    let Some(postgres) = fresh_postgres().await else {
+        return;
+    };
+    let database = &postgres.database;
+    database
+        .migrate_steps(11)
+        .await
+        .expect("11 migrations apply");
+    group::ActiveModel {
+        id: Set(1),
+        level: Set(0),
+        name: Set("Existing".to_owned()),
+        name_key: Set("existing".to_owned()),
+        image: Set(None),
+        is_default: Set(false),
+    }
+    .insert(database.connection())
+    .await
+    .expect("a group is stored");
+    let (_folder, file, writer) = sqlite_source().await;
+    let source = open_read_only(&file).await;
+
+    let result = source.copy_into(database).await;
+
+    assert!(matches!(result, Err(DbError::NotEmpty)), "{result:?}");
+    assert!(
+        database
+            .has_pending_migrations()
+            .await
+            .expect("pending are read")
+    );
+
+    source.close().await.expect("the file closes");
+    writer.close().await.expect("the writer closes");
+    postgres.remove().await;
+}
+
+#[tokio::test]
+async fn pending_migrations_are_checked_without_creating_a_table() {
+    let Some(postgres) = fresh_postgres().await else {
+        return;
+    };
+    let database = &postgres.database;
+
+    assert!(
+        database
+            .has_pending_migrations()
+            .await
+            .expect("pending are read")
+    );
+
+    let tables = table_names(
+        database,
+        "SELECT table_name AS name FROM information_schema.tables          WHERE table_schema = current_schema()",
+    )
+    .await;
+    assert!(tables.is_empty(), "{tables:?}");
+    postgres.remove().await;
+}

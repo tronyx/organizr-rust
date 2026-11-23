@@ -250,7 +250,7 @@ impl Database {
     /// database. Changes nothing.
     pub async fn has_pending_migrations(&self) -> Result<bool, DbError> {
         Ok(
-            !migration::Migrator::get_pending_migrations(&self.connection)
+            !migration::Migrator::get_pending_migrations_read_only(&self.connection)
                 .await?
                 .is_empty(),
         )
