@@ -136,6 +136,36 @@ async fn switching_layout_keeps_the_other_layouts_choice() {
 }
 
 #[tokio::test]
+async fn switch_to_modern_then_back_to_og_keeps_the_og_theme() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let robin = seed::logged_in(database, &app, "robin", 4).await;
+        let put = |body: Value| call(&app, As::User(&robin), "PUT", "/user/look", Some(body));
+
+        put(json!({"layout": "og", "theme": "Dracula", "colourSet": "light"})).await;
+        let modern = put(json!({"layout": "modern"})).await;
+        assert_eq!(modern.status, StatusCode::OK, "{}", modern.body);
+        assert_eq!(
+            modern.data(),
+            json!({"layout": "modern", "theme": "organizr", "colourSet": "dark", "source": "user"})
+        );
+        let back = put(json!({"layout": "og"})).await;
+        assert_eq!(
+            back.data(),
+            json!({"layout": "og", "theme": "Dracula", "colourSet": "light", "source": "user"})
+        );
+        // An explicit null still means the default of that layout.
+        let reset = put(json!({"layout": "og", "theme": null, "colourSet": null})).await;
+        assert_eq!(
+            reset.data(),
+            json!({"layout": "og", "theme": "Organizr", "colourSet": "dark", "source": "user"})
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn invalid_values_are_refused_with_422() {
     on_each_engine(async |database| {
         seed::installed(database).await;

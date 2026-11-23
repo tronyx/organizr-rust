@@ -33,8 +33,8 @@
 
   async function send(body: {
     layout: string | null;
-    theme: string | null;
-    colourSet: string | null;
+    theme?: string | null;
+    colourSet?: string | null;
   }) {
     busy = true;
     error = null;
@@ -48,10 +48,10 @@
     }
   }
 
-  /** The layout changes; its theme and colours are those of the person or the default. */
+  /** The layout changes; its theme and colours stay as the person last chose them there. */
   const chooseLayout = (layout: 'og' | 'modern') => {
     if (layout !== look.layout) {
-      return send({ layout, theme: null, colourSet: null });
+      return send({ layout });
     }
   };
 

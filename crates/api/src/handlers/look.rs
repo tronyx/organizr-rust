@@ -30,13 +30,34 @@ enum Request {
         theme: Option<String>,
         colour_set: Option<String>,
     },
+    /// Store the layout only: the body names no theme and no colour set, so what the
+    /// caller last chose for that layout stays.
+    Switch { layout: &'static str },
 }
 
-/// A field that is text or `null`. A field that the body lacks is `null`.
-fn optional_text(data: &ApiData, name: &str, message: &str) -> Result<Option<String>, Refusal> {
+/// A field of the body that is text or `null`.
+enum Field {
+    /// The body lacks the field.
+    Absent,
+    /// The field is `null`: the default of the layout.
+    Default,
+    Text(String),
+}
+
+impl Field {
+    fn text(self) -> Option<String> {
+        match self {
+            Field::Text(text) => Some(text),
+            Field::Absent | Field::Default => None,
+        }
+    }
+}
+
+fn optional_text(data: &ApiData, name: &str, message: &str) -> Result<Field, Refusal> {
     match data.field(name) {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(text)) => Ok(Some(text.clone())),
+        None => Ok(Field::Absent),
+        Some(Value::Null) => Ok(Field::Default),
+        Some(Value::String(text)) => Ok(Field::Text(text.clone())),
         Some(_) => Err(Refusal::unprocessable(message)),
     }
 }
@@ -51,6 +72,11 @@ fn read_request(data: &ApiData, settings: &Settings) -> Result<Request, Refusal>
     };
     let theme = optional_text(data, "theme", "theme is not valid")?;
     let colour_set = optional_text(data, "colourSet", "colourSet is not valid")?;
+    if matches!((&theme, &colour_set), (Field::Absent, Field::Absent)) {
+        return Ok(Request::Switch { layout });
+    }
+    let theme = theme.text();
+    let colour_set = colour_set.text();
     let theme_names: Vec<&str> = if layout == "og" {
         OG_THEMES.to_vec()
     } else {
@@ -132,6 +158,12 @@ pub async fn set_look(
         } => {
             let current = looks.get(user).await?.unwrap_or_default();
             let new = changed(current, layout, theme, colour_set);
+            looks.set(user, &new).await?;
+            Some(new)
+        }
+        Request::Switch { layout } => {
+            let mut new = looks.get(user).await?.unwrap_or_default();
+            new.layout = Some(layout.to_owned());
             looks.set(user, &new).await?;
             Some(new)
         }

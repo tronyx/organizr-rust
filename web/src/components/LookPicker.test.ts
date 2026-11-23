@@ -75,7 +75,7 @@ describe('LookPicker', () => {
 
     await fireEvent.click(screen.getByRole('radio', { name: 'Modern' }));
     await waitFor(() => expect(puts()).toHaveLength(3));
-    expect(puts()[2]?.body).toEqual({ layout: 'modern', theme: null, colourSet: null });
+    expect(puts()[2]?.body).toEqual({ layout: 'modern' });
     // Each change loads the look again.
     await waitFor(() =>
       expect(sent.filter((request) => request.path === 'launch').length).toBeGreaterThanOrEqual(4),

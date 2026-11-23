@@ -159,6 +159,9 @@ async fn some_settings_are_changed_by_the_admin_only() {
             ("authProxyHeaderName", json!("X-User")),
             ("customJava", json!("alert(1)")),
             ("customThemeJava", json!("alert(2)")),
+            ("layout", json!("modern")),
+            ("modernTheme", json!("organizr")),
+            ("modernColourSet", json!("light")),
         ] {
             // The other setting of the request is not changed either.
             let body = json!({"title": "Home", key: value});
@@ -179,6 +182,14 @@ async fn some_settings_are_changed_by_the_admin_only() {
         .await;
         assert_eq!(setting(&app, "customJava").await, json!("console.log(1)"));
         assert_eq!(setting(&app, "authProxyEnabled").await, json!(true));
+        assert_eq!(setting(&app, "layout").await, json!("og"));
+        change(
+            &app,
+            json!({"layout": "modern", "modernTheme": "organizr", "modernColourSet": "light"}),
+        )
+        .await;
+        assert_eq!(setting(&app, "layout").await, json!("modern"));
+        assert_eq!(setting(&app, "modernColourSet").await, json!("light"));
         // A Co-Admin changes the other settings, the style sheets among them.
         let body = json!({"customCss": "body { margin: 0; }"});
         let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;

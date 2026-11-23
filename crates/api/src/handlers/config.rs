@@ -41,12 +41,16 @@ const REGISTRATION_PASSWORD: &str = "registrationPassword";
 const INSTALL_ID: &str = "uuid";
 
 /// Whether only an Admin can change a setting: the API key, the settings that let a
-/// proxy say who the caller is, and the scripts that run on every page.
+/// proxy say who the caller is, the scripts that run on every page, and the default look
+/// (D-125).
 fn is_for_admins_only(key: &str) -> bool {
     key == API_KEY
         || key.starts_with("authProxy")
         || key == "customJava"
         || key == "customThemeJava"
+        || key == "layout"
+        || key == "modernTheme"
+        || key == "modernColourSet"
 }
 
 /// A setting as the API shows it to a caller of the given level.
@@ -254,6 +258,9 @@ mod tests {
             "authProxyWhitelist",
             "customJava",
             "customThemeJava",
+            "layout",
+            "modernTheme",
+            "modernColourSet",
         ] {
             assert!(is_for_admins_only(key), "{key}");
         }
