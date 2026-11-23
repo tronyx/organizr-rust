@@ -12,6 +12,10 @@ Themes of other marketplaces are not supported. Theme files that were written fo
 
 Each colour field takes a colour, for example `#987654`, `rgb(20, 40, 60)` or `teal`. An empty field means the colour of the theme. Organizr ignores a value that is not a colour.
 
+## The picture of the login page
+
+The switch **Use Random Media Wallpaper From Media Server**, on the page **Appearance**, group **Login Page**, shows a picture of something that was played as the background of the login page. Organizr chooses the picture at random from the pictures that the homepage keeps of what plays now on Plex, Emby or Jellyfin and of the statistics of Tautulli. A picture counts only when it is at least as wide as the pictures of what plays: 1200 pixels times the setting **Image Cache Quality** (`cacheImageSize`). Until the homepage has kept such a picture, the login page shows the **Login Wallpaper**, or no picture. Setting key: `useRandomMediaImage`. Off by default (D-123).
+
 ## Custom CSS
 
 **Custom CSS** and **Theme CSS** are style sheets for every page. They come after the style sheet of the theme, so their rules win. The server serves them as one file, `api/v2/appearance/custom.css`.

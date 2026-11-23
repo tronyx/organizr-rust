@@ -102,10 +102,6 @@ struct TabObject {
 /// How the page looks. All values are settings.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[expect(
-    clippy::struct_excessive_bools,
-    reason = "the fields are those of the answer of PHP, and one switch of this application"
-)]
 struct Appearance {
     logo: String,
     title: String,
@@ -122,8 +118,9 @@ struct Appearance {
     button_text_hover_color: String,
     button_hover_color: String,
     login_wallpaper: String,
-    /// A picture from a media server for the login page. Not built yet.
-    random_media_image: bool,
+    /// A picture of something that plays, from the picture cache, for the login page:
+    /// its address, or `false` (`useRandomMediaImage`).
+    random_media_image: Value,
     login_logo: String,
     custom_css: String,
     custom_theme_css: String,
@@ -198,7 +195,11 @@ fn tab_object(
     TabObject { tab, access_url }
 }
 
-fn appearance(settings: &Settings, custom_js_enabled: bool) -> Appearance {
+fn appearance(
+    settings: &Settings,
+    custom_js_enabled: bool,
+    random_media_image: Value,
+) -> Appearance {
     Appearance {
         logo: settings.logo.clone(),
         title: settings.title.clone(),
@@ -215,7 +216,7 @@ fn appearance(settings: &Settings, custom_js_enabled: bool) -> Appearance {
         button_text_hover_color: settings.button_text_hover_color.clone(),
         button_hover_color: settings.button_hover_color.clone(),
         login_wallpaper: settings.login_wallpaper.clone(),
-        random_media_image: false,
+        random_media_image,
         login_logo: settings.login_logo.clone(),
         custom_css: settings.custom_css.clone(),
         custom_theme_css: settings.custom_theme_css.clone(),
@@ -231,6 +232,23 @@ fn appearance(settings: &Settings, custom_js_enabled: bool) -> Appearance {
 /// Any caller may ask. A guest gets the tabs that guests may see, which on a new install
 /// are none. On an install that is not set up, `categories` and `tabs` are `false` and
 /// `status.status` is `wizard`.
+/// The picture of the login page from the picture cache, as `getRandomMediaImage` of
+/// PHP: a picture of something that plays, at least as wide as the pictures of what
+/// plays are fetched, or `false`.
+async fn random_media_image(state: &AppState, settings: &Settings) -> Value {
+    if !settings.use_random_media_image {
+        return Value::Bool(false);
+    }
+    let least_width = settings.cache_image_size.saturating_mul(1200);
+    match state.picture_cache() {
+        Some(cache) => cache
+            .random_wide_picture(least_width)
+            .await
+            .map_or(Value::Bool(false), Value::String),
+        None => Value::Bool(false),
+    }
+}
+
 pub async fn launch(
     State(state): State<AppState>,
     Extension(client): Extension<Client>,
@@ -298,7 +316,11 @@ pub async fn launch(
         version: VERSION,
         settings: visitor.settings(),
         plugins: visitor.plugins(),
-        appearance: appearance(&settings, state.custom_js()),
+        appearance: appearance(
+            &settings,
+            state.custom_js(),
+            random_media_image(&state, &settings).await,
+        ),
         status: LaunchStatus {
             status: if is_set_up { "ok" } else { "wizard" },
             writable: "yes",

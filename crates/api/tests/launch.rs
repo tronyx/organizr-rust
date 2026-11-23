@@ -308,6 +308,49 @@ async fn settings_change_the_order_and_the_look() {
     .await;
 }
 
+/// A JPEG header of the given width, enough for the width to be read.
+fn jpeg_of_width(width: u16) -> Vec<u8> {
+    let mut bytes = vec![0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x04, 0x00, 0x00];
+    bytes.extend_from_slice(&[0xFF, 0xC0, 0x00, 0x11, 0x08, 0x02, 0xA3]);
+    bytes.extend_from_slice(&width.to_be_bytes());
+    bytes.extend_from_slice(&[0x03; 12]);
+    bytes
+}
+
+#[tokio::test]
+async fn login_page_gets_a_wide_picture_of_the_cache_when_the_setting_is_on() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let folder = tempfile::tempdir().expect("a folder can be made");
+        let cache = folder.path().join("cache");
+        std::fs::create_dir_all(&cache).expect("the cache folder can be made");
+        // Only the picture of what plays that is wide enough can be chosen.
+        std::fs::write(cache.join("tautulli-7-np.jpg"), jpeg_of_width(2400)).expect("written");
+        std::fs::write(cache.join("tautulli-8-np.jpg"), jpeg_of_width(600)).expect("written");
+        std::fs::write(cache.join("tautulli-7-list.jpg"), jpeg_of_width(2400)).expect("written");
+        let app_for = |on: bool| {
+            let settings =
+                organizr_testkit::installed_settings(&[("useRandomMediaImage", json!(on))]);
+            organizr_api::router(state_with(database, settings).with_picture_cache(cache.clone()))
+                .expect("the route table is valid")
+        };
+
+        let answer = launch(&app_for(true), "").await;
+        assert_eq!(
+            answer.data()["appearance"]["randomMediaImage"],
+            json!("data/cache/tautulli-7-np.jpg")
+        );
+        let off = launch(&app_for(false), "").await;
+        assert_eq!(off.data()["appearance"]["randomMediaImage"], json!(false));
+
+        // Without a picture that is wide enough, there is none.
+        std::fs::remove_file(cache.join("tautulli-7-np.jpg")).expect("removed");
+        let none = launch(&app_for(true), "").await;
+        assert_eq!(none.data()["appearance"]["randomMediaImage"], json!(false));
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn caller_with_the_api_key_gets_the_menu_of_an_admin() {
     on_each_engine(async |database| {

@@ -74,6 +74,44 @@ pub fn picture_type(content: &[u8]) -> Option<&'static str> {
     }
 }
 
+/// The width of a JPEG or PNG picture, read from its header.
+pub fn picture_width(content: &[u8]) -> Option<u32> {
+    let pair = |at: usize| -> Option<u16> {
+        let bytes = content.get(at..at + 2)?;
+        Some(u16::from_be_bytes([*bytes.first()?, *bytes.get(1)?]))
+    };
+    if content.starts_with(&[0x89, b'P', b'N', b'G']) {
+        if content.get(12..16) != Some(b"IHDR".as_slice()) {
+            return None;
+        }
+        let bytes: [u8; 4] = content.get(16..20)?.try_into().ok()?;
+        return Some(u32::from_be_bytes(bytes));
+    }
+    if !content.starts_with(&[0xFF, 0xD8]) {
+        return None;
+    }
+    // The segments of a JPEG file: a marker 0xFF and its kind, then a length. The width
+    // is in the segment that starts the frame.
+    let mut at = 2;
+    loop {
+        if *content.get(at)? != 0xFF {
+            return None;
+        }
+        let kind = *content.get(at + 1)?;
+        match kind {
+            0xFF => at += 1,
+            0x01 | 0xD0..=0xD7 => at += 2,
+            0xC0..=0xCF if !matches!(kind, 0xC4 | 0xC8 | 0xCC) => {
+                return pair(at + 7).map(u32::from);
+            }
+            _ => at += 2 + usize::from(pair(at + 2)?),
+        }
+    }
+}
+
+/// How many pictures [`PictureCache::random_wide_picture`] reads at most.
+const RANDOM_TRIES: usize = 20;
+
 impl PictureCache {
     /// A cache in the given folder. The folder is made when the first picture comes.
     pub fn new(folder: PathBuf) -> Self {
@@ -103,6 +141,37 @@ impl PictureCache {
             return None;
         }
         tokio::fs::read(self.file(name)).await.ok()
+    }
+
+    /// The address of a picture of something that plays, chosen at random, that is at
+    /// least `least_width` pixels wide: `data/cache/<name>.jpg`. As `getRandomMediaImage`
+    /// of PHP, for the login page. The pictures of something that plays have names that
+    /// end with `-np`.
+    pub async fn random_wide_picture(&self, least_width: u32) -> Option<String> {
+        let mut names = Vec::new();
+        let mut entries = tokio::fs::read_dir(&*self.folder).await.ok()?;
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let file_name = entry.file_name();
+            if let Some(name) = file_name
+                .to_str()
+                .and_then(|name| name.strip_suffix(".jpg"))
+                && is_cache_name(name)
+                && name.ends_with("-np")
+            {
+                names.push(name.to_owned());
+            }
+        }
+        for _ in 0..RANDOM_TRIES {
+            let count = u64::try_from(names.len()).ok().filter(|count| *count > 0)?;
+            let index = usize::try_from(getrandom::u64().ok()? % count).ok()?;
+            let name = names.swap_remove(index);
+            if let Some(content) = self.read(&name).await
+                && picture_width(&content).is_some_and(|width| width >= least_width)
+            {
+                return Some(format!("data/cache/{name}.jpg"));
+            }
+        }
+        None
     }
 
     /// Puts a picture into the cache, in the place of the one with the same name.
@@ -227,7 +296,28 @@ pub fn picture_response(content: Vec<u8>) -> Option<Response> {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_cache_name, picture_type};
+    use super::{is_cache_name, picture_type, picture_width};
+
+    #[test]
+    fn width_is_read_from_the_header_of_a_jpeg_or_png() {
+        // A JPEG with a segment before the frame, which is skipped.
+        let mut jpeg = vec![0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x04, 0x00, 0x00];
+        jpeg.extend_from_slice(&[0xFF, 0xC2, 0x00, 0x11, 0x08, 0x02, 0xA3, 0x04, 0xB0]);
+        assert_eq!(picture_width(&jpeg), Some(1200));
+        let mut png = vec![0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13];
+        png.extend_from_slice(b"IHDR");
+        png.extend_from_slice(&640_u32.to_be_bytes());
+        png.extend_from_slice(&480_u32.to_be_bytes());
+        assert_eq!(picture_width(&png), Some(640));
+        for broken in [
+            b"".as_slice(),
+            b"GIF89a".as_slice(),
+            &[0xFF, 0xD8, 0xFF, 0xE0, 0x00],
+            &[0xFF, 0xD8, 0x00, 0x00],
+        ] {
+            assert_eq!(picture_width(broken), None, "{broken:?}");
+        }
+    }
 
     #[test]
     fn cache_name_cannot_leave_the_folder() {
