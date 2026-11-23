@@ -18,9 +18,9 @@ use crate::handlers::{
     backups, basics, bookmarks, categories, certificate, chat, config, connection_tests,
     connection_tests_more as more_tests, database, fields, forward_auth, groups,
     health_checks_plugin, help, homepage, icon, images, invites, ip, launch, lock, log, login,
-    login_backends, logout, mail, media_register, news, oidc, pages, ping, plex, plex_libraries,
-    plugins, register, settings_forms, socks, speed_test, sponsors, tabs, themes, token,
-    two_factor, update, users, users_import, wizard,
+    login_backends, logout, look, mail, media_register, news, oidc, pages, ping, plex,
+    plex_libraries, plugins, register, settings_forms, socks, speed_test, sponsors, tabs, themes,
+    token, two_factor, update, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -614,6 +614,8 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/update/check", &get(update::check))?
         .route("/users", &get(users::list).post(users::add))?
         .route("/users/import/{type}", &post(users_import::import))?
+        // Not a route of PHP: the look that the caller chose (D-125).
+        .route("/user/look", &put(look::set_look))?
         .route("/users/lock", &post(lock::lock_own))?
         .route("/users/unlock", &post(lock::unlock_own))?
         .route("/users/lock/{id}", &post(lock::lock_user))?

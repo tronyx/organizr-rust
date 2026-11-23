@@ -20,6 +20,7 @@ use crate::fav_icon::{IconLink, icon_links};
 use crate::handlers::launch_settings::Visitor;
 use crate::handlers::tabs::{CategoryRow, PageAddress, TabRow, TabVariables};
 use crate::handlers::token::{SessionSummary, UserObject, describe_caller};
+use crate::look::{Look, effective_look};
 use crate::state::AppState;
 use crate::update_check::UpdateStatus;
 
@@ -70,6 +71,8 @@ pub struct LaunchData {
     /// What the last version check found, for Admins and Co-Admins; `null` for every
     /// other caller (D-23).
     update: Option<UpdateStatus>,
+    /// Not in PHP: the layout, theme and colour set that apply to the caller (D-125).
+    look: Look,
 }
 
 /// A list, or `false` on an install that is not set up, as PHP sends it.
@@ -305,6 +308,11 @@ pub async fn launch(
         (ListOrFalse::NotSetUp(false), ListOrFalse::NotSetUp(false))
     };
 
+    let stored_look = match caller.user() {
+        Some(me) => database.looks().get(me.authenticated.user.id).await?,
+        None => None,
+    };
+
     Ok(Envelope::success(LaunchData {
         categories,
         tabs,
@@ -335,6 +343,7 @@ pub async fn launch(
         sso: visitor.sso_cookies(),
         warnings: None,
         update: (caller.level() <= GroupLevel::CO_ADMIN).then(|| (*state.update_status()).clone()),
+        look: effective_look(&settings, stored_look.as_ref()),
     }))
 }
 

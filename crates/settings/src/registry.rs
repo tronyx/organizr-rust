@@ -139,6 +139,12 @@ settings! {
     theme: Text = "theme", "Organizr".to_owned();
     /// The colour style of the user interface.
     style: Text = "style", "dark".to_owned();
+    /// The layout that a person sees until they choose one: `og` or `modern` (D-125).
+    layout: Text = "layout", "og".to_owned();
+    /// The theme of the modern layout until a person chooses one (D-125).
+    modern_theme: Text = "modernTheme", "organizr".to_owned();
+    /// The colour set of the modern layout until a person chooses one (D-125).
+    modern_colour_set: Text = "modernColourSet", "dark".to_owned();
     /// Where tabs of the default category stand in the menu.
     unsorted_tabs: Choice<UnsortedTabs> = "unsortedTabs", UnsortedTabs::Top;
     /// The release line of the PHP application. Kept for clients that read it.
@@ -1217,6 +1223,9 @@ mod tests {
             ("PLEXLIBRARIES-enabled", json!(false)),
             ("PLEXLIBRARIES-Auth-include", json!("4")),
             ("PLEXLIBRARIES-librariesToInclude", json!("")),
+            ("layout", json!("og")),
+            ("modernTheme", json!("organizr")),
+            ("modernColourSet", json!("dark")),
         ]
     }
 

@@ -105,6 +105,15 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
         Value::Null
     };
     let replay = replay.deviation_adds("D-23", case, "/response/data", "update", update);
+    // The look that applies to the caller: every recorded install has the default theme
+    // and style, and no recorded caller chose a look (D-125).
+    let replay = replay.deviation_adds(
+        "D-125",
+        case,
+        "/response/data",
+        "look",
+        json!({"layout": "og", "theme": "Organizr", "colourSet": "dark", "source": "default"}),
+    );
     // The switch and the level of the Plex Libraries plugin of this application (D-121).
     // A launch whose lists D-50 sorts gets them added as they are; the sort places them.
     let plugin_keys = [
@@ -665,6 +674,14 @@ async fn config_routes_answer_like_php() {
             ("PLEXLIBRARIES-librariesToInclude", json!("")),
         ] {
             replay = replay.deviation_adds_in_order("D-121", all, data, key, value);
+        }
+        // The layout and the modern theme of this application (D-125).
+        for (key, value) in [
+            ("layout", json!("og")),
+            ("modernColourSet", json!("dark")),
+            ("modernTheme", json!("organizr")),
+        ] {
+            replay = replay.deviation_adds_in_order("D-125", all, data, key, value);
         }
         // Each custom HTML item has a switch that PHP does not have.
         for number in 1..=8 {

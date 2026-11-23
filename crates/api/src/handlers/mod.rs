@@ -32,6 +32,7 @@ pub mod log;
 pub mod login;
 pub mod login_backends;
 pub mod logout;
+pub mod look;
 pub mod mail;
 pub mod media_register;
 pub mod news;

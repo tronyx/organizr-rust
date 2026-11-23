@@ -13,6 +13,7 @@ pub mod error;
 pub mod fav_icon;
 mod handlers;
 pub mod log_files;
+pub mod look;
 pub mod php_json;
 pub mod php_url;
 pub mod picture_cache;
