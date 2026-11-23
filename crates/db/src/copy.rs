@@ -196,8 +196,10 @@ impl Database {
         let original = counts(&source).await?;
         let copied = counts(&transaction).await?;
         check_counts(&original, &copied)?;
-        transaction.commit().await?;
+        // The read of the SQLite file ends before the commit. If ending it fails, the
+        // target is rolled back too and stays empty, so the copy can run again.
         source.rollback().await?;
+        transaction.commit().await?;
         Ok(copied)
     }
 }
