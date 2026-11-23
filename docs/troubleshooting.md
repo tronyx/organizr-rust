@@ -38,6 +38,16 @@ a stored setting is ignored problem=the stored secret `plexToken` cannot be open
 
 Put the old `secret.key` back in the data folder and start the container again. If the key is lost, enter the values again. See [Secrets](secrets.md#if-the-key-is-lost-or-wrong).
 
+### With PostgreSQL, the log says that `seaql_migrations` already exists
+
+At each start with PostgreSQL, the log can show lines like this one:
+
+```text
+INFO sqlx::postgres::notice: relation "seaql_migrations" already exists, skipping
+```
+
+These lines are harmless. At each start, Organizr makes sure that its tables are up to date. PostgreSQL then says that the table that records the updates is there already. You do not need to do anything.
+
 ## Reverse proxy and tabs
 
 ### The tabs open http:// addresses, but the site uses HTTPS
