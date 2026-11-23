@@ -137,7 +137,7 @@ To keep your data when you change from SQLite to PostgreSQL, use the command in 
 
 ## Move an install from SQLite to PostgreSQL
 
-The command `organizr move-to-postgres` copies the data of an install from its SQLite file into an empty PostgreSQL database. It keeps every id. It copies all 12 tables, also the sessions, so nobody has to log in again. It copies the stored secrets as they are. They still open, because you keep the same data folder and its file `secret.key`. When the copy is done, the command counts the records in each table and compares the counts.
+The command `organizr move-to-postgres` copies the data of an install from its SQLite file into an empty PostgreSQL database. It keeps every id. It copies all 13 tables, also the sessions, so nobody has to log in again. It copies the stored secrets as they are. They still open, because you keep the same data folder and its file `secret.key`. When the copy is done, the command counts the records in each table and compares the counts.
 
 The command never changes the SQLite file. It reads the file `organizr.db` in the data folder. To read another file, add `--from` and the path of the file.
 

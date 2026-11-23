@@ -23,7 +23,7 @@ Most custom CSS only changes colours. A CSS variable changes a colour everywhere
 
 ### The colours of the theme
 
-Each theme sets these. The settings **Colors & Themes** set some of them too.
+Each theme sets these. On the OG Organizr layout, the settings **Colors & Themes** set some of them too. A modern theme sets its own colours, so those settings do not change them. Your custom CSS comes after the theme, so your variables win on both layouts.
 
 | Variable | What it colours |
 |---|---|
@@ -56,6 +56,24 @@ Each theme sets these. The settings **Colors & Themes** set some of them too.
 | `--org-event-unmonitored` | Not monitored | `text-dark` |
 | `--org-event-upcoming` | An iCal event that is ahead | `text-info` |
 | `--org-event-over` | An iCal event that is over | `text-dark` |
+
+## The layout and the theme
+
+Custom CSS applies on both layouts. The element `<html>` has attributes that tell which look is on, so a rule can aim at one of them:
+
+| Attribute | Value |
+|---|---|
+| `data-layout` | `og` for the OG Organizr layout, `modern` for the modern layout |
+| `data-theme` | The theme. On the modern layout it is `m-organizr-dark` |
+| `data-colour-set` | The colours of the modern theme, `dark` for now. The OG Organizr layout does not have it |
+
+A rule for the modern layout only starts with `[data-layout='modern']`:
+
+```css
+[data-layout='modern'] {
+    --org-header-bg: #1f4e79;
+}
+```
 
 ## Classes
 
@@ -117,7 +135,20 @@ The kinds of items: `adguard`, `bookmarks`, `calendar`, `customhtml`, `deluge`, 
 | Class | What it is |
 |---|---|
 | `.org-header` | The bar at the top |
+| `.org-header-link` | A link or button in the bar at the top |
+| `.org-logo` | The logo or the name in the bar at the top |
 | `.org-sidebar` | The menu on the left |
+| `.org-sidebar-head` | The title of the menu |
+| `.org-menu` | The list of tabs in the menu |
+
+The modern layout uses these same classes, so a rule for them applies on both layouts. The modern layout also has these classes. They exist on the modern layout only:
+
+| Class | What it is |
+|---|---|
+| `.m-shown` | The name of the open tab in the bar at the top |
+| `.m-look` | The box of the button **Look** in the bar at the top |
+| `.m-with-menu` | The page area, when the menu is beside it. Below 1024 pixels the menu is a drawer, and the class is absent |
+| `.org-menu-extras` | The links at the end of the menu |
 
 ## From PHP to this version
 

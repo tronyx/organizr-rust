@@ -114,7 +114,8 @@ organizr-rust/
 │   │                          subcommands serve, import, healthcheck, reset-password
 │   └── testkit/               organizr-testkit (dev only): app on a temp database, upstream mocks,
 │                              replay of recorded PHP cases
-├── web/                       Svelte front end (src/shell, auth, homepage/widgets, settings, plugins, lib)
+├── web/                       Svelte front end (src/shell, auth, homepage/widgets, settings, plugins, lib);
+│                              two layouts: the OG Organizr shell and the modern shell (pages/ModernShell.svelte)
 ├── parity/
 │   ├── oracle/                compose file that runs real Organizr 2.1.5000 with synthetic seed data
 │   ├── recorder/              drives the oracle and writes cases
