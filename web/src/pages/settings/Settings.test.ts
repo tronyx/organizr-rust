@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { plexToken } from '../../lib/plexLogin';
 import { session } from '../../lib/session.svelte';
@@ -993,6 +993,56 @@ describe('Settings', () => {
     render(Settings, { section: 'tabs' });
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Not Authorized');
+  });
+});
+
+describe('Settings, the layouts', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    session.launch = null;
+    delete document.documentElement.dataset.layout;
+  });
+
+  it('og_settings_keep_their_tabs', async () => {
+    await show('tabs');
+
+    expect(document.querySelector('.org-main-tabs')).not.toBeNull();
+    expect(document.querySelector('.org-sub-tabs')).not.toBeNull();
+    expect(document.querySelector('.org-breadcrumb')).not.toBeNull();
+    expect(document.querySelector('.m-settings-nav')).toBeNull();
+    expect(document.querySelector('.m-page-heading')).toBeNull();
+  });
+
+  it('modern_settings_have_a_side_menu_and_a_heading', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          media: query,
+          matches: true,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    );
+    const modern = {
+      data: {
+        ...(LAUNCH.data as Record<string, unknown>),
+        look: { layout: 'modern', theme: 'organizr', colourSet: 'dark', source: 'user' },
+      },
+    };
+    stubApi({ 'GET tabs': { data: DATA }, 'GET users': { data: USERS }, 'GET launch': modern });
+    await session.load();
+    render(Settings, { section: 'categories' });
+
+    expect(await screen.findByRole('navigation', { name: 'Settings' })).toHaveClass(
+      'm-settings-nav',
+    );
+    const heading = screen.getByRole('heading', { level: 1, name: 'Categories' });
+    expect(heading.closest('.m-page-heading')).toHaveTextContent('Tab Editor');
+    expect(document.querySelector('.org-main-tabs')).toBeNull();
+    expect(document.querySelector('.org-sub-tabs')).toBeNull();
+    expect(document.querySelector('.org-breadcrumb')).toBeNull();
   });
 });
 

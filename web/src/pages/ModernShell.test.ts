@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/sve
 import { createRawSnippet } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { router } from '../lib/route.svelte';
 import { session } from '../lib/session.svelte';
 import type { MenuCategory, MenuTab } from '../lib/types';
 import { at, stubApi } from '../test-helpers';
@@ -155,6 +156,22 @@ describe('ModernShell', () => {
     // The name of the shown tab stands in the top bar, and the group of it is open.
     expect(within(screen.getByRole('banner')).getByText('Plex Server')).toBeInTheDocument();
     expect(screen.getByText('Media').closest('details')).toHaveAttribute('open');
+  });
+
+  it('top_bar_names_an_internal_page', async () => {
+    await openShell();
+    const bar = screen.getByRole('banner');
+    expect(within(bar).queryByText(/Settings ·/)).not.toBeInTheDocument();
+
+    router.go('#/settings/tabs');
+    await waitFor(() => expect(within(bar).getByText('Settings · Tabs')).toBeInTheDocument());
+    router.go('#/settings/plugins/marketplace');
+    await waitFor(() =>
+      expect(within(bar).getByText('Settings · Plugins · Marketplace')).toBeInTheDocument(),
+    );
+    router.go('#/account');
+    await waitFor(() => expect(within(bar).getByText('Account Settings')).toBeInTheDocument());
+    router.go('#/');
   });
 
   it('menu_is_a_drawer_on_a_narrow_screen', async () => {

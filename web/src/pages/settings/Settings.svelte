@@ -1,10 +1,11 @@
 <script lang="ts">
   // The settings: the general settings, the editors for tabs, categories, groups and
   // users, the settings of the e-mails, the backups and the log.
-  import { onMount } from 'svelte';
+  import { onMount, type Component } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
+  import { SETTINGS_MENU, settingsPlace } from '../../lib/settingsMenu';
   import { session } from '../../lib/session.svelte';
   import type { Account, EditorData } from '../../lib/types';
   import BackupsEditor from './BackupsEditor.svelte';
@@ -29,91 +30,29 @@
 
   let { section }: { section: SettingsSection } = $props();
 
-  /** A page of the settings: its section, the name of its address and its label. */
-  interface MenuPage {
-    section: SettingsSection;
-    page: keyof typeof PAGES;
-    label: string;
-  }
+  const place = $derived(settingsPlace(section));
+  const group = $derived(place.group);
+  const page = $derived(place.page);
 
-  /**
-   * The settings in the main tabs and the tabs under them of PHP Organizr, with its
-   * names and its pictures. A section of this application is under the tab of PHP that
-   * holds the same settings.
-   */
-  interface MenuGroup {
-    name: string;
-    icon: string;
-    pages: [MenuPage, ...MenuPage[]];
-  }
+  // The side menu of the modern layout comes in its own chunk, with the shadcn parts it
+  // uses, so people of the OG layout never load it. If the chunk does not load, the
+  // tabs of OG take its place: they always work.
+  let SettingsNav = $state<Component<{ section: string }> | null>(null);
+  let navFailed = $state(false);
+  const modern = $derived(session.look.layout === 'modern' && !navFailed);
 
-  const MENU: [MenuGroup, ...MenuGroup[]] = [
-    {
-      name: 'Tab Editor',
-      icon: 'ti-layout-tab-v',
-      pages: [
-        { section: 'tabs', page: 'tabSettings', label: 'Tabs' },
-        { section: 'categories', page: 'categorySettings', label: 'Categories' },
-        { section: 'homepage', page: 'homepageSettings', label: 'Homepage Items' },
-        { section: 'homepage-order', page: 'homepageOrderSettings', label: 'Homepage Order' },
-      ],
-    },
-    {
-      name: 'Customize',
-      icon: 'ti-paint-bucket',
-      pages: [
-        { section: 'appearance', page: 'appearanceSettings', label: 'Appearance' },
-        {
-          section: 'theme-settings',
-          page: 'themeMarketplaceSettings',
-          label: 'Marketplace Settings',
+  $effect(() => {
+    if (modern && !SettingsNav) {
+      void import('./SettingsNav.svelte').then(
+        (module) => {
+          SettingsNav = module.default;
         },
-        { section: 'themes', page: 'themeSettings', label: 'Marketplace' },
-      ],
-    },
-    {
-      name: 'User Management',
-      icon: 'ti-user',
-      pages: [
-        { section: 'users', page: 'userSettings', label: 'Manage Users' },
-        { section: 'groups', page: 'groupSettings', label: 'Manage Groups' },
-        { section: 'import', page: 'importUserSettings', label: 'Import Users' },
-      ],
-    },
-    {
-      name: 'Image Manager',
-      icon: 'ti-image',
-      pages: [{ section: 'images', page: 'imageSettings', label: 'Image Manager' }],
-    },
-    {
-      name: 'Plugins',
-      icon: 'ti-plug',
-      pages: [
-        { section: 'plugins', page: 'pluginSettings', label: 'Active' },
-        { section: 'plugins-inactive', page: 'inactivePluginSettings', label: 'Inactive' },
-        { section: 'plugin-settings', page: 'pluginMarketplaceSettings', label: 'Settings' },
-        { section: 'plugin-marketplace', page: 'pluginMarketplace', label: 'Marketplace' },
-      ],
-    },
-    {
-      name: 'System Settings',
-      icon: 'ti-settings',
-      pages: [
-        { section: 'about', page: 'aboutSettings', label: 'About' },
-        { section: 'general', page: 'generalSettings', label: 'Main' },
-        { section: 'login', page: 'loginSettings', label: 'SSO' },
-        { section: 'logs', page: 'logSettings', label: 'Logs' },
-        { section: 'updates', page: 'updateSettings', label: 'Updates' },
-        { section: 'backups', page: 'backupSettings', label: 'Backup' },
-        { section: 'donate', page: 'donateSettings', label: 'Donate' },
-      ],
-    },
-  ];
-
-  const group = $derived(
-    MENU.find((entry) => entry.pages.some((item) => item.section === section)) ?? MENU[0],
-  );
-  const page = $derived(group.pages.find((item) => item.section === section) ?? group.pages[0]);
+        () => {
+          navFailed = true;
+        },
+      );
+    }
+  });
 
   let data = $state<EditorData | null>(null);
   let loadError = $state<string | null>(null);
@@ -153,43 +92,58 @@
   onMount(load);
 </script>
 
-<main class="org-settings">
-  <div class="org-page-title">
-    <h1>Organizr Settings</h1>
-    <ol class="org-breadcrumb" aria-label="Where you are">
-      <li>Settings</li>
-      <li>{group.name}</li>
-      <li>{page.label}</li>
-    </ol>
-  </div>
+<main class={['org-settings', modern && 'm-settings']}>
+  {#if modern}
+    <div class="m-settings-side">
+      {#if SettingsNav}
+        <SettingsNav {section} />
+      {/if}
+    </div>
+  {:else}
+    <div class="org-page-title">
+      <h1>Organizr Settings</h1>
+      <ol class="org-breadcrumb" aria-label="Where you are">
+        <li>Settings</li>
+        <li>{group.name}</li>
+        <li>{page.label}</li>
+      </ol>
+    </div>
 
-  <div role="tablist" aria-label="Settings" class="org-main-tabs">
-    {#each MENU as entry (entry.name)}
-      <a
-        role="tab"
-        class:org-current={entry === group}
-        aria-selected={entry === group}
-        href={PAGES[entry.pages[0].page]}
-      >
-        <i class="oi-themify {entry.icon}" aria-hidden="true"></i>
-        <span>{entry.name}</span>
-      </a>
-    {/each}
-  </div>
-
-  <div class="org-tab-body">
-    <div role="tablist" aria-label={group.name} class="org-sub-tabs">
-      {#each group.pages as entry (entry.section)}
+    <div role="tablist" aria-label="Settings" class="org-main-tabs">
+      {#each SETTINGS_MENU as entry (entry.name)}
         <a
           role="tab"
-          class:org-current={entry.section === section}
-          aria-selected={entry.section === section}
-          href={PAGES[entry.page]}
+          class:org-current={entry === group}
+          aria-selected={entry === group}
+          href={PAGES[entry.pages[0].page]}
         >
-          {entry.label}
+          <i class="oi-themify {entry.icon}" aria-hidden="true"></i>
+          <span>{entry.name}</span>
         </a>
       {/each}
     </div>
+  {/if}
+
+  <div class="org-tab-body">
+    {#if modern}
+      <div class="m-page-heading">
+        <h1>{page.label}</h1>
+        <p>{group.name}</p>
+      </div>
+    {:else}
+      <div role="tablist" aria-label={group.name} class="org-sub-tabs">
+        {#each group.pages as entry (entry.section)}
+          <a
+            role="tab"
+            class:org-current={entry.section === section}
+            aria-selected={entry.section === section}
+            href={PAGES[entry.page]}
+          >
+            {entry.label}
+          </a>
+        {/each}
+      </div>
+    {/if}
 
     <p role="status" class="text-success mb-2 min-h-6 text-sm">{done ?? ''}</p>
 

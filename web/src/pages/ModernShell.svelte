@@ -19,7 +19,8 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import * as Sheet from '$lib/components/ui/sheet/index.js';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
-  import { PAGES } from '../lib/route.svelte';
+  import { PAGES, router } from '../lib/route.svelte';
+  import { settingsTitle } from '../lib/settingsMenu';
   import { session } from '../lib/session.svelte';
   import { pictureOf } from '../lib/picture';
   import { canUse, lockAccount, logOut as shellLogOut } from '../lib/shellActions';
@@ -71,6 +72,24 @@
   const pings = $derived(pinged.answers);
   $effect(() => pinged.watch());
   const shownTab = $derived(session.tabs.find((tab) => tab.id === shown));
+  // A page of the interface itself has no tab: the bar names the page instead.
+  const pageTitle = $derived.by(() => {
+    const route = router.route;
+    switch (route.page) {
+      case 'settings':
+        return settingsTitle(route.section);
+      case 'account':
+        return 'Account Settings';
+      case 'speedTest':
+        return 'Speed test';
+      case 'invites':
+        return 'Invites';
+      case 'chat':
+        return 'Chat';
+      default:
+        return null;
+    }
+  });
 
   const canSpeedTest = $derived(canUse('SPEEDTEST'));
   const canInvite = $derived(canUse('INVITES'));
@@ -201,6 +220,8 @@
           </a>
           {#if shownTab}
             <span class="m-shown truncate" translate="no">{shownTab.name}</span>
+          {:else if pageTitle}
+            <span class="m-shown truncate">{pageTitle}</span>
           {/if}
           {#if session.loggedIn}
             {@render iconButton('Load again', RotateCwIcon, () => reloadShown(shown))}
