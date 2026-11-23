@@ -39,6 +39,10 @@ Ombi, Overseerr and Petio can have a fallback user: `ombiFallbackUser` with `omb
 
 For Overseerr, the fallback user is an e-mail address.
 
+### Ombi imports its users
+
+When the first login of a person through Plex or Emby makes their account in Organizr, Organizr asks Ombi to import the users of that media server, as PHP Organizr does. So Ombi knows the new person, and single sign-on to Ombi works for them. This happens when **Authentication Backend** (`authBackend`) is `plex` or one of the Emby backends, and the address `ombiURL` and the key `ombiToken` of Ombi are set. Organizr does not wait for Ombi: the login goes on, and the log says whether Ombi ran the import (D-124).
+
 ### Tautulli
 
 `tautulliURL` can hold more than one address, with commas between them. Each Tautulli install gets its own cookie, at the path of the install.

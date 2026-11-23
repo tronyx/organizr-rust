@@ -123,6 +123,7 @@ pub async fn login(
         let site = mail::site_address(&settings, &headers, &client);
         let user = &logged_in.user;
         mail::welcome(&state, &site, &user.username, user.email.as_deref());
+        crate::handlers::homepage::ombi::import_users_later(&state, &settings, &headers, &client);
     }
 
     tell_about_a_new_device(&state, &headers, &client, logged_in, now_stamp(now)).await?;

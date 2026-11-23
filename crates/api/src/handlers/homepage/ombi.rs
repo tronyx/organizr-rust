@@ -70,6 +70,47 @@ fn install(
     }
 }
 
+/// The job of Ombi that imports the users of the media server of a login backend, as
+/// `ombiImport` of PHP: the Plex users for `plex`, the Emby users for the Emby backends.
+pub fn import_job(backend: &str) -> Option<&'static str> {
+    match backend {
+        "plex" => Some("v1/Job/plexuserimporter"),
+        "emby" | "emby_local" | "emby_connect" | "emby_all" => Some("v1/Job/embyuserimporter"),
+        _ => None,
+    }
+}
+
+/// Has Ombi import the users of the media server of the login backend, in the
+/// background, as PHP does before it makes the account of a first login. Nothing
+/// happens without the address and the API key of Ombi, or for another backend.
+pub fn import_users_later(
+    state: &AppState,
+    settings: &Settings,
+    headers: &HeaderMap,
+    client: &Client,
+) {
+    let Some(job) = import_job(&settings.auth_backend) else {
+        return;
+    };
+    if settings.ombi_url.is_empty() || settings.ombi_token.is_empty() {
+        return;
+    }
+    let Some(http) = state.outbound().cloned() else {
+        return;
+    };
+    let install = install(settings, headers, client, None);
+    tokio::spawn(async move {
+        match install
+            .send(&http, Method::POST, job, None, As::Application)
+            .await
+        {
+            Ok(reply) if reply.is_success => tracing::info!(job, "Ombi ran the user import"),
+            Ok(_) => tracing::warn!(job, "Ombi did not run the user import"),
+            Err(error) => tracing::warn!(job, %error, "Ombi gave no answer to the user import"),
+        }
+    });
+}
+
 /// The answer when Ombi cannot be reached.
 fn unreachable(error: &OmbiError) -> Refusal {
     tracing::warn!(%error, "Ombi gave no answer");
@@ -435,7 +476,19 @@ pub async fn add_request(
 mod tests {
     use serde_json::json;
 
-    use super::{kind, number, series_request, tvdb_id, whole};
+    use super::{import_job, kind, number, series_request, tvdb_id, whole};
+
+    #[test]
+    fn backend_names_the_user_import_of_its_media_server() {
+        assert_eq!(import_job("plex"), Some("v1/Job/plexuserimporter"));
+        for emby in ["emby", "emby_local", "emby_connect", "emby_all"] {
+            assert_eq!(import_job(emby), Some("v1/Job/embyuserimporter"), "{emby}");
+        }
+        // As in PHP, the other backends import nothing.
+        for other in ["", "jellyfin", "ldap", "ftp"] {
+            assert_eq!(import_job(other), None, "{other}");
+        }
+    }
 
     #[test]
     fn parts_of_a_path_are_read_as_the_php_application_reads_them() {

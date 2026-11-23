@@ -536,7 +536,16 @@ pub async fn ombi() -> StandIn {
     StandIn::start(
         Router::new()
             .route("/api/v1/Token", post(ombi_login))
-            .route("/api/v1/Token/plextoken", post(ombi_plex_login)),
+            .route("/api/v1/Token/plextoken", post(ombi_plex_login))
+            // The jobs that import the users of a media server answer with no body.
+            .route(
+                "/api/v1/Job/plexuserimporter",
+                post(|| async { StatusCode::OK }),
+            )
+            .route(
+                "/api/v1/Job/embyuserimporter",
+                post(|| async { StatusCode::OK }),
+            ),
     )
     .await
 }

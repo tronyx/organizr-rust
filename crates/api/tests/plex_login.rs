@@ -803,3 +803,53 @@ async fn login_with_a_plex_token_gets_a_session_of_petio() {
     })
     .await;
 }
+
+/// The requests to the user import of a stand-in for Ombi, after the background task
+/// that sends them had time to run.
+async fn ombi_imports(ombi: &StandIn, wanted: usize) -> Vec<services::Seen> {
+    for _ in 0..100 {
+        let imports: Vec<services::Seen> = ombi
+            .seen()
+            .into_iter()
+            .filter(|seen| seen.path.starts_with("/api/v1/Job/"))
+            .collect();
+        if imports.len() >= wanted {
+            return imports;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+    ombi.seen()
+}
+
+#[tokio::test]
+async fn first_login_with_plex_has_ombi_import_the_plex_users() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let ombi = services::ombi().await;
+        let app = app_with(
+            database,
+            &plex,
+            &plex_settings(&[
+                ("ombiURL", json!(ombi.url())),
+                ("ombiToken", json!("the key of ombi")),
+            ]),
+        );
+
+        let answer = log_in_with_password(&app, "robin@example.com", ROBIN.password).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let imports = ombi_imports(&ombi, 1).await;
+        assert_eq!(imports.len(), 1, "{imports:?}");
+        let import = &imports[0];
+        assert_eq!(import.method, "POST");
+        assert_eq!(import.path, "/api/v1/Job/plexuserimporter");
+        assert_eq!(import.header("apikey"), Some("the key of ombi"));
+
+        // A login of an account that exists imports nothing.
+        let again = log_in_with_password(&app, "robin", ROBIN.password).await;
+        assert_eq!(again.status, StatusCode::OK, "{}", again.body);
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+        assert_eq!(ombi_imports(&ombi, 2).await.len(), 1);
+    })
+    .await;
+}
