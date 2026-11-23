@@ -37,7 +37,8 @@
   const menu = $derived(buildMenu(tabs, categories, unsortedPlace));
 </script>
 
-{#snippet status(tab: MenuTab)}
+<!-- `push` moves the dot to the end of the row; a modern row with the new-window icon has that icon do it. -->
+{#snippet status(tab: MenuTab, push: boolean)}
   {@const answer = pingStatus(tab, pings)}
   {@const time = pingTime(tab, pings)}
   {#if time !== null}
@@ -45,13 +46,13 @@
   {/if}
   {#if answer === 'up'}
     <span
-      class={['status status-success', og && 'org-wide', 'ml-auto']}
+      class={['status status-success', og && 'org-wide', push && 'ml-auto']}
       role="img"
       aria-label="answers"
     ></span>
   {:else if answer === 'down'}
     <span
-      class={['status status-error', og && 'org-wide', 'ml-auto']}
+      class={['status status-error', og && 'org-wide', push && 'ml-auto']}
       role="img"
       aria-label="does not answer"
     ></span>
@@ -76,7 +77,7 @@
           aria-hidden="true"
           title="Opens in a new window"
         ></i>
-        {@render status(tab)}
+        {@render status(tab, og)}
       </a>
     {:else}
       <a
@@ -88,7 +89,7 @@
       >
         <Picture image={tab.image} name={tab.name} large={og} />
         <span class={[og && 'org-wide', 'truncate']}>{tab.name}</span>
-        {@render status(tab)}
+        {@render status(tab, true)}
       </a>
     {/if}
   </li>

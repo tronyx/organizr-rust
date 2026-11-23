@@ -20,6 +20,8 @@
     reloadShown,
     toggleFullScreen,
   } from '../lib/shellState.svelte';
+  import Dialog from '../components/Dialog.svelte';
+  import LookPicker from '../components/LookPicker.svelte';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import MediaSearch from './homepage/MediaSearch.svelte';
   import LanguageMenu from './LanguageMenu.svelte';
@@ -38,6 +40,7 @@
   // On a narrow screen the menu is hidden until the user asks for it.
   let menuOpen = $state(false);
   let userMenu = $state<HTMLDetailsElement>();
+  let lookOpen = $state(false);
 
   const hasMenu = $derived(session.tabs.length > 0);
 
@@ -181,6 +184,16 @@
           {#if canChat}
             <li><a href={PAGES.chat} onclick={closeUserMenu}>Chat</a></li>
           {/if}
+          <li>
+            <button
+              onclick={() => {
+                closeUserMenu();
+                lookOpen = true;
+              }}
+            >
+              Look
+            </button>
+          </li>
           <li><button onclick={lock}>Lock Screen</button></li>
           <li><button onclick={logOut}>Logout</button></li>
         </ul>
@@ -192,6 +205,12 @@
       </a>
     {/if}
   </header>
+{/if}
+
+{#if lookOpen}
+  <Dialog title="Look" onclose={() => (lookOpen = false)}>
+    <div class="mt-4"><LookPicker /></div>
+  </Dialog>
 {/if}
 
 {#if hasMenu || !session.loggedIn}

@@ -1,10 +1,12 @@
 <script lang="ts">
   // Customize, Appearance: the form of PHP Organizr, with the groups Top Bar, Side Menu,
-  // Login Page, Options, Colors & Themes and the style sheets and scripts. Only the Admin
+  // Login Page, Options, Colors & Themes and the style sheets and scripts, and a group Layout
+  // for the default look of a person (D-125). Only the Admin
   // sees the groups of the scripts (D-07), with a note on whether the scripts run (D-93).
   import { session } from '../../lib/session.svelte';
   import { scriptsNote } from '../../lib/settingsForm';
   import { ADMIN } from '../../lib/types';
+  import LayoutDefaults from './LayoutDefaults.svelte';
   import PhpSettingsForm from './PhpSettingsForm.svelte';
 
   let {
@@ -27,10 +29,16 @@
   </div>
 {/snippet}
 
+{#snippet layout()}
+  <LayoutDefaults canChange={isAdmin} {ondone} />
+{/snippet}
+
 <PhpSettingsForm
   path="settings/appearance"
   title="Customize Appearance"
   hidden={isAdmin ? [] : SCRIPTS}
-  extra={isAdmin ? { 'Custom Javascript': scripts, 'Theme Javascript': scripts } : {}}
+  extra={isAdmin
+    ? { Layout: layout, 'Custom Javascript': scripts, 'Theme Javascript': scripts }
+    : { Layout: layout }}
   {ondone}
 />

@@ -1,0 +1,53 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { describe, expect, it, vi } from 'vitest';
+
+import { stubApi } from '../../test-helpers';
+import LayoutDefaults from './LayoutDefaults.svelte';
+
+const CONFIG = { layout: 'og', modernTheme: 'organizr', modernColourSet: 'dark' };
+
+describe('LayoutDefaults', () => {
+  it('saves_the_three_settings', async () => {
+    const sent = stubApi({
+      'GET config': { data: CONFIG },
+      'PUT config': {},
+      'GET launch': { status: 500, message: 'not needed here' },
+    });
+    const ondone = vi.fn();
+    render(LayoutDefaults, { canChange: true, ondone });
+
+    const layout = await screen.findByRole('combobox', { name: 'Default layout' });
+    expect(layout).toHaveValue('og');
+    const save = screen.getByRole('button', { name: 'Save the layout' });
+    expect(save).toBeDisabled();
+
+    await fireEvent.change(layout, { target: { value: 'modern' } });
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Modern theme' }), {
+      target: { value: 'organizr' },
+    });
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Modern colour set' }), {
+      target: { value: 'light' },
+    });
+    await fireEvent.click(save);
+
+    await waitFor(() => expect(ondone).toHaveBeenCalled());
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      modernTheme: 'organizr',
+      modernColourSet: 'light',
+    });
+  });
+
+  it('co_admin_sees_but_cannot_change', async () => {
+    const sent = stubApi({ 'GET config': { data: { ...CONFIG, layout: 'modern' } } });
+    render(LayoutDefaults, { canChange: false, ondone: vi.fn() });
+
+    const layout = await screen.findByRole('combobox', { name: 'Default layout' });
+    expect(layout).toHaveValue('modern');
+    expect(layout).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: 'Modern theme' })).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: 'Modern colour set' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Save the layout' })).not.toBeInTheDocument();
+    expect(sent.some((request) => request.method === 'PUT')).toBe(false);
+  });
+});

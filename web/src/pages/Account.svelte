@@ -7,6 +7,7 @@
 
   import { api, ApiError, failureText } from '../lib/api';
   import { session } from '../lib/session.svelte';
+  import LookPicker from '../components/LookPicker.svelte';
   import ActiveTokens from './ActiveTokens.svelte';
   import OidcLinks from './OidcLinks.svelte';
   import UserInformation from './UserInformation.svelte';
@@ -110,6 +111,14 @@
   <UserInformation />
 
   <ActiveTokens />
+
+  <section class="card org-account-panel" aria-labelledby="look-title">
+    <div class="card-body">
+      <h2 id="look-title" class="card-title">Look</h2>
+      <p class="text-sm">Choose the layout and theme that you see. Other people keep their own.</p>
+      <LookPicker />
+    </div>
+  </section>
 
   <section class="card org-account-panel" aria-labelledby="second-factor-title">
     <div class="card-body">

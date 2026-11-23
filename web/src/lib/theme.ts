@@ -26,6 +26,9 @@ const THEME_IDS: Record<string, string> = {
   Plex: 'org-plex',
 };
 
+/** The names of the themes of PHP Organizr that this interface has rebuilt. */
+export const NATIVE_THEMES: string[] = Object.keys(THEME_IDS);
+
 /** The theme of a new install. */
 export const DEFAULT_THEME = 'Organizr';
 

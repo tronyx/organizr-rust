@@ -16,6 +16,7 @@
   import { failureText } from '../lib/api';
   import { Button } from '$lib/components/ui/button/index.js';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+  import * as Popover from '$lib/components/ui/popover/index.js';
   import * as Sheet from '$lib/components/ui/sheet/index.js';
   import * as Tooltip from '$lib/components/ui/tooltip/index.js';
   import { PAGES } from '../lib/route.svelte';
@@ -32,6 +33,7 @@
     reloadShown,
     toggleFullScreen,
   } from '../lib/shellState.svelte';
+  import LookPicker from '../components/LookPicker.svelte';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import LanguageMenu from './LanguageMenu.svelte';
   import MediaSearch from './homepage/MediaSearch.svelte';
@@ -117,7 +119,12 @@
   <Tooltip.Root>
     <Tooltip.Trigger>
       {#snippet child({ props })}
-        <Button variant="ghost" class={barButton} aria-label={label} {...props} {onclick}>
+        <Button
+          variant="ghost"
+          class={barButton}
+          aria-label={label}
+          {...mergeProps(props, { onclick })}
+        >
           <Icon aria-hidden="true" />
         </Button>
       {/snippet}
@@ -210,18 +217,31 @@
             {@render iconButton('Full screen', MaximizeIcon, toggleFullScreen)}
           </span>
           {#if session.loggedIn}
-            <!-- The picker of the look is attached to this element. -->
             <span class="m-look">
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  {#snippet child({ props })}
-                    <Button variant="ghost" class={barButton} aria-label="Look" {...props}>
-                      <PaletteIcon aria-hidden="true" />
-                    </Button>
-                  {/snippet}
-                </Tooltip.Trigger>
-                <Tooltip.Content>Look</Tooltip.Content>
-              </Tooltip.Root>
+              <Popover.Root>
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    {#snippet child({ props: tooltip })}
+                      <Popover.Trigger>
+                        {#snippet child({ props: popover })}
+                          <Button
+                            variant="ghost"
+                            aria-label="Look"
+                            {...mergeProps(tooltip, popover)}
+                            class={barButton}
+                          >
+                            <PaletteIcon aria-hidden="true" />
+                          </Button>
+                        {/snippet}
+                      </Popover.Trigger>
+                    {/snippet}
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>Look</Tooltip.Content>
+                </Tooltip.Root>
+                <Popover.Content align="end" class="w-64">
+                  <LookPicker />
+                </Popover.Content>
+              </Popover.Root>
             </span>
           {/if}
           <LanguageMenu />

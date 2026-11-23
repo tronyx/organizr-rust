@@ -185,6 +185,20 @@ describe('ModernShell', () => {
     expect(screen.queryByRole('button', { name: 'Menu of the user' })).not.toBeInTheDocument();
   });
 
+  it('look_button_opens_the_picker', async () => {
+    await openShell();
+
+    // The button keeps the look of the bar when it opens the popover.
+    expect(screen.getByRole('button', { name: 'Look' })).toHaveClass('org-header-link');
+    await fireEvent.click(screen.getByRole('button', { name: 'Look' }));
+    const picker = (await screen.findByRole('radio', { name: 'Modern' })).closest(
+      '[data-slot="popover-content"]',
+    ) as HTMLElement;
+    expect(picker).not.toBeNull();
+    expect(within(picker).getByRole('radio', { name: 'Modern' })).toBeChecked();
+    expect(within(picker).getByRole('button', { name: 'Use the default' })).toBeInTheDocument();
+  });
+
   it('user_menu_has_account_lock_and_logout', async () => {
     const sent = await openShell();
     expect(screen.getByRole('button', { name: 'Look' })).toBeInTheDocument();
