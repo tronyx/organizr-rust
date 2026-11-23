@@ -141,6 +141,32 @@ pub struct PlexFriend {
     pub restricted: bool,
 }
 
+/// A share of the Plex server with an account, with the libraries of the server.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SharedServer {
+    /// The id of the share, which a change of it names.
+    pub id: String,
+    /// The user name of the account.
+    pub username: String,
+    /// The e-mail address of the account.
+    pub email: String,
+    /// Each library of the server, and whether the share holds it.
+    pub libraries: Vec<SharedLibrary>,
+}
+
+/// A library of the server in a share.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SharedLibrary {
+    /// The id that a share names the library by.
+    pub id: String,
+    /// The name of the library.
+    pub title: String,
+    /// The kind: `movie`, `show`, `artist` or `photo`.
+    pub kind: String,
+    /// Whether the account sees the library.
+    pub shared: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct PlexTv {
     base: String,
@@ -204,6 +230,87 @@ impl PlexTv {
             })
             .and_then(|node| node.attribute("id"))
             .map(str::to_owned))
+    }
+
+    /// The shares of the server with the id `server`, each with every library of the
+    /// server and whether the share holds it. `owner_token` is the token of the owner.
+    pub async fn shared_servers(
+        &self,
+        owner_token: &str,
+        server: &str,
+    ) -> Result<Vec<SharedServer>, PlexError> {
+        if !is_server_id(server) {
+            return Err(PlexError::Status(404));
+        }
+        let text = self
+            .xml(
+                &format!("/api/servers/{server}/shared_servers"),
+                &[("X-Plex-Token", owner_token)],
+            )
+            .await?;
+        let document = parsed(&text)?;
+        Ok(document
+            .descendants()
+            .filter(|node| node.has_tag_name("SharedServer"))
+            .map(|share| SharedServer {
+                id: share.attribute("id").unwrap_or_default().to_owned(),
+                username: share.attribute("username").unwrap_or_default().to_owned(),
+                email: share.attribute("email").unwrap_or_default().to_owned(),
+                libraries: share
+                    .children()
+                    .filter(|node| node.has_tag_name("Section"))
+                    .map(|section| SharedLibrary {
+                        id: section.attribute("id").unwrap_or_default().to_owned(),
+                        title: section.attribute("title").unwrap_or_default().to_owned(),
+                        kind: section.attribute("type").unwrap_or_default().to_owned(),
+                        shared: section.attribute("shared") == Some("1"),
+                    })
+                    .collect(),
+            })
+            .filter(|share| !share.id.is_empty())
+            .collect())
+    }
+
+    /// Sets the libraries that the share with the id `share` holds.
+    pub async fn update_share(
+        &self,
+        owner_token: &str,
+        server: &str,
+        share: &str,
+        libraries: &[&str],
+    ) -> Result<(), PlexError> {
+        if !is_server_id(server) || !share.chars().all(|letter| letter.is_ascii_digit()) {
+            return Err(PlexError::Status(404));
+        }
+        let url = self.url(&format!("/api/servers/{server}/shared_servers/{share}"));
+        // plex.tv names the libraries by numbers.
+        let ids: Vec<serde_json::Value> = libraries
+            .iter()
+            .map(|id| {
+                id.parse::<u64>()
+                    .map_or_else(|_| serde_json::Value::from(*id), serde_json::Value::from)
+            })
+            .collect();
+        let body = serde_json::json!({
+            "server_id": server,
+            "shared_server": {"library_section_ids": ids},
+        });
+        let response = self
+            .http
+            .client_for(&url)
+            .put(&url)
+            .timeout(TIMEOUT)
+            .header("X-Plex-Token", owner_token)
+            .header("Accept", "application/json")
+            .json(&body)
+            .send()
+            .await
+            .map_err(PlexError::Unreachable)?;
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(PlexError::Status(response.status().as_u16()))
+        }
     }
 
     /// Invites an account to the Plex Home of the owner of `owner_token`, without a
@@ -337,12 +444,7 @@ impl PlexTv {
         server: &str,
         share: &Share<'_>,
     ) -> Result<(), PlexError> {
-        // The id is a part of the address. plex.tv knows no id with other characters.
-        let is_id = !server.is_empty()
-            && server
-                .chars()
-                .all(|letter| letter.is_ascii_alphanumeric() || letter == '-' || letter == '_');
-        if !is_id {
+        if !is_server_id(server) {
             return Err(PlexError::Status(404));
         }
         let url = self.url(&format!("/api/servers/{server}/shared_servers/"));
@@ -447,6 +549,15 @@ impl PlexTv {
         let text = self.xml("/pms/servers", &headers).await?;
         servers_in(&text)
     }
+}
+
+/// Whether a text can be the id of a server: it is a part of an address, and plex.tv
+/// knows no id with other characters.
+fn is_server_id(server: &str) -> bool {
+    !server.is_empty()
+        && server
+            .chars()
+            .all(|letter| letter.is_ascii_alphanumeric() || letter == '-' || letter == '_')
 }
 
 fn parsed(text: &str) -> Result<roxmltree::Document<'_>, PlexError> {

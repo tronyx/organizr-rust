@@ -83,6 +83,7 @@ export type Content =
   | { kind: 'homepage'; tab: MenuTab }
   /** The page of the bookmark plugin. */
   | { kind: 'bookmarks'; tab: MenuTab }
+  | { kind: 'plexLibraries'; tab: MenuTab }
   /** A tab that opens in a new window. The main area offers the link again. */
   | { kind: 'newWindow'; tab: MenuTab }
   /** A tab that has no address to open. */
@@ -106,6 +107,9 @@ function contentOfTab(tab: MenuTab, caller: Caller): Content {
     }
     if (tab.url?.includes('plugins/bookmark/page')) {
       return { kind: 'bookmarks', tab };
+    }
+    if (tab.url?.includes('plugins/plexlibraries/page')) {
+      return { kind: 'plexLibraries', tab };
     }
     return { kind: 'homepage', tab };
   }

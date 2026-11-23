@@ -44,6 +44,7 @@ plugins/images/plugins/chat.png
 plugins/images/plugins/healthChecks.png
 plugins/images/plugins/invites.png
 plugins/images/plugins/php-mailer.png
+plugins/images/plugins/plexLibraries.png
 plugins/images/plugins/speedTest.png
 plugins/images/tabs/AdGuardHome.png
 plugins/images/tabs/Docsify.png

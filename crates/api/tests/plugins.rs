@@ -44,7 +44,9 @@ async fn everybody_gets_the_built_in_plugins_with_the_fields_of_php() {
                 "Invites",
                 "PHP Mailer",
                 "SpeedTest",
-                "Bookmark"
+                "Bookmark",
+                // The plugin of this application comes last (D-121).
+                "Plex Libraries"
             ]
         );
         assert!(!answer.body.to_lowercase().contains("shuck"));
@@ -75,7 +77,13 @@ async fn everybody_gets_the_built_in_plugins_with_the_fields_of_php() {
         let disabled = call(&app, As::Guest, "GET", "/plugins/disabled", None).await;
         assert_eq!(
             names(&disabled.data()),
-            ["HealthChecks", "Invites", "PHP Mailer", "SpeedTest"]
+            [
+                "HealthChecks",
+                "Invites",
+                "PHP Mailer",
+                "SpeedTest",
+                "Plex Libraries"
+            ]
         );
     })
     .await;

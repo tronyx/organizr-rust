@@ -404,6 +404,14 @@ pub async fn plex_tv() -> StandIn {
             .route("/pms/servers", get(plex_servers))
             .route("/api/servers/{server}/shared_servers/", post(plex_share))
             .route("/api/invites/requested", get(plex_requested_invites))
+            .route(
+                "/api/servers/{server}/shared_servers",
+                get(plex_shared_servers),
+            )
+            .route(
+                "/api/servers/{server}/shared_servers/{share}",
+                axum::routing::put(plex_update_share),
+            )
             .route("/api/home/users", post(plex_home_invite)),
     )
     .await
@@ -429,6 +437,47 @@ async fn plex_requested_invites(headers: HeaderMap) -> Response {
 </MediaContainer>"#,
     )
         .into_response()
+}
+
+/// The shares of the server of the owner: robin sees Films, pat sees Films and Shows.
+async fn plex_shared_servers(Path(server): Path<String>, headers: HeaderMap) -> Response {
+    if !is_owner(&headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    if server != SERVER_ID {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    (
+        [(header::CONTENT_TYPE, "text/xml")],
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer friendlyName="myPlex" identifier="com.plexapp.plugins.myplex" machineIdentifier="made-up-server-one" size="2">
+  <SharedServer id="9001" username="Robin" email="robin@example.com" userID="301" accessToken="secret-of-robin" name="Home" acceptedAt="1800000000" invitedAt="1799990000" allowSync="0" owned="0">
+    <Section id="7001" key="1" title="Films" type="movie" shared="1"/>
+    <Section id="7002" key="2" title="Shows" type="show" shared="0"/>
+    <Section id="7003" key="3" title="Music" type="artist" shared="0"/>
+  </SharedServer>
+  <SharedServer id="9002" username="Pat" email="Pat@Example.com" userID="302" accessToken="secret-of-pat" name="Home" acceptedAt="1800000000" invitedAt="1799990000" allowSync="0" owned="0">
+    <Section id="7001" key="1" title="Films" type="movie" shared="1"/>
+    <Section id="7002" key="2" title="Shows" type="show" shared="1"/>
+    <Section id="7003" key="3" title="Music" type="artist" shared="0"/>
+  </SharedServer>
+</MediaContainer>"#,
+    )
+        .into_response()
+}
+
+/// Changes the libraries of a share.
+async fn plex_update_share(
+    Path((server, share)): Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    if !is_owner(&headers) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    if server != SERVER_ID || !["9001", "9002"].contains(&share.as_str()) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    StatusCode::OK.into_response()
 }
 
 /// Adds an invited account to the Plex Home of the owner.

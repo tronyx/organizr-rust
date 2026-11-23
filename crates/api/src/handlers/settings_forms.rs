@@ -76,6 +76,8 @@ struct Fill<'a> {
     komga_libraries: Option<Vec<Value>>,
     /// The groups of Nextcloud for the invites plugin, when Nextcloud was asked.
     nextcloud_groups: Option<Vec<Value>>,
+    /// The libraries of the Plex server for the Plex Libraries plugin, when plex.tv was asked.
+    plex_libraries: Option<Vec<Value>>,
 }
 
 impl<'a> Fill<'a> {
@@ -110,6 +112,7 @@ impl<'a> Fill<'a> {
             tabs,
             komga_libraries: None,
             nextcloud_groups: None,
+            plex_libraries: None,
         })
     }
 
@@ -168,6 +171,12 @@ impl<'a> Fill<'a> {
             ),
             "getIframeTabs" => self.frame_tabs(args.first().and_then(Value::as_str)),
             // PHP's `_getKomgaLibraries()`, with its one choice when Komga gives none.
+            "plexLibraries" => match &self.plex_libraries {
+                Some(libraries) if !libraries.is_empty() => Value::Array(libraries.clone()),
+                _ => {
+                    json!([{"name": "Share the Plex server first, then open this again", "value": "", "disabled": true}])
+                }
+            },
             // PHP's `_getNextcloudGroups()`, likewise.
             "nextcloudGroups" => match &self.nextcloud_groups {
                 Some(groups) if !groups.is_empty() => Value::Array(groups.clone()),
@@ -518,6 +527,49 @@ async fn nextcloud_groups(state: &AppState, settings: &Settings) -> Option<Vec<V
         ),
         Err(error) => {
             tracing::warn!(%error, "the groups of Nextcloud cannot be read");
+            None
+        }
+    }
+}
+
+/// `GET /plugins/plexlibraries/settings`: the form of the Plex Libraries plugin of this
+/// application (D-121), with the libraries of the Plex server as choices.
+pub async fn plex_libraries_plugin(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+) -> Result<Envelope<Value>, Refusal> {
+    caller.require(MANAGER)?;
+    let settings = state.settings();
+    let mut fill = Fill::new(&state, &settings, &caller).await?;
+    fill.plex_libraries = plex_libraries(&state, &settings).await;
+    Ok(Envelope::success(filled_form(
+        &fill,
+        part(part(&TABLE, "plugins"), "plexlibraries"),
+    )))
+}
+
+/// The libraries of the Plex server, from the first share that lists them, as choices.
+async fn plex_libraries(state: &AppState, settings: &Settings) -> Option<Vec<Value>> {
+    if settings.plex_token.is_empty() || settings.plex_id.is_empty() {
+        return None;
+    }
+    let plex = state.plex()?;
+    match plex
+        .shared_servers(&settings.plex_token, &settings.plex_id)
+        .await
+    {
+        Ok(shares) => shares
+            .into_iter()
+            .find(|share| !share.libraries.is_empty())
+            .map(|share| {
+                share
+                    .libraries
+                    .into_iter()
+                    .map(|library| json!({ "name": library.title, "value": library.id }))
+                    .collect()
+            }),
+        Err(error) => {
+            tracing::warn!(%error, "the libraries of the Plex server cannot be read");
             None
         }
     }

@@ -105,6 +105,30 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
         Value::Null
     };
     let replay = replay.deviation_adds("D-23", case, "/response/data", "update", update);
+    // The switch and the level of the Plex Libraries plugin of this application (D-121).
+    // A launch whose lists D-50 sorts gets them added as they are; the sort places them.
+    let plugin_keys = [
+        (
+            "/response/data/plugins",
+            "PLEXLIBRARIES-enabled",
+            json!(false),
+        ),
+        (
+            "/response/data/plugins/includes",
+            "PLEXLIBRARIES-Auth-include",
+            json!("4"),
+        ),
+    ];
+    let sorted_later = UNSORTED_LAUNCHES.contains(&case);
+    let replay = plugin_keys
+        .into_iter()
+        .fold(replay, |replay, (pointer, key, value)| {
+            if sorted_later {
+                replay.deviation_adds("D-121", case, pointer, key, value)
+            } else {
+                replay.deviation_adds_in_order("D-121", case, pointer, key, value)
+            }
+        });
     // The switches of Shuck Stop, which was removed (D-116).
     let replay = SHUCK_STOP_SWITCHES.iter().fold(replay, |replay, key| {
         replay.deviation_without("D-116", case, &format!("/response/data/plugins/{key}"))
@@ -633,6 +657,14 @@ async fn config_routes_answer_like_php() {
         }
         for key in SHUCK_STOP_SETTINGS {
             replay = replay.deviation_without("D-116", all, &format!("{data}/{key}"));
+        }
+        // The settings of the Plex Libraries plugin of this application.
+        for (key, value) in [
+            ("PLEXLIBRARIES-Auth-include", json!("4")),
+            ("PLEXLIBRARIES-enabled", json!(false)),
+            ("PLEXLIBRARIES-librariesToInclude", json!("")),
+        ] {
+            replay = replay.deviation_adds_in_order("D-121", all, data, key, value);
         }
         // Each custom HTML item has a switch that PHP does not have.
         for number in 1..=8 {

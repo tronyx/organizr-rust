@@ -47,6 +47,7 @@ The [README](../README.md) tells you what this rewrite of Organizr is and how to
 | [🔖 Bookmarks](bookmark-plugin.md) | A page of links as coloured tiles, in categories |
 | [💓 Health checks](health-checks-plugin.md) | Ask your services whether they answer, and tell Healthchecks the result |
 | [🎟️ Invites](invites-plugin.md) | Give a person access to your Plex server with a code |
+| [📚 Plex Libraries](plex-libraries-plugin.md) | See and switch the libraries of the Plex server that each shared account sees |
 | [⚡ Speed test](speed-test-plugin.md) | Measure the connection between a browser and Organizr |
 | [🧩 Extensions](extensions.md) | Programs of other authors, which run in a sandbox |
 

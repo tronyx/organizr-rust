@@ -43,6 +43,7 @@
     Invites: 'plugins/invites/settings',
     'PHP Mailer': 'plugins/php-mailer/settings',
     SpeedTest: 'plugins/speedtest/settings',
+    'Plex Libraries': 'plugins/plexlibraries/settings',
   };
 
   const shown = $derived((plugins ?? []).filter((plugin) => plugin.enabled === active));
@@ -90,6 +91,28 @@
 
 {#snippet bookmarks()}
   <BookmarksEditor {ondone} />
+{/snippet}
+
+{#snippet plexLibrariesTab()}
+  <p class="mb-3 text-sm">The page of the plugin opens from a tab of the menu.</p>
+  <button
+    type="button"
+    class="btn btn-sm btn-primary"
+    onclick={async () => {
+      try {
+        const made = await api('GET', 'plugins/plexlibraries/setup/tab');
+        ondone(
+          made.message === 'Tab already exists'
+            ? 'The menu has the tab already.'
+            : 'The menu has the tab Plex Libraries.',
+        );
+      } catch (failure) {
+        error = failureText(failure);
+      }
+    }}
+  >
+    Make the tab Plex Libraries
+  </button>
 {/snippet}
 
 <section class="org-panel" aria-labelledby="plugin-cards-title">
@@ -147,7 +170,9 @@
         ? { Services: services }
         : open.name === 'Bookmark'
           ? { Bookmarks: bookmarks }
-          : {}}
+          : open.name === 'Plex Libraries'
+            ? { Tab: plexLibrariesTab }
+            : {}}
       {ondone}
     />
   </Dialog>

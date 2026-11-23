@@ -6,6 +6,7 @@
   import { session } from '../lib/session.svelte';
   import Account from './Account.svelte';
   import Bookmarks from './Bookmarks.svelte';
+  import PlexLibraries from './PlexLibraries.svelte';
   import Chat from './Chat.svelte';
   import Homepage from './homepage/Homepage.svelte';
   import Invites from './Invites.svelte';
@@ -37,6 +38,8 @@
   <UseInvite code={content.code} />
 {:else if content.kind === 'bookmarks'}
   <Bookmarks title={content.tab.name} />
+{:else if content.kind === 'plexLibraries'}
+  <PlexLibraries title={content.tab.name} />
 {:else if content.kind === 'settings'}
   <Settings section={content.section} />
 {:else if content.kind === 'notAllowed'}

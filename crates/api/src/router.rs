@@ -18,9 +18,9 @@ use crate::handlers::{
     backups, basics, bookmarks, categories, certificate, chat, config, connection_tests,
     connection_tests_more as more_tests, database, fields, forward_auth, groups,
     health_checks_plugin, help, homepage, icon, images, invites, ip, launch, lock, log, login,
-    login_backends, logout, mail, media_register, news, oidc, pages, ping, plex, plugins, register,
-    settings_forms, socks, speed_test, sponsors, tabs, themes, token, two_factor, update, users,
-    users_import, wizard,
+    login_backends, logout, mail, media_register, news, oidc, pages, ping, plex, plex_libraries,
+    plugins, register, settings_forms, socks, speed_test, sponsors, tabs, themes, token,
+    two_factor, update, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -487,6 +487,20 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         // Not a route of PHP: the new messages as server-sent events (D-44).
         .route("/plugins/chat/events", &get(chat::events))?
         .route("/plugins/bookmark/page", &get(bookmarks::page))?
+        // The Plex Libraries plugin of this application (D-121).
+        .route(
+            "/plugins/plexlibraries/settings",
+            &get(settings_forms::plex_libraries_plugin),
+        )?
+        .route("/plugins/plexlibraries/shares", &get(plex_libraries::shares))?
+        .route(
+            "/plugins/plexlibraries/setup/tab",
+            &get(plex_libraries::set_up_tab),
+        )?
+        .route(
+            "/plugins/plexlibraries/shares/{share}",
+            &put(plex_libraries::change),
+        )?
         .route("/plugins/bookmark/setup/tab", &get(bookmarks::set_up_tab))?
         .route(
             "/plugins/bookmark/setup/category",

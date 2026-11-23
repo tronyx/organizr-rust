@@ -223,6 +223,59 @@ async fn plex_finds_the_id_of_an_invite_by_its_address_and_adds_it_to_the_home()
 }
 
 #[tokio::test]
+async fn plex_lists_the_shares_with_their_libraries_and_changes_one() {
+    let (plex, stand_in) = plex().await;
+
+    let shares = plex
+        .shared_servers(OWNER_TOKEN, SERVER_ID)
+        .await
+        .expect("plex.tv answers");
+
+    assert_eq!(shares.len(), 2);
+    let robin = &shares[0];
+    assert_eq!(robin.id, "9001");
+    assert_eq!(robin.username, "Robin");
+    assert_eq!(robin.email, "robin@example.com");
+    let libraries: Vec<(&str, &str, bool)> = robin
+        .libraries
+        .iter()
+        .map(|library| (library.id.as_str(), library.title.as_str(), library.shared))
+        .collect();
+    assert_eq!(
+        libraries,
+        [
+            ("7001", "Films", true),
+            ("7002", "Shows", false),
+            ("7003", "Music", false)
+        ]
+    );
+    // The token of the share is never read into the list.
+    assert!(!format!("{shares:?}").contains("secret-of-robin"));
+
+    plex.update_share(OWNER_TOKEN, SERVER_ID, "9001", &["7001", "7002"])
+        .await
+        .expect("plex.tv takes the change");
+    let seen = stand_in.seen().pop().expect("a request");
+    assert_eq!(seen.method, "PUT");
+    assert_eq!(
+        seen.path,
+        "/api/servers/made-up-server-one/shared_servers/9001"
+    );
+    assert_eq!(
+        seen.json(),
+        serde_json::json!({
+            "server_id": SERVER_ID,
+            "shared_server": {"library_section_ids": [7001, 7002]},
+        })
+    );
+    assert!(
+        plex.update_share(OWNER_TOKEN, SERVER_ID, "1234", &[])
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
 async fn ombi_gives_a_token_for_a_plex_token_or_for_the_fallback_account() {
     let stand_in = services::ombi().await;
     let http = outbound();

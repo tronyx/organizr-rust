@@ -38,6 +38,7 @@ pub mod oidc;
 pub mod pages;
 pub mod ping;
 pub mod plex;
+pub mod plex_libraries;
 pub mod plugins;
 pub mod register;
 pub mod settings_forms;

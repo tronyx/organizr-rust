@@ -1036,6 +1036,10 @@ settings! {
     invites_nextcloud_admin_password: Secret = "INVITES-nextcloud-admin-password", String::new();
     invites_nextcloud_groups_member: Text = "INVITES-nextcloud-groups-member", String::new();
     invites_nextcloud_quota: Text = "INVITES-nextcloud-quota", String::new();
+    // The Plex Libraries plugin of this application (D-121).
+    plex_libraries_enabled: Flag = "PLEXLIBRARIES-enabled", false;
+    plex_libraries_auth: TextNumber<u32> = "PLEXLIBRARIES-Auth-include", 4;
+    plex_libraries_include: Text = "PLEXLIBRARIES-librariesToInclude", String::new();
     mailer_enabled: Flag = "PHPMAILER-enabled", false;
     mailer_debug_testing: Flag = "PHPMAILER-debugTesting", false;
     mailer_smtp_host: Text = "PHPMAILER-smtpHost", String::new();
@@ -1206,12 +1210,33 @@ mod tests {
         "homepageCustomHTML08Trusted",
     ];
 
+    /// The settings of the Plex Libraries plugin of this application, each with its
+    /// default (D-121).
+    fn own_plugin_settings() -> Vec<(&'static str, Value)> {
+        vec![
+            ("PLEXLIBRARIES-enabled", json!(false)),
+            ("PLEXLIBRARIES-Auth-include", json!("4")),
+            ("PLEXLIBRARIES-librariesToInclude", json!("")),
+        ]
+    }
+
     #[test]
     fn every_setting_is_a_setting_of_the_php_application() {
         let php = php_defaults();
 
         for key in Settings::KEYS {
             let known = php.iter().any(|(php_key, _)| php_key == key);
+            if let Some((_, default)) = own_plugin_settings()
+                .into_iter()
+                .find(|(own, _)| own == key)
+            {
+                assert!(
+                    !known,
+                    "`{key}` is listed as a setting of this application only"
+                );
+                assert_eq!(Settings::defaults().get(key), Some(default), "`{key}`");
+                continue;
+            }
             if OWN_SETTINGS.contains(key) {
                 assert!(
                     !known,

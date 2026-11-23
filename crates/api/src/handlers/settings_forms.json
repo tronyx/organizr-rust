@@ -15352,6 +15352,46 @@
      }
     }
    ]
+  },
+  "plexlibraries": {
+   "About": [
+    {
+     "type": "notice",
+     "override": 12,
+     "label": "",
+     "name": null,
+     "value": "",
+     "notice": "info",
+     "title": "Plex Libraries",
+     "body": "Lets each person switch the libraries of the Plex server that the own account sees, and lets Admins and Co-Admins switch them for every account the server is shared with. The plugin uses the Plex token and the Plex ID of System Settings, Main, Authentication. Make the tab of its page with the button below."
+    }
+   ],
+   "Options": [
+    {
+     "type": "select",
+     "label": "Minimum Authentication",
+     "options": {
+      "$source": "groupOptions"
+     },
+     "name": "PLEXLIBRARIES-Auth-include",
+     "value": {
+      "$config": "PLEXLIBRARIES-Auth-include"
+     }
+    },
+    {
+     "type": "select2",
+     "class": "select2-multiple",
+     "name": "PLEXLIBRARIES-librariesToInclude",
+     "label": "Libraries that users may switch",
+     "value": {
+      "$config": "PLEXLIBRARIES-librariesToInclude"
+     },
+     "options": {
+      "$source": "plexLibraries"
+     },
+     "help": "Without a library, users see their libraries but change none."
+    }
+   ]
   }
  }
 }

@@ -45,7 +45,7 @@ struct BuiltIn {
 /// compares the entries as arrays, so the entry with one more field, the bookmark
 /// plugin, comes last, and the others go by name. The shuck-stop plugin of PHP is not
 /// part of this application (D-94).
-const BUILT_IN: [BuiltIn; 6] = [
+const BUILT_IN: [BuiltIn; 7] = [
     BuiltIn {
         key: "Chat",
         author: "CauseFX",
@@ -123,6 +123,20 @@ const BUILT_IN: [BuiltIn; 6] = [
         folder: "bookmark",
         bind: true,
         settings_route: Some("plugins/bookmark/settings"),
+    },
+    // The Plex Libraries plugin of this application, which PHP has not built in (D-121).
+    BuiltIn {
+        key: "Plex Libraries",
+        author: "Organizr Rust",
+        category: "Management",
+        link: "",
+        license: "personal,business",
+        prefix: "PLEXLIBRARIES",
+        db_prefix: None,
+        version: "1.0.0",
+        folder: "plexLibraries",
+        bind: true,
+        settings_route: Some("plugins/plexlibraries/settings"),
     },
 ];
 
@@ -236,7 +250,9 @@ mod tests {
                 "Invites",
                 "PHP Mailer",
                 "SpeedTest",
-                "Bookmark"
+                "Bookmark",
+                // Not a plugin of PHP: it comes after them (D-121).
+                "Plex Libraries"
             ]
         );
     }
@@ -252,10 +268,10 @@ mod tests {
     #[test]
     fn a_business_license_leaves_out_the_invites() {
         let mut settings = Settings::defaults();
-        assert_eq!(plugins(&settings, Which::All).len(), 6);
+        assert_eq!(plugins(&settings, Which::All).len(), 7);
         settings.license = "business".to_owned();
         let names: Vec<String> = plugins(&settings, Which::All).keys().cloned().collect();
         assert!(!names.contains(&"Invites".to_owned()), "{names:?}");
-        assert_eq!(names.len(), 5);
+        assert_eq!(names.len(), 6);
     }
 }
