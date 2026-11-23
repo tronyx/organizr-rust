@@ -3278,18 +3278,6 @@
     border-radius: var(--radius-field);
   }
 
-  /* The shared dialog (daisyUI modal) */
-  [data-layout='modern'] .modal::backdrop {
-    background: color-mix(in oklab, var(--color-base-100) 70%, transparent);
-  }
-
-  [data-layout='modern'] .modal-box {
-    border: 1px solid var(--color-base-300);
-    border-radius: var(--radius-box);
-    background: var(--color-base-200);
-    color: var(--color-base-content);
-  }
-
   @media (prefers-reduced-motion: reduce) {
     [data-layout='modern'] .org-form-control,
     [data-layout='modern'] .org-form-button,
@@ -3301,5 +3289,23 @@
     [data-layout='modern'] .org-switch::after {
       transition: none;
     }
+  }
+}
+
+/* The shared dialog (daisyUI modal). daisyUI puts the modal in `@layer utilities`, in
+   named sublayers, so these rules sit in `@layer utilities` too: styles that a layer holds
+   directly win over the ones in its sublayers. The veil is the background of the open
+   dialog itself (the `::backdrop` of daisyUI is hidden). The custom CSS of the Admin is
+   unlayered and still wins over these rules. */
+@layer utilities {
+  [data-layout='modern'] .modal[open] {
+    background-color: color-mix(in oklab, var(--color-base-100) 70%, transparent);
+  }
+
+  [data-layout='modern'] .modal-box {
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background-color: var(--color-base-200);
+    color: var(--color-base-content);
   }
 }

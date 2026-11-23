@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -81,5 +81,42 @@ describe('the modern CSS', () => {
       (name) => !new RegExp(String.raw`\.${name}(?![\w-])`).test(selectors),
     );
     expect(missing).toEqual([]);
+  });
+});
+
+describe('the modern dialog rules', () => {
+  const dialogSelectors = [
+    "[data-layout='modern'] .modal[open]",
+    "[data-layout='modern'] .modal-box",
+  ];
+
+  it('modern_dialog_rules_sit_in_the_utilities_layer_in_the_source', () => {
+    const block = css.slice(css.lastIndexOf('@layer utilities'));
+    for (const selector of dialogSelectors) {
+      expect(block).toContain(selector);
+    }
+    // The old, dead selector is gone from the components layer.
+    expect(css).not.toContain('.modal::backdrop');
+  });
+
+  const distDir = resolve(__dirname, '../../dist/assets');
+  const built = existsSync(distDir)
+    ? readdirSync(distDir).filter((name) => name.endsWith('.css'))
+    : [];
+
+  it.skipIf(built.length === 0)('modern_dialog_rules_are_in_the_utilities_layer_when_built', () => {
+    const out = readFileSync(resolve(distDir, built[0] as string), 'utf8');
+    // daisyUI holds the modal in `@layer utilities`; the modern rules must be in that
+    // layer too (the `components` layer comes earlier and would lose), after the layer
+    // of the daisyUI modal rules that they override.
+    const utilitiesStart = out.indexOf('@layer utilities{');
+    expect(utilitiesStart).toBeGreaterThan(out.indexOf('@layer components{'));
+    const daisyModal = out.indexOf('@layer daisyui.l1.l2{.modal.modal-open', utilitiesStart);
+    expect(daisyModal).toBeGreaterThan(utilitiesStart);
+    for (const selector of ['.modal[open]{', '.modal-box{']) {
+      const at = out.lastIndexOf(`[data-layout=modern] ${selector}`);
+      expect(at, selector).toBeGreaterThan(daisyModal);
+      expect(out.slice(utilitiesStart, at)).not.toContain('@layer components{');
+    }
   });
 });
