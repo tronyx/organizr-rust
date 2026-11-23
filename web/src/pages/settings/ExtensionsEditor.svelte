@@ -57,7 +57,16 @@
   /** What each permission lets an extension do. */
   const PERMISSIONS: Record<string, string> = {
     storage: 'Keep values of its own in the database of Organizr',
+    'http-local': 'Reach the sites that it names also when they are on your local network',
   };
+
+  /** The text of a permission. `http:<host>` names a site that the extension may reach. */
+  function permissionText(permission: string): string {
+    if (permission.startsWith('http:')) {
+      return `Send requests to the site ${permission.slice('http:'.length)}`;
+    }
+    return PERMISSIONS[permission] ?? permission;
+  }
 
   async function load() {
     try {
@@ -314,7 +323,7 @@
       <li>See the user name and the level of each caller</li>
       <li>Write lines to the log</li>
       {#each row.permissions as permission (permission)}
-        <li>{PERMISSIONS[permission] ?? permission}</li>
+        <li>{permissionText(permission)}</li>
       {/each}
     </ul>
     <p class="mt-3 text-xs break-all">SHA-256 of the file: {row.sha256}</p>

@@ -22,6 +22,7 @@ use sha2::{Digest, Sha256};
 use crate::api_data::ApiData;
 use crate::caller::Caller;
 use crate::envelope::{Envelope, NoData};
+use crate::handlers::extension_http;
 use crate::handlers::fields::Refusal;
 use crate::handlers::homepage::html::POLICY;
 use crate::state::AppState;
@@ -44,8 +45,11 @@ const MANAGER: GroupLevel = GroupLevel::ADMIN;
 /// The permission to keep values.
 const STORAGE: &str = "storage";
 
-/// The permissions that this version knows.
-const PERMISSIONS: [&str; 1] = [STORAGE];
+/// Whether this version knows a permission: `storage`, a site of `http:<host>`, or
+/// `http-local` (D-122).
+fn is_known_permission(permission: &str) -> bool {
+    permission == STORAGE || extension_http::is_permission(permission)
+}
 
 /// The most bytes of the file of a component.
 const COMPONENT_LIMIT: u64 = 32 * 1024 * 1024;
@@ -138,7 +142,7 @@ fn read_extension(folder: &FilePath) -> OnDisk {
             match manifest
                 .permissions
                 .iter()
-                .find(|permission| !PERMISSIONS.contains(&permission.as_str()))
+                .find(|permission| !is_known_permission(permission))
             {
                 Some(unknown) => Err(format!(
                     "The extension asks for the permission \"{unknown}\", which this version \
@@ -438,7 +442,7 @@ impl MarketEntry {
         }
         self.permissions
             .iter()
-            .find(|permission| !PERMISSIONS.contains(&permission.as_str()))
+            .find(|permission| !is_known_permission(permission))
             .map(|unknown| {
                 format!(
                     "The extension asks for the permission \"{unknown}\", which this version \
@@ -702,10 +706,21 @@ pub async fn call(
             level: caller.level().get(),
         },
     };
+    let http = state.outbound().and_then(|outbound| {
+        extension_http::Gate::for_permissions(
+            outbound,
+            &approved.permissions,
+            &id,
+            tokio::runtime::Handle::current(),
+        )
+    });
     let call = Call {
         extension: id.clone(),
         can_store,
         values,
+        http: http.map(|gate| {
+            std::sync::Arc::new(gate) as std::sync::Arc<dyn organizr_plugins::extension::HttpGate>
+        }),
     };
     let outcome =
         tokio::task::spawn_blocking(move || runtime.handle(&bytes, &sha256, call, request))

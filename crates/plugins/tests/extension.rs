@@ -14,10 +14,11 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::OnceLock;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use organizr_plugins::extension::{
-    Call, Caller, ExtensionError, Extensions, Outcome, RESPONSE_LIMIT, Request, STORAGE_LIMIT,
+    Call, Caller, ExtensionError, Extensions, HttpGate, HttpRequest, HttpResponse, Outcome,
+    REQUEST_COUNT_LIMIT, RESPONSE_LIMIT, Request, STORAGE_LIMIT,
 };
 
 /// The folder of this crate.
@@ -93,7 +94,40 @@ fn call(can_store: bool, values: BTreeMap<String, String>) -> Call {
         extension: "test".to_owned(),
         can_store,
         values,
+        http: None,
     }
+}
+
+/// A gate that answers every request itself, and keeps what it was sent. It refuses
+/// the addresses that do not start with `https://allowed.example/`.
+#[derive(Default)]
+struct FakeGate {
+    sent: Mutex<Vec<HttpRequest>>,
+}
+
+impl HttpGate for FakeGate {
+    fn send(&self, request: HttpRequest) -> Result<HttpResponse, String> {
+        if !request.url.starts_with("https://allowed.example/") {
+            return Err("the site is not approved".to_owned());
+        }
+        self.sent.lock().expect("the lock works").push(request);
+        Ok(HttpResponse {
+            status: 201,
+            headers: Vec::new(),
+            body: b"pong".to_vec(),
+        })
+    }
+}
+
+/// Asks the hostile extension with a gate, for the address `url`.
+fn ask_with_gate(gate: &Arc<FakeGate>, path: &str, url: &str) -> Outcome {
+    let mut asked = request("GET", path);
+    url.clone_into(&mut asked.query);
+    let mut with_gate = call(false, BTreeMap::new());
+    with_gate.http = Some(Arc::clone(gate) as Arc<dyn HttpGate>);
+    host()
+        .handle(hostile(), "hostile", with_gate, asked)
+        .expect("the extension answers")
 }
 
 fn ask_template(call: Call, request: Request) -> Outcome {
@@ -301,4 +335,61 @@ fn file_that_is_no_extension_is_refused() {
     host()
         .check(hostile(), "hostile")
         .expect("the hostile one is an extension too");
+}
+
+#[test]
+fn requests_go_only_through_the_gate_and_only_with_the_permission() {
+    // Without a gate, the extension has no permission to send.
+    let mut asked = request("GET", "/fetch");
+    asked.query = "https://allowed.example/a".to_owned();
+    let refused = host()
+        .handle(hostile(), "hostile", Call::default(), asked)
+        .expect("the extension answers");
+    assert!(
+        text(&refused).starts_with("refused: ") && text(&refused).contains("no permission"),
+        "{}",
+        text(&refused)
+    );
+
+    // With a gate, the request reaches it whole, and its answer reaches the extension.
+    let gate = Arc::new(FakeGate::default());
+    let answered = ask_with_gate(&gate, "/fetch", "https://allowed.example/a");
+    assert_eq!(text(&answered), "201 pong");
+    let sent = gate.sent.lock().expect("the lock works").clone();
+    assert_eq!(
+        sent,
+        [HttpRequest {
+            method: "POST".to_owned(),
+            url: "https://allowed.example/a".to_owned(),
+            headers: vec![("x-from".to_owned(), "hostile".to_owned())],
+            body: b"ping".to_vec(),
+        }]
+    );
+
+    // The refusal of the gate reaches the extension as an error.
+    let other = ask_with_gate(&gate, "/fetch", "https://elsewhere.example/");
+    assert_eq!(text(&other), "refused: the site is not approved");
+}
+
+#[test]
+fn requests_of_a_call_have_limits() {
+    let gate = Arc::new(FakeGate::default());
+    let many = ask_with_gate(&gate, "/fetch-many", "https://allowed.example/b");
+    assert!(
+        text(&many).starts_with(&format!("{REQUEST_COUNT_LIMIT} sent; ")),
+        "{}",
+        text(&many)
+    );
+    assert!(text(&many).contains("at most"), "{}", text(&many));
+
+    let big = ask_with_gate(
+        &Arc::new(FakeGate::default()),
+        "/fetch-big",
+        "https://allowed.example/c",
+    );
+    assert!(
+        text(&big).starts_with("refused: ") && text(&big).contains("at most"),
+        "{}",
+        text(&big)
+    );
 }

@@ -9,7 +9,8 @@ An extension is a WebAssembly component. WebAssembly is a format for programs th
 | An extension can | An extension cannot |
 |---|---|
 | Answer requests to its own routes | Read or write files |
-| See the user name and the access level of the caller | Open network connections |
+| See the user name and the access level of the caller | Open network connections of its own |
+| Send requests to the sites that it names, when the Admin approved them (see [Requests to other sites](#requests-to-other-sites)) | Reach a site that the Admin did not approve |
 | Write lines to the log of Organizr | Read the database, the settings or the secrets of Organizr |
 | Keep values of its own, when the Admin gave the permission `storage` | See the cookies or the API key of a caller |
 | Read the time and get random numbers | Read the environment of the server |
@@ -24,6 +25,10 @@ Each call of an extension has limits. A call that passes a limit is stopped, and
 | Body of an answer | 8 MiB |
 | Stored values, keys and values together | 1 MiB |
 | File of the component | 32 MiB |
+| Requests to other sites in one call | 20 |
+| Body of one request to another site | 1 MiB |
+| Body of the answer of another site | 4 MiB |
+| Time of one request to another site | 10 seconds |
 
 One extension handles one request at a time.
 
@@ -95,10 +100,27 @@ The folder `examples/extension-template` of the repository holds a small extensi
 |---|---|
 | `name`, `version` | Shown in the list. Both are necessary |
 | `description`, `author` | Shown in the list |
-| `permissions` | The permissions that the extension asks for. This version knows `storage` |
+| `permissions` | The permissions that the extension asks for: `storage`, `http:<host>` for each site, and `http-local`. See [Requests to other sites](#requests-to-other-sites) |
 | `least_access` | The level of the group with the least access that can call the extension: 0 is the Admin, 1 the Co-Admin, 999 everybody. Without it, the level is 1 |
 
 An extension gets these headers of a request: `accept`, `accept-language`, `content-type` and `user-agent`. It can set these headers of its answer: `content-type`, `cache-control` and `content-disposition`.
+
+## Requests to other sites
+
+An extension sends a request to another site with the function `send-request` of `host`. It can reach only the sites that its file `plugin.json` names, and only after the Admin approved them with the extension (D-122).
+
+| Permission | What it allows |
+|---|---|
+| `http:<host>` | Requests to this one host, over `http` or `https`, on any port. Write the host in small letters, for example `http:api.github.com`. Each site needs a permission of its own: `http:github.com` does not allow `api.github.com` |
+| `http-local` | Requests to the approved sites also when they are on a local network: this computer, a private network or a link-local network. Without it, such a request is refused |
+
+The server checks each request before it sends it:
+
+1. The address must use `http` or `https`, and its host must be one of the approved sites.
+2. The server resolves the name of the host. When one of its addresses is on a local network, the request needs `http-local`.
+3. The request goes to the address that the server checked, and to no other. The server follows no redirect: the extension gets the answer with the redirect, and decides itself. Over `https`, the certificate is checked.
+
+A request that is refused, or that fails, gives the extension an error with the reason. The extension decides what its caller sees.
 
 ## The routes of the management
 
@@ -173,4 +195,4 @@ The fields `id`, `name`, `version`, `download` and `sha256` are necessary. The o
 
 ## What is not built
 
-An extension cannot send requests to other services yet. The marketplace routes of PHP Organizr, `/plugins/marketplace` and `/plugins/manage/{plugin}`, install nothing: the marketplace of PHP lists PHP plugins, which this application cannot run (D-94).
+The marketplace routes of PHP Organizr, `/plugins/marketplace` and `/plugins/manage/{plugin}`, install nothing: the marketplace of PHP lists PHP plugins, which this application cannot run (D-94).

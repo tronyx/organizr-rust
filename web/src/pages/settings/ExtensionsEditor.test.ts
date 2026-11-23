@@ -101,6 +101,21 @@ describe('ExtensionsEditor', () => {
     );
   });
 
+  it('names each site that an extension asks to reach', async () => {
+    stubApi({
+      'GET extensions': {
+        data: [row({ permissions: ['http-local', 'http:api.example.com', 'storage'] })],
+      },
+    });
+    render(ExtensionsEditor, { ondone: vi.fn() });
+
+    await fireEvent.click(await screen.findByRole('button', { name: 'Approve Hello' }));
+    const permissions = screen.getByRole('list', { name: 'Permissions of the extension' });
+    expect(permissions.textContent).toContain('Send requests to the site api.example.com');
+    expect(permissions.textContent).toContain('also when they are on your local network');
+    expect(permissions.textContent).toContain('Keep values of its own');
+  });
+
   it('switches an extension off and deletes one', async () => {
     const sent = stubApi({
       'GET extensions': { data: [row({ enabled: true, approved: true })] },

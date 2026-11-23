@@ -2,8 +2,9 @@
 //
 // An extension is a WebAssembly component that exports the world `extension`. Organizr
 // calls `handle` for each request to a route of the extension. The extension can call
-// the functions of `host`. It has no files, no network and no environment. It can read
-// the time and get random numbers.
+// the functions of `host`. It has no files and no environment, and reaches the network
+// only through `send-request`, to the sites that an Admin approved. It can read the time
+// and get random numbers.
 package organizr:extension@0.1.0;
 
 interface host {
@@ -28,6 +29,31 @@ interface host {
 
     /// Deletes a value.
     delete-value: func(key: string);
+
+    /// A request to another site.
+    record http-request {
+        /// The method in capital letters, for example `GET`.
+        method: string,
+        /// The whole address: `http` or `https`, a host that the Admin approved, a path
+        /// and a query.
+        url: string,
+        headers: list<tuple<string, string>>,
+        body: list<u8>,
+    }
+
+    /// The answer of another site.
+    record http-response {
+        status: u16,
+        headers: list<tuple<string, string>>,
+        body: list<u8>,
+    }
+
+    /// Sends a request to another site and waits for its answer. Fails when the
+    /// extension has no permission for the host of the address, when the host is on the
+    /// local network without the permission `http-local`, when the request or the answer
+    /// is too large, when the site does not answer in time, and after too many requests
+    /// in one call. Redirects are not followed.
+    send-request: func(request: http-request) -> result<http-response, string>;
 }
 
 world extension {

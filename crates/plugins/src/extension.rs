@@ -1,8 +1,9 @@
 //! The host of extensions: WebAssembly components that answer requests.
 //!
-//! An extension runs in a sandbox. It gets no files, no network, no environment and no
-//! arguments. It can call only the functions of the interface `host` of
-//! `wit/extension.wit`. Each call has a limit for its memory and for its work, so an
+//! An extension runs in a sandbox. It gets no files, no environment and no arguments.
+//! It can call only the functions of the interface `host` of `wit/extension.wit`, and it
+//! reaches the network only through `send-request`, which the server checks with an
+//! [`HttpGate`] for the sites that an Admin approved. Each call has a limit for its memory and for its work, so an
 //! extension that is broken or hostile cannot stop the server.
 
 use std::collections::{BTreeMap, HashMap};
@@ -19,7 +20,9 @@ mod bindings {
     });
 }
 
-use bindings::organizr::extension::host::{Host, LogLevel};
+use bindings::organizr::extension::host::{
+    Host, HttpRequest as WitHttpRequest, HttpResponse as WitHttpResponse, LogLevel,
+};
 
 /// The most memory of one call of an extension, in bytes.
 const MEMORY_LIMIT: usize = 64 * 1024 * 1024;
@@ -39,6 +42,44 @@ const LOG_LINE_LIMIT: usize = 2000;
 
 /// The most lines that one call writes to the log.
 const LOG_LINES: u32 = 50;
+
+/// The most requests to other sites that one call sends.
+pub const REQUEST_COUNT_LIMIT: u32 = 20;
+
+/// The most bytes of the body of a request of an extension to another site.
+pub const OUTGOING_BODY_LIMIT: usize = 1024 * 1024;
+
+/// A request of an extension to another site.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HttpRequest {
+    /// The method in capital letters.
+    pub method: String,
+    /// The whole address.
+    pub url: String,
+    /// The headers.
+    pub headers: Vec<(String, String)>,
+    /// The body.
+    pub body: Vec<u8>,
+}
+
+/// The answer of another site to an extension.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HttpResponse {
+    /// The HTTP status.
+    pub status: u16,
+    /// The headers.
+    pub headers: Vec<(String, String)>,
+    /// The body.
+    pub body: Vec<u8>,
+}
+
+/// What sends the requests of an extension: the server, which checks the address
+/// against the sites that an Admin approved. The call of an extension runs on a thread
+/// for blocking work, so `send` blocks.
+pub trait HttpGate: Send + Sync {
+    /// Sends a request, or says why not.
+    fn send(&self, request: HttpRequest) -> Result<HttpResponse, String>;
+}
 
 /// Why an extension gave no answer.
 #[derive(Debug, thiserror::Error)]
@@ -96,7 +137,7 @@ pub struct Response {
 }
 
 /// What one call of an extension works with.
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct Call {
     /// The id of the extension, for the log.
     pub extension: String,
@@ -104,6 +145,20 @@ pub struct Call {
     pub can_store: bool,
     /// The values that the extension stored before.
     pub values: BTreeMap<String, String>,
+    /// What sends the requests of the extension to other sites, when it may send any.
+    pub http: Option<Arc<dyn HttpGate>>,
+}
+
+impl std::fmt::Debug for Call {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("Call")
+            .field("extension", &self.extension)
+            .field("can_store", &self.can_store)
+            .field("values", &self.values.len())
+            .field("http", &self.http.is_some())
+            .finish()
+    }
 }
 
 /// What a call gave.
@@ -123,6 +178,7 @@ struct State {
     call: Call,
     changed: bool,
     log_lines: u32,
+    requests: u32,
 }
 
 impl WasiView for State {
@@ -191,6 +247,34 @@ impl Host for State {
         if self.call.can_store && self.call.values.remove(&key).is_some() {
             self.changed = true;
         }
+    }
+
+    fn send_request(&mut self, request: WitHttpRequest) -> Result<WitHttpResponse, String> {
+        let Some(gate) = self.call.http.clone() else {
+            return Err("this extension has no permission to send requests".to_owned());
+        };
+        if self.requests >= REQUEST_COUNT_LIMIT {
+            return Err(format!(
+                "a call of an extension sends {REQUEST_COUNT_LIMIT} requests at most"
+            ));
+        }
+        if request.body.len() > OUTGOING_BODY_LIMIT {
+            return Err(format!(
+                "the body of a request can have {OUTGOING_BODY_LIMIT} bytes at most"
+            ));
+        }
+        self.requests += 1;
+        let answer = gate.send(HttpRequest {
+            method: request.method,
+            url: request.url,
+            headers: request.headers,
+            body: request.body,
+        })?;
+        Ok(WitHttpResponse {
+            status: answer.status,
+            headers: answer.headers,
+            body: answer.body,
+        })
     }
 }
 
@@ -277,6 +361,7 @@ impl Extensions {
             call,
             changed: false,
             log_lines: 0,
+            requests: 0,
         };
         let mut store = Store::new(&self.engine, state);
         store.limiter(|state| &mut state.limits);

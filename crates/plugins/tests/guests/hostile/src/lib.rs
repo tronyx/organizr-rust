@@ -24,7 +24,9 @@ impl Guest for Hostile {
             "/spin" => {
                 let mut number: u64 = 1;
                 loop {
-                    number = number.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                    number = number
+                        .wrapping_mul(6_364_136_223_846_793_005)
+                        .wrapping_add(1);
                     if number == 0 {
                         break;
                     }
@@ -50,10 +52,12 @@ impl Guest for Hostile {
                 Ok(entries) => format!("folder with {} entries", entries.count()),
                 Err(error) => format!("no folder: {error}"),
             }),
-            "/write" => text(match std::fs::write("/tmp/from-the-extension.txt", "text") {
-                Ok(()) => "written".to_owned(),
-                Err(error) => format!("not written: {error}"),
-            }),
+            "/write" => text(
+                match std::fs::write("/tmp/from-the-extension.txt", "text") {
+                    Ok(()) => "written".to_owned(),
+                    Err(error) => format!("not written: {error}"),
+                },
+            ),
             "/network" => text(match std::net::TcpStream::connect("127.0.0.1:80") {
                 Ok(_) => "connected".to_owned(),
                 Err(error) => format!("no connection: {error}"),
@@ -85,7 +89,59 @@ impl Guest for Hostile {
                 }
                 text(format!("{stored} stored; {refusal}"))
             }
-            "/read" => text(format!("{:?}", host::get_value("key0").map(|value| value.len()))),
+            "/read" => text(format!(
+                "{:?}",
+                host::get_value("key0").map(|value| value.len())
+            )),
+            // A request to the address of the query, through the host.
+            "/fetch" => text(
+                match host::send_request(&host::HttpRequest {
+                    method: "POST".to_owned(),
+                    url: request.query.clone(),
+                    headers: vec![("x-from".to_owned(), "hostile".to_owned())],
+                    body: b"ping".to_vec(),
+                }) {
+                    Ok(answer) => format!(
+                        "{} {}",
+                        answer.status,
+                        String::from_utf8_lossy(&answer.body)
+                    ),
+                    Err(error) => format!("refused: {error}"),
+                },
+            ),
+            // More requests than a call may send.
+            "/fetch-many" => {
+                let mut sent = 0;
+                let mut refusal = String::new();
+                for _ in 0..30 {
+                    let one = host::HttpRequest {
+                        method: "GET".to_owned(),
+                        url: request.query.clone(),
+                        headers: Vec::new(),
+                        body: Vec::new(),
+                    };
+                    match host::send_request(&one) {
+                        Ok(_) => sent += 1,
+                        Err(error) => {
+                            refusal = error;
+                            break;
+                        }
+                    }
+                }
+                text(format!("{sent} sent; {refusal}"))
+            }
+            // A body that is larger than a request can have.
+            "/fetch-big" => text(
+                match host::send_request(&host::HttpRequest {
+                    method: "POST".to_owned(),
+                    url: request.query.clone(),
+                    headers: Vec::new(),
+                    body: vec![b'a'; 2 * 1024 * 1024],
+                }) {
+                    Ok(answer) => format!("{}", answer.status),
+                    Err(error) => format!("refused: {error}"),
+                },
+            ),
             "/forget" => {
                 host::delete_value("key0");
                 text("deleted".to_owned())

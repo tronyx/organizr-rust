@@ -11,6 +11,8 @@ pub mod connection_tests;
 pub mod connection_tests_more;
 pub mod database;
 #[cfg(feature = "wasm-plugins")]
+pub mod extension_http;
+#[cfg(feature = "wasm-plugins")]
 pub mod extensions;
 pub mod external_login;
 pub mod fields;
