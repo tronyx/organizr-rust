@@ -6,6 +6,7 @@ mod check_homepage_more;
 mod healthcheck;
 mod import;
 mod log_file;
+mod move_to_postgres;
 mod restore;
 mod scheduler;
 mod secret_key;
@@ -31,6 +32,9 @@ enum Command {
     /// Move an install of PHP Organizr into this application. Run it once, before the
     /// first start of the server.
     Import(import::Args),
+    /// Copy the SQLite database of an install into an empty PostgreSQL database. Stop the
+    /// server first.
+    MoveToPostgres(move_to_postgres::Args),
     /// Ask plex.tv, Ombi, Overseerr and Tautulli what a login asks them, with the
     /// stored settings. Prints for each one whether the answer was usable.
     Check(check::Args),
@@ -44,6 +48,7 @@ async fn main() -> anyhow::Result<()> {
         Command::Serve(args) => serve::run(args).await,
         Command::Healthcheck(args) => healthcheck::run(&args).await,
         Command::Import(args) => import::run(args).await,
+        Command::MoveToPostgres(args) => move_to_postgres::run(args).await,
         Command::Check(args) => check::run(args).await,
         Command::Restore(args) => restore::run(&args),
     }

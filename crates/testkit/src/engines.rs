@@ -74,6 +74,8 @@ where
 pub struct FreshPostgres {
     /// The database, open.
     pub database: Database,
+    /// The URL of the database, with its password.
+    pub url: String,
     server: sea_orm::DatabaseConnection,
     name: String,
 }
@@ -122,12 +124,14 @@ async fn create_postgres(server_url: &str) -> FreshPostgres {
     let (base, _) = server_url
         .rsplit_once('/')
         .expect("the server URL ends with a database name");
-    let database = Database::connect(&format!("{base}/{name}"))
+    let url = format!("{base}/{name}");
+    let database = Database::connect(&url)
         .await
         .expect("the PostgreSQL test database opens");
     assert_eq!(database.engine(), Engine::Postgres);
     FreshPostgres {
         database,
+        url,
         server,
         name,
     }
