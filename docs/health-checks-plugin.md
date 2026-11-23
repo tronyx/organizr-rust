@@ -28,6 +28,12 @@ A service works when it answers with a success. A service that sends the browser
 9. Select **Save the services**.
 10. Select **Run the checks now**, and make sure that each service shows the result that you expect.
 
+### Import the checks of your Healthchecks account
+
+When the homepage item **Healthchecks** is set up with the address and an API key of your Healthchecks account, the tab **Services** can fill the list for you. Select **Import the checks of Healthchecks**. Organizr adds each check of the account that the list does not have yet, with its name and its id, switched on and without addresses. A check whose id is in the list already is left out. Then enter the addresses of the new services, and select **Save the services**: the import saves nothing by itself.
+
+The API key must have full access. A read-only key of Healthchecks gives no ping address, so Organizr cannot read the ids, and says so.
+
 | Setting | Key |
 |---|---|
 | Use the plugin | `HEALTHCHECKS-enabled` |

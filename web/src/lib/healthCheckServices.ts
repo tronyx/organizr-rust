@@ -88,3 +88,46 @@ export function toSetting(rows: ServiceRow[]): unknown {
 export function emptyRow(): ServiceRow {
   return { name: '', uuid: '', external: '', internal: '', enabled: true };
 }
+
+/** What an import of the checks of a Healthchecks account found. */
+export interface Imported {
+  /** The services with the new ones at the end. */
+  rows: ServiceRow[];
+  /** The names of the new services. */
+  added: string[];
+  /** Whether the key of Healthchecks can only read: its checks have no ping address. */
+  readOnly: boolean;
+}
+
+/** The id of a check in its ping address, as PHP reads it. */
+const CHECK_ID = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+
+/**
+ * Adds the checks of a Healthchecks account that the list does not have yet, as the
+ * button "Import Services" of PHP: each check by its name and the id in its ping
+ * address, without addresses, switched on. A check whose id is in the list already is
+ * left out.
+ */
+export function importChecks(rows: ServiceRow[], checks: unknown): Imported {
+  const known = new Set(rows.map((row) => row.uuid.trim().toLowerCase()).filter(Boolean));
+  const result: Imported = { rows: [...rows], added: [], readOnly: false };
+  for (const check of Array.isArray(checks) ? checks : []) {
+    if (typeof check !== 'object' || check === null) {
+      continue;
+    }
+    const fields = check as Record<string, unknown>;
+    // A key that can only read gives a `unique_key` in the place of the ping address.
+    if ('unique_key' in fields) {
+      return { rows, added: [], readOnly: true };
+    }
+    const uuid = typeof fields.ping_url === 'string' ? fields.ping_url.match(CHECK_ID)?.[0] : null;
+    if (!uuid || known.has(uuid.toLowerCase())) {
+      continue;
+    }
+    known.add(uuid.toLowerCase());
+    const name = typeof fields.name === 'string' ? fields.name : '';
+    result.rows.push({ ...emptyRow(), name, uuid });
+    result.added.push(name || uuid);
+  }
+  return result;
+}

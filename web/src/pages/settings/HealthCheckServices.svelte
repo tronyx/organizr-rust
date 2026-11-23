@@ -1,10 +1,16 @@
 <script lang="ts">
-  // The services of the health checks plugin: a list to edit, and a button that runs
-  // the checks now.
+  // The services of the health checks plugin: a list to edit, a button that adds the
+  // checks of the Healthchecks account, and a button that runs the checks now.
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
-  import { emptyRow, fromSetting, type ServiceRow, toSetting } from '../../lib/healthCheckServices';
+  import {
+    emptyRow,
+    fromSetting,
+    importChecks,
+    type ServiceRow,
+    toSetting,
+  } from '../../lib/healthCheckServices';
 
   let {
     ondone,
@@ -53,6 +59,47 @@
     }
   }
 
+  /** What the homepage item Healthchecks answers. */
+  interface Account {
+    content?: { checks?: unknown };
+  }
+
+  /**
+   * Adds the checks of the Healthchecks account that the list does not have, as the
+   * button "Import Services" of PHP. The account is the one of the homepage item
+   * Healthchecks. The new services are not saved until the Admin saves the list.
+   */
+  async function importNow() {
+    if (!rows) {
+      return;
+    }
+    busy = true;
+    error = null;
+    try {
+      const account = (await api<Account | null>('GET', 'homepage/healthchecks')).data;
+      const checks = account?.content?.checks;
+      if (!Array.isArray(checks) || checks.length === 0) {
+        error = 'Healthchecks gave no checks.';
+        return;
+      }
+      const imported = importChecks(rows, checks);
+      if (imported.readOnly) {
+        error = 'The API key of Healthchecks can only read. Use a key with full access.';
+        return;
+      }
+      rows = imported.rows;
+      ondone(
+        imported.added.length === 0
+          ? 'Every check of Healthchecks is in the list already.'
+          : `Added ${imported.added.length} ${imported.added.length === 1 ? 'check' : 'checks'}: ${imported.added.join(', ')}. Save the services to keep them.`,
+      );
+    } catch (failure) {
+      error = failureText(failure);
+    } finally {
+      busy = false;
+    }
+  }
+
   async function runNow() {
     busy = true;
     error = null;
@@ -75,7 +122,8 @@
   <p class="my-2 max-w-2xl text-sm">
     Each service has a check at Healthchecks. Enter the id of that check, and one address or both.
     With both, the address from the internet is asked only when the address inside the network does
-    not answer.
+    not answer. The button that imports the checks adds each check of the Healthchecks account of
+    the homepage item Healthchecks that the list does not have yet.
   </p>
   {#if error}
     <div role="alert" class="alert alert-error mb-4"><span>{error}</span></div>
@@ -158,6 +206,9 @@
           onclick={() => (rows = [...(rows ?? []), emptyRow()])}
         >
           Add a service
+        </button>
+        <button type="button" class="btn btn-sm" disabled={busy} onclick={importNow}>
+          Import the checks of Healthchecks
         </button>
         <button type="submit" class="btn btn-sm btn-primary" disabled={busy || !hasChanges}>
           Save the services

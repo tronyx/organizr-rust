@@ -54,6 +54,61 @@ describe('HealthCheckServices', () => {
     expect(items?.['0']?.[2]?.value).toBe('https://plex.example.com');
   });
 
+  it('imports the checks of Healthchecks that the list does not have, unsaved', async () => {
+    const sent = stubApi({
+      'GET config': { data: { 'HEALTHCHECKS-all-items': STORED } },
+      'GET homepage/healthchecks': {
+        data: {
+          content: {
+            checks: [
+              {
+                name: 'Sonarr',
+                ping_url: 'https://hc-ping.com/7f1e2d3c-4b5a-4968-8776-aabbccddeeff',
+              },
+            ],
+          },
+        },
+      },
+    });
+    const ondone = vi.fn();
+    render(HealthCheckServices, { ondone });
+
+    await screen.findByLabelText('Name of service 1');
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Import the checks of Healthchecks' }),
+    );
+
+    await vi.waitFor(() =>
+      expect(ondone).toHaveBeenCalledWith('Added 1 check: Sonarr. Save the services to keep them.'),
+    );
+    expect(screen.getByLabelText<HTMLInputElement>('Name of service 2').value).toBe('Sonarr');
+    expect(screen.getByLabelText<HTMLInputElement>('Id of the check of Sonarr').value).toBe(
+      '7f1e2d3c-4b5a-4968-8776-aabbccddeeff',
+    );
+    expect(screen.getByRole('button', { name: 'Save the services' }).hasAttribute('disabled')).toBe(
+      false,
+    );
+    expect(sent.filter((request) => request.method === 'PUT')).toHaveLength(0);
+  });
+
+  it('says so when the key of Healthchecks can only read', async () => {
+    stubApi({
+      'GET config': { data: { 'HEALTHCHECKS-all-items': STORED } },
+      'GET homepage/healthchecks': {
+        data: { content: { checks: [{ name: 'Plex', unique_key: 'abc' }] } },
+      },
+    });
+    render(HealthCheckServices, { ondone: vi.fn() });
+
+    await screen.findByLabelText('Name of service 1');
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Import the checks of Healthchecks' }),
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('can only read');
+    expect(screen.queryByLabelText('Name of service 2')).toBeNull();
+  });
+
   it('removes a service, and stores the empty text for an empty list', async () => {
     const sent = stubApi({
       'GET config': { data: { 'HEALTHCHECKS-all-items': STORED } },
