@@ -89,7 +89,7 @@
 {:else if start}
   <div class="org-form-grid mb-6">
     <p class="org-form-wide text-sm">
-      This is the look that a person sees until they choose their own. The original layout is the
+      This is the look that a person sees until they choose their own. The OG Organizr layout is the
       one of PHP Organizr; the modern layout has a top bar and a menu grouped by category.
     </p>
     <div class="org-form-group">
@@ -101,7 +101,7 @@
         disabled={!canChange}
         onchange={(event) => (form.layout = event.currentTarget.value)}
       >
-        <option value="og">Original</option>
+        <option value="og">OG Organizr</option>
         <option value="modern">Modern</option>
       </select>
     </div>

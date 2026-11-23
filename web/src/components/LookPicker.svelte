@@ -1,7 +1,7 @@
 <script lang="ts">
   // The choice of the look of each person: the layout (OG Organizr or the modern one), and
   // for it the theme and, on the modern layout, its colours. It is plain markup, so the menu of the
-  // user of the original layout, the Account page and the popover of the modern top bar
+  // user of the OG Organizr layout, the Account page and the popover of the modern top bar
   // can all show it. Each change is saved at once and the page then loads the look again.
   import { api, failureText } from '../lib/api';
   import { MODERN_THEMES } from '../lib/look';

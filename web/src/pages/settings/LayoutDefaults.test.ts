@@ -18,6 +18,7 @@ describe('LayoutDefaults', () => {
 
     const layout = await screen.findByRole('combobox', { name: 'Default layout' });
     expect(layout).toHaveValue('og');
+    expect(screen.getByRole('option', { name: 'OG Organizr' })).toBeInTheDocument();
     const save = screen.getByRole('button', { name: 'Save the layout' });
     expect(save).toBeDisabled();
 
