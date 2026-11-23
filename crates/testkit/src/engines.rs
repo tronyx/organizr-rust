@@ -57,6 +57,53 @@ async fn on_postgres<F>(server_url: &str, test: &F)
 where
     F: AsyncFn(&Database),
 {
+    let fresh = create_postgres(server_url).await;
+    fresh
+        .database
+        .migrate()
+        .await
+        .expect("the migrations apply on PostgreSQL");
+
+    test(&fresh.database).await;
+
+    fresh.remove().await;
+}
+
+/// A database on the `PostgreSQL` test server that no one has migrated: no tables.
+#[derive(Debug)]
+pub struct FreshPostgres {
+    /// The database, open.
+    pub database: Database,
+    server: sea_orm::DatabaseConnection,
+    name: String,
+}
+
+impl FreshPostgres {
+    /// Closes the database and drops it from the server.
+    pub async fn remove(self) {
+        self.database
+            .close()
+            .await
+            .expect("the PostgreSQL test database closes");
+        self.server
+            .execute_unprepared(&format!("DROP DATABASE {} WITH (FORCE)", self.name))
+            .await
+            .expect("the test database can be dropped");
+        self.server
+            .close()
+            .await
+            .expect("the connection to the test server closes");
+    }
+}
+
+/// Creates an empty database on the `PostgreSQL` test server, or gives `None` when no
+/// server is configured. Call [`FreshPostgres::remove`] at the end of the test.
+pub async fn fresh_postgres() -> Option<FreshPostgres> {
+    let server_url = postgres_url()?;
+    Some(create_postgres(&server_url).await)
+}
+
+async fn create_postgres(server_url: &str) -> FreshPostgres {
     static COUNTER: AtomicU32 = AtomicU32::new(0);
     let name = format!(
         "organizr_test_{}_{}",
@@ -79,23 +126,9 @@ where
         .await
         .expect("the PostgreSQL test database opens");
     assert_eq!(database.engine(), Engine::Postgres);
-    database
-        .migrate()
-        .await
-        .expect("the migrations apply on PostgreSQL");
-
-    test(&database).await;
-
-    database
-        .close()
-        .await
-        .expect("the PostgreSQL test database closes");
-    server
-        .execute_unprepared(&format!("DROP DATABASE {name} WITH (FORCE)"))
-        .await
-        .expect("the test database can be dropped");
-    server
-        .close()
-        .await
-        .expect("the connection to the test server closes");
+    FreshPostgres {
+        database,
+        server,
+        name,
+    }
 }

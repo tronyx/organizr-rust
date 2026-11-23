@@ -29,6 +29,24 @@ pub enum DbError {
     #[error("the database is not empty")]
     NotEmpty,
 
+    /// The copy to `PostgreSQL` was asked for two databases that are not `SQLite` first and
+    /// `PostgreSQL` second.
+    #[error("the copy goes from SQLite to PostgreSQL only")]
+    WrongEngines,
+
+    /// After the copy, a table has another number of rows in the new database.
+    #[error(
+        "after the copy, the table {table} has {in_postgres} rows in PostgreSQL and {in_sqlite} in SQLite"
+    )]
+    CopyMismatch {
+        /// The table.
+        table: &'static str,
+        /// The number of rows in the `SQLite` file.
+        in_sqlite: u64,
+        /// The number of rows in `PostgreSQL`.
+        in_postgres: u64,
+    },
+
     /// A stored record cannot be turned into its domain type.
     #[error("a stored {record} is not valid: {reason}")]
     InvalidRecord {

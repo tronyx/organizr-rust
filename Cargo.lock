@@ -3191,6 +3191,7 @@ dependencies = [
  "organizr-testkit",
  "sea-orm",
  "sea-orm-migration",
+ "sha2 0.11.1",
  "tempfile",
  "thiserror 2.0.21",
  "tokio",

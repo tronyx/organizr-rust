@@ -7,7 +7,9 @@
 mod bookmarks;
 mod categories;
 mod chat;
-mod entity;
+mod copy;
+#[doc(hidden)]
+pub mod entity;
 mod error;
 mod extensions;
 mod groups;
@@ -22,7 +24,7 @@ mod users;
 
 use std::time::Duration;
 
-use sea_orm::sqlx::sqlite::SqliteConnectOptions;
+use sea_orm::sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sea_orm::sqlx::{ConnectOptions as _, Connection as _};
 use sea_orm::{ConnectOptions, ConnectionTrait, DatabaseConnection, DbErr};
 use sea_orm_migration::MigratorTrait;
@@ -30,6 +32,7 @@ use sea_orm_migration::MigratorTrait;
 pub use crate::bookmarks::Bookmarks;
 pub use crate::categories::Categories;
 pub use crate::chat::Chat;
+pub use crate::copy::{COPIED_TABLES, TableCount};
 pub use crate::error::DbError;
 pub use crate::extensions::{ApprovedExtension, Extensions};
 pub use crate::groups::Groups;
@@ -208,6 +211,49 @@ impl Database {
         migration::Migrator::up(&self.connection, None)
             .await
             .map_err(DbError::Engine)
+    }
+
+    /// Runs only the first `steps` migrations. For tests that need an old schema.
+    #[doc(hidden)]
+    pub async fn migrate_steps(&self, steps: u32) -> Result<(), DbError> {
+        migration::Migrator::up(&self.connection, Some(steps))
+            .await
+            .map_err(DbError::Engine)
+    }
+
+    /// The connection, for tests that read or write rows directly.
+    #[doc(hidden)]
+    pub const fn connection(&self) -> &DatabaseConnection {
+        &self.connection
+    }
+
+    /// Opens an existing `SQLite` file for reading only. The file is not created, and
+    /// nothing is written to it: no migration, no journal mode, no table. Fails when the
+    /// file does not exist.
+    pub async fn open_sqlite_read_only(file: &std::path::Path) -> Result<Self, DbError> {
+        let options = SqliteConnectOptions::new()
+            .filename(file)
+            .read_only(true)
+            .foreign_keys(true)
+            .busy_timeout(SQLITE_BUSY_TIMEOUT);
+        let pool = SqlitePoolOptions::new()
+            .connect_with(options)
+            .await
+            .map_err(|error| DbError::Engine(DbErr::Custom(error.to_string())))?;
+        Ok(Self {
+            connection: sea_orm::SqlxSqliteConnector::from_sqlx_sqlite_pool(pool),
+            engine: Engine::Sqlite,
+        })
+    }
+
+    /// Whether a migration of this version of the application has not run yet on this
+    /// database. Changes nothing.
+    pub async fn has_pending_migrations(&self) -> Result<bool, DbError> {
+        Ok(
+            !migration::Migrator::get_pending_migrations(&self.connection)
+                .await?
+                .is_empty(),
+        )
     }
 
     /// Closes all connections.
