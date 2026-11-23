@@ -7,11 +7,10 @@
 
   import { api, failureText } from '../lib/api';
   import { frames } from '../lib/frames.svelte';
-  import { browserStorage, clearJellyfinLogin } from '../lib/jellyfinSso';
   import { opensNewWindow } from '../lib/menu';
-  import { afterLogout, browser } from '../lib/oidc';
   import { PAGES, router } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
+  import { canUse, lockAccount, logOut as shellLogOut } from '../lib/shellActions';
   import { pictureOf } from '../lib/picture';
   import { pingInterval, pingList, type PingResult } from '../lib/pings';
   import UpdateNotice from '../components/UpdateNotice.svelte';
@@ -103,42 +102,18 @@
   async function logOut() {
     error = null;
     try {
-      const oidc = session.launch?.settings.login?.oidc;
-      const jellyfin = session.launch?.settings.sso.jellyfin;
-      await api('GET', 'logout');
-      clearJellyfinLogin(jellyfin, location.origin, browserStorage);
-      const away = afterLogout(oidc);
-      if (away !== null) {
-        browser.go(away);
-        return;
-      }
-      await session.load();
-      router.go(PAGES.home);
+      await shellLogOut();
     } catch (failure) {
       error = failureText(failure);
     }
   }
 
-  /** Locks the account: the interface then shows only the lock screen. */
   async function lock() {
     try {
-      await api('POST', 'users/lock');
-      await session.load();
+      await lockAccount();
     } catch (failure) {
       error = failureText(failure);
     }
-  }
-
-  /** Whether a plugin is on, and this person has its level. `name` is `SPEEDTEST`. */
-  function canUse(name: string): boolean {
-    const plugins = session.launch?.plugins;
-    const group = session.launch?.user?.groupID;
-    if (plugins?.[`${name}-enabled`] !== true || group === undefined) {
-      return false;
-    }
-    const includes = plugins.includes as Record<string, unknown> | undefined;
-    const level = Number(includes?.[`${name}-Auth-include`]);
-    return Number.isFinite(level) ? group <= level : group <= 1;
   }
 
   const canSpeedTest = $derived(canUse('SPEEDTEST'));

@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, type Component, type Snippet } from 'svelte';
+  import { fade } from 'svelte/transition';
 
   import { contentFor, shownTab } from './lib/menu';
+  import { motion } from './lib/motion';
   import { rememberReturn } from './lib/returnTo';
   import { router } from './lib/route.svelte';
   import { session } from './lib/session.svelte';
@@ -19,6 +21,20 @@
   );
   const shown = $derived(shownTab(content, router.route, session.tabs));
 
+  // The modern shell comes in its own chunk, so people of the OG layout never load it.
+  let ModernShell = $state<Component<{ children: Snippet; shown: number | undefined }> | null>(
+    null,
+  );
+  const modern = $derived(session.look.layout === 'modern');
+
+  $effect(() => {
+    if (modern && !ModernShell) {
+      void import('./pages/ModernShell.svelte').then((module) => {
+        ModernShell = module.default;
+      });
+    }
+  });
+
   onMount(() => {
     void session.load().then(() => {
       // A reverse proxy may have sent the person here, with the address to go back to.
@@ -31,6 +47,30 @@
   <Wizard />
 {:else if session.locked}
   <Locked />
+{:else if session.launch && modern}
+  {#if ModernShell}
+    <ModernShell shown={shown?.id}>
+      <!-- The frames stay loaded below every other page. -->
+      <TabFrames
+        tabs={session.tabs}
+        shown={content.kind === 'frame' ? content.tab.id : undefined}
+      />
+      {#if content.kind !== 'frame'}
+        {#key router.route}
+          <div
+            class="bg-base-100 absolute inset-0 overflow-auto"
+            in:fade={{ duration: motion(150) }}
+          >
+            <Content {content} />
+          </div>
+        {/key}
+      {/if}
+    </ModernShell>
+  {:else}
+    <main class="grid min-h-screen place-items-center">
+      <span class="loading loading-spinner loading-lg" aria-label="Loading"></span>
+    </main>
+  {/if}
 {:else if session.launch}
   <Shell shown={shown?.id}>
     <!-- The frames stay loaded below every other page. -->

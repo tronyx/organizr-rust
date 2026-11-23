@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* `dark:` follows the colour set of the page, not the operating system. */
+@custom-variant dark (&:where([data-colour-set=dark], [data-colour-set=dark] *));
+
 @plugin 'daisyui' {
   themes: light;
 }
@@ -2630,4 +2633,108 @@
   --color-primary-foreground: var(--color-primary-content);
   --color-secondary-foreground: var(--color-secondary-content);
   --color-accent-foreground: var(--color-accent-content);
+}
+
+/* The shell of the modern layout. It reuses the classes of the OG frame (`org-header`,
+   `org-sidebar`, `org-menu` and the others), so custom CSS reaches both, and changes their
+   shape here: a taller bar, and a menu that stays open as a column instead of a strip. */
+@layer components {
+  [data-layout='modern'] .org-header {
+    height: 52px;
+    border-bottom: 1px solid var(--color-base-300);
+    gap: 4px;
+    padding-inline: 8px;
+  }
+
+  [data-layout='modern'] .org-header-link {
+    height: 36px;
+    padding: 0 12px;
+    border-radius: var(--radius-field);
+  }
+
+  [data-layout='modern'] .org-header-link:hover,
+  [data-layout='modern'] .org-header-link:focus-visible {
+    background: color-mix(in oklab, var(--org-header-text) 14%, transparent);
+  }
+
+  [data-layout='modern'] .org-logo {
+    height: 52px;
+    font-weight: 500;
+  }
+
+  [data-layout='modern'] .m-shown {
+    min-width: 0;
+    padding-left: 12px;
+    border-left: 1px solid var(--color-base-300);
+    color: var(--org-header-text);
+    font-size: 14px;
+  }
+
+  [data-layout='modern'] .org-sidebar {
+    inset: 52px auto 0 0;
+    width: 256px;
+    transform: none;
+    transition: none;
+    box-shadow: none;
+    border-right: 1px solid var(--color-base-300);
+  }
+
+  /* In the drawer the sidebar is the whole height of the sheet. */
+  [data-layout='modern'] [data-slot='sheet-content'].org-sidebar {
+    inset: 0 auto 0 0;
+    width: min(20rem, 85vw);
+    max-width: none;
+    background: var(--org-sidebar-bg, var(--color-base-200));
+    color: var(--org-sidebar-text);
+  }
+
+  [data-layout='modern'] .org-sidebar-head {
+    height: 44px;
+    padding: 4px 18px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--org-sidebar-text);
+  }
+
+  [data-layout='modern'] .org-content {
+    inset: 52px 0 0 0;
+  }
+
+  [data-layout='modern'] .org-content.m-with-menu {
+    left: 256px;
+  }
+
+  [data-layout='modern'] .org-menu a,
+  [data-layout='modern'] .org-menu summary {
+    min-height: 42px;
+    margin: 1px 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius-field);
+  }
+
+  [data-layout='modern'] .org-menu .m-group ul a {
+    padding-left: 22px;
+  }
+
+  [data-layout='modern'] .org-menu a[aria-current='page'] {
+    background: var(--color-base-300);
+    box-shadow: none;
+  }
+
+  [data-layout='modern'] .org-menu .org-label {
+    background: var(--color-base-300);
+    color: var(--org-sidebar-text);
+  }
+
+  /* No motion for a person who asked the system for less: the drawer, the menus and the
+     tooltips of the shadcn parts animate with CSS. */
+  @media (prefers-reduced-motion: reduce) {
+    [data-layout='modern'] [data-slot],
+    [data-layout='modern'] .org-arrow {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
 }
