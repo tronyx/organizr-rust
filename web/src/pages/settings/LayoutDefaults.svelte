@@ -125,7 +125,7 @@
         id="layout-colours"
         class="org-form-control"
         value={form.modernColourSet}
-        disabled={!canChange}
+        disabled={!canChange || colourSets.length < 2}
         onchange={(event) => (form.modernColourSet = event.currentTarget.value)}
       >
         {#each colourSets as set (set.id)}

@@ -76,7 +76,7 @@
     </ModernShell>
   {:else}
     <main class="grid min-h-screen place-items-center">
-      <span class="loading loading-spinner loading-lg" aria-label="Loading"></span>
+      <span class="loading loading-spinner loading-lg" role="status" aria-label="Loading"></span>
     </main>
   {/if}
 {:else if session.launch}

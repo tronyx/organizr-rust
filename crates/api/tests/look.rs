@@ -48,7 +48,7 @@ async fn the_admin_default_is_the_look_of_a_person_who_chose_none() {
 
         assert_eq!(
             answer.data()["look"],
-            json!({"layout": "modern", "theme": "organizr", "colourSet": "light", "source": "default"})
+            json!({"layout": "modern", "theme": "organizr", "colourSet": "dark", "source": "default"})
         );
     })
     .await;
@@ -93,10 +93,10 @@ async fn switching_layout_keeps_the_other_layouts_choice() {
 
         put(json!({"layout": "og", "theme": "Dracula", "colourSet": "light"})).await;
         let modern =
-            put(json!({"layout": "modern", "theme": "organizr", "colourSet": "light"})).await;
+            put(json!({"layout": "modern", "theme": "organizr", "colourSet": "dark"})).await;
         assert_eq!(
             modern.data(),
-            json!({"layout": "modern", "theme": "organizr", "colourSet": "light", "source": "user"})
+            json!({"layout": "modern", "theme": "organizr", "colourSet": "dark", "source": "user"})
         );
 
         // Back to the original layout with its defaults for theme and colour set: the
@@ -121,7 +121,7 @@ async fn switching_layout_keeps_the_other_layouts_choice() {
             .expect("the look can be read")
             .expect("the look is stored");
         assert_eq!(stored.modern_theme.as_deref(), Some("organizr"));
-        assert_eq!(stored.modern_colour_set.as_deref(), Some("light"));
+        assert_eq!(stored.modern_colour_set.as_deref(), Some("dark"));
         assert_eq!(stored.og_theme, None);
 
         // Choosing the original layout again with a theme keeps the modern choice.
@@ -189,6 +189,10 @@ async fn invalid_values_are_refused_with_422() {
             ),
             (
                 json!({"layout": "modern", "theme": "organizr", "colourSet": "purple"}),
+                "colourSet is not valid",
+            ),
+            (
+                json!({"layout": "modern", "theme": "organizr", "colourSet": "light"}),
                 "colourSet is not valid",
             ),
         ];

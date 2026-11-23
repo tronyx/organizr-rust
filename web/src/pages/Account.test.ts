@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { stubApi, type CannedAnswer } from '../test-helpers';
@@ -131,5 +131,22 @@ describe('Account', () => {
     expect(
       screen.queryByRole('button', { name: 'Set a second factor up' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows_the_look_picker_section', async () => {
+    show(false);
+    render(Account);
+
+    const section = (await screen.findByRole('heading', { name: 'Look' })).closest('section');
+    expect(section).not.toBeNull();
+    expect(
+      within(section as HTMLElement).getByRole('radio', { name: 'OG Organizr' }),
+    ).toBeChecked();
+    expect(
+      within(section as HTMLElement).getByRole('radio', { name: 'Modern' }),
+    ).toBeInTheDocument();
+    expect(
+      within(section as HTMLElement).getByRole('combobox', { name: 'Theme' }),
+    ).toBeInTheDocument();
   });
 });

@@ -32,8 +32,9 @@ pub const OG_THEMES: [&str; 13] = [
 ];
 
 /// The themes of the modern layout, each with its colour sets. The first colour set of a
-/// theme is the one used when nothing else says which.
-pub const MODERN_THEMES: &[(&str, &[&str])] = &[("organizr", &["dark", "light"])];
+/// theme is the one used when nothing else says which. The light set of `organizr` stays
+/// out until the inner pages have modern styling (phase 2).
+pub const MODERN_THEMES: &[(&str, &[&str])] = &[("organizr", &["dark"])];
 
 /// Where an effective look comes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -257,7 +258,7 @@ mod tests {
         let good = stored(|s| {
             s.layout = Some(text("modern"));
             s.modern_theme = Some(text("organizr"));
-            s.modern_colour_set = Some(text("light"));
+            s.modern_colour_set = Some(text("dark"));
         });
 
         assert_eq!(
@@ -266,7 +267,29 @@ mod tests {
         );
         assert_eq!(
             parts(&effective_look(&settings, Some(&good))),
-            ("modern", "organizr", "light")
+            ("modern", "organizr", "dark")
+        );
+    }
+
+    #[test]
+    fn light_colour_set_falls_back_to_dark() {
+        // The light set is not offered yet: a stored or Admin `light` gives dark.
+        let mut settings = Settings::defaults();
+        settings.modern_colour_set = "light".to_owned();
+        let own = stored(|s| {
+            s.layout = Some(text("modern"));
+            s.modern_theme = Some(text("organizr"));
+            s.modern_colour_set = Some(text("light"));
+        });
+
+        assert_eq!(
+            parts(&effective_look(&settings, Some(&own))),
+            ("modern", "organizr", "dark")
+        );
+        settings.layout = "modern".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "organizr", "dark")
         );
     }
 }

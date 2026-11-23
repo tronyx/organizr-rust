@@ -166,7 +166,7 @@
   {/if}
 {/snippet}
 
-<Tooltip.Provider>
+<Tooltip.Provider ignoreNonKeyboardFocus>
   <Sheet.Root bind:open={drawerOpen}>
     <div>
       {#if session.launch}

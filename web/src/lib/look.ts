@@ -21,15 +21,16 @@ export interface ModernTheme {
   colourSets: { id: string; label: string }[];
 }
 
-/** The themes of the modern layout. Later versions add entries. */
+/**
+ * The themes of the modern layout. Later versions add entries. The light colour set of
+ * `organizr` is defined in `app.css` but not offered: the inner pages keep OG styling that
+ * is unreadable on it. Phase 2 adds it back here and in the server's list.
+ */
 export const MODERN_THEMES: ModernTheme[] = [
   {
     id: 'organizr',
     label: 'Organizr',
-    colourSets: [
-      { id: 'dark', label: 'Dark' },
-      { id: 'light', label: 'Light' },
-    ],
+    colourSets: [{ id: 'dark', label: 'Dark' }],
   },
 ];
 
@@ -73,6 +74,9 @@ export const MODERN_THEME_COLOURS: Record<string, ColourPair[]> = {
     pair('success', '--color-success-content', '#04201a', '--color-success', '#00c292'),
     pair('warning', '--color-warning-content', '#1b1a1a', '--color-warning', '#fec107'),
     pair('error', '--color-error-content', '#1a0509', '--color-error', '#f33155'),
+    pair('secondary', '--color-secondary-content', '#0d1030', '--color-secondary', '#9aa4e6'),
+    pair('accent', '--color-accent-content', '#1b1a1a', '--color-accent', '#e5a00d'),
+    pair('neutral', '--color-neutral-content', '#dce2ec', '--color-neutral', '#0f141a'),
     pair('header', '--org-header-text', '#f1f5f9', '--org-header-bg', '#1f2733'),
     pair('sidebar', '--org-sidebar-text', '#b4c0d0', '--org-sidebar-bg', '#141a22'),
     pair('sidebar active', '--org-sidebar-active', '#5cc6f2', '--org-sidebar-bg', '#141a22'),
@@ -85,6 +89,9 @@ export const MODERN_THEME_COLOURS: Record<string, ColourPair[]> = {
     pair('success', '--color-success-content', '#ffffff', '--color-success', '#0a7d5e'),
     pair('warning', '--color-warning-content', '#1b1a1a', '--color-warning', '#f5b301'),
     pair('error', '--color-error-content', '#ffffff', '--color-error', '#c4203f'),
+    pair('secondary', '--color-secondary-content', '#ffffff', '--color-secondary', '#4c58b8'),
+    pair('accent', '--color-accent-content', '#ffffff', '--color-accent', '#9a6700'),
+    pair('neutral', '--color-neutral-content', '#ffffff', '--color-neutral', '#2b3544'),
     pair('header', '--org-header-text', '#1f2a37', '--org-header-bg', '#ffffff'),
     pair('sidebar', '--org-sidebar-text', '#475569', '--org-sidebar-bg', '#ffffff'),
     pair('sidebar active', '--org-sidebar-active', '#0a6a98', '--org-sidebar-bg', '#ffffff'),

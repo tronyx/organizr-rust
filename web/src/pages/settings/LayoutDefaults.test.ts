@@ -25,16 +25,15 @@ describe('LayoutDefaults', () => {
     await fireEvent.change(screen.getByRole('combobox', { name: 'Modern theme' }), {
       target: { value: 'organizr' },
     });
-    await fireEvent.change(screen.getByRole('combobox', { name: 'Modern colour set' }), {
-      target: { value: 'light' },
-    });
+    // One colour set is offered for now, so that control cannot change.
+    expect(screen.getByRole('combobox', { name: 'Modern colour set' })).toBeDisabled();
     await fireEvent.click(save);
 
     await waitFor(() => expect(ondone).toHaveBeenCalled());
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
       modernTheme: 'organizr',
-      modernColourSet: 'light',
+      modernColourSet: 'dark',
     });
   });
 

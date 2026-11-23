@@ -106,3 +106,55 @@ test('the modern layout shows the grouped menu and the user menu, and breaks no 
 
   expect(violations).toEqual([]);
 });
+
+test('the Look popover shows no tooltip when it closes after a click of the button', async ({
+  page,
+}) => {
+  await logIn(page);
+  const look = (layout: 'og' | 'modern') =>
+    page.request.put('./api/v2/user/look', { data: { layout } });
+
+  try {
+    expect((await look('modern')).ok()).toBe(true);
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
+
+    const picker = page
+      .locator('[data-slot="popover-content"]')
+      .getByRole('radio', { name: 'Modern', exact: true });
+    // The tooltip does show when the pointer rests on the button.
+    await page.getByRole('button', { name: 'Look' }).hover();
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Look' }).click();
+    await expect(picker).toBeVisible();
+    // Clicking the button again closes the popover, and the focus returns to the button.
+    await page.getByRole('button', { name: 'Look' }).click();
+    await expect(picker).toBeHidden();
+    await page.waitForTimeout(500);
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(0);
+  } finally {
+    expect((await look('og')).ok()).toBe(true);
+  }
+});
+
+test('custom CSS of the Admin applies on the modern layout', async ({ page }) => {
+  await logIn(page);
+  const look = (layout: 'og' | 'modern') =>
+    page.request.put('./api/v2/user/look', { data: { layout } });
+  const css = '.org-header{outline:3px solid rgb(255,0,0)}';
+
+  try {
+    expect((await page.request.put('./api/v2/config', { data: { customCss: css } })).ok()).toBe(
+      true,
+    );
+    expect((await look('modern')).ok()).toBe(true);
+    await page.reload();
+
+    await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
+    await expect(page.locator('link#org-custom-css')).toHaveCount(1);
+    await expect(page.locator('header.org-header')).toHaveCSS('outline-color', 'rgb(255, 0, 0)');
+  } finally {
+    await page.request.put('./api/v2/config', { data: { customCss: '' } });
+    expect((await look('og')).ok()).toBe(true);
+  }
+});

@@ -1,6 +1,6 @@
 <script lang="ts">
-  // The choice of the look of each person: the layout (the original one or the modern
-  // one), and for it the theme and its colours. It is plain markup, so the menu of the
+  // The choice of the look of each person: the layout (OG Organizr or the modern one), and
+  // for it the theme and, on the modern layout, its colours. It is plain markup, so the menu of the
   // user of the original layout, the Account page and the popover of the modern top bar
   // can all show it. Each change is saved at once and the page then loads the look again.
   import { api, failureText } from '../lib/api';
@@ -12,6 +12,8 @@
 
   let error = $state<string | null>(null);
   let busy = $state(false);
+  // Changes when a save fails, so that the controls show the saved look again.
+  let generation = $state(0);
 
   const look = $derived(session.look);
   const modern = $derived(look.layout === 'modern');
@@ -43,6 +45,7 @@
       await session.load();
     } catch (failure) {
       error = failureText(failure);
+      generation += 1;
     } finally {
       busy = false;
     }
@@ -71,51 +74,58 @@
 </script>
 
 <div class="flex flex-col gap-3">
-  <fieldset class="flex flex-col gap-1">
-    <legend class="mb-1 text-sm font-semibold">Layout</legend>
-    {#each [{ id: 'og', label: 'Original' }, { id: 'modern', label: 'Modern' }] as const as layout (layout.id)}
-      <label class="flex items-center gap-2">
-        <input
-          type="radio"
-          class="radio radio-sm"
-          name={`${id}-layout`}
-          checked={look.layout === layout.id}
-          onchange={() => chooseLayout(layout.id)}
-        />
-        <span>{layout.label}</span>
-      </label>
-    {/each}
-  </fieldset>
-
-  <div class="flex flex-col gap-1">
-    <label class="text-sm font-semibold" for={`${id}-theme`}>Theme</label>
-    <select
-      id={`${id}-theme`}
-      class="select select-sm w-full"
-      value={look.theme}
-      onchange={(event) => chooseTheme(event.currentTarget.value)}
-    >
-      {#each themes as theme (theme.id)}
-        <option value={theme.id}>{theme.label}</option>
+  {#key generation}
+    <fieldset class="flex flex-col gap-1">
+      <legend class="mb-1 text-sm font-semibold">Layout</legend>
+      {#each [{ id: 'og', label: 'OG Organizr' }, { id: 'modern', label: 'Modern' }] as const as layout (layout.id)}
+        <label class="flex items-center gap-2">
+          <input
+            type="radio"
+            class="radio radio-sm"
+            name={`${id}-layout`}
+            checked={look.layout === layout.id}
+            disabled={busy}
+            onchange={() => chooseLayout(layout.id)}
+          />
+          <span>{layout.label}</span>
+        </label>
       {/each}
-    </select>
-  </div>
+    </fieldset>
 
-  <fieldset class="flex flex-col gap-1">
-    <legend class="mb-1 text-sm font-semibold">Colours</legend>
-    {#each colourSets as set (set.id)}
-      <label class="flex items-center gap-2">
-        <input
-          type="radio"
-          class="radio radio-sm"
-          name={`${id}-colours`}
-          checked={look.colourSet === set.id}
-          onchange={() => chooseColourSet(set.id)}
-        />
-        <span>{set.label}</span>
-      </label>
-    {/each}
-  </fieldset>
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-semibold" for={`${id}-theme`}>Theme</label>
+      <select
+        id={`${id}-theme`}
+        class="select select-sm w-full"
+        value={look.theme}
+        disabled={busy}
+        onchange={(event) => chooseTheme(event.currentTarget.value)}
+      >
+        {#each themes as theme (theme.id)}
+          <option value={theme.id}>{theme.label}</option>
+        {/each}
+      </select>
+    </div>
+
+    {#if modern}
+      <fieldset class="flex flex-col gap-1">
+        <legend class="mb-1 text-sm font-semibold">Colours</legend>
+        {#each colourSets as set (set.id)}
+          <label class="flex items-center gap-2">
+            <input
+              type="radio"
+              class="radio radio-sm"
+              name={`${id}-colours`}
+              checked={look.colourSet === set.id}
+              disabled={busy || colourSets.length < 2}
+              onchange={() => chooseColourSet(set.id)}
+            />
+            <span>{set.label}</span>
+          </label>
+        {/each}
+      </fieldset>
+    {/if}
+  {/key}
 
   <div class="flex items-center gap-2">
     <button

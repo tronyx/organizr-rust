@@ -1216,8 +1216,9 @@ mod tests {
         "homepageCustomHTML08Trusted",
     ];
 
-    /// The settings of the Plex Libraries plugin of this application, each with its
-    /// default (D-121).
+    /// The settings of this application that PHP Organizr does not have, each with its
+    /// default: those of the Plex Libraries plugin (D-121) and the look settings of the
+    /// Admin (D-125).
     fn own_plugin_settings() -> Vec<(&'static str, Value)> {
         vec![
             ("PLEXLIBRARIES-enabled", json!(false)),

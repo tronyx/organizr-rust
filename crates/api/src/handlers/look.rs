@@ -130,9 +130,15 @@ fn changed(
 
 /// `PUT /user/look`: stores the look of the caller, and answers the look that applies.
 ///
-/// The body is `layout` (`og`, `modern` or `null`), `theme` and `colourSet`. `null` for
-/// the layout forgets the whole choice. Only a logged-in user may ask: a script with the
-/// API key has no look of its own.
+/// The body is `layout` (`og`, `modern` or `null`), `theme` and `colourSet`:
+///
+/// - A `layout` of `null` clears everything the caller chose.
+/// - A body with neither `theme` nor `colourSet` only switches the layout and keeps the
+///   theme and colour set that the caller stored for that layout.
+/// - Otherwise the layout's theme and colour set are replaced. An explicit `null` means
+///   the default of that layout, and one of the two being absent counts as `null`.
+///
+/// Only a logged-in user may ask: a script with the API key has no look of its own.
 pub async fn set_look(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,

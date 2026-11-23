@@ -41,10 +41,24 @@ describe('applyLook', () => {
 
   it('modern_look_sets_the_modern_theme_and_colour_set', () => {
     const root = document.createElement('html');
-    applyLook(modern('organizr', 'light'), undefined, {}, root);
+    applyLook(modern('organizr', 'dark'), undefined, {}, root);
     expect(root.dataset.layout).toBe('modern');
-    expect(root.dataset.theme).toBe('m-organizr-light');
-    expect(root.dataset.colourSet).toBe('light');
+    expect(root.dataset.theme).toBe('m-organizr-dark');
+    expect(root.dataset.colourSet).toBe('dark');
+  });
+
+  it('the_light_colour_set_is_not_offered_and_falls_back_to_dark', () => {
+    const root = document.createElement('html');
+    applyLook(modern('organizr', 'light'), undefined, {}, root);
+    expect(root.dataset.theme).toBe('m-organizr-dark');
+    expect(root.dataset.colourSet).toBe('dark');
+  });
+
+  it('a_fresh_modern_look_links_the_custom_css', () => {
+    document.getElementById('org-custom-css')?.remove();
+    const root = document.createElement('html');
+    applyLook(modern('organizr', 'dark'), undefined, { customCss: 'a{}' }, root);
+    expect(document.querySelectorAll('#org-custom-css')).toHaveLength(1);
   });
 
   it('switching_to_modern_drops_the_og_colours_and_keeps_custom_css', () => {
@@ -64,7 +78,7 @@ describe('applyLook', () => {
 
   it('unknown_modern_pair_uses_organizr_dark', () => {
     expect(modernThemeId('organizr', 'dark')).toBe('m-organizr-dark');
-    expect(modernThemeId('organizr', 'light')).toBe('m-organizr-light');
+    expect(modernThemeId('organizr', 'light')).toBe('m-organizr-dark');
     expect(modernThemeId('gone', 'light')).toBe('m-organizr-dark');
     expect(modernThemeId('organizr', 'sepia')).toBe('m-organizr-dark');
     expect(modernThemeId('toString', 'dark')).toBe('m-organizr-dark');
@@ -78,10 +92,7 @@ describe('applyLook', () => {
       {
         id: 'organizr',
         label: 'Organizr',
-        colourSets: [
-          { id: 'dark', label: 'Dark' },
-          { id: 'light', label: 'Light' },
-        ],
+        colourSets: [{ id: 'dark', label: 'Dark' }],
       },
     ]);
   });
@@ -102,6 +113,38 @@ describe('the modern colour sets', () => {
         ).toBeGreaterThanOrEqual(4.5);
       }
     }
+  });
+
+  it('muted_text_meets_aa_on_each_offered_background', () => {
+    // `--color-muted-foreground` is the text colour at 65% opacity over the background.
+    const channels = (hex: string) =>
+      [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
+    const mixed = (text: string, background: string) =>
+      `#${channels(text)
+        .map((value, i) =>
+          Math.round(0.65 * value + 0.35 * (channels(background)[i] ?? 0))
+            .toString(16)
+            .padStart(2, '0'),
+        )
+        .join('')}`;
+    for (const id of MODERN_THEMES.flatMap((theme) =>
+      theme.colourSets.map((set) => modernThemeId(theme.id, set.id)),
+    )) {
+      const pairs = MODERN_THEME_COLOURS[id] ?? [];
+      const text = pairs.find((pair) => pair.name === 'page')?.text ?? '';
+      for (const name of ['page', 'menu', 'heading']) {
+        const background = pairs.find((pair) => pair.name === name)?.background ?? '';
+        expect(
+          contrastRatio(mixed(text, background), background),
+          `${id} muted on ${name}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it('the_contrast_ratio_has_known_values', () => {
+    expect(contrastRatio('#000000', '#ffffff')).toBeCloseTo(21, 5);
+    expect(contrastRatio('#ffffff', '#ffffff')).toBeCloseTo(1, 5);
   });
 
   it('app_css_defines_the_colours_of_the_table', () => {
