@@ -132,3 +132,56 @@ Organizr makes a new code each time it starts, until the install is set up. If y
 Organizr does not move data from one engine to the other when you change `ORGANIZR_DATABASE_URL`. If you change the variable on an install that is set up, Organizr starts on the other database. That database is empty, so Organizr shows the set-up wizard again. Your data is still in the first database.
 
 To go back, set the variable to its earlier value and start Organizr again.
+
+To keep your data when you change from SQLite to PostgreSQL, use the command in the next section.
+
+## Move an install from SQLite to PostgreSQL
+
+The command `organizr move-to-postgres` copies the data of an install from its SQLite file into an empty PostgreSQL database. It keeps every id. It copies all 12 tables, also the sessions, so nobody has to log in again. It copies the stored secrets as they are. They still open, because you keep the same data folder and its file `secret.key`. When the copy is done, the command counts the records in each table and compares the counts.
+
+The command never changes the SQLite file. It reads the file `organizr.db` in the data folder. To read another file, add `--from` and the path of the file.
+
+Before you start, check these points:
+
+- The PostgreSQL database must hold no records. It may already have the empty tables, but it must have no rows.
+- The SQLite file must come from this version. If an older version of Organizr opened the file last, the command refuses to copy it. In that case, start Organizr once on SQLite with this version, stop it, and run the command again.
+- The move goes in one direction. There is no command that copies from PostgreSQL to SQLite.
+
+The steps below use the Docker Compose file of a PostgreSQL install. Make your own file look like [compose.postgres.yaml](../docker/examples/compose.postgres.yaml). The difference with [compose.sqlite.yaml](../docker/examples/compose.sqlite.yaml) is small:
+
+- Add the service `database`, which runs PostgreSQL.
+- Add `depends_on` to the service `organizr`, so that Organizr waits for the database.
+- Set `ORGANIZR_DATABASE_URL` in the service `organizr`, with the user, the password and the name of the database.
+- Keep the volume `organizr-data` on `/config`. It holds the SQLite file and `secret.key`.
+
+1. Stop Organizr, so that nothing writes to the SQLite file during the copy.
+2. Change your compose file as described above. Replace `change-this-password` in both places with a password of your own.
+3. Start only the database.
+
+   ```sh
+   docker compose -f compose.postgres.yaml up -d database
+   ```
+
+4. Run the command with `--dry-run`. A dry run writes nothing to PostgreSQL, not even the tables. It shows how many records the command would copy.
+
+   ```sh
+   docker compose -f compose.postgres.yaml run --rm organizr move-to-postgres --data-dir /config --dry-run
+   ```
+
+5. Read the report. Then run the same command without `--dry-run`.
+
+   ```sh
+   docker compose -f compose.postgres.yaml run --rm organizr move-to-postgres --data-dir /config
+   ```
+
+6. Start everything.
+
+   ```sh
+   docker compose -f compose.postgres.yaml up -d
+   ```
+
+7. Check that Organizr uses PostgreSQL. See [Make sure that Organizr uses the database you want](#make-sure-that-organizr-uses-the-database-you-want). Your users, tabs and settings are all there, and the set-up wizard does not open.
+
+After the move, keep the data folder. It holds `secret.key`, and Organizr needs that file to open the stored secrets. Also keep the old file `organizr.db` until you are sure that everything works. If you want to go back to SQLite, that file is the only way: remove `ORGANIZR_DATABASE_URL`, and start Organizr again. The data that you add to PostgreSQL after the move does not come along.
+
+A backup of an install on PostgreSQL does not hold the database. Use the tools of PostgreSQL for it. See [Backups](backups.md).
