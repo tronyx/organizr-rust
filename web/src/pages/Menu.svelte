@@ -13,6 +13,7 @@
     pings = {},
     shown,
     onpick,
+    variant = 'og',
   }: {
     tabs: MenuTab[];
     categories: MenuCategory[];
@@ -24,7 +25,14 @@
     shown: number | undefined;
     /** Called when the user picks a tab. */
     onpick?: () => void;
+    /**
+     * `og` is the strip of pictures that opens under the pointer. `modern` is the column of
+     * the modern layout: it never hides the words, and its pictures are the small size.
+     */
+    variant?: 'og' | 'modern';
   } = $props();
+
+  const og = $derived(variant === 'og');
 
   const menu = $derived(buildMenu(tabs, categories, unsortedPlace));
 </script>
@@ -33,12 +41,19 @@
   {@const answer = pingStatus(tab, pings)}
   {@const time = pingTime(tab, pings)}
   {#if time !== null}
-    <small class="org-label org-wide">{time}</small>
+    <small class={['org-label', og && 'org-wide']}>{time}</small>
   {/if}
   {#if answer === 'up'}
-    <span class="status status-success org-wide ml-auto" role="img" aria-label="answers"></span>
+    <span
+      class={['status status-success', og && 'org-wide', 'ml-auto']}
+      role="img"
+      aria-label="answers"
+    ></span>
   {:else if answer === 'down'}
-    <span class="status status-error org-wide ml-auto" role="img" aria-label="does not answer"
+    <span
+      class={['status status-error', og && 'org-wide', 'ml-auto']}
+      role="img"
+      aria-label="does not answer"
     ></span>
   {/if}
 {/snippet}
@@ -54,10 +69,10 @@
         translate="no"
         onclick={onpick}
       >
-        <Picture image={tab.image} name={tab.name} large />
-        <span class="org-wide truncate">{tab.name}</span>
+        <Picture image={tab.image} name={tab.name} large={og} />
+        <span class={[og && 'org-wide', 'truncate']}>{tab.name}</span>
         <i
-          class="oi oi-themify ti-new-window org-wide text-xs"
+          class={['oi oi-themify ti-new-window', og && 'org-wide', 'text-xs', !og && 'ml-auto']}
           aria-hidden="true"
           title="Opens in a new window"
         ></i>
@@ -71,12 +86,20 @@
         aria-current={tab.id === shown ? 'page' : undefined}
         onclick={onpick}
       >
-        <Picture image={tab.image} name={tab.name} large />
-        <span class="org-wide truncate">{tab.name}</span>
+        <Picture image={tab.image} name={tab.name} large={og} />
+        <span class={[og && 'org-wide', 'truncate']}>{tab.name}</span>
         {@render status(tab)}
       </a>
     {/if}
   </li>
+{/snippet}
+
+{#snippet list(items: MenuTab[])}
+  <ul>
+    {#each items as tab (tab.id)}
+      {@render entry(tab)}
+    {/each}
+  </ul>
 {/snippet}
 
 {#snippet unsorted()}
@@ -93,18 +116,27 @@
     {#each menu.groups as group (group.category.id)}
       <li>
         <!-- A category is closed at first, as in PHP Organizr. The one of the shown tab is open. -->
-        <details open={group.tabs.some((tab) => tab.id === shown)}>
+        <details
+          class={og ? undefined : 'm-group'}
+          open={group.tabs.some((tab) => tab.id === shown)}
+        >
           <summary aria-label={group.category.category}>
-            <Picture image={group.category.image} name={group.category.category} large />
-            <span class="org-wide truncate">{group.category.category}</span>
-            <span class="org-label org-wide">{group.tabs.length}</span>
-            <i class="oi oi-themify ti-angle-right org-arrow org-wide" aria-hidden="true"></i>
+            <Picture image={group.category.image} name={group.category.category} large={og} />
+            <span class={[og && 'org-wide', 'truncate']}>{group.category.category}</span>
+            <span class={['org-label', og && 'org-wide']}>{group.tabs.length}</span>
+            <i
+              class={['oi oi-themify ti-angle-right org-arrow', og && 'org-wide']}
+              aria-hidden="true"
+            ></i>
           </summary>
-          <ul>
-            {#each group.tabs as tab (tab.id)}
-              {@render entry(tab)}
-            {/each}
-          </ul>
+          {#if og}
+            {@render list(group.tabs)}
+          {:else}
+            <!-- A wrapper, so the rules of the OG strip for `details > ul` never match here. -->
+            <div>
+              {@render list(group.tabs)}
+            </div>
+          {/if}
         </details>
       </li>
     {/each}

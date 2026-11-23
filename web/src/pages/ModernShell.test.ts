@@ -68,23 +68,21 @@ function launch(loggedIn: boolean) {
         sso: { plex: { oAuthEnabled: false } },
         homepage: { refresh: {}, options: {} },
         misc: { checkForUpdate: false },
-        ping: {},
+        ping: { auth: 999, adminRefresh: 60000, everyoneRefresh: 60000 },
       },
       status: { status: 'ok' },
     },
   };
 }
 
-/** Stands in for the browser's media queries: a wide screen or a narrow one, and the motion. */
-function screen_(options: { wide: boolean; reducedMotion?: boolean }) {
+/** Stands in for the browser's media queries: a wide screen or a narrow one. */
+function screen_(options: { wide: boolean }) {
   vi.stubGlobal(
     'matchMedia',
     (query: string) =>
       ({
         media: query,
-        matches: query.includes('prefers-reduced-motion')
-          ? (options.reducedMotion ?? false)
-          : options.wide,
+        matches: options.wide,
         addEventListener: () => {},
         removeEventListener: () => {},
       }) as unknown as MediaQueryList,
@@ -93,9 +91,25 @@ function screen_(options: { wide: boolean; reducedMotion?: boolean }) {
 
 const page = createRawSnippet(() => ({ render: () => '<p>The page</p>' }));
 
-async function open(loggedIn = true, shown: number | undefined = undefined) {
+async function openShell(
+  loggedIn = true,
+  shown: number | undefined = undefined,
+  changes: { tabs?: MenuTab[]; categories?: MenuCategory[]; search?: unknown } = {},
+) {
+  const answer = launch(loggedIn);
+  const data = answer.data as Record<string, unknown>;
+  data.tabs = changes.tabs ?? TABS;
+  data.categories = changes.categories ?? CATEGORIES;
+  if (changes.search) {
+    (data.settings as { homepage: Record<string, unknown> }).homepage.search = changes.search;
+  }
   const sent = stubApi({
-    'GET launch': launch(loggedIn),
+    'GET launch': answer,
+    'POST ping': (request) => ({
+      data: Object.fromEntries(
+        ((request.body as { list: string[] }).list ?? []).map((address) => [address, 12]),
+      ),
+    }),
     'POST users/lock': { message: 'locked' },
     'GET logout': { message: 'bye' },
   });
@@ -111,7 +125,7 @@ describe('ModernShell', () => {
   });
 
   it('tabs_are_grouped_by_category', async () => {
-    await open();
+    await openShell();
 
     const menu = screen.getByRole('navigation', { name: 'Tabs' });
     const media = within(menu).getByText('Media').closest('details');
@@ -131,7 +145,7 @@ describe('ModernShell', () => {
   });
 
   it('open_tab_is_marked_current', async () => {
-    await open(true, 2);
+    await openShell(true, 2);
 
     expect(screen.getByRole('link', { name: 'Plex Server' })).toHaveAttribute(
       'aria-current',
@@ -145,7 +159,7 @@ describe('ModernShell', () => {
 
   it('menu_is_a_drawer_on_a_narrow_screen', async () => {
     screen_({ wide: false });
-    await open();
+    await openShell();
     expect(screen.queryByRole('navigation', { name: 'Tabs' })).not.toBeInTheDocument();
 
     await fireEvent.click(screen.getByRole('button', { name: 'Show the menu of tabs' }));
@@ -164,7 +178,7 @@ describe('ModernShell', () => {
   });
 
   it('guest_sees_log_in_and_no_look_button', async () => {
-    await open(false);
+    await openShell(false);
 
     expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute('href', '#/login');
     expect(screen.queryByRole('button', { name: 'Look' })).not.toBeInTheDocument();
@@ -172,7 +186,7 @@ describe('ModernShell', () => {
   });
 
   it('user_menu_has_account_lock_and_logout', async () => {
-    const sent = await open();
+    const sent = await openShell();
     expect(screen.getByRole('button', { name: 'Look' })).toBeInTheDocument();
 
     await fireEvent.keyDown(screen.getByRole('button', { name: 'Menu of the user' }), {
@@ -190,7 +204,7 @@ describe('ModernShell', () => {
   });
 
   it('logout_asks_the_server_to_log_out', async () => {
-    const sent = await open();
+    const sent = await openShell();
 
     await fireEvent.keyDown(screen.getByRole('button', { name: 'Menu of the user' }), {
       key: 'Enter',
@@ -202,14 +216,60 @@ describe('ModernShell', () => {
     expect(sent.map((one) => one.path)).toContain('logout');
   });
 
-  it('motion_is_off_when_reduced_motion_is_asked', async () => {
-    screen_({ wide: true, reducedMotion: true });
-    await open();
-    expect(document.querySelector('[data-motion]')).toHaveAttribute('data-motion', 'off');
+  it('has_the_frame_buttons_and_full_screen', async () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    await openShell(true, 2);
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Open in a tab of the browser' }));
+    expect(open).toHaveBeenCalledWith('https://2.example.com/', '_blank', 'noopener');
+    expect(screen.getByRole('button', { name: 'Load again' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Close the tab' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Full screen' })).toBeInTheDocument();
   });
 
-  it('motion_is_on_otherwise', async () => {
-    await open();
-    expect(document.querySelector('[data-motion]')).toHaveAttribute('data-motion', 'on');
+  it('close_the_tab_goes_to_the_start', async () => {
+    await openShell(true, 2);
+    window.location.hash = '#Plex-Server';
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Close the tab' }));
+
+    expect(window.location.hash).toBe('#/');
+  });
+
+  it('shows_whether_the_applications_answer', async () => {
+    const tabs = [tab(1, 'Status', { ping: 1, ping_url: 'https://1.example.com/' })];
+    const sent = await openShell(true, undefined, { tabs, categories: [] });
+
+    await waitFor(() => expect(screen.getByRole('img', { name: 'answers' })).toBeInTheDocument());
+    expect(sent.find((one) => one.path === 'ping')?.body).toEqual({
+      list: ['https://1.example.com/'],
+    });
+  });
+
+  it('has_the_media_search_when_the_caller_has_it', async () => {
+    await openShell(true, undefined, { search: { enabled: true, type: 'plex' } });
+
+    expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
+  });
+
+  it('has_the_links_at_the_end_of_the_menu', async () => {
+    await openShell();
+
+    const extras = screen.getByRole('navigation', { name: 'Organizr' });
+    expect(within(extras).getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+    expect(within(extras).getByRole('link', { name: 'Organizr Docs' })).toHaveAttribute(
+      'href',
+      'https://docs.organizr.app',
+    );
+  });
+
+  it('a_guest_finds_login_register_in_the_menu', async () => {
+    await openShell(false);
+
+    const extras = screen.getByRole('navigation', { name: 'Organizr' });
+    expect(within(extras).getByRole('link', { name: 'Login/Register' })).toHaveAttribute(
+      'href',
+      '#/login',
+    );
   });
 });

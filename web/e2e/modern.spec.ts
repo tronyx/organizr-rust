@@ -78,6 +78,24 @@ test('the modern layout shows the grouped menu and the user menu, and breaks no 
     await expect(page.getByRole('dialog').getByRole('navigation', { name: 'Tabs' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
+
+    // The drawer slides in. A person who asked for less motion gets no animation.
+    const animation = () =>
+      page
+        .locator('[data-slot="sheet-content"]')
+        .evaluate((element) => getComputedStyle(element).animationName);
+    await page.getByRole('button', { name: 'Show the menu of tabs' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    expect(await animation()).not.toBe('none');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.getByRole('button', { name: 'Show the menu of tabs' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    expect(await animation()).toBe('none');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
   } finally {
     // The install goes back to the OG layout for the tests after this one.
     expect((await look('og')).ok()).toBe(true);

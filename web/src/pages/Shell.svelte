@@ -5,14 +5,21 @@
   // opens to the full menu under the pointer. A visitor who sees no tab gets no frame.
   import type { Snippet } from 'svelte';
 
-  import { api, failureText } from '../lib/api';
-  import { frames } from '../lib/frames.svelte';
-  import { opensNewWindow } from '../lib/menu';
-  import { PAGES, router } from '../lib/route.svelte';
+  import { failureText } from '../lib/api';
+  import { PAGES } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
   import { canUse, lockAccount, logOut as shellLogOut } from '../lib/shellActions';
   import { pictureOf } from '../lib/picture';
-  import { pingInterval, pingList, type PingResult } from '../lib/pings';
+  import {
+    closeShown,
+    extraLinks,
+    mediaSearchService,
+    menuLinkSwitches,
+    openShown,
+    Pings,
+    reloadShown,
+    toggleFullScreen,
+  } from '../lib/shellState.svelte';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import MediaSearch from './homepage/MediaSearch.svelte';
   import LanguageMenu from './LanguageMenu.svelte';
@@ -34,70 +41,13 @@
 
   const hasMenu = $derived(session.tabs.length > 0);
 
-  /** The switches of the links that PHP adds at the end of the menu. */
-  const links = $derived.by(() => {
-    const menu = session.launch?.settings.menuLink ?? {};
-    return {
-      signout: menu.organizrSignoutMenuLink !== false,
-      github: menu.githubMenuLink !== false,
-      support: menu.organizrSupportMenuLink !== false,
-      docs: menu.organizrDocsMenuLink !== false,
-      feature: menu.organizrFeatureRequestLink !== false,
-    };
-  });
+  const links = $derived(menuLinkSwitches());
+  const extras = $derived(extraLinks());
 
-  /** The links of Organizr that PHP shows to Admins and Co-Admins (`menuExtraTabs()`). */
-  const extraLinks = $derived(
-    session.canManage
-      ? [
-          links.github && {
-            name: 'Github Repo',
-            url: 'https://github.com/causefx/organizr',
-            icon: 'oi-fontawesome fa-github',
-          },
-          links.support && {
-            name: 'Organizr Support',
-            url: 'https://organizr.app/support',
-            icon: 'oi-fontawesome fa-life-ring',
-          },
-          links.docs && {
-            name: 'Organizr Docs',
-            url: 'https://docs.organizr.app',
-            icon: 'oi-simpleline icon-docs',
-          },
-          links.feature && {
-            name: 'Feature Request',
-            url: 'https://feature.organizr.app',
-            icon: 'oi-simpleline icon-arrow-up-circle',
-          },
-        ].filter((link) => link !== false)
-      : [],
-  );
-
-  // Whether the applications behind the tabs answer. The server is asked at once, and
-  // then again and again, as long as the menu has a tab with the check switched on.
-  let pings = $state<Record<string, PingResult>>({});
-  const pingAddresses = $derived(pingList(session.tabs));
-  const pingEvery = $derived(session.launch ? pingInterval(session.launch) : null);
-
-  $effect(() => {
-    const list = pingAddresses;
-    if (list.length === 0 || pingEvery === null) {
-      pings = {};
-      return;
-    }
-    const check = async () => {
-      try {
-        pings = (await api<Record<string, PingResult>>('POST', 'ping', { list })).data;
-      } catch {
-        // Without an answer of the server, nothing is known about the tabs.
-        pings = {};
-      }
-    };
-    void check();
-    const timer = setInterval(() => void check(), pingEvery);
-    return () => clearInterval(timer);
-  });
+  // Whether the applications behind the tabs answer.
+  const pinged = new Pings();
+  const pings = $derived(pinged.answers);
+  $effect(() => pinged.watch());
 
   async function logOut() {
     error = null;
@@ -133,49 +83,13 @@
     return picture.kind === 'image' ? picture.address : null;
   });
 
-  /** The tab on top, when it shows another application in a frame. */
-  const framed = $derived.by(() => {
-    const tab = session.tabs.find((one) => one.id === shown);
-    return tab && tab.type === 1 && !opensNewWindow(tab) && tab.access_url ? tab : undefined;
-  });
-
-  /** Loads what the main area shows again: the frame of a tab, or the page. */
-  function reloadShown() {
-    if (framed) {
-      frames.reload(framed.id);
-    } else {
-      window.location.reload();
-    }
-  }
-
-  /** Closes the frame of the tab on top and goes to the start. */
-  function closeShown() {
-    if (framed) {
-      frames.close(framed.id);
-    }
-    router.go(PAGES.home);
-  }
-
-  /** Opens what the main area shows in a tab of the browser. */
-  function openShown() {
-    window.open(framed?.access_url ?? window.location.href, '_blank', 'noopener');
-  }
-
-  function toggleFullScreen() {
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
-    } else {
-      void document.documentElement.requestFullscreen();
-    }
-  }
+  const reloadTab = () => reloadShown(shown);
+  const closeTab = () => closeShown(shown);
+  const openTab = () => openShown(shown);
 
   let avatarFailed = $state(false);
 
-  /** The server of the media search of the top bar, when the caller has the search. */
-  const mediaSearch = $derived.by(() => {
-    const search = session.launch?.settings.homepage.search;
-    return search?.enabled && search.type === 'plex' ? search.type : null;
-  });
+  const mediaSearch = $derived(mediaSearchService());
   const avatar = $derived.by(() => {
     const image = session.launch?.user?.image;
     return !avatarFailed && typeof image === 'string' && /^https?:\/\//.test(image) ? image : null;
@@ -210,17 +124,17 @@
       {/if}
     </a>
     {#if session.loggedIn}
-      <button type="button" class="org-header-link" aria-label="Load again" onclick={reloadShown}>
+      <button type="button" class="org-header-link" aria-label="Load again" onclick={reloadTab}>
         <i class="oi oi-themify ti-reload" aria-hidden="true"></i>
       </button>
-      <button type="button" class="org-header-link" aria-label="Close the tab" onclick={closeShown}>
+      <button type="button" class="org-header-link" aria-label="Close the tab" onclick={closeTab}>
         <i class="oi oi-themify ti-close" aria-hidden="true"></i>
       </button>
       <button
         type="button"
         class="org-header-link"
         aria-label="Open in a tab of the browser"
-        onclick={openShown}
+        onclick={openTab}
       >
         <i class="oi oi-themify ti-arrow-top-right" aria-hidden="true"></i>
       </button>
@@ -301,7 +215,7 @@
       {shown}
       onpick={() => (menuOpen = false)}
     />
-    {#if links.signout || extraLinks.length > 0}
+    {#if links.signout || extras.length > 0}
       <nav aria-label="Organizr" class="org-menu org-menu-extras">
         <ul>
           {#if links.signout && session.loggedIn}
@@ -319,7 +233,7 @@
               </a>
             </li>
           {/if}
-          {#each extraLinks as link (link.name)}
+          {#each extras as link (link.name)}
             <li>
               <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.name}>
                 <i class="oi {link.icon} text-xl" aria-hidden="true"></i>

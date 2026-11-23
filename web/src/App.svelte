@@ -25,13 +25,21 @@
   let ModernShell = $state<Component<{ children: Snippet; shown: number | undefined }> | null>(
     null,
   );
-  const modern = $derived(session.look.layout === 'modern');
+  // A chunk that does not load (after an update, a cached page may ask for an old one)
+  // leaves the person with the original shell, which always works.
+  let modernFailed = $state(false);
+  const modern = $derived(session.look.layout === 'modern' && !modernFailed);
 
   $effect(() => {
     if (modern && !ModernShell) {
-      void import('./pages/ModernShell.svelte').then((module) => {
-        ModernShell = module.default;
-      });
+      void import('./pages/ModernShell.svelte').then(
+        (module) => {
+          ModernShell = module.default;
+        },
+        () => {
+          modernFailed = true;
+        },
+      );
     }
   });
 

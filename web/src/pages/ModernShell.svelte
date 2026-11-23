@@ -3,7 +3,11 @@
   // grouped by category (a drawer on a phone), and the page. It takes the same props as
   // `Shell`, and is loaded only for people who chose the modern layout.
   import { mergeProps } from 'bits-ui';
+  import ExternalLinkIcon from '@lucide/svelte/icons/external-link';
   import LogInIcon from '@lucide/svelte/icons/log-in';
+  import MaximizeIcon from '@lucide/svelte/icons/maximize';
+  import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
+  import XIcon from '@lucide/svelte/icons/x';
   import MenuIcon from '@lucide/svelte/icons/menu';
   import PaletteIcon from '@lucide/svelte/icons/palette';
   import { MediaQuery } from 'svelte/reactivity';
@@ -18,9 +22,20 @@
   import { session } from '../lib/session.svelte';
   import { pictureOf } from '../lib/picture';
   import { canUse, lockAccount, logOut as shellLogOut } from '../lib/shellActions';
+  import {
+    closeShown,
+    extraLinks,
+    mediaSearchService,
+    menuLinkSwitches,
+    openShown,
+    Pings,
+    reloadShown,
+    toggleFullScreen,
+  } from '../lib/shellState.svelte';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import LanguageMenu from './LanguageMenu.svelte';
-  import ModernMenu from './ModernMenu.svelte';
+  import MediaSearch from './homepage/MediaSearch.svelte';
+  import Menu from './Menu.svelte';
 
   let {
     children,
@@ -34,7 +49,6 @@
   let error = $state<string | null>(null);
   // Below 1024 pixels the menu is a drawer.
   const wide = new MediaQuery('min-width: 1024px');
-  const reduced = new MediaQuery('prefers-reduced-motion: reduce');
   let drawerOpen = $state(false);
 
   $effect(() => {
@@ -44,6 +58,16 @@
   });
 
   const hasMenu = $derived(session.tabs.length > 0);
+  // As in OG, a guest has the menu too: it holds the link to log in.
+  const showMenu = $derived(hasMenu || !session.loggedIn);
+  const links = $derived(menuLinkSwitches());
+  const extras = $derived(extraLinks());
+  const mediaSearch = $derived(mediaSearchService());
+
+  // Whether the applications behind the tabs answer.
+  const pinged = new Pings();
+  const pings = $derived(pinged.answers);
+  $effect(() => pinged.watch());
   const shownTab = $derived(session.tabs.find((tab) => tab.id === shown));
 
   const canSpeedTest = $derived(canUse('SPEEDTEST'));
@@ -89,12 +113,58 @@
     'org-header-link h-9 w-auto rounded-md px-3 hover:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)] aria-expanded:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)]';
 </script>
 
+{#snippet iconButton(label: string, Icon: typeof MenuIcon, onclick: () => void)}
+  <Tooltip.Root>
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        <Button variant="ghost" class={barButton} aria-label={label} {...props} {onclick}>
+          <Icon aria-hidden="true" />
+        </Button>
+      {/snippet}
+    </Tooltip.Trigger>
+    <Tooltip.Content>{label}</Tooltip.Content>
+  </Tooltip.Root>
+{/snippet}
+
+<!-- The links that PHP adds at the end of the menu. -->
+{#snippet extrasBlock(onpick?: () => void)}
+  {#if links.signout || extras.length > 0}
+    <nav aria-label="Organizr" class="org-menu org-menu-extras">
+      <ul>
+        {#if links.signout && session.loggedIn}
+          <li>
+            <button type="button" class="w-full" aria-label="Logout" onclick={logOut}>
+              <i class="oi oi-fontawesome fa-sign-out text-xl" aria-hidden="true"></i>
+              <span class="truncate">Logout</span>
+            </button>
+          </li>
+        {:else if links.signout}
+          <li>
+            <a href={PAGES.login} aria-label="Login/Register" onclick={onpick}>
+              <i class="oi oi-materialize mdi-login text-xl" aria-hidden="true"></i>
+              <span class="truncate">Login/Register</span>
+            </a>
+          </li>
+        {/if}
+        {#each extras as link (link.name)}
+          <li>
+            <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.name}>
+              <i class="oi {link.icon} text-xl" aria-hidden="true"></i>
+              <span class="truncate">{link.name}</span>
+            </a>
+          </li>
+        {/each}
+      </ul>
+    </nav>
+  {/if}
+{/snippet}
+
 <Tooltip.Provider>
   <Sheet.Root bind:open={drawerOpen}>
-    <div data-motion={reduced.current ? 'off' : 'on'}>
+    <div>
       {#if session.launch}
         <header class="org-header">
-          {#if hasMenu && !wide.current}
+          {#if showMenu && !wide.current}
             <Tooltip.Root>
               <Tooltip.Trigger>
                 {#snippet child({ props: tooltip })}
@@ -125,7 +195,20 @@
           {#if shownTab}
             <span class="m-shown truncate" translate="no">{shownTab.name}</span>
           {/if}
+          {#if session.loggedIn}
+            {@render iconButton('Load again', RotateCwIcon, () => reloadShown(shown))}
+            {@render iconButton('Close the tab', XIcon, () => closeShown(shown))}
+            {@render iconButton('Open in a tab of the browser', ExternalLinkIcon, () =>
+              openShown(shown),
+            )}
+          {/if}
           <span class="flex-1"></span>
+          {#if mediaSearch}
+            <MediaSearch service={mediaSearch} />
+          {/if}
+          <span class="max-sm:hidden">
+            {@render iconButton('Full screen', MaximizeIcon, toggleFullScreen)}
+          </span>
           {#if session.loggedIn}
             <!-- The picker of the look is attached to this element. -->
             <span class="m-look">
@@ -215,33 +298,39 @@
         </header>
       {/if}
 
-      {#if hasMenu && wide.current}
+      {#if showMenu && wide.current}
         <aside class="org-sidebar">
           <div class="org-sidebar-head">Navigation</div>
-          <ModernMenu
+          <Menu
+            variant="modern"
+            {pings}
             tabs={session.tabs}
             categories={session.categories}
             unsortedPlace={session.unsortedPlace}
             {shown}
           />
+          {@render extrasBlock()}
         </aside>
-      {:else if hasMenu}
+      {:else if showMenu}
         <Sheet.Content side="left" showCloseButton={false} class="org-sidebar p-0">
           <Sheet.Title class="org-sidebar-head">Navigation</Sheet.Title>
           <Sheet.Description class="sr-only">
             The tabs of this install, by category.
           </Sheet.Description>
-          <ModernMenu
+          <Menu
+            variant="modern"
+            {pings}
             tabs={session.tabs}
             categories={session.categories}
             unsortedPlace={session.unsortedPlace}
             {shown}
             onpick={() => (drawerOpen = false)}
           />
+          {@render extrasBlock(() => (drawerOpen = false))}
         </Sheet.Content>
       {/if}
 
-      <div class={['flex flex-col', 'org-content', hasMenu && wide.current && 'm-with-menu']}>
+      <div class={['flex flex-col', 'org-content', showMenu && wide.current && 'm-with-menu']}>
         {#if session.canManage && session.launch?.settings.misc.checkForUpdate !== false}
           <UpdateNotice update={session.launch?.update} />
         {/if}
