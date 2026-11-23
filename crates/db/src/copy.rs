@@ -1,8 +1,8 @@
 //! The copy of an install's `SQLite` database into an empty `PostgreSQL` database.
 
 use sea_orm::{
-    ActiveModelTrait, ConnectionTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
-    PaginatorTrait, Statement, TransactionTrait,
+    ActiveModelTrait, ConnectionTrait, EntityTrait, IntoActiveModel, PaginatorTrait, Statement,
+    TransactionTrait,
 };
 
 use crate::entity::{
@@ -53,11 +53,12 @@ pub struct TableCount {
     pub rows: u64,
 }
 
-async fn copy_table<E, C>(source: &DatabaseConnection, target: &C) -> Result<(), DbError>
+async fn copy_table<E, S, C>(source: &S, target: &C) -> Result<(), DbError>
 where
     E: EntityTrait,
     E::Model: IntoActiveModel<E::ActiveModel>,
     E::ActiveModel: ActiveModelTrait<Entity = E> + Send,
+    S: ConnectionTrait,
     C: ConnectionTrait,
 {
     let rows = E::find().all(source).await?;
@@ -145,9 +146,11 @@ impl Database {
     /// `PostgreSQL` database. Each row keeps its id, and the id counters of `PostgreSQL`
     /// move on, so a new record gets the id after the highest one.
     ///
-    /// The schema of `target` is brought up to date first. Then all rows are stored in one
-    /// transaction, or none: [`DbError::NotEmpty`] when `target` holds a record. At the end
-    /// the number of rows of each table is compared on both sides. Returns the counts.
+    /// A `target` that holds a record is refused first, with [`DbError::NotEmpty`], before
+    /// anything changes it. Then the schema of `target` is brought up to date. All rows are
+    /// read from one snapshot of this database and stored in one transaction, or none. Before
+    /// the commit, the number of rows of each table is compared on both sides, and a
+    /// difference rolls the transaction back. Returns the counts.
     pub async fn copy_into(&self, target: &Self) -> Result<Vec<TableCount>, DbError> {
         if self.engine != Engine::Sqlite || target.engine != Engine::Postgres {
             return Err(DbError::WrongEngines);
@@ -166,19 +169,21 @@ impl Database {
         {
             return Err(DbError::NotEmpty);
         }
-        let source = &self.connection;
-        copy_table::<group::Entity, _>(source, &transaction).await?;
-        copy_table::<user::Entity, _>(source, &transaction).await?;
-        copy_table::<category::Entity, _>(source, &transaction).await?;
-        copy_table::<tab::Entity, _>(source, &transaction).await?;
-        copy_table::<setting::Entity, _>(source, &transaction).await?;
-        copy_table::<legacy_setting::Entity, _>(source, &transaction).await?;
-        copy_table::<session::Entity, _>(source, &transaction).await?;
-        copy_table::<bookmark_category::Entity, _>(source, &transaction).await?;
-        copy_table::<bookmark_tab::Entity, _>(source, &transaction).await?;
-        copy_table::<invite::Entity, _>(source, &transaction).await?;
-        copy_table::<extension::Entity, _>(source, &transaction).await?;
-        copy_table::<chat_message::Entity, _>(source, &transaction).await?;
+        // One read transaction gives every table the same snapshot of the file, even when
+        // something writes to it during the copy. On a read-only connection it writes nothing.
+        let source = self.connection.begin().await?;
+        copy_table::<group::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<user::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<category::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<tab::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<setting::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<legacy_setting::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<session::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<bookmark_category::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<bookmark_tab::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<invite::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<extension::Entity, _, _>(&source, &transaction).await?;
+        copy_table::<chat_message::Entity, _, _>(&source, &transaction).await?;
         for table in TABLES_WITH_SERIAL_ID {
             transaction
                 .execute_unprepared(&format!(
@@ -187,19 +192,62 @@ impl Database {
                 ))
                 .await?;
         }
+        // The counts are compared before the commit, so a mismatch rolls the target back.
+        let original = counts(&source).await?;
+        let copied = counts(&transaction).await?;
+        check_counts(&original, &copied)?;
         transaction.commit().await?;
-
-        let copied = target.row_counts().await?;
-        let original = self.row_counts().await?;
-        for (from, to) in original.iter().zip(&copied) {
-            if from.rows != to.rows {
-                return Err(DbError::CopyMismatch {
-                    table: from.table,
-                    in_sqlite: from.rows,
-                    in_postgres: to.rows,
-                });
-            }
-        }
+        source.rollback().await?;
         Ok(copied)
+    }
+}
+
+/// Fails with [`DbError::CopyMismatch`] for the first table that has a different number of
+/// rows in `original` and in `copied`.
+fn check_counts(original: &[TableCount], copied: &[TableCount]) -> Result<(), DbError> {
+    for (from, to) in original.iter().zip(copied) {
+        if from.rows != to.rows {
+            return Err(DbError::CopyMismatch {
+                table: from.table,
+                in_sqlite: from.rows,
+                in_postgres: to.rows,
+            });
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{TableCount, check_counts};
+    use crate::DbError;
+
+    fn counts(rows: [u64; 3]) -> Vec<TableCount> {
+        ["groups", "users", "tabs"]
+            .into_iter()
+            .zip(rows)
+            .map(|(table, rows)| TableCount { table, rows })
+            .collect()
+    }
+
+    #[test]
+    fn equal_counts_pass() {
+        assert!(check_counts(&counts([1, 2, 3]), &counts([1, 2, 3])).is_ok());
+    }
+
+    #[test]
+    fn the_first_differing_table_is_reported() {
+        let result = check_counts(&counts([1, 2, 3]), &counts([1, 5, 4]));
+        assert!(
+            matches!(
+                result,
+                Err(DbError::CopyMismatch {
+                    table: "users",
+                    in_sqlite: 2,
+                    in_postgres: 5
+                })
+            ),
+            "{result:?}"
+        );
     }
 }

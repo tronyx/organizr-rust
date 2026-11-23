@@ -24,6 +24,8 @@ pub struct Args {
     storage: StorageArgs,
 }
 
+const TARGET_NOT_EMPTY: &str = "the PostgreSQL database already holds records. Point ORGANIZR_DATABASE_URL at an empty database";
+
 /// Copies the database and prints its report.
 pub async fn run(args: Args) -> anyhow::Result<()> {
     let file = args
@@ -53,11 +55,14 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     let counts = if args.dry_run {
         if target.holds_records().await? {
-            return Err(DbError::NotEmpty.into());
+            bail!(TARGET_NOT_EMPTY);
         }
         source.row_counts().await?
     } else {
-        source.copy_into(&target).await?
+        match source.copy_into(&target).await {
+            Err(DbError::NotEmpty) => bail!(TARGET_NOT_EMPTY),
+            other => other?,
+        }
     };
     println!("{}", report(&counts, args.dry_run));
 
@@ -85,14 +90,14 @@ fn report(counts: &[TableCount], dry_run: bool) -> String {
         let _ = writeln!(text, "{:>8}  {}", count.rows, count.table);
     }
     text.push_str(
-        "The SQLite file is not changed. Set ORGANIZR_DATABASE_URL to the PostgreSQL database and start Organizr with the same data folder.",
+        "\nThe SQLite file is not changed. Set ORGANIZR_DATABASE_URL to the PostgreSQL database and start Organizr with the same data folder.",
     );
     text
 }
 
 #[cfg(test)]
 mod tests {
-    use clap::Parser;
+    use clap::{CommandFactory, FromArgMatches, Parser};
     use organizr_db::{COPIED_TABLES, Database, TableCount};
     use organizr_testkit::engines::fresh_postgres;
     use sea_orm::{ActiveModelTrait, ActiveValue::Set, ConnectionTrait, Statement};
@@ -109,6 +114,20 @@ mod tests {
         let mut all = vec!["organizr"];
         all.extend_from_slice(arguments);
         Cli::try_parse_from(all).expect("the arguments parse").args
+    }
+
+    /// Like `args`, but the database URL is only what the arguments give, whatever the
+    /// environment of the developer holds.
+    fn args_without_environment(arguments: &[&str]) -> Args {
+        let mut all = vec!["organizr"];
+        all.extend_from_slice(arguments);
+        let matches = Cli::command()
+            .mut_arg("database_url", |arg| arg.env(None::<&str>))
+            .try_get_matches_from(all)
+            .expect("the arguments parse");
+        Cli::from_arg_matches(&matches)
+            .expect("the arguments make the options")
+            .args
     }
 
     fn url_of(file: &std::path::Path) -> String {
@@ -173,7 +192,7 @@ mod tests {
         ]
     }
 
-    const FOOTER: &str = "The SQLite file is not changed. Set ORGANIZR_DATABASE_URL to the PostgreSQL database and start Organizr with the same data folder.";
+    const FOOTER: &str = "\nThe SQLite file is not changed. Set ORGANIZR_DATABASE_URL to the PostgreSQL database and start Organizr with the same data folder.";
 
     #[test]
     fn report_of_a_dry_run_says_nothing_was_written() {
@@ -200,7 +219,7 @@ mod tests {
             vec!["--from", from.as_str()],
             vec!["--from", from.as_str(), "--database-url", "sqlite:x.db"],
         ] {
-            let error = run(args(&arguments))
+            let error = run(args_without_environment(&arguments))
                 .await
                 .expect_err("the target is refused");
             assert_eq!(
@@ -254,6 +273,41 @@ mod tests {
             .await
             .expect("the tables are listed");
         assert!(tables.is_empty());
+        fresh.remove().await;
+    }
+
+    #[tokio::test]
+    async fn dry_run_against_a_database_with_records_is_refused() {
+        let Some(fresh) = fresh_postgres().await else {
+            return;
+        };
+        fresh.database.migrate().await.expect("the schema is made");
+        organizr_db::entity::group::ActiveModel {
+            id: Set(1),
+            level: Set(0),
+            name: Set("Existing".to_owned()),
+            name_key: Set("existing".to_owned()),
+            image: Set(None),
+            is_default: Set(false),
+        }
+        .insert(fresh.database.connection())
+        .await
+        .expect("a group is stored");
+        let directory = tempfile::tempdir().expect("a temporary directory");
+        let source = seeded_source(directory.path()).await;
+        let error = run(args(&[
+            "--from",
+            &source.display().to_string(),
+            "--database-url",
+            &fresh.url,
+            "--dry-run",
+        ]))
+        .await
+        .expect_err("the database holds records");
+        assert_eq!(
+            error.to_string(),
+            "the PostgreSQL database already holds records. Point ORGANIZR_DATABASE_URL at an empty database"
+        );
         fresh.remove().await;
     }
 
