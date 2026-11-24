@@ -580,3 +580,43 @@ for (const layout of ['og', 'modern'] as const) {
     );
   });
 }
+
+for (const layout of ['og', 'modern'] as const) {
+  test(`homepage_tables_have_readable_text_on_${layout}`, async ({ page }) => {
+    test.setTimeout(30_000);
+    await withEveryItem(
+      page,
+      async () => {
+        await openHomepage(page, 'normal', ['sabnzbd', 'sonarrqueue'], layout);
+        for (const name of ['Downloads of SABnzbd', 'Downloads of Sonarr']) {
+          const table = page.getByRole('table', { name });
+          await expect(table.locator('tbody td').first(), `a cell of ${name}`).toHaveCSS(
+            'font-size',
+            '13px',
+          );
+          await expect(table.locator('thead th').first(), `a head of ${name}`).toHaveCSS(
+            'font-size',
+            '13px',
+          );
+        }
+        // On a phone the table scrolls inside its card; the page does not scroll sideways.
+        await page.setViewportSize({ width: 375, height: 812 });
+        const table = page.getByRole('table', { name: 'Downloads of SABnzbd' });
+        await expect(table).toBeVisible();
+        const widths = await table.evaluate((element) => {
+          const frame = element.closest('.overflow-x-auto');
+          return {
+            page: document.documentElement.scrollWidth,
+            view: document.documentElement.clientWidth,
+            frame: frame ? getComputedStyle(frame).overflowX : null,
+            frameWidth: frame?.clientWidth ?? 0,
+          };
+        });
+        expect(widths.page, 'the width of the page at 375px').toBeLessThanOrEqual(widths.view);
+        expect(widths.frame, 'the frame of the table').toBe('auto');
+        expect(widths.frameWidth, 'the frame fits the screen').toBeLessThanOrEqual(375);
+      },
+      layout,
+    );
+  });
+}

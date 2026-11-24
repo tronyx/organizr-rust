@@ -5967,4 +5967,14 @@
   [data-layout='modern'][data-theme^='m-prism-'] body {
     font-weight: 400;
   }
+
+  /* The tables of the homepage items, on both layouts. daisyUI's `table-sm` gives their
+     rows 0.75rem (about 10px at the root of 14px); they take 13px, the table size of PHP,
+     and their heads 13px too, with the compact spacing of `table-sm` kept. daisyUI puts
+     `table-sm` in a sublayer of `utilities`, so these rules sit here to win over it. The
+     tables of the settings are not in an `.org-item` and keep the size of daisyUI. */
+  .org-item .table-sm :not(thead, tfoot) tr,
+  .org-item .table-sm :where(thead, tfoot) {
+    font-size: 13px;
+  }
 }
