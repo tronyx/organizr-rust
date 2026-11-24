@@ -3141,7 +3141,9 @@
     display: flex;
   }
 
-  .org-row-buttons button {
+  /* Only the buttons of the bar itself: the dialog of the search of the requests stands
+     inside the bar, and its buttons keep their own look. */
+  .org-row-buttons > button {
     padding: 5px 12px;
     background: var(--color-info);
     color: #ffffff;
@@ -3149,15 +3151,15 @@
     cursor: pointer;
   }
 
-  .org-row-buttons button:first-child {
+  .org-row-buttons > button:first-child {
     border-radius: 3px 0 0 3px;
   }
 
-  .org-row-buttons button:last-child {
+  .org-row-buttons > button:last-child {
     border-radius: 0 3px 3px 0;
   }
 
-  .org-row-buttons button:hover {
+  .org-row-buttons > button:hover {
     opacity: 0.85;
   }
 

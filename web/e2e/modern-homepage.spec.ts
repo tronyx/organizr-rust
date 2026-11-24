@@ -620,3 +620,37 @@ for (const layout of ['og', 'modern'] as const) {
     );
   });
 }
+
+test('request_search_dialog_buttons_keep_their_own_style_on_og', async ({ page }) => {
+  test.setTimeout(30_000);
+  await withEveryItem(
+    page,
+    async () => {
+      await openHomepage(page, 'normal', ['overseerr'], 'og');
+      const bar = page.locator('section.org-item-overseerr .org-row-buttons');
+      const trigger = bar.getByRole('button', { name: 'Request a Show or Movie' });
+      const barLook = await bar
+        .getByRole('button', { name: /^Earlier in/ })
+        .evaluate((button) => getComputedStyle(button).backgroundColor);
+      // The search button is a button of the bar, so it looks like the others.
+      await expect(trigger).toHaveCSS('background-color', barLook);
+
+      await trigger.click();
+      const search = page.getByRole('dialog', { name: 'Request a Show or Movie' });
+      await search.getByRole('searchbox').fill('The F');
+      await search.getByRole('button', { name: 'Search' }).click();
+      await expect(search.getByRole('list', { name: /Results in/ })).toBeVisible();
+      // The buttons of the dialog stand inside the bar but are not buttons of the bar. The
+      // Search button is a round form button, blue as in PHP, with its own padding.
+      await expect(search.getByRole('button', { name: 'Search' })).toHaveCSS('padding', '6px 18px');
+      const result = await search.getByRole('button', { name: /The Film/ }).evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { background: style.backgroundColor, size: style.fontSize };
+      });
+      expect(result.background, 'the background of a result').not.toBe(barLook);
+      expect(result.size, 'the text size of a result').not.toBe('12px');
+      await closeDialog(page);
+    },
+    'og',
+  );
+});
