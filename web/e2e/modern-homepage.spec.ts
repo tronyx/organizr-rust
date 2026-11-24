@@ -77,6 +77,30 @@ const look = (page: Page, layout: 'og' | 'modern') =>
     data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet: 'dark' },
   });
 
+interface EffectiveLook {
+  layout: 'og' | 'modern';
+  theme: string;
+  colourSet: string;
+  source: 'user' | 'default';
+}
+
+/** The look that applies to the person now. */
+async function readLook(page: Page): Promise<EffectiveLook> {
+  const answer = await page.request.get('./api/v2/launch');
+  expect(answer.ok(), 'the launch data is read').toBe(true);
+  return ((await answer.json()) as { response: { data: { look: EffectiveLook } } }).response.data
+    .look;
+}
+
+/** Puts the look back as it was: cleared when the person had not chosen one. */
+const restoreLook = (page: Page, before: EffectiveLook) =>
+  page.request.put('./api/v2/user/look', {
+    data:
+      before.source === 'default'
+        ? { layout: null }
+        : { layout: before.layout, theme: before.theme, colourSet: before.colourSet },
+  });
+
 async function changeSettings(page: Page, values: Record<string, unknown>) {
   const answer = await page.request.put('./api/v2/config', { data: values });
   expect(answer.ok(), `the settings are changed: ${await answer.text()}`).toBe(true);
@@ -84,11 +108,13 @@ async function changeSettings(page: Page, values: Record<string, unknown>) {
 
 /**
  * Switches every item on and the look to modern, runs `body`, and puts the settings and
- * the look back. A secret that was set comes back as the text the API shows for it, which
- * the server leaves as it is.
+ * the look back. The API shows a secret as `***Secure***` and the server skips that text
+ * when it is saved, so a secret that was set is not restored: the restore of secrets
+ * relies on the fresh data folder of the e2e run, where none is set.
  */
 async function withEveryItem(page: Page, body: () => Promise<void>) {
   await logIn(page);
+  const lookBefore = await readLook(page);
   const answer = await page.request.get('./api/v2/config');
   expect(answer.ok()).toBe(true);
   const all = ((await answer.json()) as { response: { data: Record<string, unknown> } }).response
@@ -113,7 +139,7 @@ async function withEveryItem(page: Page, body: () => Promise<void>) {
   } finally {
     await page.unrouteAll({ behavior: 'ignoreErrors' });
     await changeSettings(page, original);
-    expect((await look(page, 'og')).ok()).toBe(true);
+    expect((await restoreLook(page, lookBefore)).ok()).toBe(true);
     await page.setViewportSize({ width: 1280, height: 720 });
   }
 }
@@ -460,6 +486,36 @@ test('calendar_events_follow_custom_css_on_modern', async ({ page }) => {
       }
     } finally {
       await changeSettings(page, { customCss: before ?? '' });
+    }
+  });
+});
+
+test('fields_of_items_keep_daisyui_focus_and_checked_colours_on_modern', async ({ page }) => {
+  test.setTimeout(30_000);
+  await withEveryItem(page, async () => {
+    await openHomepage(page, 'normal', ['calendar', 'jackett']);
+    const calendar = page.locator('section.org-item-calendar');
+    await calendar.getByRole('button', { name: 'Filter' }).click();
+    const search = page.locator('section.org-item-jackett').getByRole('searchbox');
+    const box = calendar.locator('input.checkbox').first();
+    for (const set of SETS) {
+      await useColourSet(page, set);
+      // At rest the border is a faint tone; in focus the outline is the text colour.
+      await search.focus();
+      const text = await page.locator('section.org-item-jackett').evaluate((element) => {
+        return getComputedStyle(element).color;
+      });
+      await expect(search, `the outline of a field in focus (${set})`).toHaveCSS(
+        'outline-color',
+        text,
+      );
+      await search.blur();
+      // A checked box is not filled with the faint tone of the border.
+      await expect(box).toBeChecked();
+      await expect(box, `the fill of a checked box (${set})`).toHaveCSS(
+        'background-color',
+        'rgba(0, 0, 0, 0)',
+      );
     }
   });
 });

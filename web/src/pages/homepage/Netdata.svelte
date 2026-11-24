@@ -85,6 +85,7 @@
               <path
                 d="M 10 50 A 40 40 0 0 1 90 50"
                 fill="none"
+                class="org-netdata-track"
                 stroke="#636363"
                 stroke-width="12"
               />
@@ -103,7 +104,15 @@
             </figcaption>
           {:else}
             <svg viewBox="0 0 100 100" class="w-full -rotate-90" aria-hidden="true">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="#636363" stroke-width="5" />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                class="org-netdata-track"
+                stroke="#636363"
+                stroke-width="5"
+              />
               <circle
                 cx="50"
                 cy="50"

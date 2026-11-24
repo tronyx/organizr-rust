@@ -126,6 +126,7 @@ const HOMEPAGE_CLASSES = [
   'org-card-row',
   'org-card-icon',
   'org-card-tag',
+  'org-netdata-track',
   'org-card-more',
   'org-tone-success',
   'org-tone-warning',
