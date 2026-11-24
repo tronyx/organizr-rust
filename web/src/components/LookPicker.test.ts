@@ -66,6 +66,7 @@ describe('LookPicker', () => {
       'Nocturne',
       'Riot',
       'Tempest',
+      'Circuit',
     ]);
     expect(screen.queryByRole('option', { name: 'Space Gray' })).not.toBeInTheDocument();
     // The theme has a dark and a light colour set; either can be chosen.
@@ -181,6 +182,29 @@ describe('LookPicker', () => {
     expect(screen.getByRole('radio', { name: 'Gale' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Squall' })).toBeEnabled();
     expect(screen.getByRole('radio', { name: 'Abyss' })).toBeEnabled();
+    expect(screen.queryByRole('radio', { name: 'Dark' })).not.toBeInTheDocument();
+  });
+
+  it('choosing_circuit_moves_to_matrix_and_offers_its_sets', async () => {
+    const sent = await open(MODERN);
+
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Theme' }), {
+      target: { value: 'circuit' },
+    });
+    await waitFor(() => expect(sent.some((request) => request.method === 'PUT')).toBe(true));
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      theme: 'circuit',
+      colourSet: 'matrix',
+    });
+  });
+
+  it('circuit_offers_its_three_colour_sets', async () => {
+    await open({ ...MODERN, theme: 'circuit', colourSet: 'amber' });
+
+    expect(screen.getByRole('radio', { name: 'Amber' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Matrix' })).toBeEnabled();
+    expect(screen.getByRole('radio', { name: 'Synth' })).toBeEnabled();
     expect(screen.queryByRole('radio', { name: 'Dark' })).not.toBeInTheDocument();
   });
 

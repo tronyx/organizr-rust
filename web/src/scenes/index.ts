@@ -18,4 +18,5 @@ export const SCENE_LOADERS: SceneLoaders = {
   nocturne: () => import('./NocturneScene.svelte'),
   riot: () => import('./RiotScene.svelte'),
   tempest: () => import('./TempestScene.svelte'),
+  circuit: () => import('./CircuitScene.svelte'),
 };

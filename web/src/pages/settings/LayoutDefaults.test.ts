@@ -33,6 +33,7 @@ describe('LayoutDefaults', () => {
       'Nocturne',
       'Riot',
       'Tempest',
+      'Circuit',
     ]) {
       expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
     }
@@ -155,6 +156,32 @@ describe('LayoutDefaults', () => {
       layout: 'modern',
       modernTheme: 'tempest',
       modernColourSet: 'squall',
+    });
+  });
+
+  it('choosing_circuit_moves_the_colour_set_to_matrix', async () => {
+    const sent = stubApi({
+      'GET config': { data: { ...CONFIG, layout: 'modern' } },
+      'PUT config': {},
+      'GET launch': { status: 500, message: 'not needed here' },
+    });
+    const ondone = vi.fn();
+    render(LayoutDefaults, { canChange: true, ondone });
+
+    const themes = await screen.findByRole('combobox', { name: 'Modern theme' });
+    await fireEvent.change(themes, { target: { value: 'circuit' } });
+    const colours = screen.getByRole('combobox', { name: 'Modern colour set' });
+    expect(colours).toHaveValue('matrix');
+    for (const label of ['Matrix', 'Synth', 'Amber']) {
+      expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
+    }
+    await fireEvent.click(screen.getByRole('button', { name: 'Save the layout' }));
+
+    await waitFor(() => expect(ondone).toHaveBeenCalled());
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      modernTheme: 'circuit',
+      modernColourSet: 'matrix',
     });
   });
 

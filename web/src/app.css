@@ -898,6 +898,132 @@
   --noise: 0;
 }
 
+/* Circuit: a cyberpunk circuit board, with small, chamfered-looking corners, the Orbitron
+   font for the page heading and Share Tech Mono for badges and inline code. Matrix is green
+   on near black, Synth magenta and cyan, and Amber an amber terminal. Every set is dark. */
+@plugin 'daisyui/theme' {
+  name: 'm-circuit-matrix';
+  color-scheme: dark;
+
+  --color-base-100: #070d09;
+  --color-base-200: #0c1610;
+  --color-base-300: #142219;
+  --color-base-content: #d8f5e0;
+  --color-primary: #3de67f;
+  --color-primary-content: #021408;
+  --color-secondary: #93d1a8;
+  --color-secondary-content: #06140b;
+  --color-accent: #b4f55a;
+  --color-accent-content: #101a02;
+  --color-neutral: #040806;
+  --color-neutral-content: #d8f5e0;
+  --color-info: #6cc4ff;
+  --color-info-content: #04111d;
+  --color-success: #5fd49a;
+  --color-success-content: #03150b;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #ff6f7d;
+  --color-error-content: #1d0408;
+
+  --org-header-bg: #09120c;
+  --org-header-text: #e6f9eb;
+  --org-sidebar-bg: #050a07;
+  --org-sidebar-text: #a8c8b2;
+  --org-sidebar-active: #5cf093;
+
+  --radius-selector: 0.25rem;
+  --radius-field: 0.125rem;
+  --radius-box: 0.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-circuit-synth';
+  color-scheme: dark;
+
+  --color-base-100: #0d0a1a;
+  --color-base-200: #151027;
+  --color-base-300: #211938;
+  --color-base-content: #efe6fa;
+  --color-primary: #ff5cdb;
+  --color-primary-content: #1c0418;
+  --color-secondary: #c4a8ff;
+  --color-secondary-content: #140a24;
+  --color-accent: #45e6f5;
+  --color-accent-content: #02171a;
+  --color-neutral: #07050f;
+  --color-neutral-content: #efe6fa;
+  --color-info: #6cb8ff;
+  --color-info-content: #04101d;
+  --color-success: #5fd49a;
+  --color-success-content: #03150b;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #ff7070;
+  --color-error-content: #1d0404;
+
+  --org-header-bg: #120d22;
+  --org-header-text: #f5effc;
+  --org-sidebar-bg: #08060f;
+  --org-sidebar-text: #bdb0d4;
+  --org-sidebar-active: #ff80e3;
+
+  --radius-selector: 0.25rem;
+  --radius-field: 0.125rem;
+  --radius-box: 0.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-circuit-amber';
+  color-scheme: dark;
+
+  --color-base-100: #120c04;
+  --color-base-200: #1b1307;
+  --color-base-300: #281c0c;
+  --color-base-content: #fbe9cc;
+  --color-primary: #ffb000;
+  --color-primary-content: #1a1000;
+  --color-secondary: #d9b27a;
+  --color-secondary-content: #1a1206;
+  --color-accent: #ffd36b;
+  --color-accent-content: #1a1300;
+  --color-neutral: #0a0703;
+  --color-neutral-content: #fbe9cc;
+  --color-info: #7cbcf2;
+  --color-info-content: #06111d;
+  --color-success: #7fd48a;
+  --color-success-content: #04150a;
+  --color-warning: #ff9e3d;
+  --color-warning-content: #1d0c00;
+  --color-error: #ff6f5e;
+  --color-error-content: #1d0603;
+
+  --org-header-bg: #170f06;
+  --org-header-text: #fdf1dc;
+  --org-sidebar-bg: #0b0803;
+  --org-sidebar-text: #cdb894;
+  --org-sidebar-active: #ffbf3d;
+
+  --radius-selector: 0.25rem;
+  --radius-field: 0.125rem;
+  --radius-box: 0.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
 /* The other themes of PHP Organizr, rebuilt for this interface: the built-in theme "Blue"
    and the 11 themes of the theme marketplace (github.com/Organizr/Organizr-Themes). The
    colours come from the style sheets of each theme. The themes of theme.park take them
@@ -5499,6 +5625,24 @@
   }
 
   [data-layout='modern'][data-theme^='m-tempest-'] :is(.link, .org-form-help) {
+    color: var(--color-accent);
+  }
+
+  /* Circuit: Orbitron, a geometric display face, for the page heading (see above), and
+     Share Tech Mono, a terminal face, for the small labels of badges (12px or larger) and
+     inline code; the rest stays Rubik. The faces come with the scene (`CircuitScene.svelte`),
+     so only this theme downloads them. The links and help texts take the accent. */
+  [data-layout='modern'][data-theme^='m-circuit-'] h1:not(.card-title) {
+    font-family: 'Orbitron Variable', 'Rubik Variable', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  [data-layout='modern'][data-theme^='m-circuit-'] :is(.badge, code) {
+    font-family: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  [data-layout='modern'][data-theme^='m-circuit-'] :is(.link, .org-form-help) {
     color: var(--color-accent);
   }
 }

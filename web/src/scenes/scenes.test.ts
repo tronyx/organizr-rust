@@ -74,6 +74,7 @@ describe('the scenes', () => {
     expect(ids).toContain('nocturne');
     expect(ids).toContain('riot');
     expect(ids).toContain('tempest');
+    expect(ids).toContain('circuit');
     expect(Object.keys(SCENE_LOADERS).sort()).toEqual([...ids].sort());
     const index = readFileSync(resolve(here, 'index.ts'), 'utf8');
     for (const id of ids) {
@@ -299,6 +300,8 @@ describe('the scenes stay out of the main bundle', () => {
       expect(code, entry).not.toContain('cinzel-latin');
       expect(code, entry).not.toContain('sedgwick-ave-display-latin');
       expect(code, entry).not.toContain('pirata-one-latin');
+      expect(code, entry).not.toContain('orbitron-latin');
+      expect(code, entry).not.toContain('share-tech-mono-latin');
     }
     const sceneStyles = files.filter((file) => /^NocturneScene-.*\.css$/.test(file));
     expect(sceneStyles.map((file) => readFileSync(resolve(assets, file), 'utf8')).join('')).toMatch(
@@ -313,6 +316,16 @@ describe('the scenes stay out of the main bundle', () => {
       tempestStyles.map((file) => readFileSync(resolve(assets, file), 'utf8')).join(''),
     ).toMatch(
       /@font-face\{font-family:"?Pirata One"?[^}]*pirata-one-latin-400-normal-[\w-]+\.woff2/,
+    );
+    const circuitStyles = files
+      .filter((file) => /^CircuitScene-.*\.css$/.test(file))
+      .map((file) => readFileSync(resolve(assets, file), 'utf8'))
+      .join('');
+    expect(circuitStyles).toMatch(
+      /@font-face\{font-family:"?Orbitron Variable"?[^}]*orbitron-latin-wght-normal-[\w-]+\.woff2/,
+    );
+    expect(circuitStyles).toMatch(
+      /@font-face\{font-family:"?Share Tech Mono"?[^}]*share-tech-mono-latin-400-normal-[\w-]+\.woff2/,
     );
   });
 });

@@ -137,6 +137,16 @@ describe('applyLook', () => {
           { id: 'gale', label: 'Gale' },
         ],
       },
+      {
+        id: 'circuit',
+        label: 'Circuit',
+        scene: 'circuit',
+        colourSets: [
+          { id: 'matrix', label: 'Matrix' },
+          { id: 'synth', label: 'Synth' },
+          { id: 'amber', label: 'Amber' },
+        ],
+      },
     ]);
   });
 
@@ -201,6 +211,18 @@ describe('applyLook', () => {
     expect(modernThemeId('tempest', 'dark')).toBe('m-organizr-dark');
     expect(modernThemeId('tempest', 'acid')).toBe('m-organizr-dark');
   });
+
+  it('circuit_has_three_dark_colour_sets', () => {
+    for (const set of ['matrix', 'synth', 'amber']) {
+      expect(modernThemeId('circuit', set)).toBe(`m-circuit-${set}`);
+      const root = document.createElement('html');
+      applyLook(modern('circuit', set), undefined, {}, root);
+      expect(root.dataset.theme).toBe(`m-circuit-${set}`);
+      expect(root.dataset.colourSet).toBe('dark');
+    }
+    expect(modernThemeId('circuit', 'dark')).toBe('m-organizr-dark');
+    expect(modernThemeId('circuit', 'acid')).toBe('m-organizr-dark');
+  });
 });
 
 describe('sceneOf', () => {
@@ -213,6 +235,9 @@ describe('sceneOf', () => {
     expect(sceneOf(modern('tempest', 'squall'))).toBe('tempest');
     expect(sceneOf(modern('tempest', 'gale'))).toBe('tempest');
     expect(sceneOf(modern('tempest', 'acid'))).toBeNull();
+    expect(sceneOf(modern('circuit', 'matrix'))).toBe('circuit');
+    expect(sceneOf(modern('circuit', 'amber'))).toBe('circuit');
+    expect(sceneOf(modern('circuit', 'acid'))).toBeNull();
     for (const theme of ['organizr', 'plex', 'jellyfin', 'emby']) {
       expect(sceneOf(modern(theme, 'dark')), theme).toBeNull();
     }
@@ -227,6 +252,9 @@ describe('sceneOf', () => {
 describe('the modern colour sets', () => {
   it('modern_colour_sets_meet_aa', () => {
     expect(Object.keys(MODERN_THEME_COLOURS).sort()).toEqual([
+      'm-circuit-amber',
+      'm-circuit-matrix',
+      'm-circuit-synth',
       'm-emby-dark',
       'm-emby-light',
       'm-jellyfin-dark',
@@ -417,6 +445,29 @@ describe('the modern colour sets', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
     for (const set of ['squall', 'abyss', 'gale']) {
       const id = `m-tempest-${set}`;
+      const start = css.indexOf(`name: '${id}';`);
+      expect(start, id).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      const value = (name: string) =>
+        new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
+      for (const colour of ['color-accent', 'color-primary', 'color-secondary']) {
+        for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
+          expect(
+            contrastRatio(value(colour), value(surface)),
+            `${id} ${colour} on ${surface}`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      expect(block, id).toContain('color-scheme: dark;');
+    }
+  });
+
+  it('circuit_accents_and_buttons_read_on_every_surface', () => {
+    // Circuit marks links and help texts with its accent, and its primary buttons sit on
+    // the cards: both, and the secondary colour, need 4.5:1 on every surface.
+    const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    for (const set of ['matrix', 'synth', 'amber']) {
+      const id = `m-circuit-${set}`;
       const start = css.indexOf(`name: '${id}';`);
       expect(start, id).toBeGreaterThan(-1);
       const block = css.slice(start, css.indexOf('}', start));

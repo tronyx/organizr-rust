@@ -42,6 +42,7 @@ pub const MODERN_THEMES: &[(&str, &[&str])] = &[
     ("nocturne", &["amethyst", "crimson", "moonlit"]),
     ("riot", &["acid", "hotwire", "blacklight"]),
     ("tempest", &["squall", "abyss", "gale"]),
+    ("circuit", &["matrix", "synth", "amber"]),
 ];
 
 /// Where an effective look comes from.
@@ -329,6 +330,7 @@ mod tests {
                 ("nocturne", &["amethyst", "crimson", "moonlit"][..]),
                 ("riot", &["acid", "hotwire", "blacklight"][..]),
                 ("tempest", &["squall", "abyss", "gale"][..]),
+                ("circuit", &["matrix", "synth", "amber"][..]),
             ]
         );
     }
@@ -368,6 +370,44 @@ mod tests {
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "tempest", "gale")
+        );
+    }
+
+    #[test]
+    fn circuit_has_its_own_colour_sets() {
+        let mut settings = Settings::defaults();
+        let circuit = |set: Option<&str>| {
+            stored(|s| {
+                s.layout = Some(text("modern"));
+                s.modern_theme = Some(text("circuit"));
+                s.modern_colour_set = set.map(text);
+            })
+        };
+        for set in ["matrix", "synth", "amber"] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&circuit(Some(set))))),
+                ("modern", "circuit", set)
+            );
+        }
+        // A set that Circuit does not have, and no set at all: its first set.
+        for set in [Some("dark"), Some("acid"), None] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&circuit(set)))),
+                ("modern", "circuit", "matrix")
+            );
+        }
+        // The same for the Admin's default.
+        settings.layout = "modern".to_owned();
+        settings.modern_theme = "circuit".to_owned();
+        settings.modern_colour_set = "hotwire".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "circuit", "matrix")
+        );
+        settings.modern_colour_set = "amber".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "circuit", "amber")
         );
     }
 

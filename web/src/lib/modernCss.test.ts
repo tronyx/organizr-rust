@@ -402,7 +402,7 @@ describe('the modern dialog rules', () => {
 
   const distDir = resolve(__dirname, '../../dist/assets');
   const built = existsSync(distDir)
-    ? readdirSync(distDir).filter((name) => name.endsWith('.css'))
+    ? readdirSync(distDir).filter((name) => name.startsWith('index-') && name.endsWith('.css'))
     : [];
 
   it.skipIf(built.length === 0)('modern_dialog_rules_are_in_the_utilities_layer_when_built', () => {
@@ -669,6 +669,9 @@ describe('the brand themes of the modern layout', () => {
       'm-tempest-squall',
       'm-tempest-abyss',
       'm-tempest-gale',
+      'm-circuit-matrix',
+      'm-circuit-synth',
+      'm-circuit-amber',
     ]);
   });
 
@@ -934,6 +937,7 @@ describe('the display fonts of the scene themes', () => {
     nocturne: "'Cinzel Variable'",
     riot: "'Sedgwick Ave Display'",
     tempest: "'Pirata One'",
+    circuit: "'Orbitron Variable'",
   };
 
   it('the_scene_themes_are_the_themes_with_a_display_font', () => {
@@ -1183,6 +1187,131 @@ describe('the Tempest theme of the modern layout', () => {
     for (const rule of own) {
       for (const part of selectorParts(rule.selector)) {
         expect(part.startsWith(TEMPEST), part).toBe(true);
+      }
+    }
+  });
+});
+
+describe('the Circuit theme of the modern layout', () => {
+  const CIRCUIT = `${SCOPE}[data-theme^='m-circuit-']`;
+  const SETS = ['matrix', 'synth', 'amber'];
+  /** The small labels that take the monospace accent: badges and inline code. */
+  const MONO_LABELS = ':is(.badge, code)';
+
+  /** The rule that gives the page heading of Circuit its font. */
+  function fontRule(): Rule | undefined {
+    return rules().find((rule) => /font-family:\s*'Orbitron Variable'/.test(rule.body));
+  }
+
+  /** The rule that gives the small labels of Circuit their monospace font. */
+  function monoRule(): Rule | undefined {
+    return rules().find((rule) => /font-family:\s*'Share Tech Mono'/.test(rule.body));
+  }
+
+  it('only_the_circuit_rules_name_its_fonts_and_the_scene_loads_their_faces', () => {
+    expect(rules().filter((rule) => rule.body.includes('Orbitron'))).toHaveLength(1);
+    expect(rules().filter((rule) => rule.body.includes('Share Tech Mono'))).toHaveLength(1);
+    expect(fontRule()?.selector.replace(/\s+/g, ' ')).toBe(`${CIRCUIT} ${DISPLAY_HEADING}`);
+    expect(monoRule()?.selector.replace(/\s+/g, ' ')).toBe(`${CIRCUIT} ${MONO_LABELS}`);
+    // The faces come with the scene, in its lazy chunk, never with the main bundle.
+    const main = readFileSync(resolve(__dirname, '../main.ts'), 'utf8');
+    expect(main).not.toContain('orbitron');
+    expect(main).not.toContain('share-tech-mono');
+    const scene = readFileSync(resolve(__dirname, '../scenes/CircuitScene.svelte'), 'utf8');
+    expect(scene).toContain("import '@fontsource-variable/orbitron/wght.css';");
+    expect(scene).toContain("import '@fontsource/share-tech-mono/400.css';");
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8')) as {
+      devDependencies: Record<string, string>;
+    };
+    expect(pkg.devDependencies['@fontsource-variable/orbitron']).toBe('5.3.0');
+    expect(pkg.devDependencies['@fontsource/share-tech-mono']).toBe('5.3.0');
+  });
+
+  it('the_monospace_font_dresses_only_badges_and_inline_code', () => {
+    const selector = monoRule()?.selector ?? '-';
+    const root = document.createElement('html');
+    root.dataset.layout = 'modern';
+    root.dataset.theme = 'm-circuit-matrix';
+    root.innerHTML = `
+      <body>
+        <span id="badge" class="badge badge-info">Admin</span>
+        <span id="small" class="badge badge-sm">3</span>
+        <code id="code">api/v2</code>
+        <div class="m-page-heading"><h1 id="heading">Main</h1></div>
+        <h2 id="card" class="card-title">User Information</h2>
+        <div id="menu" class="org-sidebar-head">Navigation</div>
+        <label id="label">Name</label>
+        <button id="button" class="btn">Save</button>
+        <p id="text">Body text</p>
+      </body>`;
+    const matches = (id: string) => root.querySelector(`#${id}`)?.matches(selector) ?? false;
+    for (const id of ['badge', 'small', 'code']) expect(matches(id), id).toBe(true);
+    for (const id of ['heading', 'card', 'menu', 'label', 'button', 'text']) {
+      expect(matches(id), id).toBe(false);
+    }
+  });
+
+  it('no_badge_is_smaller_than_12px', () => {
+    // A badge of daisyUI is 14px, `badge-sm` 12px and `badge-xs` 10px. The monospace face
+    // is too thin to read below 12px, so no page may use `badge-xs`.
+    const files = import.meta.glob('../**/*.svelte', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }) as Record<string, string>;
+    expect(Object.keys(files).length).toBeGreaterThan(10);
+    for (const [file, code] of Object.entries(files)) {
+      expect(code, file).not.toMatch(/badge-xs/);
+    }
+  });
+
+  it('the_circuit_font_rules_stop_matching_after_a_switch_to_plex', () => {
+    const heading = document.createElement('h1');
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    for (const [rule, target] of [
+      [fontRule(), heading],
+      [monoRule(), badge],
+    ] as const) {
+      expect(rule).toBeDefined();
+      const root = document.createElement('html');
+      root.append(target);
+      applyLook(
+        { layout: 'modern', theme: 'circuit', colourSet: 'synth', source: 'user' },
+        undefined,
+        {},
+        root,
+      );
+      expect(target.matches(rule?.selector ?? '-')).toBe(true);
+      applyLook(
+        { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+        undefined,
+        {},
+        root,
+      );
+      expect(target.matches(rule?.selector ?? '-')).toBe(false);
+    }
+  });
+
+  it('circuit_has_small_chamfered_corners', () => {
+    for (const set of SETS) {
+      const start = css.indexOf(`name: 'm-circuit-${set}';`);
+      expect(start, set).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      for (const name of ['radius-selector', 'radius-field', 'radius-box']) {
+        const value = Number(new RegExp(`--${name}: ([\\d.]+)rem;`).exec(block)?.[1] ?? -1);
+        expect(value, `${set} ${name}`).toBeGreaterThan(0);
+        expect(value, `${set} ${name}`).toBeLessThanOrEqual(0.25);
+      }
+    }
+  });
+
+  it('circuit_rules_are_scoped_to_circuit', () => {
+    const own = rules().filter((rule) => rule.selector.includes('m-circuit-'));
+    expect(own.length).toBeGreaterThan(0);
+    for (const rule of own) {
+      for (const part of selectorParts(rule.selector)) {
+        expect(part.startsWith(CIRCUIT), part).toBe(true);
       }
     }
   });
