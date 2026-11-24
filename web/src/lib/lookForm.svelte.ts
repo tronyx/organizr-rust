@@ -16,13 +16,13 @@ export const LOOK_GROUP = 'Colors & Themes';
 export const LOOK_FIELDS = ['theme', 'style'];
 
 /** The settings that only the Admin changes (D-125). */
-const ADMIN_KEYS = ['layout', 'modernTheme', 'modernColourSet'] as const;
+const ADMIN_KEYS = ['layout', 'modernTheme', 'modernColorSet'] as const;
 
 export interface LookValues {
   layout: string;
   theme: string;
   modernTheme: string;
-  modernColourSet: string;
+  modernColorSet: string;
 }
 
 function text(value: unknown, fallback: string): string {
@@ -37,7 +37,7 @@ export class LookForm implements FormPart {
     layout: 'og',
     theme: '',
     modernTheme: 'organizr',
-    modernColourSet: 'dark',
+    modernColorSet: 'dark',
   });
   /** The options of PHP's field Theme. */
   themes = $state<PhpOption[]>([]);
@@ -51,8 +51,8 @@ export class LookForm implements FormPart {
   }
 
   /** The colour sets of the chosen modern theme. */
-  get colourSets() {
-    return MODERN_THEMES.find((theme) => theme.id === this.form.modernTheme)?.colourSets ?? [];
+  get colorSets() {
+    return MODERN_THEMES.find((theme) => theme.id === this.form.modernTheme)?.colorSets ?? [];
   }
 
   async load(groups: PhpGroups) {
@@ -65,7 +65,7 @@ export class LookForm implements FormPart {
         layout: text(config.layout, 'og'),
         theme: String(php.theme ?? ''),
         modernTheme: text(config.modernTheme, 'organizr'),
-        modernColourSet: text(config.modernColourSet, 'dark'),
+        modernColorSet: text(config.modernColorSet, 'dark'),
       };
       this.themes = optionsOf(field('theme') ?? { type: 'select' });
       this.form = { ...loaded };
@@ -82,9 +82,9 @@ export class LookForm implements FormPart {
   /** Chooses a modern theme; a colour set it does not have moves to its first set. */
   chooseTheme(theme: string) {
     this.form.modernTheme = theme;
-    const sets = MODERN_THEMES.find((entry) => entry.id === theme)?.colourSets ?? [];
-    if (!sets.some((set) => set.id === this.form.modernColourSet) && sets[0]) {
-      this.form.modernColourSet = sets[0].id;
+    const sets = MODERN_THEMES.find((entry) => entry.id === theme)?.colorSets ?? [];
+    if (!sets.some((set) => set.id === this.form.modernColorSet) && sets[0]) {
+      this.form.modernColorSet = sets[0].id;
     }
   }
 

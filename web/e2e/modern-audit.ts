@@ -268,7 +268,7 @@ export async function put(page: Page, address: string, data: Record<string, unkn
 export interface EffectiveLook {
   layout: 'og' | 'modern';
   theme: string;
-  colourSet: string;
+  colorSet: string;
   source: 'user' | 'default';
 }
 
@@ -289,7 +289,7 @@ export async function readConfig(page: Page): Promise<Record<string, unknown>> {
 export function lookToRestore(look: EffectiveLook): Record<string, unknown> {
   return look.source === 'default'
     ? { layout: null }
-    : { layout: look.layout, theme: look.theme, colourSet: look.colourSet };
+    : { layout: look.layout, theme: look.theme, colorSet: look.colorSet };
 }
 
 /** The look of the server applies to the page. */

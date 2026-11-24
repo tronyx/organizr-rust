@@ -18,7 +18,7 @@ pub struct StoredLook {
     /// The theme of the modern layout.
     pub modern_theme: Option<String>,
     /// The colour set of the modern layout.
-    pub modern_colour_set: Option<String>,
+    pub modern_color_set: Option<String>,
 }
 
 impl From<user_preference::Model> for StoredLook {
@@ -28,7 +28,7 @@ impl From<user_preference::Model> for StoredLook {
             og_theme: row.og_theme,
             og_style: row.og_style,
             modern_theme: row.modern_theme,
-            modern_colour_set: row.modern_colour_set,
+            modern_color_set: row.modern_color_set,
         }
     }
 }
@@ -62,7 +62,7 @@ impl<'a> Looks<'a> {
             og_theme: ActiveValue::Set(look.og_theme.clone()),
             og_style: ActiveValue::Set(look.og_style.clone()),
             modern_theme: ActiveValue::Set(look.modern_theme.clone()),
-            modern_colour_set: ActiveValue::Set(look.modern_colour_set.clone()),
+            modern_color_set: ActiveValue::Set(look.modern_color_set.clone()),
         };
         user_preference::Entity::insert(row)
             .on_conflict(
@@ -72,7 +72,7 @@ impl<'a> Looks<'a> {
                         user_preference::Column::OgTheme,
                         user_preference::Column::OgStyle,
                         user_preference::Column::ModernTheme,
-                        user_preference::Column::ModernColourSet,
+                        user_preference::Column::ModernColorSet,
                     ])
                     .to_owned(),
             )

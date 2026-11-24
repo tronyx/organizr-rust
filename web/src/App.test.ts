@@ -16,7 +16,7 @@ describe('App', () => {
       'GET launch': {
         data: {
           user: { username: 'guest', group: 'Guest', groupID: 999, loggedin: false },
-          look: { layout: 'modern', theme: 'organizr', colourSet: 'dark', source: 'user' },
+          look: { layout: 'modern', theme: 'organizr', colorSet: 'dark', source: 'user' },
           tabs: [],
           categories: [],
           plugins: { includes: {} },

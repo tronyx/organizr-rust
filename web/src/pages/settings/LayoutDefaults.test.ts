@@ -7,7 +7,7 @@ import { session } from '../../lib/session.svelte';
 import { stubApi } from '../../test-helpers';
 import AppearanceSettings from './AppearanceSettings.svelte';
 
-const CONFIG = { layout: 'og', modernTheme: 'organizr', modernColourSet: 'dark' };
+const CONFIG = { layout: 'og', modernTheme: 'organizr', modernColorSet: 'dark' };
 
 /** PHP's group, as `GET settings/appearance` gives it, shortened. */
 const COLOURS = [
@@ -281,7 +281,7 @@ describe('the group Style & Themes', () => {
 
   it('a_co_admin_never_sends_the_first_set_fallback', async () => {
     const { panel } = await open(
-      { layout: 'modern', modernTheme: 'silo', modernColourSet: 'dark' },
+      { layout: 'modern', modernTheme: 'silo', modernColorSet: 'dark' },
       1,
     );
 
@@ -293,7 +293,7 @@ describe('the group Style & Themes', () => {
     const { panel } = await open({
       layout: 'modern',
       modernTheme: 'silo',
-      modernColourSet: 'dark',
+      modernColorSet: 'dark',
     });
 
     expect(within(panel).getByRole('combobox', { name: 'Modern color set' })).toHaveValue('ember');
@@ -349,7 +349,7 @@ describe('the group Style & Themes', () => {
       }
       expect(within(colours).queryByRole('option', { name: 'Dark' })).toBeNull();
       await save();
-      expect(puts()[0]?.body).toEqual({ modernTheme: theme, modernColourSet: first });
+      expect(puts()[0]?.body).toEqual({ modernTheme: theme, modernColorSet: first });
     });
   }
 

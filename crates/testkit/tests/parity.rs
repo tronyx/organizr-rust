@@ -112,7 +112,7 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
         case,
         "/response/data",
         "look",
-        json!({"layout": "og", "theme": "Organizr", "colourSet": "dark", "source": "default"}),
+        json!({"layout": "og", "theme": "Organizr", "colorSet": "dark", "source": "default"}),
     );
     // The switch and the level of the Plex Libraries plugin of this application (D-121).
     // A launch whose lists D-50 sorts gets them added as they are; the sort places them.
@@ -228,7 +228,7 @@ async fn fresh_install_answers_like_php() {
                 "D-125",
                 case,
                 "/response/data/look",
-                json!({"layout": "modern", "theme": "organizr", "colourSet": "dark", "source": "default"}),
+                json!({"layout": "modern", "theme": "organizr", "colorSet": "dark", "source": "default"}),
             );
         }
         // The admin in the launch answer, as in `me_after_the_set_up` (D-18).
@@ -692,7 +692,7 @@ async fn config_routes_answer_like_php() {
         // The layout and the modern theme of this application (D-125).
         for (key, value) in [
             ("layout", json!("og")),
-            ("modernColourSet", json!("dark")),
+            ("modernColorSet", json!("dark")),
             ("modernTheme", json!("organizr")),
         ] {
             replay = replay.deviation_adds_in_order("D-125", all, data, key, value);

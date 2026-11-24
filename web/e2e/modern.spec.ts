@@ -36,7 +36,7 @@ test('the modern layout shows the grouped menu and the user menu, and breaks no 
   expect(added.map((response) => response.status())).toEqual([200, 200]);
   const look = (layout: 'og' | 'modern') =>
     page.request.put('./api/v2/user/look', {
-      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet: 'dark' },
+      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colorSet: 'dark' },
     });
 
   try {
@@ -117,9 +117,9 @@ test('the modern menu collapses to a column of icons, and stays so in this brows
   page,
 }) => {
   await logIn(page);
-  const look = (layout: 'og' | 'modern', colourSet = 'dark') =>
+  const look = (layout: 'og' | 'modern', colorSet = 'dark') =>
     page.request.put('./api/v2/user/look', {
-      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet },
+      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colorSet },
     });
   const aside = page.locator('aside#m-menu');
   // The column and the page beside it move with a transition of their width and place. A
@@ -308,7 +308,7 @@ test('the look popover chooses the light colours, and they stay after a reload',
   const before = (
     (await launch.json()) as {
       response: {
-        data: { look: { layout: string; theme: string; colourSet: string; source: string } };
+        data: { look: { layout: string; theme: string; colorSet: string; source: string } };
       };
     }
   ).response.data.look;
@@ -326,7 +326,7 @@ test('the look popover chooses the light colours, and they stay after a reload',
 
   try {
     const modern = await page.request.put('./api/v2/user/look', {
-      data: { layout: 'modern', theme: 'organizr', colourSet: 'dark' },
+      data: { layout: 'modern', theme: 'organizr', colorSet: 'dark' },
     });
     expect(modern.ok()).toBe(true);
     await page.reload();
@@ -349,7 +349,7 @@ test('the look popover chooses the light colours, and they stay after a reload',
       data:
         before.source === 'default'
           ? { layout: null }
-          : { layout: before.layout, theme: before.theme, colourSet: before.colourSet },
+          : { layout: before.layout, theme: before.theme, colorSet: before.colorSet },
     });
     expect(restored.ok()).toBe(true);
   }
@@ -363,7 +363,7 @@ test('the colour samples of the look picker take the colours of their own themes
   const before = (
     (await launch.json()) as {
       response: {
-        data: { look: { layout: string; theme: string; colourSet: string; source: string } };
+        data: { look: { layout: string; theme: string; colorSet: string; source: string } };
       };
     }
   ).response.data.look;
@@ -416,7 +416,7 @@ test('the colour samples of the look picker take the colours of their own themes
   try {
     // The modern layout: the samples in the popover of the top bar.
     const modern = await page.request.put('./api/v2/user/look', {
-      data: { layout: 'modern', theme: 'organizr', colourSet: 'dark' },
+      data: { layout: 'modern', theme: 'organizr', colorSet: 'dark' },
     });
     expect(modern.ok()).toBe(true);
     await page.reload();
@@ -442,7 +442,7 @@ test('the colour samples of the look picker take the colours of their own themes
 
     // The OG layout: the samples on the page Account.
     const og = await page.request.put('./api/v2/user/look', {
-      data: { layout: 'og', theme: 'Organizr', colourSet: 'dark' },
+      data: { layout: 'og', theme: 'Organizr', colorSet: 'dark' },
     });
     expect(og.ok()).toBe(true);
     await page.goto('./#/account');
@@ -463,7 +463,7 @@ test('the colour samples of the look picker take the colours of their own themes
       data:
         before.source === 'default'
           ? { layout: null }
-          : { layout: before.layout, theme: before.theme, colourSet: before.colourSet },
+          : { layout: before.layout, theme: before.theme, colorSet: before.colorSet },
     });
     expect(restored.ok()).toBe(true);
   }
@@ -476,9 +476,7 @@ test('the arrow keys run through the themes of the look popover, and the focus s
   const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
 
   try {
-    expect((await look({ layout: 'modern', theme: 'organizr', colourSet: 'dark' })).ok()).toBe(
-      true,
-    );
+    expect((await look({ layout: 'modern', theme: 'organizr', colorSet: 'dark' })).ok()).toBe(true);
     await page.reload();
     await page.getByRole('button', { name: 'Look' }).click();
     const themes = page
@@ -519,9 +517,7 @@ test('the look popover fits a phone held sideways and scrolls inside', async ({ 
   const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
 
   try {
-    expect((await look({ layout: 'modern', theme: 'organizr', colourSet: 'dark' })).ok()).toBe(
-      true,
-    );
+    expect((await look({ layout: 'modern', theme: 'organizr', colorSet: 'dark' })).ok()).toBe(true);
     await page.setViewportSize({ width: 667, height: 375 });
     await page.reload();
     await page.getByRole('button', { name: 'Look' }).click();
@@ -593,8 +589,8 @@ test('the shown tab of the column of icons has a bar of at least 3:1 in every mo
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.evaluate(() => localStorage.setItem('organizr.modernMenuCollapsed', 'true'));
     for (const theme of MODERN_THEMES) {
-      for (const set of theme.colourSets) {
-        expect((await look({ layout: 'modern', theme: theme.id, colourSet: set.id })).ok()).toBe(
+      for (const set of theme.colorSets) {
+        expect((await look({ layout: 'modern', theme: theme.id, colorSet: set.id })).ok()).toBe(
           true,
         );
         await page.goto('./#Modern-Rox');
@@ -734,9 +730,7 @@ test('at the normal text size every name of the look picker is one line, whole',
   const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
 
   try {
-    expect((await look({ layout: 'modern', theme: 'organizr', colourSet: 'dark' })).ok()).toBe(
-      true,
-    );
+    expect((await look({ layout: 'modern', theme: 'organizr', colorSet: 'dark' })).ok()).toBe(true);
     for (const [width, height] of [
       [1280, 800],
       [667, 375],
@@ -783,9 +777,7 @@ test('at a text size of 200 % nothing spills out of the look popover', async ({ 
   const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
 
   try {
-    expect((await look({ layout: 'modern', theme: 'organizr', colourSet: 'dark' })).ok()).toBe(
-      true,
-    );
+    expect((await look({ layout: 'modern', theme: 'organizr', colorSet: 'dark' })).ok()).toBe(true);
     for (const [width, height] of [
       [1280, 900],
       [667, 375],
@@ -869,9 +861,9 @@ test('the border of every colour sample is 3:1 on every offered modern theme', a
   try {
     await page.setViewportSize({ width: 1280, height: 900 });
     for (const theme of MODERN_THEMES) {
-      for (const set of theme.colourSets) {
+      for (const set of theme.colorSets) {
         const where = `m-${theme.id}-${set.id}`;
-        expect((await look({ layout: 'modern', theme: theme.id, colourSet: set.id })).ok()).toBe(
+        expect((await look({ layout: 'modern', theme: theme.id, colorSet: set.id })).ok()).toBe(
           true,
         );
         await page.reload();
@@ -884,7 +876,7 @@ test('the border of every colour sample is 3:1 on every offered modern theme', a
           }),
         ).toBeChecked();
         const edge = await lowestEdge();
-        expect(edge.count, where).toBe(10 + theme.colourSets.length);
+        expect(edge.count, where).toBe(10 + theme.colorSets.length);
         expect
           .soft(edge.lowest?.ratio ?? 0, `the border of ${edge.lowest?.sample} on ${where}`)
           .toBeGreaterThanOrEqual(3);
@@ -904,10 +896,10 @@ test('the group label of the user menu reads well with the menu open, in dark an
   const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
 
   try {
-    for (const colourSet of ['dark', 'light']) {
-      expect((await look({ layout: 'modern', theme: 'organizr', colourSet })).ok()).toBe(true);
+    for (const colorSet of ['dark', 'light']) {
+      expect((await look({ layout: 'modern', theme: 'organizr', colorSet })).ok()).toBe(true);
       await page.reload();
-      await expect(page.locator('html')).toHaveAttribute('data-colour-set', colourSet);
+      await expect(page.locator('html')).toHaveAttribute('data-colour-set', colorSet);
       await page.getByRole('button', { name: 'Menu of the user' }).click();
       const label = page.locator('[data-slot="dropdown-menu-label"]');
       await expect(label).toHaveText('Admin');
@@ -919,8 +911,8 @@ test('the group label of the user menu reads well with the menu open, in dark an
         );
       // Only the open menu: its label and its entries.
       const audit = await auditContrast(page, '[data-slot="dropdown-menu-content"]');
-      expect(audit.checked, `texts of the user menu (${colourSet})`).toBeGreaterThanOrEqual(4);
-      expect(audit.low, describeLowContrast(`the user menu (${colourSet})`, audit.low)).toEqual([]);
+      expect(audit.checked, `texts of the user menu (${colorSet})`).toBeGreaterThanOrEqual(4);
+      expect(audit.low, describeLowContrast(`the user menu (${colorSet})`, audit.low)).toEqual([]);
       await page.keyboard.press('Escape');
       await expect(label).toBeHidden();
     }

@@ -23,7 +23,7 @@ describe('Shell', () => {
             loggedin: true,
             locked: 0,
           },
-          look: { layout: 'og', theme: 'Organizr', colourSet: 'dark', source: 'default' },
+          look: { layout: 'og', theme: 'Organizr', colorSet: 'dark', source: 'default' },
           tabs: [],
           categories: [],
           plugins: { includes: {} },

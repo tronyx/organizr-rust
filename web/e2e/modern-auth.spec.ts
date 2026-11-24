@@ -14,8 +14,8 @@ import { expect, test } from './fixtures';
 import { ADMIN, logIn } from './login';
 import { ADDRESS } from './server';
 
-type ColourSet = 'dark' | 'light';
-const SETS: ColourSet[] = ['dark', 'light'];
+type ColorSet = 'dark' | 'light';
+const SETS: ColorSet[] = ['dark', 'light'];
 const ORIGIN = `http://${ADDRESS}`;
 
 /** The wallpapers of the login page: a bright and a dark one. */
@@ -315,7 +315,7 @@ async function radioBorderRatios(page: Page, within: string): Promise<number[]> 
 interface EffectiveLook {
   layout: 'og' | 'modern';
   theme: string;
-  colourSet: string;
+  colorSet: string;
   source: 'user' | 'default';
 }
 
@@ -331,7 +331,7 @@ async function readDefaults(page: Page): Promise<Record<string, unknown>> {
   expect(answer.ok(), 'the settings are read').toBe(true);
   const all = ((await answer.json()) as { response: { data: Record<string, unknown> } }).response
     .data;
-  return { layout: all.layout, modernTheme: all.modernTheme, modernColourSet: all.modernColourSet };
+  return { layout: all.layout, modernTheme: all.modernTheme, modernColorSet: all.modernColorSet };
 }
 
 async function put(page: Page, address: string, data: Record<string, unknown>) {
@@ -340,17 +340,17 @@ async function put(page: Page, address: string, data: Record<string, unknown>) {
 }
 
 /** The Admin default and the look of the Admin: modern, in the colour set. */
-async function useModern(page: Page, set: ColourSet) {
+async function useModern(page: Page, set: ColorSet) {
   await put(page, './api/v2/config', {
     layout: 'modern',
     modernTheme: 'organizr',
-    modernColourSet: set,
+    modernColorSet: set,
   });
-  await put(page, './api/v2/user/look', { layout: 'modern', theme: 'organizr', colourSet: set });
+  await put(page, './api/v2/user/look', { layout: 'modern', theme: 'organizr', colorSet: set });
 }
 
 /** Opens a page from its address and checks that the look of the server applies. */
-async function open(page: Page, address: string, heading: string, set: ColourSet) {
+async function open(page: Page, address: string, heading: string, set: ColorSet) {
   await page.goto(`./${address}`);
   await page.reload();
   await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
@@ -604,7 +604,7 @@ test('login_lock_set_up_and_account_screens_pass_contrast_on_modern_dark_and_lig
         './api/v2/user/look',
         lookBefore.source === 'default'
           ? { layout: null }
-          : { layout: lookBefore.layout, theme: lookBefore.theme, colourSet: lookBefore.colourSet },
+          : { layout: lookBefore.layout, theme: lookBefore.theme, colorSet: lookBefore.colorSet },
       ),
     );
     expect.soft(failures, 'the restore of the install').toEqual([]);

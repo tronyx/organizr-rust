@@ -98,7 +98,7 @@ async fn seed(database: &Database) {
         og_theme: Set(Some("Organizr".to_owned())),
         og_style: Set(Some("dark".to_owned())),
         modern_theme: Set(Some(AWKWARD_TEXT.to_owned())),
-        modern_colour_set: Set(None),
+        modern_color_set: Set(Some("rose".to_owned())),
     }
     .insert(connection)
     .await
@@ -733,5 +733,94 @@ async fn pending_migrations_are_checked_without_creating_a_table() {
     )
     .await;
     assert!(tables.is_empty(), "{tables:?}");
+    postgres.remove().await;
+}
+
+#[tokio::test]
+async fn copy_takes_the_color_set_of_a_file_from_the_previous_version() {
+    let Some(postgres) = fresh_postgres().await else {
+        return;
+    };
+    let folder = tempfile::tempdir().expect("a temporary folder can be made");
+    let file = folder.path().join("old.db");
+    let old = Database::connect(&url_of(&file))
+        .await
+        .expect("the SQLite file opens");
+    // The last version before the color set had its American name.
+    old.migrate_steps(13).await.expect("13 migrations apply");
+    let connection = old.connection();
+    group::ActiveModel {
+        id: Set(1),
+        level: Set(0),
+        name: Set("Administrator".to_owned()),
+        name_key: Set("administrator".to_owned()),
+        image: Set(None),
+        is_default: Set(false),
+    }
+    .insert(connection)
+    .await
+    .expect("a group is stored");
+    user::ActiveModel {
+        id: Set(5),
+        username: Set("robin".to_owned()),
+        username_key: Set("robin".to_owned()),
+        email: Set(None),
+        email_key: Set(None),
+        password_hash: Set("$2y$10$not.a.real.hash".to_owned()),
+        group_id: Set(1),
+        locked: Set(false),
+        image: Set(None),
+        created_at: Set(1_700_000_000),
+        auth_service: Set("internal".to_owned()),
+        auth_provider: Set(None),
+        auth_subject: Set(None),
+        two_factor_kind: Set(None),
+        two_factor_secret: Set(None),
+        plex_token: Set(None),
+        recovery_hash: Set(None),
+        recovery_expires_at: Set(None),
+    }
+    .insert(connection)
+    .await
+    .expect("a user is stored");
+    for statement in [
+        "INSERT INTO user_preferences (user_id, modern_theme, modern_colour_set) \
+         VALUES (5, 'silo', 'rose')",
+        "INSERT INTO settings (name, value) VALUES ('modernColourSet', '\"rose\"')",
+    ] {
+        connection
+            .execute_unprepared(statement)
+            .await
+            .expect("the old look and setting are stored");
+    }
+    // The application migrates the file when it starts, before a copy.
+    old.migrate().await.expect("the migrations apply");
+    old.close().await.expect("the file closes");
+    let source = open_read_only(&file).await;
+    assert!(
+        !source
+            .has_pending_migrations()
+            .await
+            .expect("pending are read")
+    );
+
+    source
+        .copy_into(&postgres.database)
+        .await
+        .expect("the copy succeeds");
+
+    let look = user_preference::Entity::find_by_id(5)
+        .one(postgres.database.connection())
+        .await
+        .expect("the look reads")
+        .expect("the look is copied");
+    assert_eq!(look.modern_color_set.as_deref(), Some("rose"));
+    let stored = setting::Entity::find_by_id("modernColorSet".to_owned())
+        .one(postgres.database.connection())
+        .await
+        .expect("the setting reads")
+        .expect("the setting is copied");
+    assert_eq!(stored.value, "\"rose\"");
+    source.close().await.expect("the file closes");
     postgres.remove().await;
 }

@@ -14,16 +14,16 @@ import {
 } from './look';
 import { COLOUR_VARIABLE_NAMES } from './theme';
 
-const og = (theme: string, colourSet = 'dark'): Look => ({
+const og = (theme: string, colorSet = 'dark'): Look => ({
   layout: 'og',
   theme,
-  colourSet,
+  colorSet,
   source: 'default',
 });
-const modern = (theme: string, colourSet: string): Look => ({
+const modern = (theme: string, colorSet: string): Look => ({
   layout: 'modern',
   theme,
-  colourSet,
+  colorSet,
   source: 'user',
 });
 
@@ -94,14 +94,14 @@ describe('applyLook', () => {
       { id: 'light', label: 'Light' },
     ];
     expect(MODERN_THEMES).toEqual([
-      { id: 'organizr', label: 'Organizr', colourSets: sets },
-      { id: 'plex', label: 'Plex', colourSets: sets },
-      { id: 'jellyfin', label: 'Jellyfin', colourSets: sets },
-      { id: 'emby', label: 'Emby', colourSets: sets },
+      { id: 'organizr', label: 'Organizr', colorSets: sets },
+      { id: 'plex', label: 'Plex', colorSets: sets },
+      { id: 'jellyfin', label: 'Jellyfin', colorSets: sets },
+      { id: 'emby', label: 'Emby', colorSets: sets },
       {
         id: 'silo',
         label: 'Silo',
-        colourSets: [
+        colorSets: [
           { id: 'ember', label: 'Ember' },
           { id: 'ice', label: 'Ice' },
           { id: 'rose', label: 'Rose' },
@@ -111,7 +111,7 @@ describe('applyLook', () => {
         id: 'nocturne',
         label: 'Nocturne',
         scene: 'nocturne',
-        colourSets: [
+        colorSets: [
           { id: 'amethyst', label: 'Amethyst' },
           { id: 'crimson', label: 'Crimson' },
           { id: 'moonlit', label: 'Moonlit' },
@@ -121,7 +121,7 @@ describe('applyLook', () => {
         id: 'riot',
         label: 'Riot',
         scene: 'riot',
-        colourSets: [
+        colorSets: [
           { id: 'acid', label: 'Acid' },
           { id: 'hotwire', label: 'Hotwire' },
           { id: 'blacklight', label: 'Blacklight' },
@@ -131,7 +131,7 @@ describe('applyLook', () => {
         id: 'tempest',
         label: 'Tempest',
         scene: 'tempest',
-        colourSets: [
+        colorSets: [
           { id: 'squall', label: 'Squall' },
           { id: 'abyss', label: 'Abyss' },
           { id: 'gale', label: 'Gale' },
@@ -141,7 +141,7 @@ describe('applyLook', () => {
         id: 'circuit',
         label: 'Circuit',
         scene: 'circuit',
-        colourSets: [
+        colorSets: [
           { id: 'matrix', label: 'Matrix' },
           { id: 'synth', label: 'Synth' },
           { id: 'amber', label: 'Amber' },
@@ -151,7 +151,7 @@ describe('applyLook', () => {
         id: 'prism',
         label: 'Prism',
         scene: 'prism',
-        colourSets: [
+        colorSets: [
           { id: 'daydream', label: 'Daydream', light: true },
           { id: 'twilight', label: 'Twilight' },
           { id: 'candy', label: 'Candy', light: true },
@@ -349,7 +349,7 @@ describe('the modern colour sets', () => {
         )
         .join('')}`;
     for (const id of MODERN_THEMES.flatMap((theme) =>
-      theme.colourSets.map((set) => modernThemeId(theme.id, set.id)),
+      theme.colorSets.map((set) => modernThemeId(theme.id, set.id)),
     )) {
       const pairs = MODERN_THEME_COLOURS[id] ?? [];
       const text = pairs.find((pair) => pair.name === 'page')?.text ?? '';

@@ -20,7 +20,7 @@
   let generation = $state(0);
   let root: HTMLDivElement | undefined = $state();
 
-  type Choice = { layout: string | null; theme?: string | null; colourSet?: string | null };
+  type Choice = { layout: string | null; theme?: string | null; colorSet?: string | null };
   // The last choice that is not saved yet. A choice made while a save runs waits here and
   // goes next, so that the arrow keys can run through the themes: only the last one counts.
   let wanted = $state<Choice | null>(null);
@@ -29,8 +29,8 @@
   // The look that the controls show: the saved one, or the choice of a theme or colours that
   // is being saved. A new layout shows its themes once it is saved.
   const shown = $derived(
-    wanted && wanted.layout && wanted.theme && wanted.colourSet
-      ? { layout: wanted.layout, theme: wanted.theme, colourSet: wanted.colourSet }
+    wanted && wanted.layout && wanted.theme && wanted.colorSet
+      ? { layout: wanted.layout, theme: wanted.theme, colorSet: wanted.colorSet }
       : look,
   );
   const shownLayout = $derived(wanted?.layout ?? look.layout);
@@ -47,7 +47,7 @@
       ? MODERN_THEMES.map((theme) => ({
           id: theme.id,
           label: theme.label,
-          swatch: modernThemeId(theme.id, colourSetFor(theme.id)),
+          swatch: modernThemeId(theme.id, colorSetFor(theme.id)),
         }))
       : NATIVE_THEMES.map((name) => ({ id: name, label: themeLabel(name), swatch: themeId(name) })),
   );
@@ -57,9 +57,9 @@
   const adminColours = $derived(swatchColours(session.launch?.appearance ?? {}));
   const coloursOf = (theme: string) =>
     !modern && theme === installTheme ? adminColours : undefined;
-  const colourSets = $derived(
+  const colorSets = $derived(
     modern
-      ? (MODERN_THEMES.find((theme) => theme.id === shown.theme)?.colourSets ?? COLOUR_SETS)
+      ? (MODERN_THEMES.find((theme) => theme.id === shown.theme)?.colorSets ?? COLOUR_SETS)
       : COLOUR_SETS,
   );
 
@@ -118,14 +118,14 @@
   };
 
   /** The colour set of a theme after a choice of it: the current one if the theme has it. */
-  function colourSetFor(theme: string): string {
+  function colorSetFor(theme: string): string {
     // A colour set that the new theme does not have gives way to the first one it has.
     const sets = modern
-      ? (MODERN_THEMES.find((entry) => entry.id === theme)?.colourSets ?? COLOUR_SETS)
+      ? (MODERN_THEMES.find((entry) => entry.id === theme)?.colorSets ?? COLOUR_SETS)
       : COLOUR_SETS;
-    return sets.some((set) => set.id === shown.colourSet)
-      ? shown.colourSet
-      : (sets[0]?.id ?? shown.colourSet);
+    return sets.some((set) => set.id === shown.colorSet)
+      ? shown.colorSet
+      : (sets[0]?.id ?? shown.colorSet);
   }
 
   /**
@@ -149,15 +149,15 @@
       keepShown(input, shown.theme);
       return;
     }
-    return send({ layout: shown.layout, theme, colourSet: colourSetFor(theme) });
+    return send({ layout: shown.layout, theme, colorSet: colorSetFor(theme) });
   }
 
-  function chooseColourSet(colourSet: string, input: HTMLInputElement) {
+  function chooseColorSet(colorSet: string, input: HTMLInputElement) {
     if (switching) {
-      keepShown(input, shown.colourSet);
+      keepShown(input, shown.colorSet);
       return;
     }
-    return send({ layout: shown.layout, theme: shown.theme, colourSet });
+    return send({ layout: shown.layout, theme: shown.theme, colorSet });
   }
 </script>
 
@@ -211,16 +211,16 @@
     {#if modern}
       <fieldset class="flex flex-col gap-1" aria-busy={busy}>
         <legend class="mb-1 text-sm font-semibold">Colors</legend>
-        {#each colourSets as set (set.id)}
+        {#each colorSets as set (set.id)}
           <label class="flex items-center gap-2">
             <input
               type="radio"
               class="radio radio-sm"
               name={`${id}-colours`}
               value={set.id}
-              checked={shown.colourSet === set.id}
-              disabled={colourSets.length < 2}
-              onchange={(event) => chooseColourSet(set.id, event.currentTarget)}
+              checked={shown.colorSet === set.id}
+              disabled={colorSets.length < 2}
+              onchange={(event) => chooseColorSet(set.id, event.currentTarget)}
             />
             <ThemeSwatch theme={modernThemeId(shown.theme, set.id)} />
             <span class="min-w-0 wrap-break-word">{set.label}</span>
@@ -235,7 +235,7 @@
       type="button"
       class="btn btn-sm"
       disabled={busy}
-      onclick={() => send({ layout: null, theme: null, colourSet: null })}
+      onclick={() => send({ layout: null, theme: null, colorSet: null })}
     >
       Use the default
     </button>

@@ -10,7 +10,7 @@ export interface Look {
   /** On OG the name of a theme of PHP Organizr, on modern the id of a modern theme. */
   theme: string;
   /** On OG the style (`dark` or `light`), on modern a colour set of the theme. */
-  colourSet: string;
+  colorSet: string;
   /** Whether the person chose it (`user`) or the Admin default applies. */
   source: 'user' | 'default';
 }
@@ -27,22 +27,22 @@ export interface ModernTheme {
    * The colour sets. A set is dark unless its id is `light` or it says `light: true`; the
    * page then gets `data-colour-set="light"`.
    */
-  colourSets: { id: string; label: string; light?: true }[];
+  colorSets: { id: string; label: string; light?: true }[];
 }
 
 /**
  * The themes of the modern layout, as in the server's list. Later versions add entries.
  */
 export const MODERN_THEMES: ModernTheme[] = [
-  { id: 'organizr', label: 'Organizr', colourSets: darkAndLight() },
-  { id: 'plex', label: 'Plex', colourSets: darkAndLight() },
-  { id: 'jellyfin', label: 'Jellyfin', colourSets: darkAndLight() },
-  { id: 'emby', label: 'Emby', colourSets: darkAndLight() },
+  { id: 'organizr', label: 'Organizr', colorSets: darkAndLight() },
+  { id: 'plex', label: 'Plex', colorSets: darkAndLight() },
+  { id: 'jellyfin', label: 'Jellyfin', colorSets: darkAndLight() },
+  { id: 'emby', label: 'Emby', colorSets: darkAndLight() },
   {
     id: 'silo',
     label: 'Silo',
     // Silo is always dark; its sets differ in the accent only.
-    colourSets: [
+    colorSets: [
       { id: 'ember', label: 'Ember' },
       { id: 'ice', label: 'Ice' },
       { id: 'rose', label: 'Rose' },
@@ -52,7 +52,7 @@ export const MODERN_THEMES: ModernTheme[] = [
     id: 'nocturne',
     label: 'Nocturne',
     scene: 'nocturne',
-    colourSets: [
+    colorSets: [
       { id: 'amethyst', label: 'Amethyst' },
       { id: 'crimson', label: 'Crimson' },
       { id: 'moonlit', label: 'Moonlit' },
@@ -62,7 +62,7 @@ export const MODERN_THEMES: ModernTheme[] = [
     id: 'riot',
     label: 'Riot',
     scene: 'riot',
-    colourSets: [
+    colorSets: [
       { id: 'acid', label: 'Acid' },
       { id: 'hotwire', label: 'Hotwire' },
       { id: 'blacklight', label: 'Blacklight' },
@@ -72,7 +72,7 @@ export const MODERN_THEMES: ModernTheme[] = [
     id: 'tempest',
     label: 'Tempest',
     scene: 'tempest',
-    colourSets: [
+    colorSets: [
       { id: 'squall', label: 'Squall' },
       { id: 'abyss', label: 'Abyss' },
       { id: 'gale', label: 'Gale' },
@@ -82,7 +82,7 @@ export const MODERN_THEMES: ModernTheme[] = [
     id: 'circuit',
     label: 'Circuit',
     scene: 'circuit',
-    colourSets: [
+    colorSets: [
       { id: 'matrix', label: 'Matrix' },
       { id: 'synth', label: 'Synth' },
       { id: 'amber', label: 'Amber' },
@@ -93,7 +93,7 @@ export const MODERN_THEMES: ModernTheme[] = [
     label: 'Prism',
     scene: 'prism',
     // Prism is the only scene theme with light sets: Daydream and Candy.
-    colourSets: [
+    colorSets: [
       { id: 'daydream', label: 'Daydream', light: true },
       { id: 'twilight', label: 'Twilight' },
       { id: 'candy', label: 'Candy', light: true },
@@ -102,7 +102,7 @@ export const MODERN_THEMES: ModernTheme[] = [
 ];
 
 /** The two colour sets of most themes. */
-function darkAndLight(): ModernTheme['colourSets'] {
+function darkAndLight(): ModernTheme['colorSets'] {
   return [
     { id: 'dark', label: 'Dark' },
     { id: 'light', label: 'Light' },
@@ -114,17 +114,17 @@ function isLightSet(id: string): boolean {
   return (
     id.endsWith('-light') ||
     MODERN_THEMES.some((theme) =>
-      theme.colourSets.some((set) => set.light && id === `m-${theme.id}-${set.id}`),
+      theme.colorSets.some((set) => set.light && id === `m-${theme.id}-${set.id}`),
     )
   );
 }
 
 /** The `data-theme` that a modern theme and colour set have. Unknown values give the default. */
-export function modernThemeId(theme: string, colourSet: string): string {
+export function modernThemeId(theme: string, colorSet: string): string {
   const known = MODERN_THEMES.find(
-    (entry) => entry.id === theme && entry.colourSets.some((set) => set.id === colourSet),
+    (entry) => entry.id === theme && entry.colorSets.some((set) => set.id === colorSet),
   );
-  return known ? `m-${known.id}-${colourSet}` : 'm-organizr-dark';
+  return known ? `m-${known.id}-${colorSet}` : 'm-organizr-dark';
 }
 
 /**
@@ -135,7 +135,7 @@ export function sceneOf(look: Look): string | null {
   if (look.layout !== 'modern') {
     return null;
   }
-  const id = modernThemeId(look.theme, look.colourSet);
+  const id = modernThemeId(look.theme, look.colorSet);
   return MODERN_THEMES.find((entry) => id.startsWith(`m-${entry.id}-`))?.scene ?? null;
 }
 
@@ -581,7 +581,7 @@ export function applyLook(
 ): void {
   root.dataset.layout = look.layout;
   if (look.layout === 'modern') {
-    root.dataset.theme = modernThemeId(look.theme, look.colourSet);
+    root.dataset.theme = modernThemeId(look.theme, look.colorSet);
     root.dataset.colourSet = isLightSet(root.dataset.theme) ? 'light' : 'dark';
     // The colours of "Colors & Themes" belong to the OG layout; the theme sets its own.
     for (const name of COLOUR_VARIABLE_NAMES) {

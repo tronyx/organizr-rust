@@ -68,15 +68,15 @@
           <select
             id="layout-colours"
             class="org-form-control"
-            value={look.form.modernColourSet}
-            disabled={!canChange || look.colourSets.length < 2}
-            onchange={(event) => (look.form.modernColourSet = event.currentTarget.value)}
+            value={look.form.modernColorSet}
+            disabled={!canChange || look.colorSets.length < 2}
+            onchange={(event) => (look.form.modernColorSet = event.currentTarget.value)}
           >
-            {#each look.colourSets as set (set.id)}
+            {#each look.colorSets as set (set.id)}
               <option value={set.id}>{set.label}</option>
             {/each}
           </select>
-          <ThemeSwatch theme={modernThemeId(look.form.modernTheme, look.form.modernColourSet)} />
+          <ThemeSwatch theme={modernThemeId(look.form.modernTheme, look.form.modernColorSet)} />
         </div>
       </div>
       <!-- The theme of the OG layout, for the people who choose that layout. -->

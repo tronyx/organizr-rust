@@ -16,7 +16,7 @@ use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
 use crate::look::{
     Look, MODERN_THEMES, OG_STYLES, OG_THEMES, default_modern_theme, effective_look,
-    modern_colour_sets,
+    modern_color_sets,
 };
 use crate::state::AppState;
 
@@ -28,7 +28,7 @@ enum Request {
     Choose {
         layout: &'static str,
         theme: Option<String>,
-        colour_set: Option<String>,
+        color_set: Option<String>,
     },
     /// Store the layout only: the body names no theme and no colour set, so what the
     /// caller last chose for that layout stays.
@@ -71,12 +71,12 @@ fn read_request(data: &ApiData, settings: &Settings) -> Result<Request, Refusal>
         _ => return Err(Refusal::unprocessable("layout is not valid")),
     };
     let theme = optional_text(data, "theme", "theme is not valid")?;
-    let colour_set = optional_text(data, "colourSet", "colourSet is not valid")?;
-    if matches!((&theme, &colour_set), (Field::Absent, Field::Absent)) {
+    let color_set = optional_text(data, "colorSet", "colorSet is not valid")?;
+    if matches!((&theme, &color_set), (Field::Absent, Field::Absent)) {
         return Ok(Request::Switch { layout });
     }
     let theme = theme.text();
-    let colour_set = colour_set.text();
+    let color_set = color_set.text();
     let theme_names: Vec<&str> = if layout == "og" {
         OG_THEMES.to_vec()
     } else {
@@ -88,24 +88,24 @@ fn read_request(data: &ApiData, settings: &Settings) -> Result<Request, Refusal>
     {
         return Err(Refusal::unprocessable("theme is not valid"));
     }
-    let colour_sets: &[&str] = if layout == "og" {
+    let color_sets: &[&str] = if layout == "og" {
         &OG_STYLES
     } else {
         let theme = theme
             .clone()
             .unwrap_or_else(|| default_modern_theme(settings));
-        modern_colour_sets(&theme).unwrap_or_default()
+        modern_color_sets(&theme).unwrap_or_default()
     };
-    if colour_set
+    if color_set
         .as_deref()
-        .is_some_and(|set| !colour_sets.contains(&set))
+        .is_some_and(|set| !color_sets.contains(&set))
     {
-        return Err(Refusal::unprocessable("colourSet is not valid"));
+        return Err(Refusal::unprocessable("colorSet is not valid"));
     }
     Ok(Request::Choose {
         layout,
         theme,
-        colour_set,
+        color_set,
     })
 }
 
@@ -115,25 +115,25 @@ fn changed(
     mut stored: StoredLook,
     layout: &'static str,
     theme: Option<String>,
-    colour_set: Option<String>,
+    color_set: Option<String>,
 ) -> StoredLook {
     stored.layout = Some(layout.to_owned());
     if layout == "og" {
         stored.og_theme = theme;
-        stored.og_style = colour_set;
+        stored.og_style = color_set;
     } else {
         stored.modern_theme = theme;
-        stored.modern_colour_set = colour_set;
+        stored.modern_color_set = color_set;
     }
     stored
 }
 
 /// `PUT /user/look`: stores the look of the caller, and answers the look that applies.
 ///
-/// The body is `layout` (`og`, `modern` or `null`), `theme` and `colourSet`:
+/// The body is `layout` (`og`, `modern` or `null`), `theme` and `colorSet`:
 ///
 /// - A `layout` of `null` clears everything the caller chose.
-/// - A body with neither `theme` nor `colourSet` only switches the layout and keeps the
+/// - A body with neither `theme` nor `colorSet` only switches the layout and keeps the
 ///   theme and colour set that the caller stored for that layout.
 /// - Otherwise the layout's theme and colour set are replaced. An explicit `null` means
 ///   the default of that layout, and one of the two being absent counts as `null`.
@@ -160,10 +160,10 @@ pub async fn set_look(
         Request::Choose {
             layout,
             theme,
-            colour_set,
+            color_set,
         } => {
             let current = looks.get(user).await?.unwrap_or_default();
-            let new = changed(current, layout, theme, colour_set);
+            let new = changed(current, layout, theme, color_set);
             looks.set(user, &new).await?;
             Some(new)
         }

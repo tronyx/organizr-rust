@@ -45,7 +45,7 @@ import {
 const LOOKS = MODERN_THEMES.filter(
   (theme) => theme.id !== 'organizr' && theme.scene === undefined,
 ).flatMap((theme) =>
-  theme.colourSets.map((set) => ({
+  theme.colorSets.map((set) => ({
     theme: theme.id,
     set: set.id,
     setLabel: set.label,
@@ -196,7 +196,7 @@ test('the_brand_themes_of_the_modern_layout_pass_the_audit', async ({ page, brow
   const defaultsBefore = {
     layout: config.layout,
     modernTheme: config.modernTheme,
-    modernColourSet: config.modernColourSet,
+    modernColorSet: config.modernColorSet,
   };
   const itemsBefore = Object.fromEntries(CHANGED.map((key) => [key, config[key] ?? '']));
   // The sessions of Overseerr and Ombi, which the search of the requests needs.
@@ -227,12 +227,12 @@ test('the_brand_themes_of_the_modern_layout_pass_the_audit', async ({ page, brow
       await put(page, './api/v2/user/look', {
         layout: 'modern',
         theme: look.theme,
-        colourSet: look.set,
+        colorSet: look.set,
       });
       await put(page, './api/v2/config', {
         layout: 'modern',
         modernTheme: look.theme,
-        modernColourSet: look.set,
+        modernColorSet: look.set,
       });
       await openHomepage(page, look);
       const focus = await focusColours(page, look);

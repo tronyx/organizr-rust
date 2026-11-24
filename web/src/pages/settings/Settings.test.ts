@@ -1104,7 +1104,7 @@ describe('Settings, the layouts', () => {
     const modern = {
       data: {
         ...(LAUNCH.data as Record<string, unknown>),
-        look: { layout: 'modern', theme: 'organizr', colourSet: 'dark', source: 'user' },
+        look: { layout: 'modern', theme: 'organizr', colorSet: 'dark', source: 'user' },
       },
     };
     stubApi({ 'GET tabs': { data: DATA }, 'GET users': { data: USERS }, 'GET launch': modern });

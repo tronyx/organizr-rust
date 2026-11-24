@@ -24,7 +24,7 @@ class Session {
     this.launch?.look ?? {
       layout: 'og',
       theme: this.launch?.theme ?? DEFAULT_THEME,
-      colourSet: 'dark',
+      colorSet: 'dark',
       source: 'default',
     },
   );

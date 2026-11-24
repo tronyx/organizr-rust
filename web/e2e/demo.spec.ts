@@ -770,7 +770,7 @@ test('the Admin sets the default look in the group Style & Themes', async ({ pag
         theme: before.theme,
         layout: before.layout,
         modernTheme: before.modernTheme,
-        modernColourSet: before.modernColourSet,
+        modernColorSet: before.modernColorSet,
       },
     });
     expect(answer.ok(), await answer.text()).toBe(true);

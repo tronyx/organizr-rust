@@ -17,7 +17,7 @@ const FakeScene = ((anchor: Node) => {
 
 function useLook(look: Partial<Look>) {
   session.launch = {
-    look: { layout: 'modern', theme: 'organizr', colourSet: 'dark', source: 'user', ...look },
+    look: { layout: 'modern', theme: 'organizr', colorSet: 'dark', source: 'user', ...look },
   } as unknown as Launch;
   flushSync();
 }
@@ -40,9 +40,9 @@ afterEach(() => {
 describe('SceneLayer', () => {
   it('renders_nothing_for_organizr_and_plex', async () => {
     const map = loaders();
-    useLook({ theme: 'organizr', colourSet: 'dark' });
+    useLook({ theme: 'organizr', colorSet: 'dark' });
     const { container } = render(SceneLayer, { loaders: map });
-    useLook({ theme: 'plex', colourSet: 'light' });
+    useLook({ theme: 'plex', colorSet: 'light' });
     await Promise.resolve();
 
     expect(container.querySelector('.m-scene')).toBeNull();
@@ -51,7 +51,7 @@ describe('SceneLayer', () => {
 
   it('renders_nothing_on_og', () => {
     const map = loaders();
-    useLook({ layout: 'og', theme: 'nocturne', colourSet: 'amethyst' });
+    useLook({ layout: 'og', theme: 'nocturne', colorSet: 'amethyst' });
     const { container } = render(SceneLayer, { loaders: map });
 
     expect(container.querySelector('.m-scene')).toBeNull();
@@ -60,7 +60,7 @@ describe('SceneLayer', () => {
 
   it('loads_the_nocturne_scene_hidden_from_assistive_technology', async () => {
     const map = loaders();
-    useLook({ theme: 'nocturne', colourSet: 'crimson' });
+    useLook({ theme: 'nocturne', colorSet: 'crimson' });
     const { container } = render(SceneLayer, { loaders: map });
 
     const scene = await waitFor(() => {
@@ -74,13 +74,13 @@ describe('SceneLayer', () => {
     expect(scene).not.toHaveClass('m-scene-paused');
     expect(scene.querySelector('.fake-scene-art')).not.toBeNull();
     // A change of colour set keeps the loaded scene.
-    useLook({ theme: 'nocturne', colourSet: 'moonlit' });
+    useLook({ theme: 'nocturne', colorSet: 'moonlit' });
     expect(container.querySelector('.m-scene-nocturne')).not.toBeNull();
     expect(map.nocturne).toHaveBeenCalledTimes(1);
   });
 
   it('a_hidden_tab_pauses_the_scene', async () => {
-    useLook({ theme: 'nocturne', colourSet: 'amethyst' });
+    useLook({ theme: 'nocturne', colorSet: 'amethyst' });
     const { container } = render(SceneLayer, { loaders: loaders() });
     await waitFor(() => expect(container.querySelector('.m-scene')).not.toBeNull());
 
@@ -91,7 +91,7 @@ describe('SceneLayer', () => {
   });
 
   it('a_covered_scene_is_paused_and_an_uncovered_one_runs', async () => {
-    useLook({ theme: 'nocturne', colourSet: 'amethyst' });
+    useLook({ theme: 'nocturne', colorSet: 'amethyst' });
     const { container, rerender } = render(SceneLayer, { loaders: loaders(), covered: true });
     await waitFor(() => expect(container.querySelector('.m-scene')).not.toBeNull());
     // The page hides the scene (a frame tab, an opaque page): the scene stays, but still.
@@ -114,11 +114,11 @@ describe('SceneLayer', () => {
   });
 
   it('switching_to_plex_removes_the_scene', async () => {
-    useLook({ theme: 'nocturne', colourSet: 'amethyst' });
+    useLook({ theme: 'nocturne', colorSet: 'amethyst' });
     const { container } = render(SceneLayer, { loaders: loaders() });
     await waitFor(() => expect(container.querySelector('.m-scene')).not.toBeNull());
 
-    useLook({ theme: 'plex', colourSet: 'dark' });
+    useLook({ theme: 'plex', colorSet: 'dark' });
 
     expect(container.querySelector('.m-scene')).toBeNull();
     expect(container.querySelector('.fake-scene-art')).toBeNull();
@@ -132,9 +132,9 @@ describe('SceneLayer', () => {
           finish = resolve;
         }),
     };
-    useLook({ theme: 'nocturne', colourSet: 'amethyst' });
+    useLook({ theme: 'nocturne', colorSet: 'amethyst' });
     const { container } = render(SceneLayer, { loaders: slow });
-    useLook({ theme: 'emby', colourSet: 'dark' });
+    useLook({ theme: 'emby', colorSet: 'dark' });
     finish({ default: FakeScene });
     await Promise.resolve();
     flushSync();
@@ -144,7 +144,7 @@ describe('SceneLayer', () => {
 
   it('a_scene_that_fails_to_load_leaves_the_page_as_it_is', async () => {
     const failing: SceneLoaders = { nocturne: () => Promise.reject(new Error('gone')) };
-    useLook({ theme: 'nocturne', colourSet: 'amethyst' });
+    useLook({ theme: 'nocturne', colorSet: 'amethyst' });
     const { container } = render(SceneLayer, { loaders: failing });
     await Promise.resolve();
     flushSync();

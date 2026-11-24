@@ -144,7 +144,7 @@ settings! {
     /// The theme of the modern layout until a person chooses one (D-125).
     modern_theme: Text = "modernTheme", "organizr".to_owned();
     /// The colour set of the modern layout until a person chooses one (D-125).
-    modern_colour_set: Text = "modernColourSet", "dark".to_owned();
+    modern_color_set: Text = "modernColorSet", "dark".to_owned();
     /// Where tabs of the default category stand in the menu.
     unsorted_tabs: Choice<UnsortedTabs> = "unsortedTabs", UnsortedTabs::Top;
     /// The release line of the PHP application. Kept for clients that read it.
@@ -1226,7 +1226,7 @@ mod tests {
             ("PLEXLIBRARIES-librariesToInclude", json!("")),
             ("layout", json!("og")),
             ("modernTheme", json!("organizr")),
-            ("modernColourSet", json!("dark")),
+            ("modernColorSet", json!("dark")),
         ]
     }
 

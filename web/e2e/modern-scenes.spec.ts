@@ -52,7 +52,7 @@ import {
 /** The first colour set of every scene theme. */
 const SCENES = MODERN_THEMES.filter((theme) => theme.scene !== undefined).map((theme) => ({
   theme: theme.id,
-  set: theme.colourSets[0]?.id ?? '',
+  set: theme.colorSets[0]?.id ?? '',
 }));
 
 /** Every colour set of every scene theme, light or dark by the `light` flag of the set. */
@@ -60,7 +60,7 @@ const SCENE_LOOKS: (AuditLook & { scene: string; light: boolean })[] = MODERN_TH
   (theme) =>
     theme.scene === undefined
       ? []
-      : theme.colourSets.map((set) => ({
+      : theme.colorSets.map((set) => ({
           theme: theme.id,
           set: set.id,
           setLabel: set.label,
@@ -314,14 +314,14 @@ test('the_scenes_keep_off_text_and_stop_when_unseen', async ({ page, browser }) 
   const configBefore = {
     layout: config.layout,
     modernTheme: config.modernTheme,
-    modernColourSet: config.modernColourSet,
+    modernColorSet: config.modernColorSet,
     minimalLoginScreen: config.minimalLoginScreen ?? false,
   };
   try {
     for (const { theme, set } of SCENES) {
       const id = `m-${theme}-${set}`;
       const answer = await page.request.put('./api/v2/user/look', {
-        data: { layout: 'modern', theme, colourSet: set },
+        data: { layout: 'modern', theme, colorSet: set },
       });
       expect(answer.ok()).toBe(true);
       await page.goto('./#/');
@@ -370,7 +370,7 @@ test('the_scenes_keep_off_text_and_stop_when_unseen', async ({ page, browser }) 
       await put(page, './api/v2/config', {
         layout: 'modern',
         modernTheme: theme,
-        modernColourSet: set,
+        modernColorSet: set,
         minimalLoginScreen: true,
       });
       const guestContext = await browser.newContext({ baseURL: page.url().split('#')[0] });
@@ -395,7 +395,7 @@ test('the_scenes_keep_off_text_and_stop_when_unseen', async ({ page, browser }) 
       data:
         before?.source === 'default'
           ? { layout: null }
-          : { layout: before?.layout, theme: before?.theme, colourSet: before?.colourSet },
+          : { layout: before?.layout, theme: before?.theme, colorSet: before?.colorSet },
     });
   }
 });
@@ -412,13 +412,13 @@ test('scenes_and_their_fonts_load_only_for_their_theme', async ({ page, browser 
   // OG, two brand themes, and the first colour set of every scene theme: the scene and its
   // fonts are the same in every colour set of a theme.
   const looks: { label: string; look: Record<string, string>; scene: string | null }[] = [
-    { label: 'OG', look: { layout: 'og', theme: 'Organizr', colourSet: 'dark' }, scene: null },
+    { label: 'OG', look: { layout: 'og', theme: 'Organizr', colorSet: 'dark' }, scene: null },
     ...[
       ['organizr', 'dark'],
       ['plex', 'light'],
-    ].map(([theme = '', colourSet = '']) => ({
-      label: `${theme}/${colourSet}`,
-      look: { layout: 'modern', theme, colourSet },
+    ].map(([theme = '', colorSet = '']) => ({
+      label: `${theme}/${colorSet}`,
+      look: { layout: 'modern', theme, colorSet },
       scene: null,
     })),
     ...MODERN_THEMES.flatMap((theme) =>
@@ -426,8 +426,8 @@ test('scenes_and_their_fonts_load_only_for_their_theme', async ({ page, browser 
         ? []
         : [
             {
-              label: `${theme.id}/${theme.colourSets[0]?.id ?? ''}`,
-              look: { layout: 'modern', theme: theme.id, colourSet: theme.colourSets[0]?.id ?? '' },
+              label: `${theme.id}/${theme.colorSets[0]?.id ?? ''}`,
+              look: { layout: 'modern', theme: theme.id, colorSet: theme.colorSets[0]?.id ?? '' },
               scene: theme.scene,
             },
           ],
@@ -519,7 +519,7 @@ test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
   const defaultsBefore = {
     layout: config.layout,
     modernTheme: config.modernTheme,
-    modernColourSet: config.modernColourSet,
+    modernColorSet: config.modernColorSet,
     minimalLoginScreen: config.minimalLoginScreen ?? false,
   };
   const itemsBefore = Object.fromEntries(CHANGED.map((key) => [key, config[key] ?? '']));
@@ -542,12 +542,12 @@ test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
       await put(page, './api/v2/user/look', {
         layout: 'modern',
         theme: look.theme,
-        colourSet: look.set,
+        colorSet: look.set,
       });
       await put(page, './api/v2/config', {
         layout: 'modern',
         modernTheme: look.theme,
-        modernColourSet: look.set,
+        modernColorSet: look.set,
         minimalLoginScreen: false,
       });
 

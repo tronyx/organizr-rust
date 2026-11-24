@@ -16,7 +16,7 @@ const SCOPE = "[data-layout='modern']";
 
 /** The daisyUI theme of every theme and colour set that the modern layout offers. */
 const OFFERED = MODERN_THEMES.flatMap((theme) =>
-  theme.colourSets.map((set) => modernThemeId(theme.id, set.id)),
+  theme.colorSets.map((set) => modernThemeId(theme.id, set.id)),
 );
 
 /** Every `selector { declarations }` pair of the file, at any nesting depth. */
@@ -856,14 +856,14 @@ describe('the Silo theme of the modern layout', () => {
     document.head.append(style);
     try {
       applyLook(
-        { layout: 'modern', theme: 'silo', colourSet: 'ember', source: 'user' },
+        { layout: 'modern', theme: 'silo', colorSet: 'ember', source: 'user' },
         undefined,
         {},
         root,
       );
       expect(root.matches(rule?.selector ?? '-')).toBe(true);
       applyLook(
-        { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+        { layout: 'modern', theme: 'plex', colorSet: 'dark', source: 'user' },
         undefined,
         {},
         root,
@@ -872,14 +872,14 @@ describe('the Silo theme of the modern layout', () => {
       // On the page itself the declared family goes with the switch.
       const page = document.documentElement;
       applyLook(
-        { layout: 'modern', theme: 'silo', colourSet: 'rose', source: 'user' },
+        { layout: 'modern', theme: 'silo', colorSet: 'rose', source: 'user' },
         undefined,
         {},
         page,
       );
       expect(getComputedStyle(page).fontFamily).toContain('Plus Jakarta Sans Variable');
       applyLook(
-        { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+        { layout: 'modern', theme: 'plex', colorSet: 'dark', source: 'user' },
         undefined,
         {},
         page,
@@ -1063,14 +1063,14 @@ describe('the Nocturne theme of the modern layout', () => {
     const heading = document.createElement('h1');
     root.append(heading);
     applyLook(
-      { layout: 'modern', theme: 'nocturne', colourSet: 'crimson', source: 'user' },
+      { layout: 'modern', theme: 'nocturne', colorSet: 'crimson', source: 'user' },
       undefined,
       {},
       root,
     );
     expect(heading.matches(rule?.selector ?? '-')).toBe(true);
     applyLook(
-      { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+      { layout: 'modern', theme: 'plex', colorSet: 'dark', source: 'user' },
       undefined,
       {},
       root,
@@ -1132,14 +1132,14 @@ describe('the Riot theme of the modern layout', () => {
     const heading = document.createElement('h1');
     root.append(heading);
     applyLook(
-      { layout: 'modern', theme: 'riot', colourSet: 'hotwire', source: 'user' },
+      { layout: 'modern', theme: 'riot', colorSet: 'hotwire', source: 'user' },
       undefined,
       {},
       root,
     );
     expect(heading.matches(rule?.selector ?? '-')).toBe(true);
     applyLook(
-      { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+      { layout: 'modern', theme: 'plex', colorSet: 'dark', source: 'user' },
       undefined,
       {},
       root,
@@ -1203,14 +1203,14 @@ describe('the Tempest theme of the modern layout', () => {
     const heading = document.createElement('h1');
     root.append(heading);
     applyLook(
-      { layout: 'modern', theme: 'tempest', colourSet: 'abyss', source: 'user' },
+      { layout: 'modern', theme: 'tempest', colorSet: 'abyss', source: 'user' },
       undefined,
       {},
       root,
     );
     expect(heading.matches(rule?.selector ?? '-')).toBe(true);
     applyLook(
-      { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+      { layout: 'modern', theme: 'plex', colorSet: 'dark', source: 'user' },
       undefined,
       {},
       root,
@@ -1326,14 +1326,14 @@ describe('the Circuit theme of the modern layout', () => {
       const root = document.createElement('html');
       root.append(target);
       applyLook(
-        { layout: 'modern', theme: 'circuit', colourSet: 'synth', source: 'user' },
+        { layout: 'modern', theme: 'circuit', colorSet: 'synth', source: 'user' },
         undefined,
         {},
         root,
       );
       expect(target.matches(rule?.selector ?? '-')).toBe(true);
       applyLook(
-        { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+        { layout: 'modern', theme: 'plex', colorSet: 'dark', source: 'user' },
         undefined,
         {},
         root,
@@ -1411,14 +1411,14 @@ describe('the Prism theme of the modern layout', () => {
     expect(rule).toBeDefined();
     const root = document.createElement('html');
     applyLook(
-      { layout: 'modern', theme: 'prism', colourSet: 'candy', source: 'user' },
+      { layout: 'modern', theme: 'prism', colorSet: 'candy', source: 'user' },
       undefined,
       {},
       root,
     );
     expect(root.matches(rule?.selector ?? '-')).toBe(true);
     applyLook(
-      { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+      { layout: 'modern', theme: 'plex', colorSet: 'dark', source: 'user' },
       undefined,
       {},
       root,

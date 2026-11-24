@@ -66,13 +66,13 @@ pub struct Look {
     pub theme: String,
     /// The colour set of the theme: the style of the original layout, or a colour set of
     /// a modern theme.
-    pub colour_set: String,
+    pub color_set: String,
     /// Whether the person chose this look.
     pub source: LookSource,
 }
 
 /// The colour sets of a modern theme, or `None` when there is no such theme.
-pub fn modern_colour_sets(theme: &str) -> Option<&'static [&'static str]> {
+pub fn modern_color_sets(theme: &str) -> Option<&'static [&'static str]> {
     MODERN_THEMES
         .iter()
         .find(|(name, _)| *name == theme)
@@ -84,8 +84,8 @@ pub fn modern_colour_sets(theme: &str) -> Option<&'static [&'static str]> {
 /// `organizr` and `dark`.
 fn admin_modern(settings: &Settings) -> (String, String) {
     let theme = settings.modern_theme.as_str();
-    let set = settings.modern_colour_set.as_str();
-    match modern_colour_sets(theme) {
+    let set = settings.modern_color_set.as_str();
+    match modern_color_sets(theme) {
         Some(sets) if sets.contains(&set) => (theme.to_owned(), set.to_owned()),
         Some(sets) => (
             theme.to_owned(),
@@ -102,12 +102,12 @@ pub fn default_modern_theme(settings: &Settings) -> String {
 
 /// The colour set that a modern theme has when a person chose none: the one of the
 /// Admin if the Admin's theme is this theme, else the first one of the theme.
-pub fn default_modern_colour_set(settings: &Settings, theme: &str) -> String {
+pub fn default_modern_color_set(settings: &Settings, theme: &str) -> String {
     let (admin_theme, admin_set) = admin_modern(settings);
     if admin_theme == theme {
         return admin_set;
     }
-    modern_colour_sets(theme)
+    modern_color_sets(theme)
         .and_then(|sets| sets.first())
         .map_or_else(|| "dark".to_owned(), |set| (*set).to_owned())
 }
@@ -147,14 +147,14 @@ fn modern_look(settings: &Settings, stored: Option<&StoredLook>) -> (String, Str
     }
     let theme_name = theme.map_or_else(|| admin_modern(settings).0, str::to_owned);
     let set = known(
-        stored.and_then(|s| s.modern_colour_set.as_ref()),
-        modern_colour_sets(&theme_name).unwrap_or_default(),
+        stored.and_then(|s| s.modern_color_set.as_ref()),
+        modern_color_sets(&theme_name).unwrap_or_default(),
     );
-    let colour_set = set.map_or_else(
-        || default_modern_colour_set(settings, &theme_name),
+    let color_set = set.map_or_else(
+        || default_modern_color_set(settings, &theme_name),
         str::to_owned,
     );
-    (theme_name, colour_set, theme.is_some() || set.is_some())
+    (theme_name, color_set, theme.is_some() || set.is_some())
 }
 
 /// The look that applies to a person, from the defaults of the install and what the
@@ -164,7 +164,7 @@ pub fn effective_look(settings: &Settings, stored: Option<&StoredLook>) -> Look 
     let layout = own_layout
         .or_else(|| known(Some(&settings.layout), &LAYOUTS))
         .unwrap_or("og");
-    let (theme, colour_set, chosen) = if layout == "modern" {
+    let (theme, color_set, chosen) = if layout == "modern" {
         modern_look(settings, stored)
     } else {
         og_look(settings, stored)
@@ -172,7 +172,7 @@ pub fn effective_look(settings: &Settings, stored: Option<&StoredLook>) -> Look 
     Look {
         layout: layout.to_owned(),
         theme,
-        colour_set,
+        color_set,
         source: if own_layout.is_some() || chosen {
             LookSource::User
         } else {
@@ -196,7 +196,7 @@ mod tests {
     }
 
     fn parts(look: &Look) -> (&str, &str, &str) {
-        (&look.layout, &look.theme, &look.colour_set)
+        (&look.layout, &look.theme, &look.color_set)
     }
 
     #[test]
@@ -232,7 +232,7 @@ mod tests {
         let modern = stored(|s| {
             s.layout = Some(text("modern"));
             s.modern_theme = Some(text("nope"));
-            s.modern_colour_set = Some(text("light"));
+            s.modern_color_set = Some(text("light"));
         });
 
         assert_eq!(
@@ -267,12 +267,12 @@ mod tests {
         let bad = stored(|s| {
             s.layout = Some(text("modern"));
             s.modern_theme = Some(text("organizr"));
-            s.modern_colour_set = Some(text("purple"));
+            s.modern_color_set = Some(text("purple"));
         });
         let good = stored(|s| {
             s.layout = Some(text("modern"));
             s.modern_theme = Some(text("organizr"));
-            s.modern_colour_set = Some(text("dark"));
+            s.modern_color_set = Some(text("dark"));
         });
 
         assert_eq!(
@@ -286,14 +286,14 @@ mod tests {
     }
 
     #[test]
-    fn light_colour_set_is_honoured() {
+    fn light_color_set_is_honored() {
         // A stored or Admin `light` gives the light colours of the modern theme.
         let mut settings = Settings::defaults();
-        settings.modern_colour_set = "light".to_owned();
+        settings.modern_color_set = "light".to_owned();
         let own = stored(|s| {
             s.layout = Some(text("modern"));
             s.modern_theme = Some(text("organizr"));
-            s.modern_colour_set = Some(text("light"));
+            s.modern_color_set = Some(text("light"));
         });
 
         assert_eq!(
@@ -309,7 +309,7 @@ mod tests {
         let dark = stored(|s| {
             s.layout = Some(text("modern"));
             s.modern_theme = Some(text("organizr"));
-            s.modern_colour_set = Some(text("dark"));
+            s.modern_color_set = Some(text("dark"));
         });
         assert_eq!(
             parts(&effective_look(&settings, Some(&dark))),
@@ -338,13 +338,13 @@ mod tests {
     }
 
     #[test]
-    fn tempest_has_its_own_colour_sets() {
+    fn tempest_has_its_own_color_sets() {
         let mut settings = Settings::defaults();
         let tempest = |set: Option<&str>| {
             stored(|s| {
                 s.layout = Some(text("modern"));
                 s.modern_theme = Some(text("tempest"));
-                s.modern_colour_set = set.map(text);
+                s.modern_color_set = set.map(text);
             })
         };
         for set in ["squall", "abyss", "gale"] {
@@ -363,12 +363,12 @@ mod tests {
         // The same for the Admin's default.
         settings.layout = "modern".to_owned();
         settings.modern_theme = "tempest".to_owned();
-        settings.modern_colour_set = "hotwire".to_owned();
+        settings.modern_color_set = "hotwire".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "tempest", "squall")
         );
-        settings.modern_colour_set = "gale".to_owned();
+        settings.modern_color_set = "gale".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "tempest", "gale")
@@ -376,13 +376,13 @@ mod tests {
     }
 
     #[test]
-    fn prism_has_its_own_colour_sets() {
+    fn prism_has_its_own_color_sets() {
         let mut settings = Settings::defaults();
         let prism = |set: Option<&str>| {
             stored(|s| {
                 s.layout = Some(text("modern"));
                 s.modern_theme = Some(text("prism"));
-                s.modern_colour_set = set.map(text);
+                s.modern_color_set = set.map(text);
             })
         };
         for set in ["daydream", "twilight", "candy"] {
@@ -401,12 +401,12 @@ mod tests {
         // The same for the Admin's default.
         settings.layout = "modern".to_owned();
         settings.modern_theme = "prism".to_owned();
-        settings.modern_colour_set = "light".to_owned();
+        settings.modern_color_set = "light".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "prism", "daydream")
         );
-        settings.modern_colour_set = "candy".to_owned();
+        settings.modern_color_set = "candy".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "prism", "candy")
@@ -414,13 +414,13 @@ mod tests {
     }
 
     #[test]
-    fn circuit_has_its_own_colour_sets() {
+    fn circuit_has_its_own_color_sets() {
         let mut settings = Settings::defaults();
         let circuit = |set: Option<&str>| {
             stored(|s| {
                 s.layout = Some(text("modern"));
                 s.modern_theme = Some(text("circuit"));
-                s.modern_colour_set = set.map(text);
+                s.modern_color_set = set.map(text);
             })
         };
         for set in ["matrix", "synth", "amber"] {
@@ -439,12 +439,12 @@ mod tests {
         // The same for the Admin's default.
         settings.layout = "modern".to_owned();
         settings.modern_theme = "circuit".to_owned();
-        settings.modern_colour_set = "hotwire".to_owned();
+        settings.modern_color_set = "hotwire".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "circuit", "matrix")
         );
-        settings.modern_colour_set = "amber".to_owned();
+        settings.modern_color_set = "amber".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "circuit", "amber")
@@ -452,13 +452,13 @@ mod tests {
     }
 
     #[test]
-    fn riot_has_its_own_colour_sets() {
+    fn riot_has_its_own_color_sets() {
         let mut settings = Settings::defaults();
         let riot = |set: Option<&str>| {
             stored(|s| {
                 s.layout = Some(text("modern"));
                 s.modern_theme = Some(text("riot"));
-                s.modern_colour_set = set.map(text);
+                s.modern_color_set = set.map(text);
             })
         };
         for set in ["acid", "hotwire", "blacklight"] {
@@ -477,12 +477,12 @@ mod tests {
         // The same for the Admin's default.
         settings.layout = "modern".to_owned();
         settings.modern_theme = "riot".to_owned();
-        settings.modern_colour_set = "moonlit".to_owned();
+        settings.modern_color_set = "moonlit".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "riot", "acid")
         );
-        settings.modern_colour_set = "blacklight".to_owned();
+        settings.modern_color_set = "blacklight".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "riot", "blacklight")
@@ -490,13 +490,13 @@ mod tests {
     }
 
     #[test]
-    fn nocturne_has_its_own_colour_sets() {
+    fn nocturne_has_its_own_color_sets() {
         let mut settings = Settings::defaults();
         let nocturne = |set: Option<&str>| {
             stored(|s| {
                 s.layout = Some(text("modern"));
                 s.modern_theme = Some(text("nocturne"));
-                s.modern_colour_set = set.map(text);
+                s.modern_color_set = set.map(text);
             })
         };
         for set in ["amethyst", "crimson", "moonlit"] {
@@ -515,12 +515,12 @@ mod tests {
         // The same for the Admin's default.
         settings.layout = "modern".to_owned();
         settings.modern_theme = "nocturne".to_owned();
-        settings.modern_colour_set = "light".to_owned();
+        settings.modern_color_set = "light".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "nocturne", "amethyst")
         );
-        settings.modern_colour_set = "moonlit".to_owned();
+        settings.modern_color_set = "moonlit".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "nocturne", "moonlit")
@@ -528,13 +528,13 @@ mod tests {
     }
 
     #[test]
-    fn silo_has_its_own_colour_sets() {
+    fn silo_has_its_own_color_sets() {
         let mut settings = Settings::defaults();
         let silo = |set: Option<&str>| {
             stored(|s| {
                 s.layout = Some(text("modern"));
                 s.modern_theme = Some(text("silo"));
-                s.modern_colour_set = set.map(text);
+                s.modern_color_set = set.map(text);
             })
         };
         for set in ["ember", "ice", "rose"] {
@@ -554,7 +554,7 @@ mod tests {
         // for a person.
         settings.layout = "modern".to_owned();
         settings.modern_theme = "silo".to_owned();
-        settings.modern_colour_set = "dark".to_owned();
+        settings.modern_color_set = "dark".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "silo", "ember")
@@ -566,7 +566,7 @@ mod tests {
             ("modern", "organizr", "dark")
         );
         settings.modern_theme = "silo".to_owned();
-        settings.modern_colour_set = "ice".to_owned();
+        settings.modern_color_set = "ice".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "silo", "ice")
@@ -580,7 +580,7 @@ mod tests {
             let light = stored(|s| {
                 s.layout = Some(text("modern"));
                 s.modern_theme = Some(text(theme));
-                s.modern_colour_set = Some(text("light"));
+                s.modern_color_set = Some(text("light"));
             });
             assert_eq!(
                 parts(&effective_look(&settings, Some(&light))),
@@ -589,7 +589,7 @@ mod tests {
             let purple = stored(|s| {
                 s.layout = Some(text("modern"));
                 s.modern_theme = Some(text(theme));
-                s.modern_colour_set = Some(text("purple"));
+                s.modern_color_set = Some(text("purple"));
             });
             assert_eq!(
                 parts(&effective_look(&settings, Some(&purple))),

@@ -30,7 +30,7 @@ describe('Settings on the modern layout, when the side menu does not load', () =
           version: '0.1.0',
           appearance: { title: 'Organizr' },
           plugins: {},
-          look: { layout: 'modern', theme: 'organizr', colourSet: 'dark', source: 'user' },
+          look: { layout: 'modern', theme: 'organizr', colorSet: 'dark', source: 'user' },
           settings: {
             sso: { plex: { oAuthEnabled: false } },
             homepage: { refresh: {}, options: { healthChecksTags: '' } },

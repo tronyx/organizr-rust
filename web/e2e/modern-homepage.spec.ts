@@ -20,11 +20,11 @@ import {
 import { logIn } from './login';
 import { ADDRESS } from './server';
 
-type ColourSet = 'dark' | 'light';
-const SETS: ColourSet[] = ['dark', 'light'];
+type ColorSet = 'dark' | 'light';
+const SETS: ColorSet[] = ['dark', 'light'];
 
 /** The theme and colour set of the page, as the look of the person would set them. */
-async function useColourSet(page: Page, set: ColourSet) {
+async function useColorSet(page: Page, set: ColorSet) {
   await page.evaluate((wanted) => {
     document.documentElement.dataset.theme = `m-organizr-${wanted}`;
     document.documentElement.dataset.colourSet = wanted;
@@ -73,13 +73,13 @@ const CHANGED = [...Object.keys(allItemSettings()), ...Object.values(COMBINE_SWI
 
 const look = (page: Page, layout: 'og' | 'modern') =>
   page.request.put('./api/v2/user/look', {
-    data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet: 'dark' },
+    data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colorSet: 'dark' },
   });
 
 interface EffectiveLook {
   layout: 'og' | 'modern';
   theme: string;
-  colourSet: string;
+  colorSet: string;
   source: 'user' | 'default';
 }
 
@@ -97,7 +97,7 @@ const restoreLook = (page: Page, before: EffectiveLook) =>
     data:
       before.source === 'default'
         ? { layout: null }
-        : { layout: before.layout, theme: before.theme, colourSet: before.colourSet },
+        : { layout: before.layout, theme: before.theme, colorSet: before.colorSet },
   });
 
 async function changeSettings(page: Page, values: Record<string, unknown>) {
@@ -196,7 +196,7 @@ async function closeDialog(page: Page) {
 }
 
 /** Opens each tab, menu and dialog of the items, and checks each of them. */
-async function checkStates(page: Page, set: ColourSet) {
+async function checkStates(page: Page, set: ColorSet) {
   const item = (kind: string) => page.locator(`section.org-item-${kind}`);
 
   // The history of the queues of SABnzbd and NZBGet.
@@ -303,7 +303,7 @@ async function checkStates(page: Page, set: ColourSet) {
 }
 
 /** Opens what a failed or empty answer shows only after a click: searches and lists. */
-async function checkOtherStates(page: Page, variant: Variant, set: ColourSet) {
+async function checkOtherStates(page: Page, variant: Variant, set: ColorSet) {
   const item = (kind: string) => page.locator(`section.org-item-${kind}`);
   for (const kind of ['jackett', 'prowlarr']) {
     await item(kind).getByRole('searchbox').fill('A Film');
@@ -340,7 +340,7 @@ test('homepage_items_pass_contrast_on_modern_dark_and_light', async ({ page }) =
     for (const variant of ['normal', 'empty', 'error'] as const) {
       await openHomepage(page, variant);
       for (const set of SETS) {
-        await useColourSet(page, set);
+        await useColorSet(page, set);
         await checkContrast(page, `the homepage (${variant}, ${set})`);
         if (variant === 'normal') {
           await checkStates(page, set);
@@ -364,7 +364,7 @@ test('homepage_items_pass_contrast_on_modern_dark_and_light', async ({ page }) =
     const tabs = page.locator('section.org-item-downloader').getByRole('tab');
     await expect(tabs).toHaveCount(members.length);
     for (const set of SETS) {
-      await useColourSet(page, set);
+      await useColorSet(page, set);
       for (let index = 0; index < members.length; index += 1) {
         await tabs.nth(index).click();
         await expect(tabs.nth(index)).toHaveAttribute('aria-selected', 'true');
@@ -393,7 +393,7 @@ test('homepage_items_pass_contrast_on_modern_dark_and_light', async ({ page }) =
     });
     expect(overflow, 'the page scrolls sideways on a phone').toEqual({ scroll: 0, wide: [] });
     for (const set of SETS) {
-      await useColourSet(page, set);
+      await useColorSet(page, set);
       await checkContrast(page, `the homepage on a phone (${set})`);
     }
   });
@@ -404,7 +404,7 @@ test('text_over_pictures_has_a_scrim', async ({ page }, testInfo) => {
   await withEveryItem(page, async () => {
     await openHomepage(page, 'normal');
     for (const set of SETS) {
-      await useColourSet(page, set);
+      await useColorSet(page, set);
       // A text whose box is over a picture must have a background of its own (or of an
       // element between it and the picture) that hides most of the picture.
       const bare = await page.evaluate(() => {
@@ -487,7 +487,7 @@ test('calendar_events_follow_custom_css_on_modern', async ({ page }) => {
       await changeSettings(page, { customCss: ':root { --org-event-missing: rgb(1, 2, 3); }' });
       await openHomepage(page, 'normal', ['calendar']);
       for (const set of SETS) {
-        await useColourSet(page, set);
+        await useColorSet(page, set);
         await expect(
           page.locator('section.org-item-calendar .org-event-missing').first(),
         ).toHaveCSS('color', 'rgb(1, 2, 3)');
@@ -507,7 +507,7 @@ test('fields_of_items_keep_daisyui_focus_and_checked_colours_on_modern', async (
     const search = page.locator('section.org-item-jackett').getByRole('searchbox');
     const box = calendar.locator('input.checkbox').first();
     for (const set of SETS) {
-      await useColourSet(page, set);
+      await useColorSet(page, set);
       // At rest the border is a faint tone; in focus the outline is the text colour.
       await search.focus();
       const text = await page.locator('section.org-item-jackett').evaluate((element) => {
@@ -540,10 +540,10 @@ for (const layout of ['og', 'modern'] as const) {
         const card = page
           .locator('section.org-item-tautulli .org-stat', { has: page.locator('li:nth-child(3)') })
           .first();
-        const sets: (ColourSet | null)[] = layout === 'modern' ? SETS : [null];
+        const sets: (ColorSet | null)[] = layout === 'modern' ? SETS : [null];
         for (const set of sets) {
           if (set) {
-            await useColourSet(page, set);
+            await useColorSet(page, set);
           }
           const where = `${layout}${set ? `, ${set}` : ''}`;
           await expect(card.locator('h3'), `the heading (${where})`).toHaveCSS(

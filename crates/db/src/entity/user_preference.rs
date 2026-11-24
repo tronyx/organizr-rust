@@ -19,7 +19,7 @@ pub struct Model {
     /// The theme of the modern layout.
     pub modern_theme: Option<String>,
     /// The colour set of the modern layout.
-    pub modern_colour_set: Option<String>,
+    pub modern_color_set: Option<String>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

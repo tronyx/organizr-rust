@@ -50,7 +50,7 @@ fn is_for_admins_only(key: &str) -> bool {
         || key == "customThemeJava"
         || key == "layout"
         || key == "modernTheme"
-        || key == "modernColourSet"
+        || key == "modernColorSet"
 }
 
 /// A setting as the API shows it to a caller of the given level.
@@ -260,7 +260,7 @@ mod tests {
             "customThemeJava",
             "layout",
             "modernTheme",
-            "modernColourSet",
+            "modernColorSet",
         ] {
             assert!(is_for_admins_only(key), "{key}");
         }

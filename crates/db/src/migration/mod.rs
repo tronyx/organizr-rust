@@ -18,6 +18,7 @@ mod m20261120_000010_extensions;
 mod m20261120_000011_user_auth_subject;
 mod m20261120_000012_chatroom;
 mod m20261123_000013_user_preferences;
+mod m20261124_000014_color_set;
 
 /// The list of all migrations, oldest first.
 pub struct Migrator;
@@ -38,6 +39,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261120_000011_user_auth_subject::Migration),
             Box::new(m20261120_000012_chatroom::Migration),
             Box::new(m20261123_000013_user_preferences::Migration),
+            Box::new(m20261124_000014_color_set::Migration),
         ]
     }
 }

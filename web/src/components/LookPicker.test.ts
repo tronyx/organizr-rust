@@ -25,8 +25,8 @@ function launch(look: Record<string, string>): CannedAnswer {
   };
 }
 
-const OG = { layout: 'og', theme: 'Organizr', colourSet: 'dark', source: 'default' };
-const MODERN = { layout: 'modern', theme: 'organizr', colourSet: 'dark', source: 'user' };
+const OG = { layout: 'og', theme: 'Organizr', colorSet: 'dark', source: 'default' };
+const MODERN = { layout: 'modern', theme: 'organizr', colorSet: 'dark', source: 'user' };
 
 async function open(look: Record<string, string>, extra: Record<string, CannedAnswer> = {}) {
   const sent = stubApi({ 'GET launch': launch(look), 'PUT user/look': {}, ...extra });
@@ -81,14 +81,14 @@ describe('LookPicker', () => {
   });
 
   it('choosing_a_brand_theme_keeps_the_colour_set', async () => {
-    const sent = await open({ ...MODERN, colourSet: 'light' });
+    const sent = await open({ ...MODERN, colorSet: 'light' });
 
     await fireEvent.click(screen.getByRole('radio', { name: 'Jellyfin' }));
     await waitFor(() => expect(sent.some((request) => request.method === 'PUT')).toBe(true));
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
       theme: 'jellyfin',
-      colourSet: 'light',
+      colorSet: 'light',
     });
   });
 
@@ -101,12 +101,12 @@ describe('LookPicker', () => {
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
       theme: 'silo',
-      colourSet: 'ember',
+      colorSet: 'ember',
     });
   });
 
   it('silo_offers_its_three_accent_sets', async () => {
-    await open({ ...MODERN, theme: 'silo', colourSet: 'ice' });
+    await open({ ...MODERN, theme: 'silo', colorSet: 'ice' });
 
     expect(screen.getByRole('radio', { name: 'Ice' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Ember' })).toBeEnabled();
@@ -122,12 +122,12 @@ describe('LookPicker', () => {
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
       theme: 'nocturne',
-      colourSet: 'amethyst',
+      colorSet: 'amethyst',
     });
   });
 
   it('nocturne_offers_its_three_colour_sets', async () => {
-    await open({ ...MODERN, theme: 'nocturne', colourSet: 'moonlit' });
+    await open({ ...MODERN, theme: 'nocturne', colorSet: 'moonlit' });
 
     expect(screen.getByRole('radio', { name: 'Moonlit' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Amethyst' })).toBeEnabled();
@@ -143,12 +143,12 @@ describe('LookPicker', () => {
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
       theme: 'riot',
-      colourSet: 'acid',
+      colorSet: 'acid',
     });
   });
 
   it('riot_offers_its_three_colour_sets', async () => {
-    await open({ ...MODERN, theme: 'riot', colourSet: 'blacklight' });
+    await open({ ...MODERN, theme: 'riot', colorSet: 'blacklight' });
 
     expect(screen.getByRole('radio', { name: 'Blacklight' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Acid' })).toBeEnabled();
@@ -164,12 +164,12 @@ describe('LookPicker', () => {
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
       theme: 'tempest',
-      colourSet: 'squall',
+      colorSet: 'squall',
     });
   });
 
   it('tempest_offers_its_three_colour_sets', async () => {
-    await open({ ...MODERN, theme: 'tempest', colourSet: 'gale' });
+    await open({ ...MODERN, theme: 'tempest', colorSet: 'gale' });
 
     expect(screen.getByRole('radio', { name: 'Gale' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Squall' })).toBeEnabled();
@@ -185,12 +185,12 @@ describe('LookPicker', () => {
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
       theme: 'circuit',
-      colourSet: 'matrix',
+      colorSet: 'matrix',
     });
   });
 
   it('circuit_offers_its_three_colour_sets', async () => {
-    await open({ ...MODERN, theme: 'circuit', colourSet: 'amber' });
+    await open({ ...MODERN, theme: 'circuit', colorSet: 'amber' });
 
     expect(screen.getByRole('radio', { name: 'Amber' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Matrix' })).toBeEnabled();
@@ -206,12 +206,12 @@ describe('LookPicker', () => {
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
       theme: 'prism',
-      colourSet: 'daydream',
+      colorSet: 'daydream',
     });
   });
 
   it('prism_offers_its_three_colour_sets', async () => {
-    await open({ ...MODERN, theme: 'prism', colourSet: 'candy' });
+    await open({ ...MODERN, theme: 'prism', colorSet: 'candy' });
 
     expect(screen.getByRole('radio', { name: 'Candy' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Daydream' })).toBeEnabled();
@@ -227,7 +227,7 @@ describe('LookPicker', () => {
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
       theme: 'organizr',
-      colourSet: 'light',
+      colorSet: 'light',
     });
   });
 
@@ -237,7 +237,7 @@ describe('LookPicker', () => {
 
     await fireEvent.click(screen.getByRole('radio', { name: 'Nord' }));
     await waitFor(() => expect(puts()).toHaveLength(1));
-    expect(puts()[0]?.body).toEqual({ layout: 'og', theme: 'Nord', colourSet: 'dark' });
+    expect(puts()[0]?.body).toEqual({ layout: 'og', theme: 'Nord', colorSet: 'dark' });
 
     await fireEvent.click(screen.getByRole('radio', { name: 'Modern' }));
     await waitFor(() => expect(puts()).toHaveLength(2));
@@ -256,7 +256,7 @@ describe('LookPicker', () => {
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: null,
       theme: null,
-      colourSet: null,
+      colorSet: null,
     });
   });
 
@@ -384,7 +384,7 @@ describe('LookPicker', () => {
   });
 
   it('every_modern_theme_shows_a_sample_in_the_colour_set_it_would_get', async () => {
-    await open({ ...MODERN, colourSet: 'light' });
+    await open({ ...MODERN, colorSet: 'light' });
 
     const radios = within(screen.getByRole('group', { name: 'Theme' })).getAllByRole('radio');
     expect(radios).toHaveLength(10);
@@ -400,7 +400,7 @@ describe('LookPicker', () => {
   });
 
   it('a_theme_with_the_current_set_shows_that_set', async () => {
-    await open({ ...MODERN, theme: 'silo', colourSet: 'rose' });
+    await open({ ...MODERN, theme: 'silo', colorSet: 'rose' });
 
     expect(screen.getByRole('radio', { name: 'Silo' })).toBeChecked();
     expect(swatchOf('Silo')).toBe('m-silo-rose');
@@ -409,7 +409,7 @@ describe('LookPicker', () => {
   });
 
   it('every_colour_set_shows_a_sample_of_its_colours', async () => {
-    await open({ ...MODERN, theme: 'nocturne', colourSet: 'crimson' });
+    await open({ ...MODERN, theme: 'nocturne', colorSet: 'crimson' });
 
     expect(swatchOf('Amethyst')).toBe('m-nocturne-amethyst');
     expect(swatchOf('Crimson')).toBe('m-nocturne-crimson');
@@ -490,7 +490,7 @@ describe('LookPicker', () => {
   });
 
   it('a_name_wraps_only_between_words_and_a_column_keeps_its_longest_word', async () => {
-    await open({ ...MODERN, theme: 'nocturne', colourSet: 'moonlit' });
+    await open({ ...MODERN, theme: 'nocturne', colorSet: 'moonlit' });
 
     // Two columns only where both fit at their longest words; then each is that wide.
     const grid = screen.getByRole('group', { name: 'Theme' }).querySelector('.grid');

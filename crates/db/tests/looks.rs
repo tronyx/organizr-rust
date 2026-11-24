@@ -45,7 +45,7 @@ fn full_look() -> StoredLook {
         og_theme: Some("Organizr".to_owned()),
         og_style: Some("dark".to_owned()),
         modern_theme: Some("aurora".to_owned()),
-        modern_colour_set: Some("ocean".to_owned()),
+        modern_color_set: Some("ocean".to_owned()),
     }
 }
 

@@ -9,10 +9,10 @@ import { auditContrast, describeLowContrast } from './contrast';
 import { expect, test } from './fixtures';
 import { logIn } from './login';
 
-type ColourSet = 'dark' | 'light';
+type ColorSet = 'dark' | 'light';
 
 /** The theme and colour set of the page, as the look of the person would set them. */
-async function useColourSet(page: Page, set: ColourSet) {
+async function useColorSet(page: Page, set: ColorSet) {
   await page.evaluate((wanted) => {
     document.documentElement.dataset.theme = `m-organizr-${wanted}`;
     document.documentElement.dataset.colourSet = wanted;
@@ -21,11 +21,11 @@ async function useColourSet(page: Page, set: ColourSet) {
 }
 
 /** Opens a settings page from its address and waits until its content has loaded. */
-async function openSection(page: Page, address: string, label: string, set: ColourSet) {
+async function openSection(page: Page, address: string, label: string, set: ColorSet) {
   await page.goto(`./${address}`);
   await expect(page.locator('.m-page-heading h1')).toHaveText(label);
   await expect(page.locator('.org-tab-body [aria-label="Loading"]')).toHaveCount(0);
-  await useColourSet(page, set);
+  await useColorSet(page, set);
 }
 
 /** Checks the contrast and records the texts it could not check. */
@@ -103,7 +103,7 @@ test('settings_sections_pass_contrast_on_modern_dark_and_light', async ({ page }
   await logIn(page);
   const look = (layout: 'og' | 'modern') =>
     page.request.put('./api/v2/user/look', {
-      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet: 'dark' },
+      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colorSet: 'dark' },
     });
 
   try {
@@ -172,7 +172,7 @@ test('the_side_menu_scrolls_inside_itself_on_a_long_page', async ({ page }) => {
   await logIn(page);
   const look = (layout: 'og' | 'modern') =>
     page.request.put('./api/v2/user/look', {
-      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet: 'dark' },
+      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colorSet: 'dark' },
     });
 
   try {
@@ -236,7 +236,7 @@ test('the_note_of_style_and_themes_has_body_text_and_room_on_both_layouts', asyn
   await logIn(page);
   const look = (layout: 'og' | 'modern') =>
     page.request.put('./api/v2/user/look', {
-      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet: 'dark' },
+      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colorSet: 'dark' },
     });
 
   try {

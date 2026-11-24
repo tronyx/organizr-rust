@@ -60,7 +60,7 @@ function launch(loggedIn: boolean, groupID = 1) {
             locked: 0,
           }
         : { username: 'guest', group: 'Guest', groupID: 999, loggedin: false },
-      look: { layout: 'modern', theme: 'organizr', colourSet: 'dark', source: 'user' },
+      look: { layout: 'modern', theme: 'organizr', colorSet: 'dark', source: 'user' },
       tabs: TABS,
       categories: CATEGORIES,
       plugins: { includes: {} },
