@@ -1,9 +1,11 @@
 // The scenes of the scene themes of the modern layout, in the browser, on the first colour
 // set of every scene theme: no text sits on the scene on any page of the shell; the scene
-// runs at most 40 animations, pauses while the tab is hidden and while a frame tab covers
-// the page, and stands still for reduced motion. The full contrast audit of the scene
-// themes is elsewhere; this checks what only a running scene shows. It runs after the walk
-// of `demo.spec.ts`, on the same install, and puts the look of the Admin back.
+// runs at most 40 animations on the homepage, pauses while the tab is hidden and while the
+// page hides it (a frame tab, an opaque page such as the chat, the minimal login of a
+// guest), and stands still for reduced motion. The full contrast audit of the scene themes
+// is elsewhere; this checks what only a running scene shows. It runs after the walk of
+// `demo.spec.ts`, on the same install, and puts the look and the settings of the Admin
+// back.
 
 import type { Page } from '@playwright/test';
 
@@ -110,13 +112,29 @@ async function setHidden(page: Page, hidden: boolean) {
   }, hidden);
 }
 
-test('the_scenes_keep_off_text_and_stop_when_unseen', async ({ page }) => {
+async function put(page: Page, address: string, data: Record<string, unknown>) {
+  const answer = await page.request.put(address, { data });
+  expect(answer.ok(), `${address}: ${await answer.text()}`).toBe(true);
+}
+
+test('the_scenes_keep_off_text_and_stop_when_unseen', async ({ page, browser }) => {
   test.setTimeout(180_000);
   expect(SCENES.length, 'scene themes').toBeGreaterThan(0);
   await logIn(page);
   const launch = await page.request.get('./api/v2/launch');
   const before = ((await launch.json()) as { response: { data: { look: Record<string, string> } } })
     .response.data.look;
+  const config = (
+    (await (await page.request.get('./api/v2/config')).json()) as {
+      response: { data: Record<string, unknown> };
+    }
+  ).response.data;
+  const configBefore = {
+    layout: config.layout,
+    modernTheme: config.modernTheme,
+    modernColourSet: config.modernColourSet,
+    minimalLoginScreen: config.minimalLoginScreen ?? false,
+  };
   try {
     for (const { theme, set } of SCENES) {
       const id = `m-${theme}-${set}`;
@@ -167,8 +185,40 @@ test('the_scenes_keep_off_text_and_stop_when_unseen', async ({ page }) => {
       await expect(page.frameLocator('iframe[title="Ping"]').locator('body')).toContainText('pong');
       await expect(scene).toHaveClass(/m-scene-paused/);
       expect((await sceneAnimations(page)).running, `${id} under a frame tab`).toBe(0);
+      // So does an opaque page, such as the chat.
+      await page.goto('./#/chat');
+      await expect(page.locator('.m-page')).toBeVisible();
+      await expect(scene).toHaveClass(/m-scene-paused/);
+      expect((await sceneAnimations(page)).running, `${id} behind the chat`).toBe(0);
+      // Back on the homepage the scene runs again.
       await page.goto('./#/');
       await expect(scene).not.toHaveClass(/m-scene-paused/);
+      expect((await sceneAnimations(page)).running, `${id} on the homepage`).toBe(running.total);
+
+      // The minimal login screen of a guest, with the theme as the Admin default: its box
+      // sits on an opaque page, so the scene stands still behind it.
+      await put(page, './api/v2/config', {
+        layout: 'modern',
+        modernTheme: theme,
+        modernColourSet: set,
+        minimalLoginScreen: true,
+      });
+      const guestContext = await browser.newContext({ baseURL: page.url().split('#')[0] });
+      try {
+        const guest = await guestContext.newPage();
+        await guest.goto('./#/login');
+        await expect(guest.locator('html')).toHaveAttribute('data-theme', id);
+        await expect(guest.getByRole('heading', { name: 'Log in', exact: true })).toBeAttached();
+        await expect(guest.locator('main.org-login-register')).toHaveCount(0);
+        const guestScene = guest.locator(`.m-scene.m-scene-${theme}`);
+        await expect(guestScene).toHaveClass(/m-scene-paused/);
+        const still = await sceneAnimations(guest);
+        expect(still.total, `${id} behind the minimal login`).toBeGreaterThan(0);
+        expect(still.running, `${id} behind the minimal login`).toBe(0);
+      } finally {
+        await guestContext.close();
+        await put(page, './api/v2/config', configBefore);
+      }
 
       // Reduced motion: no animation at all.
       await page.emulateMedia({ reducedMotion: 'reduce' });

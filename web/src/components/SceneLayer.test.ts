@@ -94,7 +94,7 @@ describe('SceneLayer', () => {
     useLook({ theme: 'nocturne', colourSet: 'amethyst' });
     const { container, rerender } = render(SceneLayer, { loaders: loaders(), covered: true });
     await waitFor(() => expect(container.querySelector('.m-scene')).not.toBeNull());
-    // A frame tab or the login wallpaper fills the page: the scene stays, but still.
+    // The page hides the scene (a frame tab, an opaque page): the scene stays, but still.
     expect(container.querySelector('.m-scene')).toHaveClass('m-scene-paused');
 
     await rerender({ covered: false });

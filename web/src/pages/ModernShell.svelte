@@ -49,7 +49,7 @@
     children: Snippet;
     /** The id of the tab that the main area shows. */
     shown: number | undefined;
-    /** Whether something opaque fills the page (a frame tab, the login wallpaper). */
+    /** Whether the page hides all of the scene (an opaque page, a frame, the login). */
     covered?: boolean;
   } = $props();
 

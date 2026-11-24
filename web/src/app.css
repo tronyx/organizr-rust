@@ -5167,10 +5167,10 @@
      cards; every other page keeps its opaque page colour over the scene.
      Custom CSS can hide it with `.m-scene { display: none; }`, or one theme's scene with
      `.m-scene-<theme>`: the root then shows the page colour of the theme behind the clear
-     page. `m-scene-paused` is on while the tab is hidden or the page covers the scene (a
-     frame tab, the login wallpaper). The animations, and the rules that stop them for
-     reduced motion and while paused, are in the scene's own style: a layered rule here
-     could not beat it. */
+     page. `m-scene-paused` is on while the tab is hidden or the page hides all of the
+     scene (every page but those of `SCENE_PAGES`). The animations, and the rules that stop
+     them for reduced motion and while paused, are in the scene's own style: a layered rule
+     here could not beat it. */
   [data-layout='modern'] .m-scene {
     position: fixed;
     inset: 0;

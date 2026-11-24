@@ -2,8 +2,8 @@
   // The animated scene of a scene theme, fixed behind the page of the modern shell. It loads
   // the scene of the theme only when that theme is on, and goes away with it. The art is
   // decoration: hidden from assistive technology, and it takes no clicks (`.m-scene` in
-  // `app.css`). While the tab is hidden, or while the page covers the scene (a frame tab,
-  // the login wallpaper), `m-scene-paused` stops every animation; a person who asked the
+  // `app.css`). While the tab is hidden, or while the page covers the scene (any page but
+  // the clear ones of `SCENE_PAGES`), `m-scene-paused` stops every animation; a person who asked the
   // system for less motion gets the scene still (each scene's own style).
   import type { Component } from 'svelte';
 
@@ -16,7 +16,7 @@
     covered = false,
   }: {
     loaders?: SceneLoaders;
-    /** Something opaque fills the page (a frame tab, the login wallpaper): stand still. */
+    /** The page hides all of the scene (any page but those of `SCENE_PAGES`): stand still. */
     covered?: boolean;
   } = $props();
 

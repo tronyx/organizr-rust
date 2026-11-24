@@ -22,10 +22,8 @@
   );
   const shown = $derived(shownTab(content, router.route, session.tabs));
   // On the modern layout: whether the page lets the scene of a scene theme show, and
-  // whether something opaque covers the whole page.
-  const scene = $derived(
-    sceneOnPage(content, session.launch?.settings.misc.minimalLoginScreen === true),
-  );
+  // whether the page hides all of it (then the scene stands still).
+  const scene = $derived(sceneOnPage(content));
 
   // The modern shell comes in its own chunk, so people of the OG layout never load it.
   let ModernShell = $state<Component<{

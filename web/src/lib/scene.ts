@@ -8,20 +8,13 @@ import type { Content } from './menu';
  */
 export const SCENE_PAGES: readonly Content['kind'][] = ['homepage', 'settings', 'account'];
 
-/** The pages of a guest that show the login wallpaper over the whole page. */
-const WALLPAPER_PAGES: readonly Content['kind'][] = ['login', 'register', 'recover', 'useInvite'];
-
 /**
  * What the page does with the scene: `clear` when the page lets it show between its cards,
- * `covered` when something opaque fills the page (a frame tab, or the login wallpaper, which
- * the minimal login screen does not have), so the scene can stand still.
+ * `covered` when the page hides all of it, so the scene can stand still. Every page but
+ * those of `SCENE_PAGES` hides it: an opaque page, a frame tab, the login wallpaper, and the
+ * minimal login screen, whose box sits on an opaque page.
  */
-export function sceneOnPage(
-  content: Content,
-  minimalLogin: boolean,
-): { clear: boolean; covered: boolean } {
-  return {
-    clear: SCENE_PAGES.includes(content.kind),
-    covered: content.kind === 'frame' || (!minimalLogin && WALLPAPER_PAGES.includes(content.kind)),
-  };
+export function sceneOnPage(content: Content): { clear: boolean; covered: boolean } {
+  const clear = SCENE_PAGES.includes(content.kind);
+  return { clear, covered: !clear };
 }

@@ -178,6 +178,32 @@ describe('the scenes', () => {
     expect(animatedRules).toBeGreaterThan(0);
   });
 
+  it.each(SCENE_FILES)('%s_has_no_nested_rules', (name) => {
+    // A nested rule would compile to a longer selector than the checks above see, and
+    // could beat the rules that stop the scene: only `@media` and `@keyframes` hold rules.
+    const css = styleOf(read(name));
+    const open: string[] = [];
+    let start = 0;
+    for (let index = 0; index < css.length; index += 1) {
+      const character = css[index];
+      if (character === '{') {
+        const header = css.slice(start, index).trim();
+        const parent = open[open.length - 1];
+        if (parent !== undefined && !parent.startsWith('@')) {
+          expect.fail(`"${header}" is nested in "${parent}"`);
+        }
+        open.push(header);
+        start = index + 1;
+      } else if (character === '}') {
+        open.pop();
+        start = index + 1;
+      } else if (character === ';') {
+        start = index + 1;
+      }
+    }
+    expect(open).toEqual([]);
+  });
+
   it.each(SCENE_FILES)('%s_takes_every_colour_from_the_theme', (name) => {
     const source = read(name);
     const withoutReferences = source.replace(/url\(#[\w-]+\)/g, '');
