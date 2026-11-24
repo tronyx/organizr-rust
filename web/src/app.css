@@ -772,6 +772,132 @@
   --noise: 0;
 }
 
+/* Tempest: stormy seas, with rounded corners and the Pirata One font, a weathered
+   blackletter, for the page heading. Squall is slate and sea green, Abyss a deep ocean
+   blue and Gale storm cloud with a lightning accent. Every set is dark. */
+@plugin 'daisyui/theme' {
+  name: 'm-tempest-squall';
+  color-scheme: dark;
+
+  --color-base-100: #0e1518;
+  --color-base-200: #152126;
+  --color-base-300: #1f2e34;
+  --color-base-content: #e3edef;
+  --color-primary: #3ccbb8;
+  --color-primary-content: #03140f;
+  --color-secondary: #93bcc7;
+  --color-secondary-content: #0a161b;
+  --color-accent: #7fe3d3;
+  --color-accent-content: #031614;
+  --color-neutral: #070c0e;
+  --color-neutral-content: #e3edef;
+  --color-info: #6cbcff;
+  --color-info-content: #04111d;
+  --color-success: #5fd49a;
+  --color-success-content: #03150b;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #ff737f;
+  --color-error-content: #1d0408;
+
+  --org-header-bg: #111b1f;
+  --org-header-text: #edf5f6;
+  --org-sidebar-bg: #090f12;
+  --org-sidebar-text: #afc2c7;
+  --org-sidebar-active: #72e0cf;
+
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-tempest-abyss';
+  color-scheme: dark;
+
+  --color-base-100: #070d1c;
+  --color-base-200: #0d1529;
+  --color-base-300: #16213b;
+  --color-base-content: #e2e9f7;
+  --color-primary: #5ea9ff;
+  --color-primary-content: #020c1d;
+  --color-secondary: #90b5ea;
+  --color-secondary-content: #07111f;
+  --color-accent: #5fe0d6;
+  --color-accent-content: #021614;
+  --color-neutral: #04070f;
+  --color-neutral-content: #e2e9f7;
+  --color-info: #7cc6ff;
+  --color-info-content: #04111d;
+  --color-success: #5fd49a;
+  --color-success-content: #03150b;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #ff7088;
+  --color-error-content: #1d0409;
+
+  --org-header-bg: #0b1226;
+  --org-header-text: #edf1fb;
+  --org-sidebar-bg: #050a16;
+  --org-sidebar-text: #acbad4;
+  --org-sidebar-active: #82c2ff;
+
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-tempest-gale';
+  color-scheme: dark;
+
+  --color-base-100: #121417;
+  --color-base-200: #1b1e22;
+  --color-base-300: #272b31;
+  --color-base-content: #eceef0;
+  --color-primary: #ffd23f;
+  --color-primary-content: #1a1400;
+  --color-secondary: #b8c1cb;
+  --color-secondary-content: #12161a;
+  --color-accent: #ffe066;
+  --color-accent-content: #1a1500;
+  --color-neutral: #0a0b0d;
+  --color-neutral-content: #eceef0;
+  --color-info: #7cbcf2;
+  --color-info-content: #06111d;
+  --color-success: #5fd49a;
+  --color-success-content: #03150b;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #ff7a72;
+  --color-error-content: #1d0605;
+
+  --org-header-bg: #17191d;
+  --org-header-text: #f2f3f5;
+  --org-sidebar-bg: #0c0d10;
+  --org-sidebar-text: #bbc1c9;
+  --org-sidebar-active: #ffd84d;
+
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
 /* The other themes of PHP Organizr, rebuilt for this interface: the built-in theme "Blue"
    and the 11 themes of the theme marketplace (github.com/Organizr/Organizr-Themes). The
    colours come from the style sheets of each theme. The themes of theme.park take them
@@ -5360,6 +5486,19 @@
   }
 
   [data-layout='modern'][data-theme^='m-riot-'] :is(.link, .org-form-help) {
+    color: var(--color-accent);
+  }
+
+  /* Tempest: Pirata One, a weathered blackletter, for the page heading (see above); the
+     rest stays Rubik. The face itself comes with the scene (`TempestScene.svelte`), so only
+     this theme downloads it. The links and help texts take the sea light of the accent. */
+  [data-layout='modern'][data-theme^='m-tempest-'] h1:not(.card-title) {
+    font-family: 'Pirata One', 'Rubik Variable', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.03em;
+  }
+
+  [data-layout='modern'][data-theme^='m-tempest-'] :is(.link, .org-form-help) {
     color: var(--color-accent);
   }
 }

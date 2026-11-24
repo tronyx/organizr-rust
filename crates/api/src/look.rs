@@ -41,6 +41,7 @@ pub const MODERN_THEMES: &[(&str, &[&str])] = &[
     ("silo", &["ember", "ice", "rose"]),
     ("nocturne", &["amethyst", "crimson", "moonlit"]),
     ("riot", &["acid", "hotwire", "blacklight"]),
+    ("tempest", &["squall", "abyss", "gale"]),
 ];
 
 /// Where an effective look comes from.
@@ -327,7 +328,46 @@ mod tests {
                 ("silo", &["ember", "ice", "rose"][..]),
                 ("nocturne", &["amethyst", "crimson", "moonlit"][..]),
                 ("riot", &["acid", "hotwire", "blacklight"][..]),
+                ("tempest", &["squall", "abyss", "gale"][..]),
             ]
+        );
+    }
+
+    #[test]
+    fn tempest_has_its_own_colour_sets() {
+        let mut settings = Settings::defaults();
+        let tempest = |set: Option<&str>| {
+            stored(|s| {
+                s.layout = Some(text("modern"));
+                s.modern_theme = Some(text("tempest"));
+                s.modern_colour_set = set.map(text);
+            })
+        };
+        for set in ["squall", "abyss", "gale"] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&tempest(Some(set))))),
+                ("modern", "tempest", set)
+            );
+        }
+        // A set that Tempest does not have, and no set at all: its first set.
+        for set in [Some("dark"), Some("acid"), None] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&tempest(set)))),
+                ("modern", "tempest", "squall")
+            );
+        }
+        // The same for the Admin's default.
+        settings.layout = "modern".to_owned();
+        settings.modern_theme = "tempest".to_owned();
+        settings.modern_colour_set = "hotwire".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "tempest", "squall")
+        );
+        settings.modern_colour_set = "gale".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "tempest", "gale")
         );
     }
 

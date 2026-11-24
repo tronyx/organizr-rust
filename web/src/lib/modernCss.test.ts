@@ -666,6 +666,9 @@ describe('the brand themes of the modern layout', () => {
       'm-riot-acid',
       'm-riot-hotwire',
       'm-riot-blacklight',
+      'm-tempest-squall',
+      'm-tempest-abyss',
+      'm-tempest-gale',
     ]);
   });
 
@@ -930,6 +933,7 @@ describe('the display fonts of the scene themes', () => {
   const FONTS: Record<string, string> = {
     nocturne: "'Cinzel Variable'",
     riot: "'Sedgwick Ave Display'",
+    tempest: "'Pirata One'",
   };
 
   it('the_scene_themes_are_the_themes_with_a_display_font', () => {
@@ -1110,6 +1114,75 @@ describe('the Riot theme of the modern layout', () => {
     for (const rule of own) {
       for (const part of selectorParts(rule.selector)) {
         expect(part.startsWith(RIOT), part).toBe(true);
+      }
+    }
+  });
+});
+
+describe('the Tempest theme of the modern layout', () => {
+  const TEMPEST = `${SCOPE}[data-theme^='m-tempest-']`;
+  const SETS = ['squall', 'abyss', 'gale'];
+
+  /** The rule that gives the page heading of Tempest its font. */
+  function fontRule(): Rule | undefined {
+    return rules().find((rule) => /font-family:\s*'Pirata One'/.test(rule.body));
+  }
+
+  it('only_the_tempest_rule_names_pirata_one_and_the_scene_loads_its_face', () => {
+    const named = rules().filter((rule) => rule.body.includes('Pirata'));
+    expect(named).toHaveLength(1);
+    expect(fontRule()?.selector.replace(/\s+/g, ' ')).toBe(`${TEMPEST} ${DISPLAY_HEADING}`);
+    // The face comes with the scene, in its lazy chunk, never with the main bundle.
+    const main = readFileSync(resolve(__dirname, '../main.ts'), 'utf8');
+    expect(main).not.toContain('pirata');
+    const scene = readFileSync(resolve(__dirname, '../scenes/TempestScene.svelte'), 'utf8');
+    expect(scene).toContain("import '@fontsource/pirata-one/400.css';");
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8')) as {
+      devDependencies: Record<string, string>;
+    };
+    expect(pkg.devDependencies['@fontsource/pirata-one']).toBe('5.3.0');
+  });
+
+  it('the_tempest_font_rule_stops_matching_after_a_switch_to_plex', () => {
+    const rule = fontRule();
+    expect(rule).toBeDefined();
+    const root = document.createElement('html');
+    const heading = document.createElement('h1');
+    root.append(heading);
+    applyLook(
+      { layout: 'modern', theme: 'tempest', colourSet: 'abyss', source: 'user' },
+      undefined,
+      {},
+      root,
+    );
+    expect(heading.matches(rule?.selector ?? '-')).toBe(true);
+    applyLook(
+      { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+      undefined,
+      {},
+      root,
+    );
+    expect(heading.matches(rule?.selector ?? '-')).toBe(false);
+  });
+
+  it('tempest_has_rounded_corners', () => {
+    for (const set of SETS) {
+      const start = css.indexOf(`name: 'm-tempest-${set}';`);
+      expect(start, set).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      for (const name of ['radius-selector', 'radius-field', 'radius-box']) {
+        const value = Number(new RegExp(`--${name}: ([\\d.]+)rem;`).exec(block)?.[1] ?? 0);
+        expect(value, `${set} ${name}`).toBeGreaterThanOrEqual(0.5);
+      }
+    }
+  });
+
+  it('tempest_rules_are_scoped_to_tempest', () => {
+    const own = rules().filter((rule) => rule.selector.includes('m-tempest-'));
+    expect(own.length).toBeGreaterThan(0);
+    for (const rule of own) {
+      for (const part of selectorParts(rule.selector)) {
+        expect(part.startsWith(TEMPEST), part).toBe(true);
       }
     }
   });

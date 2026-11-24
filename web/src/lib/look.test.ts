@@ -127,6 +127,16 @@ describe('applyLook', () => {
           { id: 'blacklight', label: 'Blacklight' },
         ],
       },
+      {
+        id: 'tempest',
+        label: 'Tempest',
+        scene: 'tempest',
+        colourSets: [
+          { id: 'squall', label: 'Squall' },
+          { id: 'abyss', label: 'Abyss' },
+          { id: 'gale', label: 'Gale' },
+        ],
+      },
     ]);
   });
 
@@ -179,6 +189,18 @@ describe('applyLook', () => {
     expect(modernThemeId('riot', 'dark')).toBe('m-organizr-dark');
     expect(modernThemeId('riot', 'amethyst')).toBe('m-organizr-dark');
   });
+
+  it('tempest_has_three_dark_colour_sets', () => {
+    for (const set of ['squall', 'abyss', 'gale']) {
+      expect(modernThemeId('tempest', set)).toBe(`m-tempest-${set}`);
+      const root = document.createElement('html');
+      applyLook(modern('tempest', set), undefined, {}, root);
+      expect(root.dataset.theme).toBe(`m-tempest-${set}`);
+      expect(root.dataset.colourSet).toBe('dark');
+    }
+    expect(modernThemeId('tempest', 'dark')).toBe('m-organizr-dark');
+    expect(modernThemeId('tempest', 'acid')).toBe('m-organizr-dark');
+  });
 });
 
 describe('sceneOf', () => {
@@ -188,6 +210,9 @@ describe('sceneOf', () => {
     expect(sceneOf(modern('riot', 'acid'))).toBe('riot');
     expect(sceneOf(modern('riot', 'blacklight'))).toBe('riot');
     expect(sceneOf(modern('riot', 'crimson'))).toBeNull();
+    expect(sceneOf(modern('tempest', 'squall'))).toBe('tempest');
+    expect(sceneOf(modern('tempest', 'gale'))).toBe('tempest');
+    expect(sceneOf(modern('tempest', 'acid'))).toBeNull();
     for (const theme of ['organizr', 'plex', 'jellyfin', 'emby']) {
       expect(sceneOf(modern(theme, 'dark')), theme).toBeNull();
     }
@@ -219,6 +244,9 @@ describe('the modern colour sets', () => {
       'm-silo-ember',
       'm-silo-ice',
       'm-silo-rose',
+      'm-tempest-abyss',
+      'm-tempest-gale',
+      'm-tempest-squall',
     ]);
     const names = (MODERN_THEME_COLOURS['m-organizr-dark'] ?? []).map((pair) => pair.name);
     expect(names).toHaveLength(13);
@@ -366,6 +394,29 @@ describe('the modern colour sets', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
     for (const set of ['acid', 'hotwire', 'blacklight']) {
       const id = `m-riot-${set}`;
+      const start = css.indexOf(`name: '${id}';`);
+      expect(start, id).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      const value = (name: string) =>
+        new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
+      for (const colour of ['color-accent', 'color-primary', 'color-secondary']) {
+        for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
+          expect(
+            contrastRatio(value(colour), value(surface)),
+            `${id} ${colour} on ${surface}`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      expect(block, id).toContain('color-scheme: dark;');
+    }
+  });
+
+  it('tempest_accents_and_buttons_read_on_every_surface', () => {
+    // Tempest marks links and help texts with its accent, and its primary buttons sit on
+    // the cards: both, and the secondary colour, need 4.5:1 on every surface.
+    const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    for (const set of ['squall', 'abyss', 'gale']) {
+      const id = `m-tempest-${set}`;
       const start = css.indexOf(`name: '${id}';`);
       expect(start, id).toBeGreaterThan(-1);
       const block = css.slice(start, css.indexOf('}', start));
