@@ -61,7 +61,7 @@
 </script>
 
 <LoginLayout>
-  <form class="card bg-base-200 w-full max-w-sm shadow" onsubmit={use}>
+  <form class="org-login-form card bg-base-200 w-full max-w-sm shadow" onsubmit={use}>
     <div class="card-body">
       <h1 class="card-title">Use an invite code</h1>
       {#if done}

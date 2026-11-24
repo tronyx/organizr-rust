@@ -61,7 +61,7 @@
   }
 </script>
 
-<main class="org-settings min-h-screen">
+<main class="org-settings org-wizard min-h-screen">
   <div class="org-page-title">
     <h1>Organizr Setup Wizard</h1>
     <ol class="org-breadcrumb" aria-label="Where you are">

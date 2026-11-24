@@ -26,7 +26,7 @@
 </script>
 
 <LoginLayout>
-  <form class="card bg-base-200 w-full max-w-sm shadow" onsubmit={recover}>
+  <form class="org-login-form card bg-base-200 w-full max-w-sm shadow" onsubmit={recover}>
     <div class="card-body">
       <h1 class="card-title">Get a new password</h1>
       {#if sent}

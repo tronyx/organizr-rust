@@ -156,12 +156,12 @@
       onerror={() => (logoFailed = true)}
     />
   {:else}
-    <p class="text-2xl font-normal text-white">{title}</p>
+    <p class="org-login-title text-2xl font-normal text-white">{title}</p>
   {/if}
   <form
     class={minimal
-      ? 'org-login-card card bg-base-200 w-full shadow-[0_0_10px_rgb(0_0_0/0.6)]'
-      : 'org-login-box'}
+      ? 'org-login-form org-login-card card bg-base-200 w-full shadow-[0_0_10px_rgb(0_0_0/0.6)]'
+      : 'org-login-form org-login-box'}
     onsubmit={logIn}
   >
     <div class="card-body" class:p-0={!minimal}>
@@ -176,7 +176,7 @@
               onerror={() => (logoFailed = true)}
             />
           {:else}
-            <p class="text-2xl font-normal text-white">{title}</p>
+            <p class="org-login-title text-2xl font-normal text-white">{title}</p>
           {/if}
         </div>
       {/if}

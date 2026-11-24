@@ -61,7 +61,9 @@
         alt=""
         src={session.launch?.user?.image || 'plugins/images/default_user.png'}
       />
-      <h2 class="mt-3 mb-6 text-2xl font-normal text-white">{session.launch?.user?.username}</h2>
+      <h2 class="org-lock-name mt-3 mb-6 text-2xl font-normal text-white">
+        {session.launch?.user?.username}
+      </h2>
     </div>
     <label class="sr-only" for="unlock-password">Password</label>
     <input

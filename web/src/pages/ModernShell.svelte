@@ -275,7 +275,7 @@
                 {#snippet child({ props })}
                   <Button
                     variant="ghost"
-                    class={[barButton, 'gap-2 font-medium']}
+                    class={[barButton, 'm-user gap-2 font-medium']}
                     aria-label="Menu of the user"
                     {...props}
                   >
@@ -288,7 +288,7 @@
                         onerror={() => (avatarFailed = true)}
                       />
                     {/if}
-                    <span translate="no">{session.launch?.user?.username}</span>
+                    <span class="m-user-name" translate="no">{session.launch?.user?.username}</span>
                   </Button>
                 {/snippet}
               </DropdownMenu.Trigger>

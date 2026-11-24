@@ -174,6 +174,47 @@ const HOMEPAGE_CLASSES = [
   'org-calendar-other',
 ];
 
+/** The login, register, recover, invite, lock, set-up and Account screens. */
+const AUTH_CLASSES = [
+  'org-login-register',
+  'org-login-sidebar',
+  'org-login-box',
+  'org-login-box-logo',
+  'org-login-card',
+  'org-login-form',
+  'org-login-logo',
+  'org-login-title',
+  'org-login-button',
+  'org-lock-screen',
+  'org-lock-box',
+  'org-lock-name',
+  'org-wizard',
+  'org-wizard-panel',
+  'org-wizard-heading',
+  'org-account-panel',
+  'org-current-token',
+  'org-page-title',
+  'org-breadcrumb',
+  // The user button of the modern top bar.
+  'm-user',
+  'm-user-name',
+];
+
+/** The components of the auth screens, from `src`. */
+const AUTH_FILES = [
+  'components/LoginLayout.svelte',
+  'pages/Login.svelte',
+  'pages/Register.svelte',
+  'pages/Recover.svelte',
+  'pages/UseInvite.svelte',
+  'pages/Locked.svelte',
+  'pages/Wizard.svelte',
+  'pages/Account.svelte',
+  'pages/UserInformation.svelte',
+  'pages/ActiveTokens.svelte',
+  'pages/OidcLinks.svelte',
+];
+
 describe('the modern CSS', () => {
   it('modern_rules_use_only_theme_colours', () => {
     const rulesOfModern = modernRules();
@@ -231,6 +272,35 @@ describe('the modern CSS', () => {
       (name) => !new RegExp(String.raw`\.${name}(?![\w-])`).test(selectors),
     );
     expect(missing).toEqual([]);
+  });
+
+  it('every_auth_class_has_a_modern_rule', () => {
+    const selectors = modernRules()
+      .map((rule) => rule.selector)
+      .join(',');
+    const missing = AUTH_CLASSES.filter(
+      (name) => !new RegExp(String.raw`\.${name}(?![\w-])`).test(selectors),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('every_org_class_of_an_auth_screen_is_known_to_the_modern_css', () => {
+    const used = new Set<string>();
+    for (const file of AUTH_FILES) {
+      const source = readFileSync(resolve(__dirname, '..', file), 'utf8');
+      for (const match of source.matchAll(/(?<![-\w])org-[a-z][a-z-]*[a-z]/g)) {
+        used.add(match[0]);
+      }
+    }
+    // `org-settings` and `org-form-wide` keep the look of OG on these screens.
+    const known = new Set([
+      ...AUTH_CLASSES,
+      ...SETTINGS_CLASSES,
+      'org-notice-warning',
+      'org-settings',
+      'org-form-wide',
+    ]);
+    expect([...used].filter((name) => !known.has(name))).toEqual([]);
   });
 
   it('every_org_class_of_a_homepage_component_is_known_to_the_modern_css', () => {

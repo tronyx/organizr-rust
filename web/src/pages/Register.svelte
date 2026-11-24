@@ -37,7 +37,7 @@
 </script>
 
 <LoginLayout>
-  <form class="card bg-base-200 w-full max-w-sm shadow" onsubmit={register}>
+  <form class="org-login-form card bg-base-200 w-full max-w-sm shadow" onsubmit={register}>
     <div class="card-body">
       <h1 class="card-title">Make an account</h1>
       <fieldset class="fieldset">
