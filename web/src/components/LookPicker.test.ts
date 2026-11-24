@@ -416,6 +416,67 @@ describe('LookPicker', () => {
     expect(swatchOf('Moonlit')).toBe('m-nocturne-moonlit');
   });
 
+  it('the_sample_of_the_install_theme_shows_the_admin_colours_on_og', async () => {
+    const answer = launch({ ...OG, theme: 'Nord' });
+    const data = answer.data as Record<string, unknown>;
+    data.theme = 'Organizr';
+    data.appearance = {
+      title: 'Organizr',
+      buttonColor: '#ff0000',
+      accentColor: '#00ff00',
+      headerColor: '#0000ff',
+    };
+    stubApi({ 'GET launch': answer, 'PUT user/look': {} });
+    await session.load();
+    render(LookPicker);
+
+    const sample = (name: string) =>
+      screen
+        .getByRole('radio', { name })
+        .closest('label')
+        ?.querySelector<HTMLElement>('.org-swatch');
+    // The install's theme: the button colour as primary, the accent colour as accent.
+    const own = sample('Organizr');
+    expect(own?.style.getPropertyValue('--color-primary')).toBe('#ff0000');
+    expect(own?.style.getPropertyValue('--color-accent')).toBe('#00ff00');
+    expect(own?.style.getPropertyValue('--org-header-bg')).toBe('');
+    // The theme the person chose, and every other one, keep their stock colours.
+    for (const name of ['Nord', 'Plex']) {
+      expect(sample(name)?.style.getPropertyValue('--color-primary')).toBe('');
+    }
+  });
+
+  it('a_colour_setting_that_is_no_colour_leaves_the_sample_alone', async () => {
+    const answer = launch(OG);
+    const data = answer.data as Record<string, unknown>;
+    data.theme = 'Organizr';
+    data.appearance = { title: 'Organizr', buttonColor: 'red; color: blue', accentColor: '' };
+    stubApi({ 'GET launch': answer, 'PUT user/look': {} });
+    await session.load();
+    render(LookPicker);
+
+    const own = screen
+      .getByRole('radio', { name: 'Organizr' })
+      .closest('label')
+      ?.querySelector<HTMLElement>('.org-swatch');
+    expect(own?.style.getPropertyValue('--color-primary')).toBe('');
+    expect(own?.style.getPropertyValue('--color-accent')).toBe('');
+  });
+
+  it('the_modern_samples_keep_their_stock_colours', async () => {
+    const answer = launch(MODERN);
+    const data = answer.data as Record<string, unknown>;
+    data.theme = 'Organizr';
+    data.appearance = { title: 'Organizr', buttonColor: '#ff0000' };
+    stubApi({ 'GET launch': answer, 'PUT user/look': {} });
+    await session.load();
+    render(LookPicker);
+
+    for (const swatch of document.querySelectorAll<HTMLElement>('.org-swatch')) {
+      expect(swatch.style.getPropertyValue('--color-primary')).toBe('');
+    }
+  });
+
   it('the_samples_are_hidden_from_assistive_technology', async () => {
     await open(MODERN);
 

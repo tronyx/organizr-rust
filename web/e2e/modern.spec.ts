@@ -613,3 +613,40 @@ test('the shown tab of the column of icons has a bar of at least 3:1 in every mo
     expect((await look({ layout: 'og' })).ok()).toBe(true);
   }
 });
+
+test('on OG the sample of the theme of the install shows the colours of the Admin', async ({
+  page,
+}) => {
+  await logIn(page);
+  const launch = (await (await page.request.get('./api/v2/launch')).json()) as {
+    response: { data: { theme: string; appearance: { buttonColor?: string } } };
+  };
+  const installTheme = launch.response.data.theme;
+  const before = launch.response.data.appearance.buttonColor ?? '';
+  const primaryDot = (name: string) =>
+    page
+      .locator('section[aria-labelledby="look-title"]')
+      .getByRole('radio', { name, exact: true })
+      .locator('xpath=ancestor::label[1]')
+      .locator('.org-swatch-dot')
+      .nth(1)
+      .evaluate((dot) => getComputedStyle(dot).backgroundColor);
+
+  try {
+    expect(
+      (await page.request.put('./api/v2/config', { data: { buttonColor: '#ff0000' } })).ok(),
+    ).toBe(true);
+    expect((await page.request.put('./api/v2/user/look', { data: { layout: 'og' } })).ok()).toBe(
+      true,
+    );
+    await page.goto('./#/account');
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-layout', 'og');
+    // The policy of the page lets the colours through the CSSOM.
+    await expect.poll(() => primaryDot(installTheme)).toBe('rgb(255, 0, 0)');
+    const other = installTheme === 'Nord' ? 'Plex' : 'Nord';
+    expect(await primaryDot(other)).not.toBe('rgb(255, 0, 0)');
+  } finally {
+    await page.request.put('./api/v2/config', { data: { buttonColor: before } });
+  }
+});

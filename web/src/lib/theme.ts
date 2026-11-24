@@ -98,6 +98,25 @@ export function colourVariables(appearance: Partial<Appearance>): Record<string,
   return variables;
 }
 
+/**
+ * The Admin's colours that a sample of the install's OG theme shows (see `ThemeSwatch`): the
+ * button colour as its primary dot, and the accent colour (daisyUI's `info` on the page)
+ * as its accent dot. Only settings that hold a colour count, as on the page.
+ */
+export function swatchColours(appearance: Partial<Appearance>): Record<string, string> {
+  const variables = colourVariables(appearance);
+  const colours: Record<string, string> = {};
+  const primary = variables['--color-primary'];
+  const accent = variables['--color-info'];
+  if (primary !== undefined) {
+    colours['--color-primary'] = primary;
+  }
+  if (accent !== undefined) {
+    colours['--color-accent'] = accent;
+  }
+  return colours;
+}
+
 /** The id of the link to the style sheet of the Admin. */
 const CUSTOM_CSS_ID = 'org-custom-css';
 

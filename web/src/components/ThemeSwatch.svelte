@@ -4,13 +4,38 @@
   // the three dots are its text, primary and accent colours. Its border comes from the page.
   let {
     theme,
+    colours = {},
   }: {
     /** The daisyUI theme, for example `m-plex-dark`, `org-nord` or `organizr`. */
     theme: string;
+    /**
+     * CSS variables over the theme's own, for example the Admin's colours of "Colors &
+     * Themes" on the install's OG theme. They are set through the CSSOM, as `applyAppearance`
+     * sets them on the page: the policy of the page allows that, unlike a style attribute.
+     */
+    colours?: Record<string, string>;
   } = $props();
+
+  let box: HTMLSpanElement | undefined = $state();
+
+  $effect(() => {
+    const element = box;
+    if (!element) {
+      return;
+    }
+    const set = Object.entries(colours);
+    for (const [name, value] of set) {
+      element.style.setProperty(name, value);
+    }
+    return () => {
+      for (const [name] of set) {
+        element.style.removeProperty(name);
+      }
+    };
+  });
 </script>
 
-<span class="org-swatch" data-theme={theme} aria-hidden="true">
+<span class="org-swatch" data-theme={theme} aria-hidden="true" bind:this={box}>
   <span class="org-swatch-dot bg-base-content"></span>
   <span class="org-swatch-dot bg-primary"></span>
   <span class="org-swatch-dot bg-accent"></span>

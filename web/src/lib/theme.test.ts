@@ -7,6 +7,7 @@ import {
   colourVariables,
   isColour,
   isNativeTheme,
+  swatchColours,
   themeId,
   themeLabel,
 } from './theme';
@@ -90,6 +91,21 @@ describe('a colour of the settings', () => {
       '--org-sidebar-text': 'teal',
       '--org-sidebar-active': 'teal',
     });
+  });
+});
+
+describe('the colours of the sample of the theme of the install', () => {
+  it('take the button and accent colours, and only those that are colours', () => {
+    expect(
+      swatchColours({
+        headerColor: '#112233',
+        buttonColor: ' #ff0000 ',
+        accentColor: '#00ff00',
+        accentTextColor: '#000000',
+      }),
+    ).toEqual({ '--color-primary': '#ff0000', '--color-accent': '#00ff00' });
+    expect(swatchColours({ buttonColor: 'red; color: blue', accentColor: '' })).toEqual({});
+    expect(swatchColours({})).toEqual({});
   });
 });
 

@@ -9,7 +9,7 @@
   import { api, failureText } from '../lib/api';
   import { MODERN_THEMES, modernThemeId } from '../lib/look';
   import { session } from '../lib/session.svelte';
-  import { NATIVE_THEMES, themeId, themeLabel } from '../lib/theme';
+  import { NATIVE_THEMES, swatchColours, themeId, themeLabel } from '../lib/theme';
   import ThemeSwatch from './ThemeSwatch.svelte';
 
   const id = $props.id();
@@ -51,6 +51,12 @@
         }))
       : NATIVE_THEMES.map((name) => ({ id: name, label: themeLabel(name), swatch: themeId(name) })),
   );
+  // On OG, the sample of the install's own theme shows the Admin's colours of "Colors &
+  // Themes" over its own, as the page does. Other samples keep their stock colours.
+  const installTheme = $derived(session.launch?.theme);
+  const adminColours = $derived(swatchColours(session.launch?.appearance ?? {}));
+  const coloursOf = (theme: string) =>
+    !modern && theme === installTheme ? adminColours : undefined;
   const colourSets = $derived(
     modern
       ? (MODERN_THEMES.find((theme) => theme.id === shown.theme)?.colourSets ?? COLOUR_SETS)
@@ -160,7 +166,7 @@
               checked={shown.theme === theme.id}
               onchange={() => chooseTheme(theme.id)}
             />
-            <ThemeSwatch theme={theme.swatch} />
+            <ThemeSwatch theme={theme.swatch} colours={coloursOf(theme.id)} />
             <span>{theme.label}</span>
           </label>
         {/each}
