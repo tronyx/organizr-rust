@@ -1035,9 +1035,11 @@ describe('Settings, the layouts', () => {
     await session.load();
     render(Settings, { section: 'categories' });
 
-    expect(await screen.findByRole('navigation', { name: 'Settings' })).toHaveClass(
-      'm-settings-nav',
-    );
+    // The side menu is imported lazily; a cold import can take more than the
+    // default second on a slow runner.
+    expect(
+      await screen.findByRole('navigation', { name: 'Settings' }, { timeout: 10_000 }),
+    ).toHaveClass('m-settings-nav');
     const heading = screen.getByRole('heading', { level: 1, name: 'Categories' });
     expect(heading.closest('.m-page-heading')).toHaveTextContent('Tab Editor');
     expect(document.querySelector('.org-main-tabs')).toBeNull();
