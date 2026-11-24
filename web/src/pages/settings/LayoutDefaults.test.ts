@@ -247,4 +247,21 @@ describe('LayoutDefaults', () => {
     expect(screen.queryByRole('button', { name: 'Save the layout' })).not.toBeInTheDocument();
     expect(sent.some((request) => request.method === 'PUT')).toBe(false);
   });
+
+  it('a_sample_shows_the_colours_of_the_chosen_theme_and_set', async () => {
+    stubApi({ 'GET config': { data: CONFIG } });
+    render(LayoutDefaults, { canChange: true, ondone: vi.fn() });
+
+    const colours = await screen.findByRole('combobox', { name: 'Modern colour set' });
+    const swatch = () => document.querySelector('.org-swatch');
+    expect(swatch()).toHaveAttribute('data-theme', 'm-organizr-dark');
+    expect(swatch()).toHaveAttribute('aria-hidden', 'true');
+
+    await fireEvent.change(colours, { target: { value: 'light' } });
+    expect(swatch()).toHaveAttribute('data-theme', 'm-organizr-light');
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Modern theme' }), {
+      target: { value: 'silo' },
+    });
+    expect(swatch()).toHaveAttribute('data-theme', 'm-silo-ember');
+  });
 });

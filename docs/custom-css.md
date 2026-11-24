@@ -178,6 +178,8 @@ Some homepage items have these classes on both layouts. On the modern layout the
 | `.org-sidebar` | The menu on the left |
 | `.org-sidebar-head` | The title of the menu |
 | `.org-menu` | The list of tabs in the menu |
+| `.org-swatch` | A colour sample of a theme in the look picker, on both layouts |
+| `.org-swatch-dot` | One colour of that sample: the text, primary and accent colours of the theme |
 
 The modern layout uses these same classes, so a rule for them applies on both layouts. The modern layout also has these classes. They exist on the modern layout only:
 

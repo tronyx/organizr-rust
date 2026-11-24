@@ -47,6 +47,6 @@ describe('Shell', () => {
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('radio', { name: 'OG Organizr' })).toBeChecked();
-    expect(within(dialog).getByRole('combobox', { name: 'Theme' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('group', { name: 'Theme' })).toBeInTheDocument();
   });
 });

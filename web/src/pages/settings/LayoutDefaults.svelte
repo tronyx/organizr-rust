@@ -4,7 +4,8 @@
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
-  import { MODERN_THEMES } from '../../lib/look';
+  import ThemeSwatch from '../../components/ThemeSwatch.svelte';
+  import { MODERN_THEMES, modernThemeId } from '../../lib/look';
   import { session } from '../../lib/session.svelte';
 
   let {
@@ -123,17 +124,21 @@
     </div>
     <div class="org-form-group">
       <label class="org-form-label" for="layout-colours">Modern colour set</label>
-      <select
-        id="layout-colours"
-        class="org-form-control"
-        value={form.modernColourSet}
-        disabled={!canChange || colourSets.length < 2}
-        onchange={(event) => (form.modernColourSet = event.currentTarget.value)}
-      >
-        {#each colourSets as set (set.id)}
-          <option value={set.id}>{set.label}</option>
-        {/each}
-      </select>
+      <!-- A sample of the colours of the chosen theme and set. -->
+      <div class="flex items-center gap-2">
+        <select
+          id="layout-colours"
+          class="org-form-control"
+          value={form.modernColourSet}
+          disabled={!canChange || colourSets.length < 2}
+          onchange={(event) => (form.modernColourSet = event.currentTarget.value)}
+        >
+          {#each colourSets as set (set.id)}
+            <option value={set.id}>{set.label}</option>
+          {/each}
+        </select>
+        <ThemeSwatch theme={modernThemeId(form.modernTheme, form.modernColourSet)} />
+      </div>
     </div>
   </div>
   {#if error}

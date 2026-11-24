@@ -706,7 +706,7 @@ test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
       const sceneFont = await heading.evaluate((element) => getComputedStyle(element).fontFamily);
       await page.getByRole('button', { name: 'Look' }).click();
       const popover = page.locator('[data-slot="popover-content"]');
-      await popover.getByRole('combobox', { name: 'Theme' }).selectOption('plex');
+      await popover.getByRole('radio', { name: 'Plex', exact: true }).check();
       await expect(page.locator('html')).toHaveAttribute('data-theme', /^m-plex-/);
       await expect(page.locator('.m-scene')).toHaveCount(0);
       expect(

@@ -58,7 +58,7 @@ To choose your own look, use the **Look** picker. You find it in three places:
 - In the OG Organizr layout, the entry **Look** in the menu of the user.
 - On the page **Account**.
 
-The picker has the layout and the theme, and on the modern layout the colours. Each change is saved at once. The button **Use the default** forgets your choices and returns you to the default look of the Admin.
+The picker has the layout and the theme, and on the modern layout the colours. Next to each theme and colour set, the picker shows a small sample of its colours. Each change is saved at once. The button **Use the default** forgets your choices and returns you to the default look of the Admin.
 
 ### What each layout remembers
 

@@ -201,3 +201,113 @@ test('the look popover chooses the light colours, and they stay after a reload',
     expect(restored.ok()).toBe(true);
   }
 });
+
+test('the colour samples of the look picker take the colours of their own themes', async ({
+  page,
+}) => {
+  await logIn(page);
+  const launch = await page.request.get('./api/v2/launch');
+  const before = (
+    (await launch.json()) as {
+      response: {
+        data: { look: { layout: string; theme: string; colourSet: string; source: string } };
+      };
+    }
+  ).response.data.look;
+
+  /** The colours of a sample in the picker: its box, its border and its three dots. */
+  const sampleOf = (within: string, name: string) =>
+    page
+      .locator(within)
+      .getByRole('radio', { name, exact: true })
+      .locator('xpath=ancestor::label[1]')
+      .locator('.org-swatch')
+      .evaluate((swatch) => {
+        const style = getComputedStyle(swatch);
+        const dots = [...swatch.querySelectorAll('.org-swatch-dot')].map(
+          (dot) => getComputedStyle(dot).backgroundColor,
+        );
+        // The page colour behind the picker: the first ancestor with a background.
+        let behind = 'rgb(0, 0, 0)';
+        for (let node = swatch.parentElement; node; node = node.parentElement) {
+          const colour = getComputedStyle(node).backgroundColor;
+          if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') {
+            behind = colour;
+            break;
+          }
+        }
+        // A canvas turns any CSS colour (also oklab) into sRGB, for the ratio of contrast.
+        const context = document.createElement('canvas').getContext('2d');
+        const luminance = (colour: string) => {
+          if (!context) return 0;
+          context.clearRect(0, 0, 1, 1);
+          context.fillStyle = colour;
+          context.fillRect(0, 0, 1, 1);
+          const [r, g, b] = [...context.getImageData(0, 0, 1, 1).data].map((value) => {
+            const c = value / 255;
+            return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+        };
+        const [high, low] = [luminance(style.borderTopColor), luminance(behind)].sort(
+          (x, y) => y - x,
+        ) as [number, number];
+        return {
+          theme: swatch.getAttribute('data-theme'),
+          box: style.backgroundColor,
+          dots,
+          edge: (high + 0.05) / (low + 0.05),
+        };
+      });
+
+  try {
+    // The modern layout: the samples in the popover of the top bar.
+    const modern = await page.request.put('./api/v2/user/look', {
+      data: { layout: 'modern', theme: 'organizr', colourSet: 'dark' },
+    });
+    expect(modern.ok()).toBe(true);
+    await page.reload();
+    await page.getByRole('button', { name: 'Look' }).click();
+    const popover = '[data-slot="popover-content"]';
+    await expect(page.locator(popover).getByRole('radio', { name: 'Plex' })).toBeVisible();
+    const organizr = await sampleOf(popover, 'Organizr');
+    const plex = await sampleOf(popover, 'Plex');
+    expect(organizr.theme).toBe('m-organizr-dark');
+    expect(plex.theme).toBe('m-plex-dark');
+    // The primary dot (the second) of each sample is the primary colour of its theme.
+    expect(plex.dots[1], 'the primary dot of Plex').not.toBe(organizr.dots[1]);
+    expect(plex.box, 'the box of Plex').not.toBe(organizr.box);
+    for (const sample of [organizr, plex]) {
+      expect(sample.dots).toHaveLength(3);
+      expect(sample.edge, `the border of ${sample.theme}`).toBeGreaterThanOrEqual(3);
+    }
+    // A colour set has its sample too.
+    expect((await sampleOf(popover, 'Light')).theme).toBe('m-organizr-light');
+    await page.keyboard.press('Escape');
+
+    // The OG layout: the samples on the page Account.
+    const og = await page.request.put('./api/v2/user/look', {
+      data: { layout: 'og', theme: 'Organizr', colourSet: 'dark' },
+    });
+    expect(og.ok()).toBe(true);
+    await page.goto('./#/account');
+    // The page loads the look once; the reload brings the OG layout.
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-layout', 'og');
+    const account = 'section[aria-labelledby="look-title"]';
+    await expect(page.locator(account).getByRole('radio', { name: 'Nord' })).toBeVisible();
+    const organizrOg = await sampleOf(account, 'Organizr');
+    const nord = await sampleOf(account, 'Nord');
+    expect(nord.theme).toBe('org-nord');
+    expect(nord.dots[1], 'the primary dot of Nord').not.toBe(organizrOg.dots[1]);
+    expect(nord.edge, 'the border of Nord').toBeGreaterThanOrEqual(3);
+  } finally {
+    const restored = await page.request.put('./api/v2/user/look', {
+      data:
+        before.source === 'default'
+          ? { layout: null }
+          : { layout: before.layout, theme: before.theme, colourSet: before.colourSet },
+    });
+    expect(restored.ok()).toBe(true);
+  }
+});

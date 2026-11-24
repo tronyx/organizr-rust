@@ -146,7 +146,7 @@ describe('Account', () => {
       within(section as HTMLElement).getByRole('radio', { name: 'Modern' }),
     ).toBeInTheDocument();
     expect(
-      within(section as HTMLElement).getByRole('combobox', { name: 'Theme' }),
+      within(section as HTMLElement).getByRole('group', { name: 'Theme' }),
     ).toBeInTheDocument();
   });
 });
