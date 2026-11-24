@@ -281,22 +281,27 @@ test('the_brand_themes_of_the_modern_layout_pass_the_audit', async ({ page, brow
       await openSettings(page, '#/settings/general', look);
       const tabs = page.locator('.org-vtabs [role="tab"]');
       const count = await tabs.count();
-      expect(count, 'tabs of the section Main').toBeGreaterThan(1);
+      expect(count, 'tabs of the section General').toBeGreaterThan(1);
       for (let index = 0; index < count; index += 1) {
         const tab = tabs.nth(index);
         const name = ((await tab.textContent()) ?? '').trim();
         await tab.click();
         await expect(tab).toHaveAttribute('aria-selected', 'true');
-        await checkContrast(page, look, `the section Main, tab "${name}"`);
+        await checkContrast(page, look, `the section General, tab "${name}"`);
       }
       await tabs.first().click();
       const field = page.getByRole('tabpanel').getByRole('textbox').first();
       await keyboardFocus(page, field);
-      expectEdges(look, 'the section Main', { field: [await edgesOf(field), focus.field] }, focus);
+      expectEdges(
+        look,
+        'the section General',
+        { field: [await edgesOf(field), focus.field] },
+        focus,
+      );
       if (look.theme === 'silo') {
         const links = await hiddenLinks(page);
         linkNotes.push(
-          `the section Main (${look.id}): ${links.inText} in text, ${links.alone} alone, hidden: ${links.found.join(', ') || 'none'}`,
+          `the section General (${look.id}): ${links.inText} in text, ${links.alone} alone, hidden: ${links.found.join(', ') || 'none'}`,
         );
         expect.soft(links.found, `links that look like text on ${look.id}`).toEqual([]);
       }

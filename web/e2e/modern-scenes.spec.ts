@@ -601,9 +601,9 @@ test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
       // A settings section: its contrast, a click on a spot of the scene, which reaches the
       // page, and a field in focus.
       await openSettings(page, '#/settings/general', look);
-      await checkContrast(page, look, 'the section Main');
+      await checkContrast(page, look, 'the section General');
       const spot = await freeSpot(page);
-      expect(spot, `a spot of the scene on the section Main (${look.id})`).not.toBeNull();
+      expect(spot, `a spot of the scene on the section General (${look.id})`).not.toBeNull();
       if (spot) {
         // The click must reach an element of the page: not the scene, and not lost.
         const reached = await clickReaches(page, spot);
@@ -612,7 +612,12 @@ test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
       }
       const field = page.getByRole('tabpanel').getByRole('textbox').first();
       await keyboardFocus(page, field);
-      expectEdges(look, 'the section Main', { field: [await edgesOf(field), focus.field] }, focus);
+      expectEdges(
+        look,
+        'the section General',
+        { field: [await edgesOf(field), focus.field] },
+        focus,
+      );
 
       // A settings dialog with its accordions open.
       await openSettings(page, '#/settings/plugins', look);

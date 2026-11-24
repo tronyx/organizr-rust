@@ -76,7 +76,10 @@ export const SETTINGS_MENU: [MenuGroup, ...MenuGroup[]] = [
     icon: 'ti-settings',
     pages: [
       { section: 'about', page: 'aboutSettings', label: 'About' },
-      { section: 'general', page: 'generalSettings', label: 'Main' },
+      { section: 'general', page: 'generalSettings', label: 'General' },
+      { section: 'sign-in', page: 'signInSettings', label: 'Sign-in' },
+      { section: 'login-security', page: 'loginSecuritySettings', label: 'Login & Security' },
+      { section: 'general-other', page: 'generalOtherSettings', label: 'Main (other)' },
       { section: 'login', page: 'loginSettings', label: 'SSO' },
       { section: 'logs', page: 'logSettings', label: 'Logs' },
       { section: 'updates', page: 'updateSettings', label: 'Updates' },

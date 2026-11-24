@@ -1,12 +1,13 @@
 <script lang="ts">
-  // System Settings, Main: the form of PHP Organizr. PHP fills the groups Certificate and
-  // Database with HTML of its own; here they hold the upload of the custom certificate
-  // and the journal mode of the database.
+  // System Settings, General: the API key, the default settings page, the debug log, the
+  // custom certificate and the journal mode of the database. The certificate and the
+  // journal mode are parts of their own, which save by themselves.
   import { session } from '../../lib/session.svelte';
   import { ADMIN } from '../../lib/types';
+  import { GENERAL } from '../../settings/forms';
+  import SettingsForm from '../../settings/SettingsForm.svelte';
   import CustomCertificate from './CustomCertificate.svelte';
   import DatabaseJournal from './DatabaseJournal.svelte';
-  import PhpSettingsForm from './PhpSettingsForm.svelte';
 
   let {
     ondone,
@@ -28,10 +29,4 @@
   <DatabaseJournal {ondone} />
 {/snippet}
 
-<PhpSettingsForm
-  path="settings/main"
-  title="Organizr Settings"
-  sorted
-  extra={{ Certificate: certificate, Database: database }}
-  {ondone}
-/>
+<SettingsForm page={GENERAL} extra={{ certificate, database }} {ondone} />

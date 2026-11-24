@@ -18,14 +18,17 @@ async function switchPluginOn(page: Page, name: string) {
   await expect(page.getByRole('status')).toHaveText(`The plugin ${name} is switched on.`);
 }
 
-/** Saves a form of the settings, and waits until the server stored it and the form loaded again. */
+/**
+ * Saves a form of the settings, and waits until the server stored it and the form loaded
+ * again: a form of PHP loads its route, a form of our own definitions loads `config`.
+ */
 async function saveSettings(page: Page) {
   const stored = page.waitForResponse(
     (answer) => answer.url().endsWith('/api/v2/config') && answer.request().method() === 'PUT',
   );
   const loaded = page.waitForResponse(
     (answer) =>
-      /\/api\/v2\/(settings\/|plugins\/[a-z-]+\/settings)/.test(answer.url()) &&
+      /\/api\/v2\/(settings\/|plugins\/[a-z-]+\/settings|config$)/.test(answer.url()) &&
       answer.request().method() === 'GET',
   );
   await page.getByRole('button', { name: 'Save' }).click();
@@ -688,23 +691,23 @@ test('the Admin changes the name of the install and the registration password', 
   await expect(page).toHaveTitle('Media at home');
   await expect(page.getByRole('banner')).toContainText('Media at home');
 
-  // The registration password is in System Settings, Main, Login.
-  // As in PHP, System Settings opens About.
+  // The registration password is in System Settings, Login & Security, on its first
+  // section. As in PHP, System Settings opens About.
   await page.getByRole('tab', { name: 'System Settings' }).click();
   await expect(page).toHaveURL(/#\/settings\/about$/);
   await page
     .getByRole('tablist', { name: 'System Settings' })
-    .getByRole('tab', { name: 'Main' })
+    .getByRole('tab', { name: 'Login & Security' })
     .click();
-  await expect(page).toHaveURL(/#\/settings\/general$/);
-  await page.getByRole('tab', { name: 'Login', exact: true }).click();
+  await expect(page).toHaveURL(/#\/settings\/login-security$/);
+  await page.getByRole('tab', { name: 'Login page options', exact: true }).click();
   await page.getByLabel('Registration Password', { exact: true }).fill(NEW_REGISTRATION_PASSWORD);
   await saveSettings(page);
   await expect(page.getByLabel('Registration Password', { exact: true })).toHaveValue('');
 
   // The server stored both. It shows the name, and for the password only that it has one.
   await page.reload();
-  await page.getByRole('tab', { name: 'Login', exact: true }).click();
+  await page.getByRole('tab', { name: 'Login page options', exact: true }).click();
   await expect(page.getByLabel('Registration Password', { exact: true })).toHaveValue('');
   await expect(page.getByLabel('Registration Password', { exact: true })).toHaveAttribute(
     'placeholder',
@@ -1393,12 +1396,14 @@ test('the Admin switches the button "Log in with Plex" on, and the login page sh
   await page.getByRole('button', { name: 'Retrieve' }).nth(1).click();
   await expect(page.getByRole('alert')).toHaveText('Plex Token cannot be empty');
 
-  // PHP shows "Enable Plex oAuth" under Main, Authentication, for the back end Plex.
+  // "Enable Plex oAuth" is under Sign-in, Sign-in method, for the back end Plex (PHP shows
+  // it under Main, Authentication).
   await page
     .getByRole('tablist', { name: 'System Settings' })
-    .getByRole('tab', { name: 'Main' })
+    .getByRole('tab', { name: 'Sign-in' })
     .click();
-  await page.getByRole('tab', { name: 'Authentication' }).click();
+  await expect(page).toHaveURL(/#\/settings\/sign-in$/);
+  await page.getByRole('tab', { name: 'Sign-in method' }).click();
   await page.getByLabel('Authentication Type').selectOption('both');
   await page.getByLabel('Authentication Backend').selectOption('plex');
   await page.getByLabel('Enable Plex oAuth').check();

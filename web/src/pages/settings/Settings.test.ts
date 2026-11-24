@@ -891,129 +891,313 @@ describe('Settings, users', () => {
   });
 });
 
-describe('Settings, Main: the form of PHP', () => {
-  /** A short form in the shape of `GET settings/main`, with the groups of PHP. */
-  const MAIN = {
-    Socks: [{ type: 'switch', label: 'Enable', name: 'socksEnabled', value: false }],
-    API: [
-      {
-        type: 'password-alt-copy',
-        label: 'Organizr API',
-        name: 'organizrAPI',
-        value: 'abcdefghij0123456789',
-      },
-      { type: 'button', label: 'Generate New API Key', class: 'newAPIKey', text: 'Generate' },
-    ],
-    Authentication: [
-      {
-        type: 'select',
-        label: 'Authentication Type',
-        name: 'authType',
-        value: 'internal',
-        options: [
-          { name: 'Organizr DB', value: 'internal' },
-          { name: 'Organizr DB + Backend', value: 'both' },
-        ],
-      },
-      {
-        type: 'select',
-        label: 'Authentication Backend',
-        name: 'authBackend',
-        class: 'backendAuth switchAuth',
-        value: '',
-        options: [
-          { name: 'Ldap', value: 'ldap' },
-          { name: 'Plex', value: 'plex' },
-        ],
-      },
-      {
-        type: 'input',
-        label: 'Host Address',
-        name: 'authBackendHost',
-        class: 'ldapAuth ftpAuth switchAuth',
-        value: '',
-      },
-      {
-        type: 'input',
-        label: 'Plex Admin Username or Email',
-        name: 'plexAdmin',
-        class: 'plexAuth switchAuth',
-        value: '',
-      },
-      {
-        type: 'button',
-        label: 'Test Connection',
-        name: 'ldap',
-        class: 'ldapAuth switchAuth',
-        text: 'Test Connection',
-      },
-      { type: 'button', label: 'Test Login', class: 'ldapAuth switchAuth', text: 'Test Login' },
-      {
-        type: 'switch',
-        label: 'Ignore External 2FA on Local Subnet',
-        name: 'ignoreTFALocal',
-        value: false,
-      },
-    ],
-    Login: [
-      {
-        type: 'password',
-        label: 'Registration Password',
-        name: 'registrationPassword',
-        value: '***Secure***',
-      },
-      { type: 'number', label: 'Max Login Attempts', name: 'loginAttempts', value: '5' },
-    ],
+describe('Settings, General, Sign-in, and Login & Security', () => {
+  /** The stored settings of the three pages, as `GET /config` sends them. */
+  const CONFIG = {
+    organizrAPI: '***Secure***',
+    defaultSettingsTab: '5',
+    socksDebug: false,
+    maxSocksDebugSize: '100',
+    authType: 'both',
+    authBackend: 'ldap',
+    authBackendHost: 'ldap://dc.example.com',
+    authBaseDN: 'cn=%s,dc=example,dc=com',
+    plexAdmin: 'robin@example.com',
+    plexToken: '***Secure***',
+    ldapBindPassword: '***Secure***',
+    registrationPassword: '***Secure***',
+    loginAttempts: '5',
+    loginLockout: '60000',
   };
 
-  async function showMain(answers: Answers = {}) {
+  async function showPage(
+    section: 'general' | 'sign-in' | 'login-security',
+    answers: Answers = {},
+  ) {
     const sent = stubApi({
       'GET tabs': { data: DATA },
       'GET users': { data: USERS },
+      'GET groups': { data: DATA.groups },
       'GET launch': LAUNCH,
-      'GET settings/main': { data: MAIN },
+      'GET config': { data: CONFIG },
       'GET status': { data: { action: 'launch', database: 'postgresql' } },
-      'GET database/journal': {
-        status: 409,
-        message: 'The journal mode applies only to a database on SQLite',
-      },
-      'GET certificate/custom': { data: { loaded: false, certificates: 0 } },
       ...answers,
     });
-    render(Settings, { section: 'general' });
-    await screen.findByRole('tab', { name: 'API' });
+    render(Settings, { section });
+    await screen.findByRole('button', { name: 'Save' });
     return sent;
   }
 
-  function group(name: string) {
+  function sectionTab(name: string) {
     return fireEvent.click(screen.getByRole('tab', { name }));
   }
 
-  it('shows the groups of PHP in the order of their names, with the stored values', async () => {
-    await showMain();
+  function sectionNames(page: string) {
+    return within(screen.getByRole('tablist', { name: page }))
+      .getAllByRole('tab')
+      .map((tab) => tab.textContent?.trim());
+  }
 
-    const tabs = within(screen.getByRole('tablist', { name: 'Organizr Settings' }));
-    expect(tabs.getAllByRole('tab').map((tab) => tab.textContent?.trim())).toEqual([
-      'API',
-      'Authentication',
+  it('general_shows_its_sections_with_the_stored_values', async () => {
+    await showPage('general');
+
+    expect(screen.getByRole('heading', { name: 'General', level: 2 })).toBeInTheDocument();
+    expect(sectionNames('General')).toEqual([
+      'API key',
+      'Default settings page',
+      'Debug',
       'Certificate',
       'Database',
-      'Login',
-      'Socks',
     ]);
-    await group('Login');
-    expect(screen.getByLabelText('Max Login Attempts')).toHaveValue(5);
     // A stored secret is never sent to the page: the field says that it has a value.
+    expect(screen.getByLabelText('Organizr API')).toHaveValue('');
+    expect(screen.getByLabelText('Organizr API')).toHaveAttribute(
+      'placeholder',
+      'A value is stored',
+    );
+    await sectionTab('Default settings page');
+    expect(screen.getByLabelText('Default Settings Tab')).toHaveValue('5');
+    // The certificate and the journal mode keep their own parts.
+    await sectionTab('Certificate');
+    expect(screen.getByText('Only the Admin uploads a custom certificate.')).toBeInTheDocument();
+  });
+
+  it('general_makes_a_new_api_key_of_20_characters', async () => {
+    const sent = await showPage('general', { 'PUT config': {} });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    const [[, body]] = changes(sent) as [[string, { organizrAPI: string }]];
+    expect(Object.keys(body)).toEqual(['organizrAPI']);
+    expect(body.organizrAPI).toMatch(/^[A-Za-z0-9]{20}$/);
+  });
+
+  it('general_says_so_when_the_settings_cannot_be_loaded', async () => {
+    stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET launch': LAUNCH,
+      'GET config': { status: 401, message: 'Not Authorized' },
+      'GET status': { data: { action: 'launch', database: 'postgresql' } },
+    });
+    render(Settings, { section: 'general' });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not Authorized');
+  });
+
+  it('sign_in_shows_its_sections', async () => {
+    await showPage('sign-in');
+
+    expect(screen.getByRole('heading', { name: 'Sign-in', level: 2 })).toBeInTheDocument();
+    expect(sectionNames('Sign-in')).toEqual([
+      'Sign-in method',
+      'OpenID Connect',
+      'Authentik',
+      'Keycloak',
+      'PocketID',
+      'Zitadel',
+      'Auth proxy',
+    ]);
+    expect(screen.getByLabelText('Host Address')).toHaveValue('ldap://dc.example.com');
+  });
+
+  it('sign_in_shows_the_fields_of_the_chosen_back_end_only', async () => {
+    await showPage('sign-in', {
+      'GET config': { data: { ...CONFIG, authType: 'internal', authBackend: '' } },
+    });
+
+    // Organizr checks the passwords alone: no back end and none of its fields.
+    expect(screen.queryByLabelText('Authentication Backend')).toBeNull();
+    expect(screen.queryByLabelText('Host Address')).toBeNull();
+
+    await fireEvent.change(screen.getByLabelText('Authentication Type'), {
+      target: { value: 'both' },
+    });
+    await fireEvent.change(screen.getByLabelText('Authentication Backend'), {
+      target: { value: 'ldap' },
+    });
+    expect(screen.getByLabelText('Host Address')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Plex Admin Username or Email')).toBeNull();
+
+    await fireEvent.change(screen.getByLabelText('Authentication Backend'), {
+      target: { value: 'plex' },
+    });
+    expect(screen.queryByLabelText('Host Address')).toBeNull();
+    expect(screen.getByLabelText('Plex Admin Username or Email')).toBeInTheDocument();
+  });
+
+  it('switching_the_back_end_keeps_hidden_values', async () => {
+    const sent = await showPage('sign-in', { 'PUT config': {} });
+    const save = screen.getByRole('button', { name: 'Save' });
+    const backend = screen.getByLabelText('Authentication Backend');
+
+    // To Plex and back: the LDAP fields hide and come back with their values, and the
+    // form has nothing to save.
+    await fireEvent.change(backend, { target: { value: 'plex' } });
+    expect(screen.queryByLabelText('Host Address')).toBeNull();
+    expect(screen.getByLabelText('Plex Admin Username or Email')).toHaveValue('robin@example.com');
+    await fireEvent.change(backend, { target: { value: 'ldap' } });
+    expect(screen.getByLabelText('Host Address')).toHaveValue('ldap://dc.example.com');
+    expect(screen.getByLabelText('Host Base DN')).toHaveValue('cn=%s,dc=example,dc=com');
+    expect(save).toBeDisabled();
+
+    // A real change of the back end sends the back end alone: the hidden fields keep
+    // their stored values.
+    await fireEvent.change(backend, { target: { value: 'plex' } });
+    await fireEvent.click(save);
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([['PUT config', { authBackend: 'plex' }]]);
+  });
+
+  it('sign_in_tests_the_ldap_connection_and_a_login_with_a_typed_name_and_password', async () => {
+    const sent = await showPage('sign-in', {
+      'POST test/ldap': { message: 'LDAP connection successful' },
+      'POST test/ldap/login': { status: 401, message: 'Invalid credentials' },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Test Connection' }));
+    expect(await screen.findByText('LDAP connection successful')).toBeInTheDocument();
+
+    await fireEvent.input(screen.getByLabelText('User name for the test'), {
+      target: { value: 'robin' },
+    });
+    await fireEvent.input(screen.getByLabelText('Password for the test'), {
+      target: { value: 'secret' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Test Login' }));
+    expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
+    expect(changes(sent)).toEqual([
+      ['POST test/ldap', undefined],
+      ['POST test/ldap/login', { username: 'robin', password: 'secret' }],
+    ]);
+  });
+
+  it('login_security_shows_its_sections_with_the_stored_values', async () => {
+    await showPage('login-security');
+
+    expect(screen.getByRole('heading', { name: 'Login & Security', level: 2 })).toBeInTheDocument();
+    expect(sectionNames('Login & Security')).toEqual([
+      'Login page options',
+      'Lockout and sessions',
+      'Access',
+    ]);
     expect(screen.getByLabelText('Registration Password')).toHaveValue('');
     expect(screen.getByLabelText('Registration Password')).toHaveAttribute(
       'placeholder',
       'A value is stored',
     );
+    await sectionTab('Lockout and sessions');
+    expect(screen.getByLabelText('Max Login Attempts')).toHaveValue(5);
+  });
+
+  it('login_security_sends_only_the_settings_that_changed', async () => {
+    const sent = await showPage('login-security', { 'PUT config': {} });
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toBeDisabled();
+
+    await sectionTab('Lockout and sessions');
+    await fireEvent.input(screen.getByLabelText('Max Login Attempts'), { target: { value: '9' } });
+    await fireEvent.click(save);
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([['PUT config', { loginAttempts: '9' }]]);
+  });
+
+  it('login_security_shows_why_the_server_refused_and_keeps_what_was_entered', async () => {
+    await showPage('login-security', {
+      'PUT config': { status: 422, message: 'loginAttempts must be a number' },
+    });
+
+    await sectionTab('Lockout and sessions');
+    await fireEvent.input(screen.getByLabelText('Max Login Attempts'), { target: { value: '7' } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('loginAttempts must be a number');
+    expect(screen.getByLabelText('Max Login Attempts')).toHaveValue(7);
+  });
+});
+
+describe('Settings, Main (other): the rest of the form of PHP', () => {
+  /** A short form in the shape of `GET settings/main`, with the groups of PHP. */
+  const MAIN = {
+    Socks: [{ type: 'switch', label: 'Enable Debug Log', name: 'socksDebug', value: false }],
+    'Settings Page': [
+      { type: 'select', label: 'Default Settings Tab', name: 'defaultSettingsTab', value: '0' },
+    ],
+    API: [
+      {
+        type: 'password-alt-copy',
+        label: 'Organizr API',
+        name: 'organizrAPI',
+        value: '***Secure***',
+      },
+    ],
+    Authentication: [
+      { type: 'select', label: 'Authentication Type', name: 'authType', value: 'internal' },
+    ],
+    Login: [{ type: 'switch', label: 'Remember Me', name: 'rememberMe', value: true }],
+    'Auth Proxy': [{ type: 'switch', label: 'Auth Proxy', name: 'authProxyEnabled', value: false }],
+    Security: [
+      { type: 'number', label: 'Max Login Attempts', name: 'loginAttempts', value: '5' },
+      { type: 'input', label: 'iFrame Sandbox', name: 'sandbox', value: 'allow-scripts' },
+      { type: 'input', label: 'iFrame Allow Policy', name: 'iframeAllow', value: '' },
+    ],
+    Logs: [{ type: 'number', label: 'Maximum Log Files', name: 'maxLogFiles', value: '7' }],
+    Other: [{ type: 'switch', label: 'Check For Update', name: 'checkForUpdate', value: true }],
+  };
+
+  async function showOther(answers: Answers = {}) {
+    const sent = stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET launch': LAUNCH,
+      'GET settings/main': { data: MAIN },
+      ...answers,
+    });
+    render(Settings, { section: 'general-other' });
+    await screen.findByRole('tablist', { name: 'Organizr Settings' });
+    return sent;
+  }
+
+  /** Opens a group of the form; the menu of the settings has tabs of the same names. */
+  function group(name: string) {
+    const form = screen.getByRole('tablist', { name: 'Organizr Settings' });
+    return fireEvent.click(within(form).getByRole('tab', { name }));
+  }
+
+  it('shows only the groups without a new page, in the order of their names', async () => {
+    await showOther();
+
+    const tabs = within(screen.getByRole('tablist', { name: 'Organizr Settings' }));
+    expect(tabs.getAllByRole('tab').map((tab) => tab.textContent?.trim())).toEqual([
+      'Logs',
+      'Other',
+      'Security',
+    ]);
+    // Of Security, only the fields of the frames stay here.
+    await group('Security');
+    expect(screen.getByLabelText('iFrame Sandbox')).toHaveValue('allow-scripts');
+    expect(screen.getByLabelText('iFrame Allow Policy')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Max Login Attempts')).toBeNull();
+  });
+
+  it('sends only the settings that changed, with one request', async () => {
+    const sent = await showOther({ 'PUT config': { message: 'Config items updated' } });
+
+    await group('Logs');
+    await fireEvent.input(screen.getByLabelText('Maximum Log Files'), { target: { value: '9' } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([['PUT config', { maxLogFiles: '9' }]]);
   });
 
   it('shows the fixed texts of PHP in American spelling, and data as stored', async () => {
     // The Netdata fields of PHP are labeled "Colour"; the server passes the label on as it is.
-    await showMain({
+    await showOther({
       'GET settings/main': {
         data: {
           ...MAIN,
@@ -1050,41 +1234,6 @@ describe('Settings, Main: the form of PHP', () => {
     expect(screen.queryByText('Color Films')).toBeNull();
   });
 
-  it('sends only the settings that changed, with one request', async () => {
-    const sent = await showMain({ 'PUT config': { message: 'Config items updated' } });
-    const save = screen.getByRole('button', { name: 'Save' });
-    expect(save).toBeDisabled();
-
-    await group('Login');
-    await fireEvent.input(screen.getByLabelText('Max Login Attempts'), { target: { value: '9' } });
-    await fireEvent.click(save);
-
-    await statusSays('The settings are saved.');
-    expect(changes(sent)).toEqual([['PUT config', { loginAttempts: '9' }]]);
-  });
-
-  it('makes a new API key of 20 characters', async () => {
-    const sent = await showMain({ 'PUT config': {} });
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
-    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await statusSays('The settings are saved.');
-    const [[, body]] = changes(sent) as [[string, { organizrAPI: string }]];
-    expect(body.organizrAPI).toMatch(/^[A-Za-z0-9]{20}$/);
-  });
-
-  it('shows why the server refused, and keeps what was entered', async () => {
-    await showMain({ 'PUT config': { status: 422, message: 'loginAttempts must be a number' } });
-
-    await group('Login');
-    await fireEvent.input(screen.getByLabelText('Max Login Attempts'), { target: { value: '7' } });
-    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('loginAttempts must be a number');
-    expect(screen.getByLabelText('Max Login Attempts')).toHaveValue(7);
-  });
-
   it('says so when the form cannot be loaded', async () => {
     stubApi({
       'GET tabs': { data: DATA },
@@ -1092,67 +1241,47 @@ describe('Settings, Main: the form of PHP', () => {
       'GET launch': LAUNCH,
       'GET settings/main': { status: 401, message: 'Not Authorized' },
     });
-    render(Settings, { section: 'general' });
+    render(Settings, { section: 'general-other' });
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Not Authorized');
   });
+});
 
-  it('shows the fields of the chosen back end only, as PHP does', async () => {
-    await showMain();
-    await group('Authentication');
-
-    // Organizr checks the passwords alone: no back end and none of its fields.
-    expect(screen.queryByLabelText('Authentication Backend')).toBeNull();
-    expect(screen.queryByLabelText('Host Address')).toBeNull();
-
-    await fireEvent.change(screen.getByLabelText('Authentication Type'), {
-      target: { value: 'both' },
+describe('Settings, SSO: the groups of OpenID Connect live on Sign-in', () => {
+  it('leaves out the groups of OpenID Connect', async () => {
+    stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET launch': LAUNCH,
+      'GET settings/sso': {
+        data: {
+          Plex: [{ type: 'switch', label: 'Enable', name: 'ssoPlex', value: false }],
+          'OIDC Global': [
+            { type: 'switch', label: 'Enable OIDC', name: 'oidcEnabled', value: false },
+          ],
+          'OIDC: Authentik': [
+            { type: 'switch', label: 'Enable', name: 'oidcAuthentikEnabled', value: false },
+          ],
+          'OIDC: Keycloak': [
+            { type: 'switch', label: 'Enable', name: 'oidcKeycloakEnabled', value: false },
+          ],
+          'OIDC: PocketID': [
+            { type: 'switch', label: 'Enable', name: 'oidcPocketidEnabled', value: false },
+          ],
+          'OIDC: Zitadel': [
+            { type: 'switch', label: 'Enable', name: 'oidcZitadelEnabled', value: false },
+          ],
+          Tautulli: [{ type: 'switch', label: 'Enable', name: 'ssoTautulli', value: false }],
+        },
+      },
     });
-    await fireEvent.change(screen.getByLabelText('Authentication Backend'), {
-      target: { value: 'ldap' },
-    });
-    expect(screen.getByLabelText('Host Address')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Plex Admin Username or Email')).toBeNull();
+    render(Settings, { section: 'login' });
 
-    await fireEvent.change(screen.getByLabelText('Authentication Backend'), {
-      target: { value: 'plex' },
-    });
-    expect(screen.queryByLabelText('Host Address')).toBeNull();
-    expect(screen.getByLabelText('Plex Admin Username or Email')).toBeInTheDocument();
-  });
-
-  it('tests the LDAP connection, and a login with a typed name and password', async () => {
-    const ldap = {
-      ...MAIN,
-      Authentication: MAIN.Authentication.map((field) =>
-        field.name === 'authType'
-          ? { ...field, value: 'both' }
-          : field.name === 'authBackend'
-            ? { ...field, value: 'ldap' }
-            : field,
-      ),
-    };
-    const sent = await showMain({
-      'GET settings/main': { data: ldap },
-      'POST test/ldap': { message: 'LDAP connection successful' },
-      'POST test/ldap/login': { status: 401, message: 'Invalid credentials' },
-    });
-    await group('Authentication');
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Test Connection' }));
-    expect(await screen.findByText('LDAP connection successful')).toBeInTheDocument();
-
-    await fireEvent.input(screen.getByLabelText('User name for the test'), {
-      target: { value: 'robin' },
-    });
-    await fireEvent.input(screen.getByLabelText('Password for the test'), {
-      target: { value: 'secret' },
-    });
-    await fireEvent.click(screen.getByRole('button', { name: 'Test Login' }));
-    expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
-    expect(changes(sent)).toEqual([
-      ['POST test/ldap', undefined],
-      ['POST test/ldap/login', { username: 'robin', password: 'secret' }],
+    await screen.findByRole('tab', { name: 'Plex' });
+    const tabs = within(screen.getByRole('tablist', { name: 'Single Sign-On' }));
+    expect(tabs.getAllByRole('tab').map((tab) => tab.textContent?.trim())).toEqual([
+      'Plex',
+      'Tautulli',
     ]);
   });
 });

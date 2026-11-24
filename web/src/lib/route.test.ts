@@ -24,6 +24,15 @@ describe('parseRoute', () => {
     expect(parseRoute(PAGES.generalSettings)).toEqual({ page: 'settings', section: 'general' });
     expect(parseRoute('#/settings/mail')).toEqual({ page: 'settings', section: 'plugins' });
     expect(parseRoute(PAGES.loginSettings)).toEqual({ page: 'settings', section: 'login' });
+    expect(parseRoute(PAGES.signInSettings)).toEqual({ page: 'settings', section: 'sign-in' });
+    expect(parseRoute(PAGES.loginSecuritySettings)).toEqual({
+      page: 'settings',
+      section: 'login-security',
+    });
+    expect(parseRoute(PAGES.generalOtherSettings)).toEqual({
+      page: 'settings',
+      section: 'general-other',
+    });
     expect(parseRoute(PAGES.recover)).toEqual({ page: 'recover' });
     expect(parseRoute(PAGES.account)).toEqual({ page: 'account' });
   });

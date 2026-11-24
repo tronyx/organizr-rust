@@ -112,9 +112,9 @@ test('settings_sections_pass_contrast_on_modern_dark_and_light', async ({ page }
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
 
-    // The sections are the links of the side menu: all 22 of them.
+    // The sections are the links of the side menu: all 25 of them.
     const links = page.getByRole('navigation', { name: 'Settings' }).getByRole('link');
-    await expect(links).toHaveCount(22);
+    await expect(links).toHaveCount(25);
     const sections = await links.evaluateAll((anchors) =>
       anchors.map((anchor) => ({
         address: anchor.getAttribute('href') ?? '',
@@ -179,8 +179,8 @@ test('the_side_menu_scrolls_inside_itself_on_a_long_page', async ({ page }) => {
     expect((await look('modern')).ok()).toBe(true);
     await page.setViewportSize({ width: 1280, height: 720 });
     for (const [address, label] of [
-      ['#/settings/general', 'Main'],
-      ['#/settings/sso', 'SSO'],
+      ['#/settings/homepage', 'Homepage Items'],
+      ['#/settings/logs', 'Logs'],
     ] as const) {
       await page.goto('./');
       await page.goto(`./${address}`);

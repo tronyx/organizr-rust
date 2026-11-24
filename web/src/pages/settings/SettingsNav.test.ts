@@ -48,6 +48,18 @@ describe('SettingsNav', () => {
       'Plugins',
       'System Settings',
     ]);
+    expect(SETTINGS_MENU[5]?.pages.map((page) => page.label)).toEqual([
+      'About',
+      'General',
+      'Sign-in',
+      'Login & Security',
+      'Main (other)',
+      'SSO',
+      'Logs',
+      'Updates',
+      'Backup',
+      'Donate',
+    ]);
     lists.forEach((list, index) => {
       expect(list).toHaveAccessibleName(SETTINGS_MENU[index]?.name ?? '');
       const labels = within(list)
@@ -55,7 +67,7 @@ describe('SettingsNav', () => {
         .map((link) => link.textContent?.trim());
       expect(labels).toEqual(SETTINGS_MENU[index]?.pages.map((page) => page.label));
     });
-    expect(within(nav).getAllByRole('link')).toHaveLength(22);
+    expect(within(nav).getAllByRole('link')).toHaveLength(25);
   });
 
   it('open_section_is_marked_current', () => {
@@ -93,7 +105,7 @@ describe('SettingsNav', () => {
     await fireEvent.click(button);
     const sheet = await screen.findByRole('dialog');
     const nav = within(sheet).getByRole('navigation', { name: 'Settings' });
-    expect(within(nav).getAllByRole('link')).toHaveLength(22);
+    expect(within(nav).getAllByRole('link')).toHaveLength(25);
 
     await fireEvent.click(within(nav).getByRole('link', { name: 'Logs' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
