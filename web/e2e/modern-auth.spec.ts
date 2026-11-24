@@ -30,6 +30,11 @@ const PICTURES: Record<string, string> = {
     '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#050505"/></svg>',
 };
 
+/** The logo of the top bar: a wide picture, under `.invalid`, answered here. */
+const LOGO = 'https://logo.invalid/wide.svg';
+const LOGO_PICTURE =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60"><rect width="300" height="60" fill="#3366cc"/></svg>';
+
 /** A picture of one transparent pixel, for the posters of the media search. */
 const PIXEL = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
@@ -88,6 +93,7 @@ interface LaunchPatch {
   wizard?: boolean;
   search?: boolean;
   noLogo?: boolean;
+  logo?: string;
 }
 
 /**
@@ -105,6 +111,10 @@ async function routeEverything(page: Page, patch: LaunchPatch): Promise<string[]
         contentType: 'image/svg+xml',
         body: PICTURES[address.pathname] ?? '',
       });
+      return;
+    }
+    if (address.origin === 'https://logo.invalid') {
+      await route.fulfill({ status: 200, contentType: 'image/svg+xml', body: LOGO_PICTURE });
       return;
     }
     // The avatar of the Admin comes from Gravatar: a pixel answers it here.
@@ -163,6 +173,10 @@ async function routeEverything(page: Page, patch: LaunchPatch): Promise<string[]
         appearance.useLogo = false;
         appearance.title = 'A rather long title of this Organizr install';
       }
+      if (patch.logo) {
+        appearance.useLogo = true;
+        appearance.logo = patch.logo;
+      }
       if (patch.wizard && data.status) {
         data.status.status = 'wizard';
       }
@@ -206,6 +220,46 @@ async function expectNoSideScroll(page: Page, where: string) {
     return root.scrollWidth - root.clientWidth;
   });
   expect(scroll, `${where} scrolls sideways`).toBe(0);
+}
+
+/**
+ * Every control of the top bar, and the user button, ends inside the window. The bar is
+ * `position: fixed`, so `expectNoSideScroll` cannot see it when it is too wide.
+ */
+async function expectBarFits(page: Page, where: string) {
+  const bar = await page.evaluate(() => {
+    const header = document.querySelector('header.org-header');
+    const rect = (element: Element) => {
+      const { left, right, width } = element.getBoundingClientRect();
+      return { name: element.getAttribute('aria-label') ?? element.tagName, left, right, width };
+    };
+    const controls = [...(header?.querySelectorAll('button, a, img') ?? [])]
+      .map(rect)
+      .filter((control) => control.width > 0);
+    const logo = header?.querySelector('.org-logo');
+    const picture = logo?.querySelector('img');
+    return {
+      width: window.innerWidth,
+      controls,
+      user: header?.querySelector('[aria-label="Menu of the user"]')?.getBoundingClientRect().right,
+      logoRight: logo?.getBoundingClientRect().right,
+      pictureRight: picture?.getBoundingClientRect().right,
+    };
+  });
+  expect(bar.controls.length, `controls of the top bar ${where}`).toBeGreaterThan(0);
+  expect(bar.user, `the user button ${where}`).toBeDefined();
+  for (const control of bar.controls) {
+    expect.soft(control.left, `${control.name} ${where}: left edge`).toBeGreaterThanOrEqual(0);
+    expect
+      .soft(control.right, `${control.name} ${where}: right edge`)
+      .toBeLessThanOrEqual(bar.width);
+  }
+  expect(bar.user ?? Infinity, `the user button ${where}`).toBeLessThanOrEqual(bar.width);
+  if (bar.pictureRight !== undefined) {
+    expect(bar.pictureRight, `the logo picture ${where}`).toBeLessThanOrEqual(
+      (bar.logoRight ?? 0) + 0.5,
+    );
+  }
 }
 
 /** The contrast of the border of each radio that is not checked, against what is behind it. */
@@ -301,13 +355,6 @@ async function open(page: Page, address: string, heading: string, set: ColourSet
   await expect(page.locator('html')).toHaveAttribute('data-colour-set', set);
 }
 
-/** Logs the Admin in through the API, for the restore after a failure. */
-async function logInByApi(page: Page) {
-  await page.request.post('./api/v2/login', {
-    data: { username: ADMIN.username, password: ADMIN.password },
-  });
-}
-
 test('login_lock_set_up_and_account_screens_pass_contrast_on_modern_dark_and_light', async ({
   page,
 }) => {
@@ -369,6 +416,10 @@ test('login_lock_set_up_and_account_screens_pass_contrast_on_modern_dark_and_lig
         await page.reload();
         await expect(page.getByRole('heading', { name: 'The screen is locked' })).toBeAttached();
         await expect(page.locator('html')).toHaveAttribute('data-theme', `m-organizr-${set}`);
+        await expect(page.locator('main.org-lock-screen')).toHaveCSS(
+          'background-image',
+          `url("${WALLPAPERS.bright}")`,
+        );
         await checkContrast(page, `the lock screen (${set})`, undefined, true);
         await page.getByLabel('Password').fill('not the password');
         await page.getByRole('button', { name: 'Unlock' }).click();
@@ -416,6 +467,7 @@ test('login_lock_set_up_and_account_screens_pass_contrast_on_modern_dark_and_lig
         await expect(page.locator('html')).toHaveAttribute('data-theme', `m-organizr-${set}`);
         await checkContrast(page, `the invite page ${where}`, undefined, true);
         const inviteRatios = await radioBorderRatios(page, 'main');
+        expect(inviteRatios.length, 'radios of the invite page').toBeGreaterThan(0);
         for (const ratio of inviteRatios) {
           expect(ratio, `a radio border on the invite page ${where}`).toBeGreaterThanOrEqual(3);
         }
@@ -453,13 +505,38 @@ test('login_lock_set_up_and_account_screens_pass_contrast_on_modern_dark_and_lig
       const box = await home.boundingBox();
       expect(box?.width ?? 0, `the width of the title on a phone (${set})`).toBeGreaterThan(20);
       expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(375);
+      // The long title really is cut.
+      const cut = await home.evaluate((title) => title.scrollWidth - title.clientWidth);
+      expect(cut, `the long title is cut on a phone (${set})`).toBeGreaterThan(0);
+      await expectBarFits(page, `with a title in text (${set})`);
+
+      // The top bar with the media search, a logo picture, and both.
+      patch.search = true;
+      await open(page, '#/account', 'Account', set);
+      await expect(page.getByRole('button', { name: 'Search My Media' })).toBeVisible();
+      await expectBarFits(page, `with a title in text and the media search (${set})`);
       patch.noLogo = false;
+      patch.search = false;
+      patch.logo = LOGO;
+      await open(page, '#/account', 'Account', set);
+      await expect(page.locator('header .org-logo > img')).toBeVisible();
+      await expectBarFits(page, `with a logo picture (${set})`);
+      patch.search = true;
+      await open(page, '#/account', 'Account', set);
+      await expect(page.getByRole('button', { name: 'Search My Media' })).toBeVisible();
+      await expectBarFits(page, `with a logo picture and the media search (${set})`);
+      patch.search = false;
+      patch.logo = undefined;
 
       patch.wallpaper = WALLPAPERS.dark;
       expect((await page.request.post('./api/v2/users/lock')).ok()).toBe(true);
       try {
         await page.reload();
         await expect(page.getByRole('heading', { name: 'The screen is locked' })).toBeAttached();
+        await expect(page.locator('main.org-lock-screen')).toHaveCSS(
+          'background-image',
+          `url("${WALLPAPERS.dark}")`,
+        );
         await expectNoSideScroll(page, `the lock screen on a phone (${set})`);
         await checkContrast(page, `the lock screen on a phone (${set})`, undefined, true);
       } finally {
@@ -474,18 +551,43 @@ test('login_lock_set_up_and_account_screens_pass_contrast_on_modern_dark_and_lig
       await logIn(page);
     }
   } finally {
-    Object.assign(patch, { wallpaper: undefined, wizard: false, search: false, noLogo: false });
-    await page.setViewportSize({ width: 1280, height: 720 });
-    await logInByApi(page);
-    await page.request.post('./api/v2/users/unlock', { data: { password: ADMIN.password } });
-    await put(page, './api/v2/config', defaultsBefore);
-    await put(
-      page,
-      './api/v2/user/look',
-      lookBefore.source === 'default'
-        ? { layout: null }
-        : { layout: lookBefore.layout, theme: lookBefore.theme, colourSet: lookBefore.colourSet },
+    Object.assign(patch, {
+      wallpaper: undefined,
+      wizard: false,
+      search: false,
+      noLogo: false,
+      logo: undefined,
+    });
+    // Each step runs even when an earlier one fails; the failures are reported at the end.
+    const failures: string[] = [];
+    const restore = async (what: string, step: () => Promise<unknown>) => {
+      try {
+        await step();
+      } catch (error) {
+        failures.push(`${what}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    };
+    await restore('the viewport', () => page.setViewportSize({ width: 1280, height: 720 }));
+    await restore('the login', async () => {
+      const answer = await page.request.post('./api/v2/login', {
+        data: { username: ADMIN.username, password: ADMIN.password },
+      });
+      expect(answer.ok(), 'the Admin logs in again').toBe(true);
+    });
+    await restore('the unlock', () =>
+      page.request.post('./api/v2/users/unlock', { data: { password: ADMIN.password } }),
     );
+    await restore('the Admin defaults', () => put(page, './api/v2/config', defaultsBefore));
+    await restore('the look of the Admin', () =>
+      put(
+        page,
+        './api/v2/user/look',
+        lookBefore.source === 'default'
+          ? { layout: null }
+          : { layout: lookBefore.layout, theme: lookBefore.theme, colourSet: lookBefore.colourSet },
+      ),
+    );
+    expect.soft(failures, 'the restore of the install').toEqual([]);
   }
   expect(outside, 'requests to another host').toEqual([]);
 });

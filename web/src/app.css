@@ -4531,7 +4531,7 @@
   @media (max-width: 639px) {
     [data-layout='modern'] .m-user {
       flex-shrink: 1;
-      min-width: 4.5rem;
+      min-width: 0;
       max-width: 40vw;
     }
 
@@ -4561,7 +4561,10 @@
     }
 
     [data-layout='modern'] .org-logo img {
+      min-width: 0;
       max-width: 96px;
+      max-height: 32px;
+      object-fit: contain;
     }
   }
 }

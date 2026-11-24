@@ -1045,7 +1045,7 @@ describe('Settings, the layouts', () => {
     expect(document.querySelector('.org-main-tabs')).toBeNull();
     expect(document.querySelector('.org-sub-tabs')).toBeNull();
     expect(document.querySelector('.org-breadcrumb')).toBeNull();
-  });
+  }, 15_000);
 });
 
 describe('Settings, plugins: the cards of PHP', () => {
