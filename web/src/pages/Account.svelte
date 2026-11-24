@@ -116,7 +116,10 @@
     <div class="card-body">
       <h2 id="look-title" class="card-title">Look</h2>
       <p class="text-sm">Choose the layout and theme that you see. Other people keep their own.</p>
-      <LookPicker />
+      <!-- The panel is wide: the picker keeps its two columns of themes close together. -->
+      <div class="max-w-xl">
+        <LookPicker />
+      </div>
     </div>
   </section>
 

@@ -148,5 +148,11 @@ describe('Account', () => {
     expect(
       within(section as HTMLElement).getByRole('group', { name: 'Theme' }),
     ).toBeInTheDocument();
+    // On the wide panel the picker keeps a narrow width, so its two columns stay close.
+    expect(
+      within(section as HTMLElement)
+        .getByRole('group', { name: 'Theme' })
+        .closest('.max-w-xl'),
+    ).not.toBeNull();
   });
 });
