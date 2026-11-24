@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { DEFAULT_REFRESH, refreshTime, SHORTEST_REFRESH } from './itemData.svelte';
-import { durationText, fromNow, timeSpanSeconds, timeSpanText } from './time';
+import { durationText, fromNow, localDateTime, timeSpanSeconds, timeSpanText } from './time';
 
 describe('refreshTime', () => {
   it('is the setting, which the server sends as text', () => {
@@ -63,6 +63,34 @@ describe('timeSpanText', () => {
     expect(timeSpanText(undefined)).toBe('');
     expect(timeSpanText('junk')).toBe('');
     expect(timeSpanText('00:61:00')).toBe('');
+  });
+
+  it('is empty when no time is left', () => {
+    expect(timeSpanText('00:00:00')).toBe('');
+    expect(timeSpanText('00:00:00.0000000')).toBe('');
+    expect(timeSpanText('0.00:00:00')).toBe('');
+    expect(timeSpanText('00:00:01')).toBe('1 s');
+  });
+});
+
+describe('localDateTime', () => {
+  const zone = process.env.TZ;
+  afterEach(() => {
+    process.env.TZ = zone;
+  });
+
+  it('gives a UTC time of the server in the local time of the browser', () => {
+    process.env.TZ = 'America/Chicago';
+    expect(localDateTime('2026-11-18 19:02:06')).toBe('2026-11-18 13:02:06');
+    expect(localDateTime('2026-12-01 03:00:00')).toBe('2026-11-30 21:00:00');
+    process.env.TZ = 'UTC';
+    expect(localDateTime('2026-11-18 19:02:06')).toBe('2026-11-18 19:02:06');
+  });
+
+  it('gives back a text in another form as it is', () => {
+    expect(localDateTime('')).toBe('');
+    expect(localDateTime('soon')).toBe('soon');
+    expect(localDateTime('2026-13-45 99:99:99')).toBe('2026-13-45 99:99:99');
   });
 
   it('reads the day part and drops the fraction', () => {

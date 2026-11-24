@@ -138,7 +138,7 @@ describe('Settings, tabs', () => {
     await show('tabs');
 
     const rows = screen.getAllByRole('row').slice(1);
-    // The first text of the row heading is the name; the day under it shows in a narrow card.
+    // The first text of the row heading is the name; the date under it shows in a narrow card.
     expect(
       rows.map((row) => within(row).getByRole('rowheader').firstChild?.textContent?.trim()),
     ).toEqual(['Settings', 'Plex', 'Sonarr']);
@@ -411,7 +411,7 @@ describe('Settings, groups', () => {
     await show('groups');
 
     const rows = screen.getAllByRole('row').slice(1);
-    // The first text of the row heading is the name; the day under it shows in a narrow card.
+    // The first text of the row heading is the name; the date under it shows in a narrow card.
     expect(
       rows.map((row) => within(row).getByRole('rowheader').firstChild?.textContent?.trim()),
     ).toEqual(['Admin', 'Co-Admin', 'User', 'Guest']);
@@ -519,17 +519,18 @@ describe('Settings, users', () => {
     await show('users');
 
     const rows = screen.getAllByRole('row').slice(1);
-    // The first text of the row heading is the name; the day under it shows in a narrow card.
+    // The first text of the row heading is the name; the date under it shows in a narrow card.
     expect(
       rows.map((row) => within(row).getByRole('rowheader').firstChild?.textContent?.trim()),
     ).toEqual(['admin', 'zoe', 'Yan']);
     const yan = rowOf('Yan');
     expect(within(yan).getByText('yan@example.com')).toBeInTheDocument();
     expect(within(yan).getByText('User')).toBeInTheDocument();
-    // The day is in its column, and under the name for a narrow card.
+    // The date and time are in their column, and under the name for a narrow card. The
+    // server gives UTC; the page shows the local time, so only the form is fixed here.
     expect(
       within(yan)
-        .getAllByText('2026-12-01')
+        .getAllByText(/^2026-1[12]-\d\d \d\d:00:00$/)
         .map((element) => element.className),
     ).toEqual(['org-users-date-line', expect.stringContaining('org-users-date ')]);
     expect(screen.getByLabelText('Lock Yan')).toBeChecked();

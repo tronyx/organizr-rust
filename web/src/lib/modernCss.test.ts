@@ -1468,16 +1468,16 @@ describe('the users table and the look popover', () => {
       /\[data-layout='modern'\] \.org-users-avatar,\s*\[data-layout='modern'\] \.org-users-date \{\s*display: none;/,
     );
     expect(narrow).toMatch(/\[data-layout='modern'\] \.org-users-date-line \{[^}]*display: block;/);
-    // Elsewhere, and on OG at any width, the line under the name is hidden: the day shows once.
+    // Elsewhere, and on OG at any width, the line under the name is hidden: the date shows once.
     const hidden = rules().find((rule) => rule.selector === '.org-users-date-line');
     expect(hidden?.body ?? '').toMatch(/display:\s*none/);
     expect(css.slice(0, start)).not.toMatch(/\.org-users-date-line \{[^}]*display: block/);
   });
 
-  it('the_users_page_puts_the_day_under_the_name_and_in_its_own_column', () => {
+  it('the_users_page_puts_the_date_under_the_name_and_in_its_own_column', () => {
     const editor = readFileSync(resolve(__dirname, '../pages/settings/UsersEditor.svelte'), 'utf8');
-    expect(editor).toMatch(/<span class="org-users-date-line">\{dayOf\(user\)\}<\/span>/);
-    expect(editor).toMatch(/<td class="org-users-date[^"]*">\{dayOf\(user\)\}<\/td>/);
+    expect(editor).toMatch(/<span class="org-users-date-line">\{registered\(user\)\}<\/span>/);
+    expect(editor).toMatch(/<td class="org-users-date[^"]*">\{registered\(user\)\}<\/td>/);
     expect(editor).toContain('class="org-users-scroll');
   });
 

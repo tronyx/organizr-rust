@@ -65,8 +65,28 @@ export function timeSpanSeconds(text: string | null | undefined): number | null 
   return Number(days ?? 0) * 86400 + Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
 }
 
-/** A time span of the *arr applications as people say it ("1 h 51 min"), or "". */
+/**
+ * A time span of the *arr applications as people say it ("1 h 51 min"), or "". A span
+ * of zero is also "": the download has no time left to show.
+ */
 export function timeSpanText(text: string | null | undefined): string {
   const seconds = timeSpanSeconds(text);
-  return seconds === null ? '' : durationText(seconds);
+  return seconds === null || Math.round(seconds) === 0 ? '' : durationText(seconds);
+}
+
+/**
+ * A date and time that the server gives in UTC ("2026-11-18 19:02:06"), in the local time
+ * of the browser and in the same form. A text in another form is given back as it is.
+ */
+export function localDateTime(text: string): string {
+  const match = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/.exec(text.trim());
+  const time = match ? new Date(`${match[1]}T${match[2]}Z`) : null;
+  if (!time || Number.isNaN(time.getTime())) {
+    return text;
+  }
+  const two = (value: number) => String(value).padStart(2, '0');
+  return (
+    `${time.getFullYear()}-${two(time.getMonth() + 1)}-${two(time.getDate())} ` +
+    `${two(time.getHours())}:${two(time.getMinutes())}:${two(time.getSeconds())}`
+  );
 }

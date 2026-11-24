@@ -4,6 +4,7 @@
   import { api } from '../../lib/api';
   import { asSwitch } from '../../lib/editor';
   import { session } from '../../lib/session.svelte';
+  import { localDateTime } from '../../lib/time';
   import type { Account, EditorData } from '../../lib/types';
   import UserDialog from './UserDialog.svelte';
 
@@ -29,9 +30,9 @@
     return session.launch?.user?.userID === user.id;
   }
 
-  /** The day a user was stored, without the time. */
-  function dayOf(user: Account): string {
-    return user.register_date.slice(0, 10);
+  /** When a user was stored, with the time, in the local time of the browser. */
+  function registered(user: Account): string {
+    return localDateTime(user.register_date);
   }
 
   async function run(request: () => Promise<unknown>, done: string) {
@@ -170,11 +171,11 @@
               </td>
               <th scope="row" translate="no">
                 {user.username}
-                <!-- In a narrow card the column of the day is hidden: the day shows here. -->
-                <span class="org-users-date-line">{dayOf(user)}</span>
+                <!-- In a narrow card the column of the date is hidden: the date shows here. -->
+                <span class="org-users-date-line">{registered(user)}</span>
               </th>
               <td class="org-users-email" title={user.email ?? undefined}>{user.email ?? ''}</td>
-              <td class="org-users-date text-center whitespace-nowrap">{dayOf(user)}</td>
+              <td class="org-users-date text-center whitespace-nowrap">{registered(user)}</td>
               <td class="text-center">{user.group ?? ''}</td>
               <td class="text-center">
                 <!-- Nobody locks the own account here: the way back in would be closed. -->
