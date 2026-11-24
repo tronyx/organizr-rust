@@ -3276,6 +3276,560 @@
   }
 }
 
+/* The homepage on the modern layout. The items keep the classes of OG (`org-item`,
+   `org-card`, `org-poster` and the others, which custom CSS reaches on both layouts) and
+   look like the cards of the settings: roomy, with soft borders, on theme colours only.
+   Each item is a card (`base-200`); what stands inside it is `base-100`. The tone of a
+   quiet text is the text colour at 72 % over the surface, which reads on both colour sets
+   (the faded text of OG, an opacity of 40 to 70 %, does not). Rules that must beat a
+   Tailwind or daisyUI class are in the last `@layer utilities` block below. */
+@layer components {
+  /* The colours of the states of the calendar events, from the colour set. They are mixed
+     with the text colour, so that they read on the day cells of both colour sets (the
+     error red of the dark set is 4.2:1 on the cells without it). Custom CSS still sets
+     them: it is not in a layer. */
+  [data-layout='modern'] {
+    --org-event-downloaded: color-mix(
+      in oklab,
+      var(--color-success) 70%,
+      var(--color-base-content)
+    );
+    --org-event-unreleased: color-mix(in oklab, var(--color-info) 70%, var(--color-base-content));
+    --org-event-missing: color-mix(in oklab, var(--color-error) 70%, var(--color-base-content));
+    --org-event-premiere: color-mix(
+      in oklab,
+      var(--color-secondary) 70%,
+      var(--color-base-content)
+    );
+    --org-event-unmonitored: color-mix(
+      in oklab,
+      var(--color-base-content) 72%,
+      var(--color-base-100)
+    );
+    --org-event-upcoming: color-mix(in oklab, var(--color-info) 70%, var(--color-base-content));
+    --org-event-over: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-100));
+  }
+
+  /* An item and its title */
+  [data-layout='modern'] .org-item {
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-200);
+    color: var(--color-base-content);
+  }
+
+  /* An item that shows nothing (no stream) is no empty card. */
+  [data-layout='modern'] .org-item:empty {
+    display: none;
+  }
+
+  /* The calendar and the page of another site fill their card to the edge. */
+  [data-layout='modern'] .org-item.org-item-calendar,
+  [data-layout='modern'] .org-item.org-item-customhtml {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  [data-layout='modern'] .org-item-title {
+    margin: 0 0 14px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 22px;
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-item-title::after {
+    margin-left: 8px;
+    background: var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-item-title.org-plain {
+    margin-bottom: 8px;
+  }
+
+  [data-layout='modern'] .org-item-title.org-plain::after {
+    content: none;
+  }
+
+  [data-layout='modern'] .org-count {
+    padding: 3px 10px;
+    border-radius: var(--radius-selector);
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+
+  /* Cards: health checks, Monitorr, Uptime Kuma, PromPage, the streams */
+  [data-layout='modern'] .org-cards {
+    gap: 12px 16px;
+  }
+
+  [data-layout='modern'] .org-card {
+    min-height: 48px;
+    overflow: hidden;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    box-shadow: inset 4px 0 0 0 var(--org-state, var(--color-success));
+  }
+
+  [data-layout='modern'] .org-card-row {
+    min-height: 46px;
+    padding: 6px 16px 6px 20px;
+    font-size: 15px;
+    line-height: 24px;
+  }
+
+  [data-layout='modern'] .org-card-row img {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-selector);
+  }
+
+  [data-layout='modern'] .org-card-row:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+
+  /* The icon of a state is the colour of the state, a little toward the text colour so
+     that the yellow of a warning still shows on the white card of the light colour set. */
+  [data-layout='modern'] .org-card-icon {
+    color: color-mix(in oklab, var(--org-state) 75%, var(--color-base-content));
+  }
+
+  [data-layout='modern'] .org-card-more {
+    padding: 0 16px 10px 20px;
+    color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-100));
+    font-size: 13px;
+  }
+
+  [data-layout='modern'] .org-card-tag {
+    border-radius: var(--radius-selector);
+  }
+
+  [data-layout='modern'] .org-tone-success {
+    --org-state: var(--color-success);
+  }
+
+  [data-layout='modern'] .org-tone-warning {
+    --org-state: var(--color-warning);
+  }
+
+  [data-layout='modern'] .org-tone-error {
+    --org-state: var(--color-error);
+  }
+
+  [data-layout='modern'] .org-tone-info {
+    --org-state: var(--color-info);
+  }
+
+  [data-layout='modern'] .org-tone-primary {
+    --org-state: var(--color-primary);
+  }
+
+  /* The downloaders in one item: tabs with the picture of each, above one panel */
+  [data-layout='modern'] .org-combined {
+    min-width: 0;
+  }
+
+  [data-layout='modern'] .org-tabs {
+    gap: 4px;
+    border-bottom: 1px solid var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-tabs button {
+    margin: 0 0 -1px;
+    border-bottom: 2px solid transparent;
+    border-radius: var(--radius-field) var(--radius-field) 0 0;
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-tabs button:hover {
+    background: var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-tabs button[aria-selected='true'] {
+    border-bottom-color: var(--color-primary);
+    background: var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-tabs button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+
+  [data-layout='modern'] .org-tab-count {
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    font-size: 11px;
+  }
+
+  [data-layout='modern'] .org-tab-panel {
+    padding: 12px 0 0;
+    background: transparent;
+  }
+
+  /* The queue and the history of a downloader */
+  [data-layout='modern'] .org-queue-tabs {
+    margin-top: 0;
+    border-bottom: 1px solid var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-queue-tabs [role='tab'],
+  [data-layout='modern'] .org-queue-pause {
+    padding: 10px 14px;
+    border-radius: var(--radius-field) var(--radius-field) 0 0;
+    color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-200));
+    font-weight: 500;
+    opacity: 1;
+  }
+
+  [data-layout='modern'] .org-queue-tabs [role='tab']:hover,
+  [data-layout='modern'] .org-queue-pause:not(:disabled):hover {
+    background: var(--color-base-300);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-queue-tabs [role='tab'][aria-selected='true'] {
+    border-bottom: 2px solid var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  [data-layout='modern'] .org-queue-tabs [role='tab']:focus-visible,
+  [data-layout='modern'] .org-queue-pause:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+
+  [data-layout='modern'] .org-queue-pause:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  [data-layout='modern'] .org-queue-empty {
+    padding: 12px 4px;
+    color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-200));
+  }
+
+  /* The bar of a row of posters, and its menu */
+  [data-layout='modern'] .org-row-buttons button {
+    padding: 6px 12px;
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+    font-weight: 500;
+  }
+
+  [data-layout='modern'] .org-row-buttons button:first-child {
+    border-radius: var(--radius-field) 0 0 var(--radius-field);
+  }
+
+  [data-layout='modern'] .org-row-buttons button:last-child {
+    border-radius: 0 var(--radius-field) var(--radius-field) 0;
+  }
+
+  [data-layout='modern'] .org-row-buttons button:hover {
+    background: color-mix(in oklab, var(--color-primary) 85%, var(--color-base-content));
+    opacity: 1;
+  }
+
+  [data-layout='modern'] .org-row-buttons button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  [data-layout='modern'] .org-caret {
+    margin-left: 6px;
+  }
+
+  [data-layout='modern'] .org-row-menu {
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-field);
+    background: var(--color-base-200);
+    color: var(--color-base-content);
+    box-shadow: 0 8px 24px color-mix(in oklab, var(--color-base-content) 20%, transparent);
+  }
+
+  [data-layout='modern'] .org-row-menu button[aria-pressed='true'] {
+    color: var(--color-primary);
+    font-weight: 600;
+  }
+
+  [data-layout='modern'] .org-row-menu hr {
+    border-color: var(--color-base-300);
+  }
+
+  /* Posters: rounded, with a frame that lights up for the pointer and the keyboard. The
+     text of a poster without a picture (a letter) is on a solid colour; no text sits on
+     a picture. */
+  [data-layout='modern'] .org-posters {
+    gap: 12px;
+    padding: 3px 3px 6px;
+  }
+
+  [data-layout='modern'] .org-poster button {
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-300);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-poster button:hover,
+  [data-layout='modern'] .org-poster button:focus-visible {
+    border-color: var(--color-primary);
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  [data-layout='modern'] .org-poster-empty {
+    background: var(--color-base-300);
+    color: var(--color-base-content);
+    font-weight: 600;
+  }
+
+  [data-layout='modern'] .org-poster-corner {
+    border-top: 30px solid var(--org-state, var(--color-primary));
+    border-left: 30px solid transparent;
+  }
+
+  /* The results of a search: posters with a title */
+  [data-layout='modern'] .org-search-results {
+    gap: 12px;
+  }
+
+  [data-layout='modern'] .org-search-results button {
+    border-radius: var(--radius-field);
+    color: var(--color-base-content);
+    text-align: left;
+  }
+
+  [data-layout='modern'] .org-search-results button:hover,
+  [data-layout='modern'] .org-search-results button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  [data-layout='modern'] .org-search-results img {
+    border-radius: var(--radius-field);
+  }
+
+  /* A stream: a card with its picture on top and a thin bar for how much is watched. The
+     buttons over the picture sit on a veil of the theme, not on black. */
+  [data-layout='modern'] .org-stream {
+    overflow: hidden;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-stream-picture {
+    background: var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-stream-buttons {
+    background: color-mix(in oklab, var(--color-base-100) 82%, transparent);
+  }
+
+  [data-layout='modern'] .org-stream-buttons a,
+  [data-layout='modern'] .org-stream-buttons button {
+    border-radius: var(--radius-field);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-stream-buttons a:hover,
+  [data-layout='modern'] .org-stream-buttons button:hover,
+  [data-layout='modern'] .org-stream-buttons a:focus-visible,
+  [data-layout='modern'] .org-stream-buttons button:focus-visible {
+    background: var(--color-base-300);
+    color: var(--color-primary);
+    outline: 2px solid var(--color-primary);
+  }
+
+  [data-layout='modern'] .org-stream-progress {
+    height: 6px;
+    background: var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-stream-progress::-webkit-progress-bar {
+    background: var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-stream-progress::-webkit-progress-value {
+    background: var(--color-primary);
+  }
+
+  [data-layout='modern'] .org-stream-progress::-moz-progress-bar {
+    background: var(--color-primary);
+  }
+
+  [data-layout='modern'] .org-stream-info {
+    gap: 8px 16px;
+    font-size: 13px;
+  }
+
+  [data-layout='modern'] .org-stream-info dt {
+    color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-200));
+    opacity: 1;
+  }
+
+  /* The statistics of Tautulli: tiles with a picture and a ranked list */
+  [data-layout='modern'] .org-stats {
+    gap: 12px 16px;
+  }
+
+  [data-layout='modern'] .org-stat {
+    overflow: hidden;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-stat-picture img {
+    border-radius: var(--radius-field);
+  }
+
+  [data-layout='modern'] .org-stat-picture span {
+    background: var(--color-secondary);
+    color: var(--color-secondary-content);
+  }
+
+  [data-layout='modern'] .org-stat h3 small {
+    color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-100));
+  }
+
+  [data-layout='modern'] .org-stat-rank {
+    color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-100));
+  }
+
+  [data-layout='modern'] .org-stat-count {
+    color: color-mix(in oklab, var(--color-accent) 75%, var(--color-base-content));
+    font-weight: 600;
+  }
+
+  /* The calendar: the bar of buttons, and a grid of day cells that stand on the colour of
+     the page, with the column of today tinted. */
+  [data-layout='modern'] .org-calendar {
+    background: transparent;
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-calendar-bar {
+    gap: 8px 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-calendar-bar h2 {
+    color: var(--color-base-content);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  [data-layout='modern'] .org-calendar-buttons {
+    gap: 4px;
+  }
+
+  [data-layout='modern'] .org-calendar-buttons button {
+    padding: 6px 12px;
+    border: 1px solid color-mix(in oklab, var(--color-base-content) 45%, var(--color-base-300));
+    border-radius: var(--radius-field);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    font-size: 13px;
+  }
+
+  [data-layout='modern'] .org-calendar-buttons button:hover {
+    background: var(--color-base-300);
+  }
+
+  [data-layout='modern'] .org-calendar-buttons button[aria-pressed='true'] {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+  }
+
+  [data-layout='modern'] .org-calendar-buttons button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  [data-layout='modern'] .org-calendar-buttons button:disabled {
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    opacity: 0.6;
+  }
+
+  [data-layout='modern'] .org-calendar-grid th {
+    padding: 8px 0;
+    background: var(--color-base-300);
+    color: var(--color-base-content);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  [data-layout='modern'] .org-calendar-grid td {
+    border: 1px solid var(--color-base-300);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-calendar-grid th.org-today {
+    color: color-mix(in oklab, var(--color-primary) 80%, var(--color-base-content));
+  }
+
+  [data-layout='modern'] .org-calendar-grid td.org-today {
+    background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100));
+  }
+
+  [data-layout='modern'] .org-calendar-event {
+    padding: 6px;
+    border-radius: var(--radius-field);
+  }
+
+  [data-layout='modern'] .org-calendar-event:hover {
+    background: color-mix(in oklab, var(--color-base-content) 8%, transparent);
+  }
+
+  [data-layout='modern'] .org-calendar-event:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+
+  [data-layout='modern'] .org-calendar-time {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  /* The rings and the gauges of Netdata: the track is a tone of the text colour (the
+     colour of the value is the one of the settings of the chart). */
+  [data-layout='modern'] .org-item-netdata [stroke='#636363'] {
+    stroke: color-mix(in oklab, var(--color-base-content) 30%, var(--color-base-200));
+  }
+
+  @media (max-width: 767px) {
+    [data-layout='modern'] .org-item {
+      padding: 14px;
+    }
+
+    [data-layout='modern'] .org-calendar-bar {
+      padding: 12px 14px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-layout='modern'] .org-stream-buttons {
+      transition: none;
+    }
+  }
+}
+
 /* The shared dialog (daisyUI modal). daisyUI puts the modal in `@layer utilities`, in
    named sublayers, so these rules sit in `@layer utilities` too: styles that a layer holds
    directly win over the ones in its sublayers. The veil is the background of the open
@@ -3460,5 +4014,133 @@
   }
   [data-layout='modern'] .org-order-tile.bg-primary {
     --org-tile-brand: var(--color-primary);
+  }
+
+  /* The homepage items. What the components set with Tailwind or daisyUI classes (white
+     text, the dark grey of OG, the faded text with an opacity, the bars and the stats of
+     daisyUI) is set again here with theme colours, in this layer so that these rules win
+     over the classes. */
+
+  /* White text: the item is a card of the theme, so its text is the text colour. */
+  [data-layout='modern'] .org-item .text-white {
+    color: var(--color-base-content);
+  }
+
+  /* Cards of the dark grey of OG (Monitorr, OctoPrint, Speedtest Tracker, UniFi). */
+  [data-layout='modern'] .org-item [class*='2d2c2c'] {
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-item-unifi [class*='2d2c2c'] {
+    overflow: hidden;
+  }
+
+  [data-layout='modern'] .org-item [class*='9e9e9e'] {
+    color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-100));
+  }
+
+  /* The state of a Monitorr service and the head of a UniFi card are coloured by the
+     theme variable that they set inline (`background: var(--color-…)`): their text takes
+     the pair of that colour instead of white (2.4:1 on the yellow). */
+  [data-layout='modern'] .org-item [style*='background'][style*='--color-success'] {
+    color: var(--color-success-content);
+  }
+
+  [data-layout='modern'] .org-item [style*='background'][style*='--color-warning'] {
+    color: var(--color-warning-content);
+  }
+
+  [data-layout='modern'] .org-item [style*='background'][style*='--color-error'] {
+    color: var(--color-error-content);
+  }
+
+  [data-layout='modern'] .org-item [style*='background'][style*='--color-info'] {
+    color: var(--color-info-content);
+  }
+
+  [data-layout='modern'] .org-item [style*='background'][style*='--color-primary'] {
+    color: var(--color-primary-content);
+  }
+
+  [data-layout='modern'] .org-item [style*='background'][style*='--color-neutral'] {
+    color: var(--color-neutral-content);
+  }
+
+  /* The cards of AdGuard Home set a literal colour inline (green, yellow, red, purple)
+     under white text. An inline style wins over every rule without `!important`, so this
+     one has it; the cards get one tint of the theme. The big icon at the right keeps its
+     low opacity. */
+  [data-layout='modern'] .org-item-adguard section .grid > div {
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100)) !important;
+    color: var(--color-base-content);
+  }
+
+  /* The icons of Speedtest Tracker set a literal colour inline. */
+  [data-layout='modern'] .org-item-speedtest i[style] {
+    color: var(--color-primary) !important;
+  }
+
+  /* The faded text of the items (an opacity of 40 to 70 % is under 4.5:1 on the light
+     colour set): the tone of the text colour at full opacity. This holds in the dialogs of
+     the items too. */
+  [data-layout='modern'] :is(.org-item, .modal-box) :is(.opacity-40, .opacity-60, .opacity-70) {
+    color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-200));
+    opacity: 1;
+  }
+
+  /* The titles of the items that are not `org-item-title`. */
+  [data-layout='modern'] .org-item h2.text-lg {
+    margin-bottom: 14px;
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  /* Queues and lists: a table in a bordered frame, with a head in the surface colour. */
+  [data-layout='modern'] .org-item div.overflow-x-auto {
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-field);
+  }
+
+  [data-layout='modern'] .org-item .table {
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .org-item .table thead th {
+    background: var(--color-base-300);
+  }
+
+  /* The bars of progress in the colour of the action. */
+  [data-layout='modern'] .org-item .progress {
+    color: var(--color-primary);
+  }
+
+  /* The stats and the cards of daisyUI (Pi-hole, JellyStat, Emby Live TV, Weather): a
+     tile of the inner surface, with the faded titles at a readable tone. */
+  [data-layout='modern'] .org-item .stats,
+  [data-layout='modern'] .org-item .card.bg-base-200 {
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-100);
+    color: var(--color-base-content);
+    box-shadow: none;
+  }
+
+  [data-layout='modern'] .org-item .stat-title,
+  [data-layout='modern'] .org-item .stat-desc {
+    color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-100));
+    opacity: 1;
+  }
+
+  /* The fields of the items (the amount of Donate, the search of the indexers, the
+     server of Plex): a border that shows on the card. */
+  [data-layout='modern'] .org-item :is(.input, .select, .checkbox) {
+    --input-color: color-mix(in oklab, var(--color-base-content) 45%, var(--color-base-300));
+    border-color: color-mix(in oklab, var(--color-base-content) 45%, var(--color-base-300));
   }
 }

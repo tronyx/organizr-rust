@@ -117,6 +117,56 @@ const SETTINGS_CLASSES = [
   'modal-box',
 ];
 
+const HOMEPAGE_CLASSES = [
+  'org-item',
+  'org-item-title',
+  'org-count',
+  'org-cards',
+  'org-card',
+  'org-card-row',
+  'org-card-icon',
+  'org-card-tag',
+  'org-card-more',
+  'org-tone-success',
+  'org-tone-warning',
+  'org-tone-error',
+  'org-tone-info',
+  'org-tone-primary',
+  'org-calendar',
+  'org-calendar-bar',
+  'org-calendar-grid',
+  'org-calendar-buttons',
+  'org-calendar-event',
+  'org-calendar-time',
+  'org-today',
+  'org-posters',
+  'org-poster',
+  'org-poster-corner',
+  'org-poster-empty',
+  'org-stream',
+  'org-stream-picture',
+  'org-stream-info',
+  'org-stream-progress',
+  'org-stream-buttons',
+  'org-stats',
+  'org-stat',
+  'org-stat-rank',
+  'org-stat-picture',
+  'org-stat-count',
+  'org-queue-tabs',
+  'org-queue-empty',
+  'org-queue-pause',
+  'org-tabs',
+  'org-tab-panel',
+  'org-tab-count',
+  'org-row-menu',
+  'org-row-buttons',
+  'org-search-results',
+  'org-combined',
+  'org-caret',
+  'org-plain',
+];
+
 describe('the modern CSS', () => {
   it('modern_rules_use_only_theme_colours', () => {
     const rulesOfModern = modernRules();
@@ -164,6 +214,56 @@ describe('the modern CSS', () => {
       (name) => !new RegExp(String.raw`\.${name}(?![\w-])`).test(selectors),
     );
     expect(missing).toEqual([]);
+  });
+
+  it('every_homepage_class_has_a_modern_rule', () => {
+    const selectors = modernRules()
+      .map((rule) => rule.selector)
+      .join(',');
+    const missing = HOMEPAGE_CLASSES.filter(
+      (name) => !new RegExp(String.raw`\.${name}(?![\w-])`).test(selectors),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('every_org_class_of_a_homepage_component_is_known_to_the_modern_css', () => {
+    const dir = resolve(__dirname, '../pages/homepage');
+    const used = new Set<string>();
+    for (const file of readdirSync(dir).filter((name) => name.endsWith('.svelte'))) {
+      const source = readFileSync(resolve(dir, file), 'utf8');
+      for (const match of source.matchAll(/(?<![-\w])org-[a-z][a-z-]*[a-z]/g)) {
+        used.add(match[0]);
+      }
+    }
+    // `org-item-<kind>` and `org-tone-<tone>` are built from a variable.
+    const known = new Set([
+      ...HOMEPAGE_CLASSES,
+      'org-header-link',
+      'org-form-control',
+      'org-form-button',
+    ]);
+    const unknown = [...used].filter(
+      (name) => !known.has(name) && !/^org-(item|tone)(-[a-z]+)?$/.test(name),
+    );
+    expect(unknown).toEqual([]);
+  });
+
+  it('modern_sets_the_calendar_event_variables_from_theme_colours', () => {
+    const rule = modernRules().find(
+      (one) => one.selector === SCOPE && one.body.includes('--org-event-'),
+    );
+    expect(rule, 'a rule of the modern scope with the event variables').toBeDefined();
+    for (const name of [
+      'downloaded',
+      'unreleased',
+      'missing',
+      'premiere',
+      'unmonitored',
+      'upcoming',
+      'over',
+    ]) {
+      expect(rule?.body ?? '', name).toMatch(new RegExp(`--org-event-${name}:[^;]*var\\(--color-`));
+    }
   });
 });
 
