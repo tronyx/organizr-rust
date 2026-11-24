@@ -2,7 +2,7 @@
 
 The Plex Libraries plugin shows which libraries of your Plex server each shared account sees, with a switch for each library. Admins and Co-Admins change them for every account. Other people see their own share, and change the libraries that you allow.
 
-PHP Organizr has no such built-in plugin. Its marketplace had a plugin with the same aim by another author, without a licence, so this one is written new from the API of plex.tv and shares nothing with it (D-121).
+PHP Organizr has no such built-in plugin. Its marketplace had a plugin with the same aim by another author, without a license, so this one is written new from the API of plex.tv and shares nothing with it (D-121).
 
 ## Set it up
 

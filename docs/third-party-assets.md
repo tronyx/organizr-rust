@@ -37,7 +37,7 @@ The folder `web/src/icons` holds five icon fonts. For each font, the script writ
 
 The script also copies the icon list of PHP Organizr, with the names of the icons to show, to `crates/api/src/handlers/icons.json`. The route `GET /icon` sends it.
 
-The source of Organizr holds these fonts without a licence file. The terms in the table are the terms that each project publishes. Make sure that they are correct before you publish a release.
+The source of Organizr holds these fonts without a license file. The terms in the table are the terms that each project publishes. Make sure that they are correct before you publish a release.
 
 ## How to update the files
 

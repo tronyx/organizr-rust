@@ -77,7 +77,7 @@ jobs:
           cargo test --locked -p organizr-api --features wasm-plugins --lib --test extensions
 
   deny:
-    name: Advisories, licences and banned crates
+    name: Advisories, licenses and banned crates
     runs-on: ubuntu-26.04
     steps:
       - name: Check out the repository

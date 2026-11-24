@@ -104,7 +104,7 @@ def broken_links(root: Path) -> list[str]:
 class Links(unittest.TestCase):
     def test_headings_get_the_anchors_github_gives_them(self) -> None:
         self.assertEqual(github_slug("Move from PHP Organizr"), "move-from-php-organizr")
-        self.assertEqual(github_slug("Colours: CSS variables"), "colours-css-variables")
+        self.assertEqual(github_slug("Colors: CSS variables"), "colors-css-variables")
         self.assertEqual(github_slug("`ORGANIZR_TRUSTED_PROXIES`"), "organizr_trusted_proxies")
 
     def test_every_link_in_the_docs_leads_somewhere(self) -> None:

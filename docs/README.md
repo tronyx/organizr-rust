@@ -14,7 +14,7 @@ The [README](../README.md) tells you what this rewrite of Organizr is and how to
 | [🚚 Importing](importing.md) | How to move the users, tabs, settings and pictures of a PHP install into a new install |
 | [🔐 Secrets](secrets.md) | How Organizr seals the API keys and passwords that it stores, and the key that it uses |
 | [💾 Backups](backups.md) | How to make, download and restore a backup, also on a schedule |
-| [🎨 Appearance](appearance.md) | Themes, colours, custom CSS and JavaScript, and the icons of the page |
+| [🎨 Appearance](appearance.md) | Themes, colors, custom CSS and JavaScript, and the icons of the page |
 | [🖌️ Custom CSS](custom-css.md) | The CSS variables and classes to use, and how to change CSS written for PHP |
 | [🏠 Homepage](homepage.md) | The items of the homepage, their settings, and how to test the connections |
 | [📡 Checking your services](checking-your-services.md) | The `organizr check` command, which asks your services what Organizr asks them |
@@ -44,7 +44,7 @@ The [README](../README.md) tells you what this rewrite of Organizr is and how to
 
 | Page | Contents |
 | --- | --- |
-| [🔖 Bookmarks](bookmark-plugin.md) | A page of links as coloured tiles, in categories |
+| [🔖 Bookmarks](bookmark-plugin.md) | A page of links as colored tiles, in categories |
 | [💓 Health checks](health-checks-plugin.md) | Ask your services whether they answer, and tell Healthchecks the result |
 | [🎟️ Invites](invites-plugin.md) | Give a person access to your Plex server with a code |
 | [📚 Plex Libraries](plex-libraries-plugin.md) | See and switch the libraries of the Plex server that each shared account sees |
@@ -67,4 +67,4 @@ The [README](../README.md) tells you what this rewrite of Organizr is and how to
 | [🔍 Audit of PHP Organizr](audit.md) | What PHP Organizr does, route by route, as the rewrite found it |
 | [↔️ Deviations](deviations.md) | Every place where this version answers differently from PHP Organizr, and why |
 | [📚 Stack research](stack-research.md) | How the libraries of the rewrite were chosen |
-| [🖼️ Third-party assets](third-party-assets.md) | The pictures and icons of other projects that the image holds, and their licences |
+| [🖼️ Third-party assets](third-party-assets.md) | The pictures and icons of other projects that the image holds, and their licenses |

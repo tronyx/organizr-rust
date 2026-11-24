@@ -1,6 +1,6 @@
 # The bookmark plugin
 
-The bookmark plugin gives Organizr a page of links. Each link is a coloured tile, and the tiles stand in categories.
+The bookmark plugin gives Organizr a page of links. Each link is a colored tile, and the tiles stand in categories.
 
 Bookmarks are apart from the tabs of the menu. A tab opens an application inside Organizr. A bookmark opens an address in a new window.
 
@@ -21,8 +21,8 @@ Bookmarks are apart from the tabs of the menu. A tab opens an application inside
 | Picture | A picture or an icon, as for a tab |
 | Category | The heading that the tile stands under |
 | For the group, and groups with more access | The group with the least access that sees the bookmark |
-| Colour of the tile | The page shows the tile in shades of this colour |
-| Colour of the name | The colour of the text on the tile |
+| Color of the tile | The page shows the tile in shades of this color |
+| Color of the name | The color of the text on the tile |
 | Show the bookmark on the page | A bookmark that is switched off stays in the editor only |
 
 ## On the homepage

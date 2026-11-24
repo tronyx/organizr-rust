@@ -23,7 +23,7 @@ Anything marked "not yet audited" gets its own detailed pass when its slice come
 - About 35,000 lines of first-party PHP under `api/`. Slim 4 front controller at `api/v2/index.php`.
 - One class, `Organizr` (`api/classes/organizr.class.php`, 7,636 lines), built from 20 function traits and 38 homepage-item traits. Plugins are classes that **extend** `Organizr`.
 - A new `Organizr` object is built for every request. Its constructor: loads config from a PHP file, checks disk space (dies with HTML below 100 MB free), sets a device-UUID cookie, connects to the DB, resolves the user from the cookie, validates the token, runs the version upgrade check, runs the auth-proxy pre-check, and applies the IP blacklist (dies with HTML).
-- The response is global mutable state: `$GLOBALS['api']['response'] = {result:'success', message:null, data:null}` and `$GLOBALS['responseCode'] = 200`. Handlers and helpers change it as a side effect; the route closure serialises whatever is there at the end.
+- The response is global mutable state: `$GLOBALS['api']['response'] = {result:'success', message:null, data:null}` and `$GLOBALS['responseCode'] = 200`. Handlers and helpers change it as a side effect; the route closure serializes whatever is there at the end.
 - Dynamic PHP loading at runtime: `data/routes/*.php`, `data/pages/*.php`, `api/plugins/**` and `data/plugins/**` (`plugin.php`, `api.php`, `config.php`, `cron.php`, `advancedCron.php`, `*page.php`). A plugin and theme marketplace downloads PHP/CSS from GitHub into `data/`.
 - Pages are HTML strings built in PHP (with inline `<script>`), returned inside the JSON envelope by `GET /page/{page}` or as raw HTML by `GET /organizr/{page}`. `index.php` is the single-page shell; it injects config values, plugin CSS/JS tags, language packs and the form key.
 - Front end: jQuery, about 24,000 lines of first-party JS. `functions.js` makes about 128 `organizrAPI2()` calls (62 GET, 29 POST, 26 PUT, 11 DELETE).
@@ -48,7 +48,7 @@ Anything marked "not yet audited" gets its own detailed pass when its slice come
 - Unknown route: `404`, `result:error`, `message:"Endpoint Not Found or Defined"`, `data:{endpoint, method}`.
 - Slim error middleware is on with `displayErrorDetails = true`: an uncaught exception returns Slim's HTML/JSON error page with a stack trace.
 
-## 2. Authentication and authorisation model
+## 2. Authentication and authorization model
 
 ### Groups (lower number = more access)
 
@@ -179,7 +179,7 @@ All paths are under `/api/v2`. **Lvl** = `qualifyRequest` argument (`—` = none
 | Method | Path | Lvl | FK | Notes |
 |---|---|---|---|---|
 | GET | `/config[/{item}[/{term}]]` | 1 | | All config (hash masked), one key, or `/config/search/{term}`. 404 when unset |
-| PUT | `/config` | 1 | | `{key: value, …}`. `"true"`/`"false"` strings become booleans; keys containing `password` are encrypted; `logLocation`/`dbLocation` normalised. **Any key can be written, including unknown ones** |
+| PUT | `/config` | 1 | | `{key: value, …}`. `"true"`/`"false"` strings become booleans; keys containing `password` are encrypted; `logLocation`/`dbLocation` normalized. **Any key can be written, including unknown ones** |
 | GET | `/settings/{appearance, plugin, theme, main, sso, homepage}` | 1 | | UI form definitions: nested arrays of option descriptors `{type, name, label, value, help, options…}` |
 | GET | `/settings/homepage/{item}` and `/{item}/debug` | 1 | | One integration's form definition; debug dumps its config values |
 | GET | `/page` | — | ✓ | List of page names |
@@ -258,7 +258,7 @@ Seed data at setup: six groups (0–4, 999); tabs `Settings` (`api/v2/page/setti
 
 ### 4.2 Relationships (all implicit; there are no foreign keys)
 
-- `users.group_id` → `groups.group_id` (not `groups.id`). `users.group` is a denormalised copy of the name; renaming a group does not update users.
+- `users.group_id` → `groups.group_id` (not `groups.id`). `users.group` is a denormalized copy of the name; renaming a group does not update users.
 - `tabs.category_id` → `categories.category_id` (not `categories.id`). Deleting a category leaves its tabs pointing at nothing.
 - `tabs.group_id`/`group_id_max` are a level range, not a reference: a user sees a tab when `tab.group_id >= user.groupID AND tab.group_id_max <= user.groupID`.
 - `tokens.user_id` → `users.id`. Deleting a user deletes the tokens in code.
@@ -268,7 +268,7 @@ Seed data at setup: six groups (0–4, 999); tabs `Settings` (`api/v2/page/setti
 
 - **Config**: `data/config/config.php`, a PHP file returning an array, **rewritten in full on every change** with the previous copy kept as `config.bak.php`. 710 default keys in `api/config/default.php`, plus each plugin's `config.php`. Missing keys are filled from defaults on load. Numbers are mostly stored as strings (`'7'`, `'5'`, `'60000'`).
 - **Files**: `data/userTabs/` (uploaded images), `data/cache/` (cached media images), `data/plugins/`, `data/routes/`, `data/pages/`, backups in `<dbLocation>/backups/`, JSON-lines log files (rotated by count), cron timestamp file, upgrade lock files `DBLOCK.txt`/`completed.txt`.
-- **Marker files** in the web root switch behaviour: `Docker.txt`, `Dev.txt`, `Demo.txt`, `Github.txt` (commit hash used for cache-busting).
+- **Marker files** in the web root switch behavior: `Docker.txt`, `Dev.txt`, `Demo.txt`, `Github.txt` (commit hash used for cache-busting).
 - **Cookies**: `organizr_token_<uuid>`, `organizr_user_uuid` (7 days), `lockout`, `organizrOAuth`, `oAuth`, and SSO cookies `mpt`, `Auth`, `connect.sid`, `petio_jwt`, `komga_token`, `tautulli_token_<uuid>`, Jellyfin `user-*` and `jellyfin_credentials`.
 
 ### 4.4 Implicit state machines
@@ -311,7 +311,7 @@ Seed data at setup: six groups (0–4, 999); tabs `Settings` (`api/v2/page/setti
 22. **`checkKeys` silently drops unknown fields** on create/update; then `INSERT`/`UPDATE` takes every remaining client field (mass assignment within the table: `id`, `register_date` only on update is refused, `locked`, `auth_service`, `plex_token` are writable through `PUT /users/{id}` by the user on their own row).
 23. **`PUT /users/{id}` ownership test is `(int)$id !== $this->user['userID']`** (strict, mixed types): when the DB driver returns the id as a string, a user editing their own row is treated as editing someone else.
 24. **User text is HTML-escaped before storage** (`htmlspecialchars(trim())` on names, images, usernames). Values in the DB are already entity-encoded; the UI prints them raw. The Rust side must store and return the same encoded form to stay compatible.
-25. **Case rules**: usernames are lower-cased at login only when the backend is not Emby; lookups use `COLLATE NOCASE` on SQLite, which is removed for MySQL/Postgres (behaviour then depends on DB collation). Login matches the typed name against username **or** e-mail.
+25. **Case rules**: usernames are lower-cased at login only when the backend is not Emby; lookups use `COLLATE NOCASE` on SQLite, which is removed for MySQL/Postgres (behavior then depends on DB collation). Login matches the typed name against username **or** e-mail.
 26. **`register()` returns nothing when token creation fails** (falls off the end) → `200 success` with a "User created" message and no session. `login()` with an unknown `oAuthType` returns a bare string that is discarded → `200 success` with no login.
 27. **`addUser` has unreachable branches** (`!$username` before `$username == ''`), so some messages in the code can never be returned; validation errors are all `409` here but `422` in `register`.
 28. **`testCronSchedule` reads the schedule from the first key of the posted object**, replacing `_` with spaces (PHP mangles spaces in form keys).

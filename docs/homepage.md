@@ -203,7 +203,7 @@ The calendar itself has these settings:
 
 The calendar has four views: the month, the week, the day and the list. The buttons with the arrows go one month, one week or one day back or on. The button "Filter" shows the switches for the kinds and the states of events.
 
-An event has a colour for its state:
+An event has a color for its state:
 
 | State | Meaning |
 |---|---|
@@ -1022,7 +1022,7 @@ Each chart has these settings, where `<N>` is the number of the chart from 1 to 
 | Title | `netdata<N>Title` | |
 | What the chart shows | `netdata<N>Data` | `disk-read`, `disk-write`, `cpu`, `net-in`, `net-out`, `ram-used`, `swap-used`, `disk-used`, `disk-avail`, `custom` |
 | Form | `netdata<N>Chart` | `easypiechart` for a ring, `gauge` for a gauge |
-| Colour | `netdata<N>Colour` | A hexadecimal colour without the number sign, for example `46e302` |
+| Color | `netdata<N>Colour` | A hexadecimal color without the number sign, for example `46e302` |
 | Size | `netdata<N>Size` | `lg`, `md`, `sm` |
 | Show on large, medium and small screens | `netdata<N>lg`, `netdata<N>md`, `netdata<N>sm` | |
 

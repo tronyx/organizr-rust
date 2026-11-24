@@ -80,7 +80,7 @@ What two engines mean for the design:
 
 - **One code path.** Queries use SeaORM's typed builder and migrations use `sea-orm-migration`, both written once. Raw SQL is allowed only in one small, tested module for engine-specific statements (journal mode, snapshot).
 - **Caught by tests, not the compiler.** SeaORM does not check queries against the schema at compile time. Every database test and every parity test runs once per engine in CI.
-- **Engine-neutral types.** Booleans, timestamps (Unix seconds) and JSON are stored in forms both engines share. Case-insensitive uniqueness (user names, group names) uses a normalised lower-case column, not engine collations.
+- **Engine-neutral types.** Booleans, timestamps (Unix seconds) and JSON are stored in forms both engines share. Case-insensitive uniqueness (user names, group names) uses a normalized lower-case column, not engine collations.
 - **Backups.** A backup is a zip file of the data folder. With SQLite it also holds a copy of the database, made with `VACUUM INTO`. With PostgreSQL the owner saves the database with the tools of PostgreSQL (decided on 2026-11-20). A backup never holds the key for the stored secrets. The command `organizr restore` puts a backup back. The command `organizr move-to-postgres` copies an install from SQLite to PostgreSQL. The other direction, from PostgreSQL to SQLite, is not planned (decided on 2026-11-23).
 - **SQLite-only routes.** `GET /database/journal` and `PUT /database/journal/{option}` answer on PostgreSQL with `409 "The journal mode applies only to a database on SQLite"` (D-97).
 - **Docker.** Two compose examples: single container with SQLite, and with a PostgreSQL sidecar.
@@ -92,7 +92,7 @@ organizr-rust/
 ├── Cargo.toml                 workspace manifest, shared dependency versions and lints
 ├── Cargo.lock
 ├── rust-toolchain.toml        pins Rust 1.100
-├── deny.toml                  cargo-deny: advisories, licences, banned crates (openssl, native-tls)
+├── deny.toml                  cargo-deny: advisories, licenses, banned crates (openssl, native-tls)
 ├── rustfmt.toml  clippy.toml
 ├── crates/
 │   ├── domain/                organizr-domain: newtypes (UserId, GroupLevel, TabId …), enums (TabKind,
@@ -265,7 +265,7 @@ Front end (`web/package.json`): svelte 5.58.0, vite 8.3.8, @sveltejs/vite-plugin
 | Original feature | Replacement | What changes for the user |
 |---|---|---|
 | 7 bundled plugins | Compiled in. Same routes, settings and cron jobs | Nothing |
-| Plugin marketplace | Same endpoints and list format. Entries carry a WebAssembly component, a SHA-256 and a permission list; the admin approves permissions at install | Existing PHP entries show as "not compatible". The one real marketplace plugin (Plex Libraries) is ported as a bundled plugin, licence permitting |
+| Plugin marketplace | Same endpoints and list format. Entries carry a WebAssembly component, a SHA-256 and a permission list; the admin approves permissions at install | Existing PHP entries show as "not compatible". The one real marketplace plugin (Plex Libraries) is ported as a bundled plugin, license permitting |
 | Custom PHP routes and pages | Local WebAssembly plugins in `data/plugins/`, and plain HTML pages in `data/pages/` rendered by the app | PHP files must be rewritten. The importer lists any it finds and never runs them. The live install has none |
 | Theme marketplace, custom CSS | Same endpoints and install flow, with safe downloads. Themes are CSS files against a documented set of custom properties | Old theme CSS targets the old page structure and does not apply to the new front end. The 11 marketplace themes are rebuilt as native themes |
 | Custom JavaScript and custom HTML blocks | Kept. Custom JS is served as a file, admin-only, with a safe-mode switch. Custom HTML blocks run in a sandboxed frame | Existing snippets that use jQuery or old element ids need rewriting |
@@ -276,7 +276,7 @@ Front end (`web/package.json`): svelte 5.58.0, vite 8.3.8, @sveltejs/vite-plugin
 
 The WebAssembly extension system is the largest single item that exists only to keep a rarely used feature. It is scheduled last so it cannot delay the rest, and it stays behind a build feature because the runtime has a high advisory rate. The host, the approval by an Admin, the routes and the marketplace are built: see [Extensions](extensions.md).
 
-## 7. Deviations from the PHP behaviour
+## 7. Deviations from the PHP behavior
 
 See `deviations.md`. It lists every approved difference from Organizr 2.1.5000, each with an id that the parity tests refer to.
 
@@ -331,7 +331,7 @@ Each numbered item is one or more vertical slices. A slice is finished when its 
 | 14 | SOCKS proxy | Both route forms, streaming, per-app auth |
 | 15 | Remaining plugins | Invites (with Plex, Emby, Komga, Nextcloud), bookmarks, health checks, speed test, chat, Plex Libraries. Shuck Stop was dropped: its service shut down (D-116) |
 | 16 | Scheduler and upkeep | Auto-backup, plugin jobs, session purge, version check, `/update/*` |
-| 17 | Themes and customisation | Appearance settings, native themes, theme marketplace, custom CSS/JS, languages (32 packs reused) |
+| 17 | Themes and customization | Appearance settings, native themes, theme marketplace, custom CSS/JS, languages (32 packs reused) |
 | 18 | Release pipeline | Per-architecture image builds, manifest, Trivy gate, SBOM and provenance, weekly rebuild, dependency updates, both compose examples, user docs including `choosing-a-database.md` |
 | 19 | Extension system | WebAssembly host, plugin template, marketplace install, local plugins and custom routes |
 | 20 | Cutover | Import the live install, run next to the PHP app behind nginx, full replay, switch |

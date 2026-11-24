@@ -18,7 +18,7 @@ A locked account stays logged in, and the API continues to answer its requests. 
 - The interface shows only the lock screen.
 - [Forward auth](forward-auth.md) refuses the account. So the applications behind your reverse proxy are closed for it.
 
-This is the behaviour of PHP Organizr.
+This is the behavior of PHP Organizr.
 
 ## Wrong passwords
 

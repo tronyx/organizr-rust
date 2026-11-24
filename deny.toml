@@ -1,4 +1,4 @@
-# cargo-deny configuration: security advisories, licences, banned crates and sources.
+# cargo-deny configuration: security advisories, licenses, banned crates and sources.
 
 [graph]
 all-features = true

@@ -10,9 +10,9 @@ The CSS variables and classes on this page are stable: a release does not change
 
 The pages have other classes too, for example the classes of Tailwind such as `flex` or `px-4`. Do not aim at those. They can change in any release.
 
-## Colours: CSS variables
+## Colors: CSS variables
 
-Most custom CSS only changes colours. A CSS variable changes a colour everywhere it is used, without a selector for each place. Set the variables on `:root`:
+Most custom CSS only changes colors. A CSS variable changes a color everywhere it is used, without a selector for each place. Set the variables on `:root`:
 
 ```css
 :root {
@@ -21,30 +21,30 @@ Most custom CSS only changes colours. A CSS variable changes a colour everywhere
 }
 ```
 
-### The colours of the theme
+### The colors of the theme
 
-Each theme sets these. On the OG Organizr layout, the colours in the settings group **Style & Themes** set some of them too. A modern theme sets its own colours, so those settings do not change them. Your custom CSS comes after the theme, so your variables win on both layouts.
+Each theme sets these. On the OG Organizr layout, the colors in the settings group **Style & Themes** set some of them too. A modern theme sets its own colors, so those settings do not change them. Your custom CSS comes after the theme, so your variables win on both layouts.
 
-| Variable | What it colours |
+| Variable | What it colors |
 |---|---|
 | `--color-base-100` | The background of the page |
 | `--color-base-200` | Panels and boxes |
 | `--color-base-300` | Borders and lines |
 | `--color-base-content` | The text |
 | `--color-primary`, `--color-primary-content` | Buttons, and the text on them |
-| `--color-info`, `--color-info-content` | The accent colour, and text on it |
+| `--color-info`, `--color-info-content` | The accent color, and text on it |
 | `--color-success` | Things that work or are up |
 | `--color-warning` | Things that need attention |
 | `--color-error` | Things that failed or are down |
 
 ### The bar at the top and the menu
 
-| Variable | What it colours |
+| Variable | What it colors |
 |---|---|
 | `--org-header-bg`, `--org-header-text` | The bar at the top, and its text |
 | `--org-sidebar-bg`, `--org-sidebar-text` | The menu on the left, and its text |
 | `--org-sidebar-active` | The tab that is open in the menu |
-| `--org-swatch-edge` | The border of each colour sample (`.org-swatch`) in the look picker. By default 55 % of the text colour of the page mixed into its background, about 3:1 |
+| `--org-swatch-edge` | The border of each color sample (`.org-swatch`) in the look picker. By default 55 % of the text color of the page mixed into its background, about 3:1 |
 
 ### The states of the calendar
 
@@ -58,11 +58,11 @@ Each theme sets these. On the OG Organizr layout, the colours in the settings gr
 | `--org-event-upcoming` | An iCal event that is ahead | `text-info` |
 | `--org-event-over` | An iCal event that is over | `text-dark` |
 
-The modern layout sets these variables from the colours of its theme. A rule in your custom CSS for one of them still wins on both layouts.
+The modern layout sets these variables from the colors of its theme. A rule in your custom CSS for one of them still wins on both layouts.
 
-### The colours of the services
+### The colors of the services
 
-The colour of each service is a variable too, for example `--org-brand-plex`, `--org-brand-emby` and `--org-brand-sonarr`. The modern layout uses them for the coloured edge of the tiles of **Homepage Order**. Change one to change that edge.
+The color of each service is a variable too, for example `--org-brand-plex`, `--org-brand-emby` and `--org-brand-sonarr`. The modern layout uses them for the colored edge of the tiles of **Homepage Order**. Change one to change that edge.
 
 ## The layout and the theme
 
@@ -71,10 +71,10 @@ Custom CSS applies on both layouts. The element `<html>` has attributes that tel
 | Attribute | Value |
 |---|---|
 | `data-layout` | `og` for the OG Organizr layout, `modern` for the modern layout |
-| `data-theme` | The theme. On the modern layout it is `m-` followed by the theme and its colour set, for example `m-organizr-dark`, `m-plex-light` or `m-silo-ember` |
-| `data-colour-set` | `light` when the colours of the modern theme are light, else `dark`. For example Silo is always `dark`, and Prism Daydream is `light`. The OG Organizr layout does not have it |
+| `data-theme` | The theme. On the modern layout it is `m-` followed by the theme and its color set, for example `m-organizr-dark`, `m-plex-light` or `m-silo-ember` |
+| `data-color-set` | `light` when the colors of the modern theme are light, else `dark`. For example Silo is always `dark`, and Prism Daydream is `light`. The OG Organizr layout does not have it |
 
-To hide every scene, add `.m-scene { display: none; }`. The page then shows the plain colour of the theme. The scene still loads, so the theme still costs the same to open.
+To hide every scene, add `.m-scene { display: none; }`. The page then shows the plain color of the theme. The scene still loads, so the theme still costs the same to open.
 
 A rule for the modern layout only starts with `[data-layout='modern']`:
 
@@ -100,7 +100,7 @@ A rule for the modern layout only starts with `[data-layout='modern']`:
 | `.org-card-icon` | The icon of the state |
 | `.org-card-tag` | A tag of a health check |
 | `.org-card-more` | The times of a health check, which a click shows |
-| `.org-tone-success`, `.org-tone-warning`, `.org-tone-error`, `.org-tone-info`, `.org-tone-primary` | The state of a card. Each sets the variable `--org-state`, which colours the edge and the icon |
+| `.org-tone-success`, `.org-tone-warning`, `.org-tone-error`, `.org-tone-info`, `.org-tone-primary` | The state of a card. Each sets the variable `--org-state`, which colors the edge and the icon |
 
 Each item also has the attribute `data-item` with the key of the item, for example `data-item="homepageOrdercustomhtml01"`. Use it to aim at one of several items of the same kind.
 
@@ -116,7 +116,7 @@ The kinds of items: `adguard`, `bookmarks`, `calendar`, `customhtml`, `deluge`, 
 | `.org-today` | Today, in the table |
 | `.org-calendar-event` | An event in the week and day views |
 | `.org-calendar-time` | The time and the icon of an event |
-| `.org-event-downloaded`, `.org-event-unreleased`, `.org-event-missing`, `.org-event-premiere`, `.org-event-unmonitored`, `.org-event-upcoming`, `.org-event-over` | The state of an event. Each takes its colour from the variable of the same name |
+| `.org-event-downloaded`, `.org-event-unreleased`, `.org-event-missing`, `.org-event-premiere`, `.org-event-unmonitored`, `.org-event-upcoming`, `.org-event-over` | The state of an event. Each takes its color from the variable of the same name |
 
 ### Settings
 
@@ -153,14 +153,14 @@ The modern layout also has these classes for the settings. They exist on the mod
 | `.m-settings-sheet-head` | The title of the drawer |
 | `.m-page-heading` | The heading of the open page, with the name of its group below it |
 
-Some homepage items have these classes on both layouts. On the modern layout they get their colours from the theme:
+Some homepage items have these classes on both layouts. On the modern layout they get their colors from the theme:
 
 | Class | What it is |
 |---|---|
-| `.org-adguard-card` | A card of numbers in the AdGuard Home item. The item sets its colour itself, so change it in custom CSS with `background-color`, `color` or `box-shadow` |
-| `.org-speedtest-icon` | The icon of a card in the Speedtest item. The item sets its colour itself, so change it in custom CSS with `color` or `background-color` |
+| `.org-adguard-card` | A card of numbers in the AdGuard Home item. The item sets its color itself, so change it in custom CSS with `background-color`, `color` or `box-shadow` |
+| `.org-speedtest-icon` | The icon of a card in the Speedtest item. The item sets its color itself, so change it in custom CSS with `color` or `background-color` |
 | `.org-tile` | A dark tile in the Monitorr, UniFi, OctoPrint and Speedtest items |
-| `.org-fill` | A box filled with the colour of its state, with `.org-tone-success`, `.org-tone-warning`, `.org-tone-error`, `.org-tone-info`, `.org-tone-primary` or `.org-tone-neutral` |
+| `.org-fill` | A box filled with the color of its state, with `.org-tone-success`, `.org-tone-warning`, `.org-tone-error`, `.org-tone-info`, `.org-tone-primary` or `.org-tone-neutral` |
 | `.org-calendar-other` | A day of the calendar outside the month that it shows |
 | `.org-netdata-track` | The empty track of a gauge in the Netdata item |
 
@@ -190,8 +190,8 @@ Some homepage items have these classes on both layouts. On the modern layout the
 | `.org-sidebar` | The menu on the left |
 | `.org-sidebar-head` | The title of the menu |
 | `.org-menu` | The list of tabs in the menu |
-| `.org-swatch` | A colour sample of a theme in the look picker, on both layouts |
-| `.org-swatch-dot` | One colour of that sample: the text, primary and accent colours of the theme |
+| `.org-swatch` | A color sample of a theme in the look picker, on both layouts |
+| `.org-swatch-dot` | One color of that sample: the text, primary and accent colors of the theme |
 
 The modern layout uses these same classes, so a rule for them applies on both layouts. The modern layout also has these classes. They exist on the modern layout only:
 
@@ -220,7 +220,7 @@ The modern layout uses these same classes, so a rule for them applies on both la
 | `#allMonitorr`, `.monitorrCards` | `.org-item-monitorr`, `.org-item-monitorr .org-cards` |
 | `#allUptimeKuma`, `.uptimeKumaCards` | `.org-item-uptimekuma`, `.org-item-uptimekuma .org-cards` |
 | `.col-lg-3` and the other columns of a card | `.org-card` |
-| `.left-health` | The left edge of `.org-card`. Change its colour with `--org-state` |
+| `.left-health` | The left edge of `.org-card`. Change its color with `--org-state` |
 | `.bg-success`, `.text-success` on a card | `.org-tone-success { --org-state: ... }` |
 | `.bg-danger`, `.text-danger` on a card | `.org-tone-error { --org-state: ... }` |
 | `.healthCheckCards .label` | `.org-item-healthchecks .org-card-tag` |

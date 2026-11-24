@@ -78,6 +78,6 @@ Behind a reverse proxy, set `ORGANIZR_TRUSTED_PROXIES`. [Reverse proxy](docs/rev
 | Images and their checks | [Releases](docs/releases.md) |
 | Design | [Architecture](docs/architecture.md), [Audit of PHP Organizr](docs/audit.md), [Deviations](docs/deviations.md) |
 
-## Licence
+## License
 
-The project has the licence GPL-3.0, as Organizr has. [Third-party assets](docs/third-party-assets.md) lists the pictures and icons of other projects that the image holds.
+The project has the license GPL-3.0, as Organizr has. [Third-party assets](docs/third-party-assets.md) lists the pictures and icons of other projects that the image holds.

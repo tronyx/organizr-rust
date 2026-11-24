@@ -9,20 +9,20 @@ A layout is the frame around every page: the top bar and the menu. Organizr has 
 - **OG Organizr** is the layout of PHP Organizr. It has the 13 themes described under [Themes](#themes).
 - **Modern** has a top bar and a menu on the left that groups the tabs by category. Below 1024 pixels of width, for example on a phone, the menu is a drawer that a button in the top bar opens. A dot at each tab shows whether the application of the tab answers. The links that PHP adds at the end of the menu come last. On a screen of 1024 pixels or wider, the button at the left of the top bar makes the menu a narrow column of icons and gives the page the space. Each tab then shows only its picture or its first letter, its name shows when you point at it or move to it with the keyboard, and the dot that shows whether the application answers stays on the picture. Click the button again to see the whole menu. This browser remembers your choice; another browser or device starts with the whole menu. Modern has these themes:
 
-| Theme | Colour sets | Look |
+| Theme | Color sets | Look |
 |---|---|---|
-| `Organizr` | Dark, Light | The blue-grey colours of Organizr |
+| `Organizr` | Dark, Light | The blue-gray colors of Organizr |
 | `Plex` | Dark, Light | Charcoal with amber-gold |
 | `Jellyfin` | Dark, Light | Deep navy, with a purple-to-blue gradient on the main buttons |
 | `Emby` | Dark, Light | Near-black with green |
-| `Silo` | Ember, Ice, Rose | Near-black with off-white buttons, one accent colour and the font Plus Jakarta Sans. The colour sets change the accent |
+| `Silo` | Ember, Ice, Rose | Near-black with off-white buttons, one accent color and the font Plus Jakarta Sans. The color sets change the accent |
 | `Nocturne` | Amethyst, Crimson, Moonlit | Gothic violet. A night sky with a moon, mist, a cathedral and bats. Headings in Cinzel |
 | `Riot` | Acid, Hotwire, Blacklight | Punk neon. A brick wall with neon graffiti and signs. Headings in Sedgwick Ave Display |
 | `Tempest` | Squall, Abyss, Gale | Stormy seas. Waves, rain, a lighthouse and now and then a soft flash of lightning. Headings in Pirata One |
 | `Circuit` | Matrix, Synth, Amber | Cyberpunk. A circuit board with chips, traces and blinking lights. Headings in Orbitron |
 | `Prism` | Daydream, Twilight, Candy | Sparkly rainbow. A rainbow, clouds and sparkles. All text in Fredoka. Daydream and Candy are light |
 
-The themes Plex, Jellyfin, Emby and Silo take only the colours of these applications, not their logos.
+The themes Plex, Jellyfin, Emby and Silo take only the colors of these applications, not their logos.
 
 ### The scenes
 
@@ -35,7 +35,7 @@ The last five themes have a scene: a picture that moves slowly behind the page. 
 
 Every text stays on the cards of the theme, never on the scene. The scene, and the font of its theme, load only when you pick the theme.
 
-The settings on the modern layout have a side menu at the left. It lists the same groups and pages as the tabs of OG Organizr. Below 1024 pixels of width, a **Settings menu** button opens the same list as a drawer. The top bar shows the name of the open page, for example "Settings · Tabs". The homepage items have the modern look too: cards in the colours of the theme, and a coloured edge for each service where OG Organizr fills a box with the colour of the service. The login page, the pages to register, to recover a password and to use an invite, the lock screen, the set-up wizard and the page **Account** have the modern look too: a card in the colours of the theme, over the wallpaper or the picture of the login page. On a phone the bar at the top leaves out the name of the open tab, and a long user name ends in "…". The other pages inside the modern layout look as they look in the OG Organizr layout.
+The settings on the modern layout have a side menu at the left. It lists the same groups and pages as the tabs of OG Organizr. Below 1024 pixels of width, a **Settings menu** button opens the same list as a drawer. The top bar shows the name of the open page, for example "Settings · Tabs". The homepage items have the modern look too: cards in the colors of the theme, and a colored edge for each service where OG Organizr fills a box with the color of the service. The login page, the pages to register, to recover a password and to use an invite, the lock screen, the set-up wizard and the page **Account** have the modern look too: a card in the colors of the theme, over the wallpaper or the picture of the login page. On a phone the bar at the top leaves out the name of the open tab, and a long user name ends in "…". The other pages inside the modern layout look as they look in the OG Organizr layout.
 
 A new install starts on the modern layout. An install that you update, or that you import from PHP Organizr, stays on the OG Organizr layout: nobody sees a change until someone chooses one.
 
@@ -47,12 +47,12 @@ To set the default look, as Admin:
 
 1. Open **Settings**, then **Appearance**.
 2. Open the group **Style & Themes**.
-3. Choose **Default layout**. The theme of that layout shows below it, with a sample of its colours: **Theme** for OG Organizr, or **Modern theme** and **Modern colour set** for Modern. With Modern, the OG **Theme** shows too, under the heading **OG Organizr**, for the people who choose the OG layout.
-4. Select **Save** at the top of the panel. The one button saves the look and the colours of the group together.
+3. Choose **Default layout**. The theme of that layout shows below it, with a sample of its colors: **Theme** for OG Organizr, or **Modern theme** and **Modern color set** for Modern. With Modern, the OG **Theme** shows too, under the heading **OG Organizr**, for the people who choose the OG layout.
+4. Select **Save** at the top of the panel. The one button saves the look and the colors of the group together.
 
-Below the themes, the heading **Colours of the OG Organizr layout** stands over the colour pickers. They apply to the OG Organizr layout only.
+Below the themes, the heading **Colors of the OG Organizr layout** stands over the color pickers. They apply to the OG Organizr layout only.
 
-The settings are `layout` (`og` or `modern`; the set-up wizard of a new install stores `modern`, and an updated or imported install has `og`), `modernTheme` (`organizr`, `plex`, `jellyfin`, `emby`, `silo`, `nocturne`, `riot`, `tempest`, `circuit` or `prism`; `organizr` by default) and `modernColourSet` (the id of a colour set of that theme in lower case, for example `dark`, `ember` or `daydream`; `dark` by default). Only the Admin can change `layout`, `modernTheme` and `modernColourSet`. A Co-Admin sees them but cannot change them; a Co-Admin can still change **Theme** and the colours, and save them, as in PHP Organizr. A colour set that the theme does not have gives way to the first colour set of the theme, for example `silo` with `dark` shows Silo Ember.
+The settings are `layout` (`og` or `modern`; the set-up wizard of a new install stores `modern`, and an updated or imported install has `og`), `modernTheme` (`organizr`, `plex`, `jellyfin`, `emby`, `silo`, `nocturne`, `riot`, `tempest`, `circuit` or `prism`; `organizr` by default) and `modernColorSet` (the id of a color set of that theme in lower case, for example `dark`, `ember` or `daydream`; `dark` by default). Only the Admin can change `layout`, `modernTheme` and `modernColorSet`. A Co-Admin sees them but cannot change them; a Co-Admin can still change **Theme** and the colors, and save them, as in PHP Organizr. A color set that the theme does not have gives way to the first color set of the theme, for example `silo` with `dark` shows Silo Ember.
 
 To choose your own look, use the **Look** picker. You find it in three places:
 
@@ -60,7 +60,7 @@ To choose your own look, use the **Look** picker. You find it in three places:
 - In the OG Organizr layout, the entry **Look** in the menu of the user.
 - On the page **Account**.
 
-The picker has the layout and the theme, and on the modern layout the colours. Next to each theme and colour set, the picker shows a small sample of its colours. On the OG Organizr layout, the sample of the install's own theme shows the button and accent colours that the Admin set in **Style & Themes**; the other samples show the colours of each theme. Each change is saved at once. The button **Use the default** forgets your choices and returns you to the default look of the Admin.
+The picker has the layout and the theme, and on the modern layout the colors. Next to each theme and color set, the picker shows a small sample of its colors. On the OG Organizr layout, the sample of the install's own theme shows the button and accent colors that the Admin set in **Style & Themes**; the other samples show the colors of each theme. Each change is saved at once. The button **Use the default** forgets your choices and returns you to the default look of the Admin.
 
 ### What each layout remembers
 
@@ -68,11 +68,11 @@ Organizr remembers your last theme for each layout. If you switch from the OG Or
 
 ### The API
 
-`GET /launch` has the field `look` with the layout, theme, colour set and source of the look that applies. `PUT /api/v2/user/look` stores the choice of the person who is logged in, with the fields `layout`, `theme` and `colourSet`. A body that names only `layout` switches the layout and keeps the last theme and colours of that layout. A `layout` of `null` forgets the whole choice. A script with an API key has no look of its own. D-125 in [Deviations](deviations.md) has the details.
+`GET /launch` has the field `look` with the layout, theme, color set and source of the look that applies. `PUT /api/v2/user/look` stores the choice of the person who is logged in, with the fields `layout`, `theme` and `colorSet`. A body that names only `layout` switches the layout and keeps the last theme and colors of that layout. A `layout` of `null` forgets the whole choice. A script with an API key has no look of its own. D-125 in [Deviations](deviations.md) has the details.
 
-### Custom CSS and colours
+### Custom CSS and colors
 
-[Custom CSS](custom-css.md) applies on both layouts. The colours in the group **Style & Themes** apply on the OG Organizr layout only. A modern theme sets its own colours. Motion in the modern layout stops when the system asks for reduced motion.
+[Custom CSS](custom-css.md) applies on both layouts. The colors in the group **Style & Themes** apply on the OG Organizr layout only. A modern theme sets its own colors. Motion in the modern layout stops when the system asks for reduced motion.
 
 ## Themes
 
@@ -80,11 +80,11 @@ Organizr has the two themes of PHP Organizr, `Organizr` and `Blue`, and the 11 t
 
 Themes of other marketplaces are not supported. Theme files that were written for PHP Organizr do not fit the pages of this application.
 
-## Colours
+## Colors
 
-These fields apply on the OG Organizr layout only. A modern theme sets its own colours.
+These fields apply on the OG Organizr layout only. A modern theme sets its own colors.
 
-Each colour field takes a colour, for example `#987654`, `rgb(20, 40, 60)` or `teal`. An empty field means the colour of the theme. Organizr ignores a value that is not a colour.
+Each color field takes a color, for example `#987654`, `rgb(20, 40, 60)` or `teal`. An empty field means the color of the theme. Organizr ignores a value that is not a color.
 
 ## The picture of the login page
 

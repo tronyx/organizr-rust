@@ -26,7 +26,7 @@ The workflow `build` builds the image for each architecture on a machine of that
 
 A vulnerability is a known security fault in a software package of the image. A vulnerability without a correction does not stop the build, because no build can remove it.
 
-The scan reads the system packages of the image. The Rust libraries are not in that list. The job `Advisories, licences and banned crates` of the workflow `ci` looks for known faults in them on each push.
+The scan reads the system packages of the image. The Rust libraries are not in that list. The job `Advisories, licenses and banned crates` of the workflow `ci` looks for known faults in them on each push.
 
 ## What an image carries
 
