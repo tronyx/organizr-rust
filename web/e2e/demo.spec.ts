@@ -1138,7 +1138,7 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
         '<script>var seen; try { seen = "cookies: " + document.cookie; } catch (e) { seen = "no cookies for this frame"; }' +
         ' document.getElementById("cookies").textContent = seen;</script>',
     );
-  await saveSettings(page, 'settings/homepage/CustomHTML');
+  await saveSettings(page, 'config');
 
   await page.goto('./#Homepage');
   await page.reload();
