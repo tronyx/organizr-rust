@@ -52,8 +52,9 @@
     /** The groups in the answer of the route. */
     pick?: (data: unknown) => PhpGroups;
     /**
-     * Groups that PHP fills with HTML of its own, and that this application fills with a
-     * part of its own, by the name of the group.
+     * Parts of this application, by the name of the group: a group that PHP fills with HTML
+     * of its own gets the part in its place, and a normal PHP group gets it before its
+     * fields (after the notices at its start).
      */
     extra?: Record<string, Snippet>;
     /**
@@ -63,7 +64,10 @@
     parts?: Record<string, FormPart>;
     /** Groups that this page leaves out, by their names. */
     hidden?: string[];
-    /** Fields that this page leaves out, by their settings: the form does not send them either. */
+    /**
+     * Fields that this page leaves out, by their settings: the form does not send them either.
+     * The list is form-wide: a setting named here is left out of every group that has it.
+     */
     hiddenFields?: string[];
     /** The names that the page shows for some groups, by the names of PHP. */
     labels?: Record<string, string>;
