@@ -7,9 +7,35 @@ The settings page **Appearance** changes how Organizr looks. The settings page *
 A layout is the frame around every page: the top bar and the menu. Organizr has two layouts:
 
 - **OG Organizr** is the layout of PHP Organizr. It has the 13 themes described under [Themes](#themes).
-- **Modern** has a top bar and a menu on the left that groups the tabs by category. Below 1024 pixels of width, for example on a phone, the menu is a drawer that a button in the top bar opens. A dot at each tab shows whether the application of the tab answers. The links that PHP adds at the end of the menu come last. Modern has one theme for now, `Organizr`, in dark colours. More themes, and light colours, come with the next versions of the modern layout.
+- **Modern** has a top bar and a menu on the left that groups the tabs by category. Below 1024 pixels of width, for example on a phone, the menu is a drawer that a button in the top bar opens. A dot at each tab shows whether the application of the tab answers. The links that PHP adds at the end of the menu come last. Modern has these themes:
 
-The settings on the modern layout have a side menu at the left. It lists the same groups and pages as the tabs of OG Organizr. Below 1024 pixels of width, a **Settings menu** button opens the same list as a drawer. The top bar shows the name of the open page, for example "Settings · Tabs". The other pages inside the modern layout look as they look in the OG Organizr layout.
+| Theme | Colour sets | Look |
+|---|---|---|
+| `Organizr` | Dark, Light | The blue-grey colours of Organizr |
+| `Plex` | Dark, Light | Charcoal with amber-gold |
+| `Jellyfin` | Dark, Light | Deep navy, with a purple-to-blue gradient on the main buttons |
+| `Emby` | Dark, Light | Near-black with green |
+| `Silo` | Ember, Ice, Rose | Near-black with off-white buttons, one accent colour and the font Plus Jakarta Sans. The colour sets change the accent |
+| `Nocturne` | Amethyst, Crimson, Moonlit | Gothic violet. A night sky with a moon, mist, a cathedral and bats. Headings in Cinzel |
+| `Riot` | Acid, Hotwire, Blacklight | Punk neon. A brick wall with neon graffiti and signs. Headings in Sedgwick Ave Display |
+| `Tempest` | Squall, Abyss, Gale | Stormy seas. Waves, rain, a lighthouse and now and then a soft flash of lightning. Headings in Pirata One |
+| `Circuit` | Matrix, Synth, Amber | Cyberpunk. A circuit board with chips, traces and blinking lights. Headings in Orbitron |
+| `Prism` | Daydream, Twilight, Candy | Sparkly rainbow. A rainbow, clouds and sparkles. All text in Fredoka. Daydream and Candy are light |
+
+The themes Plex, Jellyfin, Emby and Silo take only the colours of these applications, not their logos.
+
+### The scenes
+
+The last five themes have a scene: a picture that moves slowly behind the page. The scene shows on the homepage, the settings and the page **Account**. The other pages cover it, and it stands still behind them. It also stands still:
+
+- when the tab of Organizr is not in view,
+- when a tab with the page of another application fills the screen,
+- behind the picture of the login page,
+- when your computer or phone asks for reduced motion (for example **Reduce motion** in the settings of the system). The scene then stays as a still picture.
+
+Every text stays on the cards of the theme, never on the scene. The scene, and the font of its theme, load only when you pick the theme.
+
+The settings on the modern layout have a side menu at the left. It lists the same groups and pages as the tabs of OG Organizr. Below 1024 pixels of width, a **Settings menu** button opens the same list as a drawer. The top bar shows the name of the open page, for example "Settings · Tabs". The homepage items have the modern look too: cards in the colours of the theme, and a coloured edge for each service where OG Organizr fills a box with the colour of the service. The login page, the pages to register, to recover a password and to use an invite, the lock screen, the set-up wizard and the page **Account** have the modern look too: a card in the colours of the theme, over the wallpaper or the picture of the login page. On a phone the bar at the top leaves out the name of the open tab, and a long user name ends in "…". The other pages inside the modern layout look as they look in the OG Organizr layout.
 
 An install that you update stays on the OG Organizr layout. Nobody sees a change until someone chooses one.
 
@@ -21,10 +47,10 @@ To set the default look, as Admin:
 
 1. Open **Settings**, then **Appearance**.
 2. Open the group **Layout**.
-3. Choose **Default layout** and **Modern theme**.
+3. Choose **Default layout**, **Modern theme** and **Modern colour set**.
 4. Select **Save the layout**.
 
-The settings are `layout` (`og` or `modern`, `og` by default), `modernTheme` (`organizr` by default) and `modernColourSet` (`dark`, the only colour set for now). Only the Admin can change them. A Co-Admin sees them but cannot save.
+The settings are `layout` (`og` or `modern`, `og` by default), `modernTheme` (`organizr`, `plex`, `jellyfin`, `emby`, `silo`, `nocturne`, `riot`, `tempest`, `circuit` or `prism`; `organizr` by default) and `modernColourSet` (the id of a colour set of that theme in lower case, for example `dark`, `ember` or `daydream`; `dark` by default). Only the Admin can change them. A Co-Admin sees them but cannot save. A colour set that the theme does not have gives way to the first colour set of the theme, for example `silo` with `dark` shows Silo Ember.
 
 To choose your own look, use the **Look** picker. You find it in three places:
 

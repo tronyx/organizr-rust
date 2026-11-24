@@ -57,6 +57,12 @@ Each theme sets these. On the OG Organizr layout, the settings **Colors & Themes
 | `--org-event-upcoming` | An iCal event that is ahead | `text-info` |
 | `--org-event-over` | An iCal event that is over | `text-dark` |
 
+The modern layout sets these variables from the colours of its theme. A rule in your custom CSS for one of them still wins on both layouts.
+
+### The colours of the services
+
+The colour of each service is a variable too, for example `--org-brand-plex`, `--org-brand-emby` and `--org-brand-sonarr`. The modern layout uses them for the coloured edge of the tiles of **Homepage Order**. Change one to change that edge.
+
 ## The layout and the theme
 
 Custom CSS applies on both layouts. The element `<html>` has attributes that tell which look is on, so a rule can aim at one of them:
@@ -64,8 +70,10 @@ Custom CSS applies on both layouts. The element `<html>` has attributes that tel
 | Attribute | Value |
 |---|---|
 | `data-layout` | `og` for the OG Organizr layout, `modern` for the modern layout |
-| `data-theme` | The theme. On the modern layout it is `m-organizr-dark` |
-| `data-colour-set` | The colours of the modern theme, `dark` for now. The OG Organizr layout does not have it |
+| `data-theme` | The theme. On the modern layout it is `m-` followed by the theme and its colour set, for example `m-organizr-dark`, `m-plex-light` or `m-silo-ember` |
+| `data-colour-set` | `light` when the colours of the modern theme are light, else `dark`. For example Silo is always `dark`, and Prism Daydream is `light`. The OG Organizr layout does not have it |
+
+To hide every scene, add `.m-scene { display: none; }`. The page then shows the plain colour of the theme. The scene still loads, so the theme still costs the same to open.
 
 A rule for the modern layout only starts with `[data-layout='modern']`:
 
@@ -133,6 +141,17 @@ The modern layout also has these classes for the settings. They exist on the mod
 | `.m-settings-sheet-head` | The title of the drawer |
 | `.m-page-heading` | The heading of the open page, with the name of its group below it |
 
+Some homepage items have these classes on both layouts. On the modern layout they get their colours from the theme:
+
+| Class | What it is |
+|---|---|
+| `.org-adguard-card` | A card of numbers in the AdGuard Home item. The item sets its colour itself, so change it in custom CSS with `background-color`, `color` or `box-shadow` |
+| `.org-speedtest-icon` | The icon of a card in the Speedtest item. The item sets its colour itself, so change it in custom CSS with `color` or `background-color` |
+| `.org-tile` | A dark tile in the Monitorr, UniFi, OctoPrint and Speedtest items |
+| `.org-fill` | A box filled with the colour of its state, with `.org-tone-success`, `.org-tone-warning`, `.org-tone-error`, `.org-tone-info`, `.org-tone-primary` or `.org-tone-neutral` |
+| `.org-calendar-other` | A day of the calendar outside the month that it shows |
+| `.org-netdata-track` | The empty track of a gauge in the Netdata item |
+
 ### Login page and lock screen
 
 | Class | What it is |
@@ -143,8 +162,11 @@ The modern layout also has these classes for the settings. They exist on the mod
 | `.org-login-box-logo` | The logo or the name in the form. It shows on phones only |
 | `.org-login-logo` | The picture of the logo |
 | `.org-login-card` | The box of the minimal login page |
+| `.org-login-form` | The form on the login page and on the pages to register, to recover a password and to use an invite |
+| `.org-login-title` | The heading of that form |
 | `.org-lock-screen` | The lock screen, with the wallpaper |
 | `.org-lock-box` | The box of the lock screen |
+| `.org-lock-name` | The name of the person on the lock screen |
 
 ### Bar at the top and menu
 
@@ -163,6 +185,12 @@ The modern layout uses these same classes, so a rule for them applies on both la
 |---|---|
 | `.m-shown` | The name of the open tab in the bar at the top |
 | `.m-look` | The box of the button **Look** in the bar at the top |
+| `.m-look-panel` | The look picker that the button **Look** opens |
+| `.m-user` | The button of the user in the bar at the top |
+| `.m-user-name` | The name in that button. On a phone a long name ends in "…" |
+| `.m-scene` | The moving scene behind the page, on the themes Nocturne, Riot, Tempest, Circuit and Prism |
+| `.m-scene-nocturne`, `.m-scene-riot`, `.m-scene-tempest`, `.m-scene-circuit`, `.m-scene-prism` | The scene of one theme |
+| `.m-scene-paused` | On `.m-scene` while the scene stands still |
 | `.m-with-menu` | The page area, when the menu is beside it. Below 1024 pixels the menu is a drawer, and the class is absent |
 | `.org-menu-extras` | The links at the end of the menu |
 
