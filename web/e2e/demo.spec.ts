@@ -465,6 +465,40 @@ test('the Admin manages the groups, and the group for new users is not deleted',
   await expect(page.getByRole('row', { name: /Writers/ })).toHaveCount(0);
 });
 
+/**
+ * The pager under the users and the page size in the heading, as in PHP: readable, and
+ * the page size hidden on a phone. The demo has fewer than ten users, so it has one page.
+ */
+async function checkUserPages(page: Page, layout: string) {
+  const pager = page.getByRole('navigation', { name: 'Pages of the users' });
+  await expect(pager).toBeVisible();
+  await expect(pager.getByRole('button', { name: 'Page 1' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(pager.getByRole('button', { name: 'Next page' })).toBeDisabled();
+  const size = page.getByLabel('Users per page');
+  await expect(size).toBeVisible();
+  await expect(size).toHaveValue('10');
+  // OG keeps the colors of PHP: white on its blue and purple buttons is below 4.5:1, as on
+  // every blue button of OG, so the pager is audited on the modern layout only.
+  const audited = layout === 'OG' ? ['.org-panel-heading'] : ['.org-pager', '.org-panel-heading'];
+  for (const where of audited) {
+    const audit = await auditContrast(page, where);
+    expect(audit.checked).toBeGreaterThan(0);
+    expect(audit.low, describeLowContrast(`${where} of the users on ${layout}`, audit.low)).toEqual(
+      [],
+    );
+  }
+  const before = page.viewportSize();
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect(size).toBeHidden();
+  await expect(pager).toBeVisible();
+  if (before) {
+    await page.setViewportSize(before);
+  }
+}
+
 test('the Admin manages the users, and cannot delete the own account', async ({ page }) => {
   await logIn(page);
   await page.goto('./#/settings/tabs');
@@ -565,6 +599,7 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
   const ogAudit = await auditContrast(page, '.org-users-table');
   expect(ogAudit.checked).toBeGreaterThan(0);
   expect(ogAudit.low, describeLowContrast('the OG table of users', ogAudit.low)).toEqual([]);
+  await checkUserPages(page, 'OG');
   await page.setViewportSize({ width: 1280, height: 720 });
 
   // On the modern layout the table fits the card: the buttons of each row are on screen.
@@ -610,6 +645,7 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
     const audit = await auditContrast(page, '.org-users-table');
     expect(audit.checked).toBeGreaterThan(0);
     expect(audit.low, describeLowContrast('the narrow table of users', audit.low)).toEqual([]);
+    await checkUserPages(page, 'modern');
   } finally {
     expect((await look(null)).ok()).toBe(true);
     await page.reload();

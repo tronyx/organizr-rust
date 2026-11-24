@@ -2100,6 +2100,22 @@
     cursor: pointer;
   }
 
+  /* The pager under a long table, at the right as in PHP. */
+  .org-pager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+    padding: 15px 25px;
+  }
+
+  /* The page size of a table, in the heading of its panel: as narrow as its numbers. The
+     class pair beats the full width of every form control. */
+  .org-form-control.org-page-size {
+    width: auto;
+    margin-left: auto;
+  }
+
   /* The buttons of the Action column of the users, side by side. */
   .org-users-actions {
     display: inline-flex;

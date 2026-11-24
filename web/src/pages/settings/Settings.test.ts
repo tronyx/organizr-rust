@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { plexToken } from '../../lib/plexLogin';
 import { session } from '../../lib/session.svelte';
@@ -737,6 +737,111 @@ describe('Settings, users', () => {
       ['PUT users/3', { locked: 1 }],
       ['PUT users/4', { locked: 0 }],
     ]);
+  });
+
+  describe('in pages', () => {
+    // 23 users: user01 … user23, after the Admin.
+    const MANY: Account[] = [
+      USERS[0] as Account,
+      ...Array.from({ length: 22 }, (_, index) =>
+        account(index + 2, `user${String(index + 2).padStart(2, '0')}`),
+      ),
+    ];
+    const names = () =>
+      screen
+        .getAllByRole('rowheader')
+        .map((header) => header.firstChild?.textContent?.trim() ?? '');
+    const pager = () => screen.getByRole('navigation', { name: 'Pages of the users' });
+
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it('shows ten users a page, with the pager of PHP', async () => {
+      await show('users', { 'GET users': { data: MANY } });
+
+      expect(names()).toHaveLength(10);
+      expect(names()[0]).toBe('admin');
+      expect(screen.getByLabelText('Users per page')).toHaveValue('10');
+      expect(within(pager()).getByRole('button', { name: 'Page 1' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(within(pager()).getByRole('button', { name: 'First page' })).toBeDisabled();
+      expect(within(pager()).getByRole('button', { name: 'Previous page' })).toBeDisabled();
+      expect(
+        within(pager())
+          .getAllByRole('button', { name: /^Page \d+$/ })
+          .map((button) => button.textContent?.trim()),
+      ).toEqual(['1', '2', '3']);
+
+      await fireEvent.click(within(pager()).getByRole('button', { name: 'Next page' }));
+      expect(names()[0]).toBe('user11');
+      await fireEvent.click(within(pager()).getByRole('button', { name: 'Last page' }));
+      expect(names()).toEqual(['user21', 'user22', 'user23']);
+      expect(within(pager()).getByRole('button', { name: 'Next page' })).toBeDisabled();
+      await fireEvent.click(within(pager()).getByRole('button', { name: 'Page 2' }));
+      expect(names()[0]).toBe('user11');
+    });
+
+    it('changes and remembers the page size, keeping the first user of the page in view', async () => {
+      await show('users', { 'GET users': { data: MANY } });
+      await fireEvent.click(within(pager()).getByRole('button', { name: 'Page 3' }));
+
+      await fireEvent.change(screen.getByLabelText('Users per page'), {
+        target: { value: '15' },
+      });
+
+      // user21 was first on page 3 of ten; with 15 a page it is on page 2.
+      expect(names()).toContain('user21');
+      expect(names()[0]).toBe('user16');
+      expect(localStorage.getItem('organizr.pageSize.users')).toBe('15');
+    });
+
+    it('starts with the page size the person picked before', async () => {
+      localStorage.setItem('organizr.pageSize.users', '30');
+      await show('users', { 'GET users': { data: MANY } });
+
+      expect(names()).toHaveLength(23);
+      expect(screen.getByLabelText('Users per page')).toHaveValue('30');
+    });
+
+    it('stays on the page after a change, and goes back a page when the last one empties', async () => {
+      // 21 users: page 3 holds user21 alone.
+      let users = MANY.slice(0, 21);
+      const sent = stubApi({
+        'GET tabs': { data: DATA },
+        'GET users': () => ({ data: users }),
+        'GET launch': AS_ADMIN,
+        'PUT users/12': {},
+        'DELETE users/21': () => {
+          users = MANY.slice(0, 20);
+          return {};
+        },
+      });
+      render(Settings, { section: 'users' });
+      await screen.findByRole('table');
+
+      await fireEvent.click(within(pager()).getByRole('button', { name: 'Page 2' }));
+      await fireEvent.click(screen.getByLabelText('Lock user12'));
+      await statusSays('The user is locked.');
+      expect(names()[0]).toBe('user11');
+
+      await fireEvent.click(within(pager()).getByRole('button', { name: 'Last page' }));
+      expect(names()).toEqual(['user21']);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      await fireEvent.click(screen.getByRole('button', { name: 'Delete user21' }));
+      await statusSays('The user is deleted.');
+      await waitFor(() => expect(names()[0]).toBe('user11'));
+      expect(within(pager()).getByRole('button', { name: 'Page 2' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(changes(sent)).toEqual([
+        ['PUT users/12', { locked: 1 }],
+        ['DELETE users/21', undefined],
+      ]);
+    });
   });
 
   it('deletes a user only after the person said yes, and shows a refusal', async () => {

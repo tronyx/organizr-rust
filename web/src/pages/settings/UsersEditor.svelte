@@ -1,8 +1,17 @@
 <script lang="ts">
   // The table of all users, with the ways to add, change, lock and delete them.
+  import Pager from '../../components/Pager.svelte';
   import Picture from '../../components/Picture.svelte';
   import { api } from '../../lib/api';
   import { asSwitch } from '../../lib/editor';
+  import {
+    PAGE_SIZES,
+    pageCount,
+    pageOf,
+    readPageSize,
+    savePageSize,
+    shownPage,
+  } from '../../lib/paging';
   import { session } from '../../lib/session.svelte';
   import { localDateTime } from '../../lib/time';
   import type { Account, EditorData } from '../../lib/types';
@@ -24,6 +33,22 @@
   // is set when the key of the Password column opened it: it starts in the new password.
   let dialog = $state<{ user: Account | null; password?: boolean } | null>(null);
   let error = $state<string | null>(null);
+
+  // The users a page at a time, as in PHP. The page stays when the users load again after
+  // a change; after a delete that empties the last page, the page before it shows.
+  let pageSize = $state(readPageSize('users'));
+  let page = $state(1);
+  const pages = $derived(pageCount(data.users.length, pageSize));
+  const current = $derived(shownPage(page, data.users.length, pageSize));
+  const shown = $derived(pageOf(data.users, current, pageSize));
+
+  function setPageSize(size: number) {
+    // The first user of the page stays in view.
+    const first = (current - 1) * pageSize;
+    pageSize = size;
+    page = Math.floor(first / size) + 1;
+    savePageSize('users', size);
+  }
 
   /** Whether the row is the account of the person who looks at the page. */
   function isOwn(user: Account): boolean {
@@ -136,6 +161,17 @@
   <section class="org-panel" aria-labelledby="manage-users-title">
     <div class="org-panel-heading">
       <h2 id="manage-users-title" class="uppercase">Manage Users</h2>
+      <!-- PHP hides the page size on a phone. -->
+      <select
+        class="org-form-control org-page-size hidden sm:block"
+        aria-label="Users per page"
+        value={pageSize}
+        onchange={(event) => setPageSize(Number(event.currentTarget.value))}
+      >
+        {#each PAGE_SIZES as size (size)}
+          <option value={size}>{size}</option>
+        {/each}
+      </select>
       <button
         class="org-round-button org-round-info org-round-small"
         aria-label="Add a user"
@@ -160,7 +196,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each data.users as user (user.id)}
+          {#each shown as user (user.id)}
             <!-- The click on a row is a shortcut for the mouse, as in PHP. The Edit button of
                  the row does the same for the keyboard, so the row needs no key or role. -->
             <tr class="org-click-row" onclick={(event) => openRow(event, user)}>
@@ -226,6 +262,7 @@
         </tbody>
       </table>
     </div>
+    <Pager page={current} count={pages} label="Pages of the users" onpage={(to) => (page = to)} />
   </section>
 {/if}
 
