@@ -1,6 +1,8 @@
 // The modern layout: the shell with its grouped menu, user menu and phone drawer. It runs
 // after the walk of `demo.spec.ts`, on the same install.
 
+import type { Page } from '@playwright/test';
+
 import { MODERN_THEMES } from '../src/lib/look';
 import { auditContrast, describeLowContrast } from './contrast';
 import { expect, test } from './fixtures';
@@ -655,7 +657,79 @@ test('on OG the sample of the theme of the install shows the colours of the Admi
   }
 });
 
-test('long theme names fit the look popover at a large text size', async ({ page }) => {
+/**
+ * How the labels of the look picker inside `within` lay out: for each label, the lines of
+ * its name and whether its own content or its box runs past its column or the picker.
+ */
+async function labelLayout(page: Page, within: string) {
+  return page.locator(within).evaluate(async (scope) => {
+    // The popover zooms in as it opens: its sizes count once that is over.
+    await Promise.all(
+      scope.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => {})),
+    );
+    const grid = scope.querySelector('fieldset .grid');
+    const gridBox = grid?.getBoundingClientRect();
+    const labels = [...scope.querySelectorAll('fieldset label')];
+    const rows = labels.map((label) => {
+      const name = label.querySelector(':scope > span:not(.org-swatch)');
+      const range = document.createRange();
+      if (name?.firstChild) range.selectNodeContents(name.firstChild);
+      const box = label.getBoundingClientRect();
+      const lineHeight = parseFloat(getComputedStyle(name ?? label).lineHeight);
+      return {
+        name: name?.textContent?.trim() ?? '',
+        lines: range.getClientRects().length,
+        oneLineHigh: (name?.getBoundingClientRect().height ?? 0) <= lineHeight * 1.2,
+        // The content of the label (radio, sample, name) stays inside the label.
+        spills: label.scrollWidth > label.clientWidth + 1,
+        box,
+      };
+    });
+    // Two labels of the same row do not overlap.
+    const overlaps = rows.flatMap((row, index) =>
+      rows
+        .slice(index + 1)
+        .filter(
+          (other) =>
+            Math.abs(other.box.top - row.box.top) < 2 &&
+            other.box.left < row.box.right - 0.5 &&
+            row.box.left < other.box.right - 0.5,
+        )
+        .map((other) => `${row.name}/${other.name}`),
+    );
+    const outsideGrid = gridBox
+      ? rows
+          .filter((row) => row.box.right > gridBox.right + 0.5 || row.box.left < gridBox.left - 0.5)
+          .map((row) => row.name)
+      : [];
+    // The labels end inside the padding of the picker, not on it.
+    const style = getComputedStyle(scope);
+    const outer = scope.getBoundingClientRect();
+    const contentRight =
+      outer.right - parseFloat(style.paddingRight) - parseFloat(style.borderRightWidth);
+    const contentLeft =
+      outer.left + parseFloat(style.paddingLeft) + parseFloat(style.borderLeftWidth);
+    const pastPadding = rows
+      .filter((row) => row.box.right > contentRight + 0.5 || row.box.left < contentLeft - 0.5)
+      .map((row) => row.name);
+    return {
+      count: rows.length,
+      pastPadding,
+      notOneLine: rows.filter((row) => row.lines !== 1 || !row.oneLineHigh).map((row) => row.name),
+      spills: rows.filter((row) => row.spills).map((row) => row.name),
+      overlaps,
+      outsideGrid,
+      gridScrolls: grid ? grid.scrollWidth > grid.clientWidth + 1 : false,
+      scopeScrolls: scope.scrollWidth > scope.clientWidth + 1,
+      scopeBox: scope.getBoundingClientRect().toJSON() as DOMRect,
+      viewport: window.innerWidth,
+    };
+  });
+}
+
+test('at the normal text size every name of the look picker is one line, whole', async ({
+  page,
+}) => {
   await logIn(page);
   const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
 
@@ -663,35 +737,87 @@ test('long theme names fit the look popover at a large text size', async ({ page
     expect((await look({ layout: 'modern', theme: 'organizr', colourSet: 'dark' })).ok()).toBe(
       true,
     );
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.reload();
-    // A browser text size of 200 %: a root of 32 px instead of 16 px, set through the CSSOM.
-    await page.evaluate(() => document.documentElement.style.setProperty('font-size', '32px'));
-    await page.getByRole('button', { name: 'Look' }).click();
-    const panel = page.locator('[data-slot="popover-content"]');
-    await expect(panel.getByRole('radio', { name: 'Nocturne', exact: true })).toBeVisible();
+    for (const [width, height] of [
+      [1280, 800],
+      [667, 375],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.reload();
+      await page.getByRole('button', { name: 'Look' }).click();
+      const panel = '[data-slot="popover-content"]';
+      await expect(
+        page.locator(panel).getByRole('radio', { name: 'Nocturne', exact: true }),
+      ).toBeVisible();
+      const layout = await labelLayout(page, panel);
+      const where = `the popover at ${width} x ${height}`;
+      expect(layout.count, where).toBe(14);
+      expect(layout.notOneLine, where).toEqual([]);
+      expect(layout.spills, where).toEqual([]);
+      expect(layout.overlaps, where).toEqual([]);
+      expect(layout.pastPadding, where).toEqual([]);
+      await page.keyboard.press('Escape');
+    }
 
-    const overflow = await panel.evaluate((element) => {
-      const box = element.getBoundingClientRect();
-      const wide = [element, ...element.querySelectorAll('*')].filter(
-        (node) =>
-          node.scrollWidth > node.clientWidth + 1 && getComputedStyle(node).overflowX !== 'visible',
-      );
-      const outside = [...element.querySelectorAll('label')].filter((label) => {
-        const own = label.getBoundingClientRect();
-        return own.right > box.right + 0.5 || own.left < box.left - 0.5;
-      });
-      return {
-        scrolls: wide.map((node) => node.className),
-        outside: outside.map((label) => label.textContent?.trim()),
-      };
-    });
-    expect(overflow.scrolls).toEqual([]);
-    expect(overflow.outside).toEqual([]);
-    // Each radio keeps its whole name.
-    await expect(panel.getByRole('radio', { name: 'Nocturne', exact: true })).toHaveAccessibleName(
-      'Nocturne',
+    // The Account page, on both layouts.
+    await page.setViewportSize({ width: 1280, height: 800 });
+    for (const layout of ['modern', 'og'] as const) {
+      expect((await look({ layout })).ok()).toBe(true);
+      await page.goto('./#/account');
+      await page.reload();
+      await expect(page.locator('html')).toHaveAttribute('data-layout', layout);
+      const section = 'section[aria-labelledby="look-title"]';
+      await expect(page.locator(section).getByRole('group', { name: 'Theme' })).toBeVisible();
+      const found = await labelLayout(page, section);
+      expect(found.count, `Account on ${layout}`).toBeGreaterThan(10);
+      expect(found.notOneLine, `Account on ${layout}`).toEqual([]);
+      expect(found.spills, `Account on ${layout}`).toEqual([]);
+    }
+  } finally {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    expect((await look({ layout: 'og' })).ok()).toBe(true);
+  }
+});
+
+test('at a text size of 200 % nothing spills out of the look popover', async ({ page }) => {
+  await logIn(page);
+  const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
+
+  try {
+    expect((await look({ layout: 'modern', theme: 'organizr', colourSet: 'dark' })).ok()).toBe(
+      true,
     );
+    for (const [width, height] of [
+      [1280, 900],
+      [667, 375],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.reload();
+      // A browser text size of 200 %: a root of 32 px instead of 16 px, set through the CSSOM.
+      await page.evaluate(() => document.documentElement.style.setProperty('font-size', '32px'));
+      await page.getByRole('button', { name: 'Look' }).click();
+      const panel = '[data-slot="popover-content"]';
+      await expect(
+        page.locator(panel).getByRole('radio', { name: 'Nocturne', exact: true }),
+      ).toBeVisible();
+      const layout = await labelLayout(page, panel);
+      const where = `the popover at 200 %, ${width} x ${height}`;
+      expect(layout.count, where).toBe(14);
+      expect(layout.spills, where).toEqual([]);
+      expect(layout.overlaps, where).toEqual([]);
+      expect(layout.outsideGrid, where).toEqual([]);
+      expect(layout.pastPadding, where).toEqual([]);
+      expect(layout.gridScrolls, where).toBe(false);
+      expect(layout.scopeScrolls, where).toBe(false);
+      // The popover itself stays inside the window.
+      expect(layout.scopeBox.left, where).toBeGreaterThanOrEqual(0);
+      expect(layout.scopeBox.right, where).toBeLessThanOrEqual(layout.viewport);
+      // Each radio keeps its whole name.
+      await expect(
+        page.locator(panel).getByRole('radio', { name: 'Nocturne', exact: true }),
+      ).toHaveAccessibleName('Nocturne');
+      await page.keyboard.press('Escape');
+      await page.evaluate(() => document.documentElement.style.removeProperty('font-size'));
+    }
   } finally {
     await page.evaluate(() => document.documentElement.style.removeProperty('font-size'));
     await page.setViewportSize({ width: 1280, height: 720 });

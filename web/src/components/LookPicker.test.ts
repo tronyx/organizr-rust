@@ -489,19 +489,56 @@ describe('LookPicker', () => {
     }
   });
 
-  it('a_long_name_wraps_in_its_column_instead_of_widening_the_grid', async () => {
+  it('a_name_wraps_only_between_words_and_a_column_keeps_its_longest_word', async () => {
     await open({ ...MODERN, theme: 'nocturne', colourSet: 'moonlit' });
 
+    // Two columns only where both fit at their longest words; then each is that wide.
+    const grid = screen.getByRole('group', { name: 'Theme' }).querySelector('.grid');
+    expect(grid?.className).toContain(
+      '@min-[19.5rem]:grid-cols-[repeat(2,minmax(min-content,1fr))]',
+    );
     for (const name of ['Nocturne', 'Moonlit']) {
       const label = screen.getByRole('radio', { name }).closest('label');
-      // A flex item may shrink below its text only with `min-w-0`; the text then wraps.
-      expect(label).toHaveClass('min-w-0');
-      expect(label?.querySelector(':scope > span:not(.org-swatch)')).toHaveClass(
-        'min-w-0',
-        'wrap-anywhere',
-      );
-      expect(label?.querySelector(':scope > span:not(.org-swatch)')).toHaveTextContent(name);
+      expect(label).not.toHaveClass('min-w-0');
+      const text = label?.querySelector(':scope > span:not(.org-swatch)');
+      // `break-word` breaks a word only when it alone is wider than its line, and keeps
+      // the min-content width at the longest word; `anywhere` would not.
+      expect(text).toHaveClass('wrap-break-word');
+      expect(text).not.toHaveClass('wrap-anywhere');
+      expect(text).toHaveTextContent(name);
     }
+  });
+
+  it('a_theme_chosen_while_a_layout_change_runs_does_not_undo_it', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const sent = await open(OG);
+    const puts = () => sent.filter((request) => request.method === 'PUT');
+    const answer = globalThis.fetch;
+    // The first save waits until the test lets it go.
+    let first = true;
+    vi.stubGlobal('fetch', async (address: string, init?: RequestInit) => {
+      if (init?.method === 'PUT' && first) {
+        first = false;
+        await gate;
+      }
+      return answer(address, init);
+    });
+
+    await fireEvent.click(screen.getByRole('radio', { name: 'Modern' }));
+    // The themes shown are still those of OG: a choice among them is not taken.
+    const nord = screen.getByRole('radio', { name: 'Nord' });
+    await fireEvent.click(nord);
+    expect(nord).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Organizr' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Modern' })).toBeChecked();
+
+    release();
+    await waitFor(() =>
+      expect(screen.getByRole('group', { name: 'Theme' })).toHaveAttribute('aria-busy', 'false'),
+    );
+    // Only the change of the layout was sent: nothing put OG back.
+    expect(puts().map((request) => request.body)).toEqual([{ layout: 'modern' }]);
   });
 
   it('the_theme_radios_have_their_own_group_name', async () => {

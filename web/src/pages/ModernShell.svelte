@@ -363,7 +363,7 @@
                 <Popover.Content
                   align="end"
                   collisionPadding={8}
-                  class="m-look-panel max-h-(--bits-popover-content-available-height) w-80 overflow-y-auto"
+                  class="m-look-panel max-h-(--bits-popover-content-available-height) w-84 max-w-[calc(100vw-1rem)] overflow-y-auto"
                 >
                   <LookPicker />
                 </Popover.Content>

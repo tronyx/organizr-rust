@@ -86,6 +86,8 @@
           await session.load();
         } catch (failure) {
           error = failureText(failure);
+          // A choice that waited is dropped too: the alert says why, and the controls show
+          // the saved look again.
           wanted = null;
           generation += 1;
           break;
@@ -126,11 +128,37 @@
       : (sets[0]?.id ?? shown.colourSet);
   }
 
-  const chooseTheme = (theme: string) =>
-    send({ layout: shown.layout, theme, colourSet: colourSetFor(theme) });
+  /**
+   * Whether a change of the layout waits or runs. The themes and colours shown are still
+   * those of the old layout until it lands, so a choice among them is not taken: it would
+   * be sent with the old layout and undo the change.
+   */
+  const switching = $derived(shownLayout !== shown.layout);
 
-  const chooseColourSet = (colourSet: string) =>
-    send({ layout: shown.layout, theme: shown.theme, colourSet });
+  /** Puts the check of a radio group back on the radio of the shown look. */
+  function keepShown(input: HTMLInputElement, value: string) {
+    input.checked = false;
+    const radios = root?.querySelectorAll<HTMLInputElement>(`input[name="${input.name}"]`);
+    for (const radio of radios ?? []) {
+      radio.checked = radio.value === value;
+    }
+  }
+
+  function chooseTheme(theme: string, input: HTMLInputElement) {
+    if (switching) {
+      keepShown(input, shown.theme);
+      return;
+    }
+    return send({ layout: shown.layout, theme, colourSet: colourSetFor(theme) });
+  }
+
+  function chooseColourSet(colourSet: string, input: HTMLInputElement) {
+    if (switching) {
+      keepShown(input, shown.colourSet);
+      return;
+    }
+    return send({ layout: shown.layout, theme: shown.theme, colourSet });
+  }
 </script>
 
 <div class="flex flex-col gap-3" bind:this={root}>
@@ -153,24 +181,30 @@
 
     <fieldset class="flex flex-col gap-1" aria-busy={busy}>
       <legend class="mb-1 text-sm font-semibold">Theme</legend>
-      <!-- Two columns on a wide screen, one on a phone; a long list scrolls in the popover. -->
-      <div
-        class="grid max-h-[50vh] grid-cols-1 gap-x-3 gap-y-1 overflow-y-auto p-0.5 sm:grid-cols-2"
-      >
-        {#each themes as theme (theme.id)}
-          <!-- A long name wraps in its column instead of widening the grid. -->
-          <label class="flex min-w-0 items-center gap-2">
-            <input
-              type="radio"
-              class="radio radio-sm"
-              name={`${id}-theme`}
-              checked={shown.theme === theme.id}
-              onchange={() => chooseTheme(theme.id)}
-            />
-            <ThemeSwatch theme={theme.swatch} colours={coloursOf(theme.id)} />
-            <span class="min-w-0 wrap-anywhere">{theme.label}</span>
-          </label>
-        {/each}
+      <!-- Two columns when the picker has the room for both at their longest words, else
+           one; a long list scrolls in the popover. The room is that of the picker, not of
+           the window, so a large text size in a narrow popover gets one column. -->
+      <div class="@container">
+        <div
+          class="grid max-h-[50vh] grid-cols-1 gap-x-3 gap-y-1 overflow-y-auto p-0.5 @min-[19.5rem]:grid-cols-[repeat(2,minmax(min-content,1fr))]"
+        >
+          {#each themes as theme (theme.id)}
+            <!-- A column is at least as wide as its longest word, so a name never breaks
+                 inside a word; a longer name wraps between its words. -->
+            <label class="flex items-center gap-2">
+              <input
+                type="radio"
+                class="radio radio-sm"
+                name={`${id}-theme`}
+                value={theme.id}
+                checked={shown.theme === theme.id}
+                onchange={(event) => chooseTheme(theme.id, event.currentTarget)}
+              />
+              <ThemeSwatch theme={theme.swatch} colours={coloursOf(theme.id)} />
+              <span class="min-w-0 wrap-break-word">{theme.label}</span>
+            </label>
+          {/each}
+        </div>
       </div>
     </fieldset>
 
@@ -178,17 +212,18 @@
       <fieldset class="flex flex-col gap-1" aria-busy={busy}>
         <legend class="mb-1 text-sm font-semibold">Colours</legend>
         {#each colourSets as set (set.id)}
-          <label class="flex min-w-0 items-center gap-2">
+          <label class="flex items-center gap-2">
             <input
               type="radio"
               class="radio radio-sm"
               name={`${id}-colours`}
+              value={set.id}
               checked={shown.colourSet === set.id}
               disabled={colourSets.length < 2}
-              onchange={() => chooseColourSet(set.id)}
+              onchange={(event) => chooseColourSet(set.id, event.currentTarget)}
             />
             <ThemeSwatch theme={modernThemeId(shown.theme, set.id)} />
-            <span class="min-w-0 wrap-anywhere">{set.label}</span>
+            <span class="min-w-0 wrap-break-word">{set.label}</span>
           </label>
         {/each}
       </fieldset>
