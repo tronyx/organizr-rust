@@ -23,7 +23,7 @@ Most custom CSS only changes colours. A CSS variable changes a colour everywhere
 
 ### The colours of the theme
 
-Each theme sets these. On the OG Organizr layout, the settings **Colors & Themes** set some of them too. A modern theme sets its own colours, so those settings do not change them. Your custom CSS comes after the theme, so your variables win on both layouts.
+Each theme sets these. On the OG Organizr layout, the colours in the settings group **Style & Themes** set some of them too. A modern theme sets its own colours, so those settings do not change them. Your custom CSS comes after the theme, so your variables win on both layouts.
 
 | Variable | What it colours |
 |---|---|
@@ -44,6 +44,7 @@ Each theme sets these. On the OG Organizr layout, the settings **Colors & Themes
 | `--org-header-bg`, `--org-header-text` | The bar at the top, and its text |
 | `--org-sidebar-bg`, `--org-sidebar-text` | The menu on the left, and its text |
 | `--org-sidebar-active` | The tab that is open in the menu |
+| `--org-swatch-edge` | The border of each colour sample (`.org-swatch`) in the look picker. By default 55 % of the text colour of the page mixed into its background, about 3:1 |
 
 ### The states of the calendar
 
@@ -127,6 +128,17 @@ The kinds of items: `adguard`, `bookmarks`, `calendar`, `customhtml`, `deluge`, 
 
 The other classes of the settings, such as `.org-table` and `.org-form-control`, are the same on both layouts. So a rule for them applies on both layouts, unless it starts with `[data-layout='og']` or `[data-layout='modern']`.
 
+The table of Manage Users has these classes on both layouts:
+
+| Class | What it is |
+|---|---|
+| `.org-users-table` | The table of the users |
+| `.org-users-scroll` | The box around the table, which scrolls sideways when the table is wider |
+| `.org-users-avatar`, `.org-users-email`, `.org-users-date` | The cells of the columns Avatar, Email and Date Registered. On the modern layout, in a narrow card, the columns Avatar and Date Registered are left out, a long address is cut short, and the date shows under the name |
+| `.org-users-date-line` | The date under the name, in a narrow card on the modern layout |
+| `.org-users-actions` | The buttons Edit and Delete of a row |
+| `.org-click-row` | A row that opens its item with a click |
+
 The modern layout also has these classes for the settings. They exist on the modern layout only:
 
 | Class | What it is |
@@ -194,6 +206,10 @@ The modern layout uses these same classes, so a rule for them applies on both la
 | `.m-scene-nocturne`, `.m-scene-riot`, `.m-scene-tempest`, `.m-scene-circuit`, `.m-scene-prism` | The scene of one theme |
 | `.m-scene-paused` | On `.m-scene` while the scene stands still |
 | `.m-with-menu` | The page area, when the menu is beside it. Below 1024 pixels the menu is a drawer, and the class is absent |
+| `#m-menu` | The menu at the left on a wide screen (an `aside` with `.org-sidebar`) |
+| `.m-sidebar-icons` | On `.org-sidebar` while the menu is a column of icons. The column is `4rem` wide |
+| `.m-with-icons` | On the page area, with `.m-with-menu`, while the menu beside it is a column of icons |
+| `.m-dot` | The dot of a tab in the column of icons, on the corner of its picture. It shows whether the application of the tab answers |
 | `.org-menu-extras` | The links at the end of the menu |
 
 ## From PHP to this version
