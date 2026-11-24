@@ -310,3 +310,35 @@ describe('the borders of the form controls', () => {
     }
   });
 });
+
+describe('the brand edges of the Homepage Order tiles', () => {
+  const order = readFileSync(resolve(__dirname, 'homepageOrder.ts'), 'utf8');
+  const tileClasses = [...new Set([...order.matchAll(/\bbg-([a-z0-9-]+)/g)].map((m) => m[1]))];
+
+  it('every_tile_colour_class_gives_the_modern_tile_an_edge_colour', () => {
+    expect(tileClasses.length).toBeGreaterThan(0);
+    for (const name of tileClasses) {
+      const rule = rules().find((r) => r.selector === `${SCOPE} .org-order-tile.bg-${name}`);
+      expect(rule?.body ?? '', `bg-${name}`).toMatch(/--org-tile-brand:\s*var\(--/);
+    }
+  });
+
+  it('the_brand_properties_equal_the_og_colours', () => {
+    const root = rules().find((r) => r.selector === ':root' && r.body.includes('--org-brand-'));
+    expect(root, 'the :root block of the brand colours').toBeDefined();
+    const declared = [...(root?.body ?? '').matchAll(/--org-brand-([a-z0-9-]+):\s*([^;]+);/g)];
+    expect(declared.length).toBeGreaterThan(0);
+    for (const [, name, value] of declared) {
+      const og = rules().find((r) => r.selector === `.bg-${name}`);
+      const ogValue = og?.body.match(/background-color:\s*([^;]+);/)?.[1]?.trim();
+      expect(value?.trim(), `--org-brand-${name}`).toBe(ogValue);
+    }
+  });
+
+  it('a_faded_tile_keeps_its_edge_colour', () => {
+    const faded = rules().filter((r) => r.selector === `${SCOPE} .org-order-tile.org-faded`);
+    expect(
+      faded.some((r) => /border-inline-start-color:\s*var\(--org-tile-brand/.test(r.body)),
+    ).toBe(true);
+  });
+});

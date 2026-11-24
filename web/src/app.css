@@ -1593,6 +1593,25 @@
     background-color: #707cd2;
   }
 
+  /* The colours of the services, once more as custom properties, for the coloured edge
+     of the tiles of Homepage Order on the modern layout. They must stay equal to the
+     rules above (a test checks it); OG keeps using the rules. */
+  :root {
+    --org-brand-plex: #e5a00d;
+    --org-brand-emby: #4caf50;
+    --org-brand-jellyfin: #a15dc3;
+    --org-brand-sonarr: #35c5f2;
+    --org-brand-radarr: #8f7128;
+    --org-brand-transmission: #950000;
+    --org-brand-nzbget: #3e8c25;
+    --org-brand-sab: #ffb300;
+    --org-brand-deluge: #425570;
+    --org-brand-qbit: #2f67ba;
+    --org-brand-healthchecks: #56b059;
+    --org-brand-bookmarks: #d90101;
+    --org-brand-inverse: #4c5667;
+  }
+
   /* The login page of PHP: the wallpaper fills the page under the bar, and the form
      stands in a dark panel of 400 pixels on the right. */
   .org-login-register {
@@ -3385,5 +3404,61 @@
   [data-layout='modern'] .org-order-number {
     background: var(--color-base-300);
     color: var(--color-base-content);
+  }
+  /* The colour of each service as a thick edge at the left of its tile, so that the
+     tiles keep the colours of OG without text on them. */
+  [data-layout='modern'] .org-order-tile {
+    border-inline-start: 4px solid var(--org-tile-brand, var(--color-base-300));
+  }
+  [data-layout='modern'] .org-order-tile.org-faded {
+    border-inline-start-color: var(--org-tile-brand, var(--color-base-300));
+  }
+  [data-layout='modern'] .org-order-tile.bg-plex {
+    --org-tile-brand: var(--org-brand-plex);
+  }
+  [data-layout='modern'] .org-order-tile.bg-emby {
+    --org-tile-brand: var(--org-brand-emby);
+  }
+  [data-layout='modern'] .org-order-tile.bg-jellyfin {
+    --org-tile-brand: var(--org-brand-jellyfin);
+  }
+  [data-layout='modern'] .org-order-tile.bg-sonarr {
+    --org-tile-brand: var(--org-brand-sonarr);
+  }
+  [data-layout='modern'] .org-order-tile.bg-radarr {
+    --org-tile-brand: var(--org-brand-radarr);
+  }
+  [data-layout='modern'] .org-order-tile.bg-transmission {
+    --org-tile-brand: var(--org-brand-transmission);
+  }
+  [data-layout='modern'] .org-order-tile.bg-nzbget {
+    --org-tile-brand: var(--org-brand-nzbget);
+  }
+  [data-layout='modern'] .org-order-tile.bg-sab {
+    --org-tile-brand: var(--org-brand-sab);
+  }
+  [data-layout='modern'] .org-order-tile.bg-deluge {
+    --org-tile-brand: var(--org-brand-deluge);
+  }
+  [data-layout='modern'] .org-order-tile.bg-qbit {
+    --org-tile-brand: var(--org-brand-qbit);
+  }
+  [data-layout='modern'] .org-order-tile.bg-healthchecks {
+    --org-tile-brand: var(--org-brand-healthchecks);
+  }
+  [data-layout='modern'] .org-order-tile.bg-bookmarks {
+    --org-tile-brand: var(--org-brand-bookmarks);
+  }
+  [data-layout='modern'] .org-order-tile.bg-inverse {
+    --org-tile-brand: var(--org-brand-inverse);
+  }
+  [data-layout='modern'] .org-order-tile.bg-info {
+    --org-tile-brand: var(--color-info);
+  }
+  [data-layout='modern'] .org-order-tile.bg-success {
+    --org-tile-brand: var(--color-success);
+  }
+  [data-layout='modern'] .org-order-tile.bg-primary {
+    --org-tile-brand: var(--color-primary);
   }
 }
