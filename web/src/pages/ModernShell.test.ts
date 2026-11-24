@@ -45,14 +45,14 @@ const CATEGORIES: MenuCategory[] = [
   { id: 2, order: 2, category: 'Media', category_id: 7, image: null, default: 0, count: 2 },
 ];
 
-function launch(loggedIn: boolean) {
+function launch(loggedIn: boolean, groupID = 1) {
   return {
     data: {
       user: loggedIn
         ? {
             username: 'robin',
             group: 'Admin',
-            groupID: 1,
+            groupID,
             email: null,
             image: null,
             userID: 5,
@@ -95,9 +95,14 @@ const page = createRawSnippet(() => ({ render: () => '<p>The page</p>' }));
 async function openShell(
   loggedIn = true,
   shown: number | undefined = undefined,
-  changes: { tabs?: MenuTab[]; categories?: MenuCategory[]; search?: unknown } = {},
+  changes: {
+    tabs?: MenuTab[];
+    categories?: MenuCategory[];
+    search?: unknown;
+    groupID?: number;
+  } = {},
 ) {
-  const answer = launch(loggedIn);
+  const answer = launch(loggedIn, changes.groupID);
   const data = answer.data as Record<string, unknown>;
   data.tabs = changes.tabs ?? TABS;
   data.categories = changes.categories ?? CATEGORIES;
@@ -163,15 +168,48 @@ describe('ModernShell', () => {
     const bar = screen.getByRole('banner');
     expect(within(bar).queryByText(/Settings ·/)).not.toBeInTheDocument();
 
-    router.go('#/settings/tabs');
-    await waitFor(() => expect(within(bar).getByText('Settings · Tabs')).toBeInTheDocument());
-    router.go('#/settings/plugins/marketplace');
-    await waitFor(() =>
-      expect(within(bar).getByText('Settings · Plugins · Marketplace')).toBeInTheDocument(),
-    );
-    router.go('#/account');
-    await waitFor(() => expect(within(bar).getByText('Account Settings')).toBeInTheDocument());
-    router.go('#/');
+    try {
+      router.go('#/settings/tabs');
+      await waitFor(() => expect(within(bar).getByText('Settings · Tabs')).toBeInTheDocument());
+      router.go('#/settings/plugins/marketplace');
+      await waitFor(() =>
+        expect(within(bar).getByText('Settings · Plugins · Marketplace')).toBeInTheDocument(),
+      );
+      router.go('#/account');
+      await waitFor(() => expect(within(bar).getByText('Account Settings')).toBeInTheDocument());
+    } finally {
+      router.go('#/');
+    }
+  });
+
+  it('top_bar_names_only_a_page_that_the_person_sees', async () => {
+    // Logged out: no title for the settings or the account.
+    await openShell(false);
+    const bar = screen.getByRole('banner');
+    try {
+      for (const address of ['#/settings/tabs', '#/account', '#/invites']) {
+        router.go(address);
+        await waitFor(() => expect(router.route.page).not.toBe('home'));
+        expect(bar.querySelector('.m-shown')).toBeNull();
+      }
+    } finally {
+      router.go('#/');
+    }
+  });
+
+  it('top_bar_has_no_settings_title_for_a_person_who_cannot_manage', async () => {
+    await openShell(true, undefined, { groupID: 4 });
+    const bar = screen.getByRole('banner');
+    try {
+      router.go('#/settings/tabs');
+      await waitFor(() => expect(router.route.page).toBe('settings'));
+      expect(within(bar).queryByText(/Settings ·/)).not.toBeInTheDocument();
+      // The account page is for every person who is logged in.
+      router.go('#/account');
+      await waitFor(() => expect(within(bar).getByText('Account Settings')).toBeInTheDocument());
+    } finally {
+      router.go('#/');
+    }
   });
 
   it('menu_is_a_drawer_on_a_narrow_screen', async () => {

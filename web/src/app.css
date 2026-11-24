@@ -2680,24 +2680,6 @@
   }
 
   /* In the drawer the sidebar is the whole height of the sheet. */
-  [data-layout='modern'] [data-slot='sheet-content'].org-sidebar {
-    inset: 0 auto 0 0;
-    width: min(20rem, 85vw);
-    max-width: none;
-    background: var(--org-sidebar-bg, var(--color-base-200));
-    color: var(--org-sidebar-text);
-  }
-
-  [data-layout='modern'] .org-sidebar-head {
-    height: 44px;
-    padding: 4px 18px;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--org-sidebar-text);
-  }
-
   [data-layout='modern'] .org-content {
     inset: 52px 0 0 0;
   }
@@ -2749,9 +2731,13 @@
       padding: 24px;
     }
 
+    /* The menu sticks below the top bar (52px) with a gap of 24px, and is no taller than
+       the space that is left (the same gap below), so its last links scroll inside it. */
     [data-layout='modern'] .m-settings-side {
       position: sticky;
       top: 24px;
+      max-height: calc(100dvh - 52px - 24px - 24px);
+      overflow-y: auto;
     }
   }
 
@@ -2769,7 +2755,7 @@
     gap: 16px;
   }
 
-  [data-layout='modern'] .m-settings-group h2 {
+  [data-layout='modern'] .m-settings-group-name {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -2811,15 +2797,6 @@
     font-weight: 500;
   }
 
-  [data-layout='modern'] .m-settings-button {
-    width: 100%;
-    height: auto;
-    min-height: 44px;
-    justify-content: space-between;
-    padding: 8px 14px;
-    text-align: left;
-  }
-
   [data-layout='modern'] .m-settings-button-text {
     display: flex;
     flex-direction: column;
@@ -2836,23 +2813,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 14px;
-  }
-
-  [data-layout='modern'] [data-slot='sheet-content'].m-settings-sheet {
-    width: min(20rem, 85vw);
-    max-width: none;
-    overflow-y: auto;
-    padding: 0 8px 16px;
-    background: var(--color-base-200);
-    color: var(--color-base-content);
-  }
-
-  [data-layout='modern'] .m-settings-sheet-head {
-    padding: 14px 10px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
   }
 
   [data-layout='modern'] .m-page-heading {
@@ -2945,7 +2905,7 @@
   }
 
   [data-layout='modern'] .org-form-control {
-    border: 1px solid color-mix(in oklab, var(--color-base-content) 25%, var(--color-base-300));
+    border: 1px solid color-mix(in oklab, var(--color-base-content) 45%, var(--color-base-300));
     border-radius: var(--radius-field);
     background: var(--color-base-100);
     color: var(--color-base-content);
@@ -2967,7 +2927,7 @@
   }
 
   [data-layout='modern'] .org-input-addon {
-    border: 1px solid color-mix(in oklab, var(--color-base-content) 25%, var(--color-base-300));
+    border: 1px solid color-mix(in oklab, var(--color-base-content) 45%, var(--color-base-300));
     border-inline-start: 0;
     border-start-end-radius: var(--radius-field);
     border-end-end-radius: var(--radius-field);
@@ -2998,7 +2958,7 @@
   }
 
   [data-layout='modern'] .org-switch {
-    border-color: color-mix(in oklab, var(--color-base-content) 35%, var(--color-base-300));
+    border-color: color-mix(in oklab, var(--color-base-content) 45%, var(--color-base-300));
     background: var(--color-base-300);
   }
 
@@ -3316,9 +3276,87 @@
 
   /* The labels of the forms and the heads of the tables of daisyUI: its faded text
      (60 %) is under 4.5:1 on the light colour set, so they get a stronger tone. */
-  [data-layout='modern'] .label,
-  [data-layout='modern'] .table thead th {
+  [data-layout='modern']
+    .label:not(
+      [class*='text-error'],
+      [class*='text-warning'],
+      [class*='text-success'],
+      [class*='text-info'],
+      [class*='text-primary'],
+      [class*='text-secondary'],
+      [class*='text-accent'],
+      [class*='text-neutral'],
+      [class*='text-base-content']
+    ),
+  [data-layout='modern']
+    .table
+    thead
+    th:not(
+      [class*='text-error'],
+      [class*='text-warning'],
+      [class*='text-success'],
+      [class*='text-info'],
+      [class*='text-primary'],
+      [class*='text-secondary'],
+      [class*='text-accent'],
+      [class*='text-neutral'],
+      [class*='text-base-content']
+    ) {
     color: color-mix(in oklab, var(--color-base-content) 80%, var(--color-base-200));
+  }
+
+  /* The hint in an empty field: a tone of the text colour that reads on the field. */
+  [data-layout='modern'] input::placeholder,
+  [data-layout='modern'] textarea::placeholder {
+    color: color-mix(in oklab, var(--color-base-content) 70%, var(--color-base-100));
+    opacity: 1;
+  }
+
+  /* The drawer of the tabs and the menu of the settings. Their parts (shadcn sheet and
+     button) come with Tailwind utilities, which sit in this layer: the rules that must
+     beat them sit here too. */
+  [data-layout='modern'] [data-slot='sheet-content'].org-sidebar {
+    inset: 0 auto 0 0;
+    width: min(20rem, 85vw);
+    max-width: none;
+    background: var(--org-sidebar-bg, var(--color-base-200));
+    color: var(--org-sidebar-text);
+  }
+
+  [data-layout='modern'] .org-sidebar-head {
+    height: 44px;
+    padding: 4px 18px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--org-sidebar-text);
+  }
+
+  [data-layout='modern'] .m-settings-button {
+    width: 100%;
+    height: auto;
+    min-height: 44px;
+    justify-content: space-between;
+    padding: 8px 14px;
+    text-align: left;
+  }
+
+  [data-layout='modern'] [data-slot='sheet-content'].m-settings-sheet {
+    width: min(20rem, 85vw);
+    max-width: none;
+    overflow-y: auto;
+    padding: 0 8px 16px;
+    background: var(--color-base-200);
+    color: var(--color-base-content);
+  }
+
+  [data-layout='modern'] .m-settings-sheet-head {
+    padding: 14px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   /* The tiles of Homepage Order: a card in the colours of the theme with the picture of

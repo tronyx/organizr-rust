@@ -72,28 +72,31 @@
   const pings = $derived(pinged.answers);
   $effect(() => pinged.watch());
   const shownTab = $derived(session.tabs.find((tab) => tab.id === shown));
-  // A page of the interface itself has no tab: the bar names the page instead.
+  const canSpeedTest = $derived(canUse('SPEEDTEST'));
+  const canInvite = $derived(canUse('INVITES'));
+  const canChat = $derived(canUse('CHAT'));
+  // A page of the interface itself has no tab: the bar names the page instead, but only
+  // when the person can see that page (a visitor who is logged out sees the log in page).
   const pageTitle = $derived.by(() => {
+    if (!session.loggedIn) {
+      return null;
+    }
     const route = router.route;
     switch (route.page) {
       case 'settings':
-        return settingsTitle(route.section);
+        return session.canManage ? settingsTitle(route.section) : null;
       case 'account':
         return 'Account Settings';
       case 'speedTest':
-        return 'Speed test';
+        return canSpeedTest ? 'Speed test' : null;
       case 'invites':
-        return 'Invites';
+        return canInvite ? 'Invites' : null;
       case 'chat':
-        return 'Chat';
+        return canChat ? 'Chat' : null;
       default:
         return null;
     }
   });
-
-  const canSpeedTest = $derived(canUse('SPEEDTEST'));
-  const canInvite = $derived(canUse('INVITES'));
-  const canChat = $derived(canUse('CHAT'));
 
   const title = $derived(session.launch?.appearance.title || 'Organizr');
   let logoFailed = $state(false);

@@ -39,10 +39,18 @@ export interface ContrastAudit {
  * Checks every visible text on the page, or inside the element of `within`. When a modal
  * dialog is open, only its content is checked: the page behind it is under its veil.
  *
- * Not checked: hidden texts, texts under `aria-hidden="true"`, texts of disabled controls,
- * placeholders, texts in SVG or in a picture (`role="img"`, such as the preview of a theme),
- * and elements whose only text is the glyph of an icon font
- * (Unicode private use). Text of `::before` and `::after` is not checked either.
+ * The placeholder of an empty text field counts: its colour is read from `::placeholder`
+ * and checked against the background of the field.
+ *
+ * Not checked: hidden texts, texts under `aria-hidden="true"` (even when they are visible),
+ * texts of disabled controls, texts in SVG or in a picture (`role="img"`, such as the
+ * preview of a theme), and elements whose only text is the glyph of an icon font
+ * (Unicode private use). Text of `::before` and `::after` is not checked either. This audit
+ * also leaves out: elements with `display: contents` (they have no box), the values of
+ * `input` of the type `submit`, `button` or `reset`, the hover and focus states, and the
+ * contrast of what is not text (borders, icons, the focus ring), which needs 3:1.
+ *
+ * When `within` is given and nothing on the page matches it, the audit throws.
  */
 export async function auditContrast(page: Page, within?: string): Promise<ContrastAudit> {
   return page.evaluate((scope) => {
@@ -200,10 +208,10 @@ export async function auditContrast(page: Page, within?: string): Promise<Contra
         const code = character.codePointAt(0) ?? 0;
         return character.trim() === '' || (code >= 0xe000 && code <= 0xf8ff);
       });
-    const root: Element | null =
-      (scope ? document.querySelector(scope) : null) ??
-      document.querySelector('dialog[open]:modal') ??
-      document.body;
+    // With a scope the audit never falls back to the dialog or the page.
+    const root: Element | null = scope
+      ? document.querySelector(scope)
+      : (document.querySelector('dialog[open]:modal') ?? document.body);
     if (!root) {
       throw new Error(`Nothing matches ${scope}.`);
     }
@@ -222,6 +230,8 @@ export async function auditContrast(page: Page, within?: string): Promise<Contra
         continue;
       }
       let text: string;
+      // The colour of the text and its own fade: those of the placeholder for an empty field.
+      let placeholder: CSSStyleDeclaration | null = null;
       if (element instanceof HTMLSelectElement) {
         text = element.selectedOptions[0]?.text ?? '';
       } else if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
@@ -229,6 +239,10 @@ export async function auditContrast(page: Page, within?: string): Promise<Contra
           element instanceof HTMLTextAreaElement ||
           ['text', 'search', 'url', 'email', 'number', 'tel', 'password'].includes(element.type);
         text = textual ? element.value : '';
+        if (textual && !text && element.placeholder) {
+          text = element.placeholder;
+          placeholder = getComputedStyle(element, '::placeholder');
+        }
       } else {
         text = [...element.childNodes]
           .filter((node) => node.nodeType === Node.TEXT_NODE)
@@ -271,7 +285,10 @@ export async function auditContrast(page: Page, within?: string): Promise<Contra
       for (let current: Element | null = element; current; current = current.parentElement) {
         opacity *= Number(getComputedStyle(current).opacity);
       }
-      const own = rgba(style.color);
+      const own = rgba((placeholder ?? style).color);
+      if (placeholder) {
+        opacity *= Number(placeholder.opacity);
+      }
       const colour = over([own[0], own[1], own[2], own[3] * opacity], background);
       const size = parseFloat(style.fontSize);
       const large = size >= 24 || (size >= 18.66 && Number(style.fontWeight) >= 700);

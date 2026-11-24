@@ -27,13 +27,14 @@
 
 {#snippet list(onpick?: () => void)}
   <nav aria-label="Settings" class="m-settings-nav">
-    {#each SETTINGS_MENU as group (group.name)}
+    {#each SETTINGS_MENU as group, index (group.name)}
       <div class="m-settings-group">
-        <h2>
+        <!-- Not a heading: the page heading of the settings comes first in the page. -->
+        <div class="m-settings-group-name" id="m-settings-group-{index}">
           <i class="oi-themify {group.icon}" aria-hidden="true"></i>
           <span>{group.name}</span>
-        </h2>
-        <ul>
+        </div>
+        <ul aria-labelledby="m-settings-group-{index}">
           {#each group.pages as entry (entry.section)}
             <li>
               <a

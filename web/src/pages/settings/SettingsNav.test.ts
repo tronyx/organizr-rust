@@ -28,11 +28,19 @@ describe('SettingsNav', () => {
     const nav = screen.getByRole('navigation', { name: 'Settings' });
     expect(nav).toHaveClass('m-settings-nav');
 
-    const headings = within(nav)
-      .getAllByRole('heading')
-      .map((heading) => heading.textContent?.trim());
-    expect(headings).toEqual(SETTINGS_MENU.map((group) => group.name));
-    expect(headings).toEqual([
+    // The group names are not headings (the page heading comes first), and each list is
+    // named by its group.
+    expect(within(nav).queryAllByRole('heading')).toEqual([]);
+    const lists = within(nav).getAllByRole('list');
+    expect(lists).toHaveLength(6);
+    const names = lists.map((list) => list.getAttribute('aria-labelledby'));
+    expect(names.every((id) => id && document.getElementById(id))).toBe(true);
+    expect(
+      lists.map((list) =>
+        document.getElementById(list.getAttribute('aria-labelledby') ?? '')?.textContent?.trim(),
+      ),
+    ).toEqual(SETTINGS_MENU.map((group) => group.name));
+    expect(SETTINGS_MENU.map((group) => group.name)).toEqual([
       'Tab Editor',
       'Customize',
       'User Management',
@@ -40,10 +48,8 @@ describe('SettingsNav', () => {
       'Plugins',
       'System Settings',
     ]);
-
-    const lists = within(nav).getAllByRole('list');
-    expect(lists).toHaveLength(6);
     lists.forEach((list, index) => {
+      expect(list).toHaveAccessibleName(SETTINGS_MENU[index]?.name ?? '');
       const labels = within(list)
         .getAllByRole('link')
         .map((link) => link.textContent?.trim());

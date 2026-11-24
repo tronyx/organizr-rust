@@ -53,6 +53,43 @@ async function checkContrast(page: Page, where: string, within?: string) {
   expect.soft(audit.low, describeLowContrast(where, audit.low)).toEqual([]);
 }
 
+/**
+ * Checks a settings section in each of its states: as it opens, with each tab of its form
+ * (`.org-vtabs`) and with every accordion (`details`) of that tab open.
+ */
+async function checkSection(page: Page, where: string) {
+  await checkContrast(page, where);
+  const tabs = page.locator('.org-vtabs [role="tab"]');
+  const count = await tabs.count();
+  const openAccordions = async (state: string) => {
+    const closed = page.locator('details.org-accordion:not([open]) > summary');
+    const total = await closed.count();
+    if (total === 0) {
+      return;
+    }
+    for (let index = 0; index < total; index += 1) {
+      await closed.first().click();
+    }
+    await expect(page.locator('details.org-accordion:not([open])')).toHaveCount(0);
+    await checkContrast(page, `${state}, accordions open`);
+  };
+  if (count === 0) {
+    await openAccordions(where);
+    return;
+  }
+  for (let index = 0; index < count; index += 1) {
+    const tab = tabs.nth(index);
+    const name = ((await tab.textContent()) ?? '').trim();
+    await tab.click();
+    await expect(tab).toHaveAttribute('aria-selected', 'true');
+    const state = `${where}, tab "${name}"`;
+    if (index > 0) {
+      await checkContrast(page, state);
+    }
+    await openAccordions(state);
+  }
+}
+
 /** One dialog of each editor: the page, the button that opens it and its name. */
 const DIALOGS = [
   { address: '#/settings/tabs', label: 'Tabs', button: 'Add a tab' },
@@ -62,7 +99,7 @@ const DIALOGS = [
 ] as const;
 
 test('settings_sections_pass_contrast_on_modern_dark_and_light', async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(900_000);
   await logIn(page);
   const look = (layout: 'og' | 'modern') =>
     page.request.put('./api/v2/user/look', {
@@ -88,7 +125,7 @@ test('settings_sections_pass_contrast_on_modern_dark_and_light', async ({ page }
     for (const set of ['dark', 'light'] as const) {
       for (const { address, label } of sections) {
         await openSection(page, address, label, set);
-        await checkContrast(page, `${address} (${set})`);
+        await checkSection(page, `${address} (${set})`);
       }
       for (const { address, label, button } of DIALOGS) {
         await openSection(page, address, label, set);
@@ -128,5 +165,69 @@ test('settings_sections_pass_contrast_on_modern_dark_and_light', async ({ page }
     // The install goes back to the OG layout for the tests after this one.
     expect((await look('og')).ok()).toBe(true);
     await page.setViewportSize({ width: 1280, height: 720 });
+  }
+});
+
+test('the_side_menu_scrolls_inside_itself_on_a_long_page', async ({ page }) => {
+  await logIn(page);
+  const look = (layout: 'og' | 'modern') =>
+    page.request.put('./api/v2/user/look', {
+      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet: 'dark' },
+    });
+
+  try {
+    expect((await look('modern')).ok()).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    for (const [address, label] of [
+      ['#/settings/general', 'Main'],
+      ['#/settings/sso', 'SSO'],
+    ] as const) {
+      await page.goto('./');
+      await page.goto(`./${address}`);
+      await page.reload();
+      await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
+      await expect(page.locator('.m-page-heading h1')).toHaveText(label);
+      await expect(page.locator('.org-tab-body [aria-label="Loading"]')).toHaveCount(0);
+
+      const menu = page.locator('.m-settings-side');
+      const donate = menu.getByRole('link', { name: 'Donate' });
+      // The menu is no taller than the space under the top bar, and scrolls by itself.
+      const sizes = await menu.evaluate((element) => ({
+        client: element.clientHeight,
+        scroll: element.scrollHeight,
+        viewport: window.innerHeight,
+      }));
+      expect(sizes.client, `the menu on ${label}`).toBeLessThan(sizes.viewport - 52);
+      expect(sizes.scroll, `the menu on ${label}`).toBeGreaterThan(sizes.client);
+
+      // The page scrolls in the nearest ancestor of the menu that scrolls.
+      const pageScroll = () =>
+        menu.evaluate((element) => {
+          let holder: Element | null = element.parentElement;
+          while (holder && holder !== document.documentElement) {
+            const overflow = getComputedStyle(holder).overflowY;
+            if (/auto|scroll/.test(overflow) && holder.scrollHeight > holder.clientHeight) {
+              break;
+            }
+            holder = holder.parentElement;
+          }
+          const scroller = holder ?? document.documentElement;
+          return { top: scroller.scrollTop, max: scroller.scrollHeight - scroller.clientHeight };
+        });
+      const before = await pageScroll();
+      await donate.scrollIntoViewIfNeeded();
+      const where = await donate.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        return { top: box.top, bottom: box.bottom, height: window.innerHeight };
+      });
+      expect(where.top, `Donate on ${label}`).toBeGreaterThanOrEqual(52);
+      expect(where.bottom, `Donate on ${label}`).toBeLessThanOrEqual(where.height);
+      // The page itself did not scroll to the end to bring the link into view.
+      const after = await pageScroll();
+      expect(after.top - before.top, `the page scrolled on ${label}`).toBeLessThan(50);
+      expect(after.max, `the page of ${label} scrolls`).toBeGreaterThan(100);
+    }
+  } finally {
+    expect((await look('og')).ok()).toBe(true);
   }
 });
