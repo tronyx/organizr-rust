@@ -17,8 +17,8 @@ export default defineConfig({
     // The polyfill is an inline script, which the Content-Security-Policy does not allow.
     modulePreload: { polyfill: false },
     // A small font file would become a `data:` address, which `font-src 'self'` blocks:
-    // fonts always stay files.
-    assetsInlineLimit: (file) => (file.endsWith('.woff2') ? false : undefined),
+    // fonts of every kind always stay files.
+    assetsInlineLimit: (file) => (/\.(woff2?|ttf|otf|eot)$/.test(file) ? false : undefined),
   },
   server: {
     // `npm run dev` serves the interface and sends API requests to a server on this machine.

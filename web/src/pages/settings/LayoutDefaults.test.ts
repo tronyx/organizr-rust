@@ -71,6 +71,29 @@ describe('LayoutDefaults', () => {
     });
   });
 
+  it('a_loaded_colour_set_the_theme_does_not_have_shows_its_first_set', async () => {
+    const sent = stubApi({
+      'GET config': {
+        data: { layout: 'modern', modernTheme: 'silo', modernColourSet: 'dark' },
+      },
+      'PUT config': {},
+      'GET launch': { status: 500, message: 'not needed here' },
+    });
+    const ondone = vi.fn();
+    render(LayoutDefaults, { canChange: true, ondone });
+
+    const colours = await screen.findByRole('combobox', { name: 'Modern colour set' });
+    expect(colours).toHaveValue('ember');
+    await fireEvent.click(screen.getByRole('button', { name: 'Save the layout' }));
+
+    await waitFor(() => expect(ondone).toHaveBeenCalled());
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      modernTheme: 'silo',
+      modernColourSet: 'ember',
+    });
+  });
+
   it('co_admin_sees_but_cannot_change', async () => {
     const sent = stubApi({ 'GET config': { data: { ...CONFIG, layout: 'modern' } } });
     render(LayoutDefaults, { canChange: false, ondone: vi.fn() });

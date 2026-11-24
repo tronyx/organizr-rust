@@ -4998,7 +4998,8 @@
 
   /* The off-white buttons of the forms: the hover of every theme mixes in the text colour,
      which is off-white too, so on Silo it darkens the button with the page colour. */
-  [data-layout='modern'][data-theme^='m-silo-'] .org-form-button:not(:disabled):hover {
+  [data-layout='modern'][data-theme^='m-silo-'] .org-form-button:not(:disabled):hover,
+  [data-layout='modern'][data-theme^='m-silo-'] .org-row-buttons > button:hover {
     background: color-mix(in oklab, var(--color-primary) 80%, var(--color-base-100));
   }
 

@@ -74,15 +74,19 @@ pub fn modern_colour_sets(theme: &str) -> Option<&'static [&'static str]> {
         .map(|(_, sets)| *sets)
 }
 
-/// The modern theme and colour set of the Admin when they exist together, else
+/// The modern theme and colour set of the Admin. A colour set that the theme does not
+/// have gives the first set of the theme, as for a person; an unknown theme gives
 /// `organizr` and `dark`.
 fn admin_modern(settings: &Settings) -> (String, String) {
     let theme = settings.modern_theme.as_str();
     let set = settings.modern_colour_set.as_str();
-    if modern_colour_sets(theme).is_some_and(|sets| sets.contains(&set)) {
-        (theme.to_owned(), set.to_owned())
-    } else {
-        ("organizr".to_owned(), "dark".to_owned())
+    match modern_colour_sets(theme) {
+        Some(sets) if sets.contains(&set) => (theme.to_owned(), set.to_owned()),
+        Some(sets) => (
+            theme.to_owned(),
+            sets.first().map_or("dark", |first| first).to_owned(),
+        ),
+        None => ("organizr".to_owned(), "dark".to_owned()),
     }
 }
 
@@ -346,15 +350,22 @@ mod tests {
                 ("modern", "silo", "ember")
             );
         }
-        // The Admin's Silo with a set it does not have falls back to the default, as
-        // for any pair that does not exist together.
+        // The Admin's Silo with a set it does not have gets the first set of Silo, as
+        // for a person.
         settings.layout = "modern".to_owned();
         settings.modern_theme = "silo".to_owned();
         settings.modern_colour_set = "dark".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),
+            ("modern", "silo", "ember")
+        );
+        // An unknown theme still gives the default.
+        settings.modern_theme = "nonsense".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
             ("modern", "organizr", "dark")
         );
+        settings.modern_theme = "silo".to_owned();
         settings.modern_colour_set = "ice".to_owned();
         assert_eq!(
             parts(&effective_look(&settings, None)),

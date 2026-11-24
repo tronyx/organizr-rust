@@ -53,6 +53,8 @@
       };
       start = loaded;
       form = { ...loaded };
+      // A colour set the theme does not have shows the first set, as `chooseTheme` does.
+      chooseTheme(form.modernTheme);
       loadError = null;
     } catch (failure) {
       loadError = failureText(failure);
