@@ -57,12 +57,25 @@ describe('LookPicker', () => {
     expect(themes.querySelectorAll('option')).toHaveLength(1);
     expect(screen.getByRole('option', { name: 'Organizr' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Space Gray' })).not.toBeInTheDocument();
-    // One colour set is offered, so the group is shown but cannot change.
+    // The theme has a dark and a light colour set; either can be chosen.
     expect(screen.getByRole('group', { name: 'Colours' })).toBeInTheDocument();
-    expect(screen.getAllByRole('radio', { name: /^(Dark|Light)$/ })).toHaveLength(1);
+    expect(screen.getAllByRole('radio', { name: /^(Dark|Light)$/ })).toHaveLength(2);
     expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
-    expect(screen.getByRole('radio', { name: 'Dark' })).toBeDisabled();
-    expect(screen.queryByRole('radio', { name: 'Light' })).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Dark' })).toBeEnabled();
+    expect(screen.getByRole('radio', { name: 'Light' })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Light' })).toBeEnabled();
+  });
+
+  it('choosing_light_sends_the_light_colour_set', async () => {
+    const sent = await open(MODERN);
+
+    await fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
+    await waitFor(() => expect(sent.some((request) => request.method === 'PUT')).toBe(true));
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      theme: 'organizr',
+      colourSet: 'light',
+    });
   });
 
   it('choosing_sends_the_layout_theme_and_colour_set', async () => {

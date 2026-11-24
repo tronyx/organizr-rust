@@ -47,11 +47,11 @@ describe('applyLook', () => {
     expect(root.dataset.colourSet).toBe('dark');
   });
 
-  it('the_light_colour_set_is_not_offered_and_falls_back_to_dark', () => {
+  it('the_light_colour_set_is_offered', () => {
     const root = document.createElement('html');
     applyLook(modern('organizr', 'light'), undefined, {}, root);
-    expect(root.dataset.theme).toBe('m-organizr-dark');
-    expect(root.dataset.colourSet).toBe('dark');
+    expect(root.dataset.theme).toBe('m-organizr-light');
+    expect(root.dataset.colourSet).toBe('light');
   });
 
   it('a_fresh_modern_look_links_the_custom_css', () => {
@@ -78,7 +78,7 @@ describe('applyLook', () => {
 
   it('unknown_modern_pair_uses_organizr_dark', () => {
     expect(modernThemeId('organizr', 'dark')).toBe('m-organizr-dark');
-    expect(modernThemeId('organizr', 'light')).toBe('m-organizr-dark');
+    expect(modernThemeId('organizr', 'light')).toBe('m-organizr-light');
     expect(modernThemeId('gone', 'light')).toBe('m-organizr-dark');
     expect(modernThemeId('organizr', 'sepia')).toBe('m-organizr-dark');
     expect(modernThemeId('toString', 'dark')).toBe('m-organizr-dark');
@@ -92,7 +92,10 @@ describe('applyLook', () => {
       {
         id: 'organizr',
         label: 'Organizr',
-        colourSets: [{ id: 'dark', label: 'Dark' }],
+        colourSets: [
+          { id: 'dark', label: 'Dark' },
+          { id: 'light', label: 'Light' },
+        ],
       },
     ]);
   });
@@ -116,13 +119,24 @@ describe('the modern colour sets', () => {
   });
 
   it('muted_text_meets_aa_on_each_offered_background', () => {
-    // `--color-muted-foreground` is the text colour at 65% opacity over the background.
+    // `--color-muted-foreground` is the text colour at the opacity of the theme's
+    // `--org-muted-text` (65% where a theme sets none) over the background.
+    const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    expect(css.replace(/\s+/g, ' ')).toContain(
+      '--color-muted-foreground: color-mix( in oklab, var(--color-base-content) var(--org-muted-text, 65%), transparent );',
+    );
+    const strength = (id: string) => {
+      const start = css.indexOf(`name: '${id}';`);
+      const block = css.slice(start, css.indexOf('}', start));
+      const found = /--org-muted-text: (\d+)%;/.exec(block);
+      return found ? Number(found[1]) / 100 : 0.65;
+    };
     const channels = (hex: string) =>
       [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16));
-    const mixed = (text: string, background: string) =>
+    const mixed = (text: string, background: string, part: number) =>
       `#${channels(text)
         .map((value, i) =>
-          Math.round(0.65 * value + 0.35 * (channels(background)[i] ?? 0))
+          Math.round(part * value + (1 - part) * (channels(background)[i] ?? 0))
             .toString(16)
             .padStart(2, '0'),
         )
@@ -135,7 +149,7 @@ describe('the modern colour sets', () => {
       for (const name of ['page', 'menu', 'heading']) {
         const background = pairs.find((pair) => pair.name === name)?.background ?? '';
         expect(
-          contrastRatio(mixed(text, background), background),
+          contrastRatio(mixed(text, background, strength(id)), background),
           `${id} muted on ${name}`,
         ).toBeGreaterThanOrEqual(4.5);
       }

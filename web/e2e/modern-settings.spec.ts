@@ -1,7 +1,7 @@
 // The settings on the modern layout: every section of the side menu passes the contrast
-// check of WCAG AA, in the dark colour set and in the light one (which people cannot pick
-// yet, but whose styles exist). It runs after the walk of `demo.spec.ts`, on the same
-// install, and leaves the install on the OG layout.
+// check of WCAG AA, in the dark colour set and in the light one (set on the page here).
+// It runs after the walk of `demo.spec.ts`, on the same install, and leaves the install
+// on the OG layout.
 
 import type { Page } from '@playwright/test';
 

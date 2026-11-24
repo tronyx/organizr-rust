@@ -146,3 +146,58 @@ test('custom CSS of the Admin applies on the modern layout', async ({ page }) =>
     expect((await look('og')).ok()).toBe(true);
   }
 });
+
+test('the look popover chooses the light colours, and they stay after a reload', async ({
+  page,
+}) => {
+  await logIn(page);
+  const launch = await page.request.get('./api/v2/launch');
+  const before = (
+    (await launch.json()) as {
+      response: {
+        data: { look: { layout: string; theme: string; colourSet: string; source: string } };
+      };
+    }
+  ).response.data.look;
+  const html = page.locator('html');
+  const choose = async (label: 'Light' | 'Dark') => {
+    await page.getByRole('button', { name: 'Look' }).click();
+    const radio = page
+      .locator('[data-slot="popover-content"]')
+      .getByRole('radio', { name: label, exact: true });
+    await expect(radio).toBeEnabled();
+    await radio.check();
+    await expect(radio).toBeChecked();
+    await page.keyboard.press('Escape');
+  };
+
+  try {
+    const modern = await page.request.put('./api/v2/user/look', {
+      data: { layout: 'modern', theme: 'organizr', colourSet: 'dark' },
+    });
+    expect(modern.ok()).toBe(true);
+    await page.reload();
+    await expect(html).toHaveAttribute('data-colour-set', 'dark');
+
+    await choose('Light');
+    await expect(html).toHaveAttribute('data-theme', 'm-organizr-light');
+    await expect(html).toHaveAttribute('data-colour-set', 'light');
+    await page.reload();
+    await expect(html).toHaveAttribute('data-colour-set', 'light');
+    await expect(html).toHaveAttribute('data-theme', 'm-organizr-light');
+
+    await choose('Dark');
+    await expect(html).toHaveAttribute('data-colour-set', 'dark');
+    await page.reload();
+    await expect(html).toHaveAttribute('data-colour-set', 'dark');
+    await expect(html).toHaveAttribute('data-theme', 'm-organizr-dark');
+  } finally {
+    const restored = await page.request.put('./api/v2/user/look', {
+      data:
+        before.source === 'default'
+          ? { layout: null }
+          : { layout: before.layout, theme: before.theme, colourSet: before.colourSet },
+    });
+    expect(restored.ok()).toBe(true);
+  }
+});

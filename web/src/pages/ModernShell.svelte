@@ -262,7 +262,7 @@
                   </Tooltip.Trigger>
                   <Tooltip.Content>Look</Tooltip.Content>
                 </Tooltip.Root>
-                <Popover.Content align="end" class="w-64">
+                <Popover.Content align="end" class="m-look-panel w-64">
                   <LookPicker />
                 </Popover.Content>
               </Popover.Root>

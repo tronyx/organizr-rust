@@ -22,15 +22,16 @@ export interface ModernTheme {
 }
 
 /**
- * The themes of the modern layout. Later versions add entries. The light colour set of
- * `organizr` is defined in `app.css` but not offered: the inner pages keep OG styling that
- * is unreadable on it. Phase 2 adds it back here and in the server's list.
+ * The themes of the modern layout, as in the server's list. Later versions add entries.
  */
 export const MODERN_THEMES: ModernTheme[] = [
   {
     id: 'organizr',
     label: 'Organizr',
-    colourSets: [{ id: 'dark', label: 'Dark' }],
+    colourSets: [
+      { id: 'dark', label: 'Dark' },
+      { id: 'light', label: 'Light' },
+    ],
   },
 ];
 

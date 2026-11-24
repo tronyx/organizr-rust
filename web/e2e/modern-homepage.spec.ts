@@ -1,7 +1,6 @@
 // The homepage on the modern layout: every item, with the answers of `homepage-fixtures.ts`
 // (normal, empty and failed), passes the contrast check of WCAG AA in the dark colour set
-// and in the light one (which people cannot pick yet, but whose styles exist), in each of
-// its tabs, menus and dialogs. No request leaves the machine: every item address is
+// and in the light one (set on the page here), in each of its tabs, menus and dialogs. No request leaves the machine: every item address is
 // under `.invalid`, and the fixtures answer every route of the items. The tests leave the
 // settings and the look of the install as they found them.
 

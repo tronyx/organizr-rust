@@ -542,6 +542,39 @@ describe('the borders of the form controls', () => {
     },
   );
 
+  it.each(['m-organizr-dark', 'm-organizr-light'])(
+    'the_speed_test_result_labels_meet_aa_on_%s',
+    (name) => {
+      const selector = `${SCOPE} .org-settings .stats :is(.stat-title, .stat-desc)`;
+      const rule = rules().find((one) => one.selector === selector);
+      const found =
+        /color:\s*color-mix\(in oklab, var\(--color-base-content\) (\d+)%, var\(--color-base-200\)\)/.exec(
+          rule?.body ?? '',
+        );
+      expect(found, 'a modern rule for the labels of the Speed test').not.toBeNull();
+      // daisyUI's `.stat-title` sits in the utilities layer; the rule must be there too.
+      expect(css.slice(css.lastIndexOf('@layer utilities'))).toContain(selector);
+      const colours = theme(name);
+      const text = luminance(
+        mixOklab(
+          colours['base-content'] as string,
+          colours['base-200'] as string,
+          Number(found?.[1]),
+        ),
+      );
+      const box = luminance(channels(colours['base-200'] as string));
+      const [high, low] = [text, box].sort((x, y) => y - x) as [number, number];
+      expect((high + 0.05) / (low + 0.05)).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it('the_radios_of_the_look_popover_get_the_same_border', () => {
+    // The look picker of the top bar sits in a popover (base-200), outside the panels.
+    expect(choiceRule()?.selector ?? '').toContain('.m-look-panel');
+    const shell = readFileSync(resolve(__dirname, '../pages/ModernShell.svelte'), 'utf8');
+    expect(shell).toMatch(/<Popover\.Content[^>]*class="[^"]*\bm-look-panel\b/);
+  });
+
   it('auth_choice_borders_keep_the_checked_look_of_daisyui', () => {
     const rule = choiceRule();
     // `--input-color` is the checked fill of a checkbox and the dot of a radio.
@@ -555,11 +588,14 @@ describe('the borders of the form controls', () => {
 });
 
 describe('the modern top bar and lock screen on a phone', () => {
-  it('the_shown_tab_name_and_the_logo_text_hide_below_640_px', () => {
+  it('the_shown_tab_name_hides_and_the_logo_text_shortens_below_640_px', () => {
     const phone = css.slice(css.lastIndexOf('@media (max-width: 639px)'));
     expect(phone).toMatch(/\[data-layout='modern'\] \.m-shown \{\s*display: none;/);
+    // Without a logo picture the title is the only content of the home link: it stays
+    // visible and ends in an ellipsis instead of being hidden.
+    expect(phone).not.toMatch(/\.org-logo > span \{[^}]*clip-path/);
     expect(phone).toMatch(
-      /\[data-layout='modern'\] \.org-logo > span \{[^}]*clip-path: inset\(50%\)/,
+      /\[data-layout='modern'\] \.org-logo > span \{[^}]*text-overflow: ellipsis;/,
     );
   });
 
