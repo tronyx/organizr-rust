@@ -16,7 +16,12 @@ export const BOOKMARKS: HomepageItemForm = {
         id: 'enable',
         title: 'Enable',
         entries: [
-          { key: 'homepageBookmarksEnabled', kind: 'switch', label: 'Enable' },
+          {
+            key: 'homepageBookmarksEnabled',
+            kind: 'switch',
+            label: 'Enable',
+            help: 'Toggles the view module for Bookmarks',
+          },
           {
             key: 'homepageBookmarksAuth',
             kind: 'select',

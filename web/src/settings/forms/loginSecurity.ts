@@ -141,6 +141,14 @@ export const LOGIN_SECURITY: FormPage = {
           wide: true,
         },
         {
+          key: 'blacklistedMessage',
+          kind: 'code',
+          label: 'Message for blocked IPs',
+          help: 'The text or HTML that a person with a blocked IP gets.',
+          wide: true,
+          language: 'html',
+        },
+        {
           key: 'debugAreaAuth',
           kind: 'select',
           label: 'Minimum Authentication for Debug Area',

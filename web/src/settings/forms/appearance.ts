@@ -177,13 +177,6 @@ export const APPEARANCE: FormPage = {
           language: 'javascript',
           adminOnly: true,
         },
-        {
-          key: 'blacklistedMessage',
-          kind: 'code',
-          label: 'Custom Code',
-          wide: true,
-          language: 'html',
-        },
       ],
     },
   ],

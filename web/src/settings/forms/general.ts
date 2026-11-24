@@ -21,7 +21,7 @@ export const GENERAL: FormPage = {
           kind: 'notice',
           tone: 'info',
           title: 'API Documentation',
-          body: "The documentation for Organizr's API is included with this installation. To access the docs, use the button below.",
+          body: "The documentation for Organizr's API is included with this installation.",
         },
       ],
     },

@@ -14,7 +14,7 @@ export const PLEX_LIBRARIES_PLUGIN: FormPage = {
           kind: 'notice',
           tone: 'info',
           title: 'Plex Libraries',
-          body: 'Lets each person switch the libraries of the Plex server that the own account sees, and lets Admins and Co-Admins switch them for every account the server is shared with. The plugin uses the Plex token and the Plex ID of System Settings, Main, Authentication. Make the tab of its page with the button below.',
+          body: 'Lets each person switch the libraries of the Plex server that the own account sees, and lets Admins and Co-Admins switch them for every account the server is shared with. The plugin uses the Plex token and the Plex ID of System Settings, Sign-in. Make the tab of its page in the section Tab.',
         },
       ],
     },

@@ -184,7 +184,7 @@ export const INVITES_PLUGIN: FormPage = {
         {
           key: 'embyURL',
           kind: 'text',
-          label: 'Emby server adress',
+          label: 'Emby server address',
           placeholder: 'localhost:8086',
         },
         {

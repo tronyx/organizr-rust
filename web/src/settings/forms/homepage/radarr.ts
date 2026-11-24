@@ -103,7 +103,7 @@ export const RADARR: HomepageItemForm = {
             choices: [
               { label: 'Sunday', value: '0' },
               { label: 'Monday', value: '1' },
-              { label: 'Tueday', value: '2' },
+              { label: 'Tuesday', value: '2' },
               { label: 'Wednesday', value: '3' },
               { label: 'Thursday', value: '4' },
               { label: 'Friday', value: '5' },
@@ -243,6 +243,7 @@ export const RADARR: HomepageItemForm = {
             kind: 'select',
             label: 'Target Tab',
             help: 'Set the tab used when clicking on calendar icon. If not set, link will open in new window.',
+            choices: [{ label: 'Open in New Window', value: '' }],
             source: 'frame-tabs',
             sourceArg: 'radarrCalendarLink',
           },

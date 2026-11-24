@@ -75,6 +75,12 @@ export interface SettingField {
    * Fields with the same title that follow each other share one box.
    */
   fold?: string;
+  /**
+   * The setting whose stored value titles the folding box, as the name of a custom e-mail
+   * template. When that value is empty, the box shows `fold`. The fields of one box carry
+   * the same key.
+   */
+  foldTitleKey?: string;
   /** Only the Admin sees the field; the page does not send it for a Co-Admin. */
   adminOnly?: boolean;
 }
@@ -97,7 +103,6 @@ export interface ButtonEntry {
   label: string;
   help?: string;
   text?: string;
-  icon?: string;
   action: Action;
   /** The button shows only for the sign-in back end that the rule names, or one of them. */
   shownWhen?: SignInRule | SignInRule[];
