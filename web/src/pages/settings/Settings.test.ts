@@ -1554,6 +1554,98 @@ describe('Settings, Appearance', () => {
   });
 });
 
+describe('Settings, plugin settings and theme settings', () => {
+  const CONFIG = {
+    externalPluginMarketplaceRepos: 'https://github.com/example/plugins',
+    externalThemeMarketplaceRepos: '',
+    githubAccessToken: '***Secure***',
+    checkForPluginUpdate: true,
+    checkForThemeUpdate: false,
+  };
+
+  const ADMIN_LAUNCH: CannedAnswer = {
+    data: {
+      ...(LAUNCH.data as Record<string, unknown>),
+      user: { groupID: 0, group: 'Admin', loggedin: true, username: 'admin' },
+    },
+  };
+
+  async function showPage(section: 'plugin-settings' | 'theme-settings') {
+    const sent = stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET launch': ADMIN_LAUNCH,
+      'GET config': { data: CONFIG },
+      'PUT config': {},
+    });
+    await session.load();
+    render(Settings, { section });
+    await screen.findByRole('button', { name: 'Save' });
+    return sent;
+  }
+
+  afterEach(() => {
+    session.launch = null;
+  });
+
+  it('plugin_settings_shows_the_marketplace_and_saves_its_keys', async () => {
+    const sent = await showPage('plugin-settings');
+
+    expect(screen.getByRole('heading', { name: 'Settings', level: 2 })).toBeInTheDocument();
+    expect(
+      screen.getByText(/the code on these repositories are not inspected/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Check for Plugin Updates')).toBeChecked();
+    // The stored token is not shown, and an untouched one is not sent.
+    expect(screen.getByLabelText('Github Person Access Token')).toHaveValue('');
+    await fireEvent.click(screen.getByLabelText('Check for Plugin Updates'));
+    await fireEvent.input(screen.getByLabelText('Github Person Access Token'), {
+      target: { value: 'new-made-up-token' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([
+      ['PUT config', { checkForPluginUpdate: false, githubAccessToken: 'new-made-up-token' }],
+    ]);
+  });
+
+  it('theme_settings_shows_the_marketplace_and_sends_nothing_untouched', async () => {
+    const sent = await showPage('theme-settings');
+
+    expect(
+      screen.getByRole('heading', { name: 'Marketplace Settings', level: 2 }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/the themes on these repositories are not inspected/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Check for Theme Updates')).not.toBeChecked();
+    expect(screen.getByLabelText('Github Person Access Token')).toHaveValue('');
+    await fireEvent.click(screen.getByLabelText('Check for Theme Updates'));
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([['PUT config', { checkForThemeUpdate: true }]]);
+  });
+
+  it('nothing_requests_the_old_plugin_and_theme_forms', async () => {
+    for (const section of ['plugin-settings', 'theme-settings'] as const) {
+      const sent = await showPage(section);
+      expect(sent.some((request) => /^settings\/(plugin|theme)/.test(request.path))).toBe(false);
+      cleanup();
+    }
+    // No code of the interface names those forms either.
+    const sources = import.meta.glob<string>(
+      ['/src/**/*.ts', '/src/**/*.svelte', '!**/*.test.ts'],
+      { query: '?raw', import: 'default', eager: true },
+    );
+    const asking = Object.entries(sources)
+      .filter(([, text]) => /['"`]settings\/(plugin|theme)['"`?]/.test(text))
+      .map(([path]) => path);
+    expect(asking).toEqual([]);
+  });
+});
+
 describe('Settings', () => {
   it('says so when the data cannot be loaded', async () => {
     const refused = { status: 401, message: 'Not Authorized' };

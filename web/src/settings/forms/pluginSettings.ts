@@ -1,4 +1,4 @@
-// The page Settings of Plugins: the plugin marketplace.
+// The Settings page of Plugins: the plugin marketplace.
 
 import type { FormPage } from '../model';
 

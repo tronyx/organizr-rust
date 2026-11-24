@@ -7,6 +7,8 @@
   import { PAGES, type SettingsSection } from '../../lib/route.svelte';
   import { SETTINGS_MENU, settingsPlace } from '../../lib/settingsMenu';
   import { session } from '../../lib/session.svelte';
+  import { PLUGIN_SETTINGS, THEME_SETTINGS } from '../../settings/forms';
+  import SettingsForm from '../../settings/SettingsForm.svelte';
   import type { Account, EditorData } from '../../lib/types';
   import BackupsEditor from './BackupsEditor.svelte';
   import AboutPage from './AboutPage.svelte';
@@ -15,7 +17,6 @@
   import ImageManager from './ImageManager.svelte';
   import AppearanceSettings from './AppearanceSettings.svelte';
   import ExtensionsEditor from './ExtensionsEditor.svelte';
-  import PhpSettingsForm from './PhpSettingsForm.svelte';
   import PluginCards from './PluginCards.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
@@ -183,19 +184,11 @@
     {:else if section === 'plugins' || section === 'plugins-inactive'}
       <PluginCards active={section === 'plugins'} ondone={(message) => (done = message)} />
     {:else if section === 'plugin-settings'}
-      <PhpSettingsForm
-        path="settings/plugin"
-        title="Plugin Settings"
-        ondone={(message) => (done = message)}
-      />
+      <SettingsForm page={PLUGIN_SETTINGS} ondone={(message) => (done = message)} />
     {:else if section === 'plugin-marketplace'}
       <ExtensionsEditor ondone={(message) => (done = message)} />
     {:else if section === 'theme-settings'}
-      <PhpSettingsForm
-        path="settings/theme"
-        title="Theme Settings"
-        ondone={(message) => (done = message)}
-      />
+      <SettingsForm page={THEME_SETTINGS} ondone={(message) => (done = message)} />
     {:else if data}
       {#if section === 'tabs'}
         <TabsEditor {data} {change} />

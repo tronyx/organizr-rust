@@ -47,7 +47,7 @@
     labels = {},
     ondone,
   }: {
-    /** The route of the form, after `api/v2/`, for example `settings/theme`. */
+    /** The route of the form, after `api/v2/`, for example `settings/homepage/plex`. */
     path: string;
     /** The title of the panel, as PHP writes it. */
     title: string;
