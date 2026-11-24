@@ -511,7 +511,8 @@ test('scenes_and_their_fonts_load_only_for_their_theme', async ({ page, browser 
 
 test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
   test.setTimeout(300_000);
-  expect(SCENE_LOOKS.length, 'colour sets of the scene themes').toBeGreaterThan(0);
+  // Five scene themes of three colour sets each; a later scene theme adds to them.
+  expect(SCENE_LOOKS.length, 'colour sets of the scene themes').toBeGreaterThanOrEqual(15);
   await logIn(page);
   const lookBefore = await readLook(page);
   const config = await readConfig(page);
@@ -604,9 +605,10 @@ test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
       const spot = await freeSpot(page);
       expect(spot, `a spot of the scene on the section Main (${look.id})`).not.toBeNull();
       if (spot) {
-        expect
-          .soft(await clickReaches(page, spot), `a click on the scene (${look.id})`)
-          .not.toBe('the scene');
+        // The click must reach an element of the page: not the scene, and not lost.
+        const reached = await clickReaches(page, spot);
+        expect.soft(reached, `a click on the scene (${look.id})`).not.toBe('the scene');
+        expect.soft(reached, `a click on the scene arrives (${look.id})`).not.toBe('nothing');
       }
       const field = page.getByRole('tabpanel').getByRole('textbox').first();
       await keyboardFocus(page, field);
