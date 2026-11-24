@@ -29,7 +29,7 @@
   <div role="alert" class="alert alert-error mb-6"><span>{look.loadError}</span></div>
 {:else if look.start}
   <div class="org-form-grid mb-6">
-    <p class="org-form-wide text-sm">
+    <p class="org-form-group org-form-wide">
       This is the look that a person sees until they choose their own. The OG Organizr layout is the
       one of PHP Organizr; the modern layout has a top bar and a menu grouped by category.
     </p>

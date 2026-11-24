@@ -231,3 +231,47 @@ test('the_side_menu_scrolls_inside_itself_on_a_long_page', async ({ page }) => {
     expect((await look('og')).ok()).toBe(true);
   }
 });
+
+test('the_note_of_style_and_themes_has_body_text_and_room_on_both_layouts', async ({ page }) => {
+  await logIn(page);
+  const look = (layout: 'og' | 'modern') =>
+    page.request.put('./api/v2/user/look', {
+      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet: 'dark' },
+    });
+
+  try {
+    for (const layout of ['og', 'modern'] as const) {
+      expect((await look(layout)).ok()).toBe(true);
+      await page.goto('./#/settings/appearance');
+      await page.reload();
+      await expect(page.locator('html')).toHaveAttribute('data-layout', layout);
+      await page.getByRole('tab', { name: 'Style & Themes' }).click();
+      const panel = page.getByRole('tabpanel', { name: 'Style & Themes settings' });
+      const note = panel.getByText(/This is the look that a person sees/);
+      const layoutField = panel.getByRole('combobox', { name: 'Default layout' });
+      await expect(layoutField).toBeVisible();
+
+      // The note has the size of the body text, not the small size.
+      const sizes = await note.evaluate((element) => ({
+        note: getComputedStyle(element).fontSize,
+        body: getComputedStyle(document.body).fontSize,
+      }));
+      expect(sizes.note, `the note on ${layout}`).toBe('14px');
+      expect(sizes.note, `the note on ${layout}`).toBe(sizes.body);
+
+      // The gap under the note is the gap between two fields of the form.
+      const gaps = await note.evaluate((element) => {
+        const grid = element.parentElement ?? document.body;
+        const groups = [...grid.querySelectorAll(':scope > .org-form-group')];
+        const boxes = groups.map((group) => group.getBoundingClientRect());
+        const gap = (above: number) =>
+          (boxes[above + 1]?.top ?? NaN) - (boxes[above]?.bottom ?? NaN);
+        return { note: gap(0), fields: gap(1) };
+      });
+      expect(gaps.note, `the gap under the note on ${layout}`).toBeGreaterThanOrEqual(14);
+      expect(gaps.note, `the gap under the note on ${layout}`).toBeCloseTo(gaps.fields, 0);
+    }
+  } finally {
+    expect((await look('og')).ok()).toBe(true);
+  }
+});
