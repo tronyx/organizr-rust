@@ -706,6 +706,23 @@ describe('Settings, users', () => {
     expect(within(edit).getByLabelText('New password')).not.toHaveAttribute('autofocus');
   });
 
+  it('names each button of a user row once, with a tooltip of the same text', async () => {
+    await show('users');
+
+    const row = rowOf('zoe');
+    for (const name of ['Change the password of zoe', 'Edit zoe', 'Delete zoe']) {
+      const button = within(row).getByRole('button', { name });
+      expect(button).toHaveAccessibleName(name);
+      // The title is the name and the tooltip, and nothing else names or describes the
+      // button. (A browser does not take a title that names a button as its description too;
+      // jsdom's computation does, so the e2e test checks that in Chrome.)
+      expect(button).toHaveAttribute('title', name);
+      expect(button).not.toHaveAttribute('aria-label');
+      expect(button).not.toHaveAttribute('aria-describedby');
+      expect(button).toHaveTextContent(/^\s*$/);
+    }
+  });
+
   it('locks and unlocks a user', async () => {
     const sent = await show('users', { 'PUT users/3': {}, 'PUT users/4': {} });
 

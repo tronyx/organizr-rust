@@ -189,29 +189,32 @@
                 </label>
               </td>
               <td class="text-center">
+                <!-- The title is the name of the button and its tooltip: no other text names or
+                     describes it, so a screen reader reads it once. -->
                 <button
                   class="org-icon-button"
-                  title="Change the password"
+                  title={`Change the password of ${user.username}`}
                   onclick={() => (dialog = { user, password: true })}
                 >
                   <i class="oi-materialize mdi-account-key" aria-hidden="true"></i>
-                  <span class="sr-only">Change the password of {user.username}</span>
                 </button>
               </td>
               <td class="text-center">
                 <span class="org-users-actions">
-                  <button class="org-icon-button" title="Edit" onclick={() => (dialog = { user })}>
+                  <button
+                    class="org-icon-button"
+                    title={`Edit ${user.username}`}
+                    onclick={() => (dialog = { user })}
+                  >
                     <i class="oi-themify ti-pencil-alt" aria-hidden="true"></i>
-                    <span class="sr-only">Edit {user.username}</span>
                   </button>
                   <button
                     class="org-icon-button org-icon-danger"
-                    title="Delete"
+                    title={`Delete ${user.username}`}
                     disabled={isOwn(user)}
                     onclick={() => remove(user)}
                   >
                     <i class="oi-themify ti-trash" aria-hidden="true"></i>
-                    <span class="sr-only">Delete {user.username}</span>
                   </button>
                 </span>
               </td>

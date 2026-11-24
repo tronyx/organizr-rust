@@ -498,6 +498,32 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
   await expect(status).toHaveText('The user is locked.');
   await expect(page.getByLabel('Lock abe')).toBeChecked();
 
+  // Each button of a row has one name, which its tooltip shows; Chrome reads no
+  // description besides it (the name is not read twice).
+  const namesOf = async () => {
+    const client = await page.context().newCDPSession(page);
+    try {
+      const { nodes } = (await client.send('Accessibility.getFullAXTree')) as {
+        nodes: {
+          role?: { value?: string };
+          name?: { value?: string };
+          description?: { value?: string };
+        }[];
+      };
+      return nodes
+        .filter((node) => node.role?.value === 'button' && /abe$/.test(node.name?.value ?? ''))
+        .map((node) => ({ name: node.name?.value, description: node.description?.value ?? '' }));
+    } finally {
+      await client.detach();
+    }
+  };
+  const ONCE = [
+    { name: 'Change the password of abe', description: '' },
+    { name: 'Edit abe', description: '' },
+    { name: 'Delete abe', description: '' },
+  ];
+  expect(await namesOf()).toEqual(ONCE);
+
   // On the modern layout the table fits the card: the buttons of each row are on screen.
   // A layout of `null` forgets the choice again, so the tests after this one keep the look
   // of the install.
@@ -509,6 +535,7 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
     await expect(page.getByRole('button', { name: 'Edit abe' })).toBeVisible();
+    expect(await namesOf()).toEqual(ONCE);
     const buttons = page.getByRole('row').getByRole('button', { name: /^(Edit|Delete) / });
     expect(await buttons.count()).toBeGreaterThanOrEqual(4);
     // Inside the window, and not hidden in the part of the table that scrolls sideways.

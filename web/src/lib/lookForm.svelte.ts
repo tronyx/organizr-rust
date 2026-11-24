@@ -68,10 +68,11 @@ export class LookForm implements FormPart {
         modernColourSet: text(config.modernColourSet, 'dark'),
       };
       this.themes = optionsOf(field('theme') ?? { type: 'select' });
-      this.start = loaded;
       this.form = { ...loaded };
-      // A colour set the theme does not have shows the first set, as `chooseTheme` does.
+      // A colour set the theme does not have shows the first set, as `chooseTheme` does. The
+      // server applies that set anyway, so it is no change: the form starts unchanged.
       this.chooseTheme(this.form.modernTheme);
+      this.start = { ...this.form };
       this.loadError = null;
     } catch (failure) {
       this.loadError = failureText(failure);
@@ -85,6 +86,11 @@ export class LookForm implements FormPart {
     if (!sets.some((set) => set.id === this.form.modernColourSet) && sets[0]) {
       this.form.modernColourSet = sets[0].id;
     }
+  }
+
+  /** Takes the values in the form as the stored ones, after a save that succeeded. */
+  saved() {
+    this.start = { ...this.form };
   }
 
   changes(): Record<string, unknown> {

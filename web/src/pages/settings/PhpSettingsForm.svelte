@@ -154,6 +154,11 @@
     error = null;
     try {
       await api('PUT', 'config', changed);
+      // What was sent is stored now, also if the loads that follow fail.
+      start = $state.snapshot(form);
+      for (const part of shownParts) {
+        part.saved();
+      }
       await Promise.all([load(), session.load()]);
       ondone('The settings are saved.');
     } catch (failure) {

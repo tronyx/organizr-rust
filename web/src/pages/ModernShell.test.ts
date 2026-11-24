@@ -456,6 +456,27 @@ describe('ModernShell', () => {
     expect(localStorage.getItem('organizr.modernMenuCollapsed')).toBe('true');
   });
 
+  it('the_menu_follows_a_collapse_or_expand_in_another_tab_of_the_browser', async () => {
+    await openShell();
+    expect(document.getElementById('m-menu')).not.toHaveClass('m-sidebar-icons');
+
+    // Another tab stores the choice: this one gets a `storage` event.
+    const change = (newValue: string | null, key: string | null = 'organizr.modernMenuCollapsed') =>
+      fireEvent(window, new StorageEvent('storage', { key, newValue }));
+    await change('true');
+    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
+    expect(screen.getByRole('button', { name: 'Expand the menu' })).toBeInTheDocument();
+    // Another key changes nothing.
+    await change('false', 'organizr.other');
+    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
+    await change('false');
+    expect(document.getElementById('m-menu')).not.toHaveClass('m-sidebar-icons');
+    // A cleared storage opens the menu, as on a first visit.
+    await change('true');
+    await change(null, null);
+    expect(document.getElementById('m-menu')).not.toHaveClass('m-sidebar-icons');
+  });
+
   it('the_menu_starts_open_and_still_collapses_when_storage_is_blocked', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new DOMException('blocked', 'SecurityError');

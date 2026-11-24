@@ -281,7 +281,7 @@ describe('LookPicker', () => {
     expect(screen.getByRole('radio', { name: 'Modern' })).not.toBeChecked();
   });
 
-  it('the_controls_are_disabled_while_a_save_is_in_flight', async () => {
+  it('the_radios_stay_enabled_and_the_group_is_busy_while_a_save_is_in_flight', async () => {
     let release: () => void = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));
     const sent = await open(OG);
@@ -293,16 +293,71 @@ describe('LookPicker', () => {
       }
       return answer(address, init);
     });
+    const themes = screen.getByRole('group', { name: 'Theme' });
+    expect(themes).toHaveAttribute('aria-busy', 'false');
 
-    await fireEvent.click(screen.getByRole('radio', { name: 'Nord' }));
-    await waitFor(() => expect(screen.getByRole('radio', { name: 'Nord' })).toBeDisabled());
-    expect(screen.getByRole('radio', { name: 'Plex' })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: 'OG Organizr' })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: 'Modern' })).toBeDisabled();
+    const nord = screen.getByRole('radio', { name: 'Nord' });
+    nord.focus();
+    await fireEvent.click(nord);
+    await waitFor(() => expect(themes).toHaveAttribute('aria-busy', 'true'));
+    // A disabled radio would lose the focus and the arrow keys.
+    expect(nord).toBeEnabled();
+    expect(nord).toHaveFocus();
+    expect(screen.getByRole('radio', { name: 'Plex' })).toBeEnabled();
+    expect(screen.getByRole('radio', { name: 'Modern' })).toBeEnabled();
 
     release();
-    await waitFor(() => expect(screen.getByRole('radio', { name: 'Nord' })).toBeEnabled());
+    await waitFor(() => expect(themes).toHaveAttribute('aria-busy', 'false'));
     expect(sent.some((request) => request.method === 'PUT')).toBe(true);
+    expect(nord).toHaveFocus();
+  });
+
+  it('choices_made_during_a_save_send_only_the_last_one_next', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const sent = await open(OG);
+    const puts = () => sent.filter((request) => request.method === 'PUT');
+    const answer = globalThis.fetch;
+    let first = true;
+    // The first save waits until the test lets it go.
+    vi.stubGlobal('fetch', async (address: string, init?: RequestInit) => {
+      if (init?.method === 'PUT' && first) {
+        first = false;
+        await gate;
+      }
+      return answer(address, init);
+    });
+
+    // As the arrow keys do: each step checks the next radio.
+    await fireEvent.click(screen.getByRole('radio', { name: 'Nord' }));
+    await fireEvent.click(screen.getByRole('radio', { name: 'Plex' }));
+    const last = screen.getByRole('radio', { name: 'Space Gray' });
+    last.focus();
+    await fireEvent.click(last);
+    // The controls show the last choice while it waits.
+    expect(last).toBeChecked();
+
+    release();
+    await waitFor(() => expect(puts()).toHaveLength(2));
+    expect(puts().map((request) => (request.body as { theme: string }).theme)).toEqual([
+      'Nord',
+      'Space_Gray',
+    ]);
+    await waitFor(() =>
+      expect(screen.getByRole('group', { name: 'Theme' })).toHaveAttribute('aria-busy', 'false'),
+    );
+    expect(last).toHaveFocus();
+  });
+
+  it('after_a_failed_save_the_focus_stays_on_the_checked_radio', async () => {
+    await open(OG, { 'PUT user/look': { status: 422, message: 'theme is not valid' } });
+
+    const nord = screen.getByRole('radio', { name: 'Nord' });
+    nord.focus();
+    await fireEvent.click(nord);
+    await screen.findByRole('alert');
+    // The controls are drawn again with the saved look; the focus stays in the group.
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Organizr' })).toHaveFocus());
   });
 
   /** The `data-theme` of the colour sample of a radio, from the label that holds both. */

@@ -3838,6 +3838,19 @@
     padding: 6px;
   }
 
+  /* The tab that is shown, in the column of icons: its name is not there to see, so a bar
+     in the primary colour of the theme marks it at the left edge of the column. */
+  [data-layout='modern'] .m-sidebar-icons .org-menu a[aria-current='page']::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: -8px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--color-primary);
+  }
+
   /* The column shrinks and grows in a short time, and at once for a person who asked the
      system for less motion. */
   @media (prefers-reduced-motion: no-preference) {

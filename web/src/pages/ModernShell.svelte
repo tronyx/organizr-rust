@@ -86,6 +86,15 @@
       // The choice holds until the page loads again.
     }
   }
+  /**
+   * Other open tabs of this browser follow a collapse or an expand of the menu. A cleared
+   * storage (no key) opens the menu, as on a first visit.
+   */
+  function followStorage(event: StorageEvent) {
+    if (event.key === COLLAPSED_KEY || event.key === null) {
+      collapsed = event.newValue === 'true';
+    }
+  }
 
   const hasMenu = $derived(session.tabs.length > 0);
   // As in OG, a guest has the menu too: it holds the link to log in.
@@ -349,7 +358,13 @@
                   </Tooltip.Trigger>
                   <Tooltip.Content>Look</Tooltip.Content>
                 </Tooltip.Root>
-                <Popover.Content align="end" class="m-look-panel w-80">
+                <!-- No higher than the room under the top bar (a phone held sideways); the
+                     panel scrolls inside. -->
+                <Popover.Content
+                  align="end"
+                  collisionPadding={8}
+                  class="m-look-panel max-h-(--bits-popover-content-available-height) w-80 overflow-y-auto"
+                >
                   <LookPicker />
                 </Popover.Content>
               </Popover.Root>
@@ -488,3 +503,5 @@
     </div>
   </Sheet.Root>
 </Tooltip.Provider>
+
+<svelte:window onstorage={followStorage} />

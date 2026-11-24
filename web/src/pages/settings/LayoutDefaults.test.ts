@@ -235,16 +235,43 @@ describe('the group Style & Themes', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it('a_loaded_colour_set_the_theme_does_not_have_shows_its_first_set', async () => {
-    const { panel, save, puts } = await open({
+  it('a_loaded_colour_set_the_theme_does_not_have_shows_its_first_set_and_is_no_change', async () => {
+    const { panel } = await open({
       layout: 'modern',
       modernTheme: 'silo',
       modernColourSet: 'dark',
     });
 
     expect(within(panel).getByRole('combobox', { name: 'Modern colour set' })).toHaveValue('ember');
+    // The server applies the first set anyway: nothing is changed on open.
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('a_failed_load_after_a_save_leaves_the_look_unchanged', async () => {
+    let configs = 0;
+    const { panel, save, puts } = await open();
+    // The first load answered; the load after the save fails.
+    const answer = globalThis.fetch;
+    vi.stubGlobal('fetch', async (address: string, init?: RequestInit) => {
+      if (String(address).endsWith('/api/v2/config') && (init?.method ?? 'GET') === 'GET') {
+        configs += 1;
+        return new Response(
+          JSON.stringify({ response: { result: 'error', message: 'down', data: null } }),
+          { status: 500 },
+        );
+      }
+      return answer(address, init);
+    });
+
+    await fireEvent.change(within(panel).getByRole('combobox', { name: 'Default layout' }), {
+      target: { value: 'modern' },
+    });
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     await save();
-    expect(puts()[0]?.body).toEqual({ modernColourSet: 'ember' });
+    expect(puts()[0]?.body).toEqual({ layout: 'modern' });
+    expect(configs).toBe(1);
+    // What was sent is stored: the form has no change left.
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
   for (const [theme, first, labels] of [

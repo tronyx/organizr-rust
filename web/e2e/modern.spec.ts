@@ -1,6 +1,7 @@
 // The modern layout: the shell with its grouped menu, user menu and phone drawer. It runs
 // after the walk of `demo.spec.ts`, on the same install.
 
+import { MODERN_THEMES } from '../src/lib/look';
 import { auditContrast, describeLowContrast } from './contrast';
 import { expect, test } from './fixtures';
 import { logIn } from './login';
@@ -459,5 +460,156 @@ test('the colour samples of the look picker take the colours of their own themes
           : { layout: before.layout, theme: before.theme, colourSet: before.colourSet },
     });
     expect(restored.ok()).toBe(true);
+  }
+});
+
+test('the arrow keys run through the themes of the look popover, and the focus stays', async ({
+  page,
+}) => {
+  await logIn(page);
+  const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
+
+  try {
+    expect((await look({ layout: 'modern', theme: 'organizr', colourSet: 'dark' })).ok()).toBe(
+      true,
+    );
+    await page.reload();
+    await page.getByRole('button', { name: 'Look' }).click();
+    const themes = page
+      .locator('[data-slot="popover-content"]')
+      .getByRole('group', { name: 'Theme', exact: true });
+    const organizr = themes.getByRole('radio', { name: 'Organizr', exact: true });
+    await organizr.focus();
+    await expect(organizr).toBeChecked();
+
+    // Three steps at once: Plex, Jellyfin, Emby. The focus never leaves the group.
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    const emby = themes.getByRole('radio', { name: 'Emby', exact: true });
+    await expect(emby).toBeFocused();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'm-emby-dark');
+    await expect(themes).toHaveAttribute('aria-busy', 'false');
+    await expect(emby).toBeChecked();
+    await expect(emby).toBeFocused();
+
+    // One more step after the saves: the next theme, still with the keyboard.
+    await page.keyboard.press('ArrowDown');
+    const silo = themes.getByRole('radio', { name: 'Silo', exact: true });
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'm-silo-ember');
+    await expect(themes).toHaveAttribute('aria-busy', 'false');
+    await expect(silo).toBeFocused();
+    const saved = (await (await page.request.get('./api/v2/launch')).json()) as {
+      response: { data: { look: { theme: string } } };
+    };
+    expect(saved.response.data.look.theme).toBe('silo');
+  } finally {
+    expect((await look({ layout: 'og' })).ok()).toBe(true);
+  }
+});
+
+test('the look popover fits a phone held sideways and scrolls inside', async ({ page }) => {
+  await logIn(page);
+  const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
+
+  try {
+    expect((await look({ layout: 'modern', theme: 'organizr', colourSet: 'dark' })).ok()).toBe(
+      true,
+    );
+    await page.setViewportSize({ width: 667, height: 375 });
+    await page.reload();
+    await page.getByRole('button', { name: 'Look' }).click();
+    const panel = page.locator('[data-slot="popover-content"]');
+    await expect(panel.getByRole('radio', { name: 'Modern', exact: true })).toBeVisible();
+
+    // The panel ends inside the window, and its content scrolls.
+    const box = await panel.boundingBox();
+    expect(box).not.toBeNull();
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(375);
+    const sizes = await panel.evaluate((element) => ({
+      scroll: element.scrollHeight,
+      client: element.clientHeight,
+      overflow: getComputedStyle(element).overflowY,
+    }));
+    expect(sizes.overflow).toBe('auto');
+    expect(sizes.scroll).toBeGreaterThan(sizes.client);
+
+    // The last button can be reached, and it is then inside the window.
+    const reset = panel.getByRole('button', { name: 'Use the default' });
+    await reset.scrollIntoViewIfNeeded();
+    await expect(reset).toBeInViewport({ ratio: 1 });
+  } finally {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    expect((await look({ layout: 'og' })).ok()).toBe(true);
+  }
+});
+
+test('the shown tab of the column of icons has a bar of at least 3:1 in every modern theme', async ({
+  page,
+}) => {
+  await logIn(page);
+  const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
+  // The tab Modern Rox comes from the first test of this file.
+
+  /** The bar of the shown tab: its size, and its ratio of contrast against the column. */
+  const bar = () =>
+    page.locator('aside#m-menu a[aria-current="page"]').evaluate((link) => {
+      const style = getComputedStyle(link, '::before');
+      const aside = link.closest('aside') as Element;
+      // A canvas turns any CSS colour (also oklab) into sRGB, for the ratio of contrast.
+      const context = document.createElement('canvas').getContext('2d');
+      const luminance = (colour: string) => {
+        if (!context) return 0;
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = colour;
+        context.fillRect(0, 0, 1, 1);
+        const [r, g, b] = [...context.getImageData(0, 0, 1, 1).data].map((value) => {
+          const c = value / 255;
+          return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+      };
+      const [high, low] = [
+        luminance(style.backgroundColor),
+        luminance(getComputedStyle(aside).backgroundColor),
+      ].sort((x, y) => y - x) as [number, number];
+      // The bar sits at the left edge of the column.
+      const left = Math.round(link.getBoundingClientRect().left + parseFloat(style.left));
+      return {
+        content: style.content,
+        width: parseFloat(style.width),
+        atEdge: left === Math.round(aside.getBoundingClientRect().left),
+        ratio: (high + 0.05) / (low + 0.05),
+      };
+    });
+
+  try {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.evaluate(() => localStorage.setItem('organizr.modernMenuCollapsed', 'true'));
+    for (const theme of MODERN_THEMES) {
+      for (const set of theme.colourSets) {
+        expect((await look({ layout: 'modern', theme: theme.id, colourSet: set.id })).ok()).toBe(
+          true,
+        );
+        await page.goto('./#Modern-Rox');
+        await page.reload();
+        await expect(page.locator('html')).toHaveAttribute('data-theme', `m-${theme.id}-${set.id}`);
+        await expect(page.locator('aside#m-menu')).toHaveClass(/m-sidebar-icons/);
+        const marker = await bar();
+        const where = `the bar in m-${theme.id}-${set.id}`;
+        expect(marker.content, where).toBe('""');
+        expect(marker.width, where).toBeGreaterThanOrEqual(3);
+        expect(marker.atEdge, where).toBe(true);
+        expect.soft(marker.ratio, where).toBeGreaterThanOrEqual(3);
+      }
+    }
+    // Expanded, the shown tab has no bar: its name and fill mark it.
+    await page.evaluate(() => localStorage.removeItem('organizr.modernMenuCollapsed'));
+    await page.reload();
+    await expect(page.locator('aside#m-menu')).not.toHaveClass(/m-sidebar-icons/);
+    expect((await bar()).content).toBe('none');
+  } finally {
+    await page.evaluate(() => localStorage.removeItem('organizr.modernMenuCollapsed'));
+    expect((await look({ layout: 'og' })).ok()).toBe(true);
   }
 });

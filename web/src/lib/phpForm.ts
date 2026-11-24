@@ -58,6 +58,11 @@ export interface FormPart {
   load(groups: PhpGroups): Promise<void>;
   /** The settings that the part changed, as `PUT /config` takes them. */
   changes(): Record<string, unknown>;
+  /**
+   * Takes the values in the form as the stored ones. The form calls it when a save
+   * succeeds, before it loads again, so that a failed load leaves nothing changed.
+   */
+  saved(): void;
 }
 
 /** The types whose value is a secret: the server sends only that one is stored. */
