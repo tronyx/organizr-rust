@@ -99,11 +99,11 @@ const BACKEND_RULES: Record<string, string> = {
 };
 
 /**
- * Whether a field shows, with the values as they stand in the form and the stored license
- * (`personal` or `business`).
+ * Whether a field or a button shows, with the values as they stand in the form and the
+ * stored license (`personal` or `business`).
  */
 export function isShown(
-  field: SettingField,
+  field: Pick<SettingField, 'license' | 'shownWhen'>,
   values: Record<string, FormValue>,
   license: string,
 ): boolean {
@@ -116,8 +116,10 @@ export function isShown(
   if (values.authType === 'internal') {
     return false;
   }
-  if (field.shownWhen === 'backend') {
+  const rules = Array.isArray(field.shownWhen) ? field.shownWhen : [field.shownWhen];
+  if (rules.includes('backend')) {
     return true;
   }
-  return BACKEND_RULES[String(values.authBackend ?? '')] === field.shownWhen;
+  const chosen = BACKEND_RULES[String(values.authBackend ?? '')];
+  return rules.some((rule) => rule === chosen);
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SECURE } from '../lib/settingsForm';
-import type { FormPage, SettingField } from './model';
+import type { ButtonEntry, FormPage, SettingField } from './model';
 import { changedSettings, initialValues, isShown, settingKeys } from './values';
 
 function field(key: string, kind: SettingField['kind'], extra: Partial<SettingField> = {}) {
@@ -110,6 +110,24 @@ describe('isShown', () => {
     expect(isShown(field('a', 'text', { shownWhen: 'emby' }), values, 'personal')).toBe(true);
     expect(isShown(field('a', 'text', { shownWhen: 'backend' }), values, 'personal')).toBe(true);
     expect(isShown(field('a', 'text', { shownWhen: 'plex' }), values, 'personal')).toBe(false);
+  });
+
+  it('shows a field with several back ends for each of them', () => {
+    const f = field('a', 'text', { shownWhen: ['ldap', 'ftp'] });
+    expect(isShown(f, { authType: 'both', authBackend: 'ftp' }, 'personal')).toBe(true);
+    expect(isShown(f, { authType: 'both', authBackend: 'ldap' }, 'personal')).toBe(true);
+    expect(isShown(f, { authType: 'both', authBackend: 'plex' }, 'personal')).toBe(false);
+  });
+
+  it('applies the rules of a button as those of a field', () => {
+    const button = {
+      kind: 'button',
+      label: 'Test Login',
+      action: { kind: 'login-test', path: 'test/ldap/login' },
+      shownWhen: 'ldap',
+    } satisfies ButtonEntry;
+    expect(isShown(button, { authType: 'both', authBackend: 'ldap' }, 'personal')).toBe(true);
+    expect(isShown(button, { authType: 'both', authBackend: 'plex' }, 'personal')).toBe(false);
   });
 
   it('shows a field only for the license it names', () => {

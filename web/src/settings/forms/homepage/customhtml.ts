@@ -1,0 +1,226 @@
+// The homepage item CustomHTML: its card and the page of its settings.
+
+import type { HomepageItemForm } from '../../model';
+
+export const CUSTOMHTML: HomepageItemForm = {
+  id: 'customhtml',
+  name: 'CustomHTML',
+  image: 'plugins/images/tabs/HTML5.png',
+  category: 'Custom',
+  enabledKey: '',
+  license: 'personal,business',
+  page: {
+    id: 'homepage-customhtml',
+    title: 'CustomHTML',
+    sections: [
+      {
+        id: 'custom-html-01',
+        title: 'Custom HTML 01',
+        entries: [
+          { key: 'homepageCustomHTML01Enabled', kind: 'switch', label: 'Enable' },
+          {
+            key: 'homepageCustomHTML01Auth',
+            kind: 'select',
+            label: 'Minimum Authentication',
+            source: 'groups',
+          },
+          {
+            key: 'customHTML01',
+            kind: 'code',
+            label: 'Custom HTML Code',
+            wide: true,
+            language: 'html',
+          },
+          {
+            key: 'homepageCustomHTML01Trusted',
+            kind: 'switch',
+            label: 'Trust custom HTML 01: show it as a page of this site',
+            help: 'Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.',
+          },
+        ],
+      },
+      {
+        id: 'custom-html-02',
+        title: 'Custom HTML 02',
+        entries: [
+          { key: 'homepageCustomHTML02Enabled', kind: 'switch', label: 'Enable' },
+          {
+            key: 'homepageCustomHTML02Auth',
+            kind: 'select',
+            label: 'Minimum Authentication',
+            source: 'groups',
+          },
+          {
+            key: 'customHTML02',
+            kind: 'code',
+            label: 'Custom HTML Code',
+            wide: true,
+            language: 'html',
+          },
+          {
+            key: 'homepageCustomHTML02Trusted',
+            kind: 'switch',
+            label: 'Trust custom HTML 02: show it as a page of this site',
+            help: 'Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.',
+          },
+        ],
+      },
+      {
+        id: 'custom-html-03',
+        title: 'Custom HTML 03',
+        entries: [
+          { key: 'homepageCustomHTML03Enabled', kind: 'switch', label: 'Enable' },
+          {
+            key: 'homepageCustomHTML03Auth',
+            kind: 'select',
+            label: 'Minimum Authentication',
+            source: 'groups',
+          },
+          {
+            key: 'customHTML03',
+            kind: 'code',
+            label: 'Custom HTML Code',
+            wide: true,
+            language: 'html',
+          },
+          {
+            key: 'homepageCustomHTML03Trusted',
+            kind: 'switch',
+            label: 'Trust custom HTML 03: show it as a page of this site',
+            help: 'Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.',
+          },
+        ],
+      },
+      {
+        id: 'custom-html-04',
+        title: 'Custom HTML 04',
+        entries: [
+          { key: 'homepageCustomHTML04Enabled', kind: 'switch', label: 'Enable' },
+          {
+            key: 'homepageCustomHTML04Auth',
+            kind: 'select',
+            label: 'Minimum Authentication',
+            source: 'groups',
+          },
+          {
+            key: 'customHTML04',
+            kind: 'code',
+            label: 'Custom HTML Code',
+            wide: true,
+            language: 'html',
+          },
+          {
+            key: 'homepageCustomHTML04Trusted',
+            kind: 'switch',
+            label: 'Trust custom HTML 04: show it as a page of this site',
+            help: 'Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.',
+          },
+        ],
+      },
+      {
+        id: 'custom-html-05',
+        title: 'Custom HTML 05',
+        entries: [
+          { key: 'homepageCustomHTML05Enabled', kind: 'switch', label: 'Enable' },
+          {
+            key: 'homepageCustomHTML05Auth',
+            kind: 'select',
+            label: 'Minimum Authentication',
+            source: 'groups',
+          },
+          {
+            key: 'customHTML05',
+            kind: 'code',
+            label: 'Custom HTML Code',
+            wide: true,
+            language: 'html',
+          },
+          {
+            key: 'homepageCustomHTML05Trusted',
+            kind: 'switch',
+            label: 'Trust custom HTML 05: show it as a page of this site',
+            help: 'Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.',
+          },
+        ],
+      },
+      {
+        id: 'custom-html-06',
+        title: 'Custom HTML 06',
+        entries: [
+          { key: 'homepageCustomHTML06Enabled', kind: 'switch', label: 'Enable' },
+          {
+            key: 'homepageCustomHTML06Auth',
+            kind: 'select',
+            label: 'Minimum Authentication',
+            source: 'groups',
+          },
+          {
+            key: 'customHTML06',
+            kind: 'code',
+            label: 'Custom HTML Code',
+            wide: true,
+            language: 'html',
+          },
+          {
+            key: 'homepageCustomHTML06Trusted',
+            kind: 'switch',
+            label: 'Trust custom HTML 06: show it as a page of this site',
+            help: 'Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.',
+          },
+        ],
+      },
+      {
+        id: 'custom-html-07',
+        title: 'Custom HTML 07',
+        entries: [
+          { key: 'homepageCustomHTML07Enabled', kind: 'switch', label: 'Enable' },
+          {
+            key: 'homepageCustomHTML07Auth',
+            kind: 'select',
+            label: 'Minimum Authentication',
+            source: 'groups',
+          },
+          {
+            key: 'customHTML07',
+            kind: 'code',
+            label: 'Custom HTML Code',
+            wide: true,
+            language: 'html',
+          },
+          {
+            key: 'homepageCustomHTML07Trusted',
+            kind: 'switch',
+            label: 'Trust custom HTML 07: show it as a page of this site',
+            help: 'Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.',
+          },
+        ],
+      },
+      {
+        id: 'custom-html-08',
+        title: 'Custom HTML 08',
+        entries: [
+          { key: 'homepageCustomHTML08Enabled', kind: 'switch', label: 'Enable' },
+          {
+            key: 'homepageCustomHTML08Auth',
+            kind: 'select',
+            label: 'Minimum Authentication',
+            source: 'groups',
+          },
+          {
+            key: 'customHTML08',
+            kind: 'code',
+            label: 'Custom HTML Code',
+            wide: true,
+            language: 'html',
+          },
+          {
+            key: 'homepageCustomHTML08Trusted',
+            kind: 'switch',
+            label: 'Trust custom HTML 08: show it as a page of this site',
+            help: 'Switch this on for HTML that embeds a page which only lets this site frame it. A script in a trusted item can do all that the person who looks at the page can do in Organizr. Trust only HTML and scripts that you know.',
+          },
+        ],
+      },
+    ],
+  },
+};

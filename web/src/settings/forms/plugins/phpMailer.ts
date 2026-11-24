@@ -1,0 +1,213 @@
+// The settings of the plugin PHP Mailer.
+
+import type { FormPage } from '../../model';
+
+export const PHP_MAILER_PLUGIN: FormPage = {
+  id: 'plugin-php-mailer',
+  title: 'PHP Mailer',
+  sections: [
+    {
+      id: 'host',
+      title: 'Host',
+      entries: [
+        { key: 'PHPMAILER-smtpHost', kind: 'text', label: 'SMTP Host' },
+        { key: 'PHPMAILER-smtpHostPort', kind: 'text', label: 'SMTP Port' },
+      ],
+    },
+    {
+      id: 'authentication',
+      title: 'Authentication',
+      entries: [
+        { key: 'PHPMAILER-smtpHostUsername', kind: 'text', label: 'Username' },
+        { key: 'PHPMAILER-smtpHostPassword', kind: 'secret', label: 'Password' },
+        { key: 'PHPMAILER-smtpHostAuth', kind: 'switch', label: 'Authentication' },
+        {
+          key: 'PHPMAILER-smtpHostType',
+          kind: 'select',
+          label: 'Authentication Type',
+          choices: [
+            { label: 'tls', value: 'tls' },
+            { label: 'ssl', value: 'ssl' },
+            { label: 'off', value: 'n/a' },
+          ],
+        },
+        { key: 'PHPMAILER-verifyCert', kind: 'switch', label: 'Verify Certificate' },
+      ],
+    },
+    {
+      id: 'sender',
+      title: 'Sender',
+      entries: [
+        { key: 'PHPMAILER-smtpHostSenderName', kind: 'text', label: 'Sender Name' },
+        {
+          key: 'PHPMAILER-smtpHostSenderEmail',
+          kind: 'text',
+          label: 'Sender Email',
+          placeholder: 'i.e. same as username',
+        },
+      ],
+    },
+    {
+      id: 'test-and-options',
+      title: 'Test and options',
+      entries: [
+        {
+          kind: 'button',
+          label: 'Send Test',
+          text: 'Send',
+          action: { kind: 'test', path: 'plugins/php-mailer/email/test', method: 'GET' },
+        },
+        {
+          key: 'PHPMAILER-debugTesting',
+          kind: 'switch',
+          label: 'Enable Debug Output on Email Test',
+        },
+        {
+          key: 'PHPMAILER-domain',
+          kind: 'text',
+          label: 'Domain Link Override',
+          placeholder: 'https://domain.com/',
+        },
+        {
+          key: 'PHPMAILER-template',
+          kind: 'select',
+          label: 'Theme',
+          choices: [
+            { label: 'dark', value: 'dark' },
+            { label: 'default', value: 'default' },
+            { label: 'gray', value: 'gray' },
+            { label: 'light', value: 'light' },
+            { label: 'plehex', value: 'plehex' },
+          ],
+        },
+        { key: 'PHPMAILER-logo', kind: 'text', label: 'WAN Logo URL', placeholder: 'Full URL' },
+        {
+          key: 'PHPMAILER-emailTemplateRegisterUserEnabled',
+          kind: 'switch',
+          label: 'Send Welcome E-Mail',
+        },
+      ],
+    },
+    {
+      id: 'templates',
+      title: 'Templates',
+      entries: [
+        {
+          key: 'PHPMAILER-emailTemplateRegisterUserSubject',
+          kind: 'text',
+          label: 'Subject',
+          fold: 'New Registration',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateRegisterUser',
+          kind: 'textbox',
+          label: 'Body',
+          wide: true,
+          fold: 'New Registration',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateResetSubject',
+          kind: 'text',
+          label: 'Subject',
+          fold: 'Reset Password',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateReset',
+          kind: 'textbox',
+          label: 'Body',
+          wide: true,
+          fold: 'Reset Password',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateInviteUserSubject',
+          kind: 'text',
+          label: 'Subject',
+          fold: 'Invite User',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateInviteUser',
+          kind: 'textbox',
+          label: 'Body',
+          wide: true,
+          fold: 'Invite User',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-OneName',
+          kind: 'text',
+          label: 'Name',
+          fold: 'Custom template 1',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-OneSubject',
+          kind: 'text',
+          label: 'Subject',
+          fold: 'Custom template 1',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-One',
+          kind: 'textbox',
+          label: 'Body',
+          wide: true,
+          fold: 'Custom template 1',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-TwoName',
+          kind: 'text',
+          label: 'Name',
+          fold: 'Custom template 2',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-TwoSubject',
+          kind: 'text',
+          label: 'Subject',
+          fold: 'Custom template 2',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-Two',
+          kind: 'textbox',
+          label: 'Body',
+          wide: true,
+          fold: 'Custom template 2',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-ThreeName',
+          kind: 'text',
+          label: 'Name',
+          fold: 'Custom template 3',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-ThreeSubject',
+          kind: 'text',
+          label: 'Subject',
+          fold: 'Custom template 3',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-Three',
+          kind: 'textbox',
+          label: 'Body',
+          wide: true,
+          fold: 'Custom template 3',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-FourName',
+          kind: 'text',
+          label: 'Name',
+          fold: 'Custom template 4',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-FourSubject',
+          kind: 'text',
+          label: 'Subject',
+          fold: 'Custom template 4',
+        },
+        {
+          key: 'PHPMAILER-emailTemplateCustom-include-Four',
+          kind: 'textbox',
+          label: 'Body',
+          wide: true,
+          fold: 'Custom template 4',
+        },
+      ],
+    },
+  ],
+};
