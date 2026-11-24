@@ -3517,6 +3517,11 @@
     color: var(--color-primary);
   }
 
+  /* The light primary is too pale on the grey of the pointer: a darker text there. */
+  [data-layout='modern'] .org-queue-tabs [role='tab'][aria-selected='true']:hover {
+    color: color-mix(in oklab, var(--color-primary) 80%, var(--color-base-content));
+  }
+
   [data-layout='modern'] .org-queue-tabs [role='tab']:focus-visible,
   [data-layout='modern'] .org-queue-pause:focus-visible {
     outline: 2px solid var(--color-primary);
@@ -3534,29 +3539,49 @@
   }
 
   /* The bar of a row of posters, and its menu */
-  [data-layout='modern'] .org-row-buttons button {
+  [data-layout='modern'] .org-row-buttons > button {
     padding: 6px 12px;
     background: var(--color-primary);
     color: var(--color-primary-content);
     font-weight: 500;
   }
 
-  [data-layout='modern'] .org-row-buttons button:first-child {
+  [data-layout='modern'] .org-row-buttons > button:first-child {
     border-radius: var(--radius-field) 0 0 var(--radius-field);
   }
 
-  [data-layout='modern'] .org-row-buttons button:last-child {
+  [data-layout='modern'] .org-row-buttons > button:last-child {
     border-radius: 0 var(--radius-field) var(--radius-field) 0;
   }
 
-  [data-layout='modern'] .org-row-buttons button:hover {
+  [data-layout='modern'] .org-row-buttons > button:hover {
     background: color-mix(in oklab, var(--color-primary) 85%, var(--color-base-content));
     opacity: 1;
   }
 
-  [data-layout='modern'] .org-row-buttons button:focus-visible {
+  [data-layout='modern'] .org-row-buttons > button:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+  }
+
+  /* The dialog of the search of the requests stands inside the bar: its buttons are not
+     buttons of the bar. A result is the poster and the title on the dialog. */
+  [data-layout='modern'] .org-row-buttons dialog button {
+    border-radius: var(--radius-field);
+    font-size: inherit;
+  }
+
+  /* The bar fades its buttons for the pointer; the buttons of the dialog keep their colour. */
+  [data-layout='modern'] .org-row-buttons dialog button:not(:disabled):hover {
+    opacity: 1;
+  }
+
+  [data-layout='modern'] .org-row-buttons dialog button:not(.btn, .org-form-button) {
+    padding: 0;
+    opacity: 1;
+    background: transparent;
+    color: inherit;
+    font-weight: inherit;
   }
 
   [data-layout='modern'] .org-caret {
