@@ -718,7 +718,9 @@ test('the Admin sets the default look in the group Style & Themes', async ({ pag
     await layout.selectOption('modern');
     await expect(panel.getByLabel('Modern theme')).toBeVisible();
     await expect(panel.getByLabel('Modern colour set')).toBeVisible();
-    await expect(panel.getByLabel('Theme', { exact: true })).toHaveCount(0);
+    // The OG theme stays, below the modern ones under its own heading.
+    await expect(panel.getByRole('heading', { name: 'OG Organizr', exact: true })).toBeVisible();
+    await expect(panel.getByLabel('Theme', { exact: true })).toHaveValue('Nord');
   } finally {
     const answer = await page.request.put('./api/v2/config', {
       data: {

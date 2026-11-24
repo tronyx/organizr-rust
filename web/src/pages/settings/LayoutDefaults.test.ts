@@ -145,7 +145,6 @@ describe('the group Style & Themes', () => {
     });
     const layout = within(panel).getByRole('combobox', { name: 'Default layout' });
     await fireEvent.change(layout, { target: { value: 'modern' } });
-    expect(within(panel).queryByRole('combobox', { name: 'Theme' })).toBeNull();
     const themes = within(panel).getByRole('combobox', { name: 'Modern theme' });
     for (const label of [
       'Organizr',
@@ -171,6 +170,36 @@ describe('the group Style & Themes', () => {
     await fireEvent.change(layout, { target: { value: 'modern' } });
     expect(within(panel).getByRole('combobox', { name: 'Modern theme' })).toHaveValue('plex');
     expect(within(panel).getByRole('combobox', { name: 'Modern colour set' })).toHaveValue('light');
+  });
+
+  it('modern_also_shows_the_og_theme_below_the_modern_ones_under_its_heading', async () => {
+    const { panel, save, puts } = await open({ ...CONFIG, layout: 'modern' });
+
+    const colours = within(panel).getByRole('combobox', { name: 'Modern colour set' });
+    const heading = within(panel).getByRole('heading', { name: 'OG Organizr' });
+    const og = within(panel).getByRole('combobox', { name: 'Theme' });
+    const follows = (first: Element, second: Element) =>
+      (first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    expect(follows(colours, heading)).toBe(true);
+    expect(follows(heading, og)).toBe(true);
+    expect(og).toHaveValue('Organizr');
+    expect(within(panel).getAllByLabelText('Theme', { exact: true })).toHaveLength(1);
+
+    // Both themes change without a switch of the layout, and one Save sends both.
+    await fireEvent.change(within(panel).getByRole('combobox', { name: 'Modern theme' }), {
+      target: { value: 'plex' },
+    });
+    await fireEvent.change(og, { target: { value: 'Nord' } });
+    await save();
+    expect(puts()[0]?.body).toEqual({ theme: 'Nord', modernTheme: 'plex' });
+  });
+
+  it('og_shows_only_the_og_theme_without_the_og_heading', async () => {
+    const { panel } = await open();
+
+    expect(within(panel).getByRole('combobox', { name: 'Theme' })).toBeInTheDocument();
+    expect(within(panel).queryByRole('heading', { name: 'OG Organizr' })).toBeNull();
+    expect(within(panel).queryByRole('combobox', { name: 'Modern theme' })).toBeNull();
   });
 
   it('one_save_sends_the_look_and_a_colour_together_and_reloads', async () => {
