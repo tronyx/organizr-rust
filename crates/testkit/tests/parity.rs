@@ -217,6 +217,20 @@ async fn fresh_install_answers_like_php() {
         ] {
             replay = launch_differences(replay, case);
         }
+        // The set-up of this application starts a new install on the modern layout (D-125).
+        for case in [
+            "launch_as_guest",
+            "launch_as_guest_with_a_trailing_slash",
+            "launch_as_admin",
+            "launch_with_cookies_of_other_services",
+        ] {
+            replay = replay.deviation(
+                "D-125",
+                case,
+                "/response/data/look",
+                json!({"layout": "modern", "theme": "organizr", "colourSet": "dark", "source": "default"}),
+            );
+        }
         // The admin in the launch answer, as in `me_after_the_set_up` (D-18).
         let launch = "launch_as_admin";
         let session = "/response/data/user/tokenList/0";
