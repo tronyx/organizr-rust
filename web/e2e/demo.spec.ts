@@ -104,6 +104,15 @@ test('the wizard refuses a wrong set-up code and takes the right one', async ({ 
   await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
   await page.reload();
   await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
+
+  // A new install starts on the modern layout.
+  await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
+  // The tests after this one check the OG layout unless they choose the modern one, so the
+  // default of this install goes back to OG, the default of an updated install.
+  const answer = await page.request.put('./api/v2/config', { data: { layout: 'og' } });
+  expect(answer.ok(), await answer.text()).toBe(true);
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-layout', 'og');
 });
 
 /** Logs the Admin in. Each test has a browser of its own, without the cookies of the others. */

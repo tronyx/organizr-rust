@@ -103,9 +103,17 @@ async fn set_up_writes_the_settings_of_the_install() {
         let keys: Vec<&str> = settings.keys().map(String::as_str).collect();
         assert_eq!(
             keys,
-            ["license", "organizrAPI", "registrationPassword", "uuid"]
+            [
+                "layout",
+                "license",
+                "organizrAPI",
+                "registrationPassword",
+                "uuid"
+            ]
         );
         assert_eq!(settings["license"], "personal");
+        // A new install starts on the modern layout.
+        assert_eq!(settings["layout"], "modern");
 
         // The API key is a secret: it is stored sealed, and the key of the install opens it.
         let secrets = seed::secrets();

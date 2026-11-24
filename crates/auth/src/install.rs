@@ -131,6 +131,9 @@ pub async fn set_up(
                 stored("uuid", &install_id),
                 stored("organizrAPI", &secrets.seal("organizrAPI", &api_key)?),
                 stored("license", &license),
+                // A new install starts on the modern layout. An install that is updated or
+                // imported from PHP has no stored value and keeps the default, OG (D-125).
+                stored("layout", "modern"),
                 stored(
                     "registrationPassword",
                     &secrets.seal("registrationPassword", registration_hash.expose())?,

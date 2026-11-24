@@ -325,6 +325,33 @@ async fn running_application_uses_what_the_set_up_wrote() {
 }
 
 #[tokio::test]
+async fn new_install_starts_on_the_modern_layout() {
+    // An install made with the wizard starts on the modern layout. An install that is
+    // updated or imported from PHP keeps the default of the setting, the OG layout.
+    on_each_engine(async |database| {
+        let app = app(database);
+        let answer = post_wizard(&app, &set_up(seed::SETUP_CODE), &[]).await;
+        assert_eq!(answer.status, 200, "{}", answer.body);
+
+        let layout = database
+            .settings()
+            .all()
+            .await
+            .expect("the settings can be read")
+            .into_iter()
+            .find(|setting| setting.key == "layout")
+            .map(|setting| setting.value);
+        assert_eq!(layout.as_deref(), Some("\"modern\""));
+
+        let launch = send(&app, request("GET", "/api/v2/launch", &[], "")).await;
+        assert_eq!(launch.status, 200, "{}", launch.body);
+        assert_eq!(launch.data()["look"]["layout"], json!("modern"));
+        assert_eq!(launch.data()["look"]["source"], json!("default"));
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn install_that_is_set_up_cannot_be_set_up_again() {
     on_each_engine(async |database| {
         let app = app(database);
