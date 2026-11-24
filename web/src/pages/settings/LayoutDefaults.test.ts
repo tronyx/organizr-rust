@@ -114,13 +114,11 @@ describe('the group Style & Themes', () => {
     expect(panel).toHaveTextContent('apply to the OG Organizr layout only');
   });
 
-  it('og_shows_theme_and_style_with_the_options_of_php_once', async () => {
+  it('og_shows_theme_with_the_options_of_php_once_and_no_style', async () => {
     const { panel } = await open();
 
     const theme = within(panel).getByRole('combobox', { name: 'Theme' });
-    const style = within(panel).getByRole('combobox', { name: 'Style' });
     expect(theme).toHaveValue('Organizr');
-    expect(style).toHaveValue('dark');
     expect(
       within(theme)
         .getAllByRole('option')
@@ -129,18 +127,10 @@ describe('the group Style & Themes', () => {
       ['Organizr', 'Organizr'],
       ['Nord', 'Nord'],
     ]);
-    expect(
-      within(style)
-        .getAllByRole('option')
-        .map((option) => [option.textContent, (option as HTMLOptionElement).value]),
-    ).toEqual([
-      ['Light', 'light'],
-      ['Dark', 'dark'],
-      ['Horizontal', 'horizontal'],
-    ]);
-    // PHP's own fields of the same settings are not shown a second time.
+    // PHP's own field Theme is not shown a second time. PHP's Style has no effect (D-92),
+    // so the page has no field for it.
     expect(within(panel).getAllByLabelText('Theme', { exact: true })).toHaveLength(1);
-    expect(within(panel).getAllByLabelText('Style', { exact: true })).toHaveLength(1);
+    expect(within(panel).queryByLabelText('Style', { exact: true })).toBeNull();
     expect(within(panel).queryByRole('combobox', { name: 'Modern theme' })).toBeNull();
     expect(within(panel).queryByRole('combobox', { name: 'Modern colour set' })).toBeNull();
     expect(panel.querySelector('.org-swatch')).toHaveAttribute('data-theme', 'organizr');
@@ -150,13 +140,12 @@ describe('the group Style & Themes', () => {
   it('modern_shows_the_modern_selects_and_switching_back_keeps_the_values', async () => {
     const { panel } = await open();
 
-    await fireEvent.change(within(panel).getByRole('combobox', { name: 'Style' }), {
-      target: { value: 'light' },
+    await fireEvent.change(within(panel).getByRole('combobox', { name: 'Theme' }), {
+      target: { value: 'Nord' },
     });
     const layout = within(panel).getByRole('combobox', { name: 'Default layout' });
     await fireEvent.change(layout, { target: { value: 'modern' } });
     expect(within(panel).queryByRole('combobox', { name: 'Theme' })).toBeNull();
-    expect(within(panel).queryByRole('combobox', { name: 'Style' })).toBeNull();
     const themes = within(panel).getByRole('combobox', { name: 'Modern theme' });
     for (const label of [
       'Organizr',
@@ -178,7 +167,7 @@ describe('the group Style & Themes', () => {
     await fireEvent.change(colours, { target: { value: 'light' } });
 
     await fireEvent.change(layout, { target: { value: 'og' } });
-    expect(within(panel).getByRole('combobox', { name: 'Style' })).toHaveValue('light');
+    expect(within(panel).getByRole('combobox', { name: 'Theme' })).toHaveValue('Nord');
     await fireEvent.change(layout, { target: { value: 'modern' } });
     expect(within(panel).getByRole('combobox', { name: 'Modern theme' })).toHaveValue('plex');
     expect(within(panel).getByRole('combobox', { name: 'Modern colour set' })).toHaveValue('light');
@@ -189,9 +178,6 @@ describe('the group Style & Themes', () => {
 
     await fireEvent.change(within(panel).getByRole('combobox', { name: 'Theme' }), {
       target: { value: 'Nord' },
-    });
-    await fireEvent.change(within(panel).getByRole('combobox', { name: 'Style' }), {
-      target: { value: 'light' },
     });
     await fireEvent.input(within(panel).getByLabelText('Nav Bar Color', { selector: 'input' }), {
       target: { value: '#112233' },
@@ -209,7 +195,6 @@ describe('the group Style & Themes', () => {
     expect(puts()[0]?.body).toEqual({
       headerColor: '#112233',
       theme: 'Nord',
-      style: 'light',
       layout: 'modern',
       modernTheme: 'emby',
     });
@@ -230,14 +215,14 @@ describe('the group Style & Themes', () => {
     expect(layout).toBeDisabled();
     expect(within(panel).getByRole('combobox', { name: 'Modern theme' })).toBeDisabled();
     expect(within(panel).getByRole('combobox', { name: 'Modern colour set' })).toBeDisabled();
-    // As in PHP's form, a Co-Admin changes the theme and the style of the OG layout.
-    const style = within(panel).getByRole('combobox', { name: 'Style' });
-    expect(style).toBeEnabled();
+    // As in PHP's form, a Co-Admin changes the theme of the OG layout.
+    const theme = within(panel).getByRole('combobox', { name: 'Theme' });
+    expect(theme).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
-    await fireEvent.change(style, { target: { value: 'light' } });
+    await fireEvent.change(theme, { target: { value: 'Nord' } });
     await save();
-    expect(puts()[0]?.body).toEqual({ style: 'light' });
+    expect(puts()[0]?.body).toEqual({ theme: 'Nord' });
   });
 
   it('a_co_admin_never_sends_the_first_set_fallback', async () => {

@@ -4,7 +4,8 @@
   // layout, then the theme of that layout, then a heading over PHP's colours of the OG
   // layout. The values live in a `LookForm`, which the form saves with its one Save.
   // Only the Admin changes the layout and the modern theme (D-125); a Co-Admin changes
-  // the theme and the style of the OG layout, as in PHP's form.
+  // the theme of the OG layout, as in PHP's form. PHP's setting `style` has no effect (D-92),
+  // so the page has no field for it.
   import ThemeSwatch from '../../components/ThemeSwatch.svelte';
   import { modernThemeId, MODERN_THEMES } from '../../lib/look';
   import type { LookForm } from '../../lib/lookForm.svelte';
@@ -61,19 +62,6 @@
           <!-- A sample of the colours of the chosen theme. -->
           <ThemeSwatch theme={themeId(look.form.theme)} />
         </div>
-      </div>
-      <div class="org-form-group">
-        <label class="org-form-label" for="php-style">Style</label>
-        <select
-          id="php-style"
-          class="org-form-control"
-          value={look.form.style}
-          onchange={(event) => (look.form.style = event.currentTarget.value)}
-        >
-          {#each look.styles as option (String(option.value))}
-            <option value={String(option.value)} disabled={option.disabled}>{option.name}</option>
-          {/each}
-        </select>
       </div>
     {/if}
     {#if showModern}

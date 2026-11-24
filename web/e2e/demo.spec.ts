@@ -656,26 +656,29 @@ test('the Admin sets the default look in the group Style & Themes', async ({ pag
     const panel = page.getByRole('tabpanel', { name: 'Style & Themes settings' });
     const layout = panel.getByRole('combobox', { name: 'Default layout' });
     await expect(layout).toHaveValue('og');
-    await expect(panel.getByLabel('Theme', { exact: true })).toBeVisible();
-    const style = panel.getByLabel('Style', { exact: true });
-    await expect(style).toBeVisible();
+    const theme = panel.getByLabel('Theme', { exact: true });
+    await expect(theme).toBeVisible();
+    // The setting `style` has no effect (D-92), so the page has no field for it.
+    await expect(panel.getByLabel('Style', { exact: true })).toHaveCount(0);
     await expect(panel.getByLabel('Modern theme')).toHaveCount(0);
 
-    await style.selectOption('light');
+    // Nord is installed by the test of the theme marketplace above.
+    await theme.selectOption('Nord');
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'org-nord');
     await page.reload();
     await page.getByRole('tab', { name: 'Style & Themes' }).click();
-    await expect(panel.getByLabel('Style', { exact: true })).toHaveValue('light');
+    await expect(panel.getByLabel('Theme', { exact: true })).toHaveValue('Nord');
 
     await layout.selectOption('modern');
     await expect(panel.getByLabel('Modern theme')).toBeVisible();
     await expect(panel.getByLabel('Modern colour set')).toBeVisible();
-    await expect(panel.getByLabel('Style', { exact: true })).toHaveCount(0);
+    await expect(panel.getByLabel('Theme', { exact: true })).toHaveCount(0);
   } finally {
     const answer = await page.request.put('./api/v2/config', {
       data: {
-        style: before.style,
+        theme: before.theme,
         layout: before.layout,
         modernTheme: before.modernTheme,
         modernColourSet: before.modernColourSet,
