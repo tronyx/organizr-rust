@@ -207,6 +207,9 @@ const AUTH_CLASSES = [
   'm-user-name',
 ];
 
+/** The classes of the column of icons of the modern menu (`ModernShell`, `Menu`). */
+const MENU_COLUMN_CLASSES = ['m-sidebar-icons', 'm-with-icons', 'm-dot'];
+
 /** The components of the auth screens, from `src`. */
 const AUTH_FILES = [
   'components/LoginLayout.svelte',
@@ -289,6 +292,46 @@ describe('the modern CSS', () => {
       (name) => !new RegExp(String.raw`\.${name}(?![\w-])`).test(selectors),
     );
     expect(missing).toEqual([]);
+  });
+
+  it('every_class_of_the_menu_column_has_a_modern_rule', () => {
+    const selectors = modernRules()
+      .map((rule) => rule.selector)
+      .join(',');
+    const missing = MENU_COLUMN_CLASSES.filter(
+      (name) => !new RegExp(String.raw`\.${name}(?![\w-])`).test(selectors),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('the_menu_column_rules_that_beat_utilities_sit_in_the_utilities_layer', () => {
+    // `w-full` on the button Logout and `ml-auto` on a dot are utilities.
+    const block = css.slice(css.lastIndexOf('@layer utilities'));
+    const before = css.slice(0, css.lastIndexOf('@layer utilities'));
+    for (const selector of [
+      `${SCOPE} .m-sidebar-icons .org-menu button`,
+      `${SCOPE} .m-sidebar-icons .org-menu .m-dot`,
+    ]) {
+      expect(block, selector).toContain(`${selector} {`);
+    }
+    expect(before).not.toContain(`${SCOPE} .m-sidebar-icons .org-menu .m-dot {`);
+    expect(before).not.toMatch(/\.m-sidebar-icons \.org-menu button \{[^}]*width/);
+  });
+
+  it('the_menu_column_moves_only_without_reduced_motion', () => {
+    // The transitions sit in a `no-preference` query: under reduced motion there is none.
+    const query = css.indexOf('@media (prefers-reduced-motion: no-preference)');
+    expect(query).toBeGreaterThan(-1);
+    const inside = css.slice(query, css.indexOf('@', query + 1));
+    expect(inside).toContain(`${SCOPE} aside.org-sidebar {`);
+    expect(inside).toContain(`${SCOPE} .org-content.m-with-menu {`);
+    const column = rules().filter((rule) =>
+      /m-sidebar-icons|m-with-icons|m-dot/.test(rule.selector),
+    );
+    expect(column.length).toBeGreaterThan(0);
+    for (const one of column) {
+      expect(one.body, one.selector).not.toMatch(/transition|animation|!important/);
+    }
   });
 
   it('every_org_class_of_an_auth_screen_is_known_to_the_modern_css', () => {

@@ -9,6 +9,8 @@
   import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
   import XIcon from '@lucide/svelte/icons/x';
   import MenuIcon from '@lucide/svelte/icons/menu';
+  import PanelLeftCloseIcon from '@lucide/svelte/icons/panel-left-close';
+  import PanelLeftOpenIcon from '@lucide/svelte/icons/panel-left-open';
   import PaletteIcon from '@lucide/svelte/icons/palette';
   import { MediaQuery } from 'svelte/reactivity';
   import type { Snippet } from 'svelte';
@@ -35,6 +37,7 @@
     toggleFullScreen,
   } from '../lib/shellState.svelte';
   import LookPicker from '../components/LookPicker.svelte';
+  import MenuTip from '../components/MenuTip.svelte';
   import SceneLayer from '../components/SceneLayer.svelte';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import LanguageMenu from './LanguageMenu.svelte';
@@ -64,9 +67,31 @@
     }
   });
 
+  // On a wide screen the menu can shrink to a column of icons. The choice stays in this
+  // browser only; storage that is blocked leaves the menu open.
+  const COLLAPSED_KEY = 'organizr.modernMenuCollapsed';
+  function storedCollapsed(): boolean {
+    try {
+      return localStorage.getItem(COLLAPSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+  let collapsed = $state(storedCollapsed());
+  function toggleCollapsed() {
+    collapsed = !collapsed;
+    try {
+      localStorage.setItem(COLLAPSED_KEY, String(collapsed));
+    } catch {
+      // The choice holds until the page loads again.
+    }
+  }
+
   const hasMenu = $derived(session.tabs.length > 0);
   // As in OG, a guest has the menu too: it holds the link to log in.
   const showMenu = $derived(hasMenu || !session.loggedIn);
+  // The column of icons: only the menu at the left of a wide screen, never the drawer.
+  const icons = $derived(collapsed && wide.current);
   const links = $derived(menuLinkSwitches());
   const extras = $derived(extraLinks());
   const mediaSearch = $derived(mediaSearchService());
@@ -136,7 +161,11 @@
     }
   }
 
-  // The buttons of the bar take the colour of the bar; their hover is a tint of it.
+  // The buttons of the bar take the colour of the bar; their hover is a tint of it. A
+  // button that opens a menu keeps the tint while the menu is open; the button that
+  // collapses the menu at the left does not, as that menu is open most of the time.
+  const barToggle =
+    'org-header-link h-9 w-auto rounded-md px-3 hover:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)] aria-expanded:bg-transparent aria-expanded:text-[var(--org-header-text)] aria-expanded:hover:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)] aria-expanded:hover:text-foreground';
   const barButton =
     'org-header-link h-9 w-auto rounded-md px-3 hover:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)] aria-expanded:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)]';
 </script>
@@ -170,25 +199,52 @@
       <ul>
         {#if links.signout && session.loggedIn}
           <li>
-            <button type="button" class="w-full" aria-label="Logout" onclick={logOut}>
-              <i class="oi oi-fontawesome fa-sign-out text-xl" aria-hidden="true"></i>
-              <span class="truncate">Logout</span>
-            </button>
+            <MenuTip label="Logout" on={icons}>
+              {#snippet children(tip)}
+                <button
+                  {...mergeProps(tip, { onclick: logOut })}
+                  type="button"
+                  class="w-full"
+                  aria-label="Logout"
+                >
+                  <i class="oi oi-fontawesome fa-sign-out text-xl" aria-hidden="true"></i>
+                  {#if !icons}<span class="truncate">Logout</span>{/if}
+                </button>
+              {/snippet}
+            </MenuTip>
           </li>
         {:else if links.signout}
           <li>
-            <a href={PAGES.login} aria-label="Login/Register" onclick={onpick}>
-              <i class="oi oi-materialize mdi-login text-xl" aria-hidden="true"></i>
-              <span class="truncate">Login/Register</span>
-            </a>
+            <MenuTip label="Login/Register" on={icons}>
+              {#snippet children(tip)}
+                <a
+                  {...mergeProps(tip, { onclick: onpick })}
+                  href={PAGES.login}
+                  aria-label="Login/Register"
+                >
+                  <i class="oi oi-materialize mdi-login text-xl" aria-hidden="true"></i>
+                  {#if !icons}<span class="truncate">Login/Register</span>{/if}
+                </a>
+              {/snippet}
+            </MenuTip>
           </li>
         {/if}
         {#each extras as link (link.name)}
           <li>
-            <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.name}>
-              <i class="oi {link.icon} text-xl" aria-hidden="true"></i>
-              <span class="truncate">{link.name}</span>
-            </a>
+            <MenuTip label={link.name} on={icons}>
+              {#snippet children(tip)}
+                <a
+                  {...tip}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={link.name}
+                >
+                  <i class="oi {link.icon} text-xl" aria-hidden="true"></i>
+                  {#if !icons}<span class="truncate">{link.name}</span>{/if}
+                </a>
+              {/snippet}
+            </MenuTip>
           </li>
         {/each}
       </ul>
@@ -220,6 +276,29 @@
                 {/snippet}
               </Tooltip.Trigger>
               <Tooltip.Content>Menu</Tooltip.Content>
+            </Tooltip.Root>
+          {:else if showMenu}
+            {@const label = collapsed ? 'Expand the menu' : 'Collapse the menu'}
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                {#snippet child({ props })}
+                  <Button
+                    variant="ghost"
+                    class={barToggle}
+                    aria-label={label}
+                    aria-expanded={!collapsed}
+                    aria-controls="m-menu"
+                    {...mergeProps(props, { onclick: toggleCollapsed })}
+                  >
+                    {#if collapsed}
+                      <PanelLeftOpenIcon aria-hidden="true" />
+                    {:else}
+                      <PanelLeftCloseIcon aria-hidden="true" />
+                    {/if}
+                  </Button>
+                {/snippet}
+              </Tooltip.Trigger>
+              <Tooltip.Content>{label}</Tooltip.Content>
             </Tooltip.Root>
           {/if}
           <a class="org-logo min-w-0" href={PAGES.home}>
@@ -351,10 +430,13 @@
       {/if}
 
       {#if showMenu && wide.current}
-        <aside class="org-sidebar">
-          <div class="org-sidebar-head">Navigation</div>
+        <aside id="m-menu" class={['org-sidebar', icons && 'm-sidebar-icons']}>
+          {#if !icons}
+            <div class="org-sidebar-head">Navigation</div>
+          {/if}
           <Menu
             variant="modern"
+            collapsed={icons}
             {pings}
             tabs={session.tabs}
             categories={session.categories}
@@ -382,7 +464,14 @@
         </Sheet.Content>
       {/if}
 
-      <div class={['flex flex-col', 'org-content', showMenu && wide.current && 'm-with-menu']}>
+      <div
+        class={[
+          'flex flex-col',
+          'org-content',
+          showMenu && wide.current && 'm-with-menu',
+          showMenu && icons && 'm-with-icons',
+        ]}
+      >
         {#if session.canManage && session.launch?.settings.misc.checkForUpdate !== false}
           <UpdateNotice update={session.launch?.update} />
         {/if}

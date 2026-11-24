@@ -1,6 +1,7 @@
 // The modern layout: the shell with its grouped menu, user menu and phone drawer. It runs
 // after the walk of `demo.spec.ts`, on the same install.
 
+import { auditContrast, describeLowContrast } from './contrast';
 import { expect, test } from './fixtures';
 import { logIn } from './login';
 
@@ -93,6 +94,127 @@ test('the modern layout shows the grouped menu and the user menu, and breaks no 
   await expect(page.locator('html')).toHaveAttribute('data-layout', 'og');
 
   expect(violations).toEqual([]);
+});
+
+test('the modern menu collapses to a column of icons, and stays so in this browser', async ({
+  page,
+}) => {
+  await logIn(page);
+  const look = (layout: 'og' | 'modern', colourSet = 'dark') =>
+    page.request.put('./api/v2/user/look', {
+      data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet },
+    });
+  const aside = page.locator('aside#m-menu');
+  const width = () => aside.evaluate((element) => element.getBoundingClientRect().width);
+  const contentLeft = () =>
+    page.locator('.org-content').evaluate((element) => element.getBoundingClientRect().left);
+  const audit = async (where: string) => {
+    // Wait until the column has its width and no tooltip shows.
+    await page.mouse.move(900, 600);
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(0);
+    const result = await auditContrast(page);
+    expect(result.checked, `texts checked on ${where}`).toBeGreaterThan(0);
+    expect.soft(result.low, describeLowContrast(where, result.low)).toEqual([]);
+  };
+
+  try {
+    expect((await look('modern')).ok()).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
+
+    const collapse = page.getByRole('button', { name: 'Collapse the menu' });
+    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
+    await expect(collapse).toHaveAttribute('aria-controls', 'm-menu');
+    // The column shrinks in a short time, and at once under reduced motion.
+    const motion = () =>
+      aside.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return `${style.transitionProperty} ${style.transitionDuration}`;
+      });
+    expect(await motion()).toBe('width 0.15s');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await motion()).toMatch(/ 0s$/);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const wideWidth = await width();
+    const wideLeft = await contentLeft();
+    expect(wideWidth).toBeGreaterThan(200);
+
+    await collapse.click();
+    const expand = page.getByRole('button', { name: 'Expand the menu' });
+    await expect(expand).toHaveAttribute('aria-expanded', 'false');
+    await expect.poll(width).toBeLessThanOrEqual(80);
+    await expect.poll(contentLeft).toBeLessThan(wideLeft);
+    expect(await contentLeft()).toBeCloseTo(await width(), 0);
+    await expect(page.getByRole('navigation', { name: 'Tabs' }).locator('summary')).toHaveCount(0);
+
+    // The name of a tab shows as a tooltip, under the pointer and for the keyboard.
+    const menu = page.getByRole('navigation', { name: 'Tabs' });
+    const rox = menu.getByRole('link', { name: 'Modern Rox' });
+    await rox.hover();
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveText('Modern Rox');
+    await page.mouse.move(900, 600);
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(0);
+    const docs = page
+      .getByRole('navigation', { name: 'Organizr' })
+      .getByRole('link', { name: 'Organizr Docs' });
+    await docs.focus();
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(1);
+    const focused = await page.evaluate(() => document.activeElement?.getAttribute('aria-label'));
+    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveText(focused ?? '');
+    // The focus ring shows on the focused entry.
+    const ring = await page.evaluate(() => {
+      const style = getComputedStyle(document.activeElement as Element);
+      return style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0;
+    });
+    expect(ring, 'a focus ring on the focused entry').toBe(true);
+
+    // A tab of the column opens.
+    await rox.click();
+    await expect(page).toHaveURL(/#Modern-Rox$/);
+    await expect(page.frameLocator('iframe[title="Modern Rox"]').locator('body')).toContainText(
+      'rox in socks!',
+    );
+    await expect(rox).toHaveAttribute('aria-current', 'page');
+
+    // The column stays after a reload.
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Expand the menu' })).toBeVisible();
+    await expect.poll(width).toBeLessThanOrEqual(80);
+
+    // No text of the page is too faint with the column, in dark and in light.
+    await audit('the collapsed menu (organizr dark)');
+    expect((await look('modern', 'light')).ok()).toBe(true);
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-colour-set', 'light');
+    await expect.poll(width).toBeLessThanOrEqual(80);
+    await audit('the collapsed menu (organizr light)');
+
+    await page.getByRole('button', { name: 'Expand the menu' }).click();
+    await expect(page.getByRole('button', { name: 'Collapse the menu' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await expect.poll(width).toBeCloseTo(wideWidth, 0);
+    await expect.poll(contentLeft).toBeCloseTo(wideLeft, 0);
+    await expect(menu.getByText('Modern Media')).toBeVisible();
+
+    // On a phone there is no such button; the drawer still opens.
+    await page.getByRole('button', { name: 'Collapse the menu' }).click();
+    await page.setViewportSize({ width: 375, height: 800 });
+    await expect(page.getByRole('button', { name: /(Collapse|Expand) the menu/ })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Show the menu of tabs' }).click();
+    const drawer = page.getByRole('dialog');
+    await expect(drawer.getByRole('navigation', { name: 'Tabs' })).toBeVisible();
+    await expect(drawer.getByText('Modern Media')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(drawer).toBeHidden();
+  } finally {
+    await page.evaluate(() => localStorage.removeItem('organizr.modernMenuCollapsed'));
+    expect((await look('og')).ok()).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 720 });
+  }
 });
 
 test('the Look popover shows no tooltip when it closes after a click of the button', async ({

@@ -1,5 +1,8 @@
 <script lang="ts">
   // The menu at the left: the tabs that the caller sees, under their categories.
+  import { mergeProps } from 'bits-ui';
+
+  import MenuTip from '../components/MenuTip.svelte';
   import Picture from '../components/Picture.svelte';
   import { buildMenu, opensNewWindow } from '../lib/menu';
   import { pingStatus, pingTime, type PingResult } from '../lib/pings';
@@ -14,6 +17,7 @@
     shown,
     onpick,
     variant = 'og',
+    collapsed = false,
   }: {
     tabs: MenuTab[];
     categories: MenuCategory[];
@@ -30,9 +34,15 @@
      * the modern layout: it never hides the words, and its pictures are the small size.
      */
     variant?: 'og' | 'modern';
+    /**
+     * Only for `modern`: the menu is a column of icons. Each tab shows its picture, with
+     * its name as a tooltip, and the tabs of the categories stand in one flat list.
+     */
+    collapsed?: boolean;
   } = $props();
 
   const og = $derived(variant === 'og');
+  const icons = $derived(!og && collapsed);
 
   const menu = $derived(buildMenu(tabs, categories, unsortedPlace));
 </script>
@@ -41,18 +51,28 @@
 {#snippet status(tab: MenuTab, push: boolean)}
   {@const answer = pingStatus(tab, pings)}
   {@const time = pingTime(tab, pings)}
-  {#if time !== null}
+  {#if time !== null && !icons}
     <small class={['org-label', og && 'org-wide']}>{time}</small>
   {/if}
   {#if answer === 'up'}
     <span
-      class={['status status-success', og && 'org-wide', push && 'ml-auto']}
+      class={[
+        'status status-success',
+        og && 'org-wide',
+        push && !icons && 'ml-auto',
+        icons && 'm-dot',
+      ]}
       role="img"
       aria-label="answers"
     ></span>
   {:else if answer === 'down'}
     <span
-      class={['status status-error', og && 'org-wide', push && 'ml-auto']}
+      class={[
+        'status status-error',
+        og && 'org-wide',
+        push && !icons && 'ml-auto',
+        icons && 'm-dot',
+      ]}
       role="img"
       aria-label="does not answer"
     ></span>
@@ -61,37 +81,50 @@
 
 {#snippet entry(tab: MenuTab)}
   <li>
-    {#if opensNewWindow(tab) && tab.access_url}
-      <a
-        href={tab.access_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={tab.name}
-        translate="no"
-        onclick={onpick}
-      >
-        <Picture image={tab.image} name={tab.name} large={og} />
-        <span class={[og && 'org-wide', 'truncate']}>{tab.name}</span>
-        <i
-          class={['oi oi-themify ti-new-window', og && 'org-wide', 'text-xs', !og && 'ml-auto']}
-          aria-hidden="true"
-          title="Opens in a new window"
-        ></i>
-        {@render status(tab, og)}
-      </a>
-    {:else}
-      <a
-        href={tabHash(tab.name)}
-        aria-label={tab.name}
-        translate="no"
-        aria-current={tab.id === shown ? 'page' : undefined}
-        onclick={onpick}
-      >
-        <Picture image={tab.image} name={tab.name} large={og} />
-        <span class={[og && 'org-wide', 'truncate']}>{tab.name}</span>
-        {@render status(tab, true)}
-      </a>
-    {/if}
+    <MenuTip label={tab.name} on={icons}>
+      {#snippet children(tip)}
+        {#if opensNewWindow(tab) && tab.access_url}
+          <a
+            {...mergeProps(tip, { onclick: onpick })}
+            href={tab.access_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={tab.name}
+            translate="no"
+          >
+            <Picture image={tab.image} name={tab.name} large={og} />
+            {#if !icons}
+              <span class={[og && 'org-wide', 'truncate']}>{tab.name}</span>
+              <i
+                class={[
+                  'oi oi-themify ti-new-window',
+                  og && 'org-wide',
+                  'text-xs',
+                  !og && 'ml-auto',
+                ]}
+                aria-hidden="true"
+                title="Opens in a new window"
+              ></i>
+            {/if}
+            {@render status(tab, og)}
+          </a>
+        {:else}
+          <a
+            {...mergeProps(tip, { onclick: onpick })}
+            href={tabHash(tab.name)}
+            aria-label={tab.name}
+            translate="no"
+            aria-current={tab.id === shown ? 'page' : undefined}
+          >
+            <Picture image={tab.image} name={tab.name} large={og} />
+            {#if !icons}
+              <span class={[og && 'org-wide', 'truncate']}>{tab.name}</span>
+            {/if}
+            {@render status(tab, true)}
+          </a>
+        {/if}
+      {/snippet}
+    </MenuTip>
   </li>
 {/snippet}
 
@@ -115,31 +148,38 @@
       {@render unsorted()}
     {/if}
     {#each menu.groups as group (group.category.id)}
-      <li>
-        <!-- A category is closed at first, as in PHP Organizr. The one of the shown tab is open. -->
-        <details
-          class={og ? undefined : 'm-group'}
-          open={group.tabs.some((tab) => tab.id === shown)}
-        >
-          <summary aria-label={group.category.category}>
-            <Picture image={group.category.image} name={group.category.category} large={og} />
-            <span class={[og && 'org-wide', 'truncate']}>{group.category.category}</span>
-            <span class={['org-label', og && 'org-wide']}>{group.tabs.length}</span>
-            <i
-              class={['oi oi-themify ti-angle-right org-arrow', og && 'org-wide']}
-              aria-hidden="true"
-            ></i>
-          </summary>
-          {#if og}
-            {@render list(group.tabs)}
-          {:else}
-            <!-- A wrapper, so the rules of the OG strip for `details > ul` never match here. -->
-            <div>
+      {#if icons}
+        <!-- In the column of icons a category has no heading: its tabs stand in the list. -->
+        {#each group.tabs as tab (tab.id)}
+          {@render entry(tab)}
+        {/each}
+      {:else}
+        <li>
+          <!-- A category is closed at first, as in PHP Organizr. The one of the shown tab is open. -->
+          <details
+            class={og ? undefined : 'm-group'}
+            open={group.tabs.some((tab) => tab.id === shown)}
+          >
+            <summary aria-label={group.category.category}>
+              <Picture image={group.category.image} name={group.category.category} large={og} />
+              <span class={[og && 'org-wide', 'truncate']}>{group.category.category}</span>
+              <span class={['org-label', og && 'org-wide']}>{group.tabs.length}</span>
+              <i
+                class={['oi oi-themify ti-angle-right org-arrow', og && 'org-wide']}
+                aria-hidden="true"
+              ></i>
+            </summary>
+            {#if og}
               {@render list(group.tabs)}
-            </div>
-          {/if}
-        </details>
-      </li>
+            {:else}
+              <!-- A wrapper, so the rules of the OG strip for `details > ul` never match here. -->
+              <div>
+                {@render list(group.tabs)}
+              </div>
+            {/if}
+          </details>
+        </li>
+      {/if}
     {/each}
     {#if menu.unsortedPlace === 'bottom'}
       {@render unsorted()}

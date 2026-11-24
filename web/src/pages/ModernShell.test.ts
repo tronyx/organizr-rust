@@ -128,6 +128,8 @@ describe('ModernShell', () => {
   beforeEach(() => screen_({ wide: true }));
   afterEach(() => {
     delete document.documentElement.dataset.layout;
+    localStorage.clear();
+    vi.restoreAllMocks();
   });
 
   it('tabs_are_grouped_by_category', async () => {
@@ -330,6 +332,120 @@ describe('ModernShell', () => {
       'href',
       'https://docs.organizr.app',
     );
+  });
+
+  it('menu_collapses_to_icons_and_expands_again', async () => {
+    await openShell(true, 2);
+    const toggle = screen.getByRole('button', { name: 'Collapse the menu' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(toggle).toHaveAttribute('aria-controls', 'm-menu');
+    const aside = document.getElementById('m-menu');
+    expect(aside?.tagName).toBe('ASIDE');
+    expect(aside).not.toHaveClass('m-sidebar-icons');
+
+    await fireEvent.click(toggle);
+    const expand = screen.getByRole('button', { name: 'Expand the menu' });
+    expect(expand).toHaveAttribute('aria-expanded', 'false');
+    expect(aside).toHaveClass('m-sidebar-icons');
+    expect(document.querySelector('.org-content')).toHaveClass('m-with-menu', 'm-with-icons');
+
+    // Every tab keeps its name and shows its picture; the categories have no heading.
+    const menu = screen.getByRole('navigation', { name: 'Tabs' });
+    const links = within(menu).getAllByRole('link');
+    expect(links.map((link) => link.getAttribute('aria-label'))).toEqual([
+      'Status',
+      'Plex Server',
+      'Sonarr',
+    ]);
+    for (const link of links) {
+      expect(link.textContent?.trim()).toBe(link.getAttribute('aria-label')?.charAt(0));
+      expect(link.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    }
+    expect(within(menu).getByRole('link', { name: 'Plex Server' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(menu.querySelector('details, summary')).toBeNull();
+    expect(within(menu).queryByText('Media')).not.toBeInTheDocument();
+    expect(document.querySelector('.org-sidebar-head')).toBeNull();
+    // The links at the end are icons too, with their names.
+    const extras = screen.getByRole('navigation', { name: 'Organizr' });
+    expect(within(extras).getByRole('button', { name: 'Logout' }).textContent?.trim()).toBe('');
+    expect(within(extras).getByRole('link', { name: 'Organizr Docs' })).toBeInTheDocument();
+
+    await fireEvent.click(expand);
+    expect(screen.getByRole('button', { name: 'Collapse the menu' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(aside).not.toHaveClass('m-sidebar-icons');
+    expect(within(menu).getByText('Media').closest('details')).not.toBeNull();
+  });
+
+  it('a_collapsed_tab_shows_its_name_as_a_tooltip', async () => {
+    // jsdom has no ResizeObserver, which the placing of a tooltip uses.
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    localStorage.setItem('organizr.modernMenuCollapsed', 'true');
+    await openShell();
+
+    const link = screen.getByRole('link', { name: 'Sonarr' });
+    // The pointer rests on the tab. (The keyboard focus is checked in the browser: the
+    // tooltip waits for `:focus-visible`, which jsdom does not have.)
+    await fireEvent.pointerEnter(link, { pointerType: 'mouse' });
+    await fireEvent.pointerMove(link, { pointerType: 'mouse' });
+    const tip = await waitFor(() => {
+      const found = document.querySelector('[data-slot="tooltip-content"]');
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+    expect(tip).toHaveTextContent('Sonarr');
+  });
+
+  it('the_collapse_toggle_is_only_on_a_wide_screen', async () => {
+    screen_({ wide: false });
+    localStorage.setItem('organizr.modernMenuCollapsed', 'true');
+    await openShell();
+
+    expect(screen.queryByRole('button', { name: /(Collapse|Expand) the menu/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Show the menu of tabs' })).toBeInTheDocument();
+    // The drawer shows the whole menu, with its headings.
+    await fireEvent.click(screen.getByRole('button', { name: 'Show the menu of tabs' }));
+    const drawer = await screen.findByRole('dialog');
+    expect(within(drawer).getByText('Media')).toBeInTheDocument();
+    expect(drawer).not.toHaveClass('m-sidebar-icons');
+  });
+
+  it('the_collapsed_menu_is_remembered_in_this_browser', async () => {
+    localStorage.setItem('organizr.modernMenuCollapsed', 'true');
+    await openShell();
+    expect(screen.getByRole('button', { name: 'Expand the menu' })).toBeInTheDocument();
+    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Expand the menu' }));
+    expect(localStorage.getItem('organizr.modernMenuCollapsed')).toBe('false');
+    await fireEvent.click(screen.getByRole('button', { name: 'Collapse the menu' }));
+    expect(localStorage.getItem('organizr.modernMenuCollapsed')).toBe('true');
+  });
+
+  it('the_menu_starts_open_and_still_collapses_when_storage_is_blocked', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    await openShell();
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Collapse the menu' }));
+    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
+    expect(screen.getByRole('link', { name: 'Status' })).toBeInTheDocument();
   });
 
   it('a_guest_finds_login_register_in_the_menu', async () => {
