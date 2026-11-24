@@ -1,155 +1,122 @@
 <script lang="ts">
-  // The group "Layout" of the Appearance settings: the layout, theme and colour set that
-  // a person sees until they choose their own. The Admin saves them; a Co-Admin sees them.
-  import { onMount } from 'svelte';
-
-  import { api, failureText } from '../../lib/api';
+  // The top of the group "Colors & Themes" (shown as "Style & Themes") of the Appearance
+  // settings: the look that a person sees until they choose their own. First the default
+  // layout, then the theme of that layout, then a heading over PHP's colours of the OG
+  // layout. The values live in a `LookForm`, which the form saves with its one Save.
+  // Only the Admin changes the layout and the modern theme (D-125); a Co-Admin changes
+  // the theme and the style of the OG layout, as in PHP's form.
   import ThemeSwatch from '../../components/ThemeSwatch.svelte';
-  import { MODERN_THEMES, modernThemeId } from '../../lib/look';
-  import { session } from '../../lib/session.svelte';
+  import { modernThemeId, MODERN_THEMES } from '../../lib/look';
+  import type { LookForm } from '../../lib/lookForm.svelte';
+  import { themeId } from '../../lib/theme';
 
   let {
-    canChange,
-    ondone,
+    look,
   }: {
-    /** Whether the person may save: the Admin. */
-    canChange: boolean;
-    /** Called with a sentence about what was saved. */
-    ondone: (message: string) => void;
+    /** The values of the look, which the form loads and saves. */
+    look: LookForm;
   } = $props();
 
-  interface Defaults {
-    layout: string;
-    modernTheme: string;
-    modernColourSet: string;
-  }
-
-  let start = $state<Defaults | null>(null);
-  let form = $state<Defaults>({ layout: 'og', modernTheme: 'organizr', modernColourSet: 'dark' });
-  let loadError = $state<string | null>(null);
-  let error = $state<string | null>(null);
-  let busy = $state(false);
-
-  const colourSets = $derived(
-    MODERN_THEMES.find((theme) => theme.id === form.modernTheme)?.colourSets ?? [],
-  );
-  const changed = $derived(
-    start !== null &&
-      (form.layout !== start.layout ||
-        form.modernTheme !== start.modernTheme ||
-        form.modernColourSet !== start.modernColourSet),
-  );
-
-  function text(value: unknown, fallback: string): string {
-    return typeof value === 'string' && value !== '' ? value : fallback;
-  }
-
-  async function load() {
-    try {
-      const config = (await api<Record<string, unknown>>('GET', 'config')).data;
-      const loaded = {
-        layout: text(config.layout, 'og'),
-        modernTheme: text(config.modernTheme, 'organizr'),
-        modernColourSet: text(config.modernColourSet, 'dark'),
-      };
-      start = loaded;
-      form = { ...loaded };
-      // A colour set the theme does not have shows the first set, as `chooseTheme` does.
-      chooseTheme(form.modernTheme);
-      loadError = null;
-    } catch (failure) {
-      loadError = failureText(failure);
-    }
-  }
-
-  function chooseTheme(theme: string) {
-    form.modernTheme = theme;
-    const sets = MODERN_THEMES.find((entry) => entry.id === theme)?.colourSets ?? [];
-    if (!sets.some((set) => set.id === form.modernColourSet) && sets[0]) {
-      form.modernColourSet = sets[0].id;
-    }
-  }
-
-  async function save() {
-    busy = true;
-    error = null;
-    try {
-      await api('PUT', 'config', { ...form });
-      await Promise.all([load(), session.load()]);
-      ondone('The settings are saved.');
-    } catch (failure) {
-      error = failureText(failure);
-    } finally {
-      busy = false;
-    }
-  }
-
-  onMount(load);
+  const canChange = $derived(look.canChangeLayout());
+  // A Co-Admin cannot change the layout, so they see the OG theme on both layouts.
+  const showOg = $derived(look.form.layout !== 'modern' || !canChange);
+  const showModern = $derived(look.form.layout === 'modern');
 </script>
 
-{#if loadError}
-  <div role="alert" class="alert alert-error"><span>{loadError}</span></div>
-{:else if start}
+{#if look.loadError}
+  <div role="alert" class="alert alert-error mb-6"><span>{look.loadError}</span></div>
+{:else if look.start}
   <div class="org-form-grid mb-6">
     <p class="org-form-wide text-sm">
       This is the look that a person sees until they choose their own. The OG Organizr layout is the
       one of PHP Organizr; the modern layout has a top bar and a menu grouped by category.
     </p>
-    <div class="org-form-group">
+    <div class="org-form-group org-form-wide">
       <label class="org-form-label" for="layout-default">Default layout</label>
       <select
         id="layout-default"
         class="org-form-control"
-        value={form.layout}
+        value={look.form.layout}
         disabled={!canChange}
-        onchange={(event) => (form.layout = event.currentTarget.value)}
+        onchange={(event) => (look.form.layout = event.currentTarget.value)}
       >
         <option value="og">OG Organizr</option>
         <option value="modern">Modern</option>
       </select>
     </div>
-    <div class="org-form-group">
-      <label class="org-form-label" for="layout-theme">Modern theme</label>
-      <select
-        id="layout-theme"
-        class="org-form-control"
-        value={form.modernTheme}
-        disabled={!canChange}
-        onchange={(event) => chooseTheme(event.currentTarget.value)}
-      >
-        {#each MODERN_THEMES as theme (theme.id)}
-          <option value={theme.id}>{theme.label}</option>
-        {/each}
-      </select>
-    </div>
-    <div class="org-form-group">
-      <label class="org-form-label" for="layout-colours">Modern colour set</label>
-      <!-- A sample of the colours of the chosen theme and set. -->
-      <div class="flex items-center gap-2">
+    {#if showOg}
+      <div class="org-form-group">
+        <label class="org-form-label" for="php-theme">Theme</label>
+        <div class="flex items-center gap-2">
+          <select
+            id="php-theme"
+            class="org-form-control"
+            value={look.form.theme}
+            onchange={(event) => (look.form.theme = event.currentTarget.value)}
+          >
+            {#each look.themes as option (String(option.value))}
+              <option value={String(option.value)} disabled={option.disabled}>{option.name}</option>
+            {/each}
+          </select>
+          <!-- A sample of the colours of the chosen theme. -->
+          <ThemeSwatch theme={themeId(look.form.theme)} />
+        </div>
+      </div>
+      <div class="org-form-group">
+        <label class="org-form-label" for="php-style">Style</label>
         <select
-          id="layout-colours"
+          id="php-style"
           class="org-form-control"
-          value={form.modernColourSet}
-          disabled={!canChange || colourSets.length < 2}
-          onchange={(event) => (form.modernColourSet = event.currentTarget.value)}
+          value={look.form.style}
+          onchange={(event) => (look.form.style = event.currentTarget.value)}
         >
-          {#each colourSets as set (set.id)}
-            <option value={set.id}>{set.label}</option>
+          {#each look.styles as option (String(option.value))}
+            <option value={String(option.value)} disabled={option.disabled}>{option.name}</option>
           {/each}
         </select>
-        <ThemeSwatch theme={modernThemeId(form.modernTheme, form.modernColourSet)} />
       </div>
+    {/if}
+    {#if showModern}
+      <div class="org-form-group">
+        <label class="org-form-label" for="layout-theme">Modern theme</label>
+        <select
+          id="layout-theme"
+          class="org-form-control"
+          value={look.form.modernTheme}
+          disabled={!canChange}
+          onchange={(event) => look.chooseTheme(event.currentTarget.value)}
+        >
+          {#each MODERN_THEMES as theme (theme.id)}
+            <option value={theme.id}>{theme.label}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="org-form-group">
+        <label class="org-form-label" for="layout-colours">Modern colour set</label>
+        <!-- A sample of the colours of the chosen theme and set. -->
+        <div class="flex items-center gap-2">
+          <select
+            id="layout-colours"
+            class="org-form-control"
+            value={look.form.modernColourSet}
+            disabled={!canChange || look.colourSets.length < 2}
+            onchange={(event) => (look.form.modernColourSet = event.currentTarget.value)}
+          >
+            {#each look.colourSets as set (set.id)}
+              <option value={set.id}>{set.label}</option>
+            {/each}
+          </select>
+          <ThemeSwatch theme={modernThemeId(look.form.modernTheme, look.form.modernColourSet)} />
+        </div>
+      </div>
+    {/if}
+    <div class="org-form-wide mt-4">
+      <h3 class="font-semibold">Colours of the OG Organizr layout</h3>
+      <p class="text-sm">
+        These colours apply to the OG Organizr layout only. A modern theme sets its own colours.
+      </p>
     </div>
   </div>
-  {#if error}
-    <div role="alert" class="alert alert-error mb-4"><span>{error}</span></div>
-  {/if}
-  {#if canChange}
-    <button type="button" class="btn btn-info btn-sm" disabled={!changed || busy} onclick={save}>
-      {#if busy}<span class="loading loading-spinner loading-xs"></span>{/if}
-      Save the layout
-    </button>
-  {/if}
 {:else}
   <span class="loading loading-spinner" aria-label="Loading"></span>
 {/if}

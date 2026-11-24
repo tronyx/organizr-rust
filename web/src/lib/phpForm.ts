@@ -49,6 +49,17 @@ export type PhpGroups = Record<string, PhpField[]>;
 /** The value of a field as the form holds it. */
 export type PhpValue = string | boolean | string[];
 
+/**
+ * A part of a group that this application adds to a form of PHP. The form loads it with
+ * its own groups, and its one Save sends the changes of the part with those of the fields.
+ */
+export interface FormPart {
+  /** Loads the values of the part. The form calls it after it loads, and after it saves. */
+  load(groups: PhpGroups): Promise<void>;
+  /** The settings that the part changed, as `PUT /config` takes them. */
+  changes(): Record<string, unknown>;
+}
+
 /** The types whose value is a secret: the server sends only that one is stored. */
 const SECRET_TYPES = new Set(['password', 'password-alt', 'password-alt-copy']);
 

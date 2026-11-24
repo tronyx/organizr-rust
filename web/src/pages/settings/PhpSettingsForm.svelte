@@ -20,6 +20,7 @@
     isSecret,
     isShown,
     optionsOf,
+    type FormPart,
     type PhpField,
     type PhpGroups,
     type PhpValue,
@@ -36,7 +37,10 @@
     sorted = false,
     pick = (data: unknown) => data as PhpGroups,
     extra = {},
+    parts = {},
     hidden = [],
+    hiddenFields = [],
+    labels = {},
     ondone,
   }: {
     /** The route of the form, after `api/v2/`, for example `settings/main`. */
@@ -52,8 +56,17 @@
      * part of its own, by the name of the group.
      */
     extra?: Record<string, Snippet>;
+    /**
+     * The values of the parts of `extra`, by the name of the group: the form loads them, and
+     * its one Save sends their changes with those of the fields.
+     */
+    parts?: Record<string, FormPart>;
     /** Groups that this page leaves out, by their names. */
     hidden?: string[];
+    /** Fields that this page leaves out, by their settings: the form does not send them either. */
+    hiddenFields?: string[];
+    /** The names that the page shows for some groups, by the names of PHP. */
+    labels?: Record<string, string>;
     /** Called with a sentence about what was saved. */
     ondone: (message: string) => void;
   } = $props();
@@ -88,13 +101,35 @@
     return sorted ? unique.sort((a, b) => a.localeCompare(b)) : unique;
   });
   const chosen = $derived(current !== null && names.includes(current) ? current : names[0]);
-  /** The groups that the page shows: a hidden group is never sent either. */
+  /** The groups that the page shows: a hidden group or field is never sent either. */
   const visible = $derived(
     groups
-      ? Object.fromEntries(Object.entries(groups).filter(([name]) => !hidden.includes(name)))
+      ? Object.fromEntries(
+          Object.entries(groups)
+            .filter(([name]) => !hidden.includes(name))
+            .map(([name, fields]) => [
+              name,
+              fields.filter(
+                (field) => typeof field.name !== 'string' || !hiddenFields.includes(field.name),
+              ),
+            ]),
+        )
       : null,
   );
-  const changed = $derived(visible ? changedValues(visible, start, form) : {});
+  /** The parts whose group the page shows. */
+  const shownParts = $derived(
+    Object.entries(parts)
+      .filter(([name]) => visible !== null && name in visible)
+      .map(([, part]) => part),
+  );
+  const changed = $derived(
+    visible
+      ? Object.assign(
+          changedValues(visible, start, form),
+          ...shownParts.map((part) => part.changes()),
+        )
+      : {},
+  );
   const hasChanges = $derived(Object.keys(changed).length > 0);
 
   async function load() {
@@ -104,6 +139,11 @@
       start = formValues(loaded);
       form = formValues(loaded);
       loadError = null;
+      await Promise.all(
+        Object.entries(parts)
+          .filter(([name]) => name in loaded && !hidden.includes(name))
+          .map(([, part]) => part.load(loaded)),
+      );
     } catch (failure) {
       loadError = failureText(failure);
     }
@@ -261,6 +301,17 @@
     } finally {
       running = null;
     }
+  }
+
+  /** The name of a group as the page shows it. */
+  function label(name: string): string {
+    return labels[name] ?? name;
+  }
+
+  /** How many fields at the start of a group are notices, which stand above a part of `extra`. */
+  function leadingNotices(fields: PhpField[]): number {
+    const index = fields.findIndex((field) => field.type !== 'notice');
+    return index === -1 ? fields.length : index;
   }
 
   /** The width of a field in the grid of two columns: PHP's `override` of twelve columns. */
@@ -561,6 +612,21 @@
   {/if}
 {/snippet}
 
+{#snippet grid(group: string, fields: PhpField[], from: number, to: number)}
+  <div class="org-form-grid">
+    {#each fields.slice(from, to) as field, index (`${group}-${from + index}`)}
+      {#if isShown(field, form)}
+        <div class="org-form-group" class:org-form-wide={wide(field)}>
+          {@render input(group, field)}
+          {#if field.help}
+            <p id={`php-${field.name ?? ''}-help`} class="sr-only">{field.help}</p>
+          {/if}
+        </div>
+      {/if}
+    {/each}
+  </div>
+{/snippet}
+
 {#if groups}
   <section class="org-panel" aria-labelledby="php-form-title">
     <div class="org-panel-heading">
@@ -588,27 +654,28 @@
             class:org-current={name === chosen}
             onclick={() => (current = name)}
           >
-            {name}
+            {label(name)}
           </button>
         {/each}
       </div>
-      <div role="tabpanel" aria-label={`${chosen ?? ''} settings`} class="org-form-fields">
-        {#if chosen !== undefined && extra[chosen]}
-          {@render extra[chosen]()}
-        {/if}
-        {#if chosen !== undefined && groups[chosen]}
-          <div class="org-form-grid">
-            {#each groups[chosen] as field, index (`${chosen}-${index}`)}
-              {#if isShown(field, form)}
-                <div class="org-form-group" class:org-form-wide={wide(field)}>
-                  {@render input(chosen, field)}
-                  {#if field.help}
-                    <p id={`php-${field.name ?? ''}-help`} class="sr-only">{field.help}</p>
-                  {/if}
-                </div>
-              {/if}
-            {/each}
-          </div>
+      <div
+        role="tabpanel"
+        aria-label={`${chosen === undefined ? '' : label(chosen)} settings`}
+        class="org-form-fields"
+      >
+        {#if chosen !== undefined}
+          {@const fields = visible?.[chosen] ?? []}
+          <!-- PHP's notices of the group stand above the part of this application. -->
+          {@const lead = extra[chosen] ? leadingNotices(fields) : 0}
+          {#if lead > 0}
+            {@render grid(chosen, fields, 0, lead)}
+          {/if}
+          {#if extra[chosen]}
+            {@render extra[chosen]()}
+          {/if}
+          {#if visible?.[chosen]}
+            {@render grid(chosen, fields, lead, fields.length)}
+          {/if}
         {/if}
       </div>
     </div>

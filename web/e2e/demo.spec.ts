@@ -613,7 +613,7 @@ test('the Admin installs a theme, picks it, and sets a colour and custom CSS', a
   await expect(page.getByRole('status')).toHaveText('The theme Nord is installed.');
 
   await page.getByRole('tab', { name: 'Appearance' }).click();
-  await page.getByRole('tab', { name: 'Colors & Themes' }).click();
+  await page.getByRole('tab', { name: 'Style & Themes' }).click();
   const theme = page.getByLabel('Theme', { exact: true });
   await theme.selectOption('Nord');
   await page.getByLabel('Nav Bar Color', { exact: true }).fill('#112233');
@@ -635,7 +635,7 @@ test('the Admin installs a theme, picks it, and sets a colour and custom CSS', a
   await expect(root).toHaveCSS('background-color', 'rgb(46, 52, 64)');
 
   // Back to the look of a new install, for the tests after this one.
-  await page.getByRole('tab', { name: 'Colors & Themes' }).click();
+  await page.getByRole('tab', { name: 'Style & Themes' }).click();
   await page.getByLabel('Theme', { exact: true }).selectOption('Organizr');
   await page.getByLabel('Nav Bar Color', { exact: true }).fill('');
   await page.getByRole('tab', { name: 'Custom CSS' }).click();
@@ -645,6 +645,44 @@ test('the Admin installs a theme, picks it, and sets a colour and custom CSS', a
   await expect(root).toHaveAttribute('data-theme', 'organizr');
   await expect(root).toHaveCSS('background-color', 'rgb(31, 31, 31)');
   await expect(header).not.toHaveCSS('border-bottom-color', 'rgb(1, 2, 3)');
+});
+
+test('the Admin sets the default look in the group Style & Themes', async ({ page }) => {
+  await logIn(page);
+  const before = (await (await page.request.get('./api/v2/config')).json()).response.data;
+  try {
+    await page.goto('./#/settings/appearance');
+    await page.getByRole('tab', { name: 'Style & Themes' }).click();
+    const panel = page.getByRole('tabpanel', { name: 'Style & Themes settings' });
+    const layout = panel.getByRole('combobox', { name: 'Default layout' });
+    await expect(layout).toHaveValue('og');
+    await expect(panel.getByLabel('Theme', { exact: true })).toBeVisible();
+    const style = panel.getByLabel('Style', { exact: true });
+    await expect(style).toBeVisible();
+    await expect(panel.getByLabel('Modern theme')).toHaveCount(0);
+
+    await style.selectOption('light');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByRole('status')).toHaveText('The settings are saved.');
+    await page.reload();
+    await page.getByRole('tab', { name: 'Style & Themes' }).click();
+    await expect(panel.getByLabel('Style', { exact: true })).toHaveValue('light');
+
+    await layout.selectOption('modern');
+    await expect(panel.getByLabel('Modern theme')).toBeVisible();
+    await expect(panel.getByLabel('Modern colour set')).toBeVisible();
+    await expect(panel.getByLabel('Style', { exact: true })).toHaveCount(0);
+  } finally {
+    const answer = await page.request.put('./api/v2/config', {
+      data: {
+        style: before.style,
+        layout: before.layout,
+        modernTheme: before.modernTheme,
+        modernColourSet: before.modernColourSet,
+      },
+    });
+    expect(answer.ok(), await answer.text()).toBe(true);
+  }
 });
 
 test('the Admin adds a custom script, which every page runs while the switch is on', async ({
