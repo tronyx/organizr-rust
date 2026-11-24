@@ -368,7 +368,7 @@ test('the color samples of the look picker take the colors of their own themes',
     }
   ).response.data.look;
 
-  /** The colours of a sample in the picker: its box, its border and its three dots. */
+  /** The colors of a sample in the picker: its box, its border and its three dots. */
   const sampleOf = (within: string, name: string) =>
     page
       .locator(within)
@@ -380,7 +380,7 @@ test('the color samples of the look picker take the colors of their own themes',
         const dots = [...swatch.querySelectorAll('.org-swatch-dot')].map(
           (dot) => getComputedStyle(dot).backgroundColor,
         );
-        // The page colour behind the picker: the first ancestor with a background.
+        // The page color behind the picker: the first ancestor with a background.
         let behind = 'rgb(0, 0, 0)';
         for (let node = swatch.parentElement; node; node = node.parentElement) {
           const color = getComputedStyle(node).backgroundColor;
@@ -389,7 +389,7 @@ test('the color samples of the look picker take the colors of their own themes',
             break;
           }
         }
-        // A canvas turns any CSS colour (also oklab) into sRGB, for the ratio of contrast.
+        // A canvas turns any CSS color (also oklab) into sRGB, for the ratio of contrast.
         const context = document.createElement('canvas').getContext('2d');
         const luminance = (color: string) => {
           if (!context) return 0;
@@ -429,14 +429,14 @@ test('the color samples of the look picker take the colors of their own themes',
     const plex = await sampleOf(popover, 'Plex');
     expect(organizr.theme).toBe('m-organizr-dark');
     expect(plex.theme).toBe('m-plex-dark');
-    // The primary dot (the second) of each sample is the primary colour of its theme.
+    // The primary dot (the second) of each sample is the primary color of its theme.
     expect(plex.dots[1], 'the primary dot of Plex').not.toBe(organizr.dots[1]);
     expect(plex.box, 'the box of Plex').not.toBe(organizr.box);
     for (const sample of [organizr, plex]) {
       expect(sample.dots).toHaveLength(3);
       expect(sample.edge, `the border of ${sample.theme}`).toBeGreaterThanOrEqual(3);
     }
-    // A colour set has its sample too.
+    // A color set has its sample too.
     expect((await sampleOf(popover, 'Light')).theme).toBe('m-organizr-light');
     await page.keyboard.press('Escape');
 
@@ -558,7 +558,7 @@ test('the shown tab of the column of icons has a bar of at least 3:1 in every mo
     page.locator('aside#m-menu a[aria-current="page"]').evaluate((link) => {
       const style = getComputedStyle(link, '::before');
       const aside = link.closest('aside') as Element;
-      // A canvas turns any CSS colour (also oklab) into sRGB, for the ratio of contrast.
+      // A canvas turns any CSS color (also oklab) into sRGB, for the ratio of contrast.
       const context = document.createElement('canvas').getContext('2d');
       const luminance = (color: string) => {
         if (!context) return 0;
@@ -644,7 +644,7 @@ test('on OG the sample of the theme of the install shows the colors of the Admin
     await page.goto('./#/account');
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-layout', 'og');
-    // The policy of the page lets the colours through the CSSOM.
+    // The policy of the page lets the colors through the CSSOM.
     await expect.poll(() => primaryDot(installTheme)).toBe('rgb(255, 0, 0)');
     const other = installTheme === 'Nord' ? 'Plex' : 'Nord';
     expect(await primaryDot(other)).not.toBe('rgb(255, 0, 0)');
@@ -821,7 +821,7 @@ test('the border of every color sample is 3:1 on every offered modern theme', as
   test.setTimeout(120_000);
   await logIn(page);
   const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
-  /** The lowest ratio of the border of a sample against the colour behind it, and where. */
+  /** The lowest ratio of the border of a sample against the color behind it, and where. */
   const lowestEdge = () =>
     page.locator('[data-slot="popover-content"]').evaluate((panel) => {
       const context = document.createElement('canvas').getContext('2d');
@@ -903,7 +903,7 @@ test('the group label of the user menu reads well with the menu open, in dark an
       await page.getByRole('button', { name: 'Menu of the user' }).click();
       const label = page.locator('[data-slot="dropdown-menu-label"]');
       await expect(label).toHaveText('Admin');
-      // The menu fades in: the colours count once that is over.
+      // The menu fades in: the colors count once that is over.
       await page
         .locator('[data-slot="dropdown-menu-content"]')
         .evaluate((menu) =>

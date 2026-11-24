@@ -1,6 +1,6 @@
 <script lang="ts">
   // A small picture of the page in a theme: the bar at the top, the menu, and a box with
-  // a highlight and a button. It takes the colours of the theme alone.
+  // a highlight and a button. It takes the colors of the theme alone.
   import { themeId, themeLabel } from '../lib/theme';
 
   let { theme }: { theme: string } = $props();

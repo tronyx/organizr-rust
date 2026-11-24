@@ -684,7 +684,7 @@ fn php_entities_decoded(text: &str) -> String {
 }
 
 /// The bookmarks of the bookmark plugin. A name that is taken gets a number behind it,
-/// and a colour that is no colour becomes black or white.
+/// and a color that is no color becomes black or white.
 fn plan_bookmarks(rows: &[LegacyRow], report: &mut Report) -> Vec<Bookmark> {
     let mut names = Names::default();
     let mut bookmarks = Vec::new();
@@ -1459,7 +1459,7 @@ mod tests {
                     ("background_color", Some("#123")),
                     ("text_color", Some("#abcdef")),
                 ]),
-                // The same name, a colour that is none, and a level that is none.
+                // The same name, a color that is none, and a level that is none.
                 LegacyRow::of([
                     ("id", Some("6")),
                     ("order", Some("2")),
@@ -1502,7 +1502,7 @@ mod tests {
             (plan.report.bookmark_categories, plan.report.bookmarks),
             (2, 2)
         );
-        // One line for each repair: a name twice, a number, and two colours.
+        // One line for each repair: a name twice, a number, and two colors.
         let about_bookmarks: Vec<&String> = plan
             .report
             .repairs

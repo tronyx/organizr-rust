@@ -93,7 +93,7 @@ pub fn cookie_domains(host_header: &str) -> CookieDomains {
     }
 }
 
-/// Whether two neighbouring labels are the domain of a dynamic DNS provider.
+/// Whether two neighboring labels are the domain of a dynamic DNS provider.
 fn is_dynamic_dns(label: &str, next_label: &str) -> bool {
     let domain = format!("{label}.{next_label}").to_ascii_lowercase();
     DYNAMIC_DNS_DOMAINS.contains(&domain.as_str())

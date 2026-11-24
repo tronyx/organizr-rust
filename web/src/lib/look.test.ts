@@ -235,7 +235,7 @@ describe('applyLook', () => {
   });
 
   it('prism_has_two_light_color_sets_and_a_dark_one', () => {
-    // Daydream and Candy are light, Twilight is dark: the colour set of the page follows.
+    // Daydream and Candy are light, Twilight is dark: the color set of the page follows.
     for (const [set, scheme] of [
       ['daydream', 'light'],
       ['twilight', 'dark'],
@@ -326,7 +326,7 @@ describe('the modern color sets', () => {
   });
 
   it('muted_text_meets_aa_on_each_offered_background', () => {
-    // `--color-muted-foreground` is the text colour at the opacity of the theme's
+    // `--color-muted-foreground` is the text color at the opacity of the theme's
     // `--org-muted-text` (65% where a theme sets none) over the background.
     const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
     expect(css.replace(/\s+/g, ' ')).toContain(
@@ -364,7 +364,7 @@ describe('the modern color sets', () => {
   });
 
   it('the_active_menu_item_meets_aa_on_its_highlight', () => {
-    // The open entry of the side menu has the active colour on a base-300 highlight.
+    // The open entry of the side menu has the active color on a base-300 highlight.
     for (const [id, pairs] of Object.entries(MODERN_THEME_COLORS)) {
       const active = pairs.find((pair) => pair.name === 'sidebar active')?.text ?? '';
       const highlight = pairs.find((pair) => pair.name === 'heading')?.background ?? '';
@@ -373,8 +373,8 @@ describe('the modern color sets', () => {
   });
 
   it('the_text_of_the_jellyfin_gradient_meets_aa_on_both_ends', () => {
-    // The primary buttons of Jellyfin run from the secondary colour to the primary one,
-    // with the primary text colour on both.
+    // The primary buttons of Jellyfin run from the secondary color to the primary one,
+    // with the primary text color on both.
     const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
     for (const id of ['m-jellyfin-dark', 'm-jellyfin-light']) {
       const start = css.indexOf(`name: '${id}';`);
@@ -474,7 +474,7 @@ describe('the modern color sets', () => {
 
   it('tempest_accents_and_buttons_read_on_every_surface', () => {
     // Tempest marks links and help texts with its accent, and its primary buttons sit on
-    // the cards: both, and the secondary colour, need 4.5:1 on every surface.
+    // the cards: both, and the secondary color, need 4.5:1 on every surface.
     const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
     for (const set of ['squall', 'abyss', 'gale']) {
       const id = `m-tempest-${set}`;
@@ -497,7 +497,7 @@ describe('the modern color sets', () => {
 
   it('circuit_accents_and_buttons_read_on_every_surface', () => {
     // Circuit marks links and help texts with its accent, and its primary buttons sit on
-    // the cards: both, and the secondary colour, need 4.5:1 on every surface.
+    // the cards: both, and the secondary color, need 4.5:1 on every surface.
     const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
     for (const set of ['matrix', 'synth', 'amber']) {
       const id = `m-circuit-${set}`;
@@ -519,8 +519,8 @@ describe('the modern color sets', () => {
   });
 
   it('prism_links_and_buttons_read_on_every_surface', () => {
-    // Prism's links and help texts are primary, and its coloured buttons sit on the cards:
-    // the primary, secondary and accent colours need 4.5:1 on every surface, light or dark.
+    // Prism's links and help texts are primary, and its colored buttons sit on the cards:
+    // the primary, secondary and accent colors need 4.5:1 on every surface, light or dark.
     const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
     for (const [set, scheme] of [
       ['daydream', 'light'],

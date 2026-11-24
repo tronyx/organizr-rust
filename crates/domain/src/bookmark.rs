@@ -66,9 +66,9 @@ pub struct Bookmark {
     pub least_access: i32,
     /// The picture, in the form of a picture of a tab.
     pub image: String,
-    /// The colour of the tile: `#` and three or six hexadecimal digits.
+    /// The color of the tile: `#` and three or six hexadecimal digits.
     pub background_color: String,
-    /// The colour of the name.
+    /// The color of the name.
     pub text_color: String,
 }
 
@@ -89,9 +89,9 @@ pub struct NewBookmark {
     pub least_access: i32,
     /// The picture.
     pub image: String,
-    /// The colour of the tile.
+    /// The color of the tile.
     pub background_color: String,
-    /// The colour of the name.
+    /// The color of the name.
     pub text_color: String,
 }
 
@@ -112,13 +112,13 @@ pub struct BookmarkChanges {
     pub least_access: Option<i32>,
     /// The picture.
     pub image: Option<String>,
-    /// The colour of the tile.
+    /// The color of the tile.
     pub background_color: Option<String>,
-    /// The colour of the name.
+    /// The color of the name.
     pub text_color: Option<String>,
 }
 
-/// Whether a text is a colour as the bookmark plugin takes it: `#` and three or six
+/// Whether a text is a color as the bookmark plugin takes it: `#` and three or six
 /// hexadecimal digits.
 pub fn is_hex_color(text: &str) -> bool {
     text.strip_prefix('#').is_some_and(|digits| {
@@ -132,14 +132,14 @@ mod tests {
     use super::is_hex_color;
 
     #[test]
-    fn colour_is_a_hash_and_three_or_six_hexadecimal_digits() {
-        for colour in ["#fff", "#FFFFFF", "#0a1B2c", "#000"] {
-            assert!(is_hex_color(colour), "{colour}");
+    fn color_is_a_hash_and_three_or_six_hexadecimal_digits() {
+        for color in ["#fff", "#FFFFFF", "#0a1B2c", "#000"] {
+            assert!(is_hex_color(color), "{color}");
         }
-        for colour in [
+        for color in [
             "fff", "#ffff", "#fffff", "#fffffff", "#ggg", "", "#", "red", "#fff;",
         ] {
-            assert!(!is_hex_color(colour), "{colour}");
+            assert!(!is_hex_color(color), "{color}");
         }
     }
 }

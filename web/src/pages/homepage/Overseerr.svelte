@@ -40,7 +40,7 @@
     content: Request[];
   }
 
-  /** The states of a request, with the word and the colour of each one. */
+  /** The states of a request, with the word and the color of each one. */
   const STATES = {
     available: { word: 'Available', badge: 'badge-success' },
     approved: { word: 'Approved', badge: 'badge-info' },
@@ -154,7 +154,7 @@
               {[...(request.title ?? '?')][0] ?? '?'}
             </span>
           {/if}
-          <!-- The colour of the corner says how far the request is. -->
+          <!-- The color of the corner says how far the request is. -->
           <span
             class="org-poster-corner"
             style:--org-state="var(--color-{state.badge.replace('badge-', '')})"

@@ -41,7 +41,7 @@ pub const CLIENT_SECRET: &str = "the secret of the organizr client";
 /// What the stand-in does wrong, and the person it vouches for. A test changes it with
 /// [`OidcProvider::set`].
 #[derive(Debug, Clone)]
-pub struct Behaviour {
+pub struct Behavior {
     /// The claims of the person, for the ID token and the user info: `sub`,
     /// `preferred_username`, `email`, `groups` and others.
     pub person: Map<String, Value>,
@@ -61,7 +61,7 @@ pub struct Behaviour {
     pub token_error: bool,
 }
 
-impl Default for Behaviour {
+impl Default for Behavior {
     fn default() -> Self {
         let person = json!({
             "sub": "subject-1",
@@ -95,7 +95,7 @@ struct Inner {
     url: String,
     key: CoreEdDsaPrivateSigningKey,
     other_key: CoreEdDsaPrivateSigningKey,
-    behaviour: Behaviour,
+    behavior: Behavior,
     pending: HashMap<String, Pending>,
     /// What the login page got last: the query of the address.
     authorized: Vec<HashMap<String, String>>,
@@ -152,13 +152,13 @@ fn query_map(query: Option<&str>) -> HashMap<String, String> {
 
 impl OidcProvider {
     /// Starts a stand-in that approves every login of the person of
-    /// [`Behaviour::default`].
+    /// [`Behavior::default`].
     pub async fn start() -> Self {
         let shared: Shared = Arc::new(Mutex::new(Inner {
             url: String::new(),
             key: new_key("key-1"),
             other_key: new_key("key-1"),
-            behaviour: Behaviour::default(),
+            behavior: Behavior::default(),
             pending: HashMap::new(),
             authorized: Vec::new(),
             token_requests: Vec::new(),
@@ -190,13 +190,13 @@ impl OidcProvider {
     }
 
     /// Changes what the stand-in does.
-    pub fn set(&self, change: impl FnOnce(&mut Behaviour)) {
+    pub fn set(&self, change: impl FnOnce(&mut Behavior)) {
         change(
             &mut self
                 .shared
                 .lock()
                 .expect("the state can be locked")
-                .behaviour,
+                .behavior,
         );
     }
 
@@ -264,7 +264,7 @@ async fn discovery(State(shared): State<Shared>) -> Response {
         "id_token_signing_alg_values_supported": ["EdDSA"],
         "code_challenge_methods_supported": ["S256"],
     });
-    if inner.behaviour.user_info {
+    if inner.behavior.user_info {
         document["userinfo_endpoint"] = json!(format!("{url}/userinfo"));
     }
     axum::Json(document).into_response()
@@ -334,7 +334,7 @@ async fn token(State(shared): State<Shared>, body: Bytes) -> Response {
         .collect();
     let mut inner = shared.lock().expect("the state can be locked");
     inner.token_requests.push(fields.clone());
-    if inner.behaviour.token_error {
+    if inner.behavior.token_error {
         return token_error("invalid_grant");
     }
     let field = |name: &str| fields.get(name).map_or("", String::as_str);
@@ -352,28 +352,23 @@ async fn token(State(shared): State<Shared>, body: Bytes) -> Response {
         return token_error("invalid_grant");
     }
 
-    let behaviour = &inner.behaviour;
+    let behavior = &inner.behavior;
     let issued = now();
-    let mut claims = Value::Object(behaviour.person.clone());
-    claims["iss"] = json!(
-        behaviour
-            .issuer
-            .clone()
-            .unwrap_or_else(|| inner.url.clone())
-    );
-    claims["aud"] = json!(behaviour.audience.as_deref().unwrap_or(CLIENT_ID));
-    claims["iat"] = json!(if behaviour.expired {
+    let mut claims = Value::Object(behavior.person.clone());
+    claims["iss"] = json!(behavior.issuer.clone().unwrap_or_else(|| inner.url.clone()));
+    claims["aud"] = json!(behavior.audience.as_deref().unwrap_or(CLIENT_ID));
+    claims["iat"] = json!(if behavior.expired {
         issued - 7200
     } else {
         issued
     });
-    claims["exp"] = json!(if behaviour.expired {
+    claims["exp"] = json!(if behavior.expired {
         issued - 3600
     } else {
         issued + 300
     });
-    claims["nonce"] = json!(behaviour.nonce.clone().unwrap_or(pending.nonce));
-    let key = if behaviour.bad_signature {
+    claims["nonce"] = json!(behavior.nonce.clone().unwrap_or(pending.nonce));
+    let key = if behavior.bad_signature {
         &inner.other_key
     } else {
         &inner.key
@@ -398,5 +393,5 @@ async fn user_info(State(shared): State<Shared>, headers: HeaderMap) -> Response
         return StatusCode::UNAUTHORIZED.into_response();
     }
     let inner = shared.lock().expect("the state can be locked");
-    axum::Json(Value::Object(inner.behaviour.person.clone())).into_response()
+    axum::Json(Value::Object(inner.behavior.person.clone())).into_response()
 }

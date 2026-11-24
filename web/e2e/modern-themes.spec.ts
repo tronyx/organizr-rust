@@ -1,5 +1,5 @@
 // The brand themes of the modern layout (Plex, Jellyfin, Emby and Silo, in each of their
-// colour sets) in the browser. The other specs of the modern layout check every screen on
+// color sets) in the browser. The other specs of the modern layout check every screen on
 // the Organizr theme; this one checks a representative set of screens on every other
 // theme and set: the homepage with the items of `homepage-fixtures.ts`, the user menu and
 // the look popover of the top bar, the Account page, a settings section with vertical
@@ -39,7 +39,7 @@ import {
 } from './modern-audit';
 
 /**
- * Every theme and colour set but those of Organizr, which the other specs check, and those
+ * Every theme and color set but those of Organizr, which the other specs check, and those
  * of the scene themes, whose audit must also know the scene behind the page.
  */
 const LOOKS = MODERN_THEMES.filter(
@@ -96,7 +96,7 @@ async function siloFont(page: Page) {
 
 /**
  * The links in running text that look like the text around them: no underline and less
- * than 3:1 against its colour. Buttons, menus and the top bar are not running text.
+ * than 3:1 against its color. Buttons, menus and the top bar are not running text.
  */
 async function hiddenLinks(page: Page) {
   return page.evaluate(() => {
@@ -152,7 +152,7 @@ async function hiddenLinks(page: Page) {
   });
 }
 
-/** The background and text colour of a control, as sRGB. */
+/** The background and text color of a control, as sRGB. */
 async function fillOf(control: Locator) {
   return control.evaluate((element) => {
     const canvas = document.createElement('canvas');
@@ -173,7 +173,7 @@ async function fillOf(control: Locator) {
   });
 }
 
-/** The contrast ratio of two sRGB colours. */
+/** The contrast ratio of two sRGB colors. */
 function ratioOf(one: number[], two: number[]): number {
   const luminance = (color: number[]) => {
     const channel = (value: number) => {
@@ -322,7 +322,7 @@ test('the_brand_themes_of_the_modern_layout_pass_the_audit', async ({ page, brow
       const rest = await fillOf(send);
       await send.hover();
       await expect.poll(async () => (await fillOf(send)).background).not.toBe(rest.background);
-      // The fill fades to the hover colour.
+      // The fill fades to the hover color.
       await waitForAnimations(page);
       const hovered = await fillOf(send);
       const apart = ratioOf(rest.rgb, hovered.rgb);

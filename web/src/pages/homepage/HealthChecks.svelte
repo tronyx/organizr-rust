@@ -18,8 +18,8 @@
     options: { desc: boolean; tags: boolean };
   }
 
-  /** How each status shows, as in PHP Organizr: its colour, its icon, and its word. */
-  // The tone names the class `org-tone-<tone>`, whose colour custom CSS may change.
+  /** How each status shows, as in PHP Organizr: its color, its icon, and its word. */
+  // The tone names the class `org-tone-<tone>`, whose color custom CSS may change.
   const STATUS: Record<string, { tone: string; icon: string; word: string }> = {
     up: { tone: 'success', icon: 'oi-themify ti-link', word: 'Up' },
     down: { tone: 'error', icon: 'oi-themify ti-unlink', word: 'Down' },

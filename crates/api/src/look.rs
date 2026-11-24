@@ -1,4 +1,4 @@
-//! How the page looks for one person: the layout, the theme and the colour set.
+//! How the page looks for one person: the layout, the theme and the color set.
 //!
 //! The Admin sets the defaults of the install. A person may choose their own look, which
 //! is stored per layout (D-125). This module knows the layouts and themes that exist and
@@ -11,7 +11,7 @@ use serde::Serialize;
 /// The layouts: the original one and the modern one.
 pub const LAYOUTS: [&str; 2] = ["og", "modern"];
 
-/// The colour styles of the original layout.
+/// The color styles of the original layout.
 pub const OG_STYLES: [&str; 2] = ["dark", "light"];
 
 /// The themes of the original layout.
@@ -31,7 +31,7 @@ pub const OG_THEMES: [&str; 13] = [
     "Plex",
 ];
 
-/// The themes of the modern layout, each with its colour sets. The first colour set of a
+/// The themes of the modern layout, each with its color sets. The first color set of a
 /// theme is the one used when nothing else says which.
 pub const MODERN_THEMES: &[(&str, &[&str])] = &[
     ("organizr", &["dark", "light"]),
@@ -64,14 +64,14 @@ pub struct Look {
     pub layout: String,
     /// The theme of that layout.
     pub theme: String,
-    /// The colour set of the theme: the style of the original layout, or a colour set of
+    /// The color set of the theme: the style of the original layout, or a color set of
     /// a modern theme.
     pub color_set: String,
     /// Whether the person chose this look.
     pub source: LookSource,
 }
 
-/// The colour sets of a modern theme, or `None` when there is no such theme.
+/// The color sets of a modern theme, or `None` when there is no such theme.
 pub fn modern_color_sets(theme: &str) -> Option<&'static [&'static str]> {
     MODERN_THEMES
         .iter()
@@ -79,7 +79,7 @@ pub fn modern_color_sets(theme: &str) -> Option<&'static [&'static str]> {
         .map(|(_, sets)| *sets)
 }
 
-/// The modern theme and colour set of the Admin. A colour set that the theme does not
+/// The modern theme and color set of the Admin. A color set that the theme does not
 /// have gives the first set of the theme, as for a person; an unknown theme gives
 /// `organizr` and `dark`.
 fn admin_modern(settings: &Settings) -> (String, String) {
@@ -100,7 +100,7 @@ pub fn default_modern_theme(settings: &Settings) -> String {
     admin_modern(settings).0
 }
 
-/// The colour set that a modern theme has when a person chose none: the one of the
+/// The color set that a modern theme has when a person chose none: the one of the
 /// Admin if the Admin's theme is this theme, else the first one of the theme.
 pub fn default_modern_color_set(settings: &Settings, theme: &str) -> String {
     let (admin_theme, admin_set) = admin_modern(settings);
@@ -119,7 +119,7 @@ fn known<'a>(value: Option<&'a String>, allowed: &[&str]) -> Option<&'a str> {
         .filter(|text| allowed.contains(text))
 }
 
-/// The theme, the colour set and whether the person chose one of them, for the original
+/// The theme, the color set and whether the person chose one of them, for the original
 /// layout.
 fn og_look(settings: &Settings, stored: Option<&StoredLook>) -> (String, String, bool) {
     let theme = known(stored.and_then(|s| s.og_theme.as_ref()), &OG_THEMES);
@@ -134,14 +134,14 @@ fn og_look(settings: &Settings, stored: Option<&StoredLook>) -> (String, String,
     )
 }
 
-/// The theme, the colour set and whether the person chose one of them, for the modern
+/// The theme, the color set and whether the person chose one of them, for the modern
 /// layout.
 fn modern_look(settings: &Settings, stored: Option<&StoredLook>) -> (String, String, bool) {
     let stored_theme = stored.and_then(|s| s.modern_theme.as_ref());
     let names: Vec<&str> = MODERN_THEMES.iter().map(|(name, _)| *name).collect();
     let theme = known(stored_theme, &names);
     if stored_theme.is_some() && theme.is_none() {
-        // A theme that does not exist: the colour set that goes with it is no use.
+        // A theme that does not exist: the color set that goes with it is no use.
         let (theme, set) = admin_modern(settings);
         return (theme, set, false);
     }
@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn light_color_set_is_honored() {
-        // A stored or Admin `light` gives the light colours of the modern theme.
+        // A stored or Admin `light` gives the light colors of the modern theme.
         let mut settings = Settings::defaults();
         settings.modern_color_set = "light".to_owned();
         let own = stored(|s| {

@@ -711,7 +711,7 @@ test('the Admin installs a theme, picks it, and sets a color and custom CSS', as
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');
 
-  // The page has the colours of Nord, the colour of the setting, and the style sheet of
+  // The page has the colors of Nord, the color of the setting, and the style sheet of
   // the Admin, all without a style that the security policy of the page would stop.
   await expect(root).toHaveAttribute('data-theme', 'org-nord');
   await expect(root).toHaveCSS('background-color', 'rgb(46, 52, 64)');
@@ -1109,7 +1109,7 @@ test('custom CSS reaches the classes and variables that its documentation names'
   page,
 }) => {
   // docs/custom-css.md promises these names. A rule for each one must apply, also over the
-  // style sheet of the interface and the colours of the theme.
+  // style sheet of the interface and the colors of the theme.
   const css = [
     ':root { --color-primary: rgb(1, 2, 3); --org-event-premiere: rgb(4, 5, 6); }',
     '.org-item-customhtml, .org-panel-heading, .org-lock-box, .org-login-sidebar,',
@@ -1238,7 +1238,7 @@ test('the Admin adds a bookmark, and the page of the bookmarks shows it as a til
   const tile = page.getByRole('region', { name: 'Reading' }).getByRole('link', { name: 'Example' });
   await expect(tile).toBeVisible();
   await expect(tile).toHaveAttribute('href', 'https://example.com/');
-  // The colours of the tile reach the page, also with the strict security policy.
+  // The colors of the tile reach the page, also with the strict security policy.
   await expect(tile).toHaveCSS('color', 'rgb(255, 255, 255)');
   const background = await tile.evaluate((element) => getComputedStyle(element).backgroundImage);
   expect(background).toContain('linear-gradient');

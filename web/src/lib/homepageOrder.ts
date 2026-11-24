@@ -1,5 +1,5 @@
 // The tiles of Tab Editor, Homepage Order of PHP Organizr: for each setting of the order,
-// the colour class, the picture, and the settings of which one must be on, or the tile is
+// the color class, the picture, and the settings of which one must be on, or the tile is
 // faded. Taken from buildHomepageSettings() of PHP 2.1.5000.
 
 export interface OrderTile {

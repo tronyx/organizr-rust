@@ -125,7 +125,7 @@ fn whole(value: &Value) -> i64 {
         .unwrap_or(0)
 }
 
-/// The class that says how the calendar colours an event.
+/// The class that says how the calendar colors an event.
 fn background(state: &str) -> String {
     state.replace("text", "bg")
 }

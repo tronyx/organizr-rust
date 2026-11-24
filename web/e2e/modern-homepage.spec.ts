@@ -1,5 +1,5 @@
 // The homepage on the modern layout: every item, with the answers of `homepage-fixtures.ts`
-// (normal, empty and failed), passes the contrast check of WCAG AA in the dark colour set
+// (normal, empty and failed), passes the contrast check of WCAG AA in the dark color set
 // and in the light one (set on the page here), in each of its tabs, menus and dialogs. No request leaves the machine: every item address is
 // under `.invalid`, and the fixtures answer every route of the items. The tests leave the
 // settings and the look of the install as they found them.
@@ -23,7 +23,7 @@ import { ADDRESS } from './server';
 type ColorSet = 'dark' | 'light';
 const SETS: ColorSet[] = ['dark', 'light'];
 
-/** The theme and colour set of the page, as the look of the person would set them. */
+/** The theme and color set of the page, as the look of the person would set them. */
 async function useColorSet(page: Page, set: ColorSet) {
   await page.evaluate((wanted) => {
     document.documentElement.dataset.theme = `m-organizr-${wanted}`;
@@ -34,7 +34,7 @@ async function useColorSet(page: Page, set: ColorSet) {
 
 /** Checks the contrast and records the texts it could not check. */
 async function checkContrast(page: Page, where: string, within?: string) {
-  // A page or a dialog fades in: the colours count once that is over. A spinner turns
+  // A page or a dialog fades in: the colors count once that is over. A spinner turns
   // for ever, and the scroll lock of the dialog follows the scrolling, not the time.
   await page.waitForFunction(() =>
     document
@@ -508,7 +508,7 @@ test('fields_of_items_keep_daisyui_focus_and_checked_colors_on_modern', async ({
     const box = calendar.locator('input.checkbox').first();
     for (const set of SETS) {
       await useColorSet(page, set);
-      // At rest the border is a faint tone; in focus the outline is the text colour.
+      // At rest the border is a faint tone; in focus the outline is the text color.
       await search.focus();
       const text = await page.locator('section.org-item-jackett').evaluate((element) => {
         return getComputedStyle(element).color;
@@ -568,7 +568,7 @@ for (const layout of ['og', 'modern'] as const) {
             'border-bottom-width',
             '0px',
           );
-          // The line is faint: never the full colour of the text.
+          // The line is faint: never the full color of the text.
           const colors = await rows.nth(1).evaluate((row) => {
             const style = getComputedStyle(row);
             return { line: style.borderBottomColor, text: style.color };

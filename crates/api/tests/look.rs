@@ -1,5 +1,5 @@
 //! `GET /launch` with the look, and `PUT /user/look`: each person chooses the own
-//! layout, theme and colour set.
+//! layout, theme and color set.
 
 #![allow(
     clippy::expect_used,
@@ -132,7 +132,7 @@ async fn user_chooses_silo_and_its_accent_sets() {
             assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
             assert_eq!(answer.data(), own);
         }
-        // Without a colour set Silo gets its first one, Ember.
+        // Without a color set Silo gets its first one, Ember.
         let body = json!({"layout": "modern", "theme": "silo"});
         let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
@@ -161,7 +161,7 @@ async fn user_chooses_nocturne_and_its_color_sets() {
             assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
             assert_eq!(answer.data(), own);
         }
-        // Without a colour set Nocturne gets its first one, Amethyst.
+        // Without a color set Nocturne gets its first one, Amethyst.
         let body = json!({"layout": "modern", "theme": "nocturne"});
         let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
@@ -192,7 +192,7 @@ async fn user_chooses_riot_and_its_color_sets() {
             assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
             assert_eq!(answer.data(), own);
         }
-        // Without a colour set Riot gets its first one, Acid.
+        // Without a color set Riot gets its first one, Acid.
         let body = json!({"layout": "modern", "theme": "riot"});
         let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
@@ -223,7 +223,7 @@ async fn user_chooses_tempest_and_its_color_sets() {
             assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
             assert_eq!(answer.data(), own);
         }
-        // Without a colour set Tempest gets its first one, Squall.
+        // Without a color set Tempest gets its first one, Squall.
         let body = json!({"layout": "modern", "theme": "tempest"});
         let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
@@ -254,7 +254,7 @@ async fn user_chooses_circuit_and_its_color_sets() {
             assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
             assert_eq!(answer.data(), own);
         }
-        // Without a colour set Circuit gets its first one, Matrix.
+        // Without a color set Circuit gets its first one, Matrix.
         let body = json!({"layout": "modern", "theme": "circuit"});
         let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
@@ -285,7 +285,7 @@ async fn user_chooses_prism_and_its_color_sets() {
             assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
             assert_eq!(answer.data(), own);
         }
-        // Without a colour set Prism gets its first one, Daydream.
+        // Without a color set Prism gets its first one, Daydream.
         let body = json!({"layout": "modern", "theme": "prism"});
         let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
@@ -368,7 +368,7 @@ async fn switching_layout_keeps_the_other_layouts_choice() {
             json!({"layout": "modern", "theme": "organizr", "colorSet": "dark", "source": "user"})
         );
 
-        // Back to the original layout with its defaults for theme and colour set: the
+        // Back to the original layout with its defaults for theme and color set: the
         // choice for the modern layout stays in the database.
         let back = put(json!({"layout": "og", "theme": null, "colorSet": null})).await;
         assert_eq!(

@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* `dark:` follows the colour set of the page, not the operating system. */
+/* `dark:` follows the color set of the page, not the operating system. */
 @custom-variant dark (&:where([data-color-set=dark], [data-color-set=dark] *));
 
 @plugin 'daisyui' {
@@ -9,7 +9,7 @@
 }
 
 /* The look of PHP Organizr with its theme "Organizr" and its style "dark": the same
-   colours, the same square boxes, and the same sizes of text. */
+   colors, the same square boxes, and the same sizes of text. */
 @plugin 'daisyui/theme' {
   name: 'organizr';
   default: true;
@@ -48,7 +48,7 @@
   --noise: 0;
 }
 
-/* The modern layout's theme "Organizr": the blue-grey family of PHP Organizr with softer
+/* The modern layout's theme "Organizr": the blue-gray family of PHP Organizr with softer
    surfaces and rounder boxes. The text and background pairs are listed in `look.ts`, where
    a test checks their contrast and that these values match. */
 @plugin 'daisyui/theme' {
@@ -122,7 +122,7 @@
   --org-sidebar-bg: #ffffff;
   --org-sidebar-text: #475569;
   --org-sidebar-active: #0a6a98;
-  /* The share of the text colour in a muted text: 65 % is under 4.5:1 on base-300. */
+  /* The share of the text color in a muted text: 65 % is under 4.5:1 on base-300. */
   --org-muted-text: 70%;
 
   --radius-selector: 0.5rem;
@@ -135,7 +135,7 @@
   --noise: 0;
 }
 
-/* The brand themes of the modern layout: the colour feel of Plex (charcoal with amber-gold),
+/* The brand themes of the modern layout: the color feel of Plex (charcoal with amber-gold),
    Jellyfin (deep navy with blue and purple) and Emby (near-black with green), with none of
    their logos or art. Plex and Emby have slightly tighter corners than Organizr. Each pair
    of text and background is in `look.ts` too, where a test checks its contrast. */
@@ -392,7 +392,7 @@
    the page, off-white text and off-white buttons with dark text. Its sets differ only in the
    accent (Ember, Ice, Rose), which marks the links, the help texts, the open menu entry and
    the focus ring (the rules keyed on `m-silo-` in the last utilities layer). It is our own
-   take on the colour feel, with no code or art of Silo. */
+   take on the color feel, with no code or art of Silo. */
 @plugin 'daisyui/theme' {
   name: 'm-silo-ember';
   color-scheme: dark;
@@ -517,8 +517,8 @@
 }
 
 /* The scene themes of the modern layout: each has an animated scene behind the page
-   (`src/scenes`), its own heading font and corners, and colour sets with names of its own.
-   The art takes its colours from these variables, so each set recolours the scene too.
+   (`src/scenes`), its own heading font and corners, and color sets with names of its own.
+   The art takes its colors from these variables, so each set recolors the scene too.
 
    Nocturne: a gothic night in violet, with old gold for the links, sharp corners and the
    Cinzel font for the headings. Amethyst is violet, Crimson a deep wine red and Moonlit a
@@ -1057,7 +1057,7 @@
   --org-sidebar-bg: #ffffff;
   --org-sidebar-text: #5a4c72;
   --org-sidebar-active: #7337b5;
-  /* The share of the text colour in a muted text: 65 % is under 4.5:1 on base-300. */
+  /* The share of the text color in a muted text: 65 % is under 4.5:1 on base-300. */
   --org-muted-text: 70%;
 
   --radius-selector: 1rem;
@@ -1141,7 +1141,7 @@
   --org-sidebar-bg: #ffffff;
   --org-sidebar-text: #6a3a5c;
   --org-sidebar-active: #a8105a;
-  /* The share of the text colour in a muted text: 65 % is under 4.5:1 on base-300. */
+  /* The share of the text color in a muted text: 65 % is under 4.5:1 on base-300. */
   --org-muted-text: 70%;
 
   --radius-selector: 1rem;
@@ -1156,7 +1156,7 @@
 
 /* The other themes of PHP Organizr, rebuilt for this interface: the built-in theme "Blue"
    and the 11 themes of the theme marketplace (github.com/Organizr/Organizr-Themes). The
-   colours come from the style sheets of each theme. The themes of theme.park take them
+   colors come from the style sheets of each theme. The themes of theme.park take them
    from theme.park (github.com/GilbN/theme.park): `--main-bg-color` is the page,
    `--modal-bg-color` and `--drop-down-menu-bg` the boxes and the menu, `--button-color`
    the buttons, `--accent-color` the highlights, `--link-color` the links and the bar at
@@ -1196,7 +1196,7 @@
   --noise: 0;
 }
 
-/* Aquamarine: the colours of theme.park, css/theme-options/aquamarine.css. */
+/* Aquamarine: the colors of theme.park, css/theme-options/aquamarine.css. */
 @plugin 'daisyui/theme' {
   name: 'org-aquamarine';
   color-scheme: dark;
@@ -1230,7 +1230,7 @@
   --noise: 0;
 }
 
-/* Dark_theme_park: the colours of theme.park, css/theme-options/dark.css. */
+/* Dark_theme_park: the colors of theme.park, css/theme-options/dark.css. */
 @plugin 'daisyui/theme' {
   name: 'org-dark-theme-park';
   color-scheme: dark;
@@ -1264,7 +1264,7 @@
   --noise: 0;
 }
 
-/* Dracula: the colours of theme.park, css/theme-options/dracula.css. */
+/* Dracula: the colors of theme.park, css/theme-options/dracula.css. */
 @plugin 'daisyui/theme' {
   name: 'org-dracula';
   color-scheme: dark;
@@ -1298,7 +1298,7 @@
   --noise: 0;
 }
 
-/* Hotline: the colours of theme.park, css/theme-options/hotline.css. */
+/* Hotline: the colors of theme.park, css/theme-options/hotline.css. */
 @plugin 'daisyui/theme' {
   name: 'org-hotline';
   color-scheme: dark;
@@ -1332,7 +1332,7 @@
   --noise: 0;
 }
 
-/* Hotpink: the colours of theme.park, css/theme-options/hotpink.css. */
+/* Hotpink: the colors of theme.park, css/theme-options/hotpink.css. */
 @plugin 'daisyui/theme' {
   name: 'org-hotpink';
   color-scheme: dark;
@@ -1366,7 +1366,7 @@
   --noise: 0;
 }
 
-/* Nord: the colours of theme.park, css/theme-options/nord.css. */
+/* Nord: the colors of theme.park, css/theme-options/nord.css. */
 @plugin 'daisyui/theme' {
   name: 'org-nord';
   color-scheme: dark;
@@ -1400,7 +1400,7 @@
   --noise: 0;
 }
 
-/* Onedark: the colours of theme.park, css/community-theme-options/onedark.css. */
+/* Onedark: the colors of theme.park, css/community-theme-options/onedark.css. */
 @plugin 'daisyui/theme' {
   name: 'org-onedark';
   color-scheme: dark;
@@ -1434,7 +1434,7 @@
   --noise: 0;
 }
 
-/* Overseerr: the colours of theme.park, css/theme-options/overseerr.css. */
+/* Overseerr: the colors of theme.park, css/theme-options/overseerr.css. */
 @plugin 'daisyui/theme' {
   name: 'org-overseerr';
   color-scheme: dark;
@@ -1468,7 +1468,7 @@
   --noise: 0;
 }
 
-/* Plex_theme_park: the colours of theme.park, css/theme-options/plex.css. */
+/* Plex_theme_park: the colors of theme.park, css/theme-options/plex.css. */
 @plugin 'daisyui/theme' {
   name: 'org-plex-theme-park';
   color-scheme: dark;
@@ -1537,7 +1537,7 @@
   --noise: 0;
 }
 
-/* Space_Gray: the colours of theme.park, css/theme-options/space-gray.css. */
+/* Space_Gray: the colors of theme.park, css/theme-options/space-gray.css. */
 @plugin 'daisyui/theme' {
   name: 'org-space-gray';
   color-scheme: dark;
@@ -1571,7 +1571,7 @@
   --noise: 0;
 }
 
-/* The bar at the top, the menu and the background of the page of each theme. The colours
+/* The bar at the top, the menu and the background of the page of each theme. The colors
    of the settings "Colors & Themes" stand on the page itself and win over these. */
 @layer base {
   html[data-theme='org-blue'],
@@ -1726,9 +1726,9 @@
     line-height: 1.43;
   }
 
-  /* The border of a colour sample of the look picker, from the colours of the page: a
+  /* The border of a color sample of the look picker, from the colors of the page: a
      custom property is resolved where it is declared, so the sample, which carries the
-     `data-theme` of its own theme, inherits the colour of the page theme. About 3:1 on the
+     `data-theme` of its own theme, inherits the color of the page theme. About 3:1 on the
      page and on the boxes of the page. */
   :root {
     --org-swatch-edge: color-mix(in oklab, var(--color-base-content) 55%, var(--color-base-100));
@@ -1736,9 +1736,9 @@
 }
 
 @layer components {
-  /* A colour sample of a theme in the look picker, on both layouts. Its own `data-theme`
-     gives it the colours of that theme: the box is the page colour of the theme, the dots
-     its text, primary and accent colours. The `background` also drops the page gradient
+  /* A color sample of a theme in the look picker, on both layouts. Its own `data-theme`
+     gives it the colors of that theme: the box is the page color of the theme, the dots
+     its text, primary and accent colors. The `background` also drops the page gradient
      that an OG theme sets on each element with its `data-theme`. */
   .org-swatch {
     display: inline-flex;
@@ -1898,7 +1898,7 @@
     transform: rotate(90deg);
   }
 
-  /* The preview of a theme on the settings pages: a small page in the colours of the
+  /* The preview of a theme on the settings pages: a small page in the colors of the
      theme. */
   /* The settings of PHP Organizr: a bar with the title and the place, the main tabs
      with their pictures, and the tabs of each part as rounded buttons. */
@@ -2548,7 +2548,7 @@
     text-transform: uppercase;
   }
 
-  /* The tiles of Homepage Order, with the colours of PHP. */
+  /* The tiles of Homepage Order, with the colors of PHP. */
   .org-order-tiles {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -2667,7 +2667,7 @@
     background-color: #707cd2;
   }
 
-  /* The colours of the services, once more as custom properties, for the coloured edge
+  /* The colors of the services, once more as custom properties, for the colored edge
      of the tiles of Homepage Order on the modern layout. They must stay equal to the
      rules above (a test checks it); OG keeps using the rules. */
   :root {
@@ -2975,7 +2975,7 @@
   }
 
   /* A homepage item of PHP Organizr: a thin title with a line after it, and small dark
-     cards with a coloured edge at the left for the state. */
+     cards with a colored edge at the left for the state. */
   .org-item-title {
     display: flex;
     align-items: center;
@@ -3303,7 +3303,7 @@
   }
 
   /*
-   * The tones of the cards of the homepage. Each sets the colour of the edge and of the
+   * The tones of the cards of the homepage. Each sets the color of the edge and of the
    * icon of its card, which custom CSS may change (docs/custom-css.md).
    */
   .org-tone-success {
@@ -3334,8 +3334,8 @@
     --org-state: var(--color-neutral);
   }
 
-  /* Parts that are filled with the colour of their state: the state of a Monitorr service,
-     the head of a UniFi card, a card of AdGuard Home (the colour is `--org-state`). */
+  /* Parts that are filled with the color of their state: the state of a Monitorr service,
+     the head of a UniFi card, a card of AdGuard Home (the color is `--org-state`). */
   .org-fill,
   .org-adguard-card {
     background: var(--org-state);
@@ -3350,7 +3350,7 @@
     opacity: 0.4;
   }
 
-  /* The colours of the states of the events of the calendar, as PHP Organizr gives them. */
+  /* The colors of the states of the events of the calendar, as PHP Organizr gives them. */
   :root {
     --org-event-downloaded: var(--color-success);
     --org-event-unreleased: var(--color-info);
@@ -3736,8 +3736,8 @@
   }
 }
 
-/* The colour names of the shadcn-svelte components of the modern layout, taken from the
-   variables of the daisyUI theme, so that every theme colours them. */
+/* The color names of the shadcn-svelte components of the modern layout, taken from the
+   variables of the daisyUI theme, so that every theme colors them. */
 @theme inline {
   --color-background: var(--color-base-100);
   --color-foreground: var(--color-base-content);
@@ -3854,7 +3854,7 @@
   }
 
   /* The tab that is shown, in the column of icons: its name is not there to see, so a bar
-     in the primary colour of the theme marks it at the left edge of the column. */
+     in the primary color of the theme marks it at the left edge of the column. */
   [data-layout='modern'] .m-sidebar-icons .org-menu a[aria-current='page']::before {
     content: '';
     position: absolute;
@@ -4015,7 +4015,7 @@
 /* The content of the settings on the modern layout: the same classes as OG (`org-panel`,
    `org-table`, `org-form-control` and the others), with the shape of a modern interface:
    roomy cards, soft borders, a focus ring. Only theme variables are used here, so the
-   content reads well on every colour set. These rules sit in the same layer as the OG
+   content reads well on every color set. These rules sit in the same layer as the OG
    rules and carry the extra attribute selector, so they win over them. */
 @layer components {
   /* Panels */
@@ -4336,7 +4336,7 @@
     color: var(--color-error);
   }
 
-  /* Notices: a card tinted with the colour of its kind */
+  /* Notices: a card tinted with the color of its kind */
   [data-layout='modern'] .org-notice {
     padding: 14px 18px;
     border: 1px solid color-mix(in oklab, var(--color-info) 45%, var(--color-base-300));
@@ -4448,7 +4448,7 @@
     border-radius: var(--radius-field);
   }
 
-  /* The details of About: the text colour of the theme, not the white of OG. */
+  /* The details of About: the text color of the theme, not the white of OG. */
   [data-layout='modern'] .org-about-list dd {
     color: var(--color-base-content);
   }
@@ -4469,14 +4469,14 @@
 
 /* The homepage on the modern layout. The items keep the classes of OG (`org-item`,
    `org-card`, `org-poster` and the others, which custom CSS reaches on both layouts) and
-   look like the cards of the settings: roomy, with soft borders, on theme colours only.
+   look like the cards of the settings: roomy, with soft borders, on theme colors only.
    Each item is a card (`base-200`); what stands inside it is `base-100`. The tone of a
-   quiet text is the text colour at 72 % over the surface, which reads on both colour sets
+   quiet text is the text color at 72 % over the surface, which reads on both color sets
    (the faded text of OG, an opacity of 40 to 70 %, does not). Rules that must beat a
    Tailwind or daisyUI class are in the last `@layer utilities` block below. */
 @layer components {
-  /* The colours of the states of the calendar events, from the colour set. They are mixed
-     with the text colour, so that they read on the day cells of both colour sets (the
+  /* The colors of the states of the calendar events, from the color set. They are mixed
+     with the text color, so that they read on the day cells of both color sets (the
      error red of the dark set is 4.2:1 on the cells without it). Custom CSS still sets
      them: it is not in a layer. */
   [data-layout='modern'] {
@@ -4593,8 +4593,8 @@
     outline-offset: -2px;
   }
 
-  /* The icon of a state is the colour of the state, a little toward the text colour so
-     that the yellow of a warning still shows on the white card of the light colour set. */
+  /* The icon of a state is the color of the state, a little toward the text color so
+     that the yellow of a warning still shows on the white card of the light color set. */
   [data-layout='modern'] .org-card-icon {
     color: color-mix(in oklab, var(--org-state) 75%, var(--color-base-content));
   }
@@ -4694,7 +4694,7 @@
     color: var(--color-primary);
   }
 
-  /* The light primary is too pale on the grey of the pointer: a darker text there. */
+  /* The light primary is too pale on the gray of the pointer: a darker text there. */
   [data-layout='modern'] .org-queue-tabs [role='tab'][aria-selected='true']:hover {
     color: color-mix(in oklab, var(--color-primary) 80%, var(--color-base-content));
   }
@@ -4748,7 +4748,7 @@
     font-size: inherit;
   }
 
-  /* The bar fades its buttons for the pointer; the buttons of the dialog keep their colour. */
+  /* The bar fades its buttons for the pointer; the buttons of the dialog keep their color. */
   [data-layout='modern'] .org-row-buttons dialog button:not(:disabled):hover {
     opacity: 1;
   }
@@ -4783,7 +4783,7 @@
   }
 
   /* Posters: rounded, with a frame that lights up for the pointer and the keyboard. The
-     text of a poster without a picture (a letter) is on a solid colour; no text sits on
+     text of a poster without a picture (a letter) is on a solid color; no text sits on
      a picture. */
   [data-layout='modern'] .org-posters {
     gap: 12px;
@@ -4936,7 +4936,7 @@
     font-weight: 600;
   }
 
-  /* The calendar: the bar of buttons, and a grid of day cells that stand on the colour of
+  /* The calendar: the bar of buttons, and a grid of day cells that stand on the color of
      the page, with the column of today tinted. */
   [data-layout='modern'] .org-calendar {
     background: transparent;
@@ -5038,8 +5038,8 @@
     --org-state: var(--color-neutral);
   }
 
-  /* The rings and the gauges of Netdata: the track is a tone of the text colour (the
-     colour of the value is the one of the settings of the chart). */
+  /* The rings and the gauges of Netdata: the track is a tone of the text color (the
+     color of the value is the one of the settings of the chart). */
   [data-layout='modern'] .org-item-netdata .org-netdata-track {
     stroke: color-mix(in oklab, var(--color-base-content) 30%, var(--color-base-200));
   }
@@ -5064,9 +5064,9 @@
 /* The login, register, recover, invite, lock, set-up and Account screens on the modern
    layout. They keep the classes of OG (`org-login-*`, `org-lock-*`, `org-wizard-*`,
    `org-account-panel`, `org-page-title`) and look like the panels of the settings. The
-   forms of the login pages and the lock screen are a centred card over the wallpaper or
-   the random media picture, behind a scrim of the page colour: every text sits on the
-   card, in the colours of the theme. The wizard and the Account page are panels with a
+   forms of the login pages and the lock screen are a centered card over the wallpaper or
+   the random media picture, behind a scrim of the page color: every text sits on the
+   card, in the colors of the theme. The wizard and the Account page are panels with a
    heading. Rules that must beat a Tailwind class are in the last `@layer utilities` block
    below. Nothing here moves, so nothing needs to stop for `prefers-reduced-motion`. */
 @layer components {
@@ -5254,7 +5254,7 @@
     font-weight: 600;
   }
 
-  /* The session of this browser in the list of the sessions: a tint of the success colour. */
+  /* The session of this browser in the list of the sessions: a tint of the success color. */
   [data-layout='modern'] .org-current-token th,
   [data-layout='modern'] .org-current-token td {
     background: color-mix(in oklab, var(--color-success) 18%, var(--color-base-100));
@@ -5279,7 +5279,7 @@
   }
 
   /* The labels of the forms and the heads of the tables of daisyUI: its faded text
-     (60 %) is under 4.5:1 on the light colour set, so they get a stronger tone. */
+     (60 %) is under 4.5:1 on the light color set, so they get a stronger tone. */
   [data-layout='modern']
     .label:not(
       [class*='text-error'],
@@ -5309,7 +5309,7 @@
     color: color-mix(in oklab, var(--color-base-content) 80%, var(--color-base-200));
   }
 
-  /* The hint in an empty field: a tone of the text colour that reads on the field. */
+  /* The hint in an empty field: a tone of the text color that reads on the field. */
   [data-layout='modern'] input::placeholder,
   [data-layout='modern'] textarea::placeholder {
     color: color-mix(in oklab, var(--color-base-content) 70%, var(--color-base-100));
@@ -5380,15 +5380,15 @@
     box-shadow: 0 0 0 2px var(--org-sidebar-bg, var(--color-base-200));
   }
 
-  /* On the tab that is shown, the ring takes the colour of its background instead. */
+  /* On the tab that is shown, the ring takes the color of its background instead. */
   [data-layout='modern'] .m-sidebar-icons .org-menu a[aria-current='page'] .m-dot {
     box-shadow: 0 0 0 2px var(--color-base-300);
   }
 
-  /* The tiles of Homepage Order: a card in the colours of the theme with the picture of
-     the item at the right, instead of the white text on the colour of each service (as
+  /* The tiles of Homepage Order: a card in the colors of the theme with the picture of
+     the item at the right, instead of the white text on the color of each service (as
      low as 2:1). A tile of an item that is off has a dashed edge and a muted text, not a
-     fade of the whole tile. In this layer because the colours of the tiles include
+     fade of the whole tile. In this layer because the colors of the tiles include
      utilities such as `bg-info`. */
   [data-layout='modern'] .org-order-tile {
     border: 1px solid var(--color-base-300);
@@ -5412,8 +5412,8 @@
     background: var(--color-base-300);
     color: var(--color-base-content);
   }
-  /* The colour of each service as a thick edge at the left of its tile, so that the
-     tiles keep the colours of OG without text on them. */
+  /* The color of each service as a thick edge at the left of its tile, so that the
+     tiles keep the colors of OG without text on them. */
   [data-layout='modern'] .org-order-tile {
     border-inline-start: 4px solid var(--org-tile-brand, var(--color-base-300));
   }
@@ -5470,16 +5470,16 @@
   }
 
   /* The homepage items. What the components set with Tailwind or daisyUI classes (white
-     text, the dark grey of OG, the faded text with an opacity, the bars and the stats of
-     daisyUI) is set again here with theme colours, in this layer so that these rules win
+     text, the dark gray of OG, the faded text with an opacity, the bars and the stats of
+     daisyUI) is set again here with theme colors, in this layer so that these rules win
      over the classes. */
 
-  /* White text: the item is a card of the theme, so its text is the text colour. */
+  /* White text: the item is a card of the theme, so its text is the text color. */
   [data-layout='modern'] .org-item .text-white {
     color: var(--color-base-content);
   }
 
-  /* Cards of the dark grey of OG (Monitorr, OctoPrint, Speedtest Tracker, UniFi). */
+  /* Cards of the dark gray of OG (Monitorr, OctoPrint, Speedtest Tracker, UniFi). */
   [data-layout='modern'] .org-item .org-tile {
     border: 1px solid var(--color-base-300);
     border-radius: var(--radius-box);
@@ -5495,8 +5495,8 @@
     color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-100));
   }
 
-  /* A part filled with the colour of its state (`--org-state`): its text takes the pair of
-     that colour of the theme instead of white (2.4:1 on the yellow). */
+  /* A part filled with the color of its state (`--org-state`): its text takes the pair of
+     that color of the theme instead of white (2.4:1 on the yellow). */
   [data-layout='modern'] .org-fill.org-tone-success {
     color: var(--color-success-content);
   }
@@ -5521,9 +5521,9 @@
     color: var(--color-neutral-content);
   }
 
-  /* The cards of AdGuard Home carry a literal colour of OG in `--org-state` (green,
+  /* The cards of AdGuard Home carry a literal color of OG in `--org-state` (green,
      yellow, red, purple) under white text. On modern the card is a tile of the theme with
-     the colour as an edge, as the other cards. The colour is an inline custom property, so
+     the color as an edge, as the other cards. The color is an inline custom property, so
      custom CSS overrides `background`, `color` or `box-shadow` of the card directly. */
   [data-layout='modern'] .org-adguard-card {
     border: 1px solid var(--color-base-300);
@@ -5533,7 +5533,7 @@
     box-shadow: inset 4px 0 0 0 var(--org-state);
   }
 
-  /* The icons of Speedtest Tracker: the colour of the card a little toward the text. */
+  /* The icons of Speedtest Tracker: the color of the card a little toward the text. */
   [data-layout='modern'] .org-speedtest-icon {
     color: color-mix(in oklab, var(--org-state) 75%, var(--color-base-content));
   }
@@ -5547,7 +5547,7 @@
   }
 
   /* The faded text of the items (an opacity of 40 to 70 % is under 4.5:1 on the light
-     colour set): the tone of the text colour at full opacity. `.modal-box` covers every
+     color set): the tone of the text color at full opacity. `.modal-box` covers every
      dialog on modern (the settings dialogs too), as the search of MediaSearch needs it. */
   [data-layout='modern']
     :is(.org-item, .modal-box)
@@ -5563,7 +5563,7 @@
     line-height: 22px;
   }
 
-  /* Queues and lists: a table in a bordered frame, with a head in the surface colour. */
+  /* Queues and lists: a table in a bordered frame, with a head in the surface color. */
   [data-layout='modern'] .org-item div.overflow-x-auto {
     border: 1px solid var(--color-base-300);
     border-radius: var(--radius-field);
@@ -5578,7 +5578,7 @@
     background: var(--color-base-300);
   }
 
-  /* The bars of progress in the colour of the action. */
+  /* The bars of progress in the color of the action. */
   [data-layout='modern'] .org-item .progress {
     color: var(--color-primary);
   }
@@ -5607,7 +5607,7 @@
   }
 
   /* The faint border is for the field at rest: a field in focus keeps the outline of
-     daisyUI in the text colour. */
+     daisyUI in the text color. */
   [data-layout='modern'] .org-item :is(.input, .select):is(:focus, :focus-within) {
     --input-color: var(--color-base-content);
   }
@@ -5638,7 +5638,7 @@
   }
 
   /* The title and the name of the lock screen are white in OG: on the card they take
-     the text colour. */
+     the text color. */
   [data-layout='modern'] .org-login-title,
   [data-layout='modern'] .org-lock-name {
     color: var(--color-base-content);
@@ -5678,7 +5678,7 @@
     font-weight: 600;
   }
 
-  /* The fields: a border that shows on the card (about 3:1), the text colour in focus. */
+  /* The fields: a border that shows on the card (about 3:1), the text color in focus. */
   [data-layout='modern']
     :is(.org-login-form, .org-lock-box, .org-wizard-panel, .org-account-panel)
     :is(.input, .select) {
@@ -5696,9 +5696,9 @@
   }
 
   /* The checkboxes and radios, also those of the look popover of the top bar: the same
-     border of about 3:1. Only the border colour is set, so a checked checkbox keeps the
+     border of about 3:1. Only the border color is set, so a checked checkbox keeps the
      fill of daisyUI (`--input-color`) and a checked radio keeps its border and dot in its
-     own colour; the focus outline is unchanged. */
+     own color; the focus outline is unchanged. */
   [data-layout='modern']
     :is(.org-login-form, .org-lock-box, .org-wizard-panel, .org-account-panel, .m-look-panel)
     :is(.checkbox, .radio:not(:checked, [aria-checked='true'])) {
@@ -5712,15 +5712,15 @@
     line-height: var(--text-base--line-height);
   }
 
-  /* The faded texts of the wizard and of Account: the tone of the text colour at full
-     opacity, which reads on both colour sets. */
+  /* The faded texts of the wizard and of Account: the tone of the text color at full
+     opacity, which reads on both color sets. */
   [data-layout='modern'] :is(.org-wizard, .org-account-panel) :is(.opacity-70, .opacity-80) {
     color: color-mix(in oklab, var(--color-base-content) 75%, var(--color-base-100));
     opacity: 1;
   }
 
   /* The names and units of the results of the Speed test: daisyUI fades them to 60 %,
-     under 4.5:1 on the light colour set; on their box they take 75 % of the text colour. */
+     under 4.5:1 on the light color set; on their box they take 75 % of the text color. */
   [data-layout='modern'] .org-settings .stats :is(.stat-title, .stat-desc) {
     color: color-mix(in oklab, var(--color-base-content) 75%, var(--color-base-200));
   }
@@ -5774,7 +5774,7 @@
   }
 
   /* Jellyfin: the primary buttons and the bottom edge of the top bar run from the
-     secondary colour (purple) to the primary one (blue). The primary text colour reads on
+     secondary color (purple) to the primary one (blue). The primary text color reads on
      both ends (a test checks it). daisyUI's `.btn` sets its own background image in a
      sublayer of this layer, so the rule sits here. A disabled button keeps the look of
      daisyUI. Nothing moves. */
@@ -5814,8 +5814,8 @@
     outline-offset: 2px;
   }
 
-  /* The off-white buttons of the forms: the hover of every theme mixes in the text colour,
-     which is off-white too, so on Silo it darkens the button with the page colour. */
+  /* The off-white buttons of the forms: the hover of every theme mixes in the text color,
+     which is off-white too, so on Silo it darkens the button with the page color. */
   [data-layout='modern'][data-theme^='m-silo-'] .org-form-button:not(:disabled):hover,
   [data-layout='modern'][data-theme^='m-silo-'] .org-row-buttons > button:hover {
     background: color-mix(in oklab, var(--color-primary) 80%, var(--color-base-100));
@@ -5849,12 +5849,12 @@
   }
 
   /* The scene of a scene theme (`SceneLayer.svelte`, art in `src/scenes`): a layer fixed
-     behind the shell that takes no clicks and never scrolls. It paints the page colour.
+     behind the shell that takes no clicks and never scrolls. It paints the page color.
      On the pages whose every text sits on a card (`SCENE_PAGES` in `src/lib/scene.ts`, the
      class `m-page-clear`), the page turns transparent and the scene shows between the
-     cards; every other page keeps its opaque page colour over the scene.
+     cards; every other page keeps its opaque page color over the scene.
      Custom CSS can hide it with `.m-scene { display: none; }`, or one theme's scene with
-     `.m-scene-<theme>`: the root then shows the page colour of the theme behind the clear
+     `.m-scene-<theme>`: the root then shows the page color of the theme behind the clear
      page. `m-scene-paused` is on while the tab is hidden or the page hides all of the
      scene (every page but those of `SCENE_PAGES`). The animations, and the rules that stop
      them for reduced motion and while paused, are in the scene's own style: a layered rule

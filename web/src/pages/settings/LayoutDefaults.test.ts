@@ -92,7 +92,7 @@ describe('the group Style & Themes', () => {
   it('replaces_the_layout_tab_and_keeps_its_place', async () => {
     await open();
 
-    // The group keeps the place of PHP's "Colors & Themes": between its neighbours.
+    // The group keeps the place of PHP's "Colors & Themes": between its neighbors.
     const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent?.trim());
     const at = (name: string) => tabs.indexOf(name);
     expect(at('Top Bar')).toBeGreaterThan(-1);
@@ -161,7 +161,7 @@ describe('the group Style & Themes', () => {
       ['Modern', 'modern'],
     ]);
     await fireEvent.change(layout, { target: { value: 'modern' } });
-    // The Organizr theme offers its dark and light colour sets.
+    // The Organizr theme offers its dark and light color sets.
     expect(
       within(within(panel).getByRole('combobox', { name: 'Modern color set' }))
         .getAllByRole('option')

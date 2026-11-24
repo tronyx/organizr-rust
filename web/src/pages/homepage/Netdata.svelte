@@ -8,7 +8,7 @@
     value?: number | string | null;
     percent?: number | string | null;
     units?: string | number | null;
-    /** A hexadecimal colour without the number sign, for example `46e302`. */
+    /** A hexadecimal color without the number sign, for example `46e302`. */
     colour?: string;
     /** `gauge` for a half ring. Every other value is a ring. */
     chart?: string;
@@ -48,7 +48,7 @@
     return chart.chart === 'gauge' ? size.gauge : size.ring;
   }
 
-  /** The colour of a chart, when the settings hold one that is a colour. */
+  /** The color of a chart, when the settings hold one that is a color. */
   function colorOf(chart: Chart): string {
     return /^[0-9a-f]{3,8}$/i.test(chart.colour ?? '') ? `#${chart.colour}` : 'var(--color-info)';
   }

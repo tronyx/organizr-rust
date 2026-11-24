@@ -1,6 +1,6 @@
 // The login, register, recover, invite, lock, set-up and Account screens on the modern
 // layout, with the Invites and Speed test pages and the media search of the top bar: each
-// passes the contrast check of WCAG AA in the dark colour set and in the light one, which
+// passes the contrast check of WCAG AA in the dark color set and in the light one, which
 // the Admin default and the look of the person choose for real here. It runs after the
 // walk of `demo.spec.ts`, on the same install. No request leaves the machine: the
 // wallpapers are under `.invalid` and answered here, the media server is answered by
@@ -339,7 +339,7 @@ async function put(page: Page, address: string, data: Record<string, unknown>) {
   expect(answer.ok(), `${address}: ${await answer.text()}`).toBe(true);
 }
 
-/** The Admin default and the look of the Admin: modern, in the colour set. */
+/** The Admin default and the look of the Admin: modern, in the color set. */
 async function useModern(page: Page, set: ColorSet) {
   await put(page, './api/v2/config', {
     layout: 'modern',

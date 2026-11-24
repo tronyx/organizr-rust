@@ -55,7 +55,7 @@ export const KINDS: Record<string, { word: string; icon: string }> = {
   ical: { word: 'Calendar events', icon: 'fontawesome::calendar' },
 };
 
-/** The states of a download, with the word and the colour of each one. */
+/** The states of a download, with the word and the color of each one. */
 export const STATES: Record<string, { word: string; badge: string }> = {
   'text-success': { word: 'Downloaded', badge: 'badge-success' },
   'text-info': { word: 'Not released yet', badge: 'badge-info' },
@@ -365,7 +365,7 @@ export function shortTime(start: string): string | null {
   return `${hour % 12 === 0 ? 12 : hour % 12}:${pad(moment.getMinutes())}${hour < 12 ? 'a' : 'p'}`;
 }
 
-/** The class of each state of an event, which colours its title, its icon and its time. */
+/** The class of each state of an event, which colors its title, its icon and its time. */
 const STATE_CLASSES: Record<string, string> = {
   'text-success': 'org-event-downloaded',
   'text-info': 'org-event-unreleased',

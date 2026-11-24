@@ -1,6 +1,6 @@
 <script lang="ts">
   // System Settings, About: the panel Information of PHP Organizr (the version, the
-  // database and the licence) and the links of Organizr. PHP also shows the news of
+  // database and the license) and the links of Organizr. PHP also shows the news of
   // Organizr, which its scripts fetch from GitHub; the security policy of this page
   // allows requests to this server only, so the news are not shown.
   import { onMount } from 'svelte';

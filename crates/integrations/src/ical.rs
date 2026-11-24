@@ -854,7 +854,7 @@ mod tests {
         assert_eq!(events[0]["end"], "2020-01-11");
         assert_eq!(events[1]["end"], "2020-01-13");
         assert_eq!(events[2]["end"], "2020-01-13T01:00:00+01:00");
-        // What is over has another colour.
+        // What is over has another color.
         assert_eq!(events[0]["bgColor"], "bg-success");
         assert_eq!(
             events[0]["imagetype"],

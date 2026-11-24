@@ -6,7 +6,7 @@
   // the wind.
   //
   // The rules of every scene (checked by `scenes.test.ts`):
-  // - every colour comes from a theme variable, set by a class of the style below; the
+  // - every color comes from a theme variable, set by a class of the style below; the
   //   markup paints only with `url(#…)` gradients and patterns of the scene;
   // - only `transform` and `opacity` move, with CSS keyframes, on at most 40 elements, each
   //   with the class `m-anim` and one `m-anim-<name>` class, never inside `{#each}`; an
@@ -443,7 +443,7 @@
     height: 100%;
   }
 
-  /* The sky: the darkest colour of the theme at the top, a low light of the primary colour
+  /* The sky: the darkest color of the theme at the top, a low light of the primary color
      at the horizon, and the sea below it, darkening towards the viewer. */
   .sky-top {
     stop-color: var(--color-neutral);

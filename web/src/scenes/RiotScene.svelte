@@ -5,10 +5,10 @@
   // On the wall: torn posters, a drainpipe, a steel shutter, sprayed neon pieces that glow
   // and fade, and two neon tubes, a ring with a bolt and an arrow over the shutter, that
   // hum and now and then flicker. In front: a fire in an old drum, with smoke and a few
-  // sparks rising, the kerb and a street lamp.
+  // sparks rising, the curb and a street lamp.
   //
   // The rules of every scene (checked by `scenes.test.ts`):
-  // - every colour comes from a theme variable, set by a class of the style below; the
+  // - every color comes from a theme variable, set by a class of the style below; the
   //   markup paints only with `url(#…)` gradients and patterns of the scene;
   // - only `transform` and `opacity` move, with CSS keyframes, on at most 40 elements, each
   //   with the class `m-anim` and one `m-anim-<name>` class, never inside `{#each}`; an
@@ -114,10 +114,10 @@
   const SLATS = Array.from({ length: 21 }, (_, i) => `M1182 ${580 + i * 14}H1418`).join('');
   const SHUTTER_FRAME = 'M1170 552H1430V566H1170ZM1170 566h10V872h-10zM1420 566h10V872h-10z';
 
-  // The plinth of the wall, the pavement and the kerb.
+  // The plinth of the wall, the sidewalk and the curb.
   const PLINTH = 'M0 828H1600V872H0Z';
   const CRACKS = 'M220 828l8 16l-6 12l10 16M760 828l-6 20l8 24M1480 828l10 14l-4 30';
-  const PAVEMENT = 'M0 872H1600V900H0Z';
+  const SIDEWALK = 'M0 872H1600V900H0Z';
   const CURB = 'M0 872H1600';
 
   // The street lamp at the right.
@@ -442,7 +442,7 @@
     <path class="drum" d={DRUM} />
     <path class="hoops" d={HOOPS} />
     <path class="rim" d={RIM} />
-    <path class="pavement" d={PAVEMENT} />
+    <path class="sidewalk" d={SIDEWALK} />
     <path class="curb" d={CURB} />
     <path d={LAMP_LIGHT} fill="url(#riot-beam)" />
     <path class="lamp" d={LAMP} />
@@ -494,8 +494,8 @@
     height: 100%;
   }
 
-  /* The sky: the darkest colour of the theme at the top, the page colour lower down, and a
-     haze of the primary colour of the set over the roofs, as a city glows at night. */
+  /* The sky: the darkest color of the theme at the top, the page color lower down, and a
+     haze of the primary color of the set over the roofs, as a city glows at night. */
   .sky-top {
     stop-color: var(--color-neutral);
   }
@@ -538,7 +538,7 @@
     stroke-width: 3;
   }
 
-  /* The wall: bricks in the dark colours of the theme, a few lighter or darker ones, a
+  /* The wall: bricks in the dark colors of the theme, a few lighter or darker ones, a
      shade towards the ground and a pool of light from the street lamp. */
   .mortar {
     fill: var(--color-neutral);
@@ -705,7 +705,7 @@
     opacity: 0.6;
   }
 
-  /* The neon tubes: a wide soft glow, the coloured glass and a bright core. */
+  /* The neon tubes: a wide soft glow, the colored glass and a bright core. */
   .tube-glow,
   .tube,
   .tube-core {
@@ -757,7 +757,7 @@
     stop-opacity: 0;
   }
 
-  /* The fire: a glow on the wall, the flame, smoke and sparks in the warm colour of the
+  /* The fire: a glow on the wall, the flame, smoke and sparks in the warm color of the
      theme's warnings. */
   .fire-inner {
     stop-color: var(--color-warning);
@@ -856,7 +856,7 @@
   }
 
   .rubble,
-  .pavement,
+  .sidewalk,
   .lamp,
   .drum {
     fill: var(--color-neutral);

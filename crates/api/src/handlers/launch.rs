@@ -71,7 +71,7 @@ pub struct LaunchData {
     /// What the last version check found, for Admins and Co-Admins; `null` for every
     /// other caller (D-23).
     update: Option<UpdateStatus>,
-    /// Not in PHP: the layout, theme and colour set that apply to the caller (D-125).
+    /// Not in PHP: the layout, theme and color set that apply to the caller (D-125).
     look: Look,
 }
 

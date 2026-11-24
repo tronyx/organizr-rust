@@ -9,7 +9,7 @@ export interface Look {
   layout: 'og' | 'modern';
   /** On OG the name of a theme of PHP Organizr, on modern the id of a modern theme. */
   theme: string;
-  /** On OG the style (`dark` or `light`), on modern a colour set of the theme. */
+  /** On OG the style (`dark` or `light`), on modern a color set of the theme. */
   colorSet: string;
   /** Whether the person chose it (`user`) or the Admin default applies. */
   source: 'user' | 'default';
@@ -24,8 +24,8 @@ export interface ModernTheme {
    */
   scene?: string;
   /**
-   * The colour sets. A set is dark unless its id is `light` or it says `light: true`; the
-   * page then gets `data-colour-set="light"`.
+   * The color sets. A set is dark unless its id is `light` or it says `light: true`; the
+   * page then gets `data-color-set="light"`.
    */
   colorSets: { id: string; label: string; light?: true }[];
 }
@@ -101,7 +101,7 @@ export const MODERN_THEMES: ModernTheme[] = [
   },
 ];
 
-/** The two colour sets of most themes. */
+/** The two color sets of most themes. */
 function darkAndLight(): ModernTheme['colorSets'] {
   return [
     { id: 'dark', label: 'Dark' },
@@ -109,7 +109,7 @@ function darkAndLight(): ModernTheme['colorSets'] {
   ];
 }
 
-/** Whether a `data-theme` of the modern layout is a light colour set. */
+/** Whether a `data-theme` of the modern layout is a light color set. */
 function isLightSet(id: string): boolean {
   return (
     id.endsWith('-light') ||
@@ -119,7 +119,7 @@ function isLightSet(id: string): boolean {
   );
 }
 
-/** The `data-theme` that a modern theme and colour set have. Unknown values give the default. */
+/** The `data-theme` that a modern theme and color set have. Unknown values give the default. */
 export function modernThemeId(theme: string, colorSet: string): string {
   const known = MODERN_THEMES.find(
     (entry) => entry.id === theme && entry.colorSets.some((set) => set.id === colorSet),
@@ -129,7 +129,7 @@ export function modernThemeId(theme: string, colorSet: string): string {
 
 /**
  * The scene that a look shows behind the page, or `null`: only a scene theme of the modern
- * layout has one, and only with a colour set of its own (else the page has the default).
+ * layout has one, and only with a color set of its own (else the page has the default).
  */
 export function sceneOf(look: Look): string | null {
   if (look.layout !== 'modern') {
@@ -139,7 +139,7 @@ export function sceneOf(look: Look): string | null {
   return MODERN_THEMES.find((entry) => id.startsWith(`m-${entry.id}-`))?.scene ?? null;
 }
 
-/** A text colour on a background, both as CSS variables of the theme in `app.css`. */
+/** A text color on a background, both as CSS variables of the theme in `app.css`. */
 export interface ColorPair {
   name: string;
   textVariable: string;
@@ -159,7 +159,7 @@ function pair(
 }
 
 /**
- * The text and background colours of each modern theme. `app.css` defines the same values
+ * The text and background colors of each modern theme. `app.css` defines the same values
  * (a test compares them), and a test checks that each pair meets WCAG AA (4.5:1).
  */
 export const MODERN_THEME_COLORS: Record<string, ColorPair[]> = {
@@ -563,7 +563,7 @@ function luminance(hex: string): number {
   return 0.2126 * (channels[0] ?? 0) + 0.7152 * (channels[1] ?? 0) + 0.0722 * (channels[2] ?? 0);
 }
 
-/** The WCAG contrast ratio of two colours written as `#rrggbb`. */
+/** The WCAG contrast ratio of two colors written as `#rrggbb`. */
 export function contrastRatio(first: string, second: string): number {
   const [light, dark] = [luminance(first), luminance(second)].sort((a, b) => b - a);
   return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
@@ -583,7 +583,7 @@ export function applyLook(
   if (look.layout === 'modern') {
     root.dataset.theme = modernThemeId(look.theme, look.colorSet);
     root.dataset.colorSet = isLightSet(root.dataset.theme) ? 'light' : 'dark';
-    // The colours of "Colors & Themes" belong to the OG layout; the theme sets its own.
+    // The colors of "Colors & Themes" belong to the OG layout; the theme sets its own.
     for (const name of COLOR_VARIABLE_NAMES) {
       root.style.removeProperty(name);
     }

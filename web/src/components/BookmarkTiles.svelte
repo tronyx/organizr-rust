@@ -16,7 +16,7 @@
 </script>
 
 <script lang="ts">
-  // The bookmarks of the bookmark plugin as coloured tiles, in their categories. The page
+  // The bookmarks of the bookmark plugin as colored tiles, in their categories. The page
   // of the plugin and the Bookmarks item of the homepage show them.
   import Picture from './Picture.svelte';
 

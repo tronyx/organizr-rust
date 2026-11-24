@@ -50,7 +50,7 @@ describe('Monitorr', () => {
 
     const list = await screen.findByRole('list', { name: 'Monitorr' });
     const cards = within(list).getAllByRole('listitem');
-    // The class of the tone colours the edge, and custom CSS may change it.
+    // The class of the tone colors the edge, and custom CSS may change it.
     const tone = (index: number) => at(cards, index).classList;
     expect(tone(0).contains('org-tone-error')).toBe(true);
     expect(tone(1).contains('org-tone-success')).toBe(true);

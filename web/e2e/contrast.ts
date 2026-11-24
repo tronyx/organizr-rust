@@ -1,5 +1,5 @@
 // A check of the contrast of the text on a page, as a person sees it in the browser: the
-// colour of each text against the colour behind it, by the rules of WCAG 2 (level AA).
+// color of each text against the color behind it, by the rules of WCAG 2 (level AA).
 
 import type { Page } from '@playwright/test';
 
@@ -11,7 +11,7 @@ export interface LowContrast {
   ratio: number;
   /** A CSS path of the element that holds the text. */
   selector: string;
-  /** The colour of the text and the colour behind it, as `rgb(…)`. */
+  /** The color of the text and the color behind it, as `rgb(…)`. */
   color: string;
   background: string;
   /** Large text needs 3:1 instead of 4.5:1. */
@@ -39,7 +39,7 @@ export interface ContrastAudit {
  * Checks every visible text on the page, or inside the element of `within`. When a modal
  * dialog is open, only its content is checked: the page behind it is under its veil.
  *
- * The placeholder of an empty text field counts: its colour is read from `::placeholder`
+ * The placeholder of an empty text field counts: its color is read from `::placeholder`
  * and checked against the background of the field.
  *
  * Not checked: hidden texts, texts under `aria-hidden="true"` (even when they are visible),
@@ -54,7 +54,7 @@ export interface ContrastAudit {
  */
 export async function auditContrast(page: Page, within?: string): Promise<ContrastAudit> {
   return page.evaluate((scope) => {
-    // Every CSS colour (oklab, oklch, color-mix and the others) as sRGB, through a canvas.
+    // Every CSS color (oklab, oklch, color-mix and the others) as sRGB, through a canvas.
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
@@ -172,7 +172,7 @@ export async function auditContrast(page: Page, within?: string): Promise<Contra
       });
     };
 
-    // The colour behind an element: its own background and those of its ancestors, drawn
+    // The color behind an element: its own background and those of its ancestors, drawn
     // over each other up to the first opaque one. For a picture or gradient: the element
     // that has it, and its background, as text.
     const backgroundOf = (element: Element): Rgba | string => {
@@ -230,7 +230,7 @@ export async function auditContrast(page: Page, within?: string): Promise<Contra
         continue;
       }
       let text: string;
-      // The colour of the text and its own fade: those of the placeholder for an empty field.
+      // The color of the text and its own fade: those of the placeholder for an empty field.
       let placeholder: CSSStyleDeclaration | null = null;
       if (element instanceof HTMLSelectElement) {
         text = element.selectedOptions[0]?.text ?? '';

@@ -18,7 +18,7 @@ pub struct Model {
     pub og_style: Option<String>,
     /// The theme of the modern layout.
     pub modern_theme: Option<String>,
-    /// The colour set of the modern layout.
+    /// The color set of the modern layout.
     pub modern_color_set: Option<String>,
 }
 

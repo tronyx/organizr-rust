@@ -44,7 +44,7 @@ describe('LookPicker', () => {
     expect(within(themes).getByRole('radio', { name: 'Organizr' })).toBeChecked();
     expect(within(themes).getAllByRole('radio')).toHaveLength(13);
     expect(screen.getByRole('radio', { name: 'Space Gray' })).toBeInTheDocument();
-    // The Colours of the OG layout do nothing (its `style` setting has no effect).
+    // The Colors of the OG layout do nothing (its `style` setting has no effect).
     expect(screen.queryByRole('group', { name: 'Colors' })).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: 'Dark' })).not.toBeInTheDocument();
   });
@@ -71,7 +71,7 @@ describe('LookPicker', () => {
     ]);
     expect(within(themes).getByRole('radio', { name: 'Organizr' })).toBeChecked();
     expect(screen.queryByRole('radio', { name: 'Space Gray' })).not.toBeInTheDocument();
-    // The theme has a dark and a light colour set; either can be chosen.
+    // The theme has a dark and a light color set; either can be chosen.
     expect(screen.getByRole('group', { name: 'Colors' })).toBeInTheDocument();
     expect(screen.getAllByRole('radio', { name: /^(Dark|Light)$/ })).toHaveLength(2);
     expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
@@ -360,7 +360,7 @@ describe('LookPicker', () => {
     await waitFor(() => expect(screen.getByRole('radio', { name: 'Organizr' })).toHaveFocus());
   });
 
-  /** The `data-theme` of the colour sample of a radio, from the label that holds both. */
+  /** The `data-theme` of the color sample of a radio, from the label that holds both. */
   function swatchOf(name: string): string | null | undefined {
     return screen
       .getByRole('radio', { name })
@@ -435,12 +435,12 @@ describe('LookPicker', () => {
         .getByRole('radio', { name })
         .closest('label')
         ?.querySelector<HTMLElement>('.org-swatch');
-    // The install's theme: the button colour as primary, the accent colour as accent.
+    // The install's theme: the button color as primary, the accent color as accent.
     const own = sample('Organizr');
     expect(own?.style.getPropertyValue('--color-primary')).toBe('#ff0000');
     expect(own?.style.getPropertyValue('--color-accent')).toBe('#00ff00');
     expect(own?.style.getPropertyValue('--org-header-bg')).toBe('');
-    // The theme the person chose, and every other one, keep their stock colours.
+    // The theme the person chose, and every other one, keep their stock colors.
     for (const name of ['Nord', 'Plex']) {
       expect(sample(name)?.style.getPropertyValue('--color-primary')).toBe('');
     }
@@ -481,7 +481,7 @@ describe('LookPicker', () => {
     await open(MODERN);
 
     const swatches = document.querySelectorAll('.org-swatch');
-    // Ten themes and two colour sets.
+    // Ten themes and two color sets.
     expect(swatches).toHaveLength(12);
     for (const swatch of swatches) {
       expect(swatch).toHaveAttribute('aria-hidden', 'true');

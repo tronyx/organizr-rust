@@ -32,7 +32,7 @@ export interface PhpField {
   override?: number;
   /** A code editor: `css`, `html` or `javascript`. */
   mode?: string;
-  /** A notice: its colour, its title and its text. */
+  /** A notice: its color, its title and its text. */
   notice?: string;
   title?: string;
   body?: string;
@@ -240,7 +240,7 @@ export type PhpAction =
   | { kind: 'login-test'; path: string }
   /** A new random key for the API key of Organizr. */
   | { kind: 'new-key' }
-  /** The colours go back to those of the theme. */
+  /** The colors go back to those of the theme. */
   | { kind: 'reset-colors' }
   /** A page that opens in a new window. */
   | { kind: 'open'; url: string }

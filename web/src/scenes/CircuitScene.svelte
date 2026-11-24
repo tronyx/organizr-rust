@@ -8,7 +8,7 @@
   // blink, a soft glow that breathes under the processor and a faint scan line.
   //
   // The rules of every scene (checked by `scenes.test.ts`):
-  // - every colour comes from a theme variable, set by a class of the style below; the
+  // - every color comes from a theme variable, set by a class of the style below; the
   //   markup paints only with `url(#…)` gradients and patterns of the scene;
   // - only `transform` and `opacity` move, with CSS keyframes, on at most 40 elements, each
   //   with the class `m-anim` and one `m-anim-<name>` class, never inside `{#each}`; an
@@ -326,7 +326,7 @@
 </script>
 
 <div class="circuit">
-  <!-- The board: its colour, a light round the middle and a fine grid. -->
+  <!-- The board: its color, a light round the middle and a fine grid. -->
   <svg class="layer" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
     <defs>
       <linearGradient id="circuit-board" x1="0" y1="0" x2="0" y2="1">
@@ -360,43 +360,43 @@
         <stop offset="1" class="core-outer" />
       </radialGradient>
       <radialGradient id="circuit-pulse-primary">
-        <stop offset="0" class="pulse-centre" />
+        <stop offset="0" class="pulse-center" />
         <stop offset="0.22" class="pulse-primary-core" />
         <stop offset="0.4" class="pulse-primary-glow" />
         <stop offset="1" class="pulse-primary-edge" />
       </radialGradient>
       <radialGradient id="circuit-pulse-accent">
-        <stop offset="0" class="pulse-centre" />
+        <stop offset="0" class="pulse-center" />
         <stop offset="0.22" class="pulse-accent-core" />
         <stop offset="0.4" class="pulse-accent-glow" />
         <stop offset="1" class="pulse-accent-edge" />
       </radialGradient>
       <radialGradient id="circuit-led-success">
-        <stop offset="0" class="led-centre" />
+        <stop offset="0" class="led-center" />
         <stop offset="0.2" class="led-success-core" />
         <stop offset="0.45" class="led-success-glow" />
         <stop offset="1" class="led-success-edge" />
       </radialGradient>
       <radialGradient id="circuit-led-warning">
-        <stop offset="0" class="led-centre" />
+        <stop offset="0" class="led-center" />
         <stop offset="0.2" class="led-warning-core" />
         <stop offset="0.45" class="led-warning-glow" />
         <stop offset="1" class="led-warning-edge" />
       </radialGradient>
       <radialGradient id="circuit-led-error">
-        <stop offset="0" class="led-centre" />
+        <stop offset="0" class="led-center" />
         <stop offset="0.2" class="led-error-core" />
         <stop offset="0.45" class="led-error-glow" />
         <stop offset="1" class="led-error-edge" />
       </radialGradient>
       <radialGradient id="circuit-led-info">
-        <stop offset="0" class="led-centre" />
+        <stop offset="0" class="led-center" />
         <stop offset="0.2" class="led-info-core" />
         <stop offset="0.45" class="led-info-glow" />
         <stop offset="1" class="led-info-edge" />
       </radialGradient>
       <radialGradient id="circuit-led-accent">
-        <stop offset="0" class="led-centre" />
+        <stop offset="0" class="led-center" />
         <stop offset="0.2" class="led-accent-core" />
         <stop offset="0.45" class="led-accent-glow" />
         <stop offset="1" class="led-accent-edge" />
@@ -630,8 +630,8 @@
     height: 100%;
   }
 
-  /* The board: the darkest colour of the theme at the edges, the page colour with a hint of
-     the primary colour in the middle, a light round the processor and a fine grid. */
+  /* The board: the darkest color of the theme at the edges, the page color with a hint of
+     the primary color in the middle, a light round the processor and a fine grid. */
   .board-edge {
     stop-color: var(--color-neutral);
   }
@@ -805,9 +805,9 @@
     stop-opacity: 0;
   }
 
-  /* The pulses: a bright centre in a glow of the primary or the accent colour. */
-  .pulse-centre,
-  .led-centre {
+  /* The pulses: a bright center in a glow of the primary or the accent color. */
+  .pulse-center,
+  .led-center {
     stop-color: var(--color-base-content);
     stop-opacity: 1;
   }
@@ -842,7 +842,7 @@
     stop-opacity: 0;
   }
 
-  /* The status lights, in the colours of the theme's states. */
+  /* The status lights, in the colors of the theme's states. */
   .led-success-core {
     stop-color: var(--color-success);
     stop-opacity: 1;

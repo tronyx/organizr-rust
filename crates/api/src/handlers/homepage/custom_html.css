@@ -1,6 +1,6 @@
 /* The base of a custom HTML item: a page that lets the dark interface show through, and
    the classes of the PHP interface that such items use most: the grid of Bootstrap 3, a
-   button, a box and a few helpers. The document has the light colour scheme, as a page
+   button, a box and a few helpers. The document has the light color scheme, as a page
    of PHP Organizr has, and so has the frame around it. A browser paints a white page
    behind a document whose scheme is another one than the scheme of its frame, so a
    page that the item embeds shows through only with this scheme. */

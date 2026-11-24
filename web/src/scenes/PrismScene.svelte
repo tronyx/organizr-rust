@@ -6,7 +6,7 @@
   // sparkles that twinkle all over the sky, with a few motes that rise from the clouds.
   //
   // The rules of every scene (checked by `scenes.test.ts`):
-  // - every colour comes from a theme variable, set by a class of the style below; the
+  // - every color comes from a theme variable, set by a class of the style below; the
   //   markup paints only with `url(#…)` gradients of the scene;
   // - only `transform` and `opacity` move, with CSS keyframes, on at most 40 elements, each
   //   with the class `m-anim` and one `m-anim-<name>` class, never inside `{#each}`; an
@@ -36,7 +36,7 @@
   const round = (value: number) => Math.round(value * 10) / 10;
   const random = generator(29);
 
-  /** The centre of the rainbow, below the clouds, and the radius of its outer edge. */
+  /** The center of the rainbow, below the clouds, and the radius of its outer edge. */
   const BOW = { x: 800, y: 860, outer: 640 };
 
   /**
@@ -361,8 +361,8 @@
     height: 100%;
   }
 
-  /* The sky: a touch of the info colour at the top, the page colour in the middle and a
-     blush of the secondary colour low down, so each set tints it its own way. */
+  /* The sky: a touch of the info color at the top, the page color in the middle and a
+     blush of the secondary color low down, so each set tints it its own way. */
   .sky-top {
     stop-color: color-mix(in oklab, var(--color-info) 16%, var(--color-base-100));
   }
@@ -394,7 +394,7 @@
     opacity: 0.35;
   }
 
-  /* The rainbow: six bands of the theme's own colours, outside in, each melting into the
+  /* The rainbow: six bands of the theme's own colors, outside in, each melting into the
      next; see-through, so the sky shows through it. */
   .bow-1,
   .bow-out {
@@ -446,7 +446,7 @@
     stop-opacity: 0.35;
   }
 
-  /* The clouds: the card colour on top, a tint of the primary colour below. */
+  /* The clouds: the card color on top, a tint of the primary color below. */
   .cloud-top,
   .bank-front-top {
     stop-color: var(--color-base-200);
@@ -476,7 +476,7 @@
     stop-color: color-mix(in oklab, var(--color-primary) 8%, var(--color-base-300));
   }
 
-  /* The sparkles: four-pointed stars in the theme's bright colours, each in a soft shine. */
+  /* The sparkles: four-pointed stars in the theme's bright colors, each in a soft shine. */
   .shine-a {
     stop-color: var(--color-primary);
     stop-opacity: 0.4;

@@ -170,7 +170,7 @@
     }
   }
 
-  // The buttons of the bar take the colour of the bar; their hover is a tint of it. A
+  // The buttons of the bar take the color of the bar; their hover is a tint of it. A
   // button that opens a menu keeps the tint while the menu is open; the button that
   // collapses the menu at the left does not, as that menu is open most of the time.
   const barToggle =

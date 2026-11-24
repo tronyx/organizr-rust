@@ -56,7 +56,7 @@
   const scheduled = $derived(lists.data?.scheduledRecordings ?? []);
   const completed = $derived(lists.data?.completedRecordings ?? []);
 
-  /** The colour of the state of a recording. */
+  /** The color of the state of a recording. */
   function badgeOf(recording: Recording): string {
     const status = (recording.status ?? '').toLowerCase();
     if (status === 'recording') {

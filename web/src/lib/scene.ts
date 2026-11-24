@@ -4,7 +4,7 @@ import type { Content } from './menu';
 
 /**
  * The pages whose every text sits on a card: only these turn clear over a scene, so the
- * scene shows between their cards. Every other page keeps its opaque page colour.
+ * scene shows between their cards. Every other page keeps its opaque page color.
  */
 export const SCENE_PAGES: readonly Content['kind'][] = ['homepage', 'settings', 'account'];
 

@@ -56,7 +56,7 @@ describe('Netdata', () => {
     expect(disk.className).toContain('hidden');
     expect(disk.className).toContain('md:hidden');
     expect(disk.className).toContain('lg:inline-block');
-    // A colour that is none is the colour of the theme, and the part is 100 at most.
+    // A color that is none is the color of the theme, and the part is 100 at most.
     const arc = at(disk.querySelectorAll('path'), 1);
     expect(arc.getAttribute('stroke')).toBe('var(--color-info)');
     expect(arc.getAttribute('stroke-dasharray')).toBe(`${Math.PI * 40} ${Math.PI * 40}`);

@@ -6,7 +6,7 @@ import type { MenuTab } from './types';
 
 const tab = { id: 1, name: 'A tab' } as MenuTab;
 
-/** Pages that keep their opaque page colour (or show a frame or the login wallpaper). */
+/** Pages that keep their opaque page color (or show a frame or the login wallpaper). */
 const OPAQUE: Content[] = [
   { kind: 'chat' },
   { kind: 'speedTest' },
@@ -28,7 +28,7 @@ const OPAQUE: Content[] = [
 describe('sceneOnPage', () => {
   it('only_pages_whose_text_is_all_on_cards_show_the_scene', () => {
     // Every text of these pages sits on a card (the e2e scene check visits each). Any other
-    // page keeps its opaque page colour over the scene.
+    // page keeps its opaque page color over the scene.
     expect([...SCENE_PAGES].sort()).toEqual(['account', 'homepage', 'settings']);
     expect(sceneOnPage({ kind: 'homepage', tab }).clear).toBe(true);
     expect(sceneOnPage({ kind: 'settings', section: 'tabs' }).clear).toBe(true);

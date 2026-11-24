@@ -14,7 +14,7 @@ interface Rule {
 
 const SCOPE = "[data-layout='modern']";
 
-/** The daisyUI theme of every theme and colour set that the modern layout offers. */
+/** The daisyUI theme of every theme and color set that the modern layout offers. */
 const OFFERED = MODERN_THEMES.flatMap((theme) =>
   theme.colorSets.map((set) => modernThemeId(theme.id, set.id)),
 );
@@ -53,7 +53,7 @@ function modernRules(): Rule[] {
   );
 }
 
-/** The CSS named colours (not `transparent`, `currentColor` or `inherit`). */
+/** The CSS named colors (not `transparent`, `currentColor` or `inherit`). */
 const NAMED_COLORS = (
   'aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue ' +
   'blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk ' +
@@ -74,12 +74,12 @@ const NAMED_COLORS = (
   'steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen'
 ).split(' ');
 
-/** A literal colour: a hex value, a colour function (not `color-mix`) or a named colour. */
+/** A literal color: a hex value, a color function (not `color-mix`) or a named color. */
 const LITERAL_COLOR = new RegExp(
   String.raw`#[0-9a-fA-F]{3,8}\b|(?<![\w-])(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color|light-dark)\(|(?<![\w-])(?:${NAMED_COLORS.join('|')})(?![\w-])`,
 );
 
-/** The values of the declarations of a rule: a name such as `border-color` is not a colour. */
+/** The values of the declarations of a rule: a name such as `border-color` is not a color. */
 function valuesOf(body: string): string {
   return body
     .split(';')
@@ -474,7 +474,7 @@ describe('the modern dialog rules', () => {
 });
 
 describe('the borders of the form controls', () => {
-  /** The colours of a theme of the style sheet, by name. */
+  /** The colors of a theme of the style sheet, by name. */
   function theme(name: string): Record<string, string> {
     const start = css.indexOf(`name: '${name}'`);
     const block = css.slice(start, css.indexOf('}', start));
@@ -496,7 +496,7 @@ describe('the borders of the form controls', () => {
   const luminance = ([r, g, b]: Triple) =>
     0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
 
-  /** `color-mix(in oklab, one percent, two)` of two hex colours, as sRGB (0 to 255). */
+  /** `color-mix(in oklab, one percent, two)` of two hex colors, as sRGB (0 to 255). */
   function mixOklab(one: string, two: string, percent: number): Triple {
     const toLab = ([r, g, b]: Triple): Triple => {
       const [lr, lg, lb] = [linear(r), linear(g), linear(b)];
@@ -528,7 +528,7 @@ describe('the borders of the form controls', () => {
     ];
   }
 
-  /** The percent of the text colour in the border of a rule. */
+  /** The percent of the text color in the border of a rule. */
   function borderPercent(selector: string): number {
     const rule = rules().find((one) => one.selector === `${SCOPE} ${selector}`);
     const found =
@@ -615,7 +615,7 @@ describe('the borders of the form controls', () => {
     const rule = choiceRule();
     // `--input-color` is the checked fill of a checkbox and the dot of a radio.
     expect(rule?.body ?? '').not.toContain('--input-color');
-    // A checked radio keeps its border in its own colour.
+    // A checked radio keeps its border in its own color.
     expect(rule?.selector ?? '').toMatch(/\.radio:not\(:checked/);
     // The rule sits in the utilities layer, where it beats the sublayers of daisyUI.
     const block = css.slice(css.lastIndexOf('@layer utilities'));
@@ -793,8 +793,8 @@ describe('the Silo theme of the modern layout', () => {
   });
 
   it('silo_form_buttons_darken_on_hover', () => {
-    // The hover of every theme mixes in the text colour, which on Silo is as off-white as
-    // the button: Silo mixes in the page colour instead.
+    // The hover of every theme mixes in the text color, which on Silo is as off-white as
+    // the button: Silo mixes in the page color instead.
     const hover = siloRules().find((rule) =>
       rule.selector.includes(`${SILO} .org-form-button:not(:disabled):hover`),
     );
@@ -906,7 +906,7 @@ describe('the scenes of the modern layout', () => {
     expect(body).toMatch(/z-index:\s*0/);
     expect(body).toMatch(/pointer-events:\s*none/);
     expect(body).toMatch(/overflow:\s*hidden/);
-    // The scene paints the page colour under its art.
+    // The scene paints the page color under its art.
     expect(body).toMatch(/background-color:\s*var\(--color-base-100\)/);
   });
 
@@ -938,7 +938,7 @@ describe('the scenes of the modern layout', () => {
 
   it('a_hidden_scene_leaves_the_page_color_of_the_theme', () => {
     // Custom CSS may hide the scene (`.m-scene { display: none; }`): the root behind the
-    // clear page then paints the page colour of the theme.
+    // clear page then paints the page color of the theme.
     const root = rule(`${SCOPE}:has(.m-scene)`);
     expect(root?.body ?? '').toMatch(/background-color:\s*var\(--color-base-100\)/);
   });
@@ -1367,7 +1367,7 @@ describe('the Prism theme of the modern layout', () => {
     return rules().find((rule) => /font-family:\s*'Fredoka Variable'/.test(rule.body));
   }
 
-  /** The daisyUI block of a colour set of Prism. */
+  /** The daisyUI block of a color set of Prism. */
   function block(set: string): string {
     const start = css.indexOf(`name: 'm-prism-${set}';`);
     expect(start, set).toBeGreaterThan(-1);

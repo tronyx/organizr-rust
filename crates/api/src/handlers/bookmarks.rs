@@ -106,7 +106,7 @@ fn check_manager(state: &AppState, caller: &Caller) -> Result<(), Refusal> {
     Ok(())
 }
 
-/// A colour of the tile of a bookmark: lighter or darker by a part of what is left to
+/// A color of the tile of a bookmark: lighter or darker by a part of what is left to
 /// white or to black. `part` runs from -1 to 1.
 fn adjusted(color: &str, part: f64) -> String {
     let digits = color.trim_start_matches('#');
@@ -174,7 +174,7 @@ pub async fn page(
                         "image": bookmark.image,
                         "background_color": bookmark.background_color,
                         "text_color": bookmark.text_color,
-                        // The tile runs from a darker to a lighter shade of its colour,
+                        // The tile runs from a darker to a lighter shade of its color,
                         // with a lighter border.
                         "border_color": adjusted(&bookmark.background_color, 0.3),
                         "dark_color": adjusted(&bookmark.background_color, -0.3),
@@ -275,7 +275,7 @@ async fn name_of(
     name.map_err(|_| Refusal::over_limit(MENU_NAME_LIMIT))
 }
 
-/// A colour from a field of the request, when the request has the field.
+/// A color from a field of the request, when the request has the field.
 fn color_of(data: &ApiData, field: &str, what: &str) -> Result<Option<String>, Refusal> {
     let Some(value) = data.field(field) else {
         return Ok(None);
@@ -712,7 +712,7 @@ mod tests {
     use super::adjusted;
 
     #[test]
-    fn colour_gets_lighter_or_darker_by_a_part_of_what_is_left() {
+    fn color_gets_lighter_or_darker_by_a_part_of_what_is_left() {
         // 0x80 is 128: 30% of the 127 to white is 39 (rounded up), and 30% of the 128
         // to black is 38 (rounded up towards zero).
         assert_eq!(adjusted("#808080", 0.3), "#a7a7a7");
@@ -720,7 +720,7 @@ mod tests {
         assert_eq!(adjusted("#fff", 0.3), "#ffffff");
         assert_eq!(adjusted("#000", -0.3), "#000000");
         assert_eq!(adjusted("#f00", 0.1), "#ff1a1a");
-        // A text that is no colour is black.
+        // A text that is no color is black.
         assert_eq!(adjusted("xyz", 0.0), "#000000");
     }
 }

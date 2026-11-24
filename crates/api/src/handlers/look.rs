@@ -1,4 +1,4 @@
-//! `PUT /user/look`: the layout, theme and colour set that the caller chose (D-125).
+//! `PUT /user/look`: the layout, theme and color set that the caller chose (D-125).
 //!
 //! Not a route of the PHP application, which has one theme for the install.
 
@@ -24,13 +24,13 @@ use crate::state::AppState;
 enum Request {
     /// Forget everything that the caller chose.
     Clear,
-    /// Store the layout, and its theme and colour set. `None` means the default.
+    /// Store the layout, and its theme and color set. `None` means the default.
     Choose {
         layout: &'static str,
         theme: Option<String>,
         color_set: Option<String>,
     },
-    /// Store the layout only: the body names no theme and no colour set, so what the
+    /// Store the layout only: the body names no theme and no color set, so what the
     /// caller last chose for that layout stays.
     Switch { layout: &'static str },
 }
@@ -134,8 +134,8 @@ fn changed(
 ///
 /// - A `layout` of `null` clears everything the caller chose.
 /// - A body with neither `theme` nor `colorSet` only switches the layout and keeps the
-///   theme and colour set that the caller stored for that layout.
-/// - Otherwise the layout's theme and colour set are replaced. An explicit `null` means
+///   theme and color set that the caller stored for that layout.
+/// - Otherwise the layout's theme and color set are replaced. An explicit `null` means
 ///   the default of that layout, and one of the two being absent counts as `null`.
 ///
 /// Only a logged-in user may ask: a script with the API key has no look of its own.

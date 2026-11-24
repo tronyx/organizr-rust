@@ -5,7 +5,7 @@
   // edge with the frame of a great pointed window at the sides.
   //
   // The rules of every scene (checked by `scenes.test.ts`):
-  // - every colour comes from a theme variable, set by a class of the style below; the
+  // - every color comes from a theme variable, set by a class of the style below; the
   //   markup paints only with `url(#…)` gradients of the scene;
   // - only `transform` and `opacity` move, with CSS keyframes, on at most 40 elements, each
   //   with the class `m-anim` and one `m-anim-<name>` class, never inside `{#each}`; an
@@ -29,7 +29,7 @@
 
   const round = (value: number) => Math.round(value * 10) / 10;
 
-  /** The moon: its centre and radius in the 1600 × 900 picture. */
+  /** The moon: its center and radius in the 1600 × 900 picture. */
   const MOON = { x: 960, y: 200, r: 62 };
 
   /** The lit part of the moon: its disc without a disc a little up and to the right. */
@@ -322,8 +322,8 @@
     height: 100%;
   }
 
-  /* The sky: the darkest colour of the theme at the top, the page colour in the middle, and a glow of the primary
-     colour of the set above the roofs. */
+  /* The sky: the darkest color of the theme at the top, the page color in the middle, and a glow of the primary
+     color of the set above the roofs. */
   .sky-top {
     stop-color: var(--color-neutral);
   }
@@ -378,7 +378,7 @@
     opacity: 0.07;
   }
 
-  /* Far, middle and near: each step darker and closer to the darkest colour of the theme. */
+  /* Far, middle and near: each step darker and closer to the darkest color of the theme. */
   .town {
     fill: color-mix(in oklab, var(--color-primary) 10%, var(--color-base-100));
   }

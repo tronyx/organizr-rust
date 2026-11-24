@@ -12,7 +12,7 @@
   /** A homepage item, as `GET settings/homepage` lists it. */
   interface Item {
     name: string;
-    /** Whether the licence of the install has the item. */
+    /** Whether the license of the install has the item. */
     enabled: boolean;
     image: string;
     category: string;

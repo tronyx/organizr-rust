@@ -47,7 +47,7 @@ export function tracePath(traceId: string): string {
   return `log/all/${encodeURIComponent(traceId)}`;
 }
 
-/** The colour of the badge of a level. */
+/** The color of the badge of a level. */
 export function levelClass(level: string): string {
   switch (level.toUpperCase()) {
     case 'DEBUG':

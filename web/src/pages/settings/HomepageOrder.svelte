@@ -1,6 +1,6 @@
 <script lang="ts">
   // Tab Editor, Homepage Order: the tiles of PHP Organizr, one for each setting of the
-  // order of the homepage, in that order. A tile has the colour and the picture of its
+  // order of the homepage, in that order. A tile has the color and the picture of its
   // item, and is faded while the item is off. As in PHP, the tiles are dragged into
   // their order, and the button Save in the heading saves it. A tile can also be moved
   // with its buttons, from the keyboard; on a touch screen it is dragged by its handle,

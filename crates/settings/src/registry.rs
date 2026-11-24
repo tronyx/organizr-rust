@@ -137,13 +137,13 @@ settings! {
     description: Text = "description", "Organizr - Accept no others".to_owned();
     /// The theme of the user interface.
     theme: Text = "theme", "Organizr".to_owned();
-    /// The colour style of the user interface.
+    /// The color style of the user interface.
     style: Text = "style", "dark".to_owned();
     /// The layout that a person sees until they choose one: `og` or `modern` (D-125).
     layout: Text = "layout", "og".to_owned();
     /// The theme of the modern layout until a person chooses one (D-125).
     modern_theme: Text = "modernTheme", "organizr".to_owned();
-    /// The colour set of the modern layout until a person chooses one (D-125).
+    /// The color set of the modern layout until a person chooses one (D-125).
     modern_color_set: Text = "modernColorSet", "dark".to_owned();
     /// Where tabs of the default category stand in the menu.
     unsorted_tabs: Choice<UnsortedTabs> = "unsortedTabs", UnsortedTabs::Top;
@@ -160,7 +160,7 @@ settings! {
     use_logo: Flag = "useLogo", false;
     /// Whether the login page shows the logo and not the title.
     use_logo_login: Flag = "useLogoLogin", false;
-    /// The colours of the page. An empty value means the colour of the theme.
+    /// The colors of the page. An empty value means the color of the theme.
     header_color: Text = "headerColor", String::new();
     header_text_color: Text = "headerTextColor", String::new();
     sidebar_color: Text = "sidebarColor", String::new();
@@ -204,7 +204,7 @@ settings! {
     /// The API key of the install: 20 characters that give a script the access of an
     /// Admin. It is empty until the install is set up.
     api_key: Secret = "organizrAPI", String::new();
-    /// The licence the install is used under: `personal` or `business`. It is empty until
+    /// The license the install is used under: `personal` or `business`. It is empty until
     /// the install is set up.
     license: Text = "license", String::new();
     /// The hash of the password that a new user must know to register an account. Empty

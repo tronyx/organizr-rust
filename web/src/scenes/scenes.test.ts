@@ -1,5 +1,5 @@
 // Static checks of the animated scenes of the modern layout: what may move and how, how
-// many things move, that they stop for reduced motion and a hidden tab, that their colours
+// many things move, that they stop for reduced motion and a hidden tab, that their colors
 // come from the theme, and that no scene reaches the main bundle.
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -212,7 +212,7 @@ describe('the scenes', () => {
     const source = read(name);
     const withoutReferences = source.replace(/url\(#[\w-]+\)/g, '');
     expect(withoutReferences).not.toMatch(LITERAL_COLOR);
-    // Paint in the markup is a reference to a gradient of the scene or nothing; the colours
+    // Paint in the markup is a reference to a gradient of the scene or nothing; the colors
     // themselves are set by the classes of the style, from theme variables.
     for (const match of markupOf(source).matchAll(/\b(fill|stroke|stop-color|color)="([^"]*)"/g)) {
       expect(match[2], match[0]).toMatch(/^(url\(#[\w-]+\)|none)$/);

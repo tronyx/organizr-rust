@@ -1,13 +1,13 @@
 // The scene themes of the modern layout in the browser, in three tests.
 //
-// - On the first colour set of every scene theme: no text sits on the scene on any page of
+// - On the first color set of every scene theme: no text sits on the scene on any page of
 //   the shell; the scene runs at most 40 animations on the homepage, and stands still
 //   while the page hides it (a frame tab, an opaque page such as the chat, the minimal
 //   login of a guest).
 // - A scene and its fonts load only for their theme: on OG and on a brand theme the
 //   browser asks for no scene chunk and no scene font, and on each scene theme for its own
 //   chunk and fonts and for none of another scene.
-// - Every scene theme in each of its colour sets passes the audit of the brand themes
+// - Every scene theme in each of its color sets passes the audit of the brand themes
 //   (`modern-themes.spec.ts`): the homepage with the items of `homepage-fixtures.ts`, the
 //   look popover, the Account page with its look picker, a settings section with a field
 //   in focus, a settings dialog with its accordions open, the phone drawer, and the login
@@ -49,13 +49,13 @@ import {
   WALLPAPER,
 } from './modern-audit';
 
-/** The first colour set of every scene theme. */
+/** The first color set of every scene theme. */
 const SCENES = MODERN_THEMES.filter((theme) => theme.scene !== undefined).map((theme) => ({
   theme: theme.id,
   set: theme.colorSets[0]?.id ?? '',
 }));
 
-/** Every colour set of every scene theme, light or dark by the `light` flag of the set. */
+/** Every color set of every scene theme, light or dark by the `light` flag of the set. */
 const SCENE_LOOKS: (AuditLook & { scene: string; light: boolean })[] = MODERN_THEMES.flatMap(
   (theme) =>
     theme.scene === undefined
@@ -409,8 +409,8 @@ test('scenes_and_their_fonts_load_only_for_their_theme', async ({ page, browser 
   await logIn(page);
   const before = await readLook(page);
   const origin = ORIGIN;
-  // OG, two brand themes, and the first colour set of every scene theme: the scene and its
-  // fonts are the same in every colour set of a theme.
+  // OG, two brand themes, and the first color set of every scene theme: the scene and its
+  // fonts are the same in every color set of a theme.
   const looks: { label: string; look: Record<string, string>; scene: string | null }[] = [
     { label: 'OG', look: { layout: 'og', theme: 'Organizr', colorSet: 'dark' }, scene: null },
     ...[
@@ -511,7 +511,7 @@ test('scenes_and_their_fonts_load_only_for_their_theme', async ({ page, browser 
 
 test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
   test.setTimeout(300_000);
-  // Five scene themes of three colour sets each; a later scene theme adds to them.
+  // Five scene themes of three color sets each; a later scene theme adds to them.
   expect(SCENE_LOOKS.length, 'color sets of the scene themes').toBeGreaterThanOrEqual(15);
   await logIn(page);
   const lookBefore = await readLook(page);

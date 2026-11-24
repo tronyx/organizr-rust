@@ -17,7 +17,7 @@ use organizr_domain::{NewUser, Timestamp, User};
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::http::{Answer, As, call, request, send};
 use organizr_testkit::login_servers::closed_port;
-use organizr_testkit::oidc_provider::{Behaviour, CLIENT_ID, CLIENT_SECRET, OidcProvider};
+use organizr_testkit::oidc_provider::{Behavior, CLIENT_ID, CLIENT_SECRET, OidcProvider};
 use organizr_testkit::{installed_app_with, seed};
 use serde_json::{Value, json};
 
@@ -318,12 +318,12 @@ async fn login_without_user_info_takes_the_claims_of_the_id_token() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let provider = OidcProvider::start().await;
-        provider.set(|behaviour| {
-            behaviour.user_info = false;
-            behaviour
+        provider.set(|behavior| {
+            behavior.user_info = false;
+            behavior
                 .person
                 .insert("preferred_username".to_owned(), json!("sam"));
-            behaviour
+            behavior
                 .person
                 .insert("email".to_owned(), json!("sam@example.com"));
         });
@@ -479,7 +479,7 @@ async fn callback_refuses_an_answer_without_a_code_or_with_an_error() {
 }
 
 /// A way in which the stand-in answers wrongly, how to make it, and the text of the page.
-type Case = (&'static str, fn(&mut Behaviour), &'static str);
+type Case = (&'static str, fn(&mut Behavior), &'static str);
 
 /// Each way in which the ID token is wrong, with the text of the page.
 #[tokio::test]
@@ -533,7 +533,7 @@ async fn callback_refuses_when_the_token_endpoint_refuses_the_code() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let provider = OidcProvider::start().await;
-        provider.set(|behaviour| behaviour.token_error = true);
+        provider.set(|behavior| behavior.token_error = true);
         let app = app(database, &provider, &[]);
 
         let answer = log_in(&app, &provider).await;
@@ -593,18 +593,18 @@ async fn group_mapping_takes_the_first_the_highest_or_the_lowest_privilege() {
         ] {
             let provider = OidcProvider::start().await;
             let name = format!("person{number}");
-            provider.set(|behaviour| {
+            provider.set(|behavior| {
                 // Each person is another account of the provider.
-                behaviour
+                behavior
                     .person
                     .insert("sub".to_owned(), json!(format!("subject-of-{name}")));
-                behaviour
+                behavior
                     .person
                     .insert("preferred_username".to_owned(), json!(name));
-                behaviour
+                behavior
                     .person
                     .insert("email".to_owned(), json!(format!("{name}@example.com")));
-                behaviour.person.insert(
+                behavior.person.insert(
                     "groups".to_owned(),
                     json!(["power", "/org/admins", "users"]),
                 );
@@ -624,17 +624,17 @@ async fn group_mapping_takes_the_first_the_highest_or_the_lowest_privilege() {
 
         // No group of the person has a mapping: the default group of the settings.
         let provider = OidcProvider::start().await;
-        provider.set(|behaviour| {
-            behaviour
+        provider.set(|behavior| {
+            behavior
                 .person
                 .insert("preferred_username".to_owned(), json!("nomap"));
-            behaviour
+            behavior
                 .person
                 .insert("sub".to_owned(), json!("subject-of-nomap"));
-            behaviour
+            behavior
                 .person
                 .insert("email".to_owned(), json!("nomap@example.com"));
-            behaviour
+            behavior
                 .person
                 .insert("groups".to_owned(), json!(["strangers"]));
         });
@@ -651,8 +651,8 @@ async fn zitadel_roles_are_the_keys_of_their_claim() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let provider = OidcProvider::start().await;
-        provider.set(|behaviour| {
-            behaviour.person.insert(
+        provider.set(|behavior| {
+            behavior.person.insert(
                 "urn:zitadel:iam:org:project:roles".to_owned(),
                 json!({"admins": {"1234": "org.example.com"}}),
             );
@@ -739,8 +739,8 @@ async fn address_that_the_provider_did_not_check_links_no_account() {
         seed::installed(database).await;
         store_user(database, "robin.smith", "robin@example.com", 2).await;
         let provider = OidcProvider::start().await;
-        provider.set(|behaviour| {
-            behaviour
+        provider.set(|behavior| {
+            behavior
                 .person
                 .insert("email_verified".to_owned(), json!(false));
         });
@@ -782,8 +782,8 @@ async fn group_of_an_account_follows_the_provider_only_with_the_setting() {
         seed::installed(database).await;
         store_user(database, "robin", "robin@example.com", 2).await;
         let provider = OidcProvider::start().await;
-        provider.set(|behaviour| {
-            behaviour
+        provider.set(|behavior| {
+            behavior
                 .person
                 .insert("groups".to_owned(), json!(["admins"]));
         });
@@ -903,12 +903,12 @@ async fn launch_names_the_provider_of_the_automatic_redirect_and_the_logout_addr
 
 /// Sets the person of the stand-in: the user name and a checked e-mail address.
 fn person(provider: &OidcProvider, name: &str, email: &str) {
-    provider.set(|behaviour| {
-        behaviour
+    provider.set(|behavior| {
+        behavior
             .person
             .insert("preferred_username".to_owned(), json!(name));
-        behaviour.person.insert("email".to_owned(), json!(email));
-        behaviour
+        behavior.person.insert("email".to_owned(), json!(email));
+        behavior
             .person
             .insert("email_verified".to_owned(), json!(true));
     });
@@ -1336,8 +1336,8 @@ async fn link_route_needs_a_session_of_this_site() {
 
 /// Sets the subject of the person of the stand-in.
 fn subject(provider: &OidcProvider, sub: &str) {
-    provider.set(|behaviour| {
-        behaviour.person.insert("sub".to_owned(), json!(sub));
+    provider.set(|behavior| {
+        behavior.person.insert("sub".to_owned(), json!(sub));
     });
 }
 

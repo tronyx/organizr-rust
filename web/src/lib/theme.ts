@@ -1,8 +1,8 @@
-// The look of the page: the theme, the colours of the settings "Colors & Themes", the
+// The look of the page: the theme, the colors of the settings "Colors & Themes", the
 // style sheet, the scripts and the icons of the Admin.
 //
 // The page allows no style that is written into it (`style-src 'self'`). So a theme is a
-// `data-theme` of the style sheet of the interface, a colour is a CSS variable that a
+// `data-theme` of the style sheet of the interface, a color is a CSS variable that a
 // script sets through the CSSOM after a check, and the style sheet of the Admin is a file
 // of the server.
 
@@ -52,7 +52,7 @@ const COLOR_FUNCTION = /^(?:rgba?|hsla?)\([0-9a-z.,%/\s+-]*\)$/i;
 const COLOR_NAME = /^[a-z]{3,24}$/i;
 
 /**
- * Whether a text is a colour: `#987654`, `rgb(…)`, `hsl(…)` or a name such as `teal`.
+ * Whether a text is a color: `#987654`, `rgb(…)`, `hsl(…)` or a name such as `teal`.
  * Nothing else reaches a CSS variable, so a setting cannot bring other CSS into the page.
  */
 export function isColor(text: string): boolean {
@@ -60,13 +60,13 @@ export function isColor(text: string): boolean {
   if (!HEX.test(value) && !COLOR_FUNCTION.test(value) && !COLOR_NAME.test(value)) {
     return false;
   }
-  // A browser knows which names and forms are colours. jsdom has no `CSS.supports`.
+  // A browser knows which names and forms are colors. jsdom has no `CSS.supports`.
   return typeof CSS === 'undefined' || typeof CSS.supports !== 'function'
     ? true
     : CSS.supports('color', value);
 }
 
-/** The colour settings, and the CSS variables that each one sets. */
+/** The color settings, and the CSS variables that each one sets. */
 const COLOR_VARIABLES: [keyof Appearance, string[]][] = [
   ['headerColor', ['--org-header-bg']],
   ['headerTextColor', ['--org-header-text']],
@@ -78,12 +78,12 @@ const COLOR_VARIABLES: [keyof Appearance, string[]][] = [
   ['buttonTextColor', ['--color-primary-content']],
 ];
 
-/** Every CSS variable that a colour setting can set. */
+/** Every CSS variable that a color setting can set. */
 export const COLOR_VARIABLE_NAMES = COLOR_VARIABLES.flatMap(([, names]) => names);
 
 /**
- * The CSS variables of the colour settings that hold a colour. An empty setting means
- * the colour of the theme, and a setting that holds no colour is left out.
+ * The CSS variables of the color settings that hold a color. An empty setting means
+ * the color of the theme, and a setting that holds no color is left out.
  */
 export function colorVariables(appearance: Partial<Appearance>): Record<string, string> {
   const variables: Record<string, string> = {};
@@ -99,9 +99,9 @@ export function colorVariables(appearance: Partial<Appearance>): Record<string, 
 }
 
 /**
- * The Admin's colours that a sample of the install's OG theme shows (see `ThemeSwatch`): the
- * button colour as its primary dot, and the accent colour (daisyUI's `info` on the page)
- * as its accent dot. Only settings that hold a colour count, as on the page.
+ * The Admin's colors that a sample of the install's OG theme shows (see `ThemeSwatch`): the
+ * button color as its primary dot, and the accent color (daisyUI's `info` on the page)
+ * as its accent dot. Only settings that hold a color count, as on the page.
  */
 export function swatchColors(appearance: Partial<Appearance>): Record<string, string> {
   const variables = colorVariables(appearance);
@@ -150,7 +150,7 @@ export function linkCustomCss(appearance: Partial<Appearance>): void {
   linkedCss = text;
 }
 
-/** Gives the page the theme, the colours and the style sheet of the settings. */
+/** Gives the page the theme, the colors and the style sheet of the settings. */
 export function applyAppearance(
   theme: string | undefined,
   appearance: Partial<Appearance>,

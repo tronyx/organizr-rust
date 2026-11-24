@@ -101,7 +101,7 @@ export interface Appearance {
   loginWallpaper?: string;
   /** A picture of the media server for the login page, when PHP chose one. */
   randomMediaImage?: string | false;
-  /** The colours of the settings "Colors & Themes". An empty text means the colour of the theme. */
+  /** The colors of the settings "Colors & Themes". An empty text means the color of the theme. */
   headerColor?: string;
   headerTextColor?: string;
   sidebarColor?: string;

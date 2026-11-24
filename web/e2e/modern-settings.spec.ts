@@ -1,5 +1,5 @@
 // The settings on the modern layout: every section of the side menu passes the contrast
-// check of WCAG AA, in the dark colour set and in the light one (set on the page here).
+// check of WCAG AA, in the dark color set and in the light one (set on the page here).
 // It runs after the walk of `demo.spec.ts`, on the same install, and leaves the install
 // on the OG layout.
 
@@ -11,7 +11,7 @@ import { logIn } from './login';
 
 type ColorSet = 'dark' | 'light';
 
-/** The theme and colour set of the page, as the look of the person would set them. */
+/** The theme and color set of the page, as the look of the person would set them. */
 async function useColorSet(page: Page, set: ColorSet) {
   await page.evaluate((wanted) => {
     document.documentElement.dataset.theme = `m-organizr-${wanted}`;
@@ -30,7 +30,7 @@ async function openSection(page: Page, address: string, label: string, set: Colo
 
 /** Checks the contrast and records the texts it could not check. */
 async function checkContrast(page: Page, where: string, within?: string) {
-  // A page or a dialog fades in: the colours count once that is over. A spinner turns
+  // A page or a dialog fades in: the colors count once that is over. A spinner turns
   // for ever, and the scroll lock of the dialog follows the scrolling, not the time.
   await page.waitForFunction(() =>
     document

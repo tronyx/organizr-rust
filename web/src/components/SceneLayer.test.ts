@@ -73,7 +73,7 @@ describe('SceneLayer', () => {
     expect(scene).toHaveClass('m-scene', 'm-scene-nocturne');
     expect(scene).not.toHaveClass('m-scene-paused');
     expect(scene.querySelector('.fake-scene-art')).not.toBeNull();
-    // A change of colour set keeps the loaded scene.
+    // A change of color set keeps the loaded scene.
     useLook({ theme: 'nocturne', colorSet: 'moonlit' });
     expect(container.querySelector('.m-scene-nocturne')).not.toBeNull();
     expect(map.nocturne).toHaveBeenCalledTimes(1);

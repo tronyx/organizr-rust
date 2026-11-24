@@ -18,7 +18,7 @@ use std::io;
 use serde::Serialize;
 use serde_json::ser::{CharEscape, Formatter, PrettyFormatter, Serializer};
 
-/// Serialises `value` as PHP's `json_encode` does with the flags Organizr uses.
+/// Serializes `value` as PHP's `json_encode` does with the flags Organizr uses.
 ///
 /// A float that is not finite is written as `null`. PHP refuses to encode such a value.
 pub fn to_vec<T>(value: &T) -> Result<Vec<u8>, serde_json::Error>

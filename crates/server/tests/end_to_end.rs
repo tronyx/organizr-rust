@@ -57,7 +57,7 @@ impl Server {
             .env_remove("ORGANIZR_LOG")
             .env_remove("ORGANIZR_SECRET_KEY")
             .env_remove("ORGANIZR_SECRET_KEY_FILE")
-            // Plain text in the log, without colour codes.
+            // Plain text in the log, without color codes.
             .env("NO_COLOR", "1")
             .stdout(output)
             .stderr(Stdio::null())

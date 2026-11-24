@@ -20,7 +20,7 @@ pub struct SetUp {
     pub email: String,
     /// The API key of the install.
     pub api_key: String,
-    /// The licence the install is used under: `personal` or `business`.
+    /// The license the install is used under: `personal` or `business`.
     pub license: String,
     /// The password that a new user must know to register an account.
     pub registration_password: String,

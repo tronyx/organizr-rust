@@ -13,7 +13,7 @@ import { ADDRESS } from './server';
 
 export const ORIGIN = `http://${ADDRESS}`;
 
-/** A theme and colour set of the modern layout, as an audit goes through them. */
+/** A theme and color set of the modern layout, as an audit goes through them. */
 export interface AuditLook {
   theme: string;
   set: string;
@@ -25,7 +25,7 @@ export interface AuditLook {
 /** The kinds that show on the homepage when every item is on and none is combined. */
 export const KINDS = HOMEPAGE_FIXTURES.map((fixture) => fixture.kind);
 
-/** The wallpaper of the login page: dark, so the card shows its own colours. */
+/** The wallpaper of the login page: dark, so the card shows its own colors. */
 export const WALLPAPER = 'https://wallpaper.invalid/dark.svg';
 const WALLPAPER_PICTURE =
   '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#050505"/></svg>';
@@ -49,9 +49,9 @@ export async function waitForAnimations(page: Page) {
  * or gradient fails the test, but for two:
  * - the text of a primary button of Jellyfin (`.btn-primary`, and `.org-form-button`, which
  *   the same rule paints), which sits on the gradient of the theme in the primary text
- *   colour. The unit test `the_text_of_the_jellyfin_gradient_meets_aa_on_both_ends`
- *   (`src/lib/look.test.ts`) checks that colour against both ends of the gradient;
- * - the text of a bookmark tile, whose gradient and text colours the Admin chose for the
+ *   color. The unit test `the_text_of_the_jellyfin_gradient_meets_aa_on_both_ends`
+ *   (`src/lib/look.test.ts`) checks that color against both ends of the gradient;
+ * - the text of a bookmark tile, whose gradient and text colors the Admin chose for the
  *   tile (inline in its `style`): they are the same on every theme.
  */
 export async function checkContrast(page: Page, look: AuditLook, where: string, within?: string) {
@@ -117,7 +117,7 @@ export async function expectNoSideScroll(page: Page, where: string) {
 
 /** What a control shows of itself, as contrast ratios against what is behind it. */
 export interface Edges {
-  /** The fill of the control (its background colour, when it is mostly opaque). */
+  /** The fill of the control (its background color, when it is mostly opaque). */
   fill: number | null;
   /** Its border. */
   border: number;
@@ -192,7 +192,7 @@ export async function themeColor(page: Page, variable: string): Promise<string> 
   }, variable);
 }
 
-/** The colours that a theme gives the focus, as the browser draws them. */
+/** The colors that a theme gives the focus, as the browser draws them. */
 export interface FocusColors {
   /** The outline of a daisyUI field. */
   input: string;
@@ -204,7 +204,7 @@ export interface FocusColors {
 
 /**
  * Silo draws every focus in its accent. The other themes outline a daisyUI field in the
- * colour of the text, and a settings field and a button in the primary colour.
+ * color of the text, and a settings field and a button in the primary color.
  */
 export async function focusColors(page: Page, look: AuditLook): Promise<FocusColors> {
   if (look.theme === 'silo') {
@@ -221,7 +221,7 @@ export async function focusColors(page: Page, look: AuditLook): Promise<FocusCol
 
 /**
  * A checked box keeps an edge of about 3:1 against the card; a field or button in focus
- * shows the focus colour of the theme with about 3:1; a primary button stands out from the
+ * shows the focus color of the theme with about 3:1; a primary button stands out from the
  * card with about 3:1.
  */
 export function expectEdges(
@@ -256,7 +256,7 @@ export async function keyboardFocus(page: Page, control: Locator) {
   await expect(control).toBeVisible();
   await page.keyboard.press('Shift');
   await control.focus();
-  // The border of a field fades to the focus colour.
+  // The border of a field fades to the focus color.
   await waitForAnimations(page);
 }
 

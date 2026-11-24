@@ -1,6 +1,6 @@
 // The default look of the Appearance settings, in the group "Colors & Themes": the layout,
 // and the theme of each layout. The OG layout has PHP's setting `theme`, with the options
-// of PHP's form; the modern layout has its theme and colour set. The part
+// of PHP's form; the modern layout has its theme and color set. The part
 // keeps the values of both layouts, so a change of the layout keeps what was chosen.
 import { api, failureText } from './api';
 import { MODERN_THEMES } from './look';
@@ -50,7 +50,7 @@ export class LookForm implements FormPart {
     this.canChangeLayout = canChangeLayout;
   }
 
-  /** The colour sets of the chosen modern theme. */
+  /** The color sets of the chosen modern theme. */
   get colorSets() {
     return MODERN_THEMES.find((theme) => theme.id === this.form.modernTheme)?.colorSets ?? [];
   }
@@ -69,7 +69,7 @@ export class LookForm implements FormPart {
       };
       this.themes = optionsOf(field('theme') ?? { type: 'select' });
       this.form = { ...loaded };
-      // A colour set the theme does not have shows the first set, as `chooseTheme` does. The
+      // A color set the theme does not have shows the first set, as `chooseTheme` does. The
       // server applies that set anyway, so it is no change: the form starts unchanged.
       this.chooseTheme(this.form.modernTheme);
       this.start = { ...this.form };
@@ -79,7 +79,7 @@ export class LookForm implements FormPart {
     }
   }
 
-  /** Chooses a modern theme; a colour set it does not have moves to its first set. */
+  /** Chooses a modern theme; a color set it does not have moves to its first set. */
   chooseTheme(theme: string) {
     this.form.modernTheme = theme;
     const sets = MODERN_THEMES.find((entry) => entry.id === theme)?.colorSets ?? [];

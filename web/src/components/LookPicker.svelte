@@ -1,6 +1,6 @@
 <script lang="ts">
   // The choice of the look of each person: the layout (OG Organizr or the modern one), and
-  // for it the theme and, on the modern layout, its colours. It is plain markup, so the menu of the
+  // for it the theme and, on the modern layout, its colors. It is plain markup, so the menu of the
   // user of the OG Organizr layout, the Account page and the popover of the modern top bar
   // can all show it. Each change is saved at once and the page then loads the look again.
   // The radios stay enabled while a save runs, so that the keyboard focus stays in them.
@@ -26,7 +26,7 @@
   let wanted = $state<Choice | null>(null);
 
   const look = $derived(session.look);
-  // The look that the controls show: the saved one, or the choice of a theme or colours that
+  // The look that the controls show: the saved one, or the choice of a theme or colors that
   // is being saved. A new layout shows its themes once it is saved.
   const shown = $derived(
     wanted && wanted.layout && wanted.theme && wanted.colorSet
@@ -40,7 +40,7 @@
     { id: 'light', label: 'Light' },
   ];
 
-  // Each theme shows a sample of its colours: on modern in the colour set that a choice of
+  // Each theme shows a sample of its colors: on modern in the color set that a choice of
   // it would give (see `chooseTheme`), on OG in its one daisyUI theme.
   const themes = $derived(
     modern
@@ -51,8 +51,8 @@
         }))
       : NATIVE_THEMES.map((name) => ({ id: name, label: themeLabel(name), swatch: themeId(name) })),
   );
-  // On OG, the sample of the install's own theme shows the Admin's colours of "Colors &
-  // Themes" over its own, as the page does. Other samples keep their stock colours.
+  // On OG, the sample of the install's own theme shows the Admin's colors of "Colors &
+  // Themes" over its own, as the page does. Other samples keep their stock colors.
   const installTheme = $derived(session.launch?.theme);
   const adminColors = $derived(swatchColors(session.launch?.appearance ?? {}));
   const colorsOf = (theme: string) => (!modern && theme === installTheme ? adminColors : undefined);
@@ -109,16 +109,16 @@
     }
   }
 
-  /** The layout changes; its theme and colours stay as the person last chose them there. */
+  /** The layout changes; its theme and colors stay as the person last chose them there. */
   const chooseLayout = (layout: 'og' | 'modern') => {
     if (layout !== shownLayout) {
       return send({ layout });
     }
   };
 
-  /** The colour set of a theme after a choice of it: the current one if the theme has it. */
+  /** The color set of a theme after a choice of it: the current one if the theme has it. */
   function colorSetFor(theme: string): string {
-    // A colour set that the new theme does not have gives way to the first one it has.
+    // A color set that the new theme does not have gives way to the first one it has.
     const sets = modern
       ? (MODERN_THEMES.find((entry) => entry.id === theme)?.colorSets ?? COLOR_SETS)
       : COLOR_SETS;
@@ -128,7 +128,7 @@
   }
 
   /**
-   * Whether a change of the layout waits or runs. The themes and colours shown are still
+   * Whether a change of the layout waits or runs. The themes and colors shown are still
    * those of the old layout until it lands, so a choice among them is not taken: it would
    * be sent with the old layout and undo the change.
    */

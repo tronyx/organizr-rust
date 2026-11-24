@@ -75,7 +75,7 @@ describe('isOwnAddress', () => {
     expect(isOwnAddress('http://localhost:3000/x', 'localhost:8080')).toBe(true);
     expect(isOwnAddress('http://other/', 'localhost')).toBe(false);
     expect(isOwnAddress('http://192.168.1.5/', '192.168.1.5:8080')).toBe(true);
-    // The numbers of an address are no domain: the neighbour does not share the login.
+    // The numbers of an address are no domain: the neighbor does not share the login.
     expect(isOwnAddress('http://192.168.1.6/', '192.168.1.5')).toBe(false);
     // A host of a dynamic DNS service shares nothing with the other hosts of the service.
     expect(isOwnAddress('https://other.ddns.net/', 'mine.ddns.net')).toBe(false);

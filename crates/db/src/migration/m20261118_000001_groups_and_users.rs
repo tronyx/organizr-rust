@@ -44,7 +44,7 @@ impl MigrationTrait for Migration {
                     // No `ON DELETE` action: the default refuses to delete a group that
                     // has users, and both engines report it as a foreign-key error.
                     // With `RESTRICT`, SQLite reports another error code (1811), which
-                    // is not recognised as a foreign-key error.
+                    // is not recognized as a foreign-key error.
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_users_group_id")
