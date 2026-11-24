@@ -5,6 +5,7 @@
   import { contentFor, shownTab } from './lib/menu';
   import { motion } from './lib/motion';
   import { rememberReturn } from './lib/returnTo';
+  import { sceneOnPage } from './lib/scene';
   import { router } from './lib/route.svelte';
   import { session } from './lib/session.svelte';
   import Content from './pages/Content.svelte';
@@ -20,11 +21,18 @@
     }),
   );
   const shown = $derived(shownTab(content, router.route, session.tabs));
+  // On the modern layout: whether the page lets the scene of a scene theme show, and
+  // whether something opaque covers the whole page.
+  const scene = $derived(
+    sceneOnPage(content, session.launch?.settings.misc.minimalLoginScreen === true),
+  );
 
   // The modern shell comes in its own chunk, so people of the OG layout never load it.
-  let ModernShell = $state<Component<{ children: Snippet; shown: number | undefined }> | null>(
-    null,
-  );
+  let ModernShell = $state<Component<{
+    children: Snippet;
+    shown: number | undefined;
+    covered: boolean;
+  }> | null>(null);
   // A chunk that does not load (after an update, a cached page may ask for an old one)
   // leaves the person with the original shell, which always works.
   let modernFailed = $state(false);
@@ -57,7 +65,7 @@
   <Locked />
 {:else if session.launch && modern}
   {#if ModernShell}
-    <ModernShell shown={shown?.id}>
+    <ModernShell shown={shown?.id} covered={scene.covered}>
       <!-- The frames stay loaded below every other page. -->
       <TabFrames
         tabs={session.tabs}
@@ -66,7 +74,10 @@
       {#if content.kind !== 'frame'}
         {#key router.route}
           <div
-            class="m-page bg-base-100 absolute inset-0 overflow-auto"
+            class={[
+              'm-page bg-base-100 absolute inset-0 overflow-auto',
+              scene.clear && 'm-page-clear',
+            ]}
             in:fade={{ duration: motion(150) }}
           >
             <Content {content} />

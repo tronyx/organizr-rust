@@ -2,15 +2,23 @@
   // The animated scene of a scene theme, fixed behind the page of the modern shell. It loads
   // the scene of the theme only when that theme is on, and goes away with it. The art is
   // decoration: hidden from assistive technology, and it takes no clicks (`.m-scene` in
-  // `app.css`). While the tab is hidden, `m-scene-paused` stops every animation; a person
-  // who asked the system for less motion gets the scene still (each scene's own style).
+  // `app.css`). While the tab is hidden, or while the page covers the scene (a frame tab,
+  // the login wallpaper), `m-scene-paused` stops every animation; a person who asked the
+  // system for less motion gets the scene still (each scene's own style).
   import type { Component } from 'svelte';
 
   import { MODERN_THEMES, sceneOf } from '../lib/look';
   import { session } from '../lib/session.svelte';
   import { SCENE_LOADERS, type SceneLoaders } from '../scenes';
 
-  let { loaders = SCENE_LOADERS }: { loaders?: SceneLoaders } = $props();
+  let {
+    loaders = SCENE_LOADERS,
+    covered = false,
+  }: {
+    loaders?: SceneLoaders;
+    /** Something opaque fills the page (a frame tab, the login wallpaper): stand still. */
+    covered?: boolean;
+  } = $props();
 
   const scene = $derived(sceneOf(session.look));
   // The theme, for the class `m-scene-<theme>` that custom CSS can use.
@@ -60,7 +68,10 @@
 </script>
 
 {#if Scene && theme}
-  <div class={['m-scene', `m-scene-${theme}`, hidden && 'm-scene-paused']} aria-hidden="true">
+  <div
+    class={['m-scene', `m-scene-${theme}`, (hidden || covered) && 'm-scene-paused']}
+    aria-hidden="true"
+  >
     <Scene />
   </div>
 {/if}

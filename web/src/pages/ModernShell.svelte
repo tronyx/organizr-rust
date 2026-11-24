@@ -44,10 +44,13 @@
   let {
     children,
     shown,
+    covered = false,
   }: {
     children: Snippet;
     /** The id of the tab that the main area shows. */
     shown: number | undefined;
+    /** Whether something opaque fills the page (a frame tab, the login wallpaper). */
+    covered?: boolean;
   } = $props();
 
   let error = $state<string | null>(null);
@@ -138,8 +141,9 @@
     'org-header-link h-9 w-auto rounded-md px-3 hover:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)] aria-expanded:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)]';
 </script>
 
-<!-- The scene of a scene theme, behind everything else of the shell. -->
-<SceneLayer />
+<!-- The scene of a scene theme, behind everything else of the shell. It stands still while
+     the page covers it. -->
+<SceneLayer {covered} />
 
 {#snippet iconButton(label: string, Icon: typeof MenuIcon, onclick: () => void)}
   <Tooltip.Root>

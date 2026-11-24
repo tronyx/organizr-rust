@@ -90,6 +90,29 @@ describe('SceneLayer', () => {
     expect(container.querySelector('.m-scene')).not.toHaveClass('m-scene-paused');
   });
 
+  it('a_covered_scene_is_paused_and_an_uncovered_one_runs', async () => {
+    useLook({ theme: 'nocturne', colourSet: 'amethyst' });
+    const { container, rerender } = render(SceneLayer, { loaders: loaders(), covered: true });
+    await waitFor(() => expect(container.querySelector('.m-scene')).not.toBeNull());
+    // A frame tab or the login wallpaper fills the page: the scene stays, but still.
+    expect(container.querySelector('.m-scene')).toHaveClass('m-scene-paused');
+
+    await rerender({ covered: false });
+    expect(container.querySelector('.m-scene')).not.toHaveClass('m-scene-paused');
+    // Uncovered but hidden: paused again.
+    setHidden(true);
+    expect(container.querySelector('.m-scene')).toHaveClass('m-scene-paused');
+  });
+
+  it('the_shell_tells_the_scene_layer_when_it_is_covered', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const shell = readFileSync(resolve(__dirname, '../pages/ModernShell.svelte'), 'utf8');
+    expect(shell).toContain('<SceneLayer {covered} />');
+    const app = readFileSync(resolve(__dirname, '../App.svelte'), 'utf8');
+    expect(app).toMatch(/<ModernShell[^>]*covered=\{scene\.covered\}/);
+  });
+
   it('switching_to_plex_removes_the_scene', async () => {
     useLook({ theme: 'nocturne', colourSet: 'amethyst' });
     const { container } = render(SceneLayer, { loaders: loaders() });

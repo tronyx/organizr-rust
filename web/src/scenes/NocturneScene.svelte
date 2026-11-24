@@ -8,7 +8,8 @@
   // - every colour comes from a theme variable, set by a class of the style below; the
   //   markup paints only with `url(#…)` gradients of the scene;
   // - only `transform` and `opacity` move, with CSS keyframes, on at most 40 elements, each
-  //   with the class `m-anim`, never inside `{#each}`;
+  //   with the class `m-anim` and one `m-anim-<name>` class, never inside `{#each}`; an
+  //   `animation` is set only on a rule whose selector is that one `.m-anim-<name>` class;
   // - moving layers are HTML boxes or whole `<svg>` elements, so the compositor moves them
   //   and nothing is painted again;
   // - the last rules of the style stop every animation for reduced motion and while the tab
@@ -190,36 +191,60 @@
     {/each}
   </svg>
 
-  <svg class="layer m-anim halo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+  <svg class="layer m-anim m-anim-halo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
     <circle cx={MOON.x} cy={MOON.y} r="240" fill="url(#nocturne-glow)" />
   </svg>
 
-  <svg class="layer m-anim twinkle t1" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+  <svg
+    class="layer twinkle m-anim m-anim-t1"
+    viewBox="0 0 1600 900"
+    preserveAspectRatio="xMidYMax slice"
+  >
     {#each TWINKLES[0] ?? [] as [x, y, r], index (index)}
       <circle class="bright" cx={x} cy={y} {r} />
     {/each}
   </svg>
-  <svg class="layer m-anim twinkle t2" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+  <svg
+    class="layer twinkle m-anim m-anim-t2"
+    viewBox="0 0 1600 900"
+    preserveAspectRatio="xMidYMax slice"
+  >
     {#each TWINKLES[1] ?? [] as [x, y, r], index (index)}
       <circle class="bright" cx={x} cy={y} {r} />
     {/each}
   </svg>
-  <svg class="layer m-anim twinkle t3" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+  <svg
+    class="layer twinkle m-anim m-anim-t3"
+    viewBox="0 0 1600 900"
+    preserveAspectRatio="xMidYMax slice"
+  >
     {#each TWINKLES[2] ?? [] as [x, y, r], index (index)}
       <circle class="bright" cx={x} cy={y} {r} />
     {/each}
   </svg>
-  <svg class="layer m-anim twinkle t4" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+  <svg
+    class="layer twinkle m-anim m-anim-t4"
+    viewBox="0 0 1600 900"
+    preserveAspectRatio="xMidYMax slice"
+  >
     {#each TWINKLES[3] ?? [] as [x, y, r], index (index)}
       <circle class="bright" cx={x} cy={y} {r} />
     {/each}
   </svg>
-  <svg class="layer m-anim twinkle t5" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+  <svg
+    class="layer twinkle m-anim m-anim-t5"
+    viewBox="0 0 1600 900"
+    preserveAspectRatio="xMidYMax slice"
+  >
     {#each TWINKLES[4] ?? [] as [x, y, r], index (index)}
       <circle class="bright" cx={x} cy={y} {r} />
     {/each}
   </svg>
-  <svg class="layer m-anim twinkle t6" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+  <svg
+    class="layer twinkle m-anim m-anim-t6"
+    viewBox="0 0 1600 900"
+    preserveAspectRatio="xMidYMax slice"
+  >
     {#each TWINKLES[5] ?? [] as [x, y, r], index (index)}
       <circle class="bright" cx={x} cy={y} {r} />
     {/each}
@@ -231,14 +256,14 @@
     <path class="town" d={TOWN} />
   </svg>
 
-  <div class="m-anim mist cloud">
+  <div class="mist cloud m-anim m-anim-cloud">
     <svg viewBox="0 0 1000 100" preserveAspectRatio="none">
       {#each MIST as [cx, cy, rx, ry], index (index)}
         <ellipse {cx} {cy} {rx} {ry} fill="url(#nocturne-mist)" />
       {/each}
     </svg>
   </div>
-  <div class="m-anim mist mist-far">
+  <div class="mist mist-far m-anim m-anim-mist-far">
     <svg viewBox="0 0 1000 100" preserveAspectRatio="none">
       {#each MIST as [cx, cy, rx, ry], index (index)}
         <ellipse {cx} {cy} {rx} {ry} fill="url(#nocturne-mist)" />
@@ -254,14 +279,14 @@
     <path class="tracery" d="M774 760h52M800 734v52M782 742l36 36M818 742l-36 36" />
   </svg>
 
-  <div class="m-anim bat-flight bat-a">
-    <svg class="m-anim wings wings-a" viewBox="0 0 60 26"><path class="bat" d={BAT} /></svg>
+  <div class="bat-flight m-anim m-anim-bat-a">
+    <svg class="wings m-anim m-anim-wings-a" viewBox="0 0 60 26"><path class="bat" d={BAT} /></svg>
   </div>
-  <div class="m-anim bat-flight bat-b">
-    <svg class="m-anim wings wings-b" viewBox="0 0 60 26"><path class="bat" d={BAT} /></svg>
+  <div class="bat-flight bat-b m-anim m-anim-bat-b">
+    <svg class="wings m-anim m-anim-wings-b" viewBox="0 0 60 26"><path class="bat" d={BAT} /></svg>
   </div>
 
-  <div class="m-anim mist mist-middle">
+  <div class="mist mist-middle m-anim m-anim-mist-middle">
     <svg viewBox="0 0 1000 100" preserveAspectRatio="none">
       {#each MIST as [cx, cy, rx, ry], index (index)}
         <ellipse cx={1000 - cx} {cy} {rx} {ry} fill="url(#nocturne-mist)" />
@@ -276,7 +301,7 @@
     <path class="near" d={MERLONS} />
   </svg>
 
-  <div class="m-anim mist mist-near">
+  <div class="mist mist-near m-anim m-anim-mist-near">
     <svg viewBox="0 0 1000 100" preserveAspectRatio="none">
       {#each MIST as [cx, cy, rx, ry], index (index)}
         <ellipse {cx} {cy} {rx} {ry} fill="url(#nocturne-mist)" />
@@ -406,38 +431,9 @@
     stop-opacity: 0;
   }
 
-  /* The moving parts. A glow that breathes, stars that twinkle, mist and a cloud that drift
-     to and fro over one to two minutes, and two bats that cross the sky now and then. */
-  .halo {
-    animation: nocturne-breathe 16s ease-in-out infinite;
-  }
-
+  /* Where the moving parts sit when they stand still. */
   .twinkle {
     opacity: 0.6;
-  }
-
-  .t1 {
-    animation: nocturne-twinkle 4.3s ease-in-out -1.1s infinite;
-  }
-
-  .t2 {
-    animation: nocturne-twinkle 5.9s ease-in-out -3.4s infinite;
-  }
-
-  .t3 {
-    animation: nocturne-twinkle 7.1s ease-in-out -0.6s infinite;
-  }
-
-  .t4 {
-    animation: nocturne-twinkle 8.7s ease-in-out -5.2s infinite;
-  }
-
-  .t5 {
-    animation: nocturne-twinkle 6.4s ease-in-out -2.7s infinite;
-  }
-
-  .t6 {
-    animation: nocturne-twinkle 9.8s ease-in-out -7.5s infinite;
   }
 
   .mist {
@@ -456,25 +452,21 @@
     top: 15%;
     height: 12%;
     opacity: 0.8;
-    animation: nocturne-drift 118s ease-in-out -50s infinite alternate;
   }
 
   .mist-far {
     bottom: 17%;
     height: 22%;
-    animation: nocturne-drift 96s ease-in-out -30s infinite alternate;
   }
 
   .mist-middle {
     bottom: 7%;
     height: 20%;
-    animation: nocturne-drift 74s ease-in-out -12s infinite alternate-reverse;
   }
 
   .mist-near {
     bottom: -6%;
     height: 18%;
-    animation: nocturne-drift 58s ease-in-out -20s infinite alternate;
   }
 
   .bat-flight {
@@ -487,6 +479,11 @@
     transform: translate(-120px, 20vh);
   }
 
+  .bat-b {
+    width: 38px;
+    height: 16px;
+  }
+
   .wings {
     display: block;
     width: 100%;
@@ -494,21 +491,66 @@
     transform-origin: 50% 35%;
   }
 
-  .bat-a {
+  /* The moving parts, each on its own `m-anim-…` class. A glow that breathes, stars that
+     twinkle, mist and a cloud that drift to and fro over one to two minutes, and two bats
+     that cross the sky now and then. */
+  .m-anim-halo {
+    animation: nocturne-breathe 16s ease-in-out infinite;
+  }
+
+  .m-anim-t1 {
+    animation: nocturne-twinkle 4.3s ease-in-out -1.1s infinite;
+  }
+
+  .m-anim-t2 {
+    animation: nocturne-twinkle 5.9s ease-in-out -3.4s infinite;
+  }
+
+  .m-anim-t3 {
+    animation: nocturne-twinkle 7.1s ease-in-out -0.6s infinite;
+  }
+
+  .m-anim-t4 {
+    animation: nocturne-twinkle 8.7s ease-in-out -5.2s infinite;
+  }
+
+  .m-anim-t5 {
+    animation: nocturne-twinkle 6.4s ease-in-out -2.7s infinite;
+  }
+
+  .m-anim-t6 {
+    animation: nocturne-twinkle 9.8s ease-in-out -7.5s infinite;
+  }
+
+  .m-anim-cloud {
+    animation: nocturne-drift 118s ease-in-out -50s infinite alternate;
+  }
+
+  .m-anim-mist-far {
+    animation: nocturne-drift 96s ease-in-out -30s infinite alternate;
+  }
+
+  .m-anim-mist-middle {
+    animation: nocturne-drift 74s ease-in-out -12s infinite alternate-reverse;
+  }
+
+  .m-anim-mist-near {
+    animation: nocturne-drift 58s ease-in-out -20s infinite alternate;
+  }
+
+  .m-anim-bat-a {
     animation: nocturne-fly-high 47s linear 4s infinite;
   }
 
-  .bat-b {
-    width: 38px;
-    height: 16px;
+  .m-anim-bat-b {
     animation: nocturne-fly-low 71s linear 27s infinite;
   }
 
-  .wings-a {
+  .m-anim-wings-a {
     animation: nocturne-flap 0.42s ease-in-out infinite alternate;
   }
 
-  .wings-b {
+  .m-anim-wings-b {
     animation: nocturne-flap 0.36s ease-in-out -0.2s infinite alternate;
   }
 

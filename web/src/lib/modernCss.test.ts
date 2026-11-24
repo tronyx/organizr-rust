@@ -863,39 +863,46 @@ describe('the scenes of the modern layout', () => {
     expect(body).toMatch(/background-color:\s*var\(--color-base-100\)/);
   });
 
-  it('a_hidden_tab_pauses_the_scene', () => {
-    const paused = rules().find((one) => one.selector.includes('.m-scene-paused'));
-    expect(paused?.body ?? '').toMatch(/animation-play-state:\s*paused/);
-    for (const part of selectorParts(paused?.selector ?? '-')) {
-      expect(part.startsWith(SCOPE), part).toBe(true);
-    }
+  it('the_scene_motion_rules_live_in_each_scene_not_here', () => {
+    // A layered rule cannot stop an animation that the scene's own (unlayered) style sets:
+    // pausing and reduced motion are the last rules of every scene (`scenes.test.ts`).
+    const motion = rules().filter(
+      (one) => one.selector.includes('m-scene') && /animation/.test(one.body),
+    );
+    expect(motion.map((one) => one.selector)).toEqual([]);
   });
 
-  it('reduced_motion_stops_the_scene', () => {
-    const start = lastBlock().indexOf('@media (prefers-reduced-motion: reduce)');
-    expect(start).toBeGreaterThan(-1);
-    const media = lastBlock().slice(start, lastBlock().indexOf('}', start));
-    expect(media).toContain(`${SCOPE} .m-scene *`);
-    expect(media).toMatch(/animation:\s*none/);
-  });
-
-  it('the_page_shows_the_scene_between_its_cards', () => {
-    // The page of the modern shell is opaque, except while a scene is behind it.
-    const page = rule(`${SCOPE}:has(.m-scene) .m-page`);
+  it('only_pages_with_all_their_text_on_cards_show_the_scene', () => {
+    // The page of the modern shell is opaque, except on the pages of `SCENE_PAGES` while a
+    // scene is behind it.
+    const page = rule(`${SCOPE}:has(.m-scene) .m-page.m-page-clear`);
     expect(page?.body ?? '').toMatch(/background-color:\s*transparent/);
     // It must beat Tailwind's `bg-base-100`, a utility.
-    expect(lastBlock()).toContain(`${SCOPE}:has(.m-scene) .m-page {`);
+    expect(lastBlock()).toContain(`${SCOPE}:has(.m-scene) .m-page.m-page-clear {`);
+    const clear = rules().filter(
+      (one) => one.selector.includes('.m-page') && /transparent/.test(one.body),
+    );
+    expect(clear.map((one) => one.selector)).toEqual([page?.selector]);
     const app = readFileSync(resolve(__dirname, '../App.svelte'), 'utf8');
-    expect(app).toMatch(/class="m-page bg-base-100 absolute inset-0 overflow-auto"/);
+    expect(app.replace(/\s+/g, ' ')).toContain(
+      "class={[ 'm-page bg-base-100 absolute inset-0 overflow-auto', scene.clear && 'm-page-clear', ]}",
+    );
+  });
+
+  it('a_hidden_scene_leaves_the_page_colour_of_the_theme', () => {
+    // Custom CSS may hide the scene (`.m-scene { display: none; }`): the root behind the
+    // clear page then paints the page colour of the theme.
+    const root = rule(`${SCOPE}:has(.m-scene)`);
+    expect(root?.body ?? '').toMatch(/background-color:\s*var\(--color-base-100\)/);
   });
 
   it('the_page_title_and_the_settings_menu_stay_opaque_over_a_scene', () => {
     // No text sits on the scene: the title of a page and the menu of the settings, which
     // have no card of their own on the other themes, get one.
     for (const part of ['.org-page-title', '.m-settings-side']) {
-      const own = rule(`${SCOPE}:has(.m-scene) ${part}`);
+      const own = rule(`${SCOPE}:has(.m-scene) .m-page-clear ${part}`);
       expect(own?.body ?? '', part).toMatch(/background-color:\s*var\(--color-base-200\)/);
-      expect(lastBlock(), part).toContain(`${SCOPE}:has(.m-scene) ${part} {`);
+      expect(lastBlock(), part).toContain(`${SCOPE}:has(.m-scene) .m-page-clear ${part} {`);
     }
   });
 

@@ -105,47 +105,77 @@ describe('the scenes', () => {
     }
   });
 
-  it.each(SCENE_FILES)('%s_animates_at_most_40_elements', (name) => {
+  it.each(SCENE_FILES)('%s_marks_every_animated_element_and_counts_at_most_40', (name) => {
     const markup = markupOf(read(name));
-    const animated = [...markup.matchAll(/class="[^"]*\bm-anim\b[^"]*"/g)];
+    // Classes are plain `class="…"` attributes, so the count below sees every one of them.
+    expect(markup, 'class={…}').not.toMatch(/\sclass=\{/);
+    expect(markup, 'class:…').not.toMatch(/\sclass:/);
+    expect(markup, 'spread attributes').not.toMatch(/\{\.\.\./);
+    expect(markup.replace(/\sclass="[^"]*"/g, ''), 'm-anim outside a class').not.toContain(
+      'm-anim',
+    );
+    const classLists = [...markup.matchAll(/\sclass="([^"]*)"/g)].map((match) =>
+      (match[1] ?? '').split(/\s+/).filter(Boolean),
+    );
+    // An animated element: any class that starts with `m-anim`.
+    const animated = classLists.filter((list) => list.some((one) => one.startsWith('m-anim')));
     expect(animated.length, name).toBeGreaterThan(0);
     expect(animated.length, name).toBeLessThanOrEqual(MOST_ANIMATED);
+    for (const list of animated) {
+      // Each has `m-anim` (which the pause and reduced-motion rules stop) and one name.
+      expect(list, list.join(' ')).toContain('m-anim');
+      expect(
+        list.filter((one) => one.startsWith('m-anim-')),
+        list.join(' '),
+      ).toHaveLength(1);
+    }
     // A loop would multiply the count: no animated element inside `{#each}`.
     for (const block of markup.matchAll(/\{#each[\s\S]*?\{\/each\}/g)) {
       expect(block[0], name).not.toContain('m-anim');
     }
-    // Every rule that starts an animation is on a class of the markup marked `m-anim`, and
-    // simple enough that the pause and reduced-motion rules beat it.
-    const marked = new Set(
-      animated.flatMap((match) => match[0].slice(7, -1).split(/\s+/)).filter(Boolean),
-    );
-    for (const rule of rulesOf(styleOf(read(name)))) {
-      if (!/(^|;)\s*animation(-name)?\s*:/.test(rule.body) || /animation:\s*none/.test(rule.body)) {
-        continue;
-      }
-      for (const part of rule.selector.split(',')) {
-        const classes = [...part.matchAll(/\.([\w-]+)/g)].map((match) => match[1] ?? '');
-        expect(classes.length, part).toBeGreaterThan(0);
-        expect(classes.length, `${part} is too specific`).toBeLessThanOrEqual(2);
-        expect(
-          classes.some((one) => marked.has(one)),
-          part,
-        ).toBe(true);
-      }
-    }
   });
 
-  it.each(SCENE_FILES)('%s_stops_for_reduced_motion_and_a_hidden_tab', (name) => {
-    const css = styleOf(read(name)).replace(/\s+/g, ' ');
-    expect(css).toMatch(
-      /@media \(prefers-reduced-motion: reduce\) \{ :global\(\.m-scene\) \.m-anim \{ animation: none; \} \}/,
+  it.each(SCENE_FILES)('%s_animates_only_through_its_m_anim_classes', (name) => {
+    const markup = markupOf(read(name));
+    const names = new Set(
+      [...markup.matchAll(/\sclass="([^"]*)"/g)].flatMap((match) =>
+        (match[1] ?? '').split(/\s+/).filter((one) => one.startsWith('m-anim-')),
+      ),
     );
-    expect(css).toMatch(
-      /:global\(\.m-scene\.m-scene-paused\) \.m-anim \{ animation-play-state: paused; \}/,
+    const css = styleOf(read(name));
+    const rules = rulesOf(css);
+    // The two rules that stop the scene come last, and are more specific than every rule
+    // that starts an animation (a single class).
+    const stops = rules.slice(-2).map((rule) => ({
+      selector: rule.selector.replace(/\s+/g, ' '),
+      body: rule.body.trim().replace(/\s+/g, ' '),
+    }));
+    expect(stops).toEqual([
+      { selector: ':global(.m-scene) .m-anim', body: 'animation: none;' },
+      {
+        selector: ':global(.m-scene.m-scene-paused) .m-anim',
+        body: 'animation-play-state: paused;',
+      },
+    ]);
+    expect(css.replace(/\s+/g, ' ')).toMatch(
+      /@media \(prefers-reduced-motion: reduce\) \{ :global\(\.m-scene\) \.m-anim \{ animation: none; \} \} :global\(\.m-scene\.m-scene-paused\) \.m-anim \{ animation-play-state: paused; \} ?$/,
     );
-    // The scene declares no play state of its own, and no `!important`.
-    expect(css.match(/animation-play-state/g)).toHaveLength(1);
     expect(css).not.toContain('!important');
+    // Every other declaration of `animation` or `animation-…` sits on a rule whose
+    // selector is exactly one `.m-anim-<name>` class of an animated element: no type
+    // selector, combinator, shared class or second class can reach another element.
+    let animatedRules = 0;
+    for (const rule of rules.slice(0, -2)) {
+      if (!/(^|[;{\s])animation(-[\w-]+)?\s*:/.test(rule.body)) {
+        continue;
+      }
+      animatedRules += 1;
+      for (const part of rule.selector.split(',').map((one) => one.trim())) {
+        expect(part, 'an animated rule').toMatch(/^\.m-anim-[\w-]+$/);
+        expect(names.has(part.slice(1)), `${part} names no animated element`).toBe(true);
+      }
+    }
+    expect(animatedRules).toBeGreaterThan(0);
   });
 
   it.each(SCENE_FILES)('%s_takes_every_colour_from_the_theme', (name) => {
