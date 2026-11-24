@@ -117,6 +117,22 @@ The kinds of items: `adguard`, `bookmarks`, `calendar`, `customhtml`, `deluge`, 
 | `.org-panel-heading` | The title bar of a panel |
 | `.org-panel-body` | The content of a panel |
 
+The other classes of the settings, such as `.org-table` and `.org-form-control`, are the same on both layouts. So a rule for them applies on both layouts, unless it starts with `[data-layout='og']` or `[data-layout='modern']`.
+
+The modern layout also has these classes for the settings. They exist on the modern layout only:
+
+| Class | What it is |
+|---|---|
+| `.m-settings` | The settings page, beside the side menu |
+| `.m-settings-side` | The column that holds the side menu |
+| `.m-settings-nav` | The side menu |
+| `.m-settings-group` | One group of pages in the side menu, with its title |
+| `.m-settings-button` | The button **Settings menu**, below 1024 pixels. It opens the drawer |
+| `.m-settings-button-text`, `.m-settings-button-label`, `.m-settings-button-place` | The text in that button: the box, the label and the name of the open page |
+| `.m-settings-sheet` | The drawer that holds the menu |
+| `.m-settings-sheet-head` | The title of the drawer |
+| `.m-page-heading` | The heading of the open page, with the name of its group below it |
+
 ### Login page and lock screen
 
 | Class | What it is |

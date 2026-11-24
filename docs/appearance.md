@@ -9,7 +9,7 @@ A layout is the frame around every page: the top bar and the menu. Organizr has 
 - **OG Organizr** is the layout of PHP Organizr. It has the 13 themes described under [Themes](#themes).
 - **Modern** has a top bar and a menu on the left that groups the tabs by category. Below 1024 pixels of width, for example on a phone, the menu is a drawer that a button in the top bar opens. A dot at each tab shows whether the application of the tab answers. The links that PHP adds at the end of the menu come last. Modern has one theme for now, `Organizr`, in dark colours. More themes, and light colours, come with the next versions of the modern layout.
 
-The pages inside the modern layout look as they look in the OG Organizr layout. Only the frame is new.
+The settings on the modern layout have a side menu at the left. It lists the same groups and pages as the tabs of OG Organizr. Below 1024 pixels of width, a **Settings menu** button opens the same list as a drawer. The top bar shows the name of the open page, for example "Settings · Tabs". The other pages inside the modern layout look as they look in the OG Organizr layout.
 
 An install that you update stays on the OG Organizr layout. Nobody sees a change until someone chooses one.
 
