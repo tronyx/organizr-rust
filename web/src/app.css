@@ -5331,11 +5331,16 @@
     background-color: var(--color-base-200);
   }
 
-  /* Nocturne: Cinzel, a roman inscription face, for the headings; the body text stays
+  /* The display fonts of the scene themes are hard to read small, so each one dresses only
+     the heading of a page: `h1:not(.card-title)`, which is the heading of `.m-page-heading`
+     and `.org-page-title` (22px) and of the chat (1.25rem). The headings of cards, panels
+     and dialogs, the menu titles and every label keep the body font. Each scene theme uses
+     this same selector after its own `[data-theme^='m-<theme>-']`.
+
+     Nocturne: Cinzel, a roman inscription face, for the page heading; the rest stays
      Rubik. The face itself comes with the scene (`NocturneScene.svelte`), so only this
      theme downloads it. The links and help texts are old gold. */
-  [data-layout='modern'][data-theme^='m-nocturne-']
-    :is(h1, h2, h3, h4, .card-title, .org-item-title, .org-panel-heading, .org-sidebar-head) {
+  [data-layout='modern'][data-theme^='m-nocturne-'] h1:not(.card-title) {
     font-family: 'Cinzel Variable', ui-serif, Georgia, serif;
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -5344,11 +5349,11 @@
   [data-layout='modern'][data-theme^='m-nocturne-'] :is(.link, .org-form-help) {
     color: var(--color-accent);
   }
-  /* Riot: Sedgwick Ave Display, a graffiti hand, for the headings; the body text stays
-     Rubik. The face itself comes with the scene (`RiotScene.svelte`), so only this theme
-     downloads it. The links and help texts take the neon accent. */
-  [data-layout='modern'][data-theme^='m-riot-']
-    :is(h1, h2, h3, h4, .card-title, .org-panel-heading, .org-sidebar-head) {
+
+  /* Riot: Sedgwick Ave Display, a graffiti hand, for the page heading (see above); the rest
+     stays Rubik. The face itself comes with the scene (`RiotScene.svelte`), so only this
+     theme downloads it. The links and help texts take the neon accent. */
+  [data-layout='modern'][data-theme^='m-riot-'] h1:not(.card-title) {
     font-family: 'Sedgwick Ave Display', 'Rubik Variable', ui-sans-serif, system-ui, sans-serif;
     font-weight: 400;
     letter-spacing: 0.02em;

@@ -918,6 +918,63 @@ describe('the scenes of the modern layout', () => {
   });
 });
 
+/**
+ * The headings that the display font of a scene theme dresses: only the heading of a page
+ * (22px in `.m-page-heading` and `.org-page-title`, 1.25rem on the chat). The display faces
+ * are hard to read small, so the headings of cards, panels and dialogs, the menu titles
+ * and the labels keep the body font.
+ */
+const DISPLAY_HEADING = 'h1:not(.card-title)';
+
+describe('the display fonts of the scene themes', () => {
+  const FONTS: Record<string, string> = {
+    nocturne: "'Cinzel Variable'",
+    riot: "'Sedgwick Ave Display'",
+  };
+
+  it('the_scene_themes_are_the_themes_with_a_display_font', () => {
+    const scenes = MODERN_THEMES.flatMap((theme) => (theme.scene ? [theme.id] : []));
+    expect(Object.keys(FONTS).sort()).toEqual(scenes.sort());
+  });
+
+  it.each(Object.entries(FONTS))(
+    'the_display_font_of_%s_dresses_only_the_heading_of_a_page',
+    (theme, family) => {
+      const own = rules().filter((rule) => rule.body.includes(`font-family: ${family}`));
+      expect(own, theme).toHaveLength(1);
+      const selector = own[0]?.selector.replace(/\s+/g, ' ') ?? '-';
+      expect(selector).toBe(`${SCOPE}[data-theme^='m-${theme}-'] ${DISPLAY_HEADING}`);
+
+      const root = document.createElement('html');
+      root.dataset.layout = 'modern';
+      root.dataset.theme = `m-${theme}-x`;
+      root.innerHTML = `
+        <body>
+          <div class="m-page-heading"><h1 id="settings">Main</h1></div>
+          <div class="org-page-title"><h1 id="account">Account</h1></div>
+          <h1 id="chat" class="text-xl font-semibold">Chat</h1>
+          <h1 id="login" class="card-title">Log in</h1>
+          <h2 id="card" class="card-title">User Information</h2>
+          <h2 id="section">Organizr Settings</h2>
+          <h3 id="alert">API Documentation</h3>
+          <h4 id="small">Small</h4>
+          <div id="panel" class="org-panel-heading">Tab Editor</div>
+          <div id="menu" class="org-sidebar-head">Navigation</div>
+          <span id="item" class="org-item-title">Plex</span>
+          <label id="label">Name</label>
+        </body>`;
+      const matches = (id: string) => root.querySelector(`#${id}`)?.matches(selector) ?? false;
+      for (const id of ['settings', 'account', 'chat']) {
+        expect(matches(id), `${theme} ${id}`).toBe(true);
+      }
+      for (const id of ['login', 'card', 'section', 'alert', 'small', 'panel', 'menu', 'item']) {
+        expect(matches(id), `${theme} ${id}`).toBe(false);
+      }
+      expect(matches('label'), `${theme} label`).toBe(false);
+    },
+  );
+});
+
 describe('the Nocturne theme of the modern layout', () => {
   const NOCTURNE = `${SCOPE}[data-theme^='m-nocturne-']`;
   const SETS = ['amethyst', 'crimson', 'moonlit'];
@@ -930,9 +987,7 @@ describe('the Nocturne theme of the modern layout', () => {
   it('only_the_nocturne_rule_names_cinzel_and_the_scene_loads_its_face', () => {
     const named = rules().filter((rule) => rule.body.includes('Cinzel'));
     expect(named).toHaveLength(1);
-    expect(fontRule()?.selector.replace(/\s+/g, ' ')).toMatch(
-      /^\[data-layout='modern'\]\[data-theme\^='m-nocturne-'\] :is\(h1, h2, h3, h4, /,
-    );
+    expect(fontRule()?.selector.replace(/\s+/g, ' ')).toBe(`${NOCTURNE} ${DISPLAY_HEADING}`);
     // The face comes with the scene, in its lazy chunk, never with the main bundle.
     const main = readFileSync(resolve(__dirname, '../main.ts'), 'utf8');
     expect(main).not.toContain('cinzel');
@@ -1001,9 +1056,7 @@ describe('the Riot theme of the modern layout', () => {
   it('only_the_riot_rule_names_sedgwick_and_the_scene_loads_its_face', () => {
     const named = rules().filter((rule) => rule.body.includes('Sedgwick'));
     expect(named).toHaveLength(1);
-    expect(fontRule()?.selector.replace(/\s+/g, ' ')).toMatch(
-      /^\[data-layout='modern'\]\[data-theme\^='m-riot-'\] :is\(h1, h2, h3, h4, /,
-    );
+    expect(fontRule()?.selector.replace(/\s+/g, ' ')).toBe(`${RIOT} ${DISPLAY_HEADING}`);
     // The face comes with the scene, in its lazy chunk, never with the main bundle.
     const main = readFileSync(resolve(__dirname, '../main.ts'), 'utf8');
     expect(main).not.toContain('sedgwick');
