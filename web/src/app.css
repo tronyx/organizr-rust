@@ -4204,8 +4204,8 @@
 
   /* The users fit the card from a window of 1024 px on. The address takes the room that
      the other columns leave, and a long one is cut short: its whole text is in the tooltip
-     of the cell. In a narrow card the picture and the day of registration step aside. A
-     phone scrolls the table inside the card. */
+     of the cell. In a narrow card the picture steps aside, and the day of registration
+     moves under the name. A phone scrolls the table inside the card. */
   [data-layout='modern'] .org-users-scroll {
     container-type: inline-size;
   }
@@ -4224,10 +4224,23 @@
     white-space: nowrap;
   }
 
+  /* The day of registration under the name: only in a narrow card, where its own column
+     is hidden, so that the day is shown and read once. */
+  .org-users-date-line {
+    display: none;
+  }
+
   @container (width < 40rem) {
     [data-layout='modern'] .org-users-avatar,
     [data-layout='modern'] .org-users-date {
       display: none;
+    }
+
+    [data-layout='modern'] .org-users-date-line {
+      display: block;
+      color: color-mix(in oklab, var(--color-base-content) 75%, var(--color-base-100));
+      font-size: 12px;
+      white-space: nowrap;
     }
   }
 

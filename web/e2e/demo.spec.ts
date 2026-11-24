@@ -5,6 +5,7 @@ import { createHmac } from 'node:crypto';
 
 import type { Page } from '@playwright/test';
 
+import { auditContrast, describeLowContrast } from './contrast';
 import { expect, test } from './fixtures';
 import { ADDRESS, SETUP_CODE_VARIABLE } from './server';
 
@@ -521,6 +522,22 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
         .map((element) => element.textContent?.trim()),
     );
     expect(outside).toEqual([]);
+
+    // In the narrow card of a 1024 px window the column of the day is hidden: each row
+    // shows its day under the name, readable, and only once.
+    await page.setViewportSize({ width: 1024, height: 720 });
+    const rows = page.locator('.org-users-table tbody tr');
+    const count = await rows.count();
+    expect(count).toBeGreaterThanOrEqual(2);
+    for (let index = 0; index < count; index++) {
+      const row = rows.nth(index);
+      await expect(row.locator('.org-users-date-line')).toBeVisible();
+      await expect(row.locator('.org-users-date-line')).toHaveText(/^\d{4}-\d{2}-\d{2}$/);
+      await expect(row.locator('td.org-users-date')).toBeHidden();
+    }
+    const audit = await auditContrast(page, '.org-users-table');
+    expect(audit.checked).toBeGreaterThan(0);
+    expect(audit.low, describeLowContrast('the narrow table of users', audit.low)).toEqual([]);
   } finally {
     expect((await look(null)).ok()).toBe(true);
     await page.reload();

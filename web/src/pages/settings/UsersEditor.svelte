@@ -78,12 +78,17 @@
     importing = false;
   }
 
-  /** A click on a row opens its user, as in PHP, unless it was on a control of the row. */
+  /** A click on a row opens its user, as in PHP, unless it was on a control of the row or
+   *  ended the selection of a text (to copy an address, for example). */
   function openRow(event: MouseEvent, user: Account) {
     const target = event.target as Element | null;
-    if (!target?.closest('button, input, label, a, select, textarea')) {
-      dialog = { user };
+    if (target?.closest('button, input, label, a, select, textarea')) {
+      return;
     }
+    if ((window.getSelection()?.toString() ?? '') !== '') {
+      return;
+    }
+    dialog = { user };
   }
 
   function remove(user: Account) {
@@ -161,7 +166,11 @@
               <td class="org-users-avatar text-center">
                 <span class="org-avatar"><Picture image={user.image} name={user.username} /></span>
               </td>
-              <th scope="row" translate="no">{user.username}</th>
+              <th scope="row" translate="no">
+                {user.username}
+                <!-- In a narrow card the column of the day is hidden: the day shows here. -->
+                <span class="org-users-date-line">{dayOf(user)}</span>
+              </th>
               <td class="org-users-email" title={user.email ?? undefined}>{user.email ?? ''}</td>
               <td class="org-users-date text-center whitespace-nowrap">{dayOf(user)}</td>
               <td class="text-center">{user.group ?? ''}</td>

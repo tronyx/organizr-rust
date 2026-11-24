@@ -138,11 +138,10 @@ describe('Settings, tabs', () => {
     await show('tabs');
 
     const rows = screen.getAllByRole('row').slice(1);
-    expect(rows.map((row) => within(row).getByRole('rowheader').textContent?.trim())).toEqual([
-      'Settings',
-      'Plex',
-      'Sonarr',
-    ]);
+    // The first text of the row heading is the name; the day under it shows in a narrow card.
+    expect(
+      rows.map((row) => within(row).getByRole('rowheader').firstChild?.textContent?.trim()),
+    ).toEqual(['Settings', 'Plex', 'Sonarr']);
     const chosen = (label: string) =>
       (screen.getByLabelText(label) as HTMLSelectElement).selectedOptions[0]?.textContent;
     expect(chosen('Category of Plex')).toBe('Media');
@@ -412,12 +411,10 @@ describe('Settings, groups', () => {
     await show('groups');
 
     const rows = screen.getAllByRole('row').slice(1);
-    expect(rows.map((row) => within(row).getByRole('rowheader').textContent?.trim())).toEqual([
-      'Admin',
-      'Co-Admin',
-      'User',
-      'Guest',
-    ]);
+    // The first text of the row heading is the name; the day under it shows in a narrow card.
+    expect(
+      rows.map((row) => within(row).getByRole('rowheader').firstChild?.textContent?.trim()),
+    ).toEqual(['Admin', 'Co-Admin', 'User', 'Guest']);
     expect(screen.getByLabelText('Put new users into User')).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -522,15 +519,19 @@ describe('Settings, users', () => {
     await show('users');
 
     const rows = screen.getAllByRole('row').slice(1);
-    expect(rows.map((row) => within(row).getByRole('rowheader').textContent?.trim())).toEqual([
-      'admin',
-      'zoe',
-      'Yan',
-    ]);
+    // The first text of the row heading is the name; the day under it shows in a narrow card.
+    expect(
+      rows.map((row) => within(row).getByRole('rowheader').firstChild?.textContent?.trim()),
+    ).toEqual(['admin', 'zoe', 'Yan']);
     const yan = rowOf('Yan');
     expect(within(yan).getByText('yan@example.com')).toBeInTheDocument();
     expect(within(yan).getByText('User')).toBeInTheDocument();
-    expect(within(yan).getByText('2026-12-01')).toBeInTheDocument();
+    // The day is in its column, and under the name for a narrow card.
+    expect(
+      within(yan)
+        .getAllByText('2026-12-01')
+        .map((element) => element.className),
+    ).toEqual(['org-users-date-line', expect.stringContaining('org-users-date ')]);
     expect(screen.getByLabelText('Lock Yan')).toBeChecked();
     expect(screen.getByLabelText('Lock zoe')).not.toBeChecked();
   });
@@ -662,6 +663,20 @@ describe('Settings, users', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
     expect(within(dialog).getByLabelText('User name')).toHaveValue('zoe');
     expect(changes(sent)).toEqual([['PUT users/3', { locked: 1 }]]);
+  });
+
+  it('does not open a user when the click ends the selection of a text', async () => {
+    await show('users');
+    const address = within(rowOf('zoe')).getByText('zoe@example.com');
+    const selection = window.getSelection();
+    selection?.selectAllChildren(address);
+
+    await fireEvent.click(address);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    selection?.removeAllRanges();
+    await fireEvent.click(address);
+    expect(await screen.findByRole('dialog', { name: 'Change the user zoe' })).toBeInTheDocument();
   });
 
   it('changes the group of a user that a click on the row opened', async () => {

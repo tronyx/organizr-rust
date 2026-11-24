@@ -119,9 +119,23 @@ test('the modern menu collapses to a column of icons, and stays so in this brows
       data: { layout, theme: layout === 'og' ? 'Organizr' : 'organizr', colourSet },
     });
   const aside = page.locator('aside#m-menu');
-  const width = () => aside.evaluate((element) => element.getBoundingClientRect().width);
-  const contentLeft = () =>
-    page.locator('.org-content').evaluate((element) => element.getBoundingClientRect().left);
+  // The column and the page beside it move with a transition of their width and place. A
+  // size counts once their transitions are over, not halfway through one.
+  const settled = () =>
+    page.evaluate(async () => {
+      const moving = ['aside#m-menu', '.org-content'].flatMap((selector) =>
+        [...document.querySelectorAll(selector)].flatMap((element) => element.getAnimations()),
+      );
+      await Promise.all(moving.map((animation) => animation.finished.catch(() => undefined)));
+    });
+  const width = async () => {
+    await settled();
+    return aside.evaluate((element) => element.getBoundingClientRect().width);
+  };
+  const contentLeft = async () => {
+    await settled();
+    return page.locator('.org-content').evaluate((element) => element.getBoundingClientRect().left);
+  };
   const audit = async (where: string) => {
     // Wait until the column has its width and no tooltip shows.
     await page.mouse.move(900, 600);
