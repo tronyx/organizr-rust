@@ -117,6 +117,16 @@ describe('applyLook', () => {
           { id: 'moonlit', label: 'Moonlit' },
         ],
       },
+      {
+        id: 'riot',
+        label: 'Riot',
+        scene: 'riot',
+        colourSets: [
+          { id: 'acid', label: 'Acid' },
+          { id: 'hotwire', label: 'Hotwire' },
+          { id: 'blacklight', label: 'Blacklight' },
+        ],
+      },
     ]);
   });
 
@@ -157,12 +167,27 @@ describe('applyLook', () => {
     }
     expect(modernThemeId('nocturne', 'dark')).toBe('m-organizr-dark');
   });
+
+  it('riot_has_three_dark_colour_sets', () => {
+    for (const set of ['acid', 'hotwire', 'blacklight']) {
+      expect(modernThemeId('riot', set)).toBe(`m-riot-${set}`);
+      const root = document.createElement('html');
+      applyLook(modern('riot', set), undefined, {}, root);
+      expect(root.dataset.theme).toBe(`m-riot-${set}`);
+      expect(root.dataset.colourSet).toBe('dark');
+    }
+    expect(modernThemeId('riot', 'dark')).toBe('m-organizr-dark');
+    expect(modernThemeId('riot', 'amethyst')).toBe('m-organizr-dark');
+  });
 });
 
 describe('sceneOf', () => {
   it('only_a_scene_theme_on_the_modern_layout_has_a_scene', () => {
     expect(sceneOf(modern('nocturne', 'amethyst'))).toBe('nocturne');
     expect(sceneOf(modern('nocturne', 'moonlit'))).toBe('nocturne');
+    expect(sceneOf(modern('riot', 'acid'))).toBe('riot');
+    expect(sceneOf(modern('riot', 'blacklight'))).toBe('riot');
+    expect(sceneOf(modern('riot', 'crimson'))).toBeNull();
     for (const theme of ['organizr', 'plex', 'jellyfin', 'emby']) {
       expect(sceneOf(modern(theme, 'dark')), theme).toBeNull();
     }
@@ -188,6 +213,9 @@ describe('the modern colour sets', () => {
       'm-organizr-light',
       'm-plex-dark',
       'm-plex-light',
+      'm-riot-acid',
+      'm-riot-blacklight',
+      'm-riot-hotwire',
       'm-silo-ember',
       'm-silo-ice',
       'm-silo-rose',
@@ -321,6 +349,29 @@ describe('the modern colour sets', () => {
       const value = (name: string) =>
         new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
       for (const colour of ['color-accent', 'color-primary']) {
+        for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
+          expect(
+            contrastRatio(value(colour), value(surface)),
+            `${id} ${colour} on ${surface}`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      expect(block, id).toContain('color-scheme: dark;');
+    }
+  });
+
+  it('riot_accents_and_buttons_read_on_every_surface', () => {
+    // Riot marks links, the open settings entry and the focus ring with its accent, and
+    // its primary buttons sit on the cards: both need 4.5:1 on every surface.
+    const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    for (const set of ['acid', 'hotwire', 'blacklight']) {
+      const id = `m-riot-${set}`;
+      const start = css.indexOf(`name: '${id}';`);
+      expect(start, id).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      const value = (name: string) =>
+        new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
+      for (const colour of ['color-accent', 'color-primary', 'color-secondary']) {
         for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
           expect(
             contrastRatio(value(colour), value(surface)),

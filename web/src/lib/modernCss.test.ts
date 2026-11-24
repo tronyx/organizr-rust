@@ -663,6 +663,9 @@ describe('the brand themes of the modern layout', () => {
       'm-nocturne-amethyst',
       'm-nocturne-crimson',
       'm-nocturne-moonlit',
+      'm-riot-acid',
+      'm-riot-hotwire',
+      'm-riot-blacklight',
     ]);
   });
 
@@ -981,6 +984,79 @@ describe('the Nocturne theme of the modern layout', () => {
     for (const rule of own) {
       for (const part of selectorParts(rule.selector)) {
         expect(part.startsWith(NOCTURNE), part).toBe(true);
+      }
+    }
+  });
+});
+
+describe('the Riot theme of the modern layout', () => {
+  const RIOT = `${SCOPE}[data-theme^='m-riot-']`;
+  const SETS = ['acid', 'hotwire', 'blacklight'];
+
+  /** The rule that gives the headings of Riot their font. */
+  function fontRule(): Rule | undefined {
+    return rules().find((rule) => /font-family:\s*'Sedgwick Ave Display'/.test(rule.body));
+  }
+
+  it('only_the_riot_rule_names_sedgwick_and_the_scene_loads_its_face', () => {
+    const named = rules().filter((rule) => rule.body.includes('Sedgwick'));
+    expect(named).toHaveLength(1);
+    expect(fontRule()?.selector.replace(/\s+/g, ' ')).toMatch(
+      /^\[data-layout='modern'\]\[data-theme\^='m-riot-'\] :is\(h1, h2, h3, h4, /,
+    );
+    // The face comes with the scene, in its lazy chunk, never with the main bundle.
+    const main = readFileSync(resolve(__dirname, '../main.ts'), 'utf8');
+    expect(main).not.toContain('sedgwick');
+    const scene = readFileSync(resolve(__dirname, '../scenes/RiotScene.svelte'), 'utf8');
+    expect(scene).toContain("import '@fontsource/sedgwick-ave-display/400.css';");
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8')) as {
+      devDependencies: Record<string, string>;
+    };
+    expect(pkg.devDependencies['@fontsource/sedgwick-ave-display']).toBe('5.3.0');
+  });
+
+  it('the_riot_font_rule_stops_matching_after_a_switch_to_plex', () => {
+    const rule = fontRule();
+    expect(rule).toBeDefined();
+    const root = document.createElement('html');
+    const heading = document.createElement('h1');
+    root.append(heading);
+    applyLook(
+      { layout: 'modern', theme: 'riot', colourSet: 'hotwire', source: 'user' },
+      undefined,
+      {},
+      root,
+    );
+    expect(heading.matches(rule?.selector ?? '-')).toBe(true);
+    applyLook(
+      { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+      undefined,
+      {},
+      root,
+    );
+    expect(heading.matches(rule?.selector ?? '-')).toBe(false);
+  });
+
+  it('riot_has_square_corners_and_thick_borders', () => {
+    for (const set of SETS) {
+      const start = css.indexOf(`name: 'm-riot-${set}';`);
+      expect(start, set).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      for (const name of ['radius-selector', 'radius-field', 'radius-box']) {
+        const value = Number(new RegExp(`--${name}: ([\\d.]+)rem;`).exec(block)?.[1] ?? 9);
+        expect(value, `${set} ${name}`).toBe(0);
+      }
+      const border = Number(/--border: ([\d.]+)px;/.exec(block)?.[1] ?? 0);
+      expect(border, `${set} border`).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it('riot_rules_are_scoped_to_riot', () => {
+    const own = rules().filter((rule) => rule.selector.includes('m-riot-'));
+    expect(own.length).toBeGreaterThan(0);
+    for (const rule of own) {
+      for (const part of selectorParts(rule.selector)) {
+        expect(part.startsWith(RIOT), part).toBe(true);
       }
     }
   });

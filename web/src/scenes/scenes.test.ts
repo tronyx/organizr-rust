@@ -72,6 +72,7 @@ describe('the scenes', () => {
     expect(SCENE_FILES.length).toBeGreaterThan(0);
     const ids = MODERN_THEMES.flatMap((theme) => (theme.scene ? [theme.scene] : []));
     expect(ids).toContain('nocturne');
+    expect(ids).toContain('riot');
     expect(Object.keys(SCENE_LOADERS).sort()).toEqual([...ids].sort());
     const index = readFileSync(resolve(here, 'index.ts'), 'utf8');
     for (const id of ids) {
@@ -290,14 +291,20 @@ describe('the scenes stay out of the main bundle', () => {
         expect(code, `${entry} has the art of ${name}`).not.toContain(`m-scene-${id}`);
       }
     }
-    // The main style sheet names the font in the Nocturne rule, but has no face of it: the
+    // The main style sheet names each font in its theme's rule, but has no face of it: the
     // `@font-face` comes with the scene.
     for (const entry of entries) {
-      expect(readFileSync(resolve(assets, entry), 'utf8'), entry).not.toContain('cinzel-latin');
+      const code = readFileSync(resolve(assets, entry), 'utf8');
+      expect(code, entry).not.toContain('cinzel-latin');
+      expect(code, entry).not.toContain('sedgwick-ave-display-latin');
     }
     const sceneStyles = files.filter((file) => /^NocturneScene-.*\.css$/.test(file));
     expect(sceneStyles.map((file) => readFileSync(resolve(assets, file), 'utf8')).join('')).toMatch(
       /@font-face\{font-family:"?Cinzel Variable"?[^}]*cinzel-latin-wght-normal-[\w-]+\.woff2/,
+    );
+    const riotStyles = files.filter((file) => /^RiotScene-.*\.css$/.test(file));
+    expect(riotStyles.map((file) => readFileSync(resolve(assets, file), 'utf8')).join('')).toMatch(
+      /@font-face\{font-family:"?Sedgwick Ave Display"?[^}]*sedgwick-ave-display-latin-400-normal-[\w-]+\.woff2/,
     );
   });
 });

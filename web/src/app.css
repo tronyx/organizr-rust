@@ -646,6 +646,132 @@
   --noise: 0;
 }
 
+/* Riot: punk neon on a night wall, with square corners, thick borders and the Sedgwick
+   Ave Display font, a graffiti hand, for the headings. Acid is acid green on black, Hotwire
+   hot pink with electric blue and Blacklight a UV purple. Every set is dark. */
+@plugin 'daisyui/theme' {
+  name: 'm-riot-acid';
+  color-scheme: dark;
+
+  --color-base-100: #0a0b08;
+  --color-base-200: #12140f;
+  --color-base-300: #1d2117;
+  --color-base-content: #eef3e4;
+  --color-primary: #b4f224;
+  --color-primary-content: #0c1200;
+  --color-secondary: #f0e64a;
+  --color-secondary-content: #171400;
+  --color-accent: #c9ff5c;
+  --color-accent-content: #101800;
+  --color-neutral: #050604;
+  --color-neutral-content: #eef3e4;
+  --color-info: #6cc8ff;
+  --color-info-content: #04121d;
+  --color-success: #4fd98a;
+  --color-success-content: #03150b;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #ff5c7a;
+  --color-error-content: #1d0409;
+
+  --org-header-bg: #0f110b;
+  --org-header-text: #f3f8e9;
+  --org-sidebar-bg: #070806;
+  --org-sidebar-text: #bcc6ab;
+  --org-sidebar-active: #c9ff5c;
+
+  --radius-selector: 0rem;
+  --radius-field: 0rem;
+  --radius-box: 0rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-riot-hotwire';
+  color-scheme: dark;
+
+  --color-base-100: #0d0a13;
+  --color-base-200: #16111e;
+  --color-base-300: #231a2e;
+  --color-base-content: #f4ecf8;
+  --color-primary: #ff47a8;
+  --color-primary-content: #1d0010;
+  --color-secondary: #ff9bd2;
+  --color-secondary-content: #22041a;
+  --color-accent: #3fd0ff;
+  --color-accent-content: #00131d;
+  --color-neutral: #07050a;
+  --color-neutral-content: #f4ecf8;
+  --color-info: #6cb8ff;
+  --color-info-content: #04101d;
+  --color-success: #4fd98a;
+  --color-success-content: #03150b;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #ff6b5e;
+  --color-error-content: #1d0603;
+
+  --org-header-bg: #120d1a;
+  --org-header-text: #f8f1fb;
+  --org-sidebar-bg: #09070d;
+  --org-sidebar-text: #c5b8cf;
+  --org-sidebar-active: #3fd0ff;
+
+  --radius-selector: 0rem;
+  --radius-field: 0rem;
+  --radius-box: 0rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-riot-blacklight';
+  color-scheme: dark;
+
+  --color-base-100: #0c0817;
+  --color-base-200: #150e25;
+  --color-base-300: #221736;
+  --color-base-content: #efe8fb;
+  --color-primary: #b874ff;
+  --color-primary-content: #10031f;
+  --color-secondary: #ec85ff;
+  --color-secondary-content: #1d0426;
+  --color-accent: #7af7e6;
+  --color-accent-content: #03181a;
+  --color-neutral: #06040c;
+  --color-neutral-content: #efe8fb;
+  --color-info: #7fb6ff;
+  --color-info-content: #060f1f;
+  --color-success: #5fe0a0;
+  --color-success-content: #03150b;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #ff6383;
+  --color-error-content: #1d0409;
+
+  --org-header-bg: #110b20;
+  --org-header-text: #f4effc;
+  --org-sidebar-bg: #08050f;
+  --org-sidebar-text: #beb2d6;
+  --org-sidebar-active: #7af7e6;
+
+  --radius-selector: 0rem;
+  --radius-field: 0rem;
+  --radius-box: 0rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 0;
+  --noise: 0;
+}
+
 /* The other themes of PHP Organizr, rebuilt for this interface: the built-in theme "Blue"
    and the 11 themes of the theme marketplace (github.com/Organizr/Organizr-Themes). The
    colours come from the style sheets of each theme. The themes of theme.park take them
@@ -5216,6 +5342,19 @@
   }
 
   [data-layout='modern'][data-theme^='m-nocturne-'] :is(.link, .org-form-help) {
+    color: var(--color-accent);
+  }
+  /* Riot: Sedgwick Ave Display, a graffiti hand, for the headings; the body text stays
+     Rubik. The face itself comes with the scene (`RiotScene.svelte`), so only this theme
+     downloads it. The links and help texts take the neon accent. */
+  [data-layout='modern'][data-theme^='m-riot-']
+    :is(h1, h2, h3, h4, .card-title, .org-panel-heading, .org-sidebar-head) {
+    font-family: 'Sedgwick Ave Display', 'Rubik Variable', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+
+  [data-layout='modern'][data-theme^='m-riot-'] :is(.link, .org-form-help) {
     color: var(--color-accent);
   }
 }

@@ -24,7 +24,7 @@ describe('LayoutDefaults', () => {
 
     await fireEvent.change(layout, { target: { value: 'modern' } });
     const themes = screen.getByRole('combobox', { name: 'Modern theme' });
-    for (const label of ['Organizr', 'Plex', 'Jellyfin', 'Emby', 'Silo', 'Nocturne']) {
+    for (const label of ['Organizr', 'Plex', 'Jellyfin', 'Emby', 'Silo', 'Nocturne', 'Riot']) {
       expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
     }
     await fireEvent.change(themes, { target: { value: 'plex' } });
@@ -94,6 +94,32 @@ describe('LayoutDefaults', () => {
       layout: 'modern',
       modernTheme: 'nocturne',
       modernColourSet: 'amethyst',
+    });
+  });
+
+  it('choosing_riot_moves_the_colour_set_to_acid', async () => {
+    const sent = stubApi({
+      'GET config': { data: { ...CONFIG, layout: 'modern' } },
+      'PUT config': {},
+      'GET launch': { status: 500, message: 'not needed here' },
+    });
+    const ondone = vi.fn();
+    render(LayoutDefaults, { canChange: true, ondone });
+
+    const themes = await screen.findByRole('combobox', { name: 'Modern theme' });
+    await fireEvent.change(themes, { target: { value: 'riot' } });
+    const colours = screen.getByRole('combobox', { name: 'Modern colour set' });
+    expect(colours).toHaveValue('acid');
+    for (const label of ['Acid', 'Hotwire', 'Blacklight']) {
+      expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
+    }
+    await fireEvent.click(screen.getByRole('button', { name: 'Save the layout' }));
+
+    await waitFor(() => expect(ondone).toHaveBeenCalled());
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      modernTheme: 'riot',
+      modernColourSet: 'acid',
     });
   });
 

@@ -40,6 +40,7 @@ pub const MODERN_THEMES: &[(&str, &[&str])] = &[
     ("emby", &["dark", "light"]),
     ("silo", &["ember", "ice", "rose"]),
     ("nocturne", &["amethyst", "crimson", "moonlit"]),
+    ("riot", &["acid", "hotwire", "blacklight"]),
 ];
 
 /// Where an effective look comes from.
@@ -325,7 +326,46 @@ mod tests {
                 ("emby", sets),
                 ("silo", &["ember", "ice", "rose"][..]),
                 ("nocturne", &["amethyst", "crimson", "moonlit"][..]),
+                ("riot", &["acid", "hotwire", "blacklight"][..]),
             ]
+        );
+    }
+
+    #[test]
+    fn riot_has_its_own_colour_sets() {
+        let mut settings = Settings::defaults();
+        let riot = |set: Option<&str>| {
+            stored(|s| {
+                s.layout = Some(text("modern"));
+                s.modern_theme = Some(text("riot"));
+                s.modern_colour_set = set.map(text);
+            })
+        };
+        for set in ["acid", "hotwire", "blacklight"] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&riot(Some(set))))),
+                ("modern", "riot", set)
+            );
+        }
+        // A set that Riot does not have, and no set at all: its first set.
+        for set in [Some("dark"), Some("amethyst"), None] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&riot(set)))),
+                ("modern", "riot", "acid")
+            );
+        }
+        // The same for the Admin's default.
+        settings.layout = "modern".to_owned();
+        settings.modern_theme = "riot".to_owned();
+        settings.modern_colour_set = "moonlit".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "riot", "acid")
+        );
+        settings.modern_colour_set = "blacklight".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "riot", "blacklight")
         );
     }
 
