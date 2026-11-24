@@ -4,8 +4,16 @@
  * the words of that family, such as `fa-cog`.
  *
  * The style sheets of the families are made by web/tools/import-organizr-assets.py.
+ *
+ * The rules also reach an icon that names only its family, such as `oi-themify ti-trash`:
+ * without `font-style: normal` the browser draws such an icon in an `<i>` slanted.
  */
-.oi {
+.oi,
+.oi-fontawesome,
+.oi-materialize,
+.oi-simpleline,
+.oi-themify,
+.oi-weathericon {
   display: inline-block;
   font-style: normal;
   font-weight: normal;
