@@ -524,6 +524,43 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
   ];
   expect(await namesOf()).toEqual(ONCE);
 
+  // The key of the Password column opens the form with the focus in the new password; the
+  // Edit button opens it without.
+  await abe.getByRole('button', { name: 'Change the password of abe' }).click();
+  const keyed = page.getByRole('dialog', { name: 'Change the user abe' });
+  await expect(keyed.getByLabel('New password')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(keyed).toBeHidden();
+  await abe.getByRole('button', { name: 'Edit abe' }).click();
+  await expect(keyed).toBeVisible();
+  await expect(keyed.getByLabel('New password')).not.toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(keyed).toBeHidden();
+
+  // On OG at 1024 px the table keeps all its columns, as in PHP: the day in its own column
+  // and not under the name. The page does not scroll sideways, and every button of a row
+  // can be reached (the card scrolls the table, if it must).
+  await page.setViewportSize({ width: 1024, height: 720 });
+  const ogRows = page.locator('.org-users-table tbody tr');
+  expect(await ogRows.count()).toBeGreaterThanOrEqual(2);
+  for (let index = 0; index < (await ogRows.count()); index++) {
+    const row = ogRows.nth(index);
+    await expect(row.locator('td.org-users-date')).toBeVisible();
+    await expect(row.locator('.org-users-date-line')).toBeHidden();
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  for (const name of ['Change the password of abe', 'Edit abe', 'Delete abe']) {
+    const button = abe.getByRole('button', { name });
+    await button.scrollIntoViewIfNeeded();
+    await expect(button).toBeInViewport({ ratio: 1 });
+  }
+  const ogAudit = await auditContrast(page, '.org-users-table');
+  expect(ogAudit.checked).toBeGreaterThan(0);
+  expect(ogAudit.low, describeLowContrast('the OG table of users', ogAudit.low)).toEqual([]);
+  await page.setViewportSize({ width: 1280, height: 720 });
+
   // On the modern layout the table fits the card: the buttons of each row are on screen.
   // A layout of `null` forgets the choice again, so the tests after this one keep the look
   // of the install.
@@ -546,7 +583,7 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
           const right = element.getBoundingClientRect().right;
           return right > window.innerWidth || (card !== undefined && right > card);
         })
-        .map((element) => element.textContent?.trim()),
+        .map((element) => element.getAttribute('title')),
     );
     expect(outside).toEqual([]);
 

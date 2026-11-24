@@ -145,9 +145,10 @@ describe('Account', () => {
     expect(
       within(section as HTMLElement).getByRole('radio', { name: 'Modern' }),
     ).toBeInTheDocument();
-    expect(
-      within(section as HTMLElement).getByRole('group', { name: 'Theme' }),
-    ).toBeInTheDocument();
+    // The themes are radios, the one of the look checked.
+    const themes = within(section as HTMLElement).getByRole('group', { name: 'Theme' });
+    expect(within(themes).getByRole('radio', { name: 'Organizr' })).toBeChecked();
+    expect(within(themes).getByRole('radio', { name: 'Nord' })).not.toBeChecked();
     // On the wide panel the picker keeps a narrow width, so its two columns stay close.
     expect(
       within(section as HTMLElement)

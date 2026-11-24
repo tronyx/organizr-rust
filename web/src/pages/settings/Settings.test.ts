@@ -697,6 +697,7 @@ describe('Settings, users', () => {
     const key = within(rowOf('zoe')).getByRole('button', { name: 'Change the password of zoe' });
     await fireEvent.click(key);
     const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
+    // jsdom's `showModal` does not move the focus; the e2e test checks the real focus.
     expect(within(dialog).getByLabelText('New password')).toHaveAttribute('autofocus');
     await fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());

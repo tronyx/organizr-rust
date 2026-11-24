@@ -487,8 +487,6 @@ describe('LookPicker', () => {
       expect(swatch).toHaveAttribute('aria-hidden', 'true');
       expect(swatch.querySelectorAll('.org-swatch-dot')).toHaveLength(3);
     }
-    // The name of each radio is its label alone.
-    expect(screen.getByRole('radio', { name: 'Plex' })).toBeInTheDocument();
   });
 
   it('a_long_name_wraps_in_its_column_instead_of_widening_the_grid', async () => {

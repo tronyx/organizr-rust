@@ -420,7 +420,9 @@ test('the colour samples of the look picker take the colours of their own themes
     await page.reload();
     await page.getByRole('button', { name: 'Look' }).click();
     const popover = '[data-slot="popover-content"]';
-    await expect(page.locator(popover).getByRole('radio', { name: 'Plex' })).toBeVisible();
+    await expect(
+      page.locator(popover).getByRole('radio', { name: 'Plex', exact: true }),
+    ).toBeVisible();
     const organizr = await sampleOf(popover, 'Organizr');
     const plex = await sampleOf(popover, 'Plex');
     expect(organizr.theme).toBe('m-organizr-dark');
@@ -446,7 +448,9 @@ test('the colour samples of the look picker take the colours of their own themes
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-layout', 'og');
     const account = 'section[aria-labelledby="look-title"]';
-    await expect(page.locator(account).getByRole('radio', { name: 'Nord' })).toBeVisible();
+    await expect(
+      page.locator(account).getByRole('radio', { name: 'Nord', exact: true }),
+    ).toBeVisible();
     const organizrOg = await sampleOf(account, 'Organizr');
     const nord = await sampleOf(account, 'Nord');
     expect(nord.theme).toBe('org-nord');
@@ -691,6 +695,110 @@ test('long theme names fit the look popover at a large text size', async ({ page
   } finally {
     await page.evaluate(() => document.documentElement.style.removeProperty('font-size'));
     await page.setViewportSize({ width: 1280, height: 720 });
+    expect((await look({ layout: 'og' })).ok()).toBe(true);
+  }
+});
+
+test('the border of every colour sample is 3:1 on every offered modern theme', async ({ page }) => {
+  test.setTimeout(120_000);
+  await logIn(page);
+  const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
+  /** The lowest ratio of the border of a sample against the colour behind it, and where. */
+  const lowestEdge = () =>
+    page.locator('[data-slot="popover-content"]').evaluate((panel) => {
+      const context = document.createElement('canvas').getContext('2d');
+      const luminance = (colour: string) => {
+        if (!context) return 0;
+        context.clearRect(0, 0, 1, 1);
+        context.fillStyle = colour;
+        context.fillRect(0, 0, 1, 1);
+        const [r, g, b] = [...context.getImageData(0, 0, 1, 1).data].map((value) => {
+          const c = value / 255;
+          return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+      };
+      const ratios = [...panel.querySelectorAll('.org-swatch')].map((swatch) => {
+        let behind = 'rgb(0, 0, 0)';
+        for (let node = swatch.parentElement; node; node = node.parentElement) {
+          const colour = getComputedStyle(node).backgroundColor;
+          if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') {
+            behind = colour;
+            break;
+          }
+        }
+        const [high, low] = [
+          luminance(getComputedStyle(swatch).borderTopColor),
+          luminance(behind),
+        ].sort((x, y) => y - x) as [number, number];
+        return {
+          ratio: (high + 0.05) / (low + 0.05),
+          sample: swatch.getAttribute('data-theme'),
+        };
+      });
+      ratios.sort((x, y) => x.ratio - y.ratio);
+      return { count: ratios.length, lowest: ratios[0] };
+    });
+
+  try {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    for (const theme of MODERN_THEMES) {
+      for (const set of theme.colourSets) {
+        const where = `m-${theme.id}-${set.id}`;
+        expect((await look({ layout: 'modern', theme: theme.id, colourSet: set.id })).ok()).toBe(
+          true,
+        );
+        await page.reload();
+        await expect(page.locator('html')).toHaveAttribute('data-theme', where);
+        await page.getByRole('button', { name: 'Look' }).click();
+        await expect(
+          page.locator('[data-slot="popover-content"]').getByRole('radio', {
+            name: theme.label,
+            exact: true,
+          }),
+        ).toBeChecked();
+        const edge = await lowestEdge();
+        expect(edge.count, where).toBe(10 + theme.colourSets.length);
+        expect
+          .soft(edge.lowest?.ratio ?? 0, `the border of ${edge.lowest?.sample} on ${where}`)
+          .toBeGreaterThanOrEqual(3);
+        await page.keyboard.press('Escape');
+      }
+    }
+  } finally {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    expect((await look({ layout: 'og' })).ok()).toBe(true);
+  }
+});
+
+test('the group label of the user menu reads well with the menu open, in dark and light', async ({
+  page,
+}) => {
+  await logIn(page);
+  const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
+
+  try {
+    for (const colourSet of ['dark', 'light']) {
+      expect((await look({ layout: 'modern', theme: 'organizr', colourSet })).ok()).toBe(true);
+      await page.reload();
+      await expect(page.locator('html')).toHaveAttribute('data-colour-set', colourSet);
+      await page.getByRole('button', { name: 'Menu of the user' }).click();
+      const label = page.locator('[data-slot="dropdown-menu-label"]');
+      await expect(label).toHaveText('Admin');
+      // The menu fades in: the colours count once that is over.
+      await page
+        .locator('[data-slot="dropdown-menu-content"]')
+        .evaluate((menu) =>
+          Promise.all(menu.getAnimations({ subtree: true }).map((animation) => animation.finished)),
+        );
+      // Only the open menu: its label and its entries.
+      const audit = await auditContrast(page, '[data-slot="dropdown-menu-content"]');
+      expect(audit.checked, `texts of the user menu (${colourSet})`).toBeGreaterThanOrEqual(4);
+      expect(audit.low, describeLowContrast(`the user menu (${colourSet})`, audit.low)).toEqual([]);
+      await page.keyboard.press('Escape');
+      await expect(label).toBeHidden();
+    }
+  } finally {
     expect((await look({ layout: 'og' })).ok()).toBe(true);
   }
 });

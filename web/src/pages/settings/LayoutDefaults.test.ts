@@ -64,8 +64,11 @@ async function open(config: Record<string, unknown> = CONFIG, groupID = 0) {
     'GET launch': launchOf(groupID),
     'GET settings/appearance': {
       data: {
+        // Groups before and after the look, in PHP's order, so that its place shows.
         'Top Bar': [{ type: 'input', label: 'Title', name: 'title', value: 'Organizr' }],
+        'Login Page': [{ type: 'input', label: 'Login Text', name: 'loginText', value: '' }],
         'Colors & Themes': COLOURS,
+        Notifications: [{ type: 'input', label: 'Position', name: 'position', value: '' }],
       },
     },
     'GET config': { data: config },
@@ -89,8 +92,13 @@ describe('the group Style & Themes', () => {
   it('replaces_the_layout_tab_and_keeps_its_place', async () => {
     await open();
 
+    // The group keeps the place of PHP's "Colors & Themes": between its neighbours.
     const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent?.trim());
-    expect(tabs.slice(0, 2)).toEqual(['Top Bar', 'Style & Themes']);
+    const at = (name: string) => tabs.indexOf(name);
+    expect(at('Top Bar')).toBeGreaterThan(-1);
+    expect(at('Login Page')).toBe(at('Top Bar') + 1);
+    expect(at('Style & Themes')).toBe(at('Login Page') + 1);
+    expect(at('Notifications')).toBe(at('Style & Themes') + 1);
     expect(screen.queryByRole('tab', { name: 'Layout' })).toBeNull();
     expect(screen.queryByRole('tab', { name: 'Colors & Themes' })).toBeNull();
   });
@@ -144,7 +152,24 @@ describe('the group Style & Themes', () => {
       target: { value: 'Nord' },
     });
     const layout = within(panel).getByRole('combobox', { name: 'Default layout' });
+    expect(
+      within(layout)
+        .getAllByRole('option')
+        .map((option) => [option.textContent, (option as HTMLOptionElement).value]),
+    ).toEqual([
+      ['OG Organizr', 'og'],
+      ['Modern', 'modern'],
+    ]);
     await fireEvent.change(layout, { target: { value: 'modern' } });
+    // The Organizr theme offers its dark and light colour sets.
+    expect(
+      within(within(panel).getByRole('combobox', { name: 'Modern colour set' }))
+        .getAllByRole('option')
+        .map((option) => [option.textContent, (option as HTMLOptionElement).value]),
+    ).toEqual([
+      ['Dark', 'dark'],
+      ['Light', 'light'],
+    ]);
     const themes = within(panel).getByRole('combobox', { name: 'Modern theme' });
     for (const label of [
       'Organizr',

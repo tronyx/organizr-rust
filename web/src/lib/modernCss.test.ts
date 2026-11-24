@@ -1451,3 +1451,53 @@ describe('the Prism theme of the modern layout', () => {
     }
   });
 });
+
+describe('the users table and the look popover', () => {
+  /** The text of the block that starts at `start`, up to its matching closing brace. */
+  function blockAt(start: number): string {
+    const open = css.indexOf('{', start);
+    let depth = 0;
+    for (let index = open; index < css.length; index += 1) {
+      if (css[index] === '{') depth += 1;
+      if (css[index] === '}') depth -= 1;
+      if (depth === 0) return css.slice(open + 1, index);
+    }
+    return '';
+  }
+
+  it('a_narrow_users_card_hides_the_picture_and_the_day_and_shows_the_day_under_the_name', () => {
+    // The card of the table is the container that the narrow rules ask about.
+    const scroll = rules().find((rule) => rule.selector === `${SCOPE} .org-users-scroll`);
+    expect(scroll?.body ?? '').toMatch(/container-type:\s*inline-size/);
+    const start = css.indexOf('@container (width < 40rem)');
+    expect(start).toBeGreaterThan(-1);
+    const narrow = blockAt(start);
+    expect(narrow).toMatch(
+      /\[data-layout='modern'\] \.org-users-avatar,\s*\[data-layout='modern'\] \.org-users-date \{\s*display: none;/,
+    );
+    expect(narrow).toMatch(/\[data-layout='modern'\] \.org-users-date-line \{[^}]*display: block;/);
+    // Elsewhere, and on OG at any width, the line under the name is hidden: the day shows once.
+    const hidden = rules().find((rule) => rule.selector === '.org-users-date-line');
+    expect(hidden?.body ?? '').toMatch(/display:\s*none/);
+    expect(css.slice(0, start)).not.toMatch(/\.org-users-date-line \{[^}]*display: block/);
+  });
+
+  it('the_users_page_puts_the_day_under_the_name_and_in_its_own_column', () => {
+    const editor = readFileSync(resolve(__dirname, '../pages/settings/UsersEditor.svelte'), 'utf8');
+    expect(editor).toMatch(/<span class="org-users-date-line">\{dayOf\(user\)\}<\/span>/);
+    expect(editor).toMatch(/<td class="org-users-date[^"]*">\{dayOf\(user\)\}<\/td>/);
+    expect(editor).toContain('class="org-users-scroll');
+  });
+
+  it('the_popover_text_is_text_base_and_its_headings_match_it', () => {
+    const popover = readFileSync(
+      resolve(__dirname, 'components/ui/popover/popover-content.svelte'),
+      'utf8',
+    );
+    expect(popover).toMatch(/\btext-base\b/);
+    expect(popover).not.toMatch(/\btext-(xs|sm)\b/);
+    const legend = rules().find((rule) => rule.selector === `${SCOPE} .m-look-panel legend`);
+    expect(legend?.body ?? '').toMatch(/font-size:\s*var\(--text-base\)/);
+    expect(legend?.body ?? '').toMatch(/line-height:\s*var\(--text-base--line-height\)/);
+  });
+});

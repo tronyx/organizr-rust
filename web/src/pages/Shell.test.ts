@@ -47,6 +47,9 @@ describe('Shell', () => {
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('radio', { name: 'OG Organizr' })).toBeChecked();
-    expect(within(dialog).getByRole('group', { name: 'Theme' })).toBeInTheDocument();
+    // The themes are radios, the one of the look checked.
+    const themes = within(dialog).getByRole('group', { name: 'Theme' });
+    expect(within(themes).getByRole('radio', { name: 'Organizr' })).toBeChecked();
+    expect(within(themes).getByRole('radio', { name: 'Nord' })).not.toBeChecked();
   });
 });

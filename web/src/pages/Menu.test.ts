@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { frames as loadedFrames } from '../lib/frames.svelte';
 import type { MenuCategory, MenuTab } from '../lib/types';
 import Menu from './Menu.svelte';
+import MenuWithTips from './MenuWithTips.test.svelte';
 import TabFrames from './TabFrames.svelte';
 
 function tab(id: number, name: string, changes: Partial<MenuTab> = {}): MenuTab {
@@ -134,6 +135,43 @@ describe('Menu', () => {
     const pictures = [...container.querySelectorAll('img')].map((image) => image.src);
     expect(pictures).toEqual(['https://example.com/plex.png']);
     expect(screen.getByRole('link', { name: /Status/ })).toHaveTextContent('S');
+  });
+});
+
+describe('Menu, collapsed', () => {
+  const tabs = [tab(1, 'Status'), tab(2, 'Plex Server', { category_id: 7 })];
+  const props = { tabs, categories: CATEGORIES, shown: 2, unsortedPlace: 'top' as const };
+
+  it('leaves the og menu unchanged', () => {
+    const open = render(Menu, { ...props, variant: 'og' });
+    const before = open.container.innerHTML;
+    open.unmount();
+    const collapsed = render(Menu, { ...props, variant: 'og', collapsed: true });
+    expect(collapsed.container.innerHTML).toBe(before);
+    expect(screen.getByText('Media')).toBeInTheDocument();
+  });
+
+  it('shows the modern tabs as a flat column of pictures, each named and the shown one marked', () => {
+    const { container } = render(MenuWithTips, { ...props, variant: 'modern', collapsed: true });
+
+    // No category to open: the tabs stand in one list, without their names as text.
+    expect(container.querySelector('details')).toBeNull();
+    expect(screen.queryByText('Media')).toBeNull();
+    expect(screen.queryByText('Plex Server')).toBeNull();
+    // Each link keeps its name for a screen reader, and the shown tab is marked.
+    expect(screen.getByRole('link', { name: 'Status' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Plex Server' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('shows the modern tabs with their names and categories when not collapsed', () => {
+    const { container } = render(Menu, { ...props, variant: 'modern' });
+
+    expect(container.querySelector('details')).not.toBeNull();
+    expect(screen.getByText('Media')).toBeInTheDocument();
+    expect(screen.getByText('Plex Server')).toBeInTheDocument();
   });
 });
 
