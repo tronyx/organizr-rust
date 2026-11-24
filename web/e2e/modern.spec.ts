@@ -650,3 +650,47 @@ test('on OG the sample of the theme of the install shows the colours of the Admi
     await page.request.put('./api/v2/config', { data: { buttonColor: before } });
   }
 });
+
+test('long theme names fit the look popover at a large text size', async ({ page }) => {
+  await logIn(page);
+  const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
+
+  try {
+    expect((await look({ layout: 'modern', theme: 'organizr', colourSet: 'dark' })).ok()).toBe(
+      true,
+    );
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.reload();
+    // A browser text size of 200 %: a root of 32 px instead of 16 px, set through the CSSOM.
+    await page.evaluate(() => document.documentElement.style.setProperty('font-size', '32px'));
+    await page.getByRole('button', { name: 'Look' }).click();
+    const panel = page.locator('[data-slot="popover-content"]');
+    await expect(panel.getByRole('radio', { name: 'Nocturne', exact: true })).toBeVisible();
+
+    const overflow = await panel.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      const wide = [element, ...element.querySelectorAll('*')].filter(
+        (node) =>
+          node.scrollWidth > node.clientWidth + 1 && getComputedStyle(node).overflowX !== 'visible',
+      );
+      const outside = [...element.querySelectorAll('label')].filter((label) => {
+        const own = label.getBoundingClientRect();
+        return own.right > box.right + 0.5 || own.left < box.left - 0.5;
+      });
+      return {
+        scrolls: wide.map((node) => node.className),
+        outside: outside.map((label) => label.textContent?.trim()),
+      };
+    });
+    expect(overflow.scrolls).toEqual([]);
+    expect(overflow.outside).toEqual([]);
+    // Each radio keeps its whole name.
+    await expect(panel.getByRole('radio', { name: 'Nocturne', exact: true })).toHaveAccessibleName(
+      'Nocturne',
+    );
+  } finally {
+    await page.evaluate(() => document.documentElement.style.removeProperty('font-size'));
+    await page.setViewportSize({ width: 1280, height: 720 });
+    expect((await look({ layout: 'og' })).ok()).toBe(true);
+  }
+});

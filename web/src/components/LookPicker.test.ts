@@ -491,6 +491,21 @@ describe('LookPicker', () => {
     expect(screen.getByRole('radio', { name: 'Plex' })).toBeInTheDocument();
   });
 
+  it('a_long_name_wraps_in_its_column_instead_of_widening_the_grid', async () => {
+    await open({ ...MODERN, theme: 'nocturne', colourSet: 'moonlit' });
+
+    for (const name of ['Nocturne', 'Moonlit']) {
+      const label = screen.getByRole('radio', { name }).closest('label');
+      // A flex item may shrink below its text only with `min-w-0`; the text then wraps.
+      expect(label).toHaveClass('min-w-0');
+      expect(label?.querySelector(':scope > span:not(.org-swatch)')).toHaveClass(
+        'min-w-0',
+        'wrap-anywhere',
+      );
+      expect(label?.querySelector(':scope > span:not(.org-swatch)')).toHaveTextContent(name);
+    }
+  });
+
   it('the_theme_radios_have_their_own_group_name', async () => {
     await open(MODERN);
 

@@ -158,7 +158,8 @@
         class="grid max-h-[50vh] grid-cols-1 gap-x-3 gap-y-1 overflow-y-auto p-0.5 sm:grid-cols-2"
       >
         {#each themes as theme (theme.id)}
-          <label class="flex items-center gap-2">
+          <!-- A long name wraps in its column instead of widening the grid. -->
+          <label class="flex min-w-0 items-center gap-2">
             <input
               type="radio"
               class="radio radio-sm"
@@ -167,7 +168,7 @@
               onchange={() => chooseTheme(theme.id)}
             />
             <ThemeSwatch theme={theme.swatch} colours={coloursOf(theme.id)} />
-            <span>{theme.label}</span>
+            <span class="min-w-0 wrap-anywhere">{theme.label}</span>
           </label>
         {/each}
       </div>
@@ -177,7 +178,7 @@
       <fieldset class="flex flex-col gap-1" aria-busy={busy}>
         <legend class="mb-1 text-sm font-semibold">Colours</legend>
         {#each colourSets as set (set.id)}
-          <label class="flex items-center gap-2">
+          <label class="flex min-w-0 items-center gap-2">
             <input
               type="radio"
               class="radio radio-sm"
@@ -187,7 +188,7 @@
               onchange={() => chooseColourSet(set.id)}
             />
             <ThemeSwatch theme={modernThemeId(shown.theme, set.id)} />
-            <span>{set.label}</span>
+            <span class="min-w-0 wrap-anywhere">{set.label}</span>
           </label>
         {/each}
       </fieldset>
