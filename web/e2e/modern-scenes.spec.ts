@@ -35,7 +35,7 @@ import {
   expectEdges,
   expectLook,
   expectNoSideScroll,
-  focusColours,
+  focusColors,
   keyboardFocus,
   lookToRestore,
   newGuest,
@@ -149,11 +149,11 @@ async function textsOnTheScene(page: Page): Promise<string[]> {
     canvas.width = 1;
     canvas.height = 1;
     const context = canvas.getContext('2d', { willReadFrequently: true });
-    const opaque = (colour: string) => {
+    const opaque = (color: string) => {
       if (!context) return false;
       context.clearRect(0, 0, 1, 1);
       context.fillStyle = 'rgba(0, 0, 0, 0)';
-      context.fillStyle = colour;
+      context.fillStyle = color;
       context.fillRect(0, 0, 1, 1);
       return (context.getImageData(0, 0, 1, 1).data[3] ?? 0) === 255;
     };
@@ -219,11 +219,11 @@ async function freeSpot(page: Page): Promise<{ x: number; y: number } | null> {
     canvas.width = 1;
     canvas.height = 1;
     const context = canvas.getContext('2d', { willReadFrequently: true });
-    const opaque = (colour: string) => {
+    const opaque = (color: string) => {
       if (!context) return false;
       context.clearRect(0, 0, 1, 1);
       context.fillStyle = 'rgba(0, 0, 0, 0)';
-      context.fillStyle = colour;
+      context.fillStyle = color;
       context.fillRect(0, 0, 1, 1);
       return (context.getImageData(0, 0, 1, 1).data[3] ?? 0) > 0;
     };
@@ -512,7 +512,7 @@ test('scenes_and_their_fonts_load_only_for_their_theme', async ({ page, browser 
 test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
   test.setTimeout(300_000);
   // Five scene themes of three colour sets each; a later scene theme adds to them.
-  expect(SCENE_LOOKS.length, 'colour sets of the scene themes').toBeGreaterThanOrEqual(15);
+  expect(SCENE_LOOKS.length, 'color sets of the scene themes').toBeGreaterThanOrEqual(15);
   await logIn(page);
   const lookBefore = await readLook(page);
   const config = await readConfig(page);
@@ -554,13 +554,13 @@ test('every_scene_look_passes_the_audit', async ({ page, browser }) => {
       // The homepage with every item, over the scene.
       await openHomepage(page, look);
       await expect(page.locator('html')).toHaveAttribute(
-        'data-colour-set',
+        'data-color-set',
         look.light ? 'light' : 'dark',
       );
       const scene = page.locator(`.m-scene.m-scene-${look.scene}`);
       await expect(scene).toHaveAttribute('aria-hidden', 'true');
       await expect(scene).toHaveCSS('pointer-events', 'none');
-      const focus = await focusColours(page, look);
+      const focus = await focusColors(page, look);
       await checkContrast(page, look, 'the homepage');
       expect
         .soft(await textsOnTheScene(page), `texts on the scene of the homepage (${look.id})`)

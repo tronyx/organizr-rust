@@ -874,6 +874,34 @@ describe('Settings, Main: the form of PHP', () => {
     );
   });
 
+  it('shows the British words of PHP in American spelling, and keeps the names', async () => {
+    // The Netdata fields of PHP are labeled "Colour"; the server passes the label on as it is.
+    await showMain({
+      'GET settings/main': {
+        data: {
+          ...MAIN,
+          Netdata: [
+            {
+              type: 'select',
+              label: 'Colour',
+              name: 'netdata1Colour',
+              value: '',
+              options: [
+                { name: 'Red', value: 'fe3912' },
+                { name: 'Default', value: '' },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    await group('Netdata');
+
+    const field = screen.getByRole('combobox', { name: 'Color' });
+    expect(field).toHaveAttribute('id', 'php-netdata1Colour');
+    expect(screen.queryByText('Colour')).toBeNull();
+  });
+
   it('sends only the settings that changed, with one request', async () => {
     const sent = await showMain({ 'PUT config': { message: 'Config items updated' } });
     const save = screen.getByRole('button', { name: 'Save' });

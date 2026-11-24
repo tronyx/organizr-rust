@@ -15,7 +15,7 @@ type ColorSet = 'dark' | 'light';
 async function useColorSet(page: Page, set: ColorSet) {
   await page.evaluate((wanted) => {
     document.documentElement.dataset.theme = `m-organizr-${wanted}`;
-    document.documentElement.dataset.colourSet = wanted;
+    document.documentElement.dataset.colorSet = wanted;
   }, set);
   await expect(page.locator('html')).toHaveAttribute('data-theme', `m-organizr-${set}`);
 }

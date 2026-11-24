@@ -12,7 +12,7 @@ export interface LowContrast {
   /** A CSS path of the element that holds the text. */
   selector: string;
   /** The colour of the text and the colour behind it, as `rgb(…)`. */
-  colour: string;
+  color: string;
   background: string;
   /** Large text needs 3:1 instead of 4.5:1. */
   large: boolean;
@@ -60,22 +60,22 @@ export async function auditContrast(page: Page, within?: string): Promise<Contra
     canvas.height = 1;
     const context = canvas.getContext('2d', { willReadFrequently: true });
     if (!context) {
-      throw new Error('No canvas to read colours with.');
+      throw new Error('No canvas to read colors with.');
     }
     type Rgba = [number, number, number, number];
     const cache = new Map<string, Rgba>();
-    const rgba = (colour: string): Rgba => {
-      const known = cache.get(colour);
+    const rgba = (color: string): Rgba => {
+      const known = cache.get(color);
       if (known) {
         return known;
       }
       context.clearRect(0, 0, 1, 1);
       context.fillStyle = 'rgba(0, 0, 0, 0)';
-      context.fillStyle = colour;
+      context.fillStyle = color;
       context.fillRect(0, 0, 1, 1);
       const [r = 0, g = 0, b = 0, a = 0] = context.getImageData(0, 0, 1, 1).data;
       const value: Rgba = [r, g, b, a / 255];
-      cache.set(colour, value);
+      cache.set(color, value);
       return value;
     };
     // `top` drawn over `bottom`, which is opaque.
@@ -184,9 +184,9 @@ export async function auditContrast(page: Page, within?: string): Promise<Contra
           const image = style.backgroundImage.slice(0, 80);
           return `${pathOf(current)} has ${image} (size ${style.backgroundSize})`;
         }
-        const colour = rgba(style.backgroundColor);
+        const color = rgba(style.backgroundColor);
         const opacity = Number(style.opacity);
-        const layer: Rgba = [colour[0], colour[1], colour[2], colour[3] * opacity];
+        const layer: Rgba = [color[0], color[1], color[2], color[3] * opacity];
         if (layer[3] > 0) {
           layers.push(layer);
         }
@@ -289,17 +289,17 @@ export async function auditContrast(page: Page, within?: string): Promise<Contra
       if (placeholder) {
         opacity *= Number(placeholder.opacity);
       }
-      const colour = over([own[0], own[1], own[2], own[3] * opacity], background);
+      const color = over([own[0], own[1], own[2], own[3] * opacity], background);
       const size = parseFloat(style.fontSize);
       const large = size >= 24 || (size >= 18.66 && Number(style.fontWeight) >= 700);
-      const ratio = ratioOf(colour, background);
+      const ratio = ratioOf(color, background);
       checked += 1;
       if (ratio < (large ? 3 : 4.5)) {
         low.push({
           text: excerpt,
           ratio: Math.round(ratio * 100) / 100,
           selector: pathOf(element),
-          colour: show(colour),
+          color: show(color),
           background: show(background),
           large,
         });
@@ -321,7 +321,7 @@ export async function lowContrastTexts(
 export function describeLowContrast(where: string, low: LowContrast[]): string {
   const lines = low.map(
     (item) =>
-      `  ${item.ratio.toFixed(2)}:1${item.large ? ' (large)' : ''}  "${item.text}"  ${item.colour} on ${item.background}\n      at ${item.selector}`,
+      `  ${item.ratio.toFixed(2)}:1${item.large ? ' (large)' : ''}  "${item.text}"  ${item.color} on ${item.background}\n      at ${item.selector}`,
   );
   return `Low contrast on ${where} (${low.length}):\n${lines.join('\n')}`;
 }

@@ -10,7 +10,7 @@ import AppearanceSettings from './AppearanceSettings.svelte';
 const CONFIG = { layout: 'og', modernTheme: 'organizr', modernColorSet: 'dark' };
 
 /** PHP's group, as `GET settings/appearance` gives it, shortened. */
-const COLOURS = [
+const COLORS = [
   { type: 'notice', override: 12, name: null, notice: 'info', title: 'Attention', body: '' },
   { type: 'button', label: 'Reset Colors', name: '', text: 'Reset' },
   {
@@ -67,7 +67,7 @@ async function open(config: Record<string, unknown> = CONFIG, groupID = 0) {
         // Groups before and after the look, in PHP's order, so that its place shows.
         'Top Bar': [{ type: 'input', label: 'Title', name: 'title', value: 'Organizr' }],
         'Login Page': [{ type: 'input', label: 'Login Text', name: 'loginText', value: '' }],
-        'Colors & Themes': COLOURS,
+        'Colors & Themes': COLORS,
         Notifications: [{ type: 'input', label: 'Position', name: 'position', value: '' }],
       },
     },
@@ -103,7 +103,7 @@ describe('the group Style & Themes', () => {
     expect(screen.queryByRole('tab', { name: 'Colors & Themes' })).toBeNull();
   });
 
-  it('shows_the_notice_then_default_layout_then_the_colours', async () => {
+  it('shows_the_notice_then_default_layout_then_the_colors', async () => {
     const { panel } = await open();
 
     const notice = within(panel).getByRole('heading', { name: 'Attention' });
@@ -111,13 +111,13 @@ describe('the group Style & Themes', () => {
     const heading = within(panel).getByRole('heading', {
       name: 'Colors of the OG Organizr layout',
     });
-    const colour = within(panel).getByLabelText('Nav Bar Color', { selector: 'input' });
+    const color = within(panel).getByLabelText('Nav Bar Color', { selector: 'input' });
     const follows = (first: Element, second: Element) =>
       (first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
     expect(follows(notice, layout)).toBe(true);
     expect(within(panel).getAllByRole('combobox')[0]).toBe(layout);
     expect(follows(layout, heading)).toBe(true);
-    expect(follows(heading, colour)).toBe(true);
+    expect(follows(heading, color)).toBe(true);
     expect(within(panel).getByRole('button', { name: 'Reset' })).toBeInTheDocument();
     expect(panel).toHaveTextContent('apply to the OG Organizr layout only');
   });
@@ -186,9 +186,9 @@ describe('the group Style & Themes', () => {
       expect(within(themes).getByRole('option', { name: label })).toBeInTheDocument();
     }
     await fireEvent.change(themes, { target: { value: 'plex' } });
-    const colours = within(panel).getByRole('combobox', { name: 'Modern color set' });
-    expect(colours).toBeEnabled();
-    await fireEvent.change(colours, { target: { value: 'light' } });
+    const colors = within(panel).getByRole('combobox', { name: 'Modern color set' });
+    expect(colors).toBeEnabled();
+    await fireEvent.change(colors, { target: { value: 'light' } });
 
     await fireEvent.change(layout, { target: { value: 'og' } });
     expect(within(panel).getByRole('combobox', { name: 'Theme' })).toHaveValue('Nord');
@@ -200,12 +200,12 @@ describe('the group Style & Themes', () => {
   it('modern_also_shows_the_og_theme_below_the_modern_ones_under_its_heading', async () => {
     const { panel, save, puts } = await open({ ...CONFIG, layout: 'modern' });
 
-    const colours = within(panel).getByRole('combobox', { name: 'Modern color set' });
+    const colors = within(panel).getByRole('combobox', { name: 'Modern color set' });
     const heading = within(panel).getByRole('heading', { name: 'OG Organizr' });
     const og = within(panel).getByRole('combobox', { name: 'Theme' });
     const follows = (first: Element, second: Element) =>
       (first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
-    expect(follows(colours, heading)).toBe(true);
+    expect(follows(colors, heading)).toBe(true);
     expect(follows(heading, og)).toBe(true);
     expect(og).toHaveValue('Organizr');
     expect(within(panel).getAllByLabelText('Theme', { exact: true })).toHaveLength(1);
@@ -227,7 +227,7 @@ describe('the group Style & Themes', () => {
     expect(within(panel).queryByRole('combobox', { name: 'Modern theme' })).toBeNull();
   });
 
-  it('one_save_sends_the_look_and_a_colour_together_and_reloads', async () => {
+  it('one_save_sends_the_look_and_a_color_together_and_reloads', async () => {
     const { sent, panel, save, puts } = await open();
 
     await fireEvent.change(within(panel).getByRole('combobox', { name: 'Theme' }), {
@@ -289,7 +289,7 @@ describe('the group Style & Themes', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it('a_loaded_colour_set_the_theme_does_not_have_shows_its_first_set_and_is_no_change', async () => {
+  it('a_loaded_color_set_the_theme_does_not_have_shows_its_first_set_and_is_no_change', async () => {
     const { panel } = await open({
       layout: 'modern',
       modernTheme: 'silo',
@@ -336,24 +336,24 @@ describe('the group Style & Themes', () => {
     ['circuit', 'matrix', ['Matrix', 'Synth', 'Amber']],
     ['prism', 'daydream', ['Daydream', 'Twilight', 'Candy']],
   ] as const) {
-    it(`choosing_${theme}_moves_the_colour_set_to_${first}`, async () => {
+    it(`choosing_${theme}_moves_the_color_set_to_${first}`, async () => {
       const { panel, save, puts } = await open({ ...CONFIG, layout: 'modern' });
 
       await fireEvent.change(within(panel).getByRole('combobox', { name: 'Modern theme' }), {
         target: { value: theme },
       });
-      const colours = within(panel).getByRole('combobox', { name: 'Modern color set' });
-      expect(colours).toHaveValue(first);
+      const colors = within(panel).getByRole('combobox', { name: 'Modern color set' });
+      expect(colors).toHaveValue(first);
       for (const label of labels) {
-        expect(within(colours).getByRole('option', { name: label })).toBeInTheDocument();
+        expect(within(colors).getByRole('option', { name: label })).toBeInTheDocument();
       }
-      expect(within(colours).queryByRole('option', { name: 'Dark' })).toBeNull();
+      expect(within(colors).queryByRole('option', { name: 'Dark' })).toBeNull();
       await save();
       expect(puts()[0]?.body).toEqual({ modernTheme: theme, modernColorSet: first });
     });
   }
 
-  it('a_sample_shows_the_colours_of_the_chosen_theme_and_set', async () => {
+  it('a_sample_shows_the_colors_of_the_chosen_theme_and_set', async () => {
     const { panel } = await open({ ...CONFIG, layout: 'modern' });
 
     const swatch = () => panel.querySelector('.org-swatch');

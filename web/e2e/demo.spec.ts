@@ -689,7 +689,7 @@ test('the Admin reads the log of the server on the settings page', async ({ page
   await expect(log).toContainText(/Request ID\s*None/);
 });
 
-test('the Admin installs a theme, picks it, and sets a colour and custom CSS', async ({ page }) => {
+test('the Admin installs a theme, picks it, and sets a color and custom CSS', async ({ page }) => {
   await logIn(page);
   const root = page.locator('html');
   const header = page.getByRole('banner');

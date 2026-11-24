@@ -6,13 +6,13 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   applyLook,
   contrastRatio,
-  MODERN_THEME_COLOURS,
+  MODERN_THEME_COLORS,
   MODERN_THEMES,
   modernThemeId,
   sceneOf,
   type Look,
 } from './look';
-import { COLOUR_VARIABLE_NAMES } from './theme';
+import { COLOR_VARIABLE_NAMES } from './theme';
 
 const og = (theme: string, colorSet = 'dark'): Look => ({
   layout: 'og',
@@ -37,22 +37,22 @@ describe('applyLook', () => {
     applyLook(og('Nord'), undefined, {}, root);
     expect(root.dataset.layout).toBe('og');
     expect(root.dataset.theme).toBe('org-nord');
-    expect(root.dataset.colourSet).toBeUndefined();
+    expect(root.dataset.colorSet).toBeUndefined();
   });
 
-  it('modern_look_sets_the_modern_theme_and_colour_set', () => {
+  it('modern_look_sets_the_modern_theme_and_color_set', () => {
     const root = document.createElement('html');
     applyLook(modern('organizr', 'dark'), undefined, {}, root);
     expect(root.dataset.layout).toBe('modern');
     expect(root.dataset.theme).toBe('m-organizr-dark');
-    expect(root.dataset.colourSet).toBe('dark');
+    expect(root.dataset.colorSet).toBe('dark');
   });
 
-  it('the_light_colour_set_is_offered', () => {
+  it('the_light_color_set_is_offered', () => {
     const root = document.createElement('html');
     applyLook(modern('organizr', 'light'), undefined, {}, root);
     expect(root.dataset.theme).toBe('m-organizr-light');
-    expect(root.dataset.colourSet).toBe('light');
+    expect(root.dataset.colorSet).toBe('light');
   });
 
   it('a_fresh_modern_look_links_the_custom_css', () => {
@@ -62,7 +62,7 @@ describe('applyLook', () => {
     expect(document.querySelectorAll('#org-custom-css')).toHaveLength(1);
   });
 
-  it('switching_to_modern_drops_the_og_colours_and_keeps_custom_css', () => {
+  it('switching_to_modern_drops_the_og_colors_and_keeps_custom_css', () => {
     const root = document.createElement('html');
     const appearance = { headerColor: '#112233', accentColor: '#445566', customCss: 'a{b:c}' };
     applyLook(og('Organizr'), undefined, appearance, root);
@@ -70,7 +70,7 @@ describe('applyLook', () => {
     expect(document.getElementById('org-custom-css')).not.toBeNull();
 
     applyLook(modern('organizr', 'dark'), undefined, appearance, root);
-    for (const name of COLOUR_VARIABLE_NAMES) {
+    for (const name of COLOR_VARIABLE_NAMES) {
       expect(root.style.getPropertyValue(name)).toBe('');
     }
     expect(document.getElementById('org-custom-css')).not.toBeNull();
@@ -167,7 +167,7 @@ describe('applyLook', () => {
         const root = document.createElement('html');
         applyLook(modern(theme, set), undefined, {}, root);
         expect(root.dataset.theme).toBe(`m-${theme}-${set}`);
-        expect(root.dataset.colourSet).toBe(set);
+        expect(root.dataset.colorSet).toBe(set);
       }
       expect(modernThemeId(theme, 'purple')).toBe('m-organizr-dark');
     }
@@ -180,61 +180,61 @@ describe('applyLook', () => {
       applyLook(modern('silo', set), undefined, {}, root);
       expect(root.dataset.theme).toBe(`m-silo-${set}`);
       // Every set of Silo is dark.
-      expect(root.dataset.colourSet).toBe('dark');
+      expect(root.dataset.colorSet).toBe('dark');
     }
     // `dark` and `light` are not sets of Silo: they give the default, as any unknown set.
     expect(modernThemeId('silo', 'dark')).toBe('m-organizr-dark');
     expect(modernThemeId('silo', 'light')).toBe('m-organizr-dark');
   });
 
-  it('nocturne_has_three_dark_colour_sets', () => {
+  it('nocturne_has_three_dark_color_sets', () => {
     for (const set of ['amethyst', 'crimson', 'moonlit']) {
       expect(modernThemeId('nocturne', set)).toBe(`m-nocturne-${set}`);
       const root = document.createElement('html');
       applyLook(modern('nocturne', set), undefined, {}, root);
       expect(root.dataset.theme).toBe(`m-nocturne-${set}`);
-      expect(root.dataset.colourSet).toBe('dark');
+      expect(root.dataset.colorSet).toBe('dark');
     }
     expect(modernThemeId('nocturne', 'dark')).toBe('m-organizr-dark');
   });
 
-  it('riot_has_three_dark_colour_sets', () => {
+  it('riot_has_three_dark_color_sets', () => {
     for (const set of ['acid', 'hotwire', 'blacklight']) {
       expect(modernThemeId('riot', set)).toBe(`m-riot-${set}`);
       const root = document.createElement('html');
       applyLook(modern('riot', set), undefined, {}, root);
       expect(root.dataset.theme).toBe(`m-riot-${set}`);
-      expect(root.dataset.colourSet).toBe('dark');
+      expect(root.dataset.colorSet).toBe('dark');
     }
     expect(modernThemeId('riot', 'dark')).toBe('m-organizr-dark');
     expect(modernThemeId('riot', 'amethyst')).toBe('m-organizr-dark');
   });
 
-  it('tempest_has_three_dark_colour_sets', () => {
+  it('tempest_has_three_dark_color_sets', () => {
     for (const set of ['squall', 'abyss', 'gale']) {
       expect(modernThemeId('tempest', set)).toBe(`m-tempest-${set}`);
       const root = document.createElement('html');
       applyLook(modern('tempest', set), undefined, {}, root);
       expect(root.dataset.theme).toBe(`m-tempest-${set}`);
-      expect(root.dataset.colourSet).toBe('dark');
+      expect(root.dataset.colorSet).toBe('dark');
     }
     expect(modernThemeId('tempest', 'dark')).toBe('m-organizr-dark');
     expect(modernThemeId('tempest', 'acid')).toBe('m-organizr-dark');
   });
 
-  it('circuit_has_three_dark_colour_sets', () => {
+  it('circuit_has_three_dark_color_sets', () => {
     for (const set of ['matrix', 'synth', 'amber']) {
       expect(modernThemeId('circuit', set)).toBe(`m-circuit-${set}`);
       const root = document.createElement('html');
       applyLook(modern('circuit', set), undefined, {}, root);
       expect(root.dataset.theme).toBe(`m-circuit-${set}`);
-      expect(root.dataset.colourSet).toBe('dark');
+      expect(root.dataset.colorSet).toBe('dark');
     }
     expect(modernThemeId('circuit', 'dark')).toBe('m-organizr-dark');
     expect(modernThemeId('circuit', 'acid')).toBe('m-organizr-dark');
   });
 
-  it('prism_has_two_light_colour_sets_and_a_dark_one', () => {
+  it('prism_has_two_light_color_sets_and_a_dark_one', () => {
     // Daydream and Candy are light, Twilight is dark: the colour set of the page follows.
     for (const [set, scheme] of [
       ['daydream', 'light'],
@@ -245,7 +245,7 @@ describe('applyLook', () => {
       const root = document.createElement('html');
       applyLook(modern('prism', set), undefined, {}, root);
       expect(root.dataset.theme).toBe(`m-prism-${set}`);
-      expect(root.dataset.colourSet, set).toBe(scheme);
+      expect(root.dataset.colorSet, set).toBe(scheme);
     }
     expect(modernThemeId('prism', 'light')).toBe('m-organizr-dark');
     expect(modernThemeId('prism', 'acid')).toBe('m-organizr-dark');
@@ -279,9 +279,9 @@ describe('sceneOf', () => {
   });
 });
 
-describe('the modern colour sets', () => {
-  it('modern_colour_sets_meet_aa', () => {
-    expect(Object.keys(MODERN_THEME_COLOURS).sort()).toEqual([
+describe('the modern color sets', () => {
+  it('modern_color_sets_meet_aa', () => {
+    expect(Object.keys(MODERN_THEME_COLORS).sort()).toEqual([
       'm-circuit-amber',
       'm-circuit-matrix',
       'm-circuit-synth',
@@ -309,9 +309,9 @@ describe('the modern colour sets', () => {
       'm-tempest-gale',
       'm-tempest-squall',
     ]);
-    const names = (MODERN_THEME_COLOURS['m-organizr-dark'] ?? []).map((pair) => pair.name);
+    const names = (MODERN_THEME_COLORS['m-organizr-dark'] ?? []).map((pair) => pair.name);
     expect(names).toHaveLength(13);
-    for (const [id, pairs] of Object.entries(MODERN_THEME_COLOURS)) {
+    for (const [id, pairs] of Object.entries(MODERN_THEME_COLORS)) {
       expect(
         pairs.map((pair) => pair.name),
         id,
@@ -351,7 +351,7 @@ describe('the modern colour sets', () => {
     for (const id of MODERN_THEMES.flatMap((theme) =>
       theme.colorSets.map((set) => modernThemeId(theme.id, set.id)),
     )) {
-      const pairs = MODERN_THEME_COLOURS[id] ?? [];
+      const pairs = MODERN_THEME_COLORS[id] ?? [];
       const text = pairs.find((pair) => pair.name === 'page')?.text ?? '';
       for (const name of ['page', 'menu', 'heading']) {
         const background = pairs.find((pair) => pair.name === name)?.background ?? '';
@@ -365,7 +365,7 @@ describe('the modern colour sets', () => {
 
   it('the_active_menu_item_meets_aa_on_its_highlight', () => {
     // The open entry of the side menu has the active colour on a base-300 highlight.
-    for (const [id, pairs] of Object.entries(MODERN_THEME_COLOURS)) {
+    for (const [id, pairs] of Object.entries(MODERN_THEME_COLORS)) {
       const active = pairs.find((pair) => pair.name === 'sidebar active')?.text ?? '';
       const highlight = pairs.find((pair) => pair.name === 'heading')?.background ?? '';
       expect(contrastRatio(active, highlight), id).toBeGreaterThanOrEqual(4.5);
@@ -393,7 +393,7 @@ describe('the modern colour sets', () => {
 
   it('silo_has_off_white_buttons_with_dark_text', () => {
     for (const id of ['m-silo-ember', 'm-silo-ice', 'm-silo-rose']) {
-      const pairs = MODERN_THEME_COLOURS[id] ?? [];
+      const pairs = MODERN_THEME_COLORS[id] ?? [];
       const primary = pairs.find((pair) => pair.name === 'primary');
       const page = pairs.find((pair) => pair.name === 'page');
       // Off-white: nearly as light as white, far lighter than the page.
@@ -437,11 +437,11 @@ describe('the modern colour sets', () => {
       const block = css.slice(start, css.indexOf('}', start));
       const value = (name: string) =>
         new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
-      for (const colour of ['color-accent', 'color-primary']) {
+      for (const color of ['color-accent', 'color-primary']) {
         for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
           expect(
-            contrastRatio(value(colour), value(surface)),
-            `${id} ${colour} on ${surface}`,
+            contrastRatio(value(color), value(surface)),
+            `${id} ${color} on ${surface}`,
           ).toBeGreaterThanOrEqual(4.5);
         }
       }
@@ -460,11 +460,11 @@ describe('the modern colour sets', () => {
       const block = css.slice(start, css.indexOf('}', start));
       const value = (name: string) =>
         new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
-      for (const colour of ['color-accent', 'color-primary', 'color-secondary']) {
+      for (const color of ['color-accent', 'color-primary', 'color-secondary']) {
         for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
           expect(
-            contrastRatio(value(colour), value(surface)),
-            `${id} ${colour} on ${surface}`,
+            contrastRatio(value(color), value(surface)),
+            `${id} ${color} on ${surface}`,
           ).toBeGreaterThanOrEqual(4.5);
         }
       }
@@ -483,11 +483,11 @@ describe('the modern colour sets', () => {
       const block = css.slice(start, css.indexOf('}', start));
       const value = (name: string) =>
         new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
-      for (const colour of ['color-accent', 'color-primary', 'color-secondary']) {
+      for (const color of ['color-accent', 'color-primary', 'color-secondary']) {
         for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
           expect(
-            contrastRatio(value(colour), value(surface)),
-            `${id} ${colour} on ${surface}`,
+            contrastRatio(value(color), value(surface)),
+            `${id} ${color} on ${surface}`,
           ).toBeGreaterThanOrEqual(4.5);
         }
       }
@@ -506,11 +506,11 @@ describe('the modern colour sets', () => {
       const block = css.slice(start, css.indexOf('}', start));
       const value = (name: string) =>
         new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
-      for (const colour of ['color-accent', 'color-primary', 'color-secondary']) {
+      for (const color of ['color-accent', 'color-primary', 'color-secondary']) {
         for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
           expect(
-            contrastRatio(value(colour), value(surface)),
-            `${id} ${colour} on ${surface}`,
+            contrastRatio(value(color), value(surface)),
+            `${id} ${color} on ${surface}`,
           ).toBeGreaterThanOrEqual(4.5);
         }
       }
@@ -533,11 +533,11 @@ describe('the modern colour sets', () => {
       const block = css.slice(start, css.indexOf('}', start));
       const value = (name: string) =>
         new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
-      for (const colour of ['color-accent', 'color-primary', 'color-secondary']) {
+      for (const color of ['color-accent', 'color-primary', 'color-secondary']) {
         for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
           expect(
-            contrastRatio(value(colour), value(surface)),
-            `${id} ${colour} on ${surface}`,
+            contrastRatio(value(color), value(surface)),
+            `${id} ${color} on ${surface}`,
           ).toBeGreaterThanOrEqual(4.5);
         }
       }
@@ -550,9 +550,9 @@ describe('the modern colour sets', () => {
     expect(contrastRatio('#ffffff', '#ffffff')).toBeCloseTo(1, 5);
   });
 
-  it('app_css_defines_the_colours_of_the_table', () => {
+  it('app_css_defines_the_colors_of_the_table', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
-    for (const [id, pairs] of Object.entries(MODERN_THEME_COLOURS)) {
+    for (const [id, pairs] of Object.entries(MODERN_THEME_COLORS)) {
       const start = css.indexOf(`name: '${id}';`);
       expect(start, id).toBeGreaterThan(-1);
       const block = css.slice(start, css.indexOf('}', start));

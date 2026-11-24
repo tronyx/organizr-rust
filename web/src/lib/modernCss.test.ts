@@ -54,7 +54,7 @@ function modernRules(): Rule[] {
 }
 
 /** The CSS named colours (not `transparent`, `currentColor` or `inherit`). */
-const NAMED_COLOURS = (
+const NAMED_COLORS = (
   'aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue ' +
   'blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk ' +
   'crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki ' +
@@ -75,8 +75,8 @@ const NAMED_COLOURS = (
 ).split(' ');
 
 /** A literal colour: a hex value, a colour function (not `color-mix`) or a named colour. */
-const LITERAL_COLOUR = new RegExp(
-  String.raw`#[0-9a-fA-F]{3,8}\b|(?<![\w-])(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color|light-dark)\(|(?<![\w-])(?:${NAMED_COLOURS.join('|')})(?![\w-])`,
+const LITERAL_COLOR = new RegExp(
+  String.raw`#[0-9a-fA-F]{3,8}\b|(?<![\w-])(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color|light-dark)\(|(?<![\w-])(?:${NAMED_COLORS.join('|')})(?![\w-])`,
 );
 
 /** The values of the declarations of a rule: a name such as `border-color` is not a colour. */
@@ -226,16 +226,16 @@ const AUTH_FILES = [
 ];
 
 describe('the modern CSS', () => {
-  it('modern_rules_use_only_theme_colours', () => {
+  it('modern_rules_use_only_theme_colors', () => {
     const rulesOfModern = modernRules();
     expect(rulesOfModern.length).toBeGreaterThan(0);
-    const bad = rulesOfModern.filter((rule) => LITERAL_COLOUR.test(valuesOf(rule.body)));
+    const bad = rulesOfModern.filter((rule) => LITERAL_COLOR.test(valuesOf(rule.body)));
     expect(bad.map((rule) => rule.selector)).toEqual([]);
   });
 
-  it('the_literal_colour_check_sees_named_colours_and_new_functions', () => {
+  it('the_literal_color_check_sees_named_colors_and_new_functions', () => {
     for (const value of ['red', '1px solid tan', 'color(srgb 1 0 0)', 'light-dark(red, blue)']) {
-      expect(LITERAL_COLOUR.test(value), value).toBe(true);
+      expect(LITERAL_COLOR.test(value), value).toBe(true);
     }
     for (const value of [
       'transparent',
@@ -244,7 +244,7 @@ describe('the modern CSS', () => {
       'var(--color-base-300)',
       'color-mix(in oklab, var(--color-primary) 35%, transparent)',
     ]) {
-      expect(LITERAL_COLOUR.test(value), value).toBe(false);
+      expect(LITERAL_COLOR.test(value), value).toBe(false);
     }
   });
 
@@ -375,7 +375,7 @@ describe('the modern CSS', () => {
     expect(unknown).toEqual([]);
   });
 
-  it('modern_sets_the_calendar_event_variables_from_theme_colours', () => {
+  it('modern_sets_the_calendar_event_variables_from_theme_colors', () => {
     const rule = modernRules().find(
       (one) => one.selector === SCOPE && one.body.includes('--org-event-'),
     );
@@ -540,13 +540,13 @@ describe('the borders of the form controls', () => {
   }
 
   it.each(OFFERED)('form_borders_reach_3_to_1_on_%s', (name) => {
-    const colours = theme(name);
-    const field = luminance(channels(colours['base-100'] as string));
+    const colors = theme(name);
+    const field = luminance(channels(colors['base-100'] as string));
     for (const selector of ['.org-form-control', '.org-input-addon', '.org-switch']) {
       const border = luminance(
         mixOklab(
-          colours['base-content'] as string,
-          colours['base-300'] as string,
+          colors['base-content'] as string,
+          colors['base-300'] as string,
           borderPercent(selector),
         ),
       );
@@ -573,17 +573,13 @@ describe('the borders of the form controls', () => {
         rule?.body ?? '',
       );
     expect(found).not.toBeNull();
-    const colours = theme(name);
+    const colors = theme(name);
     const border = luminance(
-      mixOklab(
-        colours['base-content'] as string,
-        colours['base-300'] as string,
-        Number(found?.[1]),
-      ),
+      mixOklab(colors['base-content'] as string, colors['base-300'] as string, Number(found?.[1])),
     );
     // The cards of the login and lock screens are base-200, the panels base-100.
     for (const surface of ['base-100', 'base-200']) {
-      const behind = luminance(channels(colours[surface] as string));
+      const behind = luminance(channels(colors[surface] as string));
       const [high, low] = [border, behind].sort((x, y) => y - x) as [number, number];
       expect((high + 0.05) / (low + 0.05), `${surface} on ${name}`).toBeGreaterThanOrEqual(3);
     }
@@ -599,15 +595,11 @@ describe('the borders of the form controls', () => {
     expect(found, 'a modern rule for the labels of the Speed test').not.toBeNull();
     // daisyUI's `.stat-title` sits in the utilities layer; the rule must be there too.
     expect(css.slice(css.lastIndexOf('@layer utilities'))).toContain(selector);
-    const colours = theme(name);
+    const colors = theme(name);
     const text = luminance(
-      mixOklab(
-        colours['base-content'] as string,
-        colours['base-200'] as string,
-        Number(found?.[1]),
-      ),
+      mixOklab(colors['base-content'] as string, colors['base-200'] as string, Number(found?.[1])),
     );
-    const box = luminance(channels(colours['base-200'] as string));
+    const box = luminance(channels(colors['base-200'] as string));
     const [high, low] = [text, box].sort((x, y) => y - x) as [number, number];
     expect((high + 0.05) / (low + 0.05)).toBeGreaterThanOrEqual(4.5);
   });
@@ -653,7 +645,7 @@ describe('the brand edges of the Homepage Order tiles', () => {
   const order = readFileSync(resolve(__dirname, 'homepageOrder.ts'), 'utf8');
   const tileClasses = [...new Set([...order.matchAll(/\bbg-([a-z0-9-]+)/g)].map((m) => m[1]))];
 
-  it('every_tile_colour_class_gives_the_modern_tile_an_edge_colour', () => {
+  it('every_tile_color_class_gives_the_modern_tile_an_edge_color', () => {
     expect(tileClasses.length).toBeGreaterThan(0);
     for (const name of tileClasses) {
       const rule = rules().find((r) => r.selector === `${SCOPE} .org-order-tile.bg-${name}`);
@@ -661,9 +653,9 @@ describe('the brand edges of the Homepage Order tiles', () => {
     }
   });
 
-  it('the_brand_properties_equal_the_og_colours', () => {
+  it('the_brand_properties_equal_the_og_colors', () => {
     const root = rules().find((r) => r.selector === ':root' && r.body.includes('--org-brand-'));
-    expect(root, 'the :root block of the brand colours').toBeDefined();
+    expect(root, 'the :root block of the brand colors').toBeDefined();
     const declared = [...(root?.body ?? '').matchAll(/--org-brand-([a-z0-9-]+):\s*([^;]+);/g)];
     expect(declared.length).toBeGreaterThan(0);
     for (const [, name, value] of declared) {
@@ -673,7 +665,7 @@ describe('the brand edges of the Homepage Order tiles', () => {
     }
   });
 
-  it('a_faded_tile_keeps_its_edge_colour', () => {
+  it('a_faded_tile_keeps_its_edge_color', () => {
     const faded = rules().filter((r) => r.selector === `${SCOPE} .org-order-tile.org-faded`);
     expect(
       faded.some((r) => /border-inline-start-color:\s*var\(--org-tile-brand/.test(r.body)),
@@ -690,7 +682,7 @@ describe('the brand themes of the modern layout', () => {
     return [...block.matchAll(/(--[\w-]+):/g)].map((match) => match[1] as string);
   }
 
-  it('the_offered_themes_are_the_five_themes_and_their_colour_sets', () => {
+  it('the_offered_themes_are_the_five_themes_and_their_color_sets', () => {
     expect(OFFERED).toEqual([
       'm-organizr-dark',
       'm-organizr-light',
@@ -889,7 +881,7 @@ describe('the Silo theme of the modern layout', () => {
       style.remove();
       delete document.documentElement.dataset.layout;
       delete document.documentElement.dataset.theme;
-      delete document.documentElement.dataset.colourSet;
+      delete document.documentElement.dataset.colorSet;
     }
   });
 
@@ -944,7 +936,7 @@ describe('the scenes of the modern layout', () => {
     );
   });
 
-  it('a_hidden_scene_leaves_the_page_colour_of_the_theme', () => {
+  it('a_hidden_scene_leaves_the_page_color_of_the_theme', () => {
     // Custom CSS may hide the scene (`.m-scene { display: none; }`): the root behind the
     // clear page then paints the page colour of the theme.
     const root = rule(`${SCOPE}:has(.m-scene)`);

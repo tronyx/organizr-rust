@@ -49,7 +49,7 @@
   }
 
   /** The colour of a chart, when the settings hold one that is a colour. */
-  function colourOf(chart: Chart): string {
+  function colorOf(chart: Chart): string {
     return /^[0-9a-f]{3,8}$/i.test(chart.colour ?? '') ? `#${chart.colour}` : 'var(--color-info)';
   }
 
@@ -92,7 +92,7 @@
               <path
                 d="M 10 50 A 40 40 0 0 1 90 50"
                 fill="none"
-                stroke={colourOf(chart)}
+                stroke={colorOf(chart)}
                 stroke-width="12"
                 stroke-dasharray="{(part / 100) * HALF} {HALF}"
               />
@@ -118,7 +118,7 @@
                 cy="50"
                 r="45"
                 fill="none"
-                stroke={colourOf(chart)}
+                stroke={colorOf(chart)}
                 stroke-width="5"
                 stroke-dasharray="{(part / 100) * RING} {RING}"
               />

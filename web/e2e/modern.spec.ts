@@ -218,7 +218,7 @@ test('the modern menu collapses to a column of icons, and stays so in this brows
     await audit('the collapsed menu (organizr dark)');
     expect((await look('modern', 'light')).ok()).toBe(true);
     await page.reload();
-    await expect(page.locator('html')).toHaveAttribute('data-colour-set', 'light');
+    await expect(page.locator('html')).toHaveAttribute('data-color-set', 'light');
     await expect.poll(width).toBeLessThanOrEqual(80);
     await audit('the collapsed menu (organizr light)');
 
@@ -300,7 +300,7 @@ test('custom CSS of the Admin applies on the modern layout', async ({ page }) =>
   }
 });
 
-test('the look popover chooses the light colours, and they stay after a reload', async ({
+test('the look popover chooses the light colors, and they stay after a reload', async ({
   page,
 }) => {
   await logIn(page);
@@ -330,19 +330,19 @@ test('the look popover chooses the light colours, and they stay after a reload',
     });
     expect(modern.ok()).toBe(true);
     await page.reload();
-    await expect(html).toHaveAttribute('data-colour-set', 'dark');
+    await expect(html).toHaveAttribute('data-color-set', 'dark');
 
     await choose('Light');
     await expect(html).toHaveAttribute('data-theme', 'm-organizr-light');
-    await expect(html).toHaveAttribute('data-colour-set', 'light');
+    await expect(html).toHaveAttribute('data-color-set', 'light');
     await page.reload();
-    await expect(html).toHaveAttribute('data-colour-set', 'light');
+    await expect(html).toHaveAttribute('data-color-set', 'light');
     await expect(html).toHaveAttribute('data-theme', 'm-organizr-light');
 
     await choose('Dark');
-    await expect(html).toHaveAttribute('data-colour-set', 'dark');
+    await expect(html).toHaveAttribute('data-color-set', 'dark');
     await page.reload();
-    await expect(html).toHaveAttribute('data-colour-set', 'dark');
+    await expect(html).toHaveAttribute('data-color-set', 'dark');
     await expect(html).toHaveAttribute('data-theme', 'm-organizr-dark');
   } finally {
     const restored = await page.request.put('./api/v2/user/look', {
@@ -355,7 +355,7 @@ test('the look popover chooses the light colours, and they stay after a reload',
   }
 });
 
-test('the colour samples of the look picker take the colours of their own themes', async ({
+test('the color samples of the look picker take the colors of their own themes', async ({
   page,
 }) => {
   await logIn(page);
@@ -383,18 +383,18 @@ test('the colour samples of the look picker take the colours of their own themes
         // The page colour behind the picker: the first ancestor with a background.
         let behind = 'rgb(0, 0, 0)';
         for (let node = swatch.parentElement; node; node = node.parentElement) {
-          const colour = getComputedStyle(node).backgroundColor;
-          if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') {
-            behind = colour;
+          const color = getComputedStyle(node).backgroundColor;
+          if (color !== 'rgba(0, 0, 0, 0)' && color !== 'transparent') {
+            behind = color;
             break;
           }
         }
         // A canvas turns any CSS colour (also oklab) into sRGB, for the ratio of contrast.
         const context = document.createElement('canvas').getContext('2d');
-        const luminance = (colour: string) => {
+        const luminance = (color: string) => {
           if (!context) return 0;
           context.clearRect(0, 0, 1, 1);
-          context.fillStyle = colour;
+          context.fillStyle = color;
           context.fillRect(0, 0, 1, 1);
           const [r, g, b] = [...context.getImageData(0, 0, 1, 1).data].map((value) => {
             const c = value / 255;
@@ -560,10 +560,10 @@ test('the shown tab of the column of icons has a bar of at least 3:1 in every mo
       const aside = link.closest('aside') as Element;
       // A canvas turns any CSS colour (also oklab) into sRGB, for the ratio of contrast.
       const context = document.createElement('canvas').getContext('2d');
-      const luminance = (colour: string) => {
+      const luminance = (color: string) => {
         if (!context) return 0;
         context.clearRect(0, 0, 1, 1);
-        context.fillStyle = colour;
+        context.fillStyle = color;
         context.fillRect(0, 0, 1, 1);
         const [r, g, b] = [...context.getImageData(0, 0, 1, 1).data].map((value) => {
           const c = value / 255;
@@ -616,7 +616,7 @@ test('the shown tab of the column of icons has a bar of at least 3:1 in every mo
   }
 });
 
-test('on OG the sample of the theme of the install shows the colours of the Admin', async ({
+test('on OG the sample of the theme of the install shows the colors of the Admin', async ({
   page,
 }) => {
   await logIn(page);
@@ -817,7 +817,7 @@ test('at a text size of 200 % nothing spills out of the look popover', async ({ 
   }
 });
 
-test('the border of every colour sample is 3:1 on every offered modern theme', async ({ page }) => {
+test('the border of every color sample is 3:1 on every offered modern theme', async ({ page }) => {
   test.setTimeout(120_000);
   await logIn(page);
   const look = (data: Record<string, string>) => page.request.put('./api/v2/user/look', { data });
@@ -825,10 +825,10 @@ test('the border of every colour sample is 3:1 on every offered modern theme', a
   const lowestEdge = () =>
     page.locator('[data-slot="popover-content"]').evaluate((panel) => {
       const context = document.createElement('canvas').getContext('2d');
-      const luminance = (colour: string) => {
+      const luminance = (color: string) => {
         if (!context) return 0;
         context.clearRect(0, 0, 1, 1);
-        context.fillStyle = colour;
+        context.fillStyle = color;
         context.fillRect(0, 0, 1, 1);
         const [r, g, b] = [...context.getImageData(0, 0, 1, 1).data].map((value) => {
           const c = value / 255;
@@ -839,9 +839,9 @@ test('the border of every colour sample is 3:1 on every offered modern theme', a
       const ratios = [...panel.querySelectorAll('.org-swatch')].map((swatch) => {
         let behind = 'rgb(0, 0, 0)';
         for (let node = swatch.parentElement; node; node = node.parentElement) {
-          const colour = getComputedStyle(node).backgroundColor;
-          if (colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') {
-            behind = colour;
+          const color = getComputedStyle(node).backgroundColor;
+          if (color !== 'rgba(0, 0, 0, 0)' && color !== 'transparent') {
+            behind = color;
             break;
           }
         }
@@ -899,7 +899,7 @@ test('the group label of the user menu reads well with the menu open, in dark an
     for (const colorSet of ['dark', 'light']) {
       expect((await look({ layout: 'modern', theme: 'organizr', colorSet })).ok()).toBe(true);
       await page.reload();
-      await expect(page.locator('html')).toHaveAttribute('data-colour-set', colorSet);
+      await expect(page.locator('html')).toHaveAttribute('data-color-set', colorSet);
       await page.getByRole('button', { name: 'Menu of the user' }).click();
       const label = page.locator('[data-slot="dropdown-menu-label"]');
       await expect(label).toHaveText('Admin');

@@ -33,7 +33,7 @@
   /** One card: a number of each install that the card is for. */
   interface Card {
     title: string;
-    colour: string;
+    color: string;
     icon: string;
     values: { host: string; text: string }[];
   }
@@ -59,19 +59,19 @@
     const cards: (Card | false)[] = [
       options.queries && {
         title: 'Total Queries',
-        colour: '#00a65a',
+        color: '#00a65a',
         icon: 'fa-globe',
         values: of((statistics) => grouped(statistics.num_dns_queries)),
       },
       options.blocked_count && {
         title: 'Queries Blocked',
-        colour: '#00c0ef',
+        color: '#00c0ef',
         icon: 'fa-hand-paper-o',
         values: of((statistics) => grouped(statistics.num_blocked_filtering)),
       },
       options.blocked_percent && {
         title: 'Percent Blocked',
-        colour: '#f39c12',
+        color: '#f39c12',
         icon: 'fa-pie-chart',
         values: of((statistics) => {
           const queries = numberOf(statistics.num_dns_queries) ?? 0;
@@ -81,7 +81,7 @@
       },
       options.processing_time && {
         title: 'Avg Processing Time',
-        colour: '#ab8ce4',
+        color: '#ab8ce4',
         icon: 'fa-users',
         values: of(
           (statistics) =>
@@ -90,7 +90,7 @@
       },
       options.domain_count && {
         title: 'Domains on Blocklist',
-        colour: '#dd4b39',
+        color: '#dd4b39',
         icon: 'fa-list',
         values: of((_, host) => grouped(rulesOf(answer.filters?.[host]))),
       },
@@ -131,7 +131,7 @@
         {#each row.cards as card (card.title)}
           <div
             class="org-adguard-card flex items-center justify-between gap-2 p-5 text-white"
-            style:--org-state={card.colour}
+            style:--org-state={card.color}
           >
             <div class="min-w-0">
               <p>{card.title}</p>

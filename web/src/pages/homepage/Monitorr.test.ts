@@ -45,7 +45,7 @@ describe('Monitorr', () => {
     expect(container.querySelectorAll('img')).toHaveLength(2);
   });
 
-  it('shows the small form with a coloured edge for the state', async () => {
+  it('shows the small form with a colored edge for the state', async () => {
     show(true, false);
 
     const list = await screen.findByRole('list', { name: 'Monitorr' });

@@ -241,7 +241,7 @@ export type PhpAction =
   /** A new random key for the API key of Organizr. */
   | { kind: 'new-key' }
   /** The colours go back to those of the theme. */
-  | { kind: 'reset-colours' }
+  | { kind: 'reset-colors' }
   /** A page that opens in a new window. */
   | { kind: 'open'; url: string }
   /** A lookup whose answer the Admin reads. */
@@ -305,7 +305,7 @@ export function actionOf(field: PhpField): PhpAction {
     return { kind: 'new-key' };
   }
   if (label === 'Reset Colors') {
-    return { kind: 'reset-colours' };
+    return { kind: 'reset-colors' };
   }
   if (label === 'Get Plex Token') {
     return { kind: 'plex-token' };

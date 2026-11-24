@@ -48,16 +48,16 @@ export function themeLabel(name: string): string {
 }
 
 const HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
-const COLOUR_FUNCTION = /^(?:rgba?|hsla?)\([0-9a-z.,%/\s+-]*\)$/i;
-const COLOUR_NAME = /^[a-z]{3,24}$/i;
+const COLOR_FUNCTION = /^(?:rgba?|hsla?)\([0-9a-z.,%/\s+-]*\)$/i;
+const COLOR_NAME = /^[a-z]{3,24}$/i;
 
 /**
  * Whether a text is a colour: `#987654`, `rgb(…)`, `hsl(…)` or a name such as `teal`.
  * Nothing else reaches a CSS variable, so a setting cannot bring other CSS into the page.
  */
-export function isColour(text: string): boolean {
+export function isColor(text: string): boolean {
   const value = text.trim();
-  if (!HEX.test(value) && !COLOUR_FUNCTION.test(value) && !COLOUR_NAME.test(value)) {
+  if (!HEX.test(value) && !COLOR_FUNCTION.test(value) && !COLOR_NAME.test(value)) {
     return false;
   }
   // A browser knows which names and forms are colours. jsdom has no `CSS.supports`.
@@ -67,7 +67,7 @@ export function isColour(text: string): boolean {
 }
 
 /** The colour settings, and the CSS variables that each one sets. */
-const COLOUR_VARIABLES: [keyof Appearance, string[]][] = [
+const COLOR_VARIABLES: [keyof Appearance, string[]][] = [
   ['headerColor', ['--org-header-bg']],
   ['headerTextColor', ['--org-header-text']],
   ['sidebarColor', ['--org-sidebar-bg']],
@@ -79,17 +79,17 @@ const COLOUR_VARIABLES: [keyof Appearance, string[]][] = [
 ];
 
 /** Every CSS variable that a colour setting can set. */
-export const COLOUR_VARIABLE_NAMES = COLOUR_VARIABLES.flatMap(([, names]) => names);
+export const COLOR_VARIABLE_NAMES = COLOR_VARIABLES.flatMap(([, names]) => names);
 
 /**
  * The CSS variables of the colour settings that hold a colour. An empty setting means
  * the colour of the theme, and a setting that holds no colour is left out.
  */
-export function colourVariables(appearance: Partial<Appearance>): Record<string, string> {
+export function colorVariables(appearance: Partial<Appearance>): Record<string, string> {
   const variables: Record<string, string> = {};
-  for (const [key, names] of COLOUR_VARIABLES) {
+  for (const [key, names] of COLOR_VARIABLES) {
     const value = appearance[key];
-    if (typeof value === 'string' && value.trim() !== '' && isColour(value)) {
+    if (typeof value === 'string' && value.trim() !== '' && isColor(value)) {
       for (const name of names) {
         variables[name] = value.trim();
       }
@@ -103,18 +103,18 @@ export function colourVariables(appearance: Partial<Appearance>): Record<string,
  * button colour as its primary dot, and the accent colour (daisyUI's `info` on the page)
  * as its accent dot. Only settings that hold a colour count, as on the page.
  */
-export function swatchColours(appearance: Partial<Appearance>): Record<string, string> {
-  const variables = colourVariables(appearance);
-  const colours: Record<string, string> = {};
+export function swatchColors(appearance: Partial<Appearance>): Record<string, string> {
+  const variables = colorVariables(appearance);
+  const colors: Record<string, string> = {};
   const primary = variables['--color-primary'];
   const accent = variables['--color-info'];
   if (primary !== undefined) {
-    colours['--color-primary'] = primary;
+    colors['--color-primary'] = primary;
   }
   if (accent !== undefined) {
-    colours['--color-accent'] = accent;
+    colors['--color-accent'] = accent;
   }
-  return colours;
+  return colors;
 }
 
 /** The id of the link to the style sheet of the Admin. */
@@ -157,8 +157,8 @@ export function applyAppearance(
   root: HTMLElement = document.documentElement,
 ): void {
   root.dataset.theme = themeId(theme);
-  const variables = colourVariables(appearance);
-  for (const name of COLOUR_VARIABLE_NAMES) {
+  const variables = colorVariables(appearance);
+  for (const name of COLOR_VARIABLE_NAMES) {
     const value = variables[name];
     if (value === undefined) {
       root.style.removeProperty(name);

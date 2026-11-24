@@ -23,7 +23,7 @@ import {
   expectEdges,
   expectLook,
   expectNoSideScroll,
-  focusColours,
+  focusColors,
   keyboardFocus,
   lookToRestore,
   newGuest,
@@ -102,19 +102,19 @@ async function hiddenLinks(page: Page) {
   return page.evaluate(() => {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d', { willReadFrequently: true });
-    const rgb = (colour: string) => {
+    const rgb = (color: string) => {
       if (!context) return [0, 0, 0];
       context.clearRect(0, 0, 1, 1);
-      context.fillStyle = colour;
+      context.fillStyle = color;
       context.fillRect(0, 0, 1, 1);
       return [...context.getImageData(0, 0, 1, 1).data].slice(0, 3);
     };
-    const luminance = (colour: number[]) => {
+    const luminance = (color: number[]) => {
       const channel = (value: number) => {
         const c = value / 255;
         return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
       };
-      const [r = 0, g = 0, b = 0] = colour;
+      const [r = 0, g = 0, b = 0] = color;
       return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
     };
     const found: string[] = [];
@@ -157,10 +157,10 @@ async function fillOf(control: Locator) {
   return control.evaluate((element) => {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d', { willReadFrequently: true });
-    const rgb = (colour: string) => {
+    const rgb = (color: string) => {
       if (!context) return [0, 0, 0];
       context.clearRect(0, 0, 1, 1);
-      context.fillStyle = colour;
+      context.fillStyle = color;
       context.fillRect(0, 0, 1, 1);
       return [...context.getImageData(0, 0, 1, 1).data].slice(0, 3);
     };
@@ -175,12 +175,12 @@ async function fillOf(control: Locator) {
 
 /** The contrast ratio of two sRGB colours. */
 function ratioOf(one: number[], two: number[]): number {
-  const luminance = (colour: number[]) => {
+  const luminance = (color: number[]) => {
     const channel = (value: number) => {
       const c = value / 255;
       return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
     };
-    const [r = 0, g = 0, b = 0] = colour;
+    const [r = 0, g = 0, b = 0] = color;
     return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
   };
   const [high, low] = [luminance(one), luminance(two)].sort((a, b) => b - a) as [number, number];
@@ -189,7 +189,7 @@ function ratioOf(one: number[], two: number[]): number {
 
 test('the_brand_themes_of_the_modern_layout_pass_the_audit', async ({ page, browser }) => {
   test.setTimeout(300_000);
-  expect(LOOKS.length, 'theme and colour sets to check').toBe(9);
+  expect(LOOKS.length, 'theme and color sets to check').toBe(9);
   await logIn(page);
   const lookBefore = await readLook(page);
   const config = await readConfig(page);
@@ -235,7 +235,7 @@ test('the_brand_themes_of_the_modern_layout_pass_the_audit', async ({ page, brow
         modernColorSet: look.set,
       });
       await openHomepage(page, look);
-      const focus = await focusColours(page, look);
+      const focus = await focusColors(page, look);
 
       // The homepage, and the font of the theme.
       await checkContrast(page, look, 'the homepage');

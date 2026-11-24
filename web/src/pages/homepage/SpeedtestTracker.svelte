@@ -27,17 +27,17 @@
     field: keyof Result;
     unit: string;
     icon: string;
-    colour: string;
+    color: string;
   }[] = [
-    { title: 'Ping', field: 'ping', unit: 'ms', icon: 'ti-pulse', colour: '#07db71' },
+    { title: 'Ping', field: 'ping', unit: 'ms', icon: 'ti-pulse', color: '#07db71' },
     {
       title: 'Download',
       field: 'download',
       unit: 'Mbit/s',
       icon: 'ti-download',
-      colour: '#fca503',
+      color: '#fca503',
     },
-    { title: 'Upload', field: 'upload', unit: 'Mbit/s', icon: 'ti-upload', colour: '#3e95cd' },
+    { title: 'Upload', field: 'upload', unit: 'Mbit/s', icon: 'ti-upload', color: '#3e95cd' },
   ];
 
   /** The other results than the last one, which the service does not always send. */
@@ -65,7 +65,7 @@
             <h3 class="text-lg">{card.title}</h3>
             <i
               class="org-speedtest-icon oi oi-themify {card.icon} text-3xl"
-              style:--org-state={card.colour}
+              style:--org-state={card.color}
               aria-hidden="true"
             ></i>
           </div>

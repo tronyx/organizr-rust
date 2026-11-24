@@ -31,7 +31,7 @@ describe('Netdata', () => {
               units: 'MiB/s',
               max: 6000,
               chart: 'gauge',
-              colour: 'not a colour',
+              colour: 'not a color',
               size: '',
               lg: true,
               md: false,

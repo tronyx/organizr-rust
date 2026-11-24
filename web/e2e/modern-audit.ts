@@ -123,7 +123,7 @@ export interface Edges {
   border: number;
   /** What marks the focus: the outline, or the border when there is no outline. */
   ring: number;
-  ringColour: string;
+  ringColor: string;
   focusVisible: boolean;
 }
 
@@ -134,32 +134,32 @@ export async function edgesOf(control: Locator): Promise<Edges> {
     canvas.width = 1;
     canvas.height = 1;
     const context = canvas.getContext('2d', { willReadFrequently: true });
-    const rgba = (colour: string) => {
+    const rgba = (color: string) => {
       if (!context) return [0, 0, 0, 0];
       context.clearRect(0, 0, 1, 1);
       context.fillStyle = 'rgba(0, 0, 0, 0)';
-      context.fillStyle = colour;
+      context.fillStyle = color;
       context.fillRect(0, 0, 1, 1);
       const [r = 0, g = 0, b = 0, a = 0] = context.getImageData(0, 0, 1, 1).data;
       return [r, g, b, a / 255];
     };
     const behind = (() => {
       for (let current = control.parentElement; current; current = current.parentElement) {
-        const colour = rgba(getComputedStyle(current).backgroundColor);
-        if ((colour[3] ?? 0) >= 1) return colour;
+        const color = rgba(getComputedStyle(current).backgroundColor);
+        if ((color[3] ?? 0) >= 1) return color;
       }
       return [255, 255, 255, 1];
     })();
-    const luminance = (colour: number[]) => {
+    const luminance = (color: number[]) => {
       const channel = (value: number) => {
         const c = value / 255;
         return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
       };
-      const [r = 0, g = 0, b = 0] = colour;
+      const [r = 0, g = 0, b = 0] = color;
       return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
     };
-    const ratio = (colour: string) => {
-      const own = rgba(colour);
+    const ratio = (color: string) => {
+      const own = rgba(color);
       const alpha = own[3] ?? 1;
       const seen = [0, 1, 2].map((i) => (own[i] ?? 0) * alpha + (behind[i] ?? 0) * (1 - alpha));
       const [high, low] = [luminance(seen), luminance(behind)].sort((a, b) => b - a) as [
@@ -174,26 +174,26 @@ export async function edgesOf(control: Locator): Promise<Edges> {
       fill: (rgba(style.backgroundColor)[3] ?? 0) >= 0.5 ? ratio(style.backgroundColor) : null,
       border: ratio(style.borderTopColor),
       ring: ratio(hasOutline ? style.outlineColor : style.borderTopColor),
-      ringColour: hasOutline ? style.outlineColor : style.borderTopColor,
+      ringColor: hasOutline ? style.outlineColor : style.borderTopColor,
       focusVisible: control.matches(':focus-visible'),
     };
   });
 }
 
 /** The value of a CSS variable of the theme, as the browser draws it. */
-export async function themeColour(page: Page, variable: string): Promise<string> {
+export async function themeColor(page: Page, variable: string): Promise<string> {
   return page.evaluate((name) => {
     const probe = document.createElement('span');
     probe.style.color = `var(${name})`;
     document.body.append(probe);
-    const colour = getComputedStyle(probe).color;
+    const color = getComputedStyle(probe).color;
     probe.remove();
-    return colour;
+    return color;
   }, variable);
 }
 
 /** The colours that a theme gives the focus, as the browser draws them. */
-export interface FocusColours {
+export interface FocusColors {
   /** The outline of a daisyUI field. */
   input: string;
   /** The border of a settings field. */
@@ -206,14 +206,14 @@ export interface FocusColours {
  * Silo draws every focus in its accent. The other themes outline a daisyUI field in the
  * colour of the text, and a settings field and a button in the primary colour.
  */
-export async function focusColours(page: Page, look: AuditLook): Promise<FocusColours> {
+export async function focusColors(page: Page, look: AuditLook): Promise<FocusColors> {
   if (look.theme === 'silo') {
-    const accent = await themeColour(page, '--color-accent');
+    const accent = await themeColor(page, '--color-accent');
     return { input: accent, field: accent, button: accent };
   }
-  const primary = await themeColour(page, '--color-primary');
+  const primary = await themeColor(page, '--color-primary');
   return {
-    input: await themeColour(page, '--color-base-content'),
+    input: await themeColor(page, '--color-base-content'),
     field: primary,
     button: primary,
   };
@@ -228,7 +228,7 @@ export function expectEdges(
   look: AuditLook,
   where: string,
   edges: { box?: Edges; field?: [Edges, string]; button?: Edges },
-  focus: FocusColours,
+  focus: FocusColors,
 ) {
   const label = `${where} (${look.id})`;
   if (edges.box) {
@@ -237,16 +237,16 @@ export function expectEdges(
     expect.soft(fill ?? border, `the checked box on ${label}`).toBeGreaterThanOrEqual(3);
   }
   if (edges.field) {
-    const [field, colour] = edges.field;
+    const [field, color] = edges.field;
     expect.soft(field.focusVisible, `the field in focus on ${label}`).toBe(true);
-    expect.soft(field.ringColour, `the focus colour of the field on ${label}`).toBe(colour);
+    expect.soft(field.ringColor, `the focus color of the field on ${label}`).toBe(color);
     expect.soft(field.ring, `the focus of the field on ${label}`).toBeGreaterThanOrEqual(3);
   }
   const button = edges.button;
   if (button) {
     expect.soft(button.fill ?? 0, `the primary button on ${label}`).toBeGreaterThanOrEqual(3);
     expect.soft(button.focusVisible, `the primary button in focus on ${label}`).toBe(true);
-    expect.soft(button.ringColour, `the focus colour of the button on ${label}`).toBe(focus.button);
+    expect.soft(button.ringColor, `the focus color of the button on ${label}`).toBe(focus.button);
     expect.soft(button.ring, `the focus of the button on ${label}`).toBeGreaterThanOrEqual(3);
   }
 }

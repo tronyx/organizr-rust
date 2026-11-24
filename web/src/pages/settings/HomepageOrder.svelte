@@ -130,7 +130,7 @@
           {@const tile = ORDER_TILES[key]}
           <li
             data-order-key={key}
-            class="org-order-tile {tile?.colour ?? 'bg-info'}"
+            class="org-order-tile {tile?.color ?? 'bg-info'}"
             class:org-faded={!isOn(key)}
             class:org-dragged={dragged === key}
             style:background-image={tile?.image ? `url('${tile.image}')` : undefined}

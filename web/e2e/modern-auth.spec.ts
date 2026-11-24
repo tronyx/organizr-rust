@@ -273,29 +273,29 @@ async function radioBorderRatios(page: Page, within: string): Promise<number[]> 
     canvas.width = 1;
     canvas.height = 1;
     const context = canvas.getContext('2d', { willReadFrequently: true });
-    const rgba = (colour: string) => {
+    const rgba = (color: string) => {
       if (!context) return [0, 0, 0, 0];
       context.clearRect(0, 0, 1, 1);
       context.fillStyle = 'rgba(0, 0, 0, 0)';
-      context.fillStyle = colour;
+      context.fillStyle = color;
       context.fillRect(0, 0, 1, 1);
       const [r = 0, g = 0, b = 0, a = 0] = context.getImageData(0, 0, 1, 1).data;
       return [r, g, b, a / 255];
     };
     const behind = (element: Element) => {
       for (let current: Element | null = element.parentElement; current;) {
-        const colour = rgba(getComputedStyle(current).backgroundColor);
-        if ((colour[3] ?? 0) >= 1) return colour;
+        const color = rgba(getComputedStyle(current).backgroundColor);
+        if ((color[3] ?? 0) >= 1) return color;
         current = current.parentElement;
       }
       return [255, 255, 255, 1];
     };
-    const luminance = (colour: number[]) => {
+    const luminance = (color: number[]) => {
       const channel = (value: number) => {
         const c = value / 255;
         return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
       };
-      const [r = 0, g = 0, b = 0] = colour;
+      const [r = 0, g = 0, b = 0] = color;
       return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
     };
     return [...root.querySelectorAll('input.radio:not(:checked)')].map((radio) => {
@@ -356,7 +356,7 @@ async function open(page: Page, address: string, heading: string, set: ColorSet)
   await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
   await expect(page.locator('html')).toHaveAttribute('data-theme', `m-organizr-${set}`);
-  await expect(page.locator('html')).toHaveAttribute('data-colour-set', set);
+  await expect(page.locator('html')).toHaveAttribute('data-color-set', set);
 }
 
 test('login_lock_set_up_and_account_screens_pass_contrast_on_modern_dark_and_light', async ({

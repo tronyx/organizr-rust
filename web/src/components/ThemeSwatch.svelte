@@ -4,7 +4,7 @@
   // the three dots are its text, primary and accent colours. Its border comes from the page.
   let {
     theme,
-    colours = {},
+    colors = {},
   }: {
     /** The daisyUI theme, for example `m-plex-dark`, `org-nord` or `organizr`. */
     theme: string;
@@ -13,7 +13,7 @@
      * Themes" on the install's OG theme. They are set through the CSSOM, as `applyAppearance`
      * sets them on the page: the policy of the page allows that, unlike a style attribute.
      */
-    colours?: Record<string, string>;
+    colors?: Record<string, string>;
   } = $props();
 
   let box: HTMLSpanElement | undefined = $state();
@@ -23,7 +23,7 @@
     if (!element) {
       return;
     }
-    const set = Object.entries(colours);
+    const set = Object.entries(colors);
     for (const [name, value] of set) {
       element.style.setProperty(name, value);
     }

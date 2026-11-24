@@ -9,7 +9,7 @@
   import { api, failureText } from '../lib/api';
   import { MODERN_THEMES, modernThemeId } from '../lib/look';
   import { session } from '../lib/session.svelte';
-  import { NATIVE_THEMES, swatchColours, themeId, themeLabel } from '../lib/theme';
+  import { NATIVE_THEMES, swatchColors, themeId, themeLabel } from '../lib/theme';
   import ThemeSwatch from './ThemeSwatch.svelte';
 
   const id = $props.id();
@@ -35,7 +35,7 @@
   );
   const shownLayout = $derived(wanted?.layout ?? look.layout);
   const modern = $derived(shown.layout === 'modern');
-  const COLOUR_SETS = [
+  const COLOR_SETS = [
     { id: 'dark', label: 'Dark' },
     { id: 'light', label: 'Light' },
   ];
@@ -54,13 +54,12 @@
   // On OG, the sample of the install's own theme shows the Admin's colours of "Colors &
   // Themes" over its own, as the page does. Other samples keep their stock colours.
   const installTheme = $derived(session.launch?.theme);
-  const adminColours = $derived(swatchColours(session.launch?.appearance ?? {}));
-  const coloursOf = (theme: string) =>
-    !modern && theme === installTheme ? adminColours : undefined;
+  const adminColors = $derived(swatchColors(session.launch?.appearance ?? {}));
+  const colorsOf = (theme: string) => (!modern && theme === installTheme ? adminColors : undefined);
   const colorSets = $derived(
     modern
-      ? (MODERN_THEMES.find((theme) => theme.id === shown.theme)?.colorSets ?? COLOUR_SETS)
-      : COLOUR_SETS,
+      ? (MODERN_THEMES.find((theme) => theme.id === shown.theme)?.colorSets ?? COLOR_SETS)
+      : COLOR_SETS,
   );
 
   /** The name of the radio group that has the focus, if the focus is in this picker. */
@@ -121,8 +120,8 @@
   function colorSetFor(theme: string): string {
     // A colour set that the new theme does not have gives way to the first one it has.
     const sets = modern
-      ? (MODERN_THEMES.find((entry) => entry.id === theme)?.colorSets ?? COLOUR_SETS)
-      : COLOUR_SETS;
+      ? (MODERN_THEMES.find((entry) => entry.id === theme)?.colorSets ?? COLOR_SETS)
+      : COLOR_SETS;
     return sets.some((set) => set.id === shown.colorSet)
       ? shown.colorSet
       : (sets[0]?.id ?? shown.colorSet);
@@ -200,7 +199,7 @@
                 checked={shown.theme === theme.id}
                 onchange={(event) => chooseTheme(theme.id, event.currentTarget)}
               />
-              <ThemeSwatch theme={theme.swatch} colours={coloursOf(theme.id)} />
+              <ThemeSwatch theme={theme.swatch} colors={colorsOf(theme.id)} />
               <span class="min-w-0 wrap-break-word">{theme.label}</span>
             </label>
           {/each}
@@ -216,7 +215,7 @@
             <input
               type="radio"
               class="radio radio-sm"
-              name={`${id}-colours`}
+              name={`${id}-colors`}
               value={set.id}
               checked={shown.colorSet === set.id}
               disabled={colorSets.length < 2}

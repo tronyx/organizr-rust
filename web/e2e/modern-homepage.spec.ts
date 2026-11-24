@@ -27,7 +27,7 @@ const SETS: ColorSet[] = ['dark', 'light'];
 async function useColorSet(page: Page, set: ColorSet) {
   await page.evaluate((wanted) => {
     document.documentElement.dataset.theme = `m-organizr-${wanted}`;
-    document.documentElement.dataset.colourSet = wanted;
+    document.documentElement.dataset.colorSet = wanted;
   }, set);
   await expect(page.locator('html')).toHaveAttribute('data-theme', `m-organizr-${set}`);
 }
@@ -410,11 +410,11 @@ test('text_over_pictures_has_a_scrim', async ({ page }, testInfo) => {
       const bare = await page.evaluate(() => {
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d', { willReadFrequently: true });
-        const alphaOf = (colour: string) => {
+        const alphaOf = (color: string) => {
           if (!context) return 0;
           context.clearRect(0, 0, 1, 1);
           context.fillStyle = 'rgba(0, 0, 0, 0)';
-          context.fillStyle = colour;
+          context.fillStyle = color;
           context.fillRect(0, 0, 1, 1);
           return (context.getImageData(0, 0, 1, 1).data[3] ?? 0) / 255;
         };
@@ -498,7 +498,7 @@ test('calendar_events_follow_custom_css_on_modern', async ({ page }) => {
   });
 });
 
-test('fields_of_items_keep_daisyui_focus_and_checked_colours_on_modern', async ({ page }) => {
+test('fields_of_items_keep_daisyui_focus_and_checked_colors_on_modern', async ({ page }) => {
   test.setTimeout(30_000);
   await withEveryItem(page, async () => {
     await openHomepage(page, 'normal', ['calendar', 'jackett']);
@@ -569,11 +569,11 @@ for (const layout of ['og', 'modern'] as const) {
             '0px',
           );
           // The line is faint: never the full colour of the text.
-          const colours = await rows.nth(1).evaluate((row) => {
+          const colors = await rows.nth(1).evaluate((row) => {
             const style = getComputedStyle(row);
             return { line: style.borderBottomColor, text: style.color };
           });
-          expect(colours.line, `the colour of the line (${where})`).not.toBe(colours.text);
+          expect(colors.line, `the color of the line (${where})`).not.toBe(colors.text);
         }
       },
       layout,

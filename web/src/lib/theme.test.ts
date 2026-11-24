@@ -4,10 +4,10 @@ import {
   applyAppearance,
   applyCustomScript,
   applyIcons,
-  colourVariables,
-  isColour,
+  colorVariables,
+  isColor,
   isNativeTheme,
-  swatchColours,
+  swatchColors,
   themeId,
   themeLabel,
 } from './theme';
@@ -50,9 +50,9 @@ describe('the themes', () => {
   });
 });
 
-describe('a colour of the settings', () => {
-  it('is a hex colour, a colour function or a name', () => {
-    for (const colour of [
+describe('a color of the settings', () => {
+  it('is a hex color, a color function or a name', () => {
+    for (const color of [
       '#987654',
       '#abc',
       '#11223344',
@@ -60,7 +60,7 @@ describe('a colour of the settings', () => {
       'hsl(200deg 50% 40%)',
       'teal',
     ]) {
-      expect(isColour(colour), colour).toBe(true);
+      expect(isColor(color), color).toBe(true);
     }
   });
 
@@ -74,13 +74,13 @@ describe('a colour of the settings', () => {
       'expression(alert(1))',
       '',
     ]) {
-      expect(isColour(text), text).toBe(false);
+      expect(isColor(text), text).toBe(false);
     }
   });
 
   it('sets the variables of its setting, and an empty or wrong one sets none', () => {
     expect(
-      colourVariables({
+      colorVariables({
         headerColor: '#112233',
         sidebarTextColor: ' teal ',
         accentColor: '',
@@ -94,23 +94,23 @@ describe('a colour of the settings', () => {
   });
 });
 
-describe('the colours of the sample of the theme of the install', () => {
-  it('take the button and accent colours, and only those that are colours', () => {
+describe('the colors of the sample of the theme of the install', () => {
+  it('take the button and accent colors, and only those that are colors', () => {
     expect(
-      swatchColours({
+      swatchColors({
         headerColor: '#112233',
         buttonColor: ' #ff0000 ',
         accentColor: '#00ff00',
         accentTextColor: '#000000',
       }),
     ).toEqual({ '--color-primary': '#ff0000', '--color-accent': '#00ff00' });
-    expect(swatchColours({ buttonColor: 'red; color: blue', accentColor: '' })).toEqual({});
-    expect(swatchColours({})).toEqual({});
+    expect(swatchColors({ buttonColor: 'red; color: blue', accentColor: '' })).toEqual({});
+    expect(swatchColors({})).toEqual({});
   });
 });
 
 describe('the look of the page', () => {
-  it('takes the theme and the colours, and drops a colour that is no longer set', () => {
+  it('takes the theme and the colors, and drops a color that is no longer set', () => {
     const root = document.documentElement;
     applyAppearance('Nord', { headerColor: '#112233', buttonTextColor: '#ffffff' });
 

@@ -80,7 +80,7 @@ describe('LookPicker', () => {
     expect(screen.getByRole('radio', { name: 'Light' })).toBeEnabled();
   });
 
-  it('choosing_a_brand_theme_keeps_the_colour_set', async () => {
+  it('choosing_a_brand_theme_keeps_the_color_set', async () => {
     const sent = await open({ ...MODERN, colorSet: 'light' });
 
     await fireEvent.click(screen.getByRole('radio', { name: 'Jellyfin' }));
@@ -92,7 +92,7 @@ describe('LookPicker', () => {
     });
   });
 
-  it('choosing_silo_moves_to_its_first_colour_set', async () => {
+  it('choosing_silo_moves_to_its_first_color_set', async () => {
     const sent = await open(MODERN);
 
     await fireEvent.click(screen.getByRole('radio', { name: 'Silo' }));
@@ -126,7 +126,7 @@ describe('LookPicker', () => {
     });
   });
 
-  it('nocturne_offers_its_three_colour_sets', async () => {
+  it('nocturne_offers_its_three_color_sets', async () => {
     await open({ ...MODERN, theme: 'nocturne', colorSet: 'moonlit' });
 
     expect(screen.getByRole('radio', { name: 'Moonlit' })).toBeChecked();
@@ -147,7 +147,7 @@ describe('LookPicker', () => {
     });
   });
 
-  it('riot_offers_its_three_colour_sets', async () => {
+  it('riot_offers_its_three_color_sets', async () => {
     await open({ ...MODERN, theme: 'riot', colorSet: 'blacklight' });
 
     expect(screen.getByRole('radio', { name: 'Blacklight' })).toBeChecked();
@@ -168,7 +168,7 @@ describe('LookPicker', () => {
     });
   });
 
-  it('tempest_offers_its_three_colour_sets', async () => {
+  it('tempest_offers_its_three_color_sets', async () => {
     await open({ ...MODERN, theme: 'tempest', colorSet: 'gale' });
 
     expect(screen.getByRole('radio', { name: 'Gale' })).toBeChecked();
@@ -189,7 +189,7 @@ describe('LookPicker', () => {
     });
   });
 
-  it('circuit_offers_its_three_colour_sets', async () => {
+  it('circuit_offers_its_three_color_sets', async () => {
     await open({ ...MODERN, theme: 'circuit', colorSet: 'amber' });
 
     expect(screen.getByRole('radio', { name: 'Amber' })).toBeChecked();
@@ -210,7 +210,7 @@ describe('LookPicker', () => {
     });
   });
 
-  it('prism_offers_its_three_colour_sets', async () => {
+  it('prism_offers_its_three_color_sets', async () => {
     await open({ ...MODERN, theme: 'prism', colorSet: 'candy' });
 
     expect(screen.getByRole('radio', { name: 'Candy' })).toBeChecked();
@@ -219,7 +219,7 @@ describe('LookPicker', () => {
     expect(screen.queryByRole('radio', { name: 'Light' })).not.toBeInTheDocument();
   });
 
-  it('choosing_light_sends_the_light_colour_set', async () => {
+  it('choosing_light_sends_the_light_color_set', async () => {
     const sent = await open(MODERN);
 
     await fireEvent.click(screen.getByRole('radio', { name: 'Light' }));
@@ -231,7 +231,7 @@ describe('LookPicker', () => {
     });
   });
 
-  it('choosing_sends_the_layout_theme_and_colour_set', async () => {
+  it('choosing_sends_the_layout_theme_and_color_set', async () => {
     const sent = await open(OG);
     const puts = () => sent.filter((request) => request.method === 'PUT');
 
@@ -369,7 +369,7 @@ describe('LookPicker', () => {
       ?.getAttribute('data-theme');
   }
 
-  it('every_og_theme_shows_a_sample_of_its_colours', async () => {
+  it('every_og_theme_shows_a_sample_of_its_colors', async () => {
     await open(OG);
 
     const radios = within(screen.getByRole('group', { name: 'Theme' })).getAllByRole('radio');
@@ -383,7 +383,7 @@ describe('LookPicker', () => {
     expect(swatchOf('Plex')).toBe('org-plex');
   });
 
-  it('every_modern_theme_shows_a_sample_in_the_colour_set_it_would_get', async () => {
+  it('every_modern_theme_shows_a_sample_in_the_color_set_it_would_get', async () => {
     await open({ ...MODERN, colorSet: 'light' });
 
     const radios = within(screen.getByRole('group', { name: 'Theme' })).getAllByRole('radio');
@@ -408,7 +408,7 @@ describe('LookPicker', () => {
     expect(swatchOf('Plex')).toBe('m-plex-dark');
   });
 
-  it('every_colour_set_shows_a_sample_of_its_colours', async () => {
+  it('every_color_set_shows_a_sample_of_its_colors', async () => {
     await open({ ...MODERN, theme: 'nocturne', colorSet: 'crimson' });
 
     expect(swatchOf('Amethyst')).toBe('m-nocturne-amethyst');
@@ -416,7 +416,7 @@ describe('LookPicker', () => {
     expect(swatchOf('Moonlit')).toBe('m-nocturne-moonlit');
   });
 
-  it('the_sample_of_the_install_theme_shows_the_admin_colours_on_og', async () => {
+  it('the_sample_of_the_install_theme_shows_the_admin_colors_on_og', async () => {
     const answer = launch({ ...OG, theme: 'Nord' });
     const data = answer.data as Record<string, unknown>;
     data.theme = 'Organizr';
@@ -446,7 +446,7 @@ describe('LookPicker', () => {
     }
   });
 
-  it('a_colour_setting_that_is_no_colour_leaves_the_sample_alone', async () => {
+  it('a_color_setting_that_is_no_color_leaves_the_sample_alone', async () => {
     const answer = launch(OG);
     const data = answer.data as Record<string, unknown>;
     data.theme = 'Organizr';
@@ -463,7 +463,7 @@ describe('LookPicker', () => {
     expect(own?.style.getPropertyValue('--color-accent')).toBe('');
   });
 
-  it('the_modern_samples_keep_their_stock_colours', async () => {
+  it('the_modern_samples_keep_their_stock_colors', async () => {
     const answer = launch(MODERN);
     const data = answer.data as Record<string, unknown>;
     data.theme = 'Organizr';

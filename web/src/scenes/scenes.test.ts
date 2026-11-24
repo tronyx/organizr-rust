@@ -64,7 +64,7 @@ function rulesOf(css: string): { selector: string; body: string }[] {
   }));
 }
 
-const LITERAL_COLOUR =
+const LITERAL_COLOR =
   /#[0-9a-fA-F]{3,8}\b|(?<![\w-])(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color)\(|(?<![\w-])(?:white|black|red|blue|green|purple|violet|indigo|gray|grey|silver|gold|yellow|orange|pink|crimson)(?![\w-])/;
 
 describe('the scenes', () => {
@@ -208,10 +208,10 @@ describe('the scenes', () => {
     expect(open).toEqual([]);
   });
 
-  it.each(SCENE_FILES)('%s_takes_every_colour_from_the_theme', (name) => {
+  it.each(SCENE_FILES)('%s_takes_every_color_from_the_theme', (name) => {
     const source = read(name);
     const withoutReferences = source.replace(/url\(#[\w-]+\)/g, '');
-    expect(withoutReferences).not.toMatch(LITERAL_COLOUR);
+    expect(withoutReferences).not.toMatch(LITERAL_COLOR);
     // Paint in the markup is a reference to a gradient of the scene or nothing; the colours
     // themselves are set by the classes of the style, from theme variables.
     for (const match of markupOf(source).matchAll(/\b(fill|stroke|stop-color|color)="([^"]*)"/g)) {

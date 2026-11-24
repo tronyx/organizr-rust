@@ -6,6 +6,7 @@
   import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
 
+  import { american } from '../../lib/american';
   import { api, apiUrl, failureText } from '../../lib/api';
   import {
     accordionParts,
@@ -185,7 +186,7 @@
       shownSecrets.organizrAPI = true;
       return;
     }
-    if (action.kind === 'reset-colours') {
+    if (action.kind === 'reset-colors') {
       for (const item of groups?.[group] ?? []) {
         if (holdsSetting(item) && item.type === 'input') {
           form[item.name] = '';
@@ -337,7 +338,8 @@
 
 {#snippet help(field: PhpField)}
   {#if field.help}
-    <i class="oi-themify ti-help-alt org-form-help" title={field.help} aria-hidden="true"></i>
+    <i class="oi-themify ti-help-alt org-form-help" title={american(field.help)} aria-hidden="true"
+    ></i>
   {/if}
 {/snippet}
 
@@ -345,7 +347,7 @@
   {@const id = `php-${field.name ?? ''}`}
   {@const hint = field.help ? `${id}-help` : undefined}
   {#if field.type === 'switch' && holdsSetting(field)}
-    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <label class="org-form-label" for={id}>{american(field.label)}{@render help(field)}</label>
     <input
       {id}
       type="checkbox"
@@ -355,7 +357,7 @@
       onchange={(event) => (form[field.name] = event.currentTarget.checked)}
     />
   {:else if field.type === 'select' && holdsSetting(field)}
-    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <label class="org-form-label" for={id}>{american(field.label)}{@render help(field)}</label>
     <select
       {id}
       class="org-form-control"
@@ -364,21 +366,23 @@
       onchange={(event) => (form[field.name] = event.currentTarget.value)}
     >
       {#each optionsOf(field) as option (String(option.value))}
-        <option value={String(option.value)} disabled={option.disabled}>{option.name}</option>
+        <option value={String(option.value)} disabled={option.disabled}>
+          {american(option.name)}
+        </option>
       {/each}
     </select>
   {:else if isTags(field) && holdsSetting(field)}
-    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <label class="org-form-label" for={id}>{american(field.label)}{@render help(field)}</label>
     <TagsField
       {id}
       values={form[field.name] as string[]}
-      placeholder={field.placeholder}
+      placeholder={american(field.placeholder)}
       hidden={hidesValues(field)}
       describedby={hint}
       onchange={(values) => (form[field.name] = values)}
     />
   {:else if isMultiple(field) && holdsSetting(field) && optionsOf(field).some((option) => !option.disabled)}
-    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <label class="org-form-label" for={id}>{american(field.label)}{@render help(field)}</label>
     <select
       {id}
       class="org-form-control org-form-multiple"
@@ -393,16 +397,16 @@
           disabled={option.disabled}
           selected={(form[field.name] as string[]).includes(String(option.value))}
         >
-          {option.name}
+          {american(option.name)}
         </option>
       {/each}
     </select>
   {:else if isMultiple(field) && holdsSetting(field)}
-    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <label class="org-form-label" for={id}>{american(field.label)}{@render help(field)}</label>
     <input
       {id}
       class="org-form-control"
-      placeholder={field.placeholder}
+      placeholder={american(field.placeholder)}
       value={(form[field.name] as string[]).join(',')}
       aria-describedby={hint}
       oninput={(event) =>
@@ -412,14 +416,14 @@
           .filter((part) => part !== ''))}
     />
   {:else if isSecret(field) && holdsSetting(field)}
-    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <label class="org-form-label" for={id}>{american(field.label)}{@render help(field)}</label>
     <div class="org-input-group">
       <input
         {id}
         class="org-form-control"
         type={shownSecrets[field.name] ? 'text' : 'password'}
         autocomplete="new-password"
-        placeholder={hasStoredSecret(field) ? 'A value is stored' : field.placeholder}
+        placeholder={hasStoredSecret(field) ? 'A value is stored' : american(field.placeholder)}
         value={String(form[field.name])}
         aria-describedby={hint}
         oninput={(event) => (form[field.name] = event.currentTarget.value)}
@@ -428,7 +432,7 @@
         <button
           type="button"
           class="org-input-addon org-input-addon-purple"
-          aria-label={`Copy ${field.label}`}
+          aria-label={`Copy ${american(field.label)}`}
           onclick={() => copy(field.name)}
         >
           <i class="oi-themify ti-clipboard" aria-hidden="true"></i>
@@ -437,14 +441,14 @@
       <button
         type="button"
         class="org-input-addon"
-        aria-label={`${shownSecrets[field.name] ? 'Hide' : 'Show'} ${field.label}`}
+        aria-label={`${shownSecrets[field.name] ? 'Hide' : 'Show'} ${american(field.label)}`}
         onclick={() => (shownSecrets[field.name] = !shownSecrets[field.name])}
       >
         <i class="oi-themify ti-eye" aria-hidden="true"></i>
       </button>
     </div>
   {:else if (field.type === 'code-editor' || field.type === 'textbox') && holdsSetting(field)}
-    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <label class="org-form-label" for={id}>{american(field.label)}{@render help(field)}</label>
     <textarea
       {id}
       class="org-form-control org-form-code"
@@ -455,7 +459,7 @@
       aria-describedby={hint}
       oninput={(event) => (form[field.name] = event.currentTarget.value)}></textarea>
   {:else if holdsSetting(field) && (field.class ?? '').includes('pick-a-color')}
-    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <label class="org-form-label" for={id}>{american(field.label)}{@render help(field)}</label>
     <div class="org-input-group">
       <input
         {id}
@@ -467,8 +471,8 @@
       />
       <input
         type="color"
-        class="org-input-addon org-colour-swatch"
-        aria-label={`Pick ${field.label}`}
+        class="org-input-addon org-color-swatch"
+        aria-label={`Pick ${american(field.label)}`}
         value={/^#[0-9a-f]{6}$/i.test(String(form[field.name]))
           ? String(form[field.name])
           : '#000000'}
@@ -476,13 +480,13 @@
       />
     </div>
   {:else if holdsSetting(field)}
-    <label class="org-form-label" for={id}>{field.label}{@render help(field)}</label>
+    <label class="org-form-label" for={id}>{american(field.label)}{@render help(field)}</label>
     <input
       {id}
       class="org-form-control"
       type={field.type === 'number' ? 'number' : 'text'}
       list={field.type === 'select-input' ? `${id}-choices` : undefined}
-      placeholder={field.placeholder}
+      placeholder={american(field.placeholder)}
       value={String(form[field.name])}
       aria-describedby={hint}
       oninput={(event) => (form[field.name] = event.currentTarget.value)}
@@ -497,7 +501,7 @@
           onclick={() => testValue(field.name, field.type === 'cron' ? 'cron' : 'folder')}
         >
           {#if running === key}<span class="loading loading-spinner loading-xs"></span>{/if}
-          Test {field.label}
+          Test {american(field.label)}
         </button>
         {#if answers[key]}
           <span
@@ -512,14 +516,14 @@
     {#if field.type === 'select-input'}
       <datalist id={`${id}-choices`}>
         {#each optionsOf(field) as option (String(option.value))}
-          <option value={String(option.value)}>{option.name}</option>
+          <option value={String(option.value)}>{american(option.name)}</option>
         {/each}
       </datalist>
     {/if}
   {:else if field.type === 'button'}
     {@const key = buttonKey(group, field)}
     {@const result = answers[key]}
-    {#if field.label}<span class="org-form-label">{field.label}</span>{/if}
+    {#if field.label}<span class="org-form-label">{american(field.label)}</span>{/if}
     {#if actionOf(field).kind === 'login-test'}
       <div class="mb-2 grid grid-cols-2 gap-2">
         <input
@@ -545,7 +549,7 @@
         onclick={() => press(group, field)}
       >
         {#if running === key}<span class="loading loading-spinner loading-xs"></span>{/if}
-        {field.text ?? field.label}
+        {american(field.text ?? field.label)}
       </button>
       {#if machines[key] && machines[key].length > 1}
         <select
@@ -576,10 +580,10 @@
       {/if}
     </div>
   {:else if field.type === 'accordion'}
-    <span class="org-form-label">{field.label}</span>
+    <span class="org-form-label">{american(field.label)}</span>
     {#each accordionParts(field) as part (part.id)}
       <details class="org-accordion">
-        <summary>{part.header}</summary>
+        <summary>{american(part.header)}</summary>
         <div class="org-accordion-body">
           {#each part.body as inner, index (`${part.id}-${index}`)}
             <div class="mb-4">
@@ -595,13 +599,13 @@
       class:org-notice-warning={field.notice === 'warning'}
       class:org-notice-danger={field.notice === 'danger'}
     >
-      {#if field.title}<h3>{field.title}</h3>{/if}
-      <p>{field.body}</p>
+      {#if field.title}<h3>{american(field.title)}</h3>{/if}
+      <p>{american(field.body)}</p>
     </div>
   {:else if field.type === 'about'}
     <div class="org-notice">
-      {#if field.title}<h3>{field.title}</h3>{/if}
-      <p>{field.about}</p>
+      {#if field.title}<h3>{american(field.title)}</h3>{/if}
+      <p>{american(field.about)}</p>
     </div>
   {:else if field.type === 'socks'}
     <div class="org-notice">
@@ -628,7 +632,7 @@
         <div class="org-form-group" class:org-form-wide={wide(field)}>
           {@render input(group, field)}
           {#if field.help}
-            <p id={`php-${field.name ?? ''}-help`} class="sr-only">{field.help}</p>
+            <p id={`php-${field.name ?? ''}-help`} class="sr-only">{american(field.help)}</p>
           {/if}
         </div>
       {/if}
@@ -663,7 +667,7 @@
             class:org-current={name === chosen}
             onclick={() => (current = name)}
           >
-            {label(name)}
+            {american(label(name))}
           </button>
         {/each}
       </div>

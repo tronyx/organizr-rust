@@ -11,7 +11,7 @@ describe('the log', () => {
     expect(tracePath('a b/c')).toBe('log/all/a%20b%2Fc');
   });
 
-  it('gives each level a colour', () => {
+  it('gives each level a color', () => {
     expect(levelClass('INFO')).toBe('badge-info');
     expect(levelClass('warning')).toBe('badge-warning');
     expect(levelClass('EMERGENCY')).toBe('badge-error');

@@ -118,7 +118,7 @@
   const PLINTH = 'M0 828H1600V872H0Z';
   const CRACKS = 'M220 828l8 16l-6 12l10 16M760 828l-6 20l8 24M1480 828l10 14l-4 30';
   const PAVEMENT = 'M0 872H1600V900H0Z';
-  const KERB = 'M0 872H1600';
+  const CURB = 'M0 872H1600';
 
   // The street lamp at the right.
   const LAMP = 'M1528 312h12V880h-12zM1470 304h70v10h-70zM1452 300h40l-6 18h-28z';
@@ -443,7 +443,7 @@
     <path class="hoops" d={HOOPS} />
     <path class="rim" d={RIM} />
     <path class="pavement" d={PAVEMENT} />
-    <path class="kerb" d={KERB} />
+    <path class="curb" d={CURB} />
     <path d={LAMP_LIGHT} fill="url(#riot-beam)" />
     <path class="lamp" d={LAMP} />
     <ellipse class="lens" cx="1472" cy="318" rx="14" ry="3" />
@@ -872,7 +872,7 @@
     fill: color-mix(in oklab, var(--color-warning) 22%, var(--color-neutral));
   }
 
-  .kerb {
+  .curb {
     fill: none;
     stroke: color-mix(in oklab, var(--color-base-content) 14%, var(--color-neutral));
     stroke-width: 3;

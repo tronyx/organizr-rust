@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 
 /* `dark:` follows the colour set of the page, not the operating system. */
-@custom-variant dark (&:where([data-colour-set=dark], [data-colour-set=dark] *));
+@custom-variant dark (&:where([data-color-set=dark], [data-color-set=dark] *));
 
 @plugin 'daisyui' {
   themes: light;
@@ -2384,7 +2384,7 @@
     cursor: pointer;
   }
 
-  .org-colour-swatch {
+  .org-color-swatch {
     height: 38px;
     padding: 4px;
     border: 0;

@@ -62,11 +62,11 @@
         </select>
       </div>
       <div class="org-form-group">
-        <label class="org-form-label" for="layout-colours">Modern color set</label>
+        <label class="org-form-label" for="layout-colors">Modern color set</label>
         <!-- A sample of the colours of the chosen theme and set. -->
         <div class="flex items-center gap-2">
           <select
-            id="layout-colours"
+            id="layout-colors"
             class="org-form-control"
             value={look.form.modernColorSet}
             disabled={!canChange || look.colorSets.length < 2}

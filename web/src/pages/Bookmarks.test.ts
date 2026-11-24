@@ -19,7 +19,7 @@ function tile(name: string, url: string) {
 }
 
 describe('Bookmarks', () => {
-  it('shows the bookmarks as links in their categories, with their colours', async () => {
+  it('shows the bookmarks as links in their categories, with their colors', async () => {
     stubApi({
       'GET plugins/bookmark/page': {
         data: {

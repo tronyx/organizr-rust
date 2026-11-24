@@ -1,7 +1,7 @@
 // The look of the page: the layout (the original one, "og", or the modern one) and the
 // theme of each. The server sends the look that applies to the caller in `GET /launch`.
 
-import { applyAppearance, COLOUR_VARIABLE_NAMES, linkCustomCss } from './theme';
+import { applyAppearance, COLOR_VARIABLE_NAMES, linkCustomCss } from './theme';
 import type { Appearance } from './types';
 
 /** The layout and the theme that the page shows. */
@@ -140,7 +140,7 @@ export function sceneOf(look: Look): string | null {
 }
 
 /** A text colour on a background, both as CSS variables of the theme in `app.css`. */
-export interface ColourPair {
+export interface ColorPair {
   name: string;
   textVariable: string;
   text: string;
@@ -154,7 +154,7 @@ function pair(
   text: string,
   backgroundVariable: string,
   background: string,
-): ColourPair {
+): ColorPair {
   return { name, textVariable, text, backgroundVariable, background };
 }
 
@@ -162,7 +162,7 @@ function pair(
  * The text and background colours of each modern theme. `app.css` defines the same values
  * (a test compares them), and a test checks that each pair meets WCAG AA (4.5:1).
  */
-export const MODERN_THEME_COLOURS: Record<string, ColourPair[]> = {
+export const MODERN_THEME_COLORS: Record<string, ColorPair[]> = {
   'm-organizr-dark': [
     pair('page', '--color-base-content', '#dce2ec', '--color-base-100', '#1a212b'),
     pair('menu', '--color-base-content', '#dce2ec', '--color-base-200', '#141a22'),
@@ -582,14 +582,14 @@ export function applyLook(
   root.dataset.layout = look.layout;
   if (look.layout === 'modern') {
     root.dataset.theme = modernThemeId(look.theme, look.colorSet);
-    root.dataset.colourSet = isLightSet(root.dataset.theme) ? 'light' : 'dark';
+    root.dataset.colorSet = isLightSet(root.dataset.theme) ? 'light' : 'dark';
     // The colours of "Colors & Themes" belong to the OG layout; the theme sets its own.
-    for (const name of COLOUR_VARIABLE_NAMES) {
+    for (const name of COLOR_VARIABLE_NAMES) {
       root.style.removeProperty(name);
     }
     linkCustomCss(appearance);
     return;
   }
-  delete root.dataset.colourSet;
+  delete root.dataset.colorSet;
   applyAppearance(look.theme || theme, appearance, root);
 }
