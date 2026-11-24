@@ -861,6 +861,7 @@ export const HOMEPAGE_FIXTURES: HomepageFixture[] = [
                 rows: [
                   { title: 'The Film', total_plays: 12, thumb: 'data/cache/tautulli-815-list.jpg' },
                   { title: 'Another Film', total_plays: 9, thumb: '/library/metadata/816/thumb/1' },
+                  { title: 'A Third Film', total_plays: 3 },
                 ],
               },
               { stat_id: 'popular_tv', rows: [{ title: 'The Show', users_watched: 4 }] },

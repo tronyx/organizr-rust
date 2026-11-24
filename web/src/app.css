@@ -3631,7 +3631,8 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 8px;
-    padding: 8px 6px 2px 0;
+    padding: 8px 6px 4px 0;
+    border-bottom: 1px solid rgb(120 130 140 / 0.13);
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
@@ -3656,6 +3657,11 @@
     align-items: baseline;
     gap: 6px;
     line-height: 1.9;
+  }
+
+  /* A faint line between the ranked rows, as under the heading; none after the last. */
+  .org-stat li:not(:last-child) {
+    border-bottom: 1px solid rgb(120 130 140 / 0.13);
   }
 
   .org-stat li:first-child {
@@ -4910,6 +4916,11 @@
   [data-layout='modern'] .org-stat-picture span {
     background: var(--color-secondary);
     color: var(--color-secondary-content);
+  }
+
+  [data-layout='modern'] .org-stat h3,
+  [data-layout='modern'] .org-stat li:not(:last-child) {
+    border-bottom-color: color-mix(in oklab, var(--color-base-content) 12%, var(--color-base-100));
   }
 
   [data-layout='modern'] .org-stat h3 small {

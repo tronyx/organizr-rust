@@ -111,7 +111,11 @@ async function changeSettings(page: Page, values: Record<string, unknown>) {
  * when it is saved, so a secret that was set is not restored: the restore of secrets
  * relies on the fresh data folder of the e2e run, where none is set.
  */
-async function withEveryItem(page: Page, body: () => Promise<void>) {
+async function withEveryItem(
+  page: Page,
+  body: () => Promise<void>,
+  layout: 'og' | 'modern' = 'modern',
+) {
   await logIn(page);
   const lookBefore = await readLook(page);
   const answer = await page.request.get('./api/v2/config');
@@ -132,7 +136,7 @@ async function withEveryItem(page: Page, body: () => Promise<void>) {
       ...allItemSettings(),
       ...Object.fromEntries(Object.values(COMBINE_SWITCHES).map((key) => [key, false])),
     });
-    expect((await look(page, 'modern')).ok()).toBe(true);
+    expect((await look(page, layout)).ok()).toBe(true);
     await body();
     expect(unroutedRequests(page), 'requests that no fixture answered').toEqual([]);
   } finally {
@@ -144,11 +148,16 @@ async function withEveryItem(page: Page, body: () => Promise<void>) {
 }
 
 /** Opens the homepage with the answers of `variant` and waits until every item has loaded. */
-async function openHomepage(page: Page, variant: Variant, kinds: string[] = KINDS) {
+async function openHomepage(
+  page: Page,
+  variant: Variant,
+  kinds: string[] = KINDS,
+  layout: 'og' | 'modern' = 'modern',
+) {
   await withHomepageFixtures(page, variant);
   await page.goto('./#Homepage');
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
+  await expect(page.locator('html')).toHaveAttribute('data-layout', layout);
   for (const kind of kinds) {
     await expect(page.locator(`section.org-item-${kind}`), `the item ${kind}`).toHaveCount(1);
   }
@@ -518,3 +527,56 @@ test('fields_of_items_keep_daisyui_focus_and_checked_colours_on_modern', async (
     }
   });
 });
+
+for (const layout of ['og', 'modern'] as const) {
+  test(`statistics_cards_have_dividing_lines_on_${layout}`, async ({ page }) => {
+    test.setTimeout(30_000);
+    await withEveryItem(
+      page,
+      async () => {
+        await openHomepage(page, 'normal', ['tautulli'], layout);
+        // The card of the top films has three rows: a line under the heading and under
+        // each row but the last.
+        const card = page
+          .locator('section.org-item-tautulli .org-stat', { has: page.locator('li:nth-child(3)') })
+          .first();
+        const sets: (ColourSet | null)[] = layout === 'modern' ? SETS : [null];
+        for (const set of sets) {
+          if (set) {
+            await useColourSet(page, set);
+          }
+          const where = `${layout}${set ? `, ${set}` : ''}`;
+          await expect(card.locator('h3'), `the heading (${where})`).toHaveCSS(
+            'border-bottom-width',
+            '1px',
+          );
+          await expect(card.locator('h3'), `the heading (${where})`).toHaveCSS(
+            'border-bottom-style',
+            'solid',
+          );
+          const rows = card.locator('li');
+          await expect(rows.nth(1), `a middle row (${where})`).toHaveCSS(
+            'border-bottom-width',
+            '1px',
+          );
+          await expect(rows.nth(1), `a middle row (${where})`).toHaveCSS(
+            'border-bottom-style',
+            'solid',
+          );
+          // Tailwind gives every element a solid border of no width.
+          await expect(rows.last(), `the last row (${where})`).toHaveCSS(
+            'border-bottom-width',
+            '0px',
+          );
+          // The line is faint: never the full colour of the text.
+          const colours = await rows.nth(1).evaluate((row) => {
+            const style = getComputedStyle(row);
+            return { line: style.borderBottomColor, text: style.color };
+          });
+          expect(colours.line, `the colour of the line (${where})`).not.toBe(colours.text);
+        }
+      },
+      layout,
+    );
+  });
+}
