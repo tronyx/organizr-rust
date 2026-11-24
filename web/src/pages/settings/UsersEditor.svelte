@@ -15,6 +15,7 @@
   import { session } from '../../lib/session.svelte';
   import { localDateTime } from '../../lib/time';
   import type { Account, EditorData } from '../../lib/types';
+  import { nextSort, sortUsers, type UserSort, type UserSortKey } from '../../lib/userSort';
   import UserDialog from './UserDialog.svelte';
 
   let {
@@ -40,7 +41,24 @@
   let page = $state(1);
   const pages = $derived(pageCount(data.users.length, pageSize));
   const current = $derived(shownPage(page, data.users.length, pageSize));
-  const shown = $derived(pageOf(data.users, current, pageSize));
+  // A click on the heading of a column sorts the users by it, as in PHP. Before that the
+  // users keep the order of the server.
+  let sort = $state<UserSort | null>(null);
+  const sorted = $derived(sort ? sortUsers(data.users, sort) : data.users);
+  const shown = $derived(pageOf(sorted, current, pageSize));
+
+  function sortBy(key: UserSortKey) {
+    sort = nextSort(sort, key);
+    page = 1;
+  }
+
+  /** The state of a sortable column, for `aria-sort`. */
+  function sortState(key: UserSortKey): 'ascending' | 'descending' | undefined {
+    if (sort?.key !== key) {
+      return undefined;
+    }
+    return sort.ascending ? 'ascending' : 'descending';
+  }
 
   function setPageSize(size: number) {
     // The first user of the page stays in view.
@@ -158,6 +176,17 @@
     </div>
   </section>
 {:else}
+  {#snippet sortable(key: UserSortKey, label: string, className: string)}
+    {@const state = sortState(key)}
+    <th scope="col" class={className || undefined} aria-sort={state}>
+      <button class="org-sort-button" onclick={() => sortBy(key)}>
+        {label}
+        <span class="org-sort-mark" aria-hidden="true">
+          {state === 'ascending' ? '▲' : state === 'descending' ? '▼' : ''}
+        </span>
+      </button>
+    </th>
+  {/snippet}
   <section class="org-panel" aria-labelledby="manage-users-title">
     <div class="org-panel-heading">
       <h2 id="manage-users-title" class="uppercase">Manage Users</h2>
@@ -186,11 +215,11 @@
         <thead>
           <tr>
             <th scope="col" class="org-users-avatar text-center">Avatar</th>
-            <th scope="col">Username</th>
-            <th scope="col" class="org-users-email">Email</th>
-            <th scope="col" class="org-users-date text-center">Date Registered</th>
-            <th scope="col" class="text-center">Group</th>
-            <th scope="col" class="text-center">Locked</th>
+            {@render sortable('username', 'Username', '')}
+            {@render sortable('email', 'Email', 'org-users-email')}
+            {@render sortable('register_date', 'Date Registered', 'org-users-date text-center')}
+            {@render sortable('group_id', 'Group', 'text-center')}
+            {@render sortable('locked', 'Locked', 'text-center')}
             <th scope="col" class="text-center">Password</th>
             <th scope="col" class="text-center">Action</th>
           </tr>

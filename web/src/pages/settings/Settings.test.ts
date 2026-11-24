@@ -806,6 +806,37 @@ describe('Settings, users', () => {
       expect(screen.getByLabelText('Users per page')).toHaveValue('30');
     });
 
+    it('sorts a column with a click on its heading, as PHP does, from the first page', async () => {
+      await show('users', { 'GET users': { data: MANY } });
+      await fireEvent.click(within(pager()).getByRole('button', { name: 'Page 3' }));
+      const heading = screen.getByRole('columnheader', { name: /Username/ });
+      expect(heading).not.toHaveAttribute('aria-sort');
+
+      await fireEvent.click(within(heading).getByRole('button'));
+      expect(heading).toHaveAttribute('aria-sort', 'ascending');
+      expect(names()[0]).toBe('admin');
+      expect(within(pager()).getByRole('button', { name: 'Page 1' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+
+      await fireEvent.click(within(heading).getByRole('button'));
+      expect(heading).toHaveAttribute('aria-sort', 'descending');
+      expect(names()[0]).toBe('user23');
+
+      // The groups sort by their level: the Admin's group, level 0, comes first.
+      const group = screen.getByRole('columnheader', { name: /Group/ });
+      await fireEvent.click(within(group).getByRole('button'));
+      expect(group).toHaveAttribute('aria-sort', 'ascending');
+      expect(heading).not.toHaveAttribute('aria-sort');
+      expect(names()[0]).toBe('admin');
+
+      // Avatar, Password and Action do not sort, as in PHP.
+      for (const name of ['Avatar', 'Password', 'Action']) {
+        expect(within(screen.getByRole('columnheader', { name })).queryByRole('button')).toBeNull();
+      }
+    });
+
     it('stays on the page after a change, and goes back a page when the last one empties', async () => {
       // 21 users: page 3 holds user21 alone.
       let users = MANY.slice(0, 21);

@@ -467,7 +467,8 @@ test('the Admin manages the groups, and the group for new users is not deleted',
 
 /**
  * The pager under the users and the page size in the heading, as in PHP: readable, and
- * the page size hidden on a phone. The demo has fewer than ten users, so it has one page.
+ * the page size hidden on a phone, and the headings that sort. The demo has fewer than ten
+ * users, so it has one page.
  */
 async function checkUserPages(page: Page, layout: string) {
   const pager = page.getByRole('navigation', { name: 'Pages of the users' });
@@ -490,6 +491,16 @@ async function checkUserPages(page: Page, layout: string) {
       [],
     );
   }
+  // A click on a heading sorts by its column; the heading stays readable. The page loads
+  // again after this check, so the order of the server comes back.
+  const heading = page.getByRole('columnheader', { name: /Username/ });
+  await heading.getByRole('button').click();
+  await expect(heading).toHaveAttribute('aria-sort', 'ascending');
+  await heading.getByRole('button').click();
+  await expect(heading).toHaveAttribute('aria-sort', 'descending');
+  const headings = await auditContrast(page, '.org-users-table thead');
+  expect(headings.checked).toBeGreaterThan(0);
+  expect(headings.low, describeLowContrast(`the headings on ${layout}`, headings.low)).toEqual([]);
   const before = page.viewportSize();
   await page.setViewportSize({ width: 375, height: 812 });
   await expect(size).toBeHidden();

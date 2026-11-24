@@ -2109,6 +2109,23 @@
     padding: 15px 25px;
   }
 
+  /* The heading of a column that sorts the table on a click, as the users grid of PHP. It
+     looks like the other headings; a small triangle shows the order. */
+  .org-sort-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .org-sort-mark {
+    font-size: 0.7em;
+  }
+
   /* The page size of a table, in the heading of its panel: as narrow as its numbers. The
      class pair beats the full width of every form control. */
   .org-form-control.org-page-size {
