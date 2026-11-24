@@ -188,7 +188,7 @@ export const TAUTULLI: HomepageItemForm = {
         id: 'socks',
         title: 'API SOCKS',
         entries: [
-          { kind: 'socks', app: 'tautulli' },
+          { kind: 'socks', app: 'tautulli', wide: true },
           { key: 'tautulliSocksEnabled', kind: 'switch', label: 'Enable' },
           {
             key: 'tautulliSocksAuth',

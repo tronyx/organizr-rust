@@ -504,6 +504,7 @@ export const NETDATA: HomepageItemForm = {
             tone: 'info',
             title: 'Custom data',
             body: 'This is where you can define custom data sources for your netdata charts. To use a custom source, you need to select "Custom" in the data field for the chart. Add an entry to the JSON below, where the key is the chart number, for example {"1": {"url": "/api/v1/data?chart=system.ram&format=array", "value": "result,0", "units": "%", "max": 100}}. url (required): the netdata API endpoint, appended to your netdata URL. value (required): comma-separated keys that select the value from the netdata response. units: the units of the chart, % by default. max: the maximum possible value, 100 by default. mutator: simple operations on the result (+, -, /, *), comma-separated, for example /1000. netdata: another netdata instance to read the data from, in the format http://IP:PORT.',
+            wide: true,
           },
           {
             key: 'netdataCustom',

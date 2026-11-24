@@ -56,24 +56,35 @@ export async function loadList(source: ListSource, level = 999): Promise<Choice[
   }
 }
 
-/** The lists that a page loaded, by their source; the frame tabs with their addresses. */
+/**
+ * The lists that a page loaded, by their source; the frame tabs with their addresses; and
+ * the sources that could not be loaded.
+ */
 export interface LoadedLists {
   lists: Partial<Record<ListSource, Choice[]>>;
   frameTabs: FrameTab[];
+  failed: ListSource[];
 }
 
-/** Loads each list that the fields need once, for a caller of the given level. */
+/**
+ * Loads each list that the fields need once, for a caller of the given level. A list that
+ * fails to load is named in `failed`, and its fields keep only their fixed choices.
+ */
 export async function loadLists(fields: SettingField[], level: number): Promise<LoadedLists> {
   const sources = [
     ...new Set(fields.map((field) => field.source).filter((source) => source !== undefined)),
   ];
-  const loaded: LoadedLists = { lists: {}, frameTabs: [] };
+  const loaded: LoadedLists = { lists: {}, frameTabs: [], failed: [] };
   await Promise.all(
     sources.map(async (source) => {
-      if (source === 'frame-tabs') {
-        loaded.frameTabs = await loadFrameTabs(level);
-      } else {
-        loaded.lists[source] = await loadList(source, level);
+      try {
+        if (source === 'frame-tabs') {
+          loaded.frameTabs = await loadFrameTabs(level);
+        } else {
+          loaded.lists[source] = await loadList(source, level);
+        }
+      } catch {
+        loaded.failed.push(source);
       }
     }),
   );
@@ -133,11 +144,14 @@ function sourcedChoices(
 }
 
 /**
- * The choices with the value of the field added when it is none of them, as an old or
- * hand-edited value: the list shows it, and a Save leaves it as it is.
+ * The choices with each value of the field added, once, when it is none of them, as an old
+ * or hand-edited value: the list shows it, and a Save leaves it as it is. An empty value
+ * adds nothing: the list shows its first choice, as PHP does.
  */
 export function withValue(choices: Choice[], value: FormValue): Choice[] {
   const values = Array.isArray(value) ? value : [String(value)];
-  const missing = values.filter((one) => !choices.some((choice) => choice.value === one));
+  const missing = [...new Set(values)].filter(
+    (one) => one !== '' && !choices.some((choice) => choice.value === one),
+  );
   return [...choices, ...missing.map((one) => ({ label: one, value: one }))];
 }

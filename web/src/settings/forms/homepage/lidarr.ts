@@ -213,7 +213,7 @@ export const LIDARR: HomepageItemForm = {
         id: 'socks',
         title: 'API SOCKS',
         entries: [
-          { kind: 'socks', app: 'lidarr' },
+          { kind: 'socks', app: 'lidarr', wide: true },
           { key: 'lidarrSocksEnabled', kind: 'switch', label: 'Enable' },
           {
             key: 'lidarrSocksAuth',

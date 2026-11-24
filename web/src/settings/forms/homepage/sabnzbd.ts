@@ -78,7 +78,7 @@ export const SABNZBD: HomepageItemForm = {
         id: 'socks',
         title: 'API SOCKS',
         entries: [
-          { kind: 'socks', app: 'sabnzbd' },
+          { kind: 'socks', app: 'sabnzbd', wide: true },
           { key: 'sabnzbdSocksEnabled', kind: 'switch', label: 'Enable' },
           {
             key: 'sabnzbdSocksAuth',

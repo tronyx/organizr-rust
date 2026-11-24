@@ -29,6 +29,7 @@ export const OVERSEERR: HomepageItemForm = {
             tone: 'info',
             title: 'Attention',
             body: 'Since Organizr supports multiple Request Providers, You must now select which service you want to submit requests through',
+            wide: true,
           },
           {
             key: 'defaultRequestService',

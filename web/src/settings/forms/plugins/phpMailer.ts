@@ -92,6 +92,7 @@ export const PHP_MAILER_PLUGIN: FormPage = {
       id: 'templates',
       title: 'Templates',
       entries: [
+        { kind: 'heading', text: 'Edit Template' },
         {
           key: 'PHPMAILER-emailTemplateRegisterUserSubject',
           kind: 'text',

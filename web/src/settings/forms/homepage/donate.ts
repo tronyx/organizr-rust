@@ -80,6 +80,7 @@ export const DONATE: HomepageItemForm = {
             kind: 'about',
             title: 'Donations Homepage Item',
             body: 'This item allows you to use Stripe to accept donations on the homepage',
+            wide: true,
           },
         ],
       },

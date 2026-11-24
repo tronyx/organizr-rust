@@ -121,7 +121,7 @@ export const QBITTORRENT: HomepageItemForm = {
         id: 'socks',
         title: 'API SOCKS',
         entries: [
-          { kind: 'socks', app: 'qbittorrent' },
+          { kind: 'socks', app: 'qbittorrent', wide: true },
           { key: 'qBittorrentSocksEnabled', kind: 'switch', label: 'Enable' },
           {
             key: 'qBittorrentSocksAuth',

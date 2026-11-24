@@ -15,6 +15,7 @@ export const PLUGIN_SETTINGS: FormPage = {
           tone: 'danger',
           title: 'Attention',
           body: '3rd Party Repositories are not affiliated with Organizr and therefore the code on these repositories are not inspected. Use at your own risk.',
+          wide: true,
         },
         {
           key: 'externalPluginMarketplaceRepos',

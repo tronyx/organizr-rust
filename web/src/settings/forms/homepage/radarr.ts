@@ -253,7 +253,7 @@ export const RADARR: HomepageItemForm = {
         id: 'socks',
         title: 'API SOCKS',
         entries: [
-          { kind: 'socks', app: 'radarr' },
+          { kind: 'socks', app: 'radarr', wide: true },
           { key: 'radarrSocksEnabled', kind: 'switch', label: 'Enable' },
           {
             key: 'radarrSocksAuth',

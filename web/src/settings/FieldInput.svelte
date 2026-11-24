@@ -13,6 +13,7 @@
     choices = [],
     stored = false,
     revealed = $bindable(false),
+    listFailed = false,
     onchange,
   }: {
     field: SettingField;
@@ -24,6 +25,8 @@
     stored?: boolean;
     /** Whether a secret shows as text. */
     revealed?: boolean;
+    /** Whether the list of the choices could not be loaded. */
+    listFailed?: boolean;
     onchange: (value: FormValue) => void;
   } = $props();
 
@@ -31,6 +34,13 @@
   const hint = $derived(field.help ? `${id}-help` : undefined);
   const text = $derived(Array.isArray(value) ? value.join(',') : String(value));
   const list = $derived(Array.isArray(value) ? value : []);
+  /**
+   * The choice that a select shows: its value, or the first choice for a value that is
+   * none of them (an empty one), as PHP shows it. The value itself stays as it is.
+   */
+  const selected = $derived(
+    choices.some((choice) => choice.value === text) ? text : (choices[0]?.value ?? ''),
+  );
 
   /** What the last test of the value said. */
   let answer = $state<{ ok: boolean; text: string } | null>(null);
@@ -75,7 +85,7 @@
   <select
     {id}
     class="org-form-control"
-    value={text}
+    value={selected}
     disabled={field.disabled}
     aria-describedby={hint}
     onchange={(event) => onchange(event.currentTarget.value)}
@@ -236,6 +246,9 @@
       {/each}
     </datalist>
   {/if}
+{/if}
+{#if listFailed}
+  <p class="text-error mt-1 text-sm">The list could not be loaded.</p>
 {/if}
 {#if field.help}
   <p id={hint} class="sr-only">{field.help}</p>

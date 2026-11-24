@@ -79,7 +79,7 @@ export const NZBGET: HomepageItemForm = {
         id: 'socks',
         title: 'API SOCKS',
         entries: [
-          { kind: 'socks', app: 'nzbget' },
+          { kind: 'socks', app: 'nzbget', wide: true },
           { key: 'nzbgetSocksEnabled', kind: 'switch', label: 'Enable' },
           {
             key: 'nzbgetSocksAuth',

@@ -1,5 +1,6 @@
 // The model of the native settings forms: a page holds sections, a section holds entries,
-// and an entry is a setting field, a button, a notice, a piece of text or a socks box.
+// and an entry is a setting field, a button, a notice, a piece of text, a socks box, a heading
+// or a part that its own component draws.
 
 /** How a setting field is drawn and what kind of value it holds. */
 export type FieldKind =
@@ -114,6 +115,8 @@ export interface NoticeEntry {
   tone: string;
   title?: string;
   body: string;
+  /** The notice takes the whole row. */
+  wide?: boolean;
 }
 
 /** A piece of text about the page. */
@@ -121,12 +124,22 @@ export interface AboutEntry {
   kind: 'about';
   title?: string;
   body: string;
+  /** The text takes the whole row. */
+  wide?: boolean;
 }
 
 /** The box of the socks of an app. */
 export interface SocksEntry {
   kind: 'socks';
   app: string;
+  /** The box takes the whole row. */
+  wide?: boolean;
+}
+
+/** A heading above the entries that follow it, such as the folding boxes of the templates. */
+export interface HeadingEntry {
+  kind: 'heading';
+  text: string;
 }
 
 /** A part of a page that its own component draws, such as the health-check services. */
@@ -147,7 +160,8 @@ export interface PartEntry {
 }
 
 /** Anything a section can hold. */
-export type Entry = SettingField | ButtonEntry | NoticeEntry | AboutEntry | SocksEntry | PartEntry;
+export type Entry =
+  SettingField | ButtonEntry | NoticeEntry | AboutEntry | SocksEntry | HeadingEntry | PartEntry;
 
 /** A titled group of entries. */
 export interface Section {

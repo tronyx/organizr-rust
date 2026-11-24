@@ -6,7 +6,8 @@ import { plexToken } from '../lib/plexLogin';
 import { session } from '../lib/session.svelte';
 import type { Launch, Tab } from '../lib/types';
 import { stubApi, type CannedAnswer, type SentRequest } from '../test-helpers';
-import { loadList } from './lists';
+import { loadList, withValue } from './lists';
+import { PHP_MAILER_PLUGIN } from './forms/plugins/phpMailer';
 import type { FormPage } from './model';
 import SettingsForm, { type SectionPart } from './SettingsForm.svelte';
 
@@ -404,6 +405,54 @@ describe('SettingsForm', () => {
     expect(await screen.findByText('The schedule is valid')).toHaveAttribute('role', 'status');
     expect(changes(sent)).toEqual([['POST test/cron', '0 3 * * *']]);
   });
+
+  it('shows the first choice for an empty stored value, and does not send it', async () => {
+    const { sent } = await show(PAGE, {
+      'GET config': { data: { ...CONFIG, authType: 'both', authBackend: '' } },
+      'PUT config': {},
+    });
+    await section('Sign-in Method');
+
+    const backend = screen.getByLabelText('Authentication Backend');
+    expect(backend).toHaveValue('ldap');
+    expect(
+      within(backend)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Ldap', 'Plex']);
+    await section('Login');
+    await fireEvent.input(screen.getByLabelText('Max Login Attempts'), { target: { value: '6' } });
+    await save();
+
+    expect(await sentBody(sent)).toEqual({ loginAttempts: '6' });
+  });
+
+  it('makes notices, texts and socks boxes wide only when the definition says so', async () => {
+    const boxes: FormPage = {
+      id: 'boxes',
+      title: 'Boxes',
+      sections: [
+        {
+          id: 'all',
+          title: 'All',
+          entries: [
+            { kind: 'notice', tone: 'info', title: 'Wide notice', body: 'One', wide: true },
+            { kind: 'notice', tone: 'info', title: 'Narrow notice', body: 'Two' },
+            { kind: 'about', title: 'Wide about', body: 'Three', wide: true },
+            { kind: 'socks', app: 'sonarr' },
+          ],
+        },
+      ],
+    };
+    await show(boxes, { 'GET config': { data: {} } });
+
+    const group = (name: string) =>
+      screen.getByRole('heading', { name }).closest('.org-form-group');
+    expect(group('Wide notice')).toHaveClass('org-form-wide');
+    expect(group('Narrow notice')).not.toHaveClass('org-form-wide');
+    expect(group('Wide about')).toHaveClass('org-form-wide');
+    expect(group('API SOCKS')).not.toHaveClass('org-form-wide');
+  });
 });
 
 describe('SettingsForm, the Plex buttons', () => {
@@ -642,6 +691,73 @@ describe('SettingsForm, the lists', () => {
     expect(screen.getByLabelText('User')).toHaveValue('3');
   });
 
+  it('takes a stored value of a plugin list as a text with commas', async () => {
+    const plugin: FormPage = {
+      id: 'invites',
+      title: 'Invites',
+      sections: [
+        {
+          id: 'plex',
+          title: 'Plex',
+          entries: [
+            {
+              key: 'INVITES-plexLibraries',
+              kind: 'multi-select',
+              label: 'Libraries',
+              source: 'plex-libraries',
+            },
+          ],
+        },
+      ],
+    };
+    const { sent } = await show(plugin, {
+      'GET config': { data: { 'INVITES-plexLibraries': 'films,shows' } },
+      'PUT config': {},
+    });
+
+    const box = screen.getByLabelText('Libraries');
+    expect(box.tagName).toBe('INPUT');
+    expect(box).toHaveValue('films,shows');
+    await fireEvent.input(box, { target: { value: 'films,shows,music' } });
+    await save();
+
+    expect(await sentBody(sent)).toEqual({ 'INVITES-plexLibraries': 'films,shows,music' });
+  });
+
+  it('adds a stored value that is none of the choices once, and an empty one not at all', () => {
+    const choices = [{ label: 'Admin', value: '0' }];
+
+    expect(withValue(choices, ['a', 'a', '0'])).toEqual([...choices, { label: 'a', value: 'a' }]);
+    expect(withValue(choices, '')).toEqual(choices);
+    expect(withValue(choices, 'old')).toEqual([...choices, { label: 'old', value: 'old' }]);
+  });
+
+  it('draws a stored list with a repeated value', async () => {
+    await show(CALENDAR, {
+      ...LIST_ANSWERS,
+      'GET config': {
+        data: { ...((LIST_ANSWERS['GET config'] as CannedAnswer).data as object), plexUser: '7' },
+      },
+    });
+    await section('Options');
+
+    expect(options('User')).toEqual(['zoe', '7']);
+  });
+
+  it('keeps the page when a list cannot be loaded, with the fixed choices and a note', async () => {
+    await show(CALENDAR, {
+      ...LIST_ANSWERS,
+      'GET groups': { status: 500, message: 'The database is busy' },
+    });
+    await section('Options');
+
+    expect(options('Minimum Authentication')).toEqual(['1']);
+    const group = screen.getByLabelText('Minimum Authentication').closest('.org-form-group');
+    expect(group).toHaveTextContent('The list could not be loaded.');
+    expect(options('Theme')).toEqual(['Organizr', 'Dark']);
+    expect(screen.getAllByText('The list could not be loaded.')).toHaveLength(1);
+  });
+
   it('has no plugin lists yet', async () => {
     expect(await loadList('plex-libraries')).toEqual([]);
     expect(await loadList('nextcloud-groups')).toEqual([]);
@@ -759,6 +875,7 @@ describe('SettingsForm, the parts and the boxes', () => {
         id: 'templates',
         title: 'Templates',
         entries: [
+          { kind: 'heading', text: 'Edit Template' },
           { key: 'resetSubject', kind: 'text', label: 'Subject', fold: 'Reset Password' },
           { key: 'reset', kind: 'textbox', label: 'Body', fold: 'Reset Password' },
           {
@@ -800,5 +917,19 @@ describe('SettingsForm, the parts and the boxes', () => {
     expect(titles()).toEqual(['Reset Password', 'Hello']);
     await fireEvent.input(screen.getByLabelText('Name'), { target: { value: '' } });
     expect(titles()).toEqual(['Reset Password', 'Custom template 1']);
+  });
+
+  it('draws the heading of the boxes above them, in their cell', async () => {
+    await show(TEMPLATES, { 'GET config': { data: {} } });
+
+    const heading = screen.getByText('Edit Template');
+    expect(heading).toHaveClass('org-form-label');
+    expect(heading.closest('.org-form-group')?.querySelectorAll('details')).toHaveLength(2);
+  });
+
+  it('gives the templates of the mails their heading', () => {
+    const templates = PHP_MAILER_PLUGIN.sections.find((one) => one.id === 'templates');
+
+    expect(templates?.entries[0]).toEqual({ kind: 'heading', text: 'Edit Template' });
   });
 });

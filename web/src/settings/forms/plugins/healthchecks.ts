@@ -15,6 +15,7 @@ export const HEALTHCHECKS_PLUGIN: FormPage = {
           tone: 'info',
           title: 'Scheduled jobs',
           body: 'The server runs the jobs of the schedules itself. No cron file is needed.',
+          wide: true,
         },
         { key: 'HEALTHCHECKS-cron-run-enabled', kind: 'switch', label: 'Enable' },
         {

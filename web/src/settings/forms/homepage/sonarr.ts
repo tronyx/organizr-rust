@@ -250,7 +250,7 @@ export const SONARR: HomepageItemForm = {
         id: 'socks',
         title: 'API SOCKS',
         entries: [
-          { kind: 'socks', app: 'sonarr' },
+          { kind: 'socks', app: 'sonarr', wide: true },
           { key: 'sonarrSocksEnabled', kind: 'switch', label: 'Enable' },
           {
             key: 'sonarrSocksAuth',
@@ -268,6 +268,7 @@ export const SONARR: HomepageItemForm = {
             kind: 'about',
             title: 'Sonarr Homepage Item',
             body: "This item allows access to Sonarr's calendar data and aggregates it to Organizr's calendar. Along with that you also have the Downloader function that allow access to Sonarr's queue. The last item that is included is the API SOCKS function which acts as a middleman between API's which is useful if you are not port forwarding or reverse proxying Sonarr.",
+            wide: true,
           },
         ],
       },

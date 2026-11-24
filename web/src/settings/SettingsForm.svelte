@@ -82,14 +82,19 @@
     fields: SettingField[];
   }
 
-  /** What one cell of the grid holds: an entry, or the folding boxes that follow each other. */
-  type Cell = { kind: 'entry'; entry: Entry; index: number } | { kind: 'folds'; boxes: FoldBox[] };
+  /**
+   * What one cell of the grid holds: an entry, or the folding boxes that follow each other
+   * with the heading that stands right before them.
+   */
+  type Cell =
+    | { kind: 'entry'; entry: Entry; index: number }
+    | { kind: 'folds'; heading?: string; boxes: FoldBox[] };
 
   /** A grid of cells, or a part between two grids. */
   type Block = { kind: 'grid'; cells: Cell[] } | { kind: 'part'; entry: PartEntry };
 
   let config = $state<Record<string, unknown> | null>(null);
-  let lists = $state<LoadedLists>({ lists: {}, frameTabs: [] });
+  let lists = $state<LoadedLists>({ lists: {}, frameTabs: [], failed: [] });
   let start = $state<Record<string, FormValue>>({});
   let form = $state<Record<string, FormValue>>({});
   let loadError = $state<string | null>(null);
@@ -197,12 +202,19 @@
     return form[key] ?? config?.[key];
   }
 
-  /** The choices of a field, with its value added when it is none of them. */
+  /**
+   * The choices of a field, with its value added when it is none of them. A multi-select
+   * without a choice to pick gets none added, so that it takes a text with commas.
+   */
   function choices(field: SettingField) {
     const all = choicesOf(field, lists, valueOf);
-    return field.kind === 'select' || field.kind === 'multi-select'
-      ? withValue(all, form[field.key] ?? '')
-      : all;
+    if (field.kind === 'select') {
+      return withValue(all, form[field.key] ?? '');
+    }
+    if (field.kind === 'multi-select' && all.some((choice) => !choice.disabled)) {
+      return withValue(all, form[field.key] ?? []);
+    }
+    return all;
   }
 
   /** The grids and parts of a section: a part takes the whole width between two grids. */
@@ -220,8 +232,15 @@
       }
       if (isField(entry) && entry.fold !== undefined) {
         const last = cells.at(-1);
-        const folds = last?.kind === 'folds' ? last : { kind: 'folds' as const, boxes: [] };
-        if (folds !== last) {
+        let folds: Extract<Cell, { kind: 'folds' }>;
+        if (last?.kind === 'folds') {
+          folds = last;
+        } else if (last?.kind === 'entry' && last.entry.kind === 'heading') {
+          // The heading stands right above the boxes, in the same cell.
+          folds = { kind: 'folds', heading: last.entry.text, boxes: [] };
+          cells[cells.length - 1] = folds;
+        } else {
+          folds = { kind: 'folds', boxes: [] };
           cells.push(folds);
         }
         const box = folds.boxes.at(-1);
@@ -259,7 +278,10 @@
     if (isField(entry)) {
       return entry.wide === true || entry.kind === 'code' || entry.kind === 'textbox';
     }
-    return entry.kind !== 'button';
+    if (entry.kind === 'heading') {
+      return true;
+    }
+    return 'wide' in entry && entry.wide === true;
   }
 
   async function press(section: Section, button: ButtonEntry, key: string) {
@@ -387,6 +409,7 @@
     value={form[entry.key] ?? ''}
     choices={choices(entry)}
     stored={config?.[entry.key] === SECURE}
+    listFailed={entry.source !== undefined && lists.failed.includes(entry.source)}
     bind:revealed={
       () => shownSecrets[entry.key] === true, (shown) => (shownSecrets[entry.key] = shown)
     }
@@ -472,6 +495,8 @@
     {@render field(entry)}
   {:else if entry.kind === 'button'}
     {@render button(section, entry, index)}
+  {:else if entry.kind === 'heading'}
+    <span class="org-form-label">{entry.text}</span>
   {:else if entry.kind === 'notice'}
     <div
       class="org-notice"
@@ -504,6 +529,7 @@
     {#each cells as cell, position (position)}
       {#if cell.kind === 'folds'}
         <div class="org-form-group org-form-wide">
+          {#if cell.heading}<span class="org-form-label">{cell.heading}</span>{/if}
           {#each cell.boxes as box, number (number)}
             <details class="org-accordion">
               <summary>{boxTitle(box)}</summary>
