@@ -368,6 +368,24 @@ describe('the modern dialog rules', () => {
     expect(css).not.toContain('.modal::backdrop');
   });
 
+  // daisyUI puts `.fieldset`, `.card-body`, `.card-title` and `.btn` in sublayers of
+  // `@layer utilities`: a modern rule that sets their padding or font must sit there too.
+  const authSelectors = [
+    "[data-layout='modern'] .org-wizard-panel",
+    "[data-layout='modern'] .org-account-panel > .card-body",
+    "[data-layout='modern'] .org-account-panel .card-title",
+    "[data-layout='modern'] .org-login-button",
+  ];
+
+  it('auth_rules_that_beat_daisyui_sit_in_the_utilities_layer', () => {
+    const block = css.slice(css.lastIndexOf('@layer utilities'));
+    const before = css.slice(0, css.lastIndexOf('@layer utilities'));
+    for (const selector of authSelectors) {
+      expect(block, selector).toContain(`${selector} {`);
+      expect(before, selector).not.toContain(`${selector} {`);
+    }
+  });
+
   it('the_rules_that_beat_utilities_are_not_in_the_components_layer', () => {
     const before = css.slice(0, css.lastIndexOf('@layer utilities'));
     for (const selector of [...dialogSelectors, ...partSelectors]) {
@@ -485,6 +503,69 @@ describe('the borders of the form controls', () => {
       const [high, low] = [border, field].sort((x, y) => y - x) as [number, number];
       expect((high + 0.05) / (low + 0.05), `${selector} on ${name}`).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  /** The rule of the borders of the checkboxes and radios of the auth screens. */
+  function choiceRule(): Rule | undefined {
+    return rules().find(
+      (rule) =>
+        rule.selector.includes('.org-login-form') &&
+        rule.selector.includes('.checkbox') &&
+        rule.selector.includes('.radio'),
+    );
+  }
+
+  it.each(['m-organizr-dark', 'm-organizr-light'])(
+    'auth_checkbox_and_radio_borders_reach_3_to_1_on_%s',
+    (name) => {
+      const rule = choiceRule();
+      expect(rule, 'a modern rule for the checkboxes and radios of the auth screens').toBeDefined();
+      const found =
+        /border-color:\s*color-mix\(in oklab, var\(--color-base-content\) (\d+)%, var\(--color-base-300\)\)/.exec(
+          rule?.body ?? '',
+        );
+      expect(found).not.toBeNull();
+      const colours = theme(name);
+      const border = luminance(
+        mixOklab(
+          colours['base-content'] as string,
+          colours['base-300'] as string,
+          Number(found?.[1]),
+        ),
+      );
+      // The cards of the login and lock screens are base-200, the panels base-100.
+      for (const surface of ['base-100', 'base-200']) {
+        const behind = luminance(channels(colours[surface] as string));
+        const [high, low] = [border, behind].sort((x, y) => y - x) as [number, number];
+        expect((high + 0.05) / (low + 0.05), `${surface} on ${name}`).toBeGreaterThanOrEqual(3);
+      }
+    },
+  );
+
+  it('auth_choice_borders_keep_the_checked_look_of_daisyui', () => {
+    const rule = choiceRule();
+    // `--input-color` is the checked fill of a checkbox and the dot of a radio.
+    expect(rule?.body ?? '').not.toContain('--input-color');
+    // A checked radio keeps its border in its own colour.
+    expect(rule?.selector ?? '').toMatch(/\.radio:not\(:checked/);
+    // The rule sits in the utilities layer, where it beats the sublayers of daisyUI.
+    const block = css.slice(css.lastIndexOf('@layer utilities'));
+    expect(block).toContain(rule?.selector ?? '-');
+  });
+});
+
+describe('the modern top bar and lock screen on a phone', () => {
+  it('the_shown_tab_name_and_the_logo_text_hide_below_640_px', () => {
+    const phone = css.slice(css.lastIndexOf('@media (max-width: 639px)'));
+    expect(phone).toMatch(/\[data-layout='modern'\] \.m-shown \{\s*display: none;/);
+    expect(phone).toMatch(
+      /\[data-layout='modern'\] \.org-logo > span \{[^}]*clip-path: inset\(50%\)/,
+    );
+  });
+
+  it('a_long_user_name_wraps_inside_the_lock_card', () => {
+    const found = rules().filter((one) => one.selector.includes(`${SCOPE} .org-lock-name`));
+    expect(found.some((one) => /overflow-wrap:\s*anywhere/.test(one.body))).toBe(true);
   });
 });
 

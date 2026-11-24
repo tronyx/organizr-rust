@@ -3962,15 +3962,6 @@
     text-transform: none;
   }
 
-  [data-layout='modern'] .org-login-button {
-    height: auto;
-    min-height: 42px;
-    padding: 10px 16px;
-    border-radius: var(--radius-field);
-    font-size: 15px;
-    font-weight: 500;
-  }
-
   /* The page of Account and of the wizard (and of Invites and the speed test): a roomy
      page with a heading, as the settings on modern. */
   [data-layout='modern'] .org-settings:not(.m-settings) {
@@ -4008,6 +3999,12 @@
 
   [data-layout='modern'] .org-breadcrumb li:last-child {
     color: var(--color-base-content);
+  }
+
+  /* A long user name breaks instead of running past the edge on a phone. */
+  [data-layout='modern'] .org-breadcrumb li {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   @media (max-width: 767px) {
@@ -4070,31 +4067,15 @@
     color: var(--color-base-content);
   }
 
-  [data-layout='modern'] .org-wizard-panel {
-    padding: 0 20px 20px;
-  }
-
-  [data-layout='modern'] .org-wizard-heading,
-  [data-layout='modern'] .org-account-panel .card-title {
+  [data-layout='modern'] .org-wizard-heading {
+    width: calc(100% + 40px);
+    margin: 0 -20px 16px;
     padding: 14px 20px;
     border-bottom: 1px solid var(--color-base-300);
     background: var(--color-base-200);
     color: var(--color-base-content);
     font-size: 15px;
     font-weight: 600;
-  }
-
-  [data-layout='modern'] .org-wizard-heading {
-    width: calc(100% + 40px);
-    margin: 0 -20px 16px;
-  }
-
-  [data-layout='modern'] .org-account-panel > .card-body {
-    padding: 20px;
-  }
-
-  [data-layout='modern'] .org-account-panel .card-title {
-    margin: -20px -20px 16px;
   }
 
   /* The session of this browser in the list of the sessions: a tint of the success colour. */
@@ -4465,6 +4446,40 @@
     color: var(--color-base-content);
   }
 
+  /* A long name breaks inside the lock card instead of pushing the page sideways. */
+  [data-layout='modern'] .org-lock-name {
+    overflow-wrap: anywhere;
+  }
+
+  /* The sizes that compete with daisyUI (`.btn`, `.fieldset`, `.card-body` and
+     `.card-title` sit in sublayers of this layer). */
+  [data-layout='modern'] .org-login-button {
+    height: auto;
+    min-height: 42px;
+    padding: 10px 16px;
+    border-radius: var(--radius-field);
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  [data-layout='modern'] .org-wizard-panel {
+    padding: 0 20px 20px;
+  }
+
+  [data-layout='modern'] .org-account-panel > .card-body {
+    padding: 20px;
+  }
+
+  [data-layout='modern'] .org-account-panel .card-title {
+    margin: -20px -20px 16px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--color-base-300);
+    background: var(--color-base-200);
+    color: var(--color-base-content);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
   /* The fields: a border that shows on the card (about 3:1), the text colour in focus. */
   [data-layout='modern']
     :is(.org-login-form, .org-lock-box, .org-wizard-panel, .org-account-panel)
@@ -4480,6 +4495,15 @@
     :is(.input, .select):is(:focus, :focus-within) {
     --input-color: var(--color-base-content);
     border-color: var(--color-base-content);
+  }
+
+  /* The checkboxes and radios: the same border of about 3:1. Only the border colour is
+     set, so a checked checkbox keeps the fill of daisyUI (`--input-color`) and a checked
+     radio keeps its border and dot in its own colour; the focus outline is unchanged. */
+  [data-layout='modern']
+    :is(.org-login-form, .org-lock-box, .org-wizard-panel, .org-account-panel)
+    :is(.checkbox, .radio:not(:checked, [aria-checked='true'])) {
+    border-color: color-mix(in oklab, var(--color-base-content) 45%, var(--color-base-300));
   }
 
   /* The faded texts of the wizard and of Account: the tone of the text colour at full
@@ -4507,6 +4531,25 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    /* The side menu shows the open tab, so its name leaves the bar. The logo keeps its
+       picture; a title in text stays for screen readers only. */
+    [data-layout='modern'] .m-shown {
+      display: none;
+    }
+
+    [data-layout='modern'] .org-logo > span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    [data-layout='modern'] .org-logo img {
+      max-width: 96px;
     }
   }
 }
