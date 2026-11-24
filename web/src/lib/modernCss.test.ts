@@ -672,6 +672,9 @@ describe('the brand themes of the modern layout', () => {
       'm-circuit-matrix',
       'm-circuit-synth',
       'm-circuit-amber',
+      'm-prism-daydream',
+      'm-prism-twilight',
+      'm-prism-candy',
     ]);
   });
 
@@ -940,9 +943,12 @@ describe('the display fonts of the scene themes', () => {
     circuit: "'Orbitron Variable'",
   };
 
+  /** The scene themes whose own face is a readable sans for all text, not a display face. */
+  const BODY_FONTS = ['prism'];
+
   it('the_scene_themes_are_the_themes_with_a_display_font', () => {
     const scenes = MODERN_THEMES.flatMap((theme) => (theme.scene ? [theme.id] : []));
-    expect(Object.keys(FONTS).sort()).toEqual(scenes.sort());
+    expect([...Object.keys(FONTS), ...BODY_FONTS].sort()).toEqual(scenes.sort());
   });
 
   it.each(Object.entries(FONTS))(
@@ -1312,6 +1318,92 @@ describe('the Circuit theme of the modern layout', () => {
     for (const rule of own) {
       for (const part of selectorParts(rule.selector)) {
         expect(part.startsWith(CIRCUIT), part).toBe(true);
+      }
+    }
+  });
+});
+
+describe('the Prism theme of the modern layout', () => {
+  const PRISM = `${SCOPE}[data-theme^='m-prism-']`;
+  const SETS = ['daydream', 'twilight', 'candy'];
+
+  /** The rule that gives every text of Prism its font. */
+  function fontRule(): Rule | undefined {
+    return rules().find((rule) => /font-family:\s*'Fredoka Variable'/.test(rule.body));
+  }
+
+  /** The daisyUI block of a colour set of Prism. */
+  function block(set: string): string {
+    const start = css.indexOf(`name: 'm-prism-${set}';`);
+    expect(start, set).toBeGreaterThan(-1);
+    return css.slice(start, css.indexOf('}', start));
+  }
+
+  it('only_the_prism_rule_names_fredoka_and_the_scene_loads_its_face', () => {
+    const named = rules().filter((rule) => rule.body.includes('Fredoka'));
+    expect(named).toHaveLength(1);
+    // Fredoka is a readable rounded sans, so Prism sets it for every text, as Silo does.
+    expect(fontRule()?.selector).toBe(PRISM);
+    expect(fontRule()?.body).toMatch(/'Fredoka Variable', 'Rubik Variable', ui-sans-serif/);
+    // The face comes with the scene, in its lazy chunk, never with the main bundle.
+    const main = readFileSync(resolve(__dirname, '../main.ts'), 'utf8');
+    expect(main).not.toContain('fredoka');
+    const scene = readFileSync(resolve(__dirname, '../scenes/PrismScene.svelte'), 'utf8');
+    expect(scene).toContain("import '@fontsource-variable/fredoka/wght.css';");
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8')) as {
+      devDependencies: Record<string, string>;
+    };
+    expect(pkg.devDependencies['@fontsource-variable/fredoka']).toBe('5.3.0');
+  });
+
+  it('prism_body_text_is_regular_weight', () => {
+    // The body of the modern layout is light (300); the rounded face reads better at 400.
+    const body = rules().find((rule) => rule.selector === `${PRISM} body`);
+    expect(Number(/font-weight:\s*(\d+)/.exec(body?.body ?? '')?.[1])).toBe(400);
+    expect(css.slice(css.lastIndexOf('@layer utilities'))).toContain(`${PRISM} body {`);
+  });
+
+  it('the_prism_font_rule_stops_matching_after_a_switch_to_plex', () => {
+    const rule = fontRule();
+    expect(rule).toBeDefined();
+    const root = document.createElement('html');
+    applyLook(
+      { layout: 'modern', theme: 'prism', colourSet: 'candy', source: 'user' },
+      undefined,
+      {},
+      root,
+    );
+    expect(root.matches(rule?.selector ?? '-')).toBe(true);
+    applyLook(
+      { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+      undefined,
+      {},
+      root,
+    );
+    expect(root.matches(rule?.selector ?? '-')).toBe(false);
+  });
+
+  it('prism_has_very_round_corners', () => {
+    for (const set of SETS) {
+      for (const name of ['radius-selector', 'radius-field', 'radius-box']) {
+        const value = Number(new RegExp(`--${name}: ([\\d.]+)rem;`).exec(block(set))?.[1] ?? 0);
+        expect(value, `${set} ${name}`).toBeGreaterThanOrEqual(0.75);
+      }
+    }
+  });
+
+  it('the_light_sets_of_prism_are_light_and_twilight_is_dark', () => {
+    expect(block('daydream')).toContain('color-scheme: light;');
+    expect(block('candy')).toContain('color-scheme: light;');
+    expect(block('twilight')).toContain('color-scheme: dark;');
+  });
+
+  it('prism_rules_are_scoped_to_prism', () => {
+    const own = rules().filter((rule) => rule.selector.includes('m-prism-'));
+    expect(own.length).toBeGreaterThan(0);
+    for (const rule of own) {
+      for (const part of selectorParts(rule.selector)) {
+        expect(part.startsWith(PRISM), part).toBe(true);
       }
     }
   });

@@ -1024,6 +1024,136 @@
   --noise: 0;
 }
 
+/* Prism: a sparkly rainbow, with very round corners and Fredoka, a rounded sans, for every
+   text. Daydream is light and pastel, Twilight dark with rainbow accents, and Candy light
+   and brighter. On the light sets every text sits on an opaque white card or bar. */
+@plugin 'daisyui/theme' {
+  name: 'm-prism-daydream';
+  color-scheme: light;
+
+  --color-base-100: #f6f1fc;
+  --color-base-200: #ffffff;
+  --color-base-300: #ebe3f6;
+  --color-base-content: #2b2140;
+  --color-primary: #7b3fbf;
+  --color-primary-content: #ffffff;
+  --color-secondary: #a8306e;
+  --color-secondary-content: #ffffff;
+  --color-accent: #0b6f78;
+  --color-accent-content: #ffffff;
+  --color-neutral: #352a4d;
+  --color-neutral-content: #ffffff;
+  --color-info: #2b67b0;
+  --color-info-content: #ffffff;
+  --color-success: #1d7347;
+  --color-success-content: #ffffff;
+  --color-warning: #f2b134;
+  --color-warning-content: #2a1a00;
+  --color-error: #c0284a;
+  --color-error-content: #ffffff;
+
+  --org-header-bg: #ffffff;
+  --org-header-text: #2b2140;
+  --org-sidebar-bg: #ffffff;
+  --org-sidebar-text: #5a4c72;
+  --org-sidebar-active: #7337b5;
+  /* The share of the text colour in a muted text: 65 % is under 4.5:1 on base-300. */
+  --org-muted-text: 70%;
+
+  --radius-selector: 1rem;
+  --radius-field: 0.875rem;
+  --radius-box: 1.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-prism-twilight';
+  color-scheme: dark;
+
+  --color-base-100: #131026;
+  --color-base-200: #1c1834;
+  --color-base-300: #292346;
+  --color-base-content: #f1ecfb;
+  --color-primary: #c69cff;
+  --color-primary-content: #1a0b30;
+  --color-secondary: #ff92c9;
+  --color-secondary-content: #2a0718;
+  --color-accent: #72e2d5;
+  --color-accent-content: #04201c;
+  --color-neutral: #0b0919;
+  --color-neutral-content: #f1ecfb;
+  --color-info: #7ab8ff;
+  --color-info-content: #06142a;
+  --color-success: #6fdc9a;
+  --color-success-content: #05200f;
+  --color-warning: #ffc95c;
+  --color-warning-content: #241700;
+  --color-error: #ff7d8c;
+  --color-error-content: #2a0710;
+
+  --org-header-bg: #18142e;
+  --org-header-text: #f5f1fc;
+  --org-sidebar-bg: #0e0b1f;
+  --org-sidebar-text: #c0b6d8;
+  --org-sidebar-active: #d4b2ff;
+
+  --radius-selector: 1rem;
+  --radius-field: 0.875rem;
+  --radius-box: 1.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-prism-candy';
+  color-scheme: light;
+
+  --color-base-100: #fff2f8;
+  --color-base-200: #ffffff;
+  --color-base-300: #fce0ed;
+  --color-base-content: #3a1031;
+  --color-primary: #b91262;
+  --color-primary-content: #ffffff;
+  --color-secondary: #6a3cd4;
+  --color-secondary-content: #ffffff;
+  --color-accent: #08687e;
+  --color-accent-content: #ffffff;
+  --color-neutral: #3b1532;
+  --color-neutral-content: #ffffff;
+  --color-info: #1f66c4;
+  --color-info-content: #ffffff;
+  --color-success: #117a4b;
+  --color-success-content: #ffffff;
+  --color-warning: #ffb21f;
+  --color-warning-content: #2a1600;
+  --color-error: #c22a1c;
+  --color-error-content: #ffffff;
+
+  --org-header-bg: #ffffff;
+  --org-header-text: #3a1031;
+  --org-sidebar-bg: #ffffff;
+  --org-sidebar-text: #6a3a5c;
+  --org-sidebar-active: #a8105a;
+  /* The share of the text colour in a muted text: 65 % is under 4.5:1 on base-300. */
+  --org-muted-text: 70%;
+
+  --radius-selector: 1rem;
+  --radius-field: 0.875rem;
+  --radius-box: 1.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
 /* The other themes of PHP Organizr, rebuilt for this interface: the built-in theme "Blue"
    and the 11 themes of the theme marketplace (github.com/Organizr/Organizr-Themes). The
    colours come from the style sheets of each theme. The themes of theme.park take them
@@ -5644,5 +5774,17 @@
 
   [data-layout='modern'][data-theme^='m-circuit-'] :is(.link, .org-form-help) {
     color: var(--color-accent);
+  }
+
+  /* Prism: Fredoka, a rounded sans that reads well small, for every text of the page, as
+     Silo does with its font. Only this rule names it; the face comes with the scene
+     (`PrismScene.svelte`), so only this theme downloads it. The body of the modern layout
+     is light (300); Fredoka's strokes are thin at that weight, so its body text is 400. */
+  [data-layout='modern'][data-theme^='m-prism-'] {
+    font-family: 'Fredoka Variable', 'Rubik Variable', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  [data-layout='modern'][data-theme^='m-prism-'] body {
+    font-weight: 400;
   }
 }

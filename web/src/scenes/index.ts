@@ -19,4 +19,5 @@ export const SCENE_LOADERS: SceneLoaders = {
   riot: () => import('./RiotScene.svelte'),
   tempest: () => import('./TempestScene.svelte'),
   circuit: () => import('./CircuitScene.svelte'),
+  prism: () => import('./PrismScene.svelte'),
 };

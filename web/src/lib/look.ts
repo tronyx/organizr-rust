@@ -23,7 +23,11 @@ export interface ModernTheme {
    * `src/scenes`. The other themes have none.
    */
   scene?: string;
-  colourSets: { id: string; label: string }[];
+  /**
+   * The colour sets. A set is dark unless its id is `light` or it says `light: true`; the
+   * page then gets `data-colour-set="light"`.
+   */
+  colourSets: { id: string; label: string; light?: true }[];
 }
 
 /**
@@ -84,6 +88,17 @@ export const MODERN_THEMES: ModernTheme[] = [
       { id: 'amber', label: 'Amber' },
     ],
   },
+  {
+    id: 'prism',
+    label: 'Prism',
+    scene: 'prism',
+    // Prism is the only scene theme with light sets: Daydream and Candy.
+    colourSets: [
+      { id: 'daydream', label: 'Daydream', light: true },
+      { id: 'twilight', label: 'Twilight' },
+      { id: 'candy', label: 'Candy', light: true },
+    ],
+  },
 ];
 
 /** The two colour sets of most themes. */
@@ -92,6 +107,16 @@ function darkAndLight(): ModernTheme['colourSets'] {
     { id: 'dark', label: 'Dark' },
     { id: 'light', label: 'Light' },
   ];
+}
+
+/** Whether a `data-theme` of the modern layout is a light colour set. */
+function isLightSet(id: string): boolean {
+  return (
+    id.endsWith('-light') ||
+    MODERN_THEMES.some((theme) =>
+      theme.colourSets.some((set) => set.light && id === `m-${theme.id}-${set.id}`),
+    )
+  );
 }
 
 /** The `data-theme` that a modern theme and colour set have. Unknown values give the default. */
@@ -483,6 +508,51 @@ export const MODERN_THEME_COLOURS: Record<string, ColourPair[]> = {
     pair('sidebar', '--org-sidebar-text', '#cdb894', '--org-sidebar-bg', '#0b0803'),
     pair('sidebar active', '--org-sidebar-active', '#ffbf3d', '--org-sidebar-bg', '#0b0803'),
   ],
+  'm-prism-daydream': [
+    pair('page', '--color-base-content', '#2b2140', '--color-base-100', '#f6f1fc'),
+    pair('menu', '--color-base-content', '#2b2140', '--color-base-200', '#ffffff'),
+    pair('heading', '--color-base-content', '#2b2140', '--color-base-300', '#ebe3f6'),
+    pair('primary', '--color-primary-content', '#ffffff', '--color-primary', '#7b3fbf'),
+    pair('success', '--color-success-content', '#ffffff', '--color-success', '#1d7347'),
+    pair('warning', '--color-warning-content', '#2a1a00', '--color-warning', '#f2b134'),
+    pair('error', '--color-error-content', '#ffffff', '--color-error', '#c0284a'),
+    pair('secondary', '--color-secondary-content', '#ffffff', '--color-secondary', '#a8306e'),
+    pair('accent', '--color-accent-content', '#ffffff', '--color-accent', '#0b6f78'),
+    pair('neutral', '--color-neutral-content', '#ffffff', '--color-neutral', '#352a4d'),
+    pair('header', '--org-header-text', '#2b2140', '--org-header-bg', '#ffffff'),
+    pair('sidebar', '--org-sidebar-text', '#5a4c72', '--org-sidebar-bg', '#ffffff'),
+    pair('sidebar active', '--org-sidebar-active', '#7337b5', '--org-sidebar-bg', '#ffffff'),
+  ],
+  'm-prism-twilight': [
+    pair('page', '--color-base-content', '#f1ecfb', '--color-base-100', '#131026'),
+    pair('menu', '--color-base-content', '#f1ecfb', '--color-base-200', '#1c1834'),
+    pair('heading', '--color-base-content', '#f1ecfb', '--color-base-300', '#292346'),
+    pair('primary', '--color-primary-content', '#1a0b30', '--color-primary', '#c69cff'),
+    pair('success', '--color-success-content', '#05200f', '--color-success', '#6fdc9a'),
+    pair('warning', '--color-warning-content', '#241700', '--color-warning', '#ffc95c'),
+    pair('error', '--color-error-content', '#2a0710', '--color-error', '#ff7d8c'),
+    pair('secondary', '--color-secondary-content', '#2a0718', '--color-secondary', '#ff92c9'),
+    pair('accent', '--color-accent-content', '#04201c', '--color-accent', '#72e2d5'),
+    pair('neutral', '--color-neutral-content', '#f1ecfb', '--color-neutral', '#0b0919'),
+    pair('header', '--org-header-text', '#f5f1fc', '--org-header-bg', '#18142e'),
+    pair('sidebar', '--org-sidebar-text', '#c0b6d8', '--org-sidebar-bg', '#0e0b1f'),
+    pair('sidebar active', '--org-sidebar-active', '#d4b2ff', '--org-sidebar-bg', '#0e0b1f'),
+  ],
+  'm-prism-candy': [
+    pair('page', '--color-base-content', '#3a1031', '--color-base-100', '#fff2f8'),
+    pair('menu', '--color-base-content', '#3a1031', '--color-base-200', '#ffffff'),
+    pair('heading', '--color-base-content', '#3a1031', '--color-base-300', '#fce0ed'),
+    pair('primary', '--color-primary-content', '#ffffff', '--color-primary', '#b91262'),
+    pair('success', '--color-success-content', '#ffffff', '--color-success', '#117a4b'),
+    pair('warning', '--color-warning-content', '#2a1600', '--color-warning', '#ffb21f'),
+    pair('error', '--color-error-content', '#ffffff', '--color-error', '#c22a1c'),
+    pair('secondary', '--color-secondary-content', '#ffffff', '--color-secondary', '#6a3cd4'),
+    pair('accent', '--color-accent-content', '#ffffff', '--color-accent', '#08687e'),
+    pair('neutral', '--color-neutral-content', '#ffffff', '--color-neutral', '#3b1532'),
+    pair('header', '--org-header-text', '#3a1031', '--org-header-bg', '#ffffff'),
+    pair('sidebar', '--org-sidebar-text', '#6a3a5c', '--org-sidebar-bg', '#ffffff'),
+    pair('sidebar active', '--org-sidebar-active', '#a8105a', '--org-sidebar-bg', '#ffffff'),
+  ],
 };
 
 function luminance(hex: string): number {
@@ -512,7 +582,7 @@ export function applyLook(
   root.dataset.layout = look.layout;
   if (look.layout === 'modern') {
     root.dataset.theme = modernThemeId(look.theme, look.colourSet);
-    root.dataset.colourSet = root.dataset.theme.endsWith('-light') ? 'light' : 'dark';
+    root.dataset.colourSet = isLightSet(root.dataset.theme) ? 'light' : 'dark';
     // The colours of "Colors & Themes" belong to the OG layout; the theme sets its own.
     for (const name of COLOUR_VARIABLE_NAMES) {
       root.style.removeProperty(name);

@@ -75,6 +75,7 @@ describe('the scenes', () => {
     expect(ids).toContain('riot');
     expect(ids).toContain('tempest');
     expect(ids).toContain('circuit');
+    expect(ids).toContain('prism');
     expect(Object.keys(SCENE_LOADERS).sort()).toEqual([...ids].sort());
     const index = readFileSync(resolve(here, 'index.ts'), 'utf8');
     for (const id of ids) {
@@ -302,6 +303,7 @@ describe('the scenes stay out of the main bundle', () => {
       expect(code, entry).not.toContain('pirata-one-latin');
       expect(code, entry).not.toContain('orbitron-latin');
       expect(code, entry).not.toContain('share-tech-mono-latin');
+      expect(code, entry).not.toContain('fredoka-latin');
     }
     const sceneStyles = files.filter((file) => /^NocturneScene-.*\.css$/.test(file));
     expect(sceneStyles.map((file) => readFileSync(resolve(assets, file), 'utf8')).join('')).toMatch(
@@ -326,6 +328,13 @@ describe('the scenes stay out of the main bundle', () => {
     );
     expect(circuitStyles).toMatch(
       /@font-face\{font-family:"?Share Tech Mono"?[^}]*share-tech-mono-latin-400-normal-[\w-]+\.woff2/,
+    );
+    const prismStyles = files
+      .filter((file) => /^PrismScene-.*\.css$/.test(file))
+      .map((file) => readFileSync(resolve(assets, file), 'utf8'))
+      .join('');
+    expect(prismStyles).toMatch(
+      /@font-face\{font-family:"?Fredoka Variable"?[^}]*fredoka-latin-wght-normal-[\w-]+\.woff2/,
     );
   });
 });

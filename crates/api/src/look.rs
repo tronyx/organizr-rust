@@ -43,6 +43,7 @@ pub const MODERN_THEMES: &[(&str, &[&str])] = &[
     ("riot", &["acid", "hotwire", "blacklight"]),
     ("tempest", &["squall", "abyss", "gale"]),
     ("circuit", &["matrix", "synth", "amber"]),
+    ("prism", &["daydream", "twilight", "candy"]),
 ];
 
 /// Where an effective look comes from.
@@ -331,6 +332,7 @@ mod tests {
                 ("riot", &["acid", "hotwire", "blacklight"][..]),
                 ("tempest", &["squall", "abyss", "gale"][..]),
                 ("circuit", &["matrix", "synth", "amber"][..]),
+                ("prism", &["daydream", "twilight", "candy"][..]),
             ]
         );
     }
@@ -370,6 +372,44 @@ mod tests {
         assert_eq!(
             parts(&effective_look(&settings, None)),
             ("modern", "tempest", "gale")
+        );
+    }
+
+    #[test]
+    fn prism_has_its_own_colour_sets() {
+        let mut settings = Settings::defaults();
+        let prism = |set: Option<&str>| {
+            stored(|s| {
+                s.layout = Some(text("modern"));
+                s.modern_theme = Some(text("prism"));
+                s.modern_colour_set = set.map(text);
+            })
+        };
+        for set in ["daydream", "twilight", "candy"] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&prism(Some(set))))),
+                ("modern", "prism", set)
+            );
+        }
+        // A set that Prism does not have, and no set at all: its first set.
+        for set in [Some("light"), Some("matrix"), None] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&prism(set)))),
+                ("modern", "prism", "daydream")
+            );
+        }
+        // The same for the Admin's default.
+        settings.layout = "modern".to_owned();
+        settings.modern_theme = "prism".to_owned();
+        settings.modern_colour_set = "light".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "prism", "daydream")
+        );
+        settings.modern_colour_set = "candy".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "prism", "candy")
         );
     }
 

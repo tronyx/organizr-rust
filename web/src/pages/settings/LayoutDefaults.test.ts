@@ -34,6 +34,7 @@ describe('LayoutDefaults', () => {
       'Riot',
       'Tempest',
       'Circuit',
+      'Prism',
     ]) {
       expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
     }
@@ -182,6 +183,32 @@ describe('LayoutDefaults', () => {
       layout: 'modern',
       modernTheme: 'circuit',
       modernColourSet: 'matrix',
+    });
+  });
+
+  it('choosing_prism_moves_the_colour_set_to_daydream', async () => {
+    const sent = stubApi({
+      'GET config': { data: { ...CONFIG, layout: 'modern' } },
+      'PUT config': {},
+      'GET launch': { status: 500, message: 'not needed here' },
+    });
+    const ondone = vi.fn();
+    render(LayoutDefaults, { canChange: true, ondone });
+
+    const themes = await screen.findByRole('combobox', { name: 'Modern theme' });
+    await fireEvent.change(themes, { target: { value: 'prism' } });
+    const colours = screen.getByRole('combobox', { name: 'Modern colour set' });
+    expect(colours).toHaveValue('daydream');
+    for (const label of ['Daydream', 'Twilight', 'Candy']) {
+      expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
+    }
+    await fireEvent.click(screen.getByRole('button', { name: 'Save the layout' }));
+
+    await waitFor(() => expect(ondone).toHaveBeenCalled());
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      modernTheme: 'prism',
+      modernColourSet: 'daydream',
     });
   });
 

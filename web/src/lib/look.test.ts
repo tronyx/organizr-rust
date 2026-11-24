@@ -147,6 +147,16 @@ describe('applyLook', () => {
           { id: 'amber', label: 'Amber' },
         ],
       },
+      {
+        id: 'prism',
+        label: 'Prism',
+        scene: 'prism',
+        colourSets: [
+          { id: 'daydream', label: 'Daydream', light: true },
+          { id: 'twilight', label: 'Twilight' },
+          { id: 'candy', label: 'Candy', light: true },
+        ],
+      },
     ]);
   });
 
@@ -223,6 +233,23 @@ describe('applyLook', () => {
     expect(modernThemeId('circuit', 'dark')).toBe('m-organizr-dark');
     expect(modernThemeId('circuit', 'acid')).toBe('m-organizr-dark');
   });
+
+  it('prism_has_two_light_colour_sets_and_a_dark_one', () => {
+    // Daydream and Candy are light, Twilight is dark: the colour set of the page follows.
+    for (const [set, scheme] of [
+      ['daydream', 'light'],
+      ['twilight', 'dark'],
+      ['candy', 'light'],
+    ] as const) {
+      expect(modernThemeId('prism', set)).toBe(`m-prism-${set}`);
+      const root = document.createElement('html');
+      applyLook(modern('prism', set), undefined, {}, root);
+      expect(root.dataset.theme).toBe(`m-prism-${set}`);
+      expect(root.dataset.colourSet, set).toBe(scheme);
+    }
+    expect(modernThemeId('prism', 'light')).toBe('m-organizr-dark');
+    expect(modernThemeId('prism', 'acid')).toBe('m-organizr-dark');
+  });
 });
 
 describe('sceneOf', () => {
@@ -238,6 +265,9 @@ describe('sceneOf', () => {
     expect(sceneOf(modern('circuit', 'matrix'))).toBe('circuit');
     expect(sceneOf(modern('circuit', 'amber'))).toBe('circuit');
     expect(sceneOf(modern('circuit', 'acid'))).toBeNull();
+    expect(sceneOf(modern('prism', 'daydream'))).toBe('prism');
+    expect(sceneOf(modern('prism', 'candy'))).toBe('prism');
+    expect(sceneOf(modern('prism', 'acid'))).toBeNull();
     for (const theme of ['organizr', 'plex', 'jellyfin', 'emby']) {
       expect(sceneOf(modern(theme, 'dark')), theme).toBeNull();
     }
@@ -266,6 +296,9 @@ describe('the modern colour sets', () => {
       'm-organizr-light',
       'm-plex-dark',
       'm-plex-light',
+      'm-prism-candy',
+      'm-prism-daydream',
+      'm-prism-twilight',
       'm-riot-acid',
       'm-riot-blacklight',
       'm-riot-hotwire',
@@ -482,6 +515,33 @@ describe('the modern colour sets', () => {
         }
       }
       expect(block, id).toContain('color-scheme: dark;');
+    }
+  });
+
+  it('prism_links_and_buttons_read_on_every_surface', () => {
+    // Prism's links and help texts are primary, and its coloured buttons sit on the cards:
+    // the primary, secondary and accent colours need 4.5:1 on every surface, light or dark.
+    const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    for (const [set, scheme] of [
+      ['daydream', 'light'],
+      ['twilight', 'dark'],
+      ['candy', 'light'],
+    ] as const) {
+      const id = `m-prism-${set}`;
+      const start = css.indexOf(`name: '${id}';`);
+      expect(start, id).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      const value = (name: string) =>
+        new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
+      for (const colour of ['color-accent', 'color-primary', 'color-secondary']) {
+        for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
+          expect(
+            contrastRatio(value(colour), value(surface)),
+            `${id} ${colour} on ${surface}`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      expect(block, id).toContain(`color-scheme: ${scheme};`);
     }
   });
 

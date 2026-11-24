@@ -270,6 +270,37 @@ async fn user_chooses_circuit_and_its_colour_sets() {
 }
 
 #[tokio::test]
+async fn user_chooses_prism_and_its_colour_sets() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let robin = seed::logged_in(database, &app, "robin", 4).await;
+
+        for set in ["daydream", "twilight", "candy"] {
+            let body = json!({"layout": "modern", "theme": "prism", "colourSet": set});
+            let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
+            let own = json!({
+                "layout": "modern", "theme": "prism", "colourSet": set, "source": "user"
+            });
+            assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+            assert_eq!(answer.data(), own);
+        }
+        // Without a colour set Prism gets its first one, Daydream.
+        let body = json!({"layout": "modern", "theme": "prism"});
+        let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let launch = call(&app, As::User(&robin), "GET", "/launch", None).await;
+        assert_eq!(
+            launch.data()["look"],
+            json!({
+                "layout": "modern", "theme": "prism", "colourSet": "daydream", "source": "user"
+            })
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn an_admin_default_of_silo_reaches_a_guest() {
     on_each_engine(async |database| {
         seed::installed(database).await;
@@ -451,6 +482,10 @@ async fn invalid_values_are_refused_with_422() {
             ),
             (
                 json!({"layout": "modern", "theme": "circuit", "colourSet": "acid"}),
+                "colourSet is not valid",
+            ),
+            (
+                json!({"layout": "modern", "theme": "prism", "colourSet": "light"}),
                 "colourSet is not valid",
             ),
         ];
