@@ -19,8 +19,9 @@
     change: (request: () => Promise<unknown>, done: string) => Promise<string | null>;
   } = $props();
 
-  // The dialog: closed, open for a new user, or open for one that is changed.
-  let dialog = $state<{ user: Account | null } | null>(null);
+  // The dialog: closed, open for a new user, or open for one that is changed. `password`
+  // is set when the key of the Password column opened it: it starts in the new password.
+  let dialog = $state<{ user: Account | null; password?: boolean } | null>(null);
   let error = $state<string | null>(null);
 
   /** Whether the row is the account of the person who looks at the page. */
@@ -77,6 +78,14 @@
     importing = false;
   }
 
+  /** A click on a row opens its user, as in PHP, unless it was on a control of the row. */
+  function openRow(event: MouseEvent, user: Account) {
+    const target = event.target as Element | null;
+    if (!target?.closest('button, input, label, a, select, textarea')) {
+      dialog = { user };
+    }
+  }
+
   function remove(user: Account) {
     if (confirm(`Delete the user ${user.username}?`)) {
       void run(() => api('DELETE', `users/${user.id}`), 'The user is deleted.');
@@ -130,14 +139,14 @@
         <i class="oi-themify ti-plus" aria-hidden="true"></i>
       </button>
     </div>
-    <div class="overflow-x-auto">
-      <table class="org-table org-table-grid">
+    <div class="org-users-scroll overflow-x-auto">
+      <table class="org-table org-table-grid org-users-table">
         <thead>
           <tr>
-            <th scope="col" class="text-center">Avatar</th>
+            <th scope="col" class="org-users-avatar text-center">Avatar</th>
             <th scope="col">Username</th>
-            <th scope="col">Email</th>
-            <th scope="col" class="text-center">Date Registered</th>
+            <th scope="col" class="org-users-email">Email</th>
+            <th scope="col" class="org-users-date text-center">Date Registered</th>
             <th scope="col" class="text-center">Group</th>
             <th scope="col" class="text-center">Locked</th>
             <th scope="col" class="text-center">Password</th>
@@ -146,13 +155,15 @@
         </thead>
         <tbody>
           {#each data.users as user (user.id)}
-            <tr>
-              <td class="text-center">
+            <!-- The click on a row is a shortcut for the mouse, as in PHP. The Edit button of
+                 the row does the same for the keyboard, so the row needs no key or role. -->
+            <tr class="org-click-row" onclick={(event) => openRow(event, user)}>
+              <td class="org-users-avatar text-center">
                 <span class="org-avatar"><Picture image={user.image} name={user.username} /></span>
               </td>
               <th scope="row" translate="no">{user.username}</th>
-              <td>{user.email ?? ''}</td>
-              <td class="text-center whitespace-nowrap">{dayOf(user)}</td>
+              <td class="org-users-email" title={user.email ?? undefined}>{user.email ?? ''}</td>
+              <td class="org-users-date text-center whitespace-nowrap">{dayOf(user)}</td>
               <td class="text-center">{user.group ?? ''}</td>
               <td class="text-center">
                 <!-- Nobody locks the own account here: the way back in would be closed. -->
@@ -169,20 +180,31 @@
                 </label>
               </td>
               <td class="text-center">
-                <button class="org-icon-button" onclick={() => (dialog = { user })}>
-                  <i class="oi-simpleline icon-user-following" aria-hidden="true"></i>
-                  <span class="sr-only">Change {user.username}</span>
+                <button
+                  class="org-icon-button"
+                  title="Change the password"
+                  onclick={() => (dialog = { user, password: true })}
+                >
+                  <i class="oi-materialize mdi-account-key" aria-hidden="true"></i>
+                  <span class="sr-only">Change the password of {user.username}</span>
                 </button>
               </td>
               <td class="text-center">
-                <button
-                  class="org-icon-button org-icon-danger"
-                  disabled={isOwn(user)}
-                  onclick={() => remove(user)}
-                >
-                  <i class="oi-themify ti-trash" aria-hidden="true"></i>
-                  <span class="sr-only">Delete {user.username}</span>
-                </button>
+                <span class="org-users-actions">
+                  <button class="org-icon-button" title="Edit" onclick={() => (dialog = { user })}>
+                    <i class="oi-themify ti-pencil-alt" aria-hidden="true"></i>
+                    <span class="sr-only">Edit {user.username}</span>
+                  </button>
+                  <button
+                    class="org-icon-button org-icon-danger"
+                    title="Delete"
+                    disabled={isOwn(user)}
+                    onclick={() => remove(user)}
+                  >
+                    <i class="oi-themify ti-trash" aria-hidden="true"></i>
+                    <span class="sr-only">Delete {user.username}</span>
+                  </button>
+                </span>
               </td>
             </tr>
           {/each}
@@ -197,6 +219,7 @@
     <UserDialog
       user={dialog.user}
       groups={data.groups}
+      focusPassword={dialog.password ?? false}
       onsave={save}
       onclose={() => (dialog = null)}
     />

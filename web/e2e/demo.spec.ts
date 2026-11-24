@@ -486,7 +486,7 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
   const abe = page.getByRole('row', { name: /abe@example\.com/ });
   await expect(abe.getByRole('cell', { name: 'User', exact: true })).toBeVisible();
 
-  await abe.getByRole('button', { name: /Change/ }).click();
+  await abe.getByRole('button', { name: 'Edit abe' }).click();
   const changed = page.getByRole('dialog', { name: 'Change the user abe' });
   await changed.getByLabel('Group').selectOption({ label: 'Co-Admin' });
   await changed.getByRole('button', { name: 'Save' }).click();
@@ -496,6 +496,35 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
   await page.getByLabel('Lock abe').check();
   await expect(status).toHaveText('The user is locked.');
   await expect(page.getByLabel('Lock abe')).toBeChecked();
+
+  // On the modern layout the table fits the card: the buttons of each row are on screen.
+  // A layout of `null` forgets the choice again, so the tests after this one keep the look
+  // of the install.
+  const look = (layout: 'modern' | null) =>
+    page.request.put('./api/v2/user/look', { data: { layout } });
+  try {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    expect((await look('modern')).ok()).toBe(true);
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
+    await expect(page.getByRole('button', { name: 'Edit abe' })).toBeVisible();
+    const buttons = page.getByRole('row').getByRole('button', { name: /^(Edit|Delete) / });
+    expect(await buttons.count()).toBeGreaterThanOrEqual(4);
+    // Inside the window, and not hidden in the part of the table that scrolls sideways.
+    const outside = await buttons.evaluateAll((elements) =>
+      elements
+        .filter((element) => {
+          const card = element.closest('.overflow-x-auto')?.getBoundingClientRect().right;
+          const right = element.getBoundingClientRect().right;
+          return right > window.innerWidth || (card !== undefined && right > card);
+        })
+        .map((element) => element.textContent?.trim()),
+    );
+    expect(outside).toEqual([]);
+  } finally {
+    expect((await look(null)).ok()).toBe(true);
+    await page.reload();
+  }
 
   page.once('dialog', (dialog) => void dialog.accept());
   await abe.getByRole('button', { name: /Delete/ }).click();

@@ -2095,6 +2095,18 @@
     opacity: 0.3;
   }
 
+  /* A row that opens its item on a click, as the users of PHP do. */
+  .org-click-row {
+    cursor: pointer;
+  }
+
+  /* The buttons of the Action column of the users, side by side. */
+  .org-users-actions {
+    display: inline-flex;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
   .org-avatar img,
   .org-avatar i {
     display: inline-block;
@@ -4188,6 +4200,35 @@
 
   [data-layout='modern'] .org-table-check {
     accent-color: var(--color-primary);
+  }
+
+  /* The users fit the card from a window of 1024 px on. The address takes the room that
+     the other columns leave, and a long one is cut short: its whole text is in the tooltip
+     of the cell. In a narrow card the picture and the day of registration step aside. A
+     phone scrolls the table inside the card. */
+  [data-layout='modern'] .org-users-scroll {
+    container-type: inline-size;
+  }
+
+  [data-layout='modern'] .org-users-table th,
+  [data-layout='modern'] .org-users-table td {
+    padding-inline: 6px;
+  }
+
+  [data-layout='modern'] .org-users-table td.org-users-email {
+    width: 100%;
+    min-width: 6rem;
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @container (width < 40rem) {
+    [data-layout='modern'] .org-users-avatar,
+    [data-layout='modern'] .org-users-date {
+      display: none;
+    }
   }
 
   [data-layout='modern'] .org-order button:focus-visible {

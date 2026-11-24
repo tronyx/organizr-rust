@@ -542,7 +542,7 @@ describe('Settings, users', () => {
 
     expect(screen.getByLabelText('Lock admin')).toBeDisabled();
     expect(within(rowOf('admin')).getByRole('button', { name: /Delete/ })).toBeDisabled();
-    expect(within(rowOf('admin')).getByRole('button', { name: /Change/ })).toBeEnabled();
+    expect(within(rowOf('admin')).getByRole('button', { name: 'Edit admin' })).toBeEnabled();
     expect(screen.getByLabelText('Lock zoe')).toBeEnabled();
     expect(within(rowOf('zoe')).getByRole('button', { name: /Delete/ })).toBeEnabled();
   });
@@ -598,7 +598,7 @@ describe('Settings, users', () => {
   it('sends only what the form changed', async () => {
     const sent = await show('users', { 'PUT users/3': { message: 'User info updated' } });
 
-    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: /Change/ }));
+    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: 'Edit zoe' }));
     const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
     expect(within(dialog).getByLabelText('User name')).toHaveValue('zoe');
     expect(within(dialog).getByLabelText('E-mail address')).toHaveValue('zoe@example.com');
@@ -621,7 +621,7 @@ describe('Settings, users', () => {
       'PUT users/3': { status: 409, message: 'Username: Yan is already taken' },
     });
 
-    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: /Change/ }));
+    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: 'Edit zoe' }));
     const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
     await fireEvent.input(within(dialog).getByLabelText('User name'), { target: { value: 'Yan' } });
     await fireEvent.input(within(dialog).getByLabelText('New password'), {
@@ -640,12 +640,55 @@ describe('Settings, users', () => {
   it('closes the form without a request when nothing was changed', async () => {
     const sent = await show('users');
 
-    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: /Change/ }));
+    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: 'Edit zoe' }));
     const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
     await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(changes(sent)).toEqual([]);
+  });
+
+  it('opens a user with a click on the row, but not with a click on a control of it', async () => {
+    const sent = await show('users', { 'PUT users/3': {} });
+    const ask = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    await fireEvent.click(screen.getByLabelText('Lock zoe'));
+    await statusSays('The user is locked.');
+    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: 'Delete zoe' }));
+    expect(ask).toHaveBeenCalledWith('Delete the user zoe?');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await fireEvent.click(within(rowOf('zoe')).getByText('zoe@example.com'));
+    const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
+    expect(within(dialog).getByLabelText('User name')).toHaveValue('zoe');
+    expect(changes(sent)).toEqual([['PUT users/3', { locked: 1 }]]);
+  });
+
+  it('changes the group of a user that a click on the row opened', async () => {
+    const sent = await show('users', { 'PUT users/4': {} });
+
+    await fireEvent.click(within(rowOf('Yan')).getByRole('rowheader'));
+    const dialog = await screen.findByRole('dialog', { name: 'Change the user Yan' });
+    await fireEvent.change(within(dialog).getByLabelText('Group'), { target: { value: '1' } });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await statusSays('The user is changed.');
+    expect(changes(sent)).toEqual([['PUT users/4', { group_id: 1 }]]);
+  });
+
+  it('opens the same form with the key of the Password column, in the new password', async () => {
+    await show('users');
+
+    const key = within(rowOf('zoe')).getByRole('button', { name: 'Change the password of zoe' });
+    await fireEvent.click(key);
+    const dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
+    expect(within(dialog).getByLabelText('New password')).toHaveAttribute('autofocus');
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: 'Edit zoe' }));
+    const edit = await screen.findByRole('dialog', { name: 'Change the user zoe' });
+    expect(within(edit).getByLabelText('New password')).not.toHaveAttribute('autofocus');
   });
 
   it('locks and unlocks a user', async () => {

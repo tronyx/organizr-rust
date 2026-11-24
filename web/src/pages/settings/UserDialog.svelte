@@ -8,12 +8,15 @@
   let {
     user,
     groups,
+    focusPassword = false,
     onsave,
     onclose,
   }: {
     /** The user to change. `null` for a new user. */
     user: Account | null;
     groups: Group[];
+    /** Whether the dialog starts in the field of the new password. */
+    focusPassword?: boolean;
     /** Stores the fields. Returns why the server refused them, or `null`. */
     onsave: (fields: Record<string, unknown>) => Promise<string | null>;
     onclose: () => void;
@@ -89,6 +92,8 @@
       />
 
       <label class="label" for="user-password">{user ? 'New password' : 'Password'}</label>
+      <!-- A dialog that was opened to change the password starts there. -->
+      <!-- svelte-ignore a11y_autofocus -->
       <input
         id="user-password"
         class="input w-full"
@@ -97,6 +102,7 @@
         required={!user}
         maxlength="200"
         autocomplete="new-password"
+        autofocus={focusPassword}
         aria-describedby={user ? 'user-password-hint' : undefined}
       />
       {#if user}
