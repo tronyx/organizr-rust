@@ -460,7 +460,7 @@
       <input
         {id}
         class="org-form-control"
-        placeholder="The colour of the theme"
+        placeholder="The color of the theme"
         value={String(form[field.name])}
         aria-describedby={hint}
         oninput={(event) => (form[field.name] = event.currentTarget.value)}

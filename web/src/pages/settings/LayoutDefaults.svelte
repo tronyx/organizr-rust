@@ -62,7 +62,7 @@
         </select>
       </div>
       <div class="org-form-group">
-        <label class="org-form-label" for="layout-colours">Modern colour set</label>
+        <label class="org-form-label" for="layout-colours">Modern color set</label>
         <!-- A sample of the colours of the chosen theme and set. -->
         <div class="flex items-center gap-2">
           <select
@@ -100,9 +100,9 @@
       </div>
     </div>
     <div class="org-form-wide mt-4">
-      <h3 class="font-semibold">Colours of the OG Organizr layout</h3>
+      <h3 class="font-semibold">Colors of the OG Organizr layout</h3>
       <p class="text-sm">
-        These colours apply to the OG Organizr layout only. A modern theme sets its own colours.
+        These colors apply to the OG Organizr layout only. A modern theme sets its own colors.
       </p>
     </div>
   </div>

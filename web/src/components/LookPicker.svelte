@@ -210,7 +210,7 @@
 
     {#if modern}
       <fieldset class="flex flex-col gap-1" aria-busy={busy}>
-        <legend class="mb-1 text-sm font-semibold">Colours</legend>
+        <legend class="mb-1 text-sm font-semibold">Colors</legend>
         {#each colourSets as set (set.id)}
           <label class="flex items-center gap-2">
             <input

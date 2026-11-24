@@ -330,10 +330,10 @@
           {/each}
         </select>
 
-        <label class="label" for="bookmark-background">Colour of the tile</label>
+        <label class="label" for="bookmark-background">Color of the tile</label>
         <input id="bookmark-background" type="color" bind:value={form.background_color} />
 
-        <label class="label" for="bookmark-text">Colour of the name</label>
+        <label class="label" for="bookmark-text">Color of the name</label>
         <input id="bookmark-text" type="color" bind:value={form.text_color} />
 
         <label class="label mt-2 cursor-pointer justify-start gap-3">

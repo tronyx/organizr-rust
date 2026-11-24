@@ -45,7 +45,7 @@ describe('LookPicker', () => {
     expect(within(themes).getAllByRole('radio')).toHaveLength(13);
     expect(screen.getByRole('radio', { name: 'Space Gray' })).toBeInTheDocument();
     // The Colours of the OG layout do nothing (its `style` setting has no effect).
-    expect(screen.queryByRole('group', { name: 'Colours' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Colors' })).not.toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: 'Dark' })).not.toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe('LookPicker', () => {
     expect(within(themes).getByRole('radio', { name: 'Organizr' })).toBeChecked();
     expect(screen.queryByRole('radio', { name: 'Space Gray' })).not.toBeInTheDocument();
     // The theme has a dark and a light colour set; either can be chosen.
-    expect(screen.getByRole('group', { name: 'Colours' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Colors' })).toBeInTheDocument();
     expect(screen.getAllByRole('radio', { name: /^(Dark|Light)$/ })).toHaveLength(2);
     expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Dark' })).toBeEnabled();

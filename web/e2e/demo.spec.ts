@@ -760,7 +760,7 @@ test('the Admin sets the default look in the group Style & Themes', async ({ pag
 
     await layout.selectOption('modern');
     await expect(panel.getByLabel('Modern theme')).toBeVisible();
-    await expect(panel.getByLabel('Modern colour set')).toBeVisible();
+    await expect(panel.getByLabel('Modern color set')).toBeVisible();
     // The OG theme stays, below the modern ones under its own heading.
     await expect(panel.getByRole('heading', { name: 'OG Organizr', exact: true })).toBeVisible();
     await expect(panel.getByLabel('Theme', { exact: true })).toHaveValue('Nord');
@@ -1225,7 +1225,7 @@ test('the Admin adds a bookmark, and the page of the bookmarks shows it as a til
   const dialog = page.getByRole('dialog', { name: 'Add a bookmark' });
   await dialog.getByLabel('Name', { exact: true }).fill('Example');
   await dialog.getByLabel('Address').fill('https://example.com/');
-  await dialog.getByLabel('Colour of the tile').fill('#804020');
+  await dialog.getByLabel('Color of the tile').fill('#804020');
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The bookmark is added.');
   await expect(page.getByRole('table', { name: 'Bookmarks' })).toContainText('Example');

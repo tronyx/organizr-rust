@@ -1,6 +1,6 @@
 [package]
 name = "organizr"
-description = "Organizr: a dashboard that organises self-hosted web applications into tabs."
+description = "Organizr: a dashboard that organizes self-hosted web applications into tabs."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
