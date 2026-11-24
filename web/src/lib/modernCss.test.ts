@@ -742,6 +742,18 @@ describe('the Silo theme of the modern layout', () => {
     expect(lastBlock()).toContain(gap?.selector ?? '-');
   });
 
+  it('silo_form_buttons_darken_on_hover', () => {
+    // The hover of every theme mixes in the text colour, which on Silo is as off-white as
+    // the button: Silo mixes in the page colour instead.
+    const hover = siloRules().find(
+      (rule) => rule.selector === `${SILO} .org-form-button:not(:disabled):hover`,
+    );
+    expect(hover?.body ?? '').toMatch(
+      /background:\s*color-mix\(in oklab, var\(--color-primary\) \d+%, var\(--color-base-100\)\)/,
+    );
+    expect(hover?.body ?? '').not.toContain('--color-base-content');
+  });
+
   it('silo_links_help_texts_and_the_open_settings_entry_use_the_accent', () => {
     const links = siloRules().find(
       (rule) => rule.selector.includes('.link') && rule.selector.includes('.org-form-help'),

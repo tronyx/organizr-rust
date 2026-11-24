@@ -4996,6 +4996,12 @@
     outline-offset: 2px;
   }
 
+  /* The off-white buttons of the forms: the hover of every theme mixes in the text colour,
+     which is off-white too, so on Silo it darkens the button with the page colour. */
+  [data-layout='modern'][data-theme^='m-silo-'] .org-form-button:not(:disabled):hover {
+    background: color-mix(in oklab, var(--color-primary) 80%, var(--color-base-100));
+  }
+
   [data-layout='modern'][data-theme^='m-silo-'] .org-form-control:focus {
     border-color: var(--color-accent);
     box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 35%, transparent);
