@@ -322,7 +322,7 @@ test('the_brand_themes_of_the_modern_layout_pass_the_audit', async ({ page, brow
       await checkContrast(page, look, 'the templates of PHP Mailer, accordions open');
 
       // A button of the form shows its hover: on Silo the off-white darkens.
-      await mailer.getByRole('tab', { name: 'Test & Options' }).click();
+      await mailer.getByRole('tab', { name: 'Test and options' }).click();
       const send = mailer.locator('.org-form-button', { hasText: 'Send' });
       const rest = await fillOf(send);
       await send.hover();

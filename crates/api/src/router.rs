@@ -492,6 +492,10 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/plugins/plexlibraries/settings",
             &get(settings_forms::plex_libraries_plugin),
         )?
+        .route(
+            "/plugins/plexlibraries/libraries",
+            &get(plex_libraries::libraries),
+        )?
         .route("/plugins/plexlibraries/shares", &get(plex_libraries::shares))?
         .route(
             "/plugins/plexlibraries/setup/tab",
@@ -527,6 +531,15 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route(
             "/plugins/bookmark/categories/{id}",
             &put(bookmarks::change_category).delete(bookmarks::remove_category),
+        )?
+        // Not routes of PHP: the lists of the settings form of the plugin.
+        .route(
+            "/plugins/invites/nextcloud/groups",
+            &get(invites::nextcloud_group_list),
+        )?
+        .route(
+            "/plugins/invites/komga/libraries",
+            &get(invites::komga_library_list),
         )?
         .route("/plugins/invites", &get(invites::list).post(invites::create))?
         .route(

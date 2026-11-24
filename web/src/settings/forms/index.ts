@@ -58,6 +58,7 @@ import { INVITES_PLUGIN } from './plugins/invites';
 import { PHP_MAILER_PLUGIN } from './plugins/phpMailer';
 import { SPEEDTEST_PLUGIN } from './plugins/speedtest';
 import { PLEX_LIBRARIES_PLUGIN } from './plugins/plexLibraries';
+import { CHAT_PLUGIN } from './plugins/chat';
 
 export {
   GENERAL,
@@ -119,7 +120,7 @@ export const HOMEPAGE_ITEMS: HomepageItemForm[] = [
 
 /** The settings forms of the plugins, by the id of the plugin. */
 export const PLUGIN_FORMS: Record<
-  'healthchecks' | 'invites' | 'php-mailer' | 'speedtest' | 'plexlibraries',
+  'healthchecks' | 'invites' | 'php-mailer' | 'speedtest' | 'plexlibraries' | 'chat',
   FormPage
 > = {
   healthchecks: HEALTHCHECKS_PLUGIN,
@@ -127,6 +128,7 @@ export const PLUGIN_FORMS: Record<
   'php-mailer': PHP_MAILER_PLUGIN,
   speedtest: SPEEDTEST_PLUGIN,
   plexlibraries: PLEX_LIBRARIES_PLUGIN,
+  chat: CHAT_PLUGIN,
 };
 
 /** Every page of settings: the menu pages, the homepage items and the plugin forms. */

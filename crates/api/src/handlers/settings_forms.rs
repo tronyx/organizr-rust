@@ -29,6 +29,8 @@ use crate::caller::Caller;
 use crate::envelope::Envelope;
 use crate::handlers::config::shown;
 use crate::handlers::fields::Refusal;
+use crate::handlers::invites::{self, Choice};
+use crate::handlers::plex_libraries;
 use crate::handlers::themes::all_themes;
 use crate::state::AppState;
 
@@ -448,6 +450,14 @@ pub async fn homepage_item_debug(
     }))
 }
 
+/// Choices as the options of a form of PHP: `name` and `value`.
+fn as_options(choices: Vec<Choice>) -> Vec<Value> {
+    choices
+        .into_iter()
+        .map(|choice| json!({ "name": choice.label, "value": choice.value }))
+        .collect()
+}
+
 /// Answers with the form of a plugin.
 async fn answer_plugin(
     state: &AppState,
@@ -489,47 +499,15 @@ pub async fn invites_plugin(
     let settings = state.settings();
     let mut fill = Fill::new(&state, &settings, &caller).await?;
     let (komga, nextcloud) = tokio::join!(
-        komga_libraries(&state, &settings),
-        nextcloud_groups(&state, &settings)
+        invites::komga_libraries(&state, &settings),
+        invites::nextcloud_groups(&state, &settings)
     );
-    fill.komga_libraries = komga;
-    fill.nextcloud_groups = nextcloud;
+    fill.komga_libraries = komga.map(as_options);
+    fill.nextcloud_groups = nextcloud.map(as_options);
     Ok(Envelope::success(filled_form(
         &fill,
         part(part(&TABLE, "plugins"), "invites"),
     )))
-}
-
-/// The groups of the Nextcloud of the invites plugin as choices, or nothing when it is
-/// not set up or does not answer, as PHP's `_checkNextcloudVar` asks.
-async fn nextcloud_groups(state: &AppState, settings: &Settings) -> Option<Vec<Value>> {
-    use organizr_integrations::nextcloud::{Admin, groups};
-
-    if !settings.invites_nextcloud_enabled
-        || settings.invites_nextcloud_url.is_empty()
-        || settings.invites_nextcloud_admin_user.is_empty()
-        || settings.invites_nextcloud_admin_password.is_empty()
-    {
-        return None;
-    }
-    let http = state.outbound()?;
-    let admin = Admin {
-        url: settings.invites_nextcloud_url.trim_end_matches('/'),
-        user: &settings.invites_nextcloud_admin_user,
-        password: &settings.invites_nextcloud_admin_password,
-    };
-    match groups(http, admin, KOMGA_TIME).await {
-        Ok(found) => Some(
-            found
-                .into_iter()
-                .map(|group| json!({ "name": group, "value": group }))
-                .collect(),
-        ),
-        Err(error) => {
-            tracing::warn!(%error, "the groups of Nextcloud cannot be read");
-            None
-        }
-    }
 }
 
 /// `GET /plugins/plexlibraries/settings`: the form of the Plex Libraries plugin of this
@@ -541,74 +519,13 @@ pub async fn plex_libraries_plugin(
     caller.require(MANAGER)?;
     let settings = state.settings();
     let mut fill = Fill::new(&state, &settings, &caller).await?;
-    fill.plex_libraries = plex_libraries(&state, &settings).await;
+    fill.plex_libraries = plex_libraries::library_choices(&state, &settings)
+        .await
+        .map(as_options);
     Ok(Envelope::success(filled_form(
         &fill,
         part(part(&TABLE, "plugins"), "plexlibraries"),
     )))
-}
-
-/// The libraries of the Plex server, from the first share that lists them, as choices.
-async fn plex_libraries(state: &AppState, settings: &Settings) -> Option<Vec<Value>> {
-    if settings.plex_token.is_empty() || settings.plex_id.is_empty() {
-        return None;
-    }
-    let plex = state.plex()?;
-    match plex
-        .shared_servers(&settings.plex_token, &settings.plex_id)
-        .await
-    {
-        Ok(shares) => shares
-            .into_iter()
-            .find(|share| !share.libraries.is_empty())
-            .map(|share| {
-                share
-                    .libraries
-                    .into_iter()
-                    .map(|library| json!({ "name": library.title, "value": library.id }))
-                    .collect()
-            }),
-        Err(error) => {
-            tracing::warn!(%error, "the libraries of the Plex server cannot be read");
-            None
-        }
-    }
-}
-
-/// The longest wait for the libraries of Komga.
-const KOMGA_TIME: std::time::Duration = std::time::Duration::from_secs(10);
-
-/// The libraries of the Komga of the invites plugin as choices, or nothing when it is not
-/// set up or does not answer. PHP asks the address of single sign-on, `komgaURL`; the
-/// address of the plugin, `INVITES-komga-uri`, comes first here, as its account goes
-/// there too (D-118).
-async fn komga_libraries(state: &AppState, settings: &Settings) -> Option<Vec<Value>> {
-    let url = [&settings.invites_komga_uri, &settings.komga_url]
-        .into_iter()
-        .find(|url| !url.is_empty())?;
-    if settings.invites_komga_api_key.is_empty() {
-        return None;
-    }
-    let http = state.outbound()?;
-    match organizr_integrations::komga::libraries(
-        http,
-        url.trim_end_matches('/'),
-        &settings.invites_komga_api_key,
-        KOMGA_TIME,
-    )
-    .await
-    {
-        Ok(libraries) => Some(
-            libraries
-                .into_iter()
-                .map(|library| json!({ "name": library.name, "value": library.id }))
-                .collect(),
-        ),
-        Err(error) => {
-            tracing::warn!(%error, "the libraries of Komga cannot be read");
-            None
-        }
-    }
 }
 
 /// `GET /plugins/php-mailer/settings`.

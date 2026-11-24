@@ -242,3 +242,63 @@ async fn manager_makes_the_tab_of_the_page_once() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn library_list_names_the_libraries_of_the_plex_server() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let app = app_with(database, &plex, &[]);
+        let user = seed::logged_in(database, &app, "uma", 4).await;
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+
+        let answer = call(
+            &app,
+            As::User(&co_admin),
+            "GET",
+            "/plugins/plexlibraries/libraries",
+            None,
+        )
+        .await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(
+            answer.data(),
+            json!([
+                {"label": "Films", "value": "7001"},
+                {"label": "Shows", "value": "7002"},
+                {"label": "Music", "value": "7003"},
+            ])
+        );
+        for who in [As::Guest, As::User(&user)] {
+            let refused = call(&app, who, "GET", "/plugins/plexlibraries/libraries", None).await;
+            assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn library_list_is_empty_without_plex_or_when_plex_fails() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        for more in [
+            vec![("plexToken", json!(""))],
+            vec![("plexToken", json!("a-token-that-plex-does-not-know"))],
+        ] {
+            let app = app_with(database, &plex, &more);
+            let answer = call(
+                &app,
+                As::Admin,
+                "GET",
+                "/plugins/plexlibraries/libraries",
+                None,
+            )
+            .await;
+            assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+            assert_eq!(answer.data(), json!([]));
+        }
+    })
+    .await;
+}

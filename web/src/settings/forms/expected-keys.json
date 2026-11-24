@@ -1,4 +1,6 @@
 [
+  "CHAT-Auth-include",
+  "CHAT-messageLoadLimit",
   "HEALTHCHECKS-401-enabled",
   "HEALTHCHECKS-403-enabled",
   "HEALTHCHECKS-Auth-include",

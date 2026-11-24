@@ -28,9 +28,16 @@ export async function loadFrameTabs(level: number): Promise<FrameTab[]> {
     }));
 }
 
+/** The routes of the plugin lists, which answer with their choices. */
+const PLUGIN_LISTS = {
+  'plex-libraries': 'plugins/plexlibraries/libraries',
+  'nextcloud-groups': 'plugins/invites/nextcloud/groups',
+  'komga-libraries': 'plugins/invites/komga/libraries',
+} as const;
+
 /**
  * The choices of a list that comes from the server. The source `setting-values` comes from
- * the form, and the plugin lists have no route yet: they give no choices.
+ * the form: it gives no choices here.
  */
 export async function loadList(source: ListSource, level = 999): Promise<Choice[]> {
   switch (source) {
@@ -50,7 +57,10 @@ export async function loadList(source: ListSource, level = 999): Promise<Choice[
       return (await loadFrameTabs(level)).map((tab) => tab.choice);
     case 'plex-libraries':
     case 'nextcloud-groups':
-    case 'komga-libraries':
+    case 'komga-libraries': {
+      const { data } = await api<Choice[]>('GET', PLUGIN_LISTS[source]);
+      return data;
+    }
     case 'setting-values':
       return [];
   }

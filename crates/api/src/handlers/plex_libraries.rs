@@ -21,6 +21,7 @@ use crate::caller::Caller;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
+use crate::handlers::invites::Choice;
 use crate::state::AppState;
 
 /// The level that sees and changes every share.
@@ -85,6 +86,52 @@ async fn read_shares(state: &AppState, settings: &Settings) -> Result<Vec<Shared
                 _ => "plex.tv cannot be reached",
             })
         })
+}
+
+/// The libraries of the Plex server, from the first share that lists them, as choices, or
+/// nothing when Plex is not set up or does not answer.
+pub(crate) async fn library_choices(state: &AppState, settings: &Settings) -> Option<Vec<Choice>> {
+    if settings.plex_token.is_empty() || settings.plex_id.is_empty() {
+        return None;
+    }
+    let plex = state.plex()?;
+    match plex
+        .shared_servers(&settings.plex_token, &settings.plex_id)
+        .await
+    {
+        Ok(shares) => shares
+            .into_iter()
+            .find(|share| !share.libraries.is_empty())
+            .map(|share| {
+                share
+                    .libraries
+                    .into_iter()
+                    .map(|library| Choice {
+                        label: library.title,
+                        value: library.id,
+                    })
+                    .collect()
+            }),
+        Err(error) => {
+            tracing::warn!(%error, "the libraries of the Plex server cannot be read");
+            None
+        }
+    }
+}
+
+/// `GET /plugins/plexlibraries/libraries`: the libraries of the Plex server, for Admins and
+/// Co-Admins, as a list of `{label, value}` for the setting `PLEXLIBRARIES-librariesToInclude`.
+/// The list is empty when Plex is not set up, no share lists a library, or Plex does not
+/// answer. It answers also when the plugin is off, as its settings do.
+pub async fn libraries(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+) -> Result<Envelope<Vec<Choice>>, Refusal> {
+    caller.require(MANAGER)?;
+    let settings = state.settings();
+    Ok(Envelope::success(
+        library_choices(&state, &settings).await.unwrap_or_default(),
+    ))
 }
 
 /// `GET /plugins/plexlibraries/shares`: the shares that the caller sees, each with its

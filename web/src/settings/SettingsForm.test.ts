@@ -6,7 +6,7 @@ import { plexToken } from '../lib/plexLogin';
 import { session } from '../lib/session.svelte';
 import type { Launch, Tab } from '../lib/types';
 import { stubApi, type CannedAnswer, type SentRequest } from '../test-helpers';
-import { loadList, withValue } from './lists';
+import { withValue } from './lists';
 import { PHP_MAILER_PLUGIN } from './forms/plugins/phpMailer';
 import type { FormPage } from './model';
 import SettingsForm, { type SectionPart } from './SettingsForm.svelte';
@@ -756,12 +756,6 @@ describe('SettingsForm, the lists', () => {
     expect(group).toHaveTextContent('The list could not be loaded.');
     expect(options('Theme')).toEqual(['Organizr', 'Dark']);
     expect(screen.getAllByText('The list could not be loaded.')).toHaveLength(1);
-  });
-
-  it('has no plugin lists yet', async () => {
-    expect(await loadList('plex-libraries')).toEqual([]);
-    expect(await loadList('nextcloud-groups')).toEqual([]);
-    expect(await loadList('komga-libraries')).toEqual([]);
   });
 });
 

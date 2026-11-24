@@ -1728,32 +1728,6 @@ describe('Settings, plugins: the cards of PHP', () => {
     },
   };
 
-  const MAILER = {
-    Host: [{ type: 'input', label: 'SMTP Host', name: 'PHPMAILER-smtpHost', value: '' }],
-    'Test & Options': [{ type: 'button', label: 'Send Test', text: 'Send' }],
-    Templates: [
-      {
-        type: 'accordion',
-        label: 'Edit Template',
-        override: 12,
-        options: [
-          {
-            id: 'reset',
-            header: 'Reset Password',
-            body: [
-              {
-                type: 'textbox',
-                name: 'PHPMAILER-emailTemplateReset',
-                smallLabel: 'Body',
-                value: '<h2>Hey there {user}!</h2>',
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  };
-
   async function showPlugins(section: 'plugins' | 'plugins-inactive', answers: Answers = {}) {
     const sent = stubApi({
       'GET tabs': { data: DATA },
@@ -1782,7 +1756,7 @@ describe('Settings, plugins: the cards of PHP', () => {
 
   it('opens the settings of a plugin, saves a template and sends a test e-mail', async () => {
     const sent = await showPlugins('plugins', {
-      'GET plugins/php-mailer/settings': { data: MAILER },
+      'GET config': { data: { 'PHPMAILER-emailTemplateReset': '<h2>Hey there {user}!</h2>' } },
       'PUT config': {},
       'GET plugins/php-mailer/email/test': { message: 'Email sent' },
     });
@@ -1790,13 +1764,17 @@ describe('Settings, plugins: the cards of PHP', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Settings of PHP Mailer' }));
     const dialog = await screen.findByRole('dialog', { name: 'PHP Mailer Settings' });
     await fireEvent.click(await within(dialog).findByRole('tab', { name: 'Templates' }));
-    await fireEvent.input(within(dialog).getByLabelText('Body'), {
+    const reset = within(dialog).getByText('Reset Password').closest('details');
+    if (!reset) {
+      throw new Error('There is no box Reset Password');
+    }
+    await fireEvent.input(within(reset).getByLabelText('Body'), {
       target: { value: '<p>New: {password}</p>' },
     });
     await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     await statusSays('The settings are saved.');
 
-    await fireEvent.click(within(dialog).getByRole('tab', { name: 'Test & Options' }));
+    await fireEvent.click(within(dialog).getByRole('tab', { name: 'Test and options' }));
     await fireEvent.click(within(dialog).getByRole('button', { name: 'Send' }));
     expect(await within(dialog).findByText('Email sent')).toBeInTheDocument();
     expect(changes(sent)).toEqual([

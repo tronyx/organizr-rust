@@ -599,6 +599,119 @@ pub async fn remove(
     Ok(Envelope::success(NoData).with_message("Code has been deleted"))
 }
 
+/// One choice of a list of the settings forms: what the list shows, and what is stored.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Choice {
+    /// What the list shows.
+    pub label: String,
+    /// What the setting stores.
+    pub value: String,
+}
+
+/// The longest wait for the lists of Komga and Nextcloud.
+const LIST_TIME: Duration = Duration::from_secs(10);
+
+/// The groups of the Nextcloud of the plugin as choices, or nothing when it is not set up
+/// or does not answer, as PHP's `_checkNextcloudVar` asks.
+pub(crate) async fn nextcloud_groups(state: &AppState, settings: &Settings) -> Option<Vec<Choice>> {
+    use organizr_integrations::nextcloud::{Admin, groups};
+
+    if !settings.invites_nextcloud_enabled
+        || settings.invites_nextcloud_url.is_empty()
+        || settings.invites_nextcloud_admin_user.is_empty()
+        || settings.invites_nextcloud_admin_password.is_empty()
+    {
+        return None;
+    }
+    let http = state.outbound()?;
+    let admin = Admin {
+        url: settings.invites_nextcloud_url.trim_end_matches('/'),
+        user: &settings.invites_nextcloud_admin_user,
+        password: &settings.invites_nextcloud_admin_password,
+    };
+    match groups(http, admin, LIST_TIME).await {
+        Ok(found) => Some(
+            found
+                .into_iter()
+                .map(|group| Choice {
+                    label: group.clone(),
+                    value: group,
+                })
+                .collect(),
+        ),
+        Err(error) => {
+            tracing::warn!(%error, "the groups of Nextcloud cannot be read");
+            None
+        }
+    }
+}
+
+/// The libraries of the Komga of the plugin as choices, or nothing when it is not set up
+/// or does not answer. PHP asks the address of single sign-on, `komgaURL`; the address of
+/// the plugin, `INVITES-komga-uri`, comes first here, as its account goes there too
+/// (D-118).
+pub(crate) async fn komga_libraries(state: &AppState, settings: &Settings) -> Option<Vec<Choice>> {
+    let url = [&settings.invites_komga_uri, &settings.komga_url]
+        .into_iter()
+        .find(|url| !url.is_empty())?;
+    if settings.invites_komga_api_key.is_empty() {
+        return None;
+    }
+    let http = state.outbound()?;
+    match organizr_integrations::komga::libraries(
+        http,
+        url.trim_end_matches('/'),
+        &settings.invites_komga_api_key,
+        LIST_TIME,
+    )
+    .await
+    {
+        Ok(libraries) => Some(
+            libraries
+                .into_iter()
+                .map(|library| Choice {
+                    label: library.name,
+                    value: library.id,
+                })
+                .collect(),
+        ),
+        Err(error) => {
+            tracing::warn!(%error, "the libraries of Komga cannot be read");
+            None
+        }
+    }
+}
+
+/// `GET /plugins/invites/nextcloud/groups`: the groups of the Nextcloud of the plugin, for
+/// Admins and Co-Admins, as a list of `{label, value}`. The list is empty when Nextcloud is
+/// not set up or does not answer. Not a route of PHP: its form holds the list.
+pub async fn nextcloud_group_list(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+) -> Result<Envelope<Vec<Choice>>, Refusal> {
+    caller.require(MANAGER)?;
+    let settings = state.settings();
+    Ok(Envelope::success(
+        nextcloud_groups(&state, &settings)
+            .await
+            .unwrap_or_default(),
+    ))
+}
+
+/// `GET /plugins/invites/komga/libraries`: the libraries of the Komga of the plugin, for
+/// Admins and Co-Admins, as a list of `{label, value}`. The list is empty when Komga is not
+/// set up or does not answer. Not a route of PHP: its form holds the list.
+pub async fn komga_library_list(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+) -> Result<Envelope<Vec<Choice>>, Refusal> {
+    caller.require(MANAGER)?;
+    let settings = state.settings();
+    Ok(Envelope::success(
+        komga_libraries(&state, &settings).await.unwrap_or_default(),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

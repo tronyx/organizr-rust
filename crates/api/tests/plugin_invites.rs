@@ -750,3 +750,131 @@ async fn plugin_that_is_off_answers_no_route() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn komga_library_list_names_the_libraries_of_komga() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let komga = services::komga().await;
+        let (app, _) = app_with(
+            database,
+            &plex,
+            &[
+                ("INVITES-komga-uri", json!(komga.url())),
+                ("INVITES-komga-api-key", json!(KOMGA_API_KEY)),
+            ],
+        );
+        let user = seed::logged_in(database, &app, "uma", 4).await;
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+
+        let answer = call(
+            &app,
+            As::User(&co_admin),
+            "GET",
+            "/plugins/invites/komga/libraries",
+            None,
+        )
+        .await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(
+            answer.data(),
+            json!([{"label": "Comics", "value": "0A1B"}, {"label": "Manga", "value": "2C3D"}])
+        );
+        for who in [As::Guest, As::User(&user)] {
+            let refused = call(&app, who, "GET", "/plugins/invites/komga/libraries", None).await;
+            assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn nextcloud_group_list_names_the_groups_of_nextcloud() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let nextcloud = services::nextcloud().await;
+        let (user, password) = NEXTCLOUD_ADMIN;
+        let (app, _) = app_with(
+            database,
+            &plex,
+            &[
+                ("INVITES-nextcloud-enabled", json!(true)),
+                ("INVITES-nextcloud-url", json!(nextcloud.url())),
+                ("INVITES-nextcloud-admin-user", json!(user)),
+                ("INVITES-nextcloud-admin-password", json!(password)),
+            ],
+        );
+        let member = seed::logged_in(database, &app, "uma", 4).await;
+
+        let answer = call(
+            &app,
+            As::Admin,
+            "GET",
+            "/plugins/invites/nextcloud/groups",
+            None,
+        )
+        .await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(
+            answer.data(),
+            json!([
+                {"label": "admin", "value": "admin"},
+                {"label": "family", "value": "family"},
+                {"label": "friends", "value": "friends"},
+            ])
+        );
+        for who in [As::Guest, As::User(&member)] {
+            let refused = call(&app, who, "GET", "/plugins/invites/nextcloud/groups", None).await;
+            assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn invite_lists_are_empty_when_the_service_is_not_set_up_or_fails() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let komga = services::komga().await;
+        let nextcloud = services::nextcloud().await;
+        let (user, _) = NEXTCLOUD_ADMIN;
+        let cases: [(&str, Vec<(&'static str, Value)>); 4] = [
+            ("/plugins/invites/komga/libraries", vec![]),
+            (
+                "/plugins/invites/komga/libraries",
+                vec![
+                    ("INVITES-komga-uri", json!(komga.url())),
+                    (
+                        "INVITES-komga-api-key",
+                        json!("a-key-that-komga-does-not-know"),
+                    ),
+                ],
+            ),
+            ("/plugins/invites/nextcloud/groups", vec![]),
+            (
+                "/plugins/invites/nextcloud/groups",
+                vec![
+                    ("INVITES-nextcloud-enabled", json!(true)),
+                    ("INVITES-nextcloud-url", json!(nextcloud.url())),
+                    ("INVITES-nextcloud-admin-user", json!(user)),
+                    (
+                        "INVITES-nextcloud-admin-password",
+                        json!("a wrong password"),
+                    ),
+                ],
+            ),
+        ];
+        for (path, more) in cases {
+            let (app, _) = app_with(database, &plex, &more);
+            let answer = call(&app, As::Admin, "GET", path, None).await;
+            assert_eq!(answer.status, StatusCode::OK, "{path}: {}", answer.body);
+            assert_eq!(answer.data(), json!([]), "{path}");
+        }
+    })
+    .await;
+}

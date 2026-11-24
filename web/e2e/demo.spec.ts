@@ -1060,8 +1060,8 @@ test('a new password by e-mail is offered only when the install sends e-mails', 
   await mailer.getByRole('tab', { name: 'Authentication', exact: true }).click();
   await mailer.getByLabel('Authentication Type').selectOption('n/a');
   await mailer.getByLabel('Authentication', { exact: true }).uncheck();
-  await saveSettings(page, 'plugins/php-mailer/settings');
-  await mailer.getByRole('tab', { name: 'Test & Options' }).click();
+  await saveSettings(page, 'config');
+  await mailer.getByRole('tab', { name: 'Test and options' }).click();
   await mailer.getByRole('button', { name: 'Send' }).click();
   await expect(mailer.getByRole('alert')).toBeVisible();
   await page.keyboard.press('Escape');
@@ -1269,10 +1269,7 @@ test('the Admin adds a bookmark, and the page of the bookmarks shows it as a til
   await switchPluginOn(page, 'Bookmark');
   await page.goto('./#/settings/plugins');
   await page.getByRole('button', { name: 'Settings of Bookmark' }).click();
-  await page
-    .getByRole('dialog', { name: 'Bookmark Settings' })
-    .getByRole('tab', { name: 'Bookmarks' })
-    .click();
+  await expect(page.getByRole('dialog', { name: 'Bookmark Settings' })).toBeVisible();
 
   // The editor shows once the plugin is on.
   await page.getByLabel('Name of a new category').fill('Reading');
