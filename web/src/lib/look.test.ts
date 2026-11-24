@@ -9,6 +9,7 @@ import {
   MODERN_THEME_COLOURS,
   MODERN_THEMES,
   modernThemeId,
+  sceneOf,
   type Look,
 } from './look';
 import { COLOUR_VARIABLE_NAMES } from './theme';
@@ -106,6 +107,16 @@ describe('applyLook', () => {
           { id: 'rose', label: 'Rose' },
         ],
       },
+      {
+        id: 'nocturne',
+        label: 'Nocturne',
+        scene: 'nocturne',
+        colourSets: [
+          { id: 'amethyst', label: 'Amethyst' },
+          { id: 'crimson', label: 'Crimson' },
+          { id: 'moonlit', label: 'Moonlit' },
+        ],
+      },
     ]);
   });
 
@@ -135,6 +146,32 @@ describe('applyLook', () => {
     expect(modernThemeId('silo', 'dark')).toBe('m-organizr-dark');
     expect(modernThemeId('silo', 'light')).toBe('m-organizr-dark');
   });
+
+  it('nocturne_has_three_dark_colour_sets', () => {
+    for (const set of ['amethyst', 'crimson', 'moonlit']) {
+      expect(modernThemeId('nocturne', set)).toBe(`m-nocturne-${set}`);
+      const root = document.createElement('html');
+      applyLook(modern('nocturne', set), undefined, {}, root);
+      expect(root.dataset.theme).toBe(`m-nocturne-${set}`);
+      expect(root.dataset.colourSet).toBe('dark');
+    }
+    expect(modernThemeId('nocturne', 'dark')).toBe('m-organizr-dark');
+  });
+});
+
+describe('sceneOf', () => {
+  it('only_a_scene_theme_on_the_modern_layout_has_a_scene', () => {
+    expect(sceneOf(modern('nocturne', 'amethyst'))).toBe('nocturne');
+    expect(sceneOf(modern('nocturne', 'moonlit'))).toBe('nocturne');
+    for (const theme of ['organizr', 'plex', 'jellyfin', 'emby']) {
+      expect(sceneOf(modern(theme, 'dark')), theme).toBeNull();
+    }
+    expect(sceneOf(modern('silo', 'ember'))).toBeNull();
+    // A set the theme does not have gives the default theme, which has no scene.
+    expect(sceneOf(modern('nocturne', 'dark'))).toBeNull();
+    expect(sceneOf({ ...modern('nocturne', 'amethyst'), layout: 'og' })).toBeNull();
+    expect(sceneOf(og('Organizr'))).toBeNull();
+  });
 });
 
 describe('the modern colour sets', () => {
@@ -144,6 +181,9 @@ describe('the modern colour sets', () => {
       'm-emby-light',
       'm-jellyfin-dark',
       'm-jellyfin-light',
+      'm-nocturne-amethyst',
+      'm-nocturne-crimson',
+      'm-nocturne-moonlit',
       'm-organizr-dark',
       'm-organizr-light',
       'm-plex-dark',
@@ -266,6 +306,29 @@ describe('the modern colour sets', () => {
       }
       // The open entry of the side menu is in the accent too.
       expect(value('org-sidebar-active'), id).toBe(accent);
+    }
+  });
+
+  it('nocturne_accents_and_buttons_read_on_every_surface', () => {
+    // Nocturne marks links, the open settings entry and the focus ring with its accent,
+    // and its primary buttons sit on the cards: both need 4.5:1 on every surface.
+    const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    for (const set of ['amethyst', 'crimson', 'moonlit']) {
+      const id = `m-nocturne-${set}`;
+      const start = css.indexOf(`name: '${id}';`);
+      expect(start, id).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      const value = (name: string) =>
+        new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
+      for (const colour of ['color-accent', 'color-primary']) {
+        for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
+          expect(
+            contrastRatio(value(colour), value(surface)),
+            `${id} ${colour} on ${surface}`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+      expect(block, id).toContain('color-scheme: dark;');
     }
   });
 

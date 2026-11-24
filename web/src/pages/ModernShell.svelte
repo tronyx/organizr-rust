@@ -35,6 +35,7 @@
     toggleFullScreen,
   } from '../lib/shellState.svelte';
   import LookPicker from '../components/LookPicker.svelte';
+  import SceneLayer from '../components/SceneLayer.svelte';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import LanguageMenu from './LanguageMenu.svelte';
   import MediaSearch from './homepage/MediaSearch.svelte';
@@ -136,6 +137,9 @@
   const barButton =
     'org-header-link h-9 w-auto rounded-md px-3 hover:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)] aria-expanded:bg-[color-mix(in_oklab,var(--org-header-text)_14%,transparent)]';
 </script>
+
+<!-- The scene of a scene theme, behind everything else of the shell. -->
+<SceneLayer />
 
 {#snippet iconButton(label: string, Icon: typeof MenuIcon, onclick: () => void)}
   <Tooltip.Root>

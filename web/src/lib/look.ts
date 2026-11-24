@@ -18,6 +18,11 @@ export interface Look {
 export interface ModernTheme {
   id: string;
   label: string;
+  /**
+   * The animated scene behind the page, for a scene theme: a key of `SCENE_LOADERS` in
+   * `src/scenes`. The other themes have none.
+   */
+  scene?: string;
   colourSets: { id: string; label: string }[];
 }
 
@@ -39,6 +44,16 @@ export const MODERN_THEMES: ModernTheme[] = [
       { id: 'rose', label: 'Rose' },
     ],
   },
+  {
+    id: 'nocturne',
+    label: 'Nocturne',
+    scene: 'nocturne',
+    colourSets: [
+      { id: 'amethyst', label: 'Amethyst' },
+      { id: 'crimson', label: 'Crimson' },
+      { id: 'moonlit', label: 'Moonlit' },
+    ],
+  },
 ];
 
 /** The two colour sets of most themes. */
@@ -55,6 +70,18 @@ export function modernThemeId(theme: string, colourSet: string): string {
     (entry) => entry.id === theme && entry.colourSets.some((set) => set.id === colourSet),
   );
   return known ? `m-${known.id}-${colourSet}` : 'm-organizr-dark';
+}
+
+/**
+ * The scene that a look shows behind the page, or `null`: only a scene theme of the modern
+ * layout has one, and only with a colour set of its own (else the page has the default).
+ */
+export function sceneOf(look: Look): string | null {
+  if (look.layout !== 'modern') {
+    return null;
+  }
+  const id = modernThemeId(look.theme, look.colourSet);
+  return MODERN_THEMES.find((entry) => id.startsWith(`m-${entry.id}-`))?.scene ?? null;
 }
 
 /** A text colour on a background, both as CSS variables of the theme in `app.css`. */
@@ -245,6 +272,51 @@ export const MODERN_THEME_COLOURS: Record<string, ColourPair[]> = {
     pair('header', '--org-header-text', '#f2f3f5', '--org-header-bg', '#121317'),
     pair('sidebar', '--org-sidebar-text', '#b6bac2', '--org-sidebar-bg', '#0a0b0d'),
     pair('sidebar active', '--org-sidebar-active', '#ff7593', '--org-sidebar-bg', '#0a0b0d'),
+  ],
+  'm-nocturne-amethyst': [
+    pair('page', '--color-base-content', '#ece5f6', '--color-base-100', '#120c1c'),
+    pair('menu', '--color-base-content', '#ece5f6', '--color-base-200', '#1c1429'),
+    pair('heading', '--color-base-content', '#ece5f6', '--color-base-300', '#2a1f3b'),
+    pair('primary', '--color-primary-content', '#170b28', '--color-primary', '#b994f2'),
+    pair('success', '--color-success-content', '#04150d', '--color-success', '#5fc99c'),
+    pair('warning', '--color-warning-content', '#1b1a1a', '--color-warning', '#f5b301'),
+    pair('error', '--color-error-content', '#1a0509', '--color-error', '#f2637d'),
+    pair('secondary', '--color-secondary-content', '#1d0d24', '--color-secondary', '#d3a6e0'),
+    pair('accent', '--color-accent-content', '#1a1206', '--color-accent', '#e6c27a'),
+    pair('neutral', '--color-neutral-content', '#ece5f6', '--color-neutral', '#0a0710'),
+    pair('header', '--org-header-text', '#f2edf9', '--org-header-bg', '#170f24'),
+    pair('sidebar', '--org-sidebar-text', '#bfb3d2', '--org-sidebar-bg', '#0d0914'),
+    pair('sidebar active', '--org-sidebar-active', '#c7a6f7', '--org-sidebar-bg', '#0d0914'),
+  ],
+  'm-nocturne-crimson': [
+    pair('page', '--color-base-content', '#f2e4e7', '--color-base-100', '#140a0d'),
+    pair('menu', '--color-base-content', '#f2e4e7', '--color-base-200', '#1f1015'),
+    pair('heading', '--color-base-content', '#f2e4e7', '--color-base-300', '#2e1820'),
+    pair('primary', '--color-primary-content', '#1c0409', '--color-primary', '#ee6f86'),
+    pair('success', '--color-success-content', '#04150d', '--color-success', '#5fc99c'),
+    pair('warning', '--color-warning-content', '#1b1a1a', '--color-warning', '#f5b301'),
+    pair('error', '--color-error-content', '#1d0603', '--color-error', '#ff7a6b'),
+    pair('secondary', '--color-secondary-content', '#1f0a10', '--color-secondary', '#d79aa9'),
+    pair('accent', '--color-accent-content', '#1a1206', '--color-accent', '#e3bc78'),
+    pair('neutral', '--color-neutral-content', '#f2e4e7', '--color-neutral', '#0b0608'),
+    pair('header', '--org-header-text', '#f7eef0', '--org-header-bg', '#1a0d11'),
+    pair('sidebar', '--org-sidebar-text', '#cdb5bb', '--org-sidebar-bg', '#0f080a'),
+    pair('sidebar active', '--org-sidebar-active', '#f58a9c', '--org-sidebar-bg', '#0f080a'),
+  ],
+  'm-nocturne-moonlit': [
+    pair('page', '--color-base-content', '#e6e9f6', '--color-base-100', '#0c0e1a'),
+    pair('menu', '--color-base-content', '#e6e9f6', '--color-base-200', '#141728'),
+    pair('heading', '--color-base-content', '#e6e9f6', '--color-base-300', '#202439'),
+    pair('primary', '--color-primary-content', '#0b0f22', '--color-primary', '#a9b9f2'),
+    pair('success', '--color-success-content', '#04150d', '--color-success', '#5fc99c'),
+    pair('warning', '--color-warning-content', '#1b1a1a', '--color-warning', '#f5b301'),
+    pair('error', '--color-error-content', '#1a0509', '--color-error', '#f2637d'),
+    pair('secondary', '--color-secondary-content', '#100c24', '--color-secondary', '#b3a8e6'),
+    pair('accent', '--color-accent-content', '#17140a', '--color-accent', '#ebdfae'),
+    pair('neutral', '--color-neutral-content', '#e6e9f6', '--color-neutral', '#07080f'),
+    pair('header', '--org-header-text', '#f0f2fa', '--org-header-bg', '#10132a'),
+    pair('sidebar', '--org-sidebar-text', '#b4bad2', '--org-sidebar-bg', '#090b16'),
+    pair('sidebar active', '--org-sidebar-active', '#bccaf7', '--org-sidebar-bg', '#090b16'),
   ],
 };
 

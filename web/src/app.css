@@ -516,6 +516,136 @@
   --noise: 0;
 }
 
+/* The scene themes of the modern layout: each has an animated scene behind the page
+   (`src/scenes`), its own heading font and corners, and colour sets with names of its own.
+   The art takes its colours from these variables, so each set recolours the scene too.
+
+   Nocturne: a gothic night in violet, with old gold for the links, sharp corners and the
+   Cinzel font for the headings. Amethyst is violet, Crimson a deep wine red and Moonlit a
+   cold silver blue. Every set is dark. */
+@plugin 'daisyui/theme' {
+  name: 'm-nocturne-amethyst';
+  color-scheme: dark;
+
+  --color-base-100: #120c1c;
+  --color-base-200: #1c1429;
+  --color-base-300: #2a1f3b;
+  --color-base-content: #ece5f6;
+  --color-primary: #b994f2;
+  --color-primary-content: #170b28;
+  --color-secondary: #d3a6e0;
+  --color-secondary-content: #1d0d24;
+  --color-accent: #e6c27a;
+  --color-accent-content: #1a1206;
+  --color-neutral: #0a0710;
+  --color-neutral-content: #ece5f6;
+  --color-info: #7fb6f2;
+  --color-info-content: #07111d;
+  --color-success: #5fc99c;
+  --color-success-content: #04150d;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #f2637d;
+  --color-error-content: #1a0509;
+
+  --org-header-bg: #170f24;
+  --org-header-text: #f2edf9;
+  --org-sidebar-bg: #0d0914;
+  --org-sidebar-text: #bfb3d2;
+  --org-sidebar-active: #c7a6f7;
+
+  --radius-selector: 0.125rem;
+  --radius-field: 0.125rem;
+  --radius-box: 0.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-nocturne-crimson';
+  color-scheme: dark;
+
+  --color-base-100: #140a0d;
+  --color-base-200: #1f1015;
+  --color-base-300: #2e1820;
+  --color-base-content: #f2e4e7;
+  --color-primary: #ee6f86;
+  --color-primary-content: #1c0409;
+  --color-secondary: #d79aa9;
+  --color-secondary-content: #1f0a10;
+  --color-accent: #e3bc78;
+  --color-accent-content: #1a1206;
+  --color-neutral: #0b0608;
+  --color-neutral-content: #f2e4e7;
+  --color-info: #7fb6f2;
+  --color-info-content: #07111d;
+  --color-success: #5fc99c;
+  --color-success-content: #04150d;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #ff7a6b;
+  --color-error-content: #1d0603;
+
+  --org-header-bg: #1a0d11;
+  --org-header-text: #f7eef0;
+  --org-sidebar-bg: #0f080a;
+  --org-sidebar-text: #cdb5bb;
+  --org-sidebar-active: #f58a9c;
+
+  --radius-selector: 0.125rem;
+  --radius-field: 0.125rem;
+  --radius-box: 0.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-nocturne-moonlit';
+  color-scheme: dark;
+
+  --color-base-100: #0c0e1a;
+  --color-base-200: #141728;
+  --color-base-300: #202439;
+  --color-base-content: #e6e9f6;
+  --color-primary: #a9b9f2;
+  --color-primary-content: #0b0f22;
+  --color-secondary: #b3a8e6;
+  --color-secondary-content: #100c24;
+  --color-accent: #ebdfae;
+  --color-accent-content: #17140a;
+  --color-neutral: #07080f;
+  --color-neutral-content: #e6e9f6;
+  --color-info: #7fc4f2;
+  --color-info-content: #07131d;
+  --color-success: #5fc99c;
+  --color-success-content: #04150d;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #f2637d;
+  --color-error-content: #1a0509;
+
+  --org-header-bg: #10132a;
+  --org-header-text: #f0f2fa;
+  --org-sidebar-bg: #090b16;
+  --org-sidebar-text: #b4bad2;
+  --org-sidebar-active: #bccaf7;
+
+  --radius-selector: 0.125rem;
+  --radius-field: 0.125rem;
+  --radius-box: 0.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
 /* The other themes of PHP Organizr, rebuilt for this interface: the built-in theme "Blue"
    and the 11 themes of the theme marketplace (github.com/Organizr/Organizr-Themes). The
    colours come from the style sheets of each theme. The themes of theme.park take them
@@ -5028,5 +5158,68 @@
   [data-layout='modern'][data-theme^='m-silo-']
     :is(h1, h2, h3, h4, .card-title, .btn, .org-form-button, .org-login-button) {
     font-weight: 600;
+  }
+
+  /* The scene of a scene theme (`SceneLayer.svelte`, art in `src/scenes`): a layer fixed
+     behind the shell that takes no clicks and never scrolls. It paints the page colour, so
+     the page itself turns transparent and the scene shows between the cards; every surface
+     with text (cards, top bar, menu, dialogs, the heading of a page) stays opaque.
+     Custom CSS can hide it with `.m-scene { display: none; }`, or one theme's scene with
+     `.m-scene-<theme>`. `m-scene-paused` is on while the tab is hidden. The animations are
+     declared in the scene's own style, which also stops them for reduced motion and while
+     paused (a layered rule cannot beat it); these two rules stop anything else. */
+  [data-layout='modern'] .m-scene {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background-color: var(--color-base-100);
+    contain: strict;
+  }
+
+  [data-layout='modern'] .m-scene-paused,
+  [data-layout='modern'] .m-scene-paused * {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-layout='modern'] .m-scene * {
+      animation: none;
+    }
+  }
+
+  [data-layout='modern']:has(.m-scene) .m-page {
+    background-color: transparent;
+  }
+
+  /* The title of a page and the menu of the settings sit on the page itself: over a scene
+     each gets a card of its own. */
+  [data-layout='modern']:has(.m-scene) .org-page-title {
+    padding: 12px 16px;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background-color: var(--color-base-200);
+  }
+
+  [data-layout='modern']:has(.m-scene) .m-settings-side {
+    padding: 12px 0;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background-color: var(--color-base-200);
+  }
+
+  /* Nocturne: Cinzel, a roman inscription face, for the headings; the body text stays
+     Rubik. The face itself comes with the scene (`NocturneScene.svelte`), so only this
+     theme downloads it. The links and help texts are old gold. */
+  [data-layout='modern'][data-theme^='m-nocturne-']
+    :is(h1, h2, h3, h4, .card-title, .org-item-title, .org-panel-heading, .org-sidebar-head) {
+    font-family: 'Cinzel Variable', ui-serif, Georgia, serif;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  [data-layout='modern'][data-theme^='m-nocturne-'] :is(.link, .org-form-help) {
+    color: var(--color-accent);
   }
 }

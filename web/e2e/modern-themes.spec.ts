@@ -28,8 +28,13 @@ import { ADDRESS } from './server';
 
 const ORIGIN = `http://${ADDRESS}`;
 
-/** Every theme and colour set but those of Organizr, which the other specs check. */
-const LOOKS = MODERN_THEMES.filter((theme) => theme.id !== 'organizr').flatMap((theme) =>
+/**
+ * Every theme and colour set but those of Organizr, which the other specs check, and those
+ * of the scene themes, whose audit must also know the scene behind the page.
+ */
+const LOOKS = MODERN_THEMES.filter(
+  (theme) => theme.id !== 'organizr' && theme.scene === undefined,
+).flatMap((theme) =>
   theme.colourSets.map((set) => ({
     theme: theme.id,
     set: set.id,

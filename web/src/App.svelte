@@ -66,7 +66,7 @@
       {#if content.kind !== 'frame'}
         {#key router.route}
           <div
-            class="bg-base-100 absolute inset-0 overflow-auto"
+            class="m-page bg-base-100 absolute inset-0 overflow-auto"
             in:fade={{ duration: motion(150) }}
           >
             <Content {content} />

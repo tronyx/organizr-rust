@@ -660,6 +660,9 @@ describe('the brand themes of the modern layout', () => {
       'm-silo-ember',
       'm-silo-ice',
       'm-silo-rose',
+      'm-nocturne-amethyst',
+      'm-nocturne-crimson',
+      'm-nocturne-moonlit',
     ]);
   });
 
@@ -841,5 +844,137 @@ describe('the Silo theme of the modern layout', () => {
     );
     expect(Number(/font-weight:\s*(\d+)/.exec(heavy?.body ?? '')?.[1])).toBeGreaterThanOrEqual(600);
     expect(lastBlock()).toContain(heavy?.selector ?? '-');
+  });
+});
+
+describe('the scenes of the modern layout', () => {
+  const lastBlock = () => css.slice(css.lastIndexOf('@layer utilities'));
+  const rule = (selector: string) => rules().find((one) => one.selector === selector);
+
+  it('the_scene_is_fixed_behind_the_page_and_catches_no_clicks', () => {
+    const scene = rule(`${SCOPE} .m-scene`);
+    const body = scene?.body ?? '';
+    expect(body).toMatch(/position:\s*fixed/);
+    expect(body).toMatch(/inset:\s*0/);
+    expect(body).toMatch(/z-index:\s*0/);
+    expect(body).toMatch(/pointer-events:\s*none/);
+    expect(body).toMatch(/overflow:\s*hidden/);
+    // The scene paints the page colour under its art.
+    expect(body).toMatch(/background-color:\s*var\(--color-base-100\)/);
+  });
+
+  it('a_hidden_tab_pauses_the_scene', () => {
+    const paused = rules().find((one) => one.selector.includes('.m-scene-paused'));
+    expect(paused?.body ?? '').toMatch(/animation-play-state:\s*paused/);
+    for (const part of selectorParts(paused?.selector ?? '-')) {
+      expect(part.startsWith(SCOPE), part).toBe(true);
+    }
+  });
+
+  it('reduced_motion_stops_the_scene', () => {
+    const start = lastBlock().indexOf('@media (prefers-reduced-motion: reduce)');
+    expect(start).toBeGreaterThan(-1);
+    const media = lastBlock().slice(start, lastBlock().indexOf('}', start));
+    expect(media).toContain(`${SCOPE} .m-scene *`);
+    expect(media).toMatch(/animation:\s*none/);
+  });
+
+  it('the_page_shows_the_scene_between_its_cards', () => {
+    // The page of the modern shell is opaque, except while a scene is behind it.
+    const page = rule(`${SCOPE}:has(.m-scene) .m-page`);
+    expect(page?.body ?? '').toMatch(/background-color:\s*transparent/);
+    // It must beat Tailwind's `bg-base-100`, a utility.
+    expect(lastBlock()).toContain(`${SCOPE}:has(.m-scene) .m-page {`);
+    const app = readFileSync(resolve(__dirname, '../App.svelte'), 'utf8');
+    expect(app).toMatch(/class="m-page bg-base-100 absolute inset-0 overflow-auto"/);
+  });
+
+  it('the_page_title_and_the_settings_menu_stay_opaque_over_a_scene', () => {
+    // No text sits on the scene: the title of a page and the menu of the settings, which
+    // have no card of their own on the other themes, get one.
+    for (const part of ['.org-page-title', '.m-settings-side']) {
+      const own = rule(`${SCOPE}:has(.m-scene) ${part}`);
+      expect(own?.body ?? '', part).toMatch(/background-color:\s*var\(--color-base-200\)/);
+      expect(lastBlock(), part).toContain(`${SCOPE}:has(.m-scene) ${part} {`);
+    }
+  });
+
+  it('the_scene_rules_use_no_important', () => {
+    const scene = rules().filter((one) => one.selector.includes('m-scene'));
+    expect(scene.length).toBeGreaterThan(0);
+    for (const one of scene) {
+      expect(one.body, one.selector).not.toContain('!important');
+    }
+  });
+});
+
+describe('the Nocturne theme of the modern layout', () => {
+  const NOCTURNE = `${SCOPE}[data-theme^='m-nocturne-']`;
+  const SETS = ['amethyst', 'crimson', 'moonlit'];
+
+  /** The rule that gives the headings of Nocturne their font. */
+  function fontRule(): Rule | undefined {
+    return rules().find((rule) => /font-family:\s*'Cinzel Variable'/.test(rule.body));
+  }
+
+  it('only_the_nocturne_rule_names_cinzel_and_the_scene_loads_its_face', () => {
+    const named = rules().filter((rule) => rule.body.includes('Cinzel'));
+    expect(named).toHaveLength(1);
+    expect(fontRule()?.selector.replace(/\s+/g, ' ')).toMatch(
+      /^\[data-layout='modern'\]\[data-theme\^='m-nocturne-'\] :is\(h1, h2, h3, h4, /,
+    );
+    // The face comes with the scene, in its lazy chunk, never with the main bundle.
+    const main = readFileSync(resolve(__dirname, '../main.ts'), 'utf8');
+    expect(main).not.toContain('cinzel');
+    const scene = readFileSync(resolve(__dirname, '../scenes/NocturneScene.svelte'), 'utf8');
+    expect(scene).toContain("import '@fontsource-variable/cinzel/wght.css';");
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8')) as {
+      devDependencies: Record<string, string>;
+    };
+    expect(pkg.devDependencies['@fontsource-variable/cinzel']).toBe('5.3.0');
+  });
+
+  it('the_nocturne_font_rule_stops_matching_after_a_switch_to_plex', () => {
+    const rule = fontRule();
+    expect(rule).toBeDefined();
+    const root = document.createElement('html');
+    const heading = document.createElement('h1');
+    root.append(heading);
+    applyLook(
+      { layout: 'modern', theme: 'nocturne', colourSet: 'crimson', source: 'user' },
+      undefined,
+      {},
+      root,
+    );
+    expect(heading.matches(rule?.selector ?? '-')).toBe(true);
+    applyLook(
+      { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+      undefined,
+      {},
+      root,
+    );
+    expect(heading.matches(rule?.selector ?? '-')).toBe(false);
+  });
+
+  it('nocturne_has_sharp_corners', () => {
+    for (const set of SETS) {
+      const start = css.indexOf(`name: 'm-nocturne-${set}';`);
+      expect(start, set).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      for (const name of ['radius-selector', 'radius-field', 'radius-box']) {
+        const value = Number(new RegExp(`--${name}: ([\\d.]+)rem;`).exec(block)?.[1] ?? 9);
+        expect(value, `${set} ${name}`).toBeLessThanOrEqual(0.25);
+      }
+    }
+  });
+
+  it('nocturne_rules_are_scoped_to_nocturne', () => {
+    const own = rules().filter((rule) => rule.selector.includes('m-nocturne-'));
+    expect(own.length).toBeGreaterThan(0);
+    for (const rule of own) {
+      for (const part of selectorParts(rule.selector)) {
+        expect(part.startsWith(NOCTURNE), part).toBe(true);
+      }
+    }
   });
 });

@@ -57,7 +57,7 @@ describe('LookPicker', () => {
     const labels = [...themes.querySelectorAll('option')].map((option) =>
       option.textContent.trim(),
     );
-    expect(labels).toEqual(['Organizr', 'Plex', 'Jellyfin', 'Emby', 'Silo']);
+    expect(labels).toEqual(['Organizr', 'Plex', 'Jellyfin', 'Emby', 'Silo', 'Nocturne']);
     expect(screen.queryByRole('option', { name: 'Space Gray' })).not.toBeInTheDocument();
     // The theme has a dark and a light colour set; either can be chosen.
     expect(screen.getByRole('group', { name: 'Colours' })).toBeInTheDocument();
@@ -103,6 +103,29 @@ describe('LookPicker', () => {
     expect(screen.getByRole('radio', { name: 'Ice' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Ember' })).toBeEnabled();
     expect(screen.getByRole('radio', { name: 'Rose' })).toBeEnabled();
+    expect(screen.queryByRole('radio', { name: 'Dark' })).not.toBeInTheDocument();
+  });
+
+  it('choosing_nocturne_moves_to_amethyst_and_offers_its_sets', async () => {
+    const sent = await open(MODERN);
+
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Theme' }), {
+      target: { value: 'nocturne' },
+    });
+    await waitFor(() => expect(sent.some((request) => request.method === 'PUT')).toBe(true));
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      theme: 'nocturne',
+      colourSet: 'amethyst',
+    });
+  });
+
+  it('nocturne_offers_its_three_colour_sets', async () => {
+    await open({ ...MODERN, theme: 'nocturne', colourSet: 'moonlit' });
+
+    expect(screen.getByRole('radio', { name: 'Moonlit' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Amethyst' })).toBeEnabled();
+    expect(screen.getByRole('radio', { name: 'Crimson' })).toBeEnabled();
     expect(screen.queryByRole('radio', { name: 'Dark' })).not.toBeInTheDocument();
   });
 
