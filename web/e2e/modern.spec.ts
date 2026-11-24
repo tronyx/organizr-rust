@@ -1,20 +1,8 @@
 // The modern layout: the shell with its grouped menu, user menu and phone drawer. It runs
 // after the walk of `demo.spec.ts`, on the same install.
 
-import type { Page } from '@playwright/test';
-
 import { expect, test } from './fixtures';
-
-/** What the set-up of `demo.spec.ts` filled in. */
-const ADMIN = { username: 'admin', password: 'the password of the browser tests' };
-
-async function logIn(page: Page) {
-  await page.goto('./#/login');
-  await page.getByLabel('User name or e-mail address').fill(ADMIN.username);
-  await page.getByLabel('Password').fill(ADMIN.password);
-  await page.getByRole('button', { name: 'Log in', exact: true }).click();
-  await expect(page.getByLabel('Menu of the user')).toHaveText(ADMIN.username);
-}
+import { logIn } from './login';
 
 test('the modern layout shows the grouped menu and the user menu, and breaks no policy', async ({
   page,
