@@ -4539,6 +4539,12 @@
       flex-shrink: 0;
     }
 
+    /* Without an avatar the name is all there is: it keeps room for about two letters
+       and the ellipsis. */
+    [data-layout='modern'] .m-user:not(:has(img)) {
+      min-width: 3.25rem;
+    }
+
     [data-layout='modern'] .m-user-name {
       min-width: 0;
       overflow: hidden;

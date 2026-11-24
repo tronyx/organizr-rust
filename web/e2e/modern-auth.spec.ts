@@ -94,6 +94,7 @@ interface LaunchPatch {
   search?: boolean;
   noLogo?: boolean;
   logo?: string;
+  noAvatar?: boolean;
 }
 
 /**
@@ -172,6 +173,9 @@ async function routeEverything(page: Page, patch: LaunchPatch): Promise<string[]
       if (patch.noLogo) {
         appearance.useLogo = false;
         appearance.title = 'A rather long title of this Organizr install';
+      }
+      if (patch.noAvatar && data.user) {
+        data.user.image = '';
       }
       if (patch.logo) {
         appearance.useLogo = true;
@@ -528,6 +532,21 @@ test('login_lock_set_up_and_account_screens_pass_contrast_on_modern_dark_and_lig
       patch.search = false;
       patch.logo = undefined;
 
+      // Without an avatar the name keeps some room and ends in an ellipsis.
+      patch.noAvatar = true;
+      patch.search = true;
+      patch.logo = LOGO;
+      await open(page, '#/account', 'Account', set);
+      await expect(page.getByRole('button', { name: 'Search My Media' })).toBeVisible();
+      await expect(page.locator('.m-user img')).toHaveCount(0);
+      await expect(page.locator('.m-user-name')).toHaveCSS('text-overflow', 'ellipsis');
+      const nameWidth = await page.locator('.m-user-name').evaluate((name) => name.clientWidth);
+      expect(nameWidth, `the name without an avatar on a phone (${set})`).toBeGreaterThan(0);
+      await expectBarFits(page, `with no avatar, a logo picture and the media search (${set})`);
+      patch.noAvatar = false;
+      patch.search = false;
+      patch.logo = undefined;
+
       patch.wallpaper = WALLPAPERS.dark;
       expect((await page.request.post('./api/v2/users/lock')).ok()).toBe(true);
       try {
@@ -557,6 +576,7 @@ test('login_lock_set_up_and_account_screens_pass_contrast_on_modern_dark_and_lig
       search: false,
       noLogo: false,
       logo: undefined,
+      noAvatar: false,
     });
     // Each step runs even when an earlier one fails; the failures are reported at the end.
     const failures: string[] = [];
