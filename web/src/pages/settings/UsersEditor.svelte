@@ -164,7 +164,9 @@
                  the row does the same for the keyboard, so the row needs no key or role. -->
             <tr class="org-click-row" onclick={(event) => openRow(event, user)}>
               <td class="org-users-avatar text-center">
-                <span class="org-avatar"><Picture image={user.image} name={user.username} /></span>
+                <span class="org-avatar">
+                  <Picture image={user.image} name={user.username} avatar />
+                </span>
               </td>
               <th scope="row" translate="no">
                 {user.username}

@@ -6,14 +6,17 @@
     image,
     name,
     large = false,
+    avatar = false,
   }: {
     image: string | null;
     name: string;
     /** The size of the menu at the left: 30 pixels, as PHP Organizr shows a tab. */
     large?: boolean;
+    /** The avatar of a user in a table: a circle of 45 pixels, as PHP Organizr shows it. */
+    avatar?: boolean;
   } = $props();
 
-  const size = $derived(large ? 'size-[30px]' : 'size-6');
+  const size = $derived(avatar ? 'size-[45px] rounded-full' : large ? 'size-[30px]' : 'size-6');
 
   // An image that does not load gives way to the letter.
   let failed = $state<string | null>(null);
@@ -22,7 +25,7 @@
 
 {#if picture.kind === 'image'}
   <img
-    class={[size, 'shrink-0 object-contain']}
+    class={[size, 'shrink-0', avatar ? 'object-cover' : 'object-contain']}
     src={picture.address}
     alt=""
     loading="lazy"
@@ -36,7 +39,8 @@
   <span
     class={[
       size,
-      'bg-neutral text-neutral-content grid shrink-0 place-items-center rounded text-xs font-semibold',
+      'bg-neutral text-neutral-content grid shrink-0 place-items-center font-semibold',
+      avatar ? 'text-base' : 'rounded text-xs',
     ]}
     aria-hidden="true"
   >

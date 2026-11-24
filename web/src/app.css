@@ -2121,6 +2121,15 @@
     text-transform: none;
   }
 
+  /* The grid of PHP (jsGrid) has a faint line under the headings and under each row. */
+  .org-table-grid thead th {
+    border-bottom: 1px solid rgb(120 130 140 / 0.35);
+  }
+
+  .org-table-grid tbody tr {
+    border-bottom: 1px solid rgb(120 130 140 / 0.13);
+  }
+
   .org-round-info:not(.org-round-small, :disabled):hover,
   .org-round-info:not(.org-round-small, :disabled):focus-visible {
     background: var(--color-info);

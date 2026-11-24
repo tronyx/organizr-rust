@@ -475,6 +475,12 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
   const own = page.getByRole('row', { name: new RegExp(ADMIN.username) });
   await expect(own.getByRole('button', { name: /Delete/ })).toBeDisabled();
   await expect(page.getByLabel(`Lock ${ADMIN.username}`)).toBeDisabled();
+  // As in the grid of PHP: avatars of 45 pixels, and a line under each row.
+  const avatar = own.locator('.org-users-avatar .org-avatar > *').first();
+  await expect(avatar).toHaveCSS('width', '45px');
+  await expect(avatar).toHaveCSS('height', '45px');
+  await expect(own).toHaveCSS('border-bottom-width', '1px');
+  await expect(own).toHaveCSS('border-bottom-style', 'solid');
 
   await page.getByRole('button', { name: 'Add a user' }).click();
   const added = page.getByRole('dialog', { name: 'Add a user' });
