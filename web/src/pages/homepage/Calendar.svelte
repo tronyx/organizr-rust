@@ -192,7 +192,7 @@
                   class:org-today={day.day === now}
                   aria-current={day.day === now ? 'date' : undefined}
                 >
-                  <div class="text-right text-xs" class:opacity-40={!day.inMonth}>
+                  <div class="text-right text-xs" class:org-calendar-other={!day.inMonth}>
                     {day.number}
                   </div>
                   {#each events.slice(0, options.limit) as event (event.id)}

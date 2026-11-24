@@ -165,6 +165,12 @@ const HOMEPAGE_CLASSES = [
   'org-combined',
   'org-caret',
   'org-plain',
+  'org-tone-neutral',
+  'org-tile',
+  'org-fill',
+  'org-adguard-card',
+  'org-speedtest-icon',
+  'org-calendar-other',
 ];
 
 describe('the modern CSS', () => {

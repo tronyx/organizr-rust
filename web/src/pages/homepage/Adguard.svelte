@@ -130,8 +130,8 @@
       <div class="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         {#each row.cards as card (card.title)}
           <div
-            class="flex items-center justify-between gap-2 p-5 text-white"
-            style:background={card.colour}
+            class="org-adguard-card flex items-center justify-between gap-2 p-5 text-white"
+            style:--org-state={card.colour}
           >
             <div class="min-w-0">
               <p>{card.title}</p>

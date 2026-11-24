@@ -45,7 +45,7 @@
   {#if item.data.options.titleToggle}
     <h2 class="org-item-title">{item.data.options.title}<span aria-hidden="true">:</span></h2>
   {/if}
-  <div class="flex flex-wrap gap-4 bg-[#2d2c2c] p-5 text-white">
+  <div class="org-tile flex flex-wrap gap-4 bg-[#2d2c2c] p-5 text-white">
     <dl
       class="grid flex-1 grid-cols-[auto_1fr] content-start gap-x-4 gap-y-1"
       aria-label="Print job"

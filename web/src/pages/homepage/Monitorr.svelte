@@ -24,19 +24,16 @@
 
   const STATES = {
     online: {
-      colour: 'var(--color-success)',
       tone: 'success',
       icon: 'fa-check-circle',
       word: 'Online',
     },
     unresponsive: {
-      colour: 'var(--color-warning)',
       tone: 'warning',
       icon: 'fa-times-circle',
       word: 'Unresponsive',
     },
     offline: {
-      colour: 'var(--color-error)',
       tone: 'error',
       icon: 'fa-times-circle',
       word: 'Offline',
@@ -103,14 +100,15 @@
         {#each services as [text, service] (text)}
           {@const state = stateOf(service)}
           {@const picture = pictureOf(service)}
-          <li class="flex flex-col items-center gap-3 bg-[#2d2c2c] p-4 text-center text-white">
+          <li
+            class="org-tile flex flex-col items-center gap-3 bg-[#2d2c2c] p-4 text-center text-white"
+          >
             {@render name(text, service, 'max-w-full truncate text-lg')}
             {#if picture}
               <img class="h-20 w-20 object-contain" src={picture} alt="" />
             {/if}
             <span
-              class="rounded px-4 py-1.5 text-xs font-semibold text-white uppercase"
-              style:background={state.colour}
+              class="org-fill org-tone-{state.tone} rounded px-4 py-1.5 text-xs font-semibold text-white uppercase"
             >
               {state.word}
             </span>

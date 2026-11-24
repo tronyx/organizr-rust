@@ -2256,6 +2256,26 @@
     color: var(--org-state);
   }
 
+  .org-tone-neutral {
+    --org-state: var(--color-neutral);
+  }
+
+  /* Parts that are filled with the colour of their state: the state of a Monitorr service,
+     the head of a UniFi card, a card of AdGuard Home (the colour is `--org-state`). */
+  .org-fill,
+  .org-adguard-card {
+    background: var(--org-state);
+  }
+
+  .org-speedtest-icon {
+    color: var(--org-state);
+  }
+
+  /* A day of another month in the grid of the calendar. */
+  .org-calendar-other {
+    opacity: 0.4;
+  }
+
   /* The colours of the states of the events of the calendar, as PHP Organizr gives them. */
   :root {
     --org-event-downloaded: var(--color-success);
@@ -3408,10 +3428,6 @@
     font-size: 13px;
   }
 
-  [data-layout='modern'] .org-card-tag {
-    border-radius: var(--radius-selector);
-  }
-
   [data-layout='modern'] .org-tone-success {
     --org-state: var(--color-success);
   }
@@ -3804,7 +3820,15 @@
 
   [data-layout='modern'] .org-calendar-time {
     font-variant-numeric: tabular-nums;
-    font-weight: 600;
+  }
+
+  [data-layout='modern'] .org-calendar-other {
+    color: color-mix(in oklab, var(--color-base-content) 66%, var(--color-base-100));
+    opacity: 1;
+  }
+
+  [data-layout='modern'] .org-tone-neutral {
+    --org-state: var(--color-neutral);
   }
 
   /* The rings and the gauges of Netdata: the track is a tone of the text colour (the
@@ -4027,68 +4051,77 @@
   }
 
   /* Cards of the dark grey of OG (Monitorr, OctoPrint, Speedtest Tracker, UniFi). */
-  [data-layout='modern'] .org-item [class*='2d2c2c'] {
+  [data-layout='modern'] .org-item .org-tile {
     border: 1px solid var(--color-base-300);
     border-radius: var(--radius-box);
     background: var(--color-base-100);
     color: var(--color-base-content);
   }
 
-  [data-layout='modern'] .org-item-unifi [class*='2d2c2c'] {
+  [data-layout='modern'] .org-item-unifi .org-tile {
     overflow: hidden;
   }
 
-  [data-layout='modern'] .org-item [class*='9e9e9e'] {
+  [data-layout='modern'] .org-item-speedtest .org-tile p.text-sm {
     color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-100));
   }
 
-  /* The state of a Monitorr service and the head of a UniFi card are coloured by the
-     theme variable that they set inline (`background: var(--color-…)`): their text takes
-     the pair of that colour instead of white (2.4:1 on the yellow). */
-  [data-layout='modern'] .org-item [style*='background'][style*='--color-success'] {
+  /* A part filled with the colour of its state (`--org-state`): its text takes the pair of
+     that colour of the theme instead of white (2.4:1 on the yellow). */
+  [data-layout='modern'] .org-fill.org-tone-success {
     color: var(--color-success-content);
   }
 
-  [data-layout='modern'] .org-item [style*='background'][style*='--color-warning'] {
+  [data-layout='modern'] .org-fill.org-tone-warning {
     color: var(--color-warning-content);
   }
 
-  [data-layout='modern'] .org-item [style*='background'][style*='--color-error'] {
+  [data-layout='modern'] .org-fill.org-tone-error {
     color: var(--color-error-content);
   }
 
-  [data-layout='modern'] .org-item [style*='background'][style*='--color-info'] {
+  [data-layout='modern'] .org-fill.org-tone-info {
     color: var(--color-info-content);
   }
 
-  [data-layout='modern'] .org-item [style*='background'][style*='--color-primary'] {
+  [data-layout='modern'] .org-fill.org-tone-primary {
     color: var(--color-primary-content);
   }
 
-  [data-layout='modern'] .org-item [style*='background'][style*='--color-neutral'] {
+  [data-layout='modern'] .org-fill.org-tone-neutral {
     color: var(--color-neutral-content);
   }
 
-  /* The cards of AdGuard Home set a literal colour inline (green, yellow, red, purple)
-     under white text. An inline style wins over every rule without `!important`, so this
-     one has it; the cards get one tint of the theme. The big icon at the right keeps its
-     low opacity. */
-  [data-layout='modern'] .org-item-adguard section .grid > div {
+  /* The cards of AdGuard Home carry a literal colour of OG in `--org-state` (green,
+     yellow, red, purple) under white text. On modern the card is a tile of the theme with
+     the colour as an edge, as the other cards; custom CSS can still set `--org-state`. */
+  [data-layout='modern'] .org-adguard-card {
     border: 1px solid var(--color-base-300);
     border-radius: var(--radius-box);
-    background: color-mix(in oklab, var(--color-primary) 14%, var(--color-base-100)) !important;
+    background: var(--color-base-100);
     color: var(--color-base-content);
+    box-shadow: inset 4px 0 0 0 var(--org-state);
   }
 
-  /* The icons of Speedtest Tracker set a literal colour inline. */
-  [data-layout='modern'] .org-item-speedtest i[style] {
-    color: var(--color-primary) !important;
+  /* The icons of Speedtest Tracker: the colour of the card a little toward the text. */
+  [data-layout='modern'] .org-speedtest-icon {
+    color: color-mix(in oklab, var(--org-state) 75%, var(--color-base-content));
+  }
+
+  [data-layout='modern'] .org-card-tag {
+    border-radius: var(--radius-selector);
+  }
+
+  [data-layout='modern'] .org-calendar-time {
+    font-weight: 600;
   }
 
   /* The faded text of the items (an opacity of 40 to 70 % is under 4.5:1 on the light
      colour set): the tone of the text colour at full opacity. This holds in the dialogs of
      the items too. */
-  [data-layout='modern'] :is(.org-item, .modal-box) :is(.opacity-40, .opacity-60, .opacity-70) {
+  [data-layout='modern']
+    :is(.org-item, .modal-box)
+    :is(.opacity-40, .opacity-60, .opacity-70):not(i) {
     color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-200));
     opacity: 1;
   }

@@ -60,12 +60,12 @@
     {@const current = item.data.data.current}
     <div class="grid gap-2.5 md:grid-cols-3">
       {#each CARDS as card (card.field)}
-        <section class="bg-[#2d2c2c] p-5 text-white shadow-sm" aria-label={card.title}>
+        <section class="org-tile bg-[#2d2c2c] p-5 text-white shadow-sm" aria-label={card.title}>
           <div class="flex items-center justify-between">
             <h3 class="text-lg">{card.title}</h3>
             <i
-              class="oi oi-themify {card.icon} text-3xl"
-              style:color={card.colour}
+              class="org-speedtest-icon oi oi-themify {card.icon} text-3xl"
+              style:--org-state={card.colour}
               aria-hidden="true"
             ></i>
           </div>
