@@ -6,18 +6,68 @@
 // is elsewhere; this checks what only a running scene shows. It runs after the walk of
 // `demo.spec.ts`, on the same install, and puts the look and the settings of the Admin
 // back.
+//
+// It also checks that a scene and its fonts load only for their theme: on OG and on a
+// brand theme the browser asks for no scene chunk and no scene font, and on each scene
+// theme for its own chunk and fonts and for none of another scene.
 
-import type { Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+import type { Page, Request } from '@playwright/test';
 
 import { MODERN_THEMES } from '../src/lib/look';
 import { expect, test } from './fixtures';
 import { logIn } from './login';
+import { ADDRESS } from './server';
 
 /** The first colour set of every scene theme. */
 const SCENES = MODERN_THEMES.filter((theme) => theme.scene !== undefined).map((theme) => ({
   theme: theme.id,
   set: theme.colourSets[0]?.id ?? '',
 }));
+
+/** The file name of the scene component of a scene id: `nocturne` gives `NocturneScene`. */
+const sceneModule = (scene: string) => `${scene.charAt(0).toUpperCase()}${scene.slice(1)}Scene`;
+
+/**
+ * The fonts of each scene, read from the `@fontsource` imports of its component: the build
+ * names each font file after its package (`cinzel-latin-wght-normal-….woff2`).
+ */
+const SCENE_FONTS = new Map(
+  MODERN_THEMES.flatMap((theme) => (theme.scene === undefined ? [] : [theme.scene])).map(
+    (scene) => {
+      const source = readFileSync(
+        resolve(import.meta.dirname, '../src/scenes', `${sceneModule(scene)}.svelte`),
+        'utf8',
+      );
+      const fonts = [...source.matchAll(/import '@fontsource(?:-variable)?\/([a-z0-9-]+)\//g)].map(
+        (match) => match[1] ?? '',
+      );
+      return [scene, fonts] as const;
+    },
+  ),
+);
+
+/**
+ * What a request asks for: the chunk of a scene (`js` or `css`), or a font of a scene (its
+ * package name), or `null`. The build keeps the module name in the name of a chunk
+ * (`NocturneScene-<hash>.js`) and the package name in the name of a font file.
+ */
+function sceneAsset(request: Request): { scene: string; what: string } | null {
+  const path = new URL(request.url()).pathname;
+  const chunk = /\/assets\/([A-Z][A-Za-z]*)Scene-[^/]*\.(js|css)$/.exec(path);
+  if (chunk) {
+    return { scene: (chunk[1] ?? '').toLowerCase(), what: chunk[2] ?? '' };
+  }
+  if (/\.woff2?$/.test(path)) {
+    for (const [scene, fonts] of SCENE_FONTS) {
+      const font = fonts.find((name) => path.startsWith(`/assets/${name}-`));
+      if (font) return { scene, what: font };
+    }
+  }
+  return null;
+}
 
 /** Every page of the shell that a test can reach on this install. */
 const PAGES = [
@@ -229,6 +279,117 @@ test('the_scenes_keep_off_text_and_stop_when_unseen', async ({ page, browser }) 
         expect((await sceneAnimations(page)).total, `${id} with reduced motion`).toBe(0);
       } finally {
         await page.emulateMedia({ reducedMotion: 'no-preference' });
+      }
+    }
+  } finally {
+    await page.request.put('./api/v2/user/look', {
+      data:
+        before?.source === 'default'
+          ? { layout: null }
+          : { layout: before?.layout, theme: before?.theme, colourSet: before?.colourSet },
+    });
+  }
+});
+
+test('scenes_and_their_fonts_load_only_for_their_theme', async ({ page, browser }) => {
+  test.setTimeout(120_000);
+  expect(SCENE_FONTS.size, 'scene themes').toBeGreaterThan(0);
+  for (const [scene, fonts] of SCENE_FONTS) {
+    expect(fonts, `the fonts that the scene ${scene} imports`).not.toEqual([]);
+  }
+  await logIn(page);
+  const launch = await page.request.get('./api/v2/launch');
+  const before = ((await launch.json()) as { response: { data: { look: Record<string, string> } } })
+    .response.data.look;
+  const origin = `http://${ADDRESS}`;
+  // OG, two brand themes, and the first colour set of every scene theme: the scene and its
+  // fonts are the same in every colour set of a theme.
+  const looks: { label: string; look: Record<string, string>; scene: string | null }[] = [
+    { label: 'OG', look: { layout: 'og', theme: 'Organizr', colourSet: 'dark' }, scene: null },
+    ...[
+      ['organizr', 'dark'],
+      ['plex', 'light'],
+    ].map(([theme = '', colourSet = '']) => ({
+      label: `${theme}/${colourSet}`,
+      look: { layout: 'modern', theme, colourSet },
+      scene: null,
+    })),
+    ...MODERN_THEMES.flatMap((theme) =>
+      theme.scene === undefined
+        ? []
+        : [
+            {
+              label: `${theme.id}/${theme.colourSets[0]?.id ?? ''}`,
+              look: { layout: 'modern', theme: theme.id, colourSet: theme.colourSets[0]?.id ?? '' },
+              scene: theme.scene,
+            },
+          ],
+    ),
+  ];
+  try {
+    for (const { label, look, scene } of looks) {
+      await put(page, './api/v2/user/look', look);
+      // A context of its own for each look, with the session of the Admin: its cache is
+      // empty, so every chunk and font that the look needs is asked for again.
+      const context = await browser.newContext({
+        baseURL: `${origin}/`,
+        storageState: await page.context().storageState(),
+      });
+      try {
+        const tab = await context.newPage();
+        const problems: string[] = [];
+        tab.on('pageerror', (error) => problems.push(`error in a script: ${error.message}`));
+        await tab.route('**/*', async (route) => {
+          if (new URL(route.request().url()).origin === origin) {
+            await route.fallback();
+          } else {
+            await route.abort('blockedbyclient');
+          }
+        });
+        const asked: string[] = [];
+        tab.on('request', (request) => {
+          const asset = sceneAsset(request);
+          if (asset) asked.push(`${asset.scene}: ${asset.what}`);
+        });
+        const expected =
+          scene === null
+            ? []
+            : [
+                `${scene}: js`,
+                `${scene}: css`,
+                ...(SCENE_FONTS.get(scene) ?? []).map((font) => `${scene}: ${font}`),
+              ];
+        for (const address of [
+          './#/',
+          './#/settings/general',
+          './#/settings/logs',
+          './#/account',
+        ]) {
+          await tab.goto(address);
+          await expect(tab.locator('html')).toHaveAttribute('data-layout', look.layout ?? '');
+          await tab.waitForLoadState('networkidle');
+          await tab.evaluate(() => document.fonts.ready);
+        }
+        if (scene !== null) {
+          await expect(tab.locator(`.m-scene.m-scene-${scene}`)).toBeAttached();
+          await expect
+            .poll(() => [...new Set(asked)].sort(), `the scene assets of ${label}`)
+            .toEqual([...expected].sort());
+        } else {
+          await expect(tab.locator('.m-scene')).toHaveCount(0);
+          expect([...new Set(asked)], `the scene assets of ${label}`).toEqual([]);
+        }
+        const faces = await tab.evaluate(() =>
+          [...document.fonts]
+            .filter((face) => face.status !== 'unloaded')
+            .map((face) => face.family.replace(/['"]/g, '')),
+        );
+        console.log(
+          `${label}: ${[...new Set(asked)].join(', ') || 'no scene asset'}; faces ${[...new Set(faces)].join(', ')}`,
+        );
+        expect(problems, `the browser reported problems on ${label}`).toEqual([]);
+      } finally {
+        await context.close();
       }
     }
   } finally {
