@@ -274,6 +274,24 @@ describe('ModernShell', () => {
     await waitFor(() => expect(sent.map((one) => one.path)).toContain('users/lock'));
   });
 
+  it('the_user_menu_text_is_as_large_as_the_og_menus', async () => {
+    await openShell();
+
+    await fireEvent.keyDown(screen.getByRole('button', { name: 'Menu of the user' }), {
+      key: 'Enter',
+    });
+    const menu = await screen.findByRole('menu');
+    // The root font is 14 px: `text-base` is 14 px, `text-sm` 12.25 px. The sizes of
+    // the browser are checked in the browser tests.
+    for (const item of within(menu).getAllByRole('menuitem')) {
+      expect(item).toHaveClass('text-base');
+      expect(item).not.toHaveClass('text-sm');
+    }
+    const label = menu.querySelector('[data-slot="dropdown-menu-label"]');
+    expect(label).toHaveClass('text-sm');
+    expect(label).not.toHaveClass('text-xs');
+  });
+
   it('logout_asks_the_server_to_log_out', async () => {
     const sent = await openShell();
 
@@ -406,6 +424,10 @@ describe('ModernShell', () => {
       return found as HTMLElement;
     });
     expect(tip).toHaveTextContent('Sonarr');
+    expect(tip).toHaveClass('text-sm');
+    // The link has its name once: the tooltip does not describe it with the same text.
+    expect(link).toHaveAccessibleName('Sonarr');
+    expect(link).not.toHaveAttribute('aria-describedby');
   });
 
   it('the_collapse_toggle_is_only_on_a_wide_screen', async () => {

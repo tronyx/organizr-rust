@@ -58,6 +58,20 @@ test('the modern layout shows the grouped menu and the user menu, and breaks no 
     await expect(page.getByRole('menuitem', { name: 'Account Settings' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Lock Screen' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Logout' })).toBeVisible();
+    // The text reads as well as that of the OG menus: 14 px for the items, 12 px or more
+    // for the name of the group.
+    const sizes = await page.getByRole('menu').evaluate((menu) =>
+      [...menu.querySelectorAll('[role="menuitem"], [data-slot="dropdown-menu-label"]')].map(
+        (element) => ({
+          label: element.getAttribute('data-slot') === 'dropdown-menu-label',
+          size: parseFloat(getComputedStyle(element).fontSize),
+        }),
+      ),
+    );
+    expect(sizes.filter((one) => one.label)).toHaveLength(1);
+    for (const { label, size } of sizes) {
+      expect(size).toBeGreaterThanOrEqual(label ? 12 : 14);
+    }
     await page.keyboard.press('Escape');
 
     // On a phone the menu is a drawer.

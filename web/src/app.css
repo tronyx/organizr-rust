@@ -5334,6 +5334,11 @@
     box-shadow: 0 0 0 2px var(--org-sidebar-bg, var(--color-base-200));
   }
 
+  /* On the tab that is shown, the ring takes the colour of its background instead. */
+  [data-layout='modern'] .m-sidebar-icons .org-menu a[aria-current='page'] .m-dot {
+    box-shadow: 0 0 0 2px var(--color-base-300);
+  }
+
   /* The tiles of Homepage Order: a card in the colours of the theme with the picture of
      the item at the right, instead of the white text on the colour of each service (as
      low as 2:1). A tile of an item that is off has a dashed edge and a muted text, not a
@@ -5652,6 +5657,13 @@
     :is(.org-login-form, .org-lock-box, .org-wizard-panel, .org-account-panel, .m-look-panel)
     :is(.checkbox, .radio:not(:checked, [aria-checked='true'])) {
     border-color: color-mix(in oklab, var(--color-base-content) 45%, var(--color-base-300));
+  }
+
+  /* The headings of the look popover of the top bar: as large as the text of its choices
+     (`text-base`), so that their weight sets them apart as headings. */
+  [data-layout='modern'] .m-look-panel legend {
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
   }
 
   /* The faded texts of the wizard and of Account: the tone of the text colour at full
