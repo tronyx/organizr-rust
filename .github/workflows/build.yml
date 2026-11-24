@@ -1,14 +1,13 @@
 name: build
 
 # Builds the image for both architectures, tests that it starts, and publishes it.
-# It runs once a day when the branch has commits that no earlier run built, on request,
-# for each push to main, and for a pull request to main that changes a file of the image.
+# It runs on request (Run workflow), for each push to main, and for a pull request to main
+# that changes a file of the image. It has no daily run: the image of develop is built on
+# request, to save the minutes of GitHub Actions.
 # A run for the branch develop publishes ghcr.io/<owner>/<repository>:develop.
 # A run for the branch main publishes :latest and :<version of the workspace>.
 # No image is published when the scan finds a vulnerability that has a correction.
 on:
-  schedule:
-    - cron: "7 12 * * *"
   push:
     branches:
       - main
