@@ -1,8 +1,8 @@
 <script lang="ts">
-  // The top of the group "Colors & Themes" (shown as "Style & Themes") of the Appearance
-  // settings: the look that a person sees until they choose their own. First the default
-  // layout, then the theme of that layout (on Modern also the OG theme, under its own
-  // heading), then a heading over PHP's colors of the OG layout. The values live in a
+  // The top of the section "Style & Themes" of the Appearance settings (PHP's group
+  // "Colors & Themes"): the look that a person sees until they choose their own. First the
+  // default layout, then the theme of that layout (on Modern also the OG theme, under its
+  // own heading), then a heading over PHP's colors of the OG layout. The values live in a
   // `LookForm`, which the form saves with its one Save.
   // Only the Admin changes the layout and the modern theme (D-125); a Co-Admin changes
   // the theme of the OG layout, as in PHP's form. PHP's setting `style` has no effect (D-92),
@@ -91,8 +91,8 @@
           value={look.form.theme}
           onchange={(event) => (look.form.theme = event.currentTarget.value)}
         >
-          {#each look.themes as option (String(option.value))}
-            <option value={String(option.value)} disabled={option.disabled}>{option.name}</option>
+          {#each look.themes as option (option.value)}
+            <option value={option.value} disabled={option.disabled}>{option.label}</option>
           {/each}
         </select>
         <!-- A sample of the colors of the chosen theme. -->

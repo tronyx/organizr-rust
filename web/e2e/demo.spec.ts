@@ -681,10 +681,10 @@ test('the Admin changes the name of the install and the registration password', 
 }) => {
   await logIn(page);
   await page.goto('./#/settings/tabs');
-  // The name is in Customize, Appearance, Top Bar, as in PHP.
+  // The name is in Customize, Appearance, Top bar and menu (PHP's Top Bar).
   await page.getByRole('tab', { name: 'Customize' }).click();
   await expect(page).toHaveURL(/#\/settings\/appearance$/);
-  await page.getByRole('tab', { name: 'Top Bar' }).click();
+  await page.getByRole('tab', { name: 'Top bar and menu' }).click();
   const name = page.getByLabel('Organizr Title');
   await expect(name).toHaveValue('Organizr V2');
   const save = page.getByRole('button', { name: 'Save' });
@@ -719,7 +719,7 @@ test('the Admin changes the name of the install and the registration password', 
     'A value is stored',
   );
   await page.goto('./#/settings/appearance');
-  await page.getByRole('tab', { name: 'Top Bar' }).click();
+  await page.getByRole('tab', { name: 'Top bar and menu' }).click();
   await expect(page.getByLabel('Organizr Title')).toHaveValue('Media at home');
 });
 
@@ -761,7 +761,7 @@ test('the Admin installs a theme, picks it, and sets a color and custom CSS', as
   const theme = page.getByLabel('Theme', { exact: true });
   await theme.selectOption('Nord');
   await page.getByLabel('Nav Bar Color', { exact: true }).fill('#112233');
-  await page.getByRole('tab', { name: 'Custom CSS' }).click();
+  await page.getByRole('tab', { name: 'Custom code' }).click();
   await page
     .getByLabel('Custom CSS', { exact: true })
     .fill('.org-header { border-bottom: 3px solid rgb(1, 2, 3); }');
@@ -782,7 +782,7 @@ test('the Admin installs a theme, picks it, and sets a color and custom CSS', as
   await page.getByRole('tab', { name: 'Style & Themes' }).click();
   await page.getByLabel('Theme', { exact: true }).selectOption('Organizr');
   await page.getByLabel('Nav Bar Color', { exact: true }).fill('');
-  await page.getByRole('tab', { name: 'Custom CSS' }).click();
+  await page.getByRole('tab', { name: 'Custom code' }).click();
   await page.getByLabel('Custom CSS', { exact: true }).fill('');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');
@@ -839,7 +839,7 @@ test('the Admin adds a custom script, which every page runs while the switch is 
 }) => {
   await logIn(page);
   await page.goto('./#/settings/appearance');
-  await page.getByRole('tab', { name: 'Custom Javascript' }).click();
+  await page.getByRole('tab', { name: 'Custom code' }).click();
   await expect(page.getByText(/The scripts run now/)).toBeVisible();
   await page
     .getByLabel('Custom Javascript', { exact: true })
@@ -862,7 +862,7 @@ test('the Admin adds a custom script, which every page runs while the switch is 
   // Without a script there is no file, and the page loads none.
   await logIn(page);
   await page.goto('./#/settings/appearance');
-  await page.getByRole('tab', { name: 'Custom Javascript' }).click();
+  await page.getByRole('tab', { name: 'Custom code' }).click();
   await page.getByLabel('Custom Javascript', { exact: true }).fill('');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');
@@ -1181,7 +1181,7 @@ test('custom CSS reaches the classes and variables that its documentation names'
 
   await logIn(page);
   await page.goto('./#/settings/appearance');
-  await page.getByRole('tab', { name: 'Custom CSS' }).click();
+  await page.getByRole('tab', { name: 'Custom code' }).click();
   await page.getByLabel('Custom CSS', { exact: true }).fill(css);
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');
@@ -1213,7 +1213,7 @@ test('custom CSS reaches the classes and variables that its documentation names'
   // Back to no custom CSS, for the tests after this one.
   await logIn(page);
   await page.goto('./#/settings/appearance');
-  await page.getByRole('tab', { name: 'Custom CSS' }).click();
+  await page.getByRole('tab', { name: 'Custom code' }).click();
   await page.getByLabel('Custom CSS', { exact: true }).fill('');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('status')).toHaveText('The settings are saved.');

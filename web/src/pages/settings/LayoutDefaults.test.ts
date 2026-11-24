@@ -1,4 +1,4 @@
-// The group "Style & Themes" of the Appearance settings: PHP's group "Colors & Themes",
+// The section "Style & Themes" of the Appearance settings: PHP's group "Colors & Themes",
 // with the default layout and the theme of each layout at its top, and one Save.
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
@@ -7,41 +7,15 @@ import { session } from '../../lib/session.svelte';
 import { stubApi } from '../../test-helpers';
 import AppearanceSettings from './AppearanceSettings.svelte';
 
-const CONFIG = { layout: 'og', modernTheme: 'organizr', modernColorSet: 'dark' };
-
-/** PHP's group, as `GET settings/appearance` gives it, shortened. */
-const COLORS = [
-  { type: 'notice', override: 12, name: null, notice: 'info', title: 'Attention', body: '' },
-  { type: 'button', label: 'Reset Colors', name: '', text: 'Reset' },
-  {
-    type: 'input',
-    label: 'Nav Bar Color',
-    class: 'pick-a-color-custom-options',
-    name: 'headerColor',
-    value: '',
-  },
-  {
-    type: 'select',
-    label: 'Theme',
-    name: 'theme',
-    value: 'Organizr',
-    options: [
-      { name: 'Organizr', value: 'Organizr' },
-      { name: 'Nord', value: 'Nord' },
-    ],
-  },
-  {
-    type: 'select',
-    label: 'Style',
-    name: 'style',
-    value: 'dark',
-    options: [
-      { name: 'Light', value: 'light' },
-      { name: 'Dark', value: 'dark' },
-      { name: 'Horizontal', value: 'horizontal' },
-    ],
-  },
-];
+/** The stored look, with a color of the OG layout and PHP's `style`. */
+const CONFIG = {
+  layout: 'og',
+  modernTheme: 'organizr',
+  modernColorSet: 'dark',
+  theme: 'Organizr',
+  style: 'dark',
+  headerColor: '',
+};
 
 function launchOf(groupID: number) {
   return {
@@ -58,20 +32,13 @@ function launchOf(groupID: number) {
   };
 }
 
-/** Opens the page on the group, as the Admin (0) or a Co-Admin (1). */
+/** Opens the page on the section, as the Admin (0) or a Co-Admin (1). */
 async function open(config: Record<string, unknown> = CONFIG, groupID = 0) {
   const sent = stubApi({
     'GET launch': launchOf(groupID),
-    'GET settings/appearance': {
-      data: {
-        // Groups before and after the look, in PHP's order, so that its place shows.
-        'Top Bar': [{ type: 'input', label: 'Title', name: 'title', value: 'Organizr' }],
-        'Login Page': [{ type: 'input', label: 'Login Text', name: 'loginText', value: '' }],
-        'Colors & Themes': COLORS,
-        Notifications: [{ type: 'input', label: 'Position', name: 'position', value: '' }],
-      },
-    },
-    'GET config': { data: config },
+    'GET config': { data: { ...CONFIG, ...config } },
+    // The themes that are installed, as `GET themes` gives them.
+    'GET themes': { data: { Organizr: {}, Nord: {} } },
     'PUT config': {},
   });
   await session.load();
@@ -92,37 +59,35 @@ describe('the group Style & Themes', () => {
   it('replaces_the_layout_tab_and_keeps_its_place', async () => {
     await open();
 
-    // The group keeps the place of PHP's "Colors & Themes": between its neighbors.
+    // The section keeps the place of PHP's "Colors & Themes": between its neighbors.
     const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent?.trim());
     const at = (name: string) => tabs.indexOf(name);
-    expect(at('Top Bar')).toBeGreaterThan(-1);
-    expect(at('Login Page')).toBe(at('Top Bar') + 1);
-    expect(at('Style & Themes')).toBe(at('Login Page') + 1);
-    expect(at('Notifications')).toBe(at('Style & Themes') + 1);
+    expect(at('Login page')).toBeGreaterThan(-1);
+    expect(at('Style & Themes')).toBe(at('Login page') + 1);
+    expect(at('Notifications and favicon')).toBe(at('Style & Themes') + 1);
     expect(screen.queryByRole('tab', { name: 'Layout' })).toBeNull();
     expect(screen.queryByRole('tab', { name: 'Colors & Themes' })).toBeNull();
   });
 
-  it('shows_the_notice_then_default_layout_then_the_colors', async () => {
+  it('shows_the_default_layout_then_the_colors', async () => {
     const { panel } = await open();
 
-    const notice = within(panel).getByRole('heading', { name: 'Attention' });
     const layout = within(panel).getByRole('combobox', { name: 'Default layout' });
     const heading = within(panel).getByRole('heading', {
       name: 'Colors of the OG Organizr layout',
     });
+    const reset = within(panel).getByRole('button', { name: 'Reset' });
     const color = within(panel).getByLabelText('Nav Bar Color', { selector: 'input' });
     const follows = (first: Element, second: Element) =>
       (first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
-    expect(follows(notice, layout)).toBe(true);
     expect(within(panel).getAllByRole('combobox')[0]).toBe(layout);
     expect(follows(layout, heading)).toBe(true);
-    expect(follows(heading, color)).toBe(true);
-    expect(within(panel).getByRole('button', { name: 'Reset' })).toBeInTheDocument();
+    expect(follows(heading, reset)).toBe(true);
+    expect(follows(reset, color)).toBe(true);
     expect(panel).toHaveTextContent('apply to the OG Organizr layout only');
   });
 
-  it('og_shows_theme_with_the_options_of_php_once_and_no_style', async () => {
+  it('og_shows_theme_with_the_installed_themes_once_and_no_style', async () => {
     const { panel } = await open();
 
     const theme = within(panel).getByRole('combobox', { name: 'Theme' });
@@ -135,13 +100,22 @@ describe('the group Style & Themes', () => {
       ['Organizr', 'Organizr'],
       ['Nord', 'Nord'],
     ]);
-    // PHP's own field Theme is not shown a second time. PHP's Style has no effect (D-92),
-    // so the page has no field for it.
+    // The field Theme of the definition is not shown a second time. PHP's Style has no
+    // effect (D-92), so the page has no field for it.
     expect(within(panel).getAllByLabelText('Theme', { exact: true })).toHaveLength(1);
     expect(within(panel).queryByLabelText('Style', { exact: true })).toBeNull();
     expect(within(panel).queryByRole('combobox', { name: 'Modern theme' })).toBeNull();
     expect(within(panel).queryByRole('combobox', { name: 'Modern color set' })).toBeNull();
     expect(panel.querySelector('.org-swatch')).toHaveAttribute('data-theme', 'organizr');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('a_stored_theme_that_is_not_installed_still_shows_and_is_no_change', async () => {
+    const { panel } = await open({ theme: 'Plexy' });
+
+    const theme = within(panel).getByRole('combobox', { name: 'Theme' });
+    expect(theme).toHaveValue('Plexy');
+    expect(within(theme).getByRole('option', { name: 'Nord' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
@@ -252,11 +226,11 @@ describe('the group Style & Themes', () => {
       layout: 'modern',
       modernTheme: 'emby',
     });
-    // Both parts load again, and so does the session, for the look of the page.
+    // The form and the look load again, and so does the session, for the look of the page.
     const after = sent.slice(before).map((request) => `${request.method} ${request.path}`);
-    expect(after).toEqual(
-      expect.arrayContaining(['GET settings/appearance', 'GET config', 'GET launch']),
-    );
+    expect(after).toEqual(expect.arrayContaining(['GET config', 'GET themes', 'GET launch']));
+    expect(after.filter((request) => request === 'GET config')).toHaveLength(2);
+    expect(after.some((request) => request.startsWith('GET settings/'))).toBe(false);
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Save the layout' })).toBeNull();
   });

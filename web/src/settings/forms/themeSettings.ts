@@ -1,10 +1,10 @@
-// The page Theme settings: the theme marketplace.
+// The page Marketplace Settings of Customize: the theme marketplace.
 
 import type { FormPage } from '../model';
 
 export const THEME_SETTINGS: FormPage = {
   id: 'theme-settings',
-  title: 'Theme settings',
+  title: 'Marketplace Settings',
   sections: [
     {
       id: 'marketplace',

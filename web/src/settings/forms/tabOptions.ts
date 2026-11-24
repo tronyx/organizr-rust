@@ -1,10 +1,10 @@
-// The page Tab options of the Tab Editor.
+// The page Tab Options of the Tab Editor.
 
 import type { FormPage } from '../model';
 
 export const TAB_OPTIONS: FormPage = {
   id: 'tab-options',
-  title: 'Tab options',
+  title: 'Tab Options',
   sections: [
     {
       id: 'frames',

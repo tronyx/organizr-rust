@@ -118,34 +118,26 @@ describe('the scripts on the appearance page', () => {
   async function open(groupID: number, customJsEnabled: boolean) {
     stubApi({
       'GET launch': launchOf(groupID, customJsEnabled),
-      'GET settings/appearance': {
+      'GET config': {
         data: {
-          'Top Bar': [{ type: 'input', label: 'Title', name: 'title', value: 'Organizr' }],
-          'Custom Javascript': [
-            {
-              type: 'code-editor',
-              label: 'Custom Javascript',
-              name: 'customJava',
-              value: 'window.x = 1;',
-            },
-          ],
-          'Theme Javascript': [
-            { type: 'code-editor', label: 'Theme Javascript', name: 'customThemeJava', value: '' },
-          ],
+          title: 'Organizr',
+          customCss: '',
+          customJava: 'window.x = 1;',
+          customThemeJava: '',
         },
       },
+      'GET themes': { data: { Organizr: {} } },
     });
     await session.load();
     render(AppearanceSettings, { ondone: vi.fn() });
-    await screen.findByRole('tab', { name: 'Top Bar' });
+    await fireEvent.click(await screen.findByRole('tab', { name: 'Custom code' }));
   }
 
   it('are for the Admin, with a note that the switch is off', async () => {
     await open(0, false);
 
-    await fireEvent.click(screen.getByRole('tab', { name: 'Custom Javascript' }));
     expect(screen.getByLabelText('Custom Javascript')).toHaveValue('window.x = 1;');
-    expect(screen.getByRole('tab', { name: 'Theme Javascript' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Theme Javascript')).toBeInTheDocument();
     expect(screen.getByText(/The scripts do not run now/)).toHaveTextContent(
       'ORGANIZR_CUSTOM_JS=1',
     );
@@ -157,14 +149,15 @@ describe('the scripts on the appearance page', () => {
   it('say so when the operator turned the switch on', async () => {
     await open(0, true);
 
-    await fireEvent.click(screen.getByRole('tab', { name: 'Custom Javascript' }));
     expect(screen.getByText(/The scripts run now/)).toBeInTheDocument();
   });
 
   it('are not shown to a Co-Admin', async () => {
     await open(1, true);
 
-    expect(screen.queryByRole('tab', { name: 'Custom Javascript' })).toBeNull();
-    expect(screen.queryByRole('tab', { name: 'Theme Javascript' })).toBeNull();
+    expect(screen.getByLabelText('Custom CSS')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Custom Javascript')).toBeNull();
+    expect(screen.queryByLabelText('Theme Javascript')).toBeNull();
+    expect(screen.queryByText(/The scripts run now/)).toBeNull();
   });
 });

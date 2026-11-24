@@ -1,17 +1,19 @@
-// The default look of the Appearance settings, in the group "Colors & Themes": the layout,
-// and the theme of each layout. The OG layout has PHP's setting `theme`, with the options
-// of PHP's form; the modern layout has its theme and color set. The part
-// keeps the values of both layouts, so a change of the layout keeps what was chosen.
+// The default look of the Appearance settings, in the section "Style & Themes": the layout,
+// and the theme of each layout. The OG layout has PHP's setting `theme`, with the installed
+// themes as its choices; the modern layout has its theme and color set. The part keeps the
+// values of both layouts, so a change of the layout keeps what was chosen.
+import type { Choice } from '../settings/model';
+import { loadList, withValue } from '../settings/lists';
+import type { SectionPart } from '../settings/SettingsForm.svelte';
 import { api, failureText } from './api';
 import { MODERN_THEMES } from './look';
-import { formValues, optionsOf, type FormPart, type PhpGroups, type PhpOption } from './phpForm';
 
-/** The group of PHP's form that holds the look. */
-export const LOOK_GROUP = 'Colors & Themes';
+/** The id of the part entry that holds the look. */
+export const LOOK_PART = 'layout-defaults';
 
 /**
- * The settings of PHP's form that the page leaves out: `theme`, which the part shows in its
- * place, and `style`, which is stored and has no effect (D-92).
+ * The settings of the definition that the page leaves out: `theme`, which the part shows in
+ * its place, and `style`, which is stored and has no effect (D-92).
  */
 export const LOOK_FIELDS = ['theme', 'style'];
 
@@ -29,7 +31,7 @@ function text(value: unknown, fallback: string): string {
   return typeof value === 'string' && value !== '' ? value : fallback;
 }
 
-export class LookForm implements FormPart {
+export class LookForm implements SectionPart {
   /** The values as they are stored, once loaded. */
   start = $state<LookValues | null>(null);
   /** The values in the form. */
@@ -39,8 +41,8 @@ export class LookForm implements FormPart {
     modernTheme: 'organizr',
     modernColorSet: 'dark',
   });
-  /** The options of PHP's field Theme. */
-  themes = $state<PhpOption[]>([]);
+  /** The choices of the theme of the OG layout: the installed themes. */
+  themes = $state<Choice[]>([]);
   loadError = $state<string | null>(null);
 
   /** Whether the person may change the layout and the modern theme: the Admin. */
@@ -55,19 +57,21 @@ export class LookForm implements FormPart {
     return MODERN_THEMES.find((theme) => theme.id === this.form.modernTheme)?.colorSets ?? [];
   }
 
-  async load(groups: PhpGroups) {
-    const fields = groups[LOOK_GROUP] ?? [];
-    const field = (name: string) => fields.find((entry) => entry.name === name);
-    const php = formValues({ [LOOK_GROUP]: fields });
+  async load() {
     try {
-      const config = (await api<Record<string, unknown>>('GET', 'config')).data;
+      const [answer, themes] = await Promise.all([
+        api<Record<string, unknown>>('GET', 'config'),
+        loadList('themes'),
+      ]);
+      const config = answer.data;
       const loaded: LookValues = {
         layout: text(config.layout, 'og'),
-        theme: String(php.theme ?? ''),
+        theme: typeof config.theme === 'string' ? config.theme : '',
         modernTheme: text(config.modernTheme, 'organizr'),
         modernColorSet: text(config.modernColorSet, 'dark'),
       };
-      this.themes = optionsOf(field('theme') ?? { type: 'select' });
+      // A stored theme that is not installed still shows, and stays as it is.
+      this.themes = withValue(themes, loaded.theme);
       this.form = { ...loaded };
       // A color set the theme does not have shows the first set, as `chooseTheme` does. The
       // server applies that set anyway, so it is no change: the form starts unchanged.

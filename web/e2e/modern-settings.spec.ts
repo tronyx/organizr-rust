@@ -55,9 +55,10 @@ async function checkContrast(page: Page, where: string, within?: string) {
 
 /**
  * Checks a settings section in each of its states: as it opens, with each tab of its form
- * (`.org-vtabs`) and with every accordion (`details`) of that tab open.
+ * (`.org-vtabs`) and with every accordion (`details`) of that tab open. Gives the names of
+ * the tabs that it checked.
  */
-async function checkSection(page: Page, where: string) {
+async function checkSection(page: Page, where: string): Promise<string[]> {
   await checkContrast(page, where);
   const tabs = page.locator('.org-vtabs [role="tab"]');
   const count = await tabs.count();
@@ -73,13 +74,15 @@ async function checkSection(page: Page, where: string) {
     await expect(page.locator('details.org-accordion:not([open])')).toHaveCount(0);
     await checkContrast(page, `${state}, accordions open`);
   };
+  const names: string[] = [];
   if (count === 0) {
     await openAccordions(where);
-    return;
+    return names;
   }
   for (let index = 0; index < count; index += 1) {
     const tab = tabs.nth(index);
     const name = ((await tab.textContent()) ?? '').trim();
+    names.push(name);
     await tab.click();
     await expect(tab).toHaveAttribute('aria-selected', 'true');
     const state = `${where}, tab "${name}"`;
@@ -88,7 +91,18 @@ async function checkSection(page: Page, where: string) {
     }
     await openAccordions(state);
   }
+  return names;
 }
+
+/** The sections of the Appearance page, which the check must reach one by one. */
+const APPEARANCE_SECTIONS = [
+  'Top bar and menu',
+  'Login page',
+  'Style & Themes',
+  'Notifications and favicon',
+  'Options',
+  'Custom code',
+];
 
 /** One dialog of each editor: the page, the button that opens it and its name. */
 const DIALOGS = [
@@ -122,10 +136,15 @@ test('settings_sections_pass_contrast_on_modern_dark_and_light', async ({ page }
       })),
     );
 
+    expect(sections.map((section) => section.address)).toContain('#/settings/appearance');
+
     for (const set of ['dark', 'light'] as const) {
       for (const { address, label } of sections) {
         await openSection(page, address, label, set);
-        await checkSection(page, `${address} (${set})`);
+        const checked = await checkSection(page, `${address} (${set})`);
+        if (address.endsWith('/settings/appearance')) {
+          expect(checked, `the sections of Appearance (${set})`).toEqual(APPEARANCE_SECTIONS);
+        }
       }
       for (const { address, label, button } of DIALOGS) {
         await openSection(page, address, label, set);

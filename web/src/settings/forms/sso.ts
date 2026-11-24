@@ -4,7 +4,7 @@ import type { FormPage } from '../model';
 
 export const SSO: FormPage = {
   id: 'sso',
-  title: 'Single sign-on',
+  title: 'SSO',
   sections: [
     {
       id: 'plex',

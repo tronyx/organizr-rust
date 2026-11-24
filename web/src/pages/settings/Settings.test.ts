@@ -1249,8 +1249,8 @@ describe('Settings, SSO, Logs, Updates, Backup, and Tab Options', () => {
   it('sso_shows_its_sections_without_openid_connect', async () => {
     const sent = await showPage('login');
 
-    expect(screen.getByRole('heading', { name: 'Single sign-on', level: 2 })).toBeInTheDocument();
-    expect(sectionNames('Single sign-on')).toEqual([
+    expect(screen.getByRole('heading', { name: 'SSO', level: 2 })).toBeInTheDocument();
+    expect(sectionNames('SSO')).toEqual([
       'Plex',
       'Tautulli',
       'Overseerr',
@@ -1261,7 +1261,7 @@ describe('Settings, SSO, Logs, Updates, Backup, and Tab Options', () => {
     ]);
     expect(screen.getByLabelText('Plex Admin Username or Email')).toHaveValue('robin@example.com');
     expect(screen.queryByLabelText('Enable OIDC')).toBeNull();
-    await sectionTab('Single sign-on', 'Tautulli');
+    await sectionTab('SSO', 'Tautulli');
     expect(screen.getByLabelText('Enable')).toBeChecked();
     expect(sent.some((request) => request.path.startsWith('settings/'))).toBe(false);
   });
@@ -1380,9 +1380,9 @@ describe('Settings, SSO, Logs, Updates, Backup, and Tab Options', () => {
   it('tab_options_shows_its_sections_and_saves_its_keys', async () => {
     const sent = await showPage('tab-options');
 
-    expect(screen.getByRole('heading', { name: 'Tab options', level: 2 })).toBeInTheDocument();
-    expect(sectionNames('Tab options')).toEqual(['iFrames', 'Ping and sounds', 'Unsorted tabs']);
-    await sectionTab('Tab options', 'Ping and sounds');
+    expect(screen.getByRole('heading', { name: 'Tab Options', level: 2 })).toBeInTheDocument();
+    expect(sectionNames('Tab Options')).toEqual(['iFrames', 'Ping and sounds', 'Unsorted tabs']);
+    await sectionTab('Tab Options', 'Ping and sounds');
     // The groups come from the server.
     expect(screen.getByLabelText('Minimum Authentication')).toHaveValue('1');
     expect(
@@ -1391,7 +1391,7 @@ describe('Settings, SSO, Logs, Updates, Backup, and Tab Options', () => {
       }),
     ).toBeInTheDocument();
     await fireEvent.click(screen.getByLabelText('Show Ping Time'));
-    await sectionTab('Tab options', 'Unsorted tabs');
+    await sectionTab('Tab Options', 'Unsorted tabs');
     await fireEvent.change(screen.getByLabelText('Unsorted Tab Placement'), {
       target: { value: 'bottom' },
     });
@@ -1424,6 +1424,133 @@ describe('Settings, SSO, Logs, Updates, Backup, and Tab Options', () => {
       .filter(([, text]) => /['"`]settings\/(main|sso)['"`?]/.test(text))
       .map(([path]) => path);
     expect(asking).toEqual([]);
+  });
+});
+
+describe('Settings, Appearance', () => {
+  /** The stored settings of the page, as `GET /config` sends them. */
+  const CONFIG = {
+    title: 'Organizr',
+    loginLogo: '',
+    layout: 'og',
+    modernTheme: 'organizr',
+    modernColorSet: 'dark',
+    theme: 'Organizr',
+    style: 'dark',
+    headerColor: '',
+    notificationBackbone: 'toastr',
+    debugErrors: false,
+    customCss: '',
+    customThemeCss: '',
+    customJava: 'console.log("stored");',
+    customThemeJava: '',
+  };
+
+  /** Shows the page, as the Admin (0) or a Co-Admin (1). */
+  async function showAppearance(groupID: number) {
+    const sent = stubApi({
+      'GET tabs': { data: DATA },
+      'GET users': { data: USERS },
+      'GET launch': {
+        data: {
+          ...(LAUNCH.data as Record<string, unknown>),
+          user: { groupID, group: 'Admin', loggedin: true, username: 'admin' },
+        },
+      },
+      'GET config': { data: CONFIG },
+      'GET themes': { data: { Organizr: {}, Nord: {} } },
+      'PUT config': {},
+    });
+    await session.load();
+    render(Settings, { section: 'appearance' });
+    await screen.findByRole('button', { name: 'Save' });
+    return sent;
+  }
+
+  function sectionTab(name: string) {
+    const form = screen.getByRole('tablist', { name: 'Appearance' });
+    return fireEvent.click(within(form).getByRole('tab', { name }));
+  }
+
+  afterEach(() => {
+    session.launch = null;
+  });
+
+  it('appearance_shows_its_six_sections_and_saves_its_keys', async () => {
+    const sent = await showAppearance(0);
+
+    expect(screen.getByRole('heading', { name: 'Appearance', level: 2 })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('tablist', { name: 'Appearance' }))
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent?.trim()),
+    ).toEqual([
+      'Top bar and menu',
+      'Login page',
+      'Style & Themes',
+      'Notifications and favicon',
+      'Options',
+      'Custom code',
+    ]);
+    await fireEvent.input(screen.getByLabelText('Organizr Title'), {
+      target: { value: 'Media at home' },
+    });
+    await sectionTab('Custom code');
+    await fireEvent.input(screen.getByLabelText('Custom CSS'), {
+      target: { value: 'body { margin: 0; }' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([
+      ['PUT config', { title: 'Media at home', customCss: 'body { margin: 0; }' }],
+    ]);
+    // The page reads no form of PHP.
+    expect(sent.some((request) => request.path.startsWith('settings/'))).toBe(false);
+  });
+
+  it('the_admin_sees_the_scripts_below_their_note', async () => {
+    await showAppearance(0);
+
+    await sectionTab('Custom code');
+    const note = screen.getByText(/The scripts do not run now/);
+    expect(note).toHaveTextContent('guests on the login page too');
+    expect(screen.getAllByText(/The scripts do not run now/)).toHaveLength(1);
+    const script = screen.getByLabelText('Custom Javascript');
+    expect(script).toHaveValue('console.log("stored");');
+    expect(screen.getByLabelText('Theme Javascript')).toBeInTheDocument();
+    expect(note.compareDocumentPosition(script) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  });
+
+  it('a_co_admin_sees_no_script_fields_and_sends_none', async () => {
+    const sent = await showAppearance(1);
+
+    await sectionTab('Custom code');
+    expect(screen.getByLabelText('Custom CSS')).toBeInTheDocument();
+    expect(screen.getByLabelText('Theme CSS')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Custom Javascript')).toBeNull();
+    expect(screen.queryByLabelText('Theme Javascript')).toBeNull();
+    expect(screen.queryByText(/The scripts/)).toBeNull();
+
+    await fireEvent.input(screen.getByLabelText('Custom CSS'), {
+      target: { value: 'body { margin: 0; }' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    // Only the change of the Co-Admin: no script, and no setting of the look of the Admin.
+    expect(changes(sent)).toEqual([['PUT config', { customCss: 'body { margin: 0; }' }]]);
+  });
+
+  it('style_and_themes_shows_the_look_once_without_theme_and_style_fields', async () => {
+    await showAppearance(0);
+
+    await sectionTab('Style & Themes');
+    const panel = screen.getByRole('tabpanel', { name: 'Style & Themes settings' });
+    expect(await within(panel).findByRole('combobox', { name: 'Default layout' })).toBeEnabled();
+    expect(within(panel).getAllByLabelText('Theme', { exact: true })).toHaveLength(1);
+    expect(within(panel).queryByLabelText('Style', { exact: true })).toBeNull();
+    expect(within(panel).getByLabelText('Nav Bar Color', { selector: 'input' })).toHaveValue('');
   });
 });
 

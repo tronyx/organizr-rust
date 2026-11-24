@@ -1,10 +1,10 @@
-// The page Plugin settings: the plugin marketplace.
+// The page Settings of Plugins: the plugin marketplace.
 
 import type { FormPage } from '../model';
 
 export const PLUGIN_SETTINGS: FormPage = {
   id: 'plugin-settings',
-  title: 'Plugin settings',
+  title: 'Settings',
   sections: [
     {
       id: 'marketplace',
