@@ -88,27 +88,51 @@ describe('applyLook', () => {
   });
 
   it('lists_the_modern_themes', () => {
+    const sets = [
+      { id: 'dark', label: 'Dark' },
+      { id: 'light', label: 'Light' },
+    ];
     expect(MODERN_THEMES).toEqual([
-      {
-        id: 'organizr',
-        label: 'Organizr',
-        colourSets: [
-          { id: 'dark', label: 'Dark' },
-          { id: 'light', label: 'Light' },
-        ],
-      },
+      { id: 'organizr', label: 'Organizr', colourSets: sets },
+      { id: 'plex', label: 'Plex', colourSets: sets },
+      { id: 'jellyfin', label: 'Jellyfin', colourSets: sets },
+      { id: 'emby', label: 'Emby', colourSets: sets },
     ]);
+  });
+
+  it('the_brand_themes_have_their_own_ids', () => {
+    for (const theme of ['plex', 'jellyfin', 'emby']) {
+      for (const set of ['dark', 'light']) {
+        expect(modernThemeId(theme, set)).toBe(`m-${theme}-${set}`);
+        const root = document.createElement('html');
+        applyLook(modern(theme, set), undefined, {}, root);
+        expect(root.dataset.theme).toBe(`m-${theme}-${set}`);
+        expect(root.dataset.colourSet).toBe(set);
+      }
+      expect(modernThemeId(theme, 'purple')).toBe('m-organizr-dark');
+    }
   });
 });
 
 describe('the modern colour sets', () => {
   it('modern_colour_sets_meet_aa', () => {
     expect(Object.keys(MODERN_THEME_COLOURS).sort()).toEqual([
+      'm-emby-dark',
+      'm-emby-light',
+      'm-jellyfin-dark',
+      'm-jellyfin-light',
       'm-organizr-dark',
       'm-organizr-light',
+      'm-plex-dark',
+      'm-plex-light',
     ]);
+    const names = (MODERN_THEME_COLOURS['m-organizr-dark'] ?? []).map((pair) => pair.name);
+    expect(names).toHaveLength(13);
     for (const [id, pairs] of Object.entries(MODERN_THEME_COLOURS)) {
-      expect(pairs.length).toBeGreaterThan(5);
+      expect(
+        pairs.map((pair) => pair.name),
+        id,
+      ).toEqual(names);
       for (const pair of pairs) {
         expect(
           contrastRatio(pair.text, pair.background),
@@ -151,6 +175,34 @@ describe('the modern colour sets', () => {
         expect(
           contrastRatio(mixed(text, background, strength(id)), background),
           `${id} muted on ${name}`,
+        ).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it('the_active_menu_item_meets_aa_on_its_highlight', () => {
+    // The open entry of the side menu has the active colour on a base-300 highlight.
+    for (const [id, pairs] of Object.entries(MODERN_THEME_COLOURS)) {
+      const active = pairs.find((pair) => pair.name === 'sidebar active')?.text ?? '';
+      const highlight = pairs.find((pair) => pair.name === 'heading')?.background ?? '';
+      expect(contrastRatio(active, highlight), id).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('the_text_of_the_jellyfin_gradient_meets_aa_on_both_ends', () => {
+    // The primary buttons of Jellyfin run from the secondary colour to the primary one,
+    // with the primary text colour on both.
+    const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    for (const id of ['m-jellyfin-dark', 'm-jellyfin-light']) {
+      const start = css.indexOf(`name: '${id}';`);
+      expect(start, id).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      const value = (name: string) =>
+        new RegExp(`--color-${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '';
+      for (const end of ['primary', 'secondary']) {
+        expect(
+          contrastRatio(value('primary-content'), value(end)),
+          `${id} on ${end}`,
         ).toBeGreaterThanOrEqual(4.5);
       }
     }

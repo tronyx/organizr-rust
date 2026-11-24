@@ -74,6 +74,50 @@ async fn user_chooses_the_light_colours_of_the_modern_theme() {
 }
 
 #[tokio::test]
+async fn user_chooses_a_brand_theme() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let robin = seed::logged_in(database, &app, "robin", 4).await;
+
+        for theme in ["plex", "jellyfin", "emby"] {
+            let body = json!({"layout": "modern", "theme": theme, "colourSet": "light"});
+            let set = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
+            let own =
+                json!({"layout": "modern", "theme": theme, "colourSet": "light", "source": "user"});
+            assert_eq!(set.status, StatusCode::OK, "{}", set.body);
+            assert_eq!(set.data(), own);
+            let launch = call(&app, As::User(&robin), "GET", "/launch", None).await;
+            assert_eq!(launch.data()["look"], own);
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn an_admin_default_brand_theme_reaches_a_guest() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app_with(
+            database,
+            &[
+                ("layout", json!("modern")),
+                ("modernTheme", json!("emby")),
+                ("modernColourSet", json!("light")),
+            ],
+        );
+
+        let answer = call(&app, As::Guest, "GET", "/launch", None).await;
+
+        assert_eq!(
+            answer.data()["look"],
+            json!({"layout": "modern", "theme": "emby", "colourSet": "light", "source": "default"})
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn user_sets_and_clears_their_look() {
     on_each_engine(async |database| {
         seed::installed(database).await;
@@ -208,6 +252,10 @@ async fn invalid_values_are_refused_with_422() {
             ),
             (
                 json!({"layout": "modern", "theme": "organizr", "colourSet": "purple"}),
+                "colourSet is not valid",
+            ),
+            (
+                json!({"layout": "modern", "theme": "plex", "colourSet": "purple"}),
                 "colourSet is not valid",
             ),
         ];

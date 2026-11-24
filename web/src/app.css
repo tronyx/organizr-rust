@@ -135,6 +135,259 @@
   --noise: 0;
 }
 
+/* The brand themes of the modern layout: the colour feel of Plex (charcoal with amber-gold),
+   Jellyfin (deep navy with blue and purple) and Emby (near-black with green), with none of
+   their logos or art. Plex and Emby have slightly tighter corners than Organizr. Each pair
+   of text and background is in `look.ts` too, where a test checks its contrast. */
+@plugin 'daisyui/theme' {
+  name: 'm-plex-dark';
+  color-scheme: dark;
+
+  --color-base-100: #1f1f1f;
+  --color-base-200: #191919;
+  --color-base-300: #2b2b2b;
+  --color-base-content: #e6e6e6;
+  --color-primary: #e5a00d;
+  --color-primary-content: #1a1406;
+  --color-secondary: #cc7b19;
+  --color-secondary-content: #1a1006;
+  --color-accent: #f2c94c;
+  --color-accent-content: #1a1406;
+  --color-neutral: #121212;
+  --color-neutral-content: #e6e6e6;
+  --color-info: #4fb3e8;
+  --color-info-content: #061620;
+  --color-success: #6abf4b;
+  --color-success-content: #0c1a08;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #e5484d;
+  --color-error-content: #1a0506;
+
+  --org-header-bg: #262626;
+  --org-header-text: #f2f2f2;
+  --org-sidebar-bg: #191919;
+  --org-sidebar-text: #b8b8b8;
+  --org-sidebar-active: #e5a00d;
+
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-plex-light';
+  color-scheme: light;
+
+  --color-base-100: #f7f4ee;
+  --color-base-200: #ffffff;
+  --color-base-300: #ebe6dc;
+  --color-base-content: #2a2620;
+  --color-primary: #946300;
+  --color-primary-content: #ffffff;
+  --color-secondary: #8a4f0b;
+  --color-secondary-content: #ffffff;
+  --color-accent: #7a5a00;
+  --color-accent-content: #ffffff;
+  --color-neutral: #2b2b2b;
+  --color-neutral-content: #ffffff;
+  --color-info: #0a6f9e;
+  --color-info-content: #ffffff;
+  --color-success: #2f7d2a;
+  --color-success-content: #ffffff;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #c4203f;
+  --color-error-content: #ffffff;
+
+  --org-header-bg: #ffffff;
+  --org-header-text: #2a2620;
+  --org-sidebar-bg: #ffffff;
+  --org-sidebar-text: #57504a;
+  --org-sidebar-active: #8a5c00;
+  --org-muted-text: 70%;
+
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-jellyfin-dark';
+  color-scheme: dark;
+
+  --color-base-100: #101827;
+  --color-base-200: #0b111c;
+  --color-base-300: #1c2638;
+  --color-base-content: #e3e8f0;
+  --color-primary: #00a4dc;
+  --color-primary-content: #03101a;
+  --color-secondary: #b06acb;
+  --color-secondary-content: #03101a;
+  --color-accent: #e0a3f5;
+  --color-accent-content: #1a0a22;
+  --color-neutral: #0a0f18;
+  --color-neutral-content: #e3e8f0;
+  --color-info: #33b5e5;
+  --color-info-content: #03101a;
+  --color-success: #3fb68b;
+  --color-success-content: #04150f;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #f0506e;
+  --color-error-content: #1a0509;
+
+  --org-header-bg: #141e30;
+  --org-header-text: #f1f5f9;
+  --org-sidebar-bg: #0b111c;
+  --org-sidebar-text: #b3bdd0;
+  --org-sidebar-active: #38bdf0;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-jellyfin-light';
+  color-scheme: light;
+
+  --color-base-100: #f2f5fa;
+  --color-base-200: #ffffff;
+  --color-base-300: #e2e8f2;
+  --color-base-content: #1a2233;
+  --color-primary: #00709b;
+  --color-primary-content: #ffffff;
+  --color-secondary: #7d3c98;
+  --color-secondary-content: #ffffff;
+  --color-accent: #6b3685;
+  --color-accent-content: #ffffff;
+  --color-neutral: #1c2638;
+  --color-neutral-content: #ffffff;
+  --color-info: #0a6f9e;
+  --color-info-content: #ffffff;
+  --color-success: #0a7d5e;
+  --color-success-content: #ffffff;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #c4203f;
+  --color-error-content: #ffffff;
+
+  --org-header-bg: #ffffff;
+  --org-header-text: #1a2233;
+  --org-sidebar-bg: #ffffff;
+  --org-sidebar-text: #4a5568;
+  --org-sidebar-active: #006a96;
+  --org-muted-text: 70%;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-emby-dark';
+  color-scheme: dark;
+
+  --color-base-100: #101010;
+  --color-base-200: #0a0a0a;
+  --color-base-300: #1e1e1e;
+  --color-base-content: #e4e4e4;
+  --color-primary: #52b54b;
+  --color-primary-content: #061205;
+  --color-secondary: #4cb3a8;
+  --color-secondary-content: #04120f;
+  --color-accent: #a6d96a;
+  --color-accent-content: #0f1a05;
+  --color-neutral: #181818;
+  --color-neutral-content: #e4e4e4;
+  --color-info: #3aa6e0;
+  --color-info-content: #04121b;
+  --color-success: #52b54b;
+  --color-success-content: #061205;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #e5484d;
+  --color-error-content: #1a0506;
+
+  --org-header-bg: #1a1a1a;
+  --org-header-text: #f0f0f0;
+  --org-sidebar-bg: #0a0a0a;
+  --org-sidebar-text: #b5b5b5;
+  --org-sidebar-active: #6cc565;
+
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-emby-light';
+  color-scheme: light;
+
+  --color-base-100: #f4f6f4;
+  --color-base-200: #ffffff;
+  --color-base-300: #e4e9e4;
+  --color-base-content: #1c241c;
+  --color-primary: #2e7d32;
+  --color-primary-content: #ffffff;
+  --color-secondary: #1e6f68;
+  --color-secondary-content: #ffffff;
+  --color-accent: #4a6f1a;
+  --color-accent-content: #ffffff;
+  --color-neutral: #263026;
+  --color-neutral-content: #ffffff;
+  --color-info: #0a6f9e;
+  --color-info-content: #ffffff;
+  --color-success: #2e7d32;
+  --color-success-content: #ffffff;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #c4203f;
+  --color-error-content: #ffffff;
+
+  --org-header-bg: #ffffff;
+  --org-header-text: #1c241c;
+  --org-sidebar-bg: #ffffff;
+  --org-sidebar-text: #4a564a;
+  --org-sidebar-active: #246b28;
+  --org-muted-text: 70%;
+
+  --radius-selector: 0.375rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
 /* The other themes of PHP Organizr, rebuilt for this interface: the built-in theme "Blue"
    and the 11 themes of the theme marketplace (github.com/Organizr/Organizr-Themes). The
    colours come from the style sheets of each theme. The themes of theme.park take them
@@ -4572,5 +4825,31 @@
       max-height: 32px;
       object-fit: contain;
     }
+  }
+
+  /* Jellyfin: the primary buttons and the bottom edge of the top bar run from the
+     secondary colour (purple) to the primary one (blue). The primary text colour reads on
+     both ends (a test checks it). daisyUI's `.btn` sets its own background image in a
+     sublayer of this layer, so the rule sits here. A disabled button keeps the look of
+     daisyUI. Nothing moves. */
+  [data-layout='modern'][data-theme^='m-jellyfin-']
+    :is(.btn-primary, .org-form-button):not(:disabled, .btn-disabled) {
+    border-color: transparent;
+    background-image: linear-gradient(135deg, var(--color-secondary), var(--color-primary));
+    background-origin: border-box;
+  }
+
+  [data-layout='modern'][data-theme^='m-jellyfin-']
+    :is(.btn-primary, .org-form-button):not(:disabled, .btn-disabled):hover {
+    background-image: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-secondary) 85%, var(--color-base-content)),
+      color-mix(in oklab, var(--color-primary) 85%, var(--color-base-content))
+    );
+  }
+
+  [data-layout='modern'][data-theme^='m-jellyfin-'] .org-header {
+    border-bottom-width: 2px;
+    border-image: linear-gradient(90deg, var(--color-secondary), var(--color-primary)) 1;
   }
 }

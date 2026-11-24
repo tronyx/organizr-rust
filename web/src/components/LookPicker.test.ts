@@ -54,8 +54,10 @@ describe('LookPicker', () => {
 
     expect(screen.getByRole('radio', { name: 'Modern' })).toBeChecked();
     const themes = screen.getByRole('combobox', { name: 'Theme' });
-    expect(themes.querySelectorAll('option')).toHaveLength(1);
-    expect(screen.getByRole('option', { name: 'Organizr' })).toBeInTheDocument();
+    const labels = [...themes.querySelectorAll('option')].map((option) =>
+      option.textContent.trim(),
+    );
+    expect(labels).toEqual(['Organizr', 'Plex', 'Jellyfin', 'Emby']);
     expect(screen.queryByRole('option', { name: 'Space Gray' })).not.toBeInTheDocument();
     // The theme has a dark and a light colour set; either can be chosen.
     expect(screen.getByRole('group', { name: 'Colours' })).toBeInTheDocument();
@@ -64,6 +66,20 @@ describe('LookPicker', () => {
     expect(screen.getByRole('radio', { name: 'Dark' })).toBeEnabled();
     expect(screen.getByRole('radio', { name: 'Light' })).not.toBeChecked();
     expect(screen.getByRole('radio', { name: 'Light' })).toBeEnabled();
+  });
+
+  it('choosing_a_brand_theme_keeps_the_colour_set', async () => {
+    const sent = await open({ ...MODERN, colourSet: 'light' });
+
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Theme' }), {
+      target: { value: 'jellyfin' },
+    });
+    await waitFor(() => expect(sent.some((request) => request.method === 'PUT')).toBe(true));
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      theme: 'jellyfin',
+      colourSet: 'light',
+    });
   });
 
   it('choosing_light_sends_the_light_colour_set', async () => {

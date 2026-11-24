@@ -33,7 +33,12 @@ pub const OG_THEMES: [&str; 13] = [
 
 /// The themes of the modern layout, each with its colour sets. The first colour set of a
 /// theme is the one used when nothing else says which.
-pub const MODERN_THEMES: &[(&str, &[&str])] = &[("organizr", &["dark", "light"])];
+pub const MODERN_THEMES: &[(&str, &[&str])] = &[
+    ("organizr", &["dark", "light"]),
+    ("plex", &["dark", "light"]),
+    ("jellyfin", &["dark", "light"]),
+    ("emby", &["dark", "light"]),
+];
 
 /// Where an effective look comes from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -304,6 +309,40 @@ mod tests {
 
     #[test]
     fn lists_the_modern_themes() {
-        assert_eq!(MODERN_THEMES, &[("organizr", &["dark", "light"][..])]);
+        let sets = &["dark", "light"][..];
+        assert_eq!(
+            MODERN_THEMES,
+            &[
+                ("organizr", sets),
+                ("plex", sets),
+                ("jellyfin", sets),
+                ("emby", sets),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_brand_theme_is_honoured_and_its_unknown_set_is_not() {
+        let settings = Settings::defaults();
+        for theme in ["plex", "jellyfin", "emby"] {
+            let light = stored(|s| {
+                s.layout = Some(text("modern"));
+                s.modern_theme = Some(text(theme));
+                s.modern_colour_set = Some(text("light"));
+            });
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&light))),
+                ("modern", theme, "light")
+            );
+            let purple = stored(|s| {
+                s.layout = Some(text("modern"));
+                s.modern_theme = Some(text(theme));
+                s.modern_colour_set = Some(text("purple"));
+            });
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&purple))),
+                ("modern", theme, "dark")
+            );
+        }
     }
 }

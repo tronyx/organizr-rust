@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { MODERN_THEMES, modernThemeId } from './look';
+
 const css = readFileSync(resolve(__dirname, '../app.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
 interface Rule {
@@ -11,6 +13,11 @@ interface Rule {
 }
 
 const SCOPE = "[data-layout='modern']";
+
+/** The daisyUI theme of every theme and colour set that the modern layout offers. */
+const OFFERED = MODERN_THEMES.flatMap((theme) =>
+  theme.colourSets.map((set) => modernThemeId(theme.id, set.id)),
+);
 
 /** Every `selector { declarations }` pair of the file, at any nesting depth. */
 function rules(): Rule[] {
@@ -489,7 +496,7 @@ describe('the borders of the form controls', () => {
     return Number(found?.[1]);
   }
 
-  it.each(['m-organizr-dark', 'm-organizr-light'])('form_borders_reach_3_to_1_on_%s', (name) => {
+  it.each(OFFERED)('form_borders_reach_3_to_1_on_%s', (name) => {
     const colours = theme(name);
     const field = luminance(channels(colours['base-100'] as string));
     for (const selector of ['.org-form-control', '.org-input-addon', '.org-switch']) {
@@ -515,58 +522,52 @@ describe('the borders of the form controls', () => {
     );
   }
 
-  it.each(['m-organizr-dark', 'm-organizr-light'])(
-    'auth_checkbox_and_radio_borders_reach_3_to_1_on_%s',
-    (name) => {
-      const rule = choiceRule();
-      expect(rule, 'a modern rule for the checkboxes and radios of the auth screens').toBeDefined();
-      const found =
-        /border-color:\s*color-mix\(in oklab, var\(--color-base-content\) (\d+)%, var\(--color-base-300\)\)/.exec(
-          rule?.body ?? '',
-        );
-      expect(found).not.toBeNull();
-      const colours = theme(name);
-      const border = luminance(
-        mixOklab(
-          colours['base-content'] as string,
-          colours['base-300'] as string,
-          Number(found?.[1]),
-        ),
+  it.each(OFFERED)('auth_checkbox_and_radio_borders_reach_3_to_1_on_%s', (name) => {
+    const rule = choiceRule();
+    expect(rule, 'a modern rule for the checkboxes and radios of the auth screens').toBeDefined();
+    const found =
+      /border-color:\s*color-mix\(in oklab, var\(--color-base-content\) (\d+)%, var\(--color-base-300\)\)/.exec(
+        rule?.body ?? '',
       );
-      // The cards of the login and lock screens are base-200, the panels base-100.
-      for (const surface of ['base-100', 'base-200']) {
-        const behind = luminance(channels(colours[surface] as string));
-        const [high, low] = [border, behind].sort((x, y) => y - x) as [number, number];
-        expect((high + 0.05) / (low + 0.05), `${surface} on ${name}`).toBeGreaterThanOrEqual(3);
-      }
-    },
-  );
+    expect(found).not.toBeNull();
+    const colours = theme(name);
+    const border = luminance(
+      mixOklab(
+        colours['base-content'] as string,
+        colours['base-300'] as string,
+        Number(found?.[1]),
+      ),
+    );
+    // The cards of the login and lock screens are base-200, the panels base-100.
+    for (const surface of ['base-100', 'base-200']) {
+      const behind = luminance(channels(colours[surface] as string));
+      const [high, low] = [border, behind].sort((x, y) => y - x) as [number, number];
+      expect((high + 0.05) / (low + 0.05), `${surface} on ${name}`).toBeGreaterThanOrEqual(3);
+    }
+  });
 
-  it.each(['m-organizr-dark', 'm-organizr-light'])(
-    'the_speed_test_result_labels_meet_aa_on_%s',
-    (name) => {
-      const selector = `${SCOPE} .org-settings .stats :is(.stat-title, .stat-desc)`;
-      const rule = rules().find((one) => one.selector === selector);
-      const found =
-        /color:\s*color-mix\(in oklab, var\(--color-base-content\) (\d+)%, var\(--color-base-200\)\)/.exec(
-          rule?.body ?? '',
-        );
-      expect(found, 'a modern rule for the labels of the Speed test').not.toBeNull();
-      // daisyUI's `.stat-title` sits in the utilities layer; the rule must be there too.
-      expect(css.slice(css.lastIndexOf('@layer utilities'))).toContain(selector);
-      const colours = theme(name);
-      const text = luminance(
-        mixOklab(
-          colours['base-content'] as string,
-          colours['base-200'] as string,
-          Number(found?.[1]),
-        ),
+  it.each(OFFERED)('the_speed_test_result_labels_meet_aa_on_%s', (name) => {
+    const selector = `${SCOPE} .org-settings .stats :is(.stat-title, .stat-desc)`;
+    const rule = rules().find((one) => one.selector === selector);
+    const found =
+      /color:\s*color-mix\(in oklab, var\(--color-base-content\) (\d+)%, var\(--color-base-200\)\)/.exec(
+        rule?.body ?? '',
       );
-      const box = luminance(channels(colours['base-200'] as string));
-      const [high, low] = [text, box].sort((x, y) => y - x) as [number, number];
-      expect((high + 0.05) / (low + 0.05)).toBeGreaterThanOrEqual(4.5);
-    },
-  );
+    expect(found, 'a modern rule for the labels of the Speed test').not.toBeNull();
+    // daisyUI's `.stat-title` sits in the utilities layer; the rule must be there too.
+    expect(css.slice(css.lastIndexOf('@layer utilities'))).toContain(selector);
+    const colours = theme(name);
+    const text = luminance(
+      mixOklab(
+        colours['base-content'] as string,
+        colours['base-200'] as string,
+        Number(found?.[1]),
+      ),
+    );
+    const box = luminance(channels(colours['base-200'] as string));
+    const [high, low] = [text, box].sort((x, y) => y - x) as [number, number];
+    expect((high + 0.05) / (low + 0.05)).toBeGreaterThanOrEqual(4.5);
+  });
 
   it('the_radios_of_the_look_popover_get_the_same_border', () => {
     // The look picker of the top bar sits in a popover (base-200), outside the panels.
@@ -634,5 +635,68 @@ describe('the brand edges of the Homepage Order tiles', () => {
     expect(
       faded.some((r) => /border-inline-start-color:\s*var\(--org-tile-brand/.test(r.body)),
     ).toBe(true);
+  });
+});
+
+describe('the brand themes of the modern layout', () => {
+  /** The names of the variables that a daisyUI theme block sets. */
+  function variablesOf(name: string): string[] {
+    const start = css.indexOf(`name: '${name}';`);
+    expect(start, name).toBeGreaterThan(-1);
+    const block = css.slice(start, css.indexOf('}', start));
+    return [...block.matchAll(/(--[\w-]+):/g)].map((match) => match[1] as string);
+  }
+
+  it('the_offered_themes_are_the_four_themes_in_both_colour_sets', () => {
+    expect(OFFERED).toEqual([
+      'm-organizr-dark',
+      'm-organizr-light',
+      'm-plex-dark',
+      'm-plex-light',
+      'm-jellyfin-dark',
+      'm-jellyfin-light',
+      'm-emby-dark',
+      'm-emby-light',
+    ]);
+  });
+
+  it.each(OFFERED)('the_theme_%s_sets_every_variable_of_organizr', (name) => {
+    // The share of a muted text is optional: without it, the theme gets 65 %.
+    const expected = variablesOf('m-organizr-dark').filter((one) => one !== '--org-muted-text');
+    const own = variablesOf(name).filter((one) => one !== '--org-muted-text');
+    expect(own.sort()).toEqual(expected.sort());
+  });
+
+  /** The rules of the Jellyfin gradient. */
+  const gradientRules = () =>
+    modernRules().filter((rule) => rule.selector.includes("[data-theme^='m-jellyfin-']"));
+
+  it('jellyfin_gives_its_primary_buttons_and_top_bar_a_gradient', () => {
+    const rules = gradientRules();
+    const button = rules.find(
+      (rule) =>
+        rule.selector.includes('.btn-primary') && rule.selector.includes('.org-form-button'),
+    );
+    expect(button?.body ?? '').toMatch(
+      /background-image:\s*linear-gradient\([^;]*var\(--color-secondary\)[^;]*var\(--color-primary\)/,
+    );
+    expect(button?.selector ?? '').toContain(':not(:disabled');
+    const bar = rules.find((rule) => rule.selector.endsWith('.org-header'));
+    expect(bar?.body ?? '').toMatch(
+      /border-image:\s*linear-gradient\([^;]*var\(--color-secondary\)[^;]*var\(--color-primary\)/,
+    );
+    // daisyUI's `.btn` sits in a sublayer of the utilities layer: the gradient must too.
+    const block = css.slice(css.lastIndexOf('@layer utilities'));
+    expect(block).toContain(button?.selector ?? '-');
+  });
+
+  it('only_jellyfin_rules_name_a_brand_theme', () => {
+    const named = rules().filter((rule) => /data-theme\^?='m-(plex|emby)-/.test(rule.selector));
+    expect(named).toEqual([]);
+    for (const rule of gradientRules()) {
+      expect(rule.selector.startsWith(`${SCOPE}[data-theme^='m-jellyfin-']`), rule.selector).toBe(
+        true,
+      );
+    }
   });
 });

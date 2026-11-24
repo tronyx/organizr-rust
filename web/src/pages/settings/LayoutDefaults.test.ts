@@ -23,9 +23,11 @@ describe('LayoutDefaults', () => {
     expect(save).toBeDisabled();
 
     await fireEvent.change(layout, { target: { value: 'modern' } });
-    await fireEvent.change(screen.getByRole('combobox', { name: 'Modern theme' }), {
-      target: { value: 'organizr' },
-    });
+    const themes = screen.getByRole('combobox', { name: 'Modern theme' });
+    for (const label of ['Organizr', 'Plex', 'Jellyfin', 'Emby']) {
+      expect(screen.getByRole('option', { name: label })).toBeInTheDocument();
+    }
+    await fireEvent.change(themes, { target: { value: 'plex' } });
     const colours = screen.getByRole('combobox', { name: 'Modern colour set' });
     expect(colours).toBeEnabled();
     expect(screen.getByRole('option', { name: 'Dark' })).toBeInTheDocument();
@@ -36,7 +38,7 @@ describe('LayoutDefaults', () => {
     await waitFor(() => expect(ondone).toHaveBeenCalled());
     expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
       layout: 'modern',
-      modernTheme: 'organizr',
+      modernTheme: 'plex',
       modernColourSet: 'light',
     });
   });
