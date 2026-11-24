@@ -530,7 +530,7 @@ describe('Settings, users', () => {
     // server gives UTC; the page shows the local time, so only the form is fixed here.
     expect(
       within(yan)
-        .getAllByText(/^2026-1[12]-\d\d \d\d:00:00$/)
+        .getAllByText(/^(Nov 30|Dec 1), 2026 \d{1,2}:00 [AP]M$/)
         .map((element) => element.className),
     ).toEqual(['org-users-date-line', expect.stringContaining('org-users-date ')]);
     expect(screen.getByLabelText('Lock Yan')).toBeChecked();

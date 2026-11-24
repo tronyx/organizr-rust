@@ -73,28 +73,32 @@ describe('timeSpanText', () => {
   });
 });
 
+describe('timeSpanSeconds', () => {
+  it('reads the day part and drops the fraction', () => {
+    expect(timeSpanSeconds('1.00:00:01.5')).toBe(86401);
+    expect(timeSpanSeconds('00:10:00')).toBe(600);
+  });
+});
+
 describe('localDateTime', () => {
   const zone = process.env.TZ;
   afterEach(() => {
     process.env.TZ = zone;
   });
 
-  it('gives a UTC time of the server in the local time of the browser', () => {
+  it('gives a UTC time of the server in the local time of the browser, as PHP shows it', () => {
     process.env.TZ = 'America/Chicago';
-    expect(localDateTime('2026-11-18 19:02:06')).toBe('2026-11-18 13:02:06');
-    expect(localDateTime('2026-12-01 03:00:00')).toBe('2026-11-30 21:00:00');
+    expect(localDateTime('2026-11-18 19:02:06')).toBe('Nov 18, 2026 1:02 PM');
+    expect(localDateTime('2026-12-01 03:00:00')).toBe('Nov 30, 2026 9:00 PM');
+    expect(localDateTime('2026-01-05 06:30:00')).toBe('Jan 5, 2026 12:30 AM');
+    expect(localDateTime('2026-07-04 17:05:00')).toBe('Jul 4, 2026 12:05 PM');
     process.env.TZ = 'UTC';
-    expect(localDateTime('2026-11-18 19:02:06')).toBe('2026-11-18 19:02:06');
+    expect(localDateTime('2026-11-18 09:02:06')).toBe('Nov 18, 2026 9:02 AM');
   });
 
   it('gives back a text in another form as it is', () => {
     expect(localDateTime('')).toBe('');
     expect(localDateTime('soon')).toBe('soon');
     expect(localDateTime('2026-13-45 99:99:99')).toBe('2026-13-45 99:99:99');
-  });
-
-  it('reads the day part and drops the fraction', () => {
-    expect(timeSpanSeconds('1.00:00:01.5')).toBe(86401);
-    expect(timeSpanSeconds('00:10:00')).toBe(600);
   });
 });

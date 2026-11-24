@@ -74,9 +74,12 @@ export function timeSpanText(text: string | null | undefined): string {
   return seconds === null || Math.round(seconds) === 0 ? '' : durationText(seconds);
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 /**
  * A date and time that the server gives in UTC ("2026-11-18 19:02:06"), in the local time
- * of the browser and in the same form. A text in another form is given back as it is.
+ * of the browser and in the form of PHP Organizr ("Nov 18, 2026 1:02 PM", the `ll LT` of
+ * moment.js in English). A text in another form is given back as it is.
  */
 export function localDateTime(text: string): string {
   const match = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/.exec(text.trim());
@@ -84,9 +87,10 @@ export function localDateTime(text: string): string {
   if (!time || Number.isNaN(time.getTime())) {
     return text;
   }
-  const two = (value: number) => String(value).padStart(2, '0');
+  const hours = time.getHours();
+  const minutes = String(time.getMinutes()).padStart(2, '0');
   return (
-    `${time.getFullYear()}-${two(time.getMonth() + 1)}-${two(time.getDate())} ` +
-    `${two(time.getHours())}:${two(time.getMinutes())}:${two(time.getSeconds())}`
+    `${MONTHS[time.getMonth()] ?? ''} ${time.getDate()}, ${time.getFullYear()} ` +
+    `${hours % 12 || 12}:${minutes} ${hours < 12 ? 'AM' : 'PM'}`
   );
 }

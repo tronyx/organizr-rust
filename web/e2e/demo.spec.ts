@@ -649,7 +649,7 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
       const row = rows.nth(index);
       await expect(row.locator('.org-users-date-line')).toBeVisible();
       await expect(row.locator('.org-users-date-line')).toHaveText(
-        /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/,
+        /^[A-Z][a-z]{2} \d{1,2}, \d{4} \d{1,2}:\d{2} [AP]M$/,
       );
       await expect(row.locator('td.org-users-date')).toBeHidden();
     }
