@@ -47,3 +47,26 @@ export function durationText(seconds: number): string {
   }
   return `${Math.floor(hours / 24)} d ${hours % 24} h`;
 }
+
+/**
+ * The seconds of a time span as Sonarr, Radarr, Lidarr and Readarr give it (.NET
+ * `TimeSpan`): "hh:mm:ss" with an optional fraction ("01:51:22.3339332") and an optional
+ * day part ("2.03:04:05"). Null when the text is not such a span.
+ */
+export function timeSpanSeconds(text: string | null | undefined): number | null {
+  const match = /^(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:\.\d+)?$/.exec(text?.trim() ?? '');
+  if (!match) {
+    return null;
+  }
+  const [, days, hours, minutes, seconds] = match;
+  if (Number(minutes) > 59 || Number(seconds) > 59) {
+    return null;
+  }
+  return Number(days ?? 0) * 86400 + Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+}
+
+/** A time span of the *arr applications as people say it ("1 h 51 min"), or "". */
+export function timeSpanText(text: string | null | undefined): string {
+  const seconds = timeSpanSeconds(text);
+  return seconds === null ? '' : durationText(seconds);
+}

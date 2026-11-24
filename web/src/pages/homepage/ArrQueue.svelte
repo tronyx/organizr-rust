@@ -1,6 +1,7 @@
 <script lang="ts">
   // The download queue of Sonarr or Radarr.
   import { itemData } from '../../lib/itemData.svelte';
+  import { timeSpanText } from '../../lib/time';
 
   interface QueueItem {
     title?: string | null;
@@ -97,7 +98,7 @@
                 ></progress>
                 {percentOf(download)} %
               </td>
-              <td>{download.timeleft ?? ''}</td>
+              <td>{timeSpanText(download.timeleft)}</td>
             </tr>
           {/each}
         </tbody>

@@ -193,7 +193,7 @@ const ARR_QUEUE = {
         status: 'downloading',
         size: 1000,
         sizeleft: 500,
-        timeleft: '00:10:00',
+        timeleft: '01:51:22.3339332',
         series: { title: 'The Show' },
         episode: { seasonNumber: 2, episodeNumber: 3, title: 'The One' },
         movie: { title: 'The Film' },

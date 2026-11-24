@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_REFRESH, refreshTime, SHORTEST_REFRESH } from './itemData.svelte';
-import { durationText, fromNow } from './time';
+import { durationText, fromNow, timeSpanSeconds, timeSpanText } from './time';
 
 describe('refreshTime', () => {
   it('is the setting, which the server sends as text', () => {
@@ -47,5 +47,26 @@ describe('durationText', () => {
     expect(durationText(183600)).toBe('2 d 3 h');
     expect(durationText(-1)).toBe('');
     expect(durationText(Number.NaN)).toBe('');
+  });
+});
+
+describe('timeSpanText', () => {
+  it('says a time span of the *arr applications as a duration', () => {
+    expect(timeSpanText('01:51:22.3339332')).toBe('1 h 51 min');
+    expect(timeSpanText('2.03:04:05')).toBe('2 d 3 h');
+    expect(timeSpanText('00:00:45')).toBe('45 s');
+  });
+
+  it('is empty for an empty or unknown text', () => {
+    expect(timeSpanText('')).toBe('');
+    expect(timeSpanText(null)).toBe('');
+    expect(timeSpanText(undefined)).toBe('');
+    expect(timeSpanText('junk')).toBe('');
+    expect(timeSpanText('00:61:00')).toBe('');
+  });
+
+  it('reads the day part and drops the fraction', () => {
+    expect(timeSpanSeconds('1.00:00:01.5')).toBe(86401);
+    expect(timeSpanSeconds('00:10:00')).toBe(600);
   });
 });

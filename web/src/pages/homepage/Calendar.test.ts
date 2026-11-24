@@ -162,7 +162,7 @@ describe('ArrQueue', () => {
                 status: 'downloading',
                 size: 1000,
                 sizeleft: 250,
-                timeleft: '00:10:00',
+                timeleft: '01:51:22.3339332',
                 series: { title: 'The Show' },
                 episode: { seasonNumber: 2, episodeNumber: 3, title: 'The One' },
               },
@@ -184,7 +184,8 @@ describe('ArrQueue', () => {
     expect(first.textContent).toContain('The Show S02E03');
     expect(first.textContent).toContain('downloading');
     expect(first.textContent).toContain('75 %');
-    expect(first.textContent).toContain('00:10:00');
+    // The time span of Sonarr reads as a duration.
+    expect(first.textContent).toContain('1 h 51 min');
     expect(second.textContent).toContain('A.Release');
     expect(second.textContent).toContain('0 %');
   });
