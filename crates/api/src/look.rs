@@ -38,6 +38,7 @@ pub const MODERN_THEMES: &[(&str, &[&str])] = &[
     ("plex", &["dark", "light"]),
     ("jellyfin", &["dark", "light"]),
     ("emby", &["dark", "light"]),
+    ("silo", &["ember", "ice", "rose"]),
 ];
 
 /// Where an effective look comes from.
@@ -317,7 +318,47 @@ mod tests {
                 ("plex", sets),
                 ("jellyfin", sets),
                 ("emby", sets),
+                ("silo", &["ember", "ice", "rose"][..]),
             ]
+        );
+    }
+
+    #[test]
+    fn silo_has_its_own_colour_sets() {
+        let mut settings = Settings::defaults();
+        let silo = |set: Option<&str>| {
+            stored(|s| {
+                s.layout = Some(text("modern"));
+                s.modern_theme = Some(text("silo"));
+                s.modern_colour_set = set.map(text);
+            })
+        };
+        for set in ["ember", "ice", "rose"] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&silo(Some(set))))),
+                ("modern", "silo", set)
+            );
+        }
+        // `dark` is not a set of Silo, and no set at all: the first set of Silo.
+        for set in [Some("dark"), None] {
+            assert_eq!(
+                parts(&effective_look(&settings, Some(&silo(set)))),
+                ("modern", "silo", "ember")
+            );
+        }
+        // The Admin's Silo with a set it does not have falls back to the default, as
+        // for any pair that does not exist together.
+        settings.layout = "modern".to_owned();
+        settings.modern_theme = "silo".to_owned();
+        settings.modern_colour_set = "dark".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "organizr", "dark")
+        );
+        settings.modern_colour_set = "ice".to_owned();
+        assert_eq!(
+            parts(&effective_look(&settings, None)),
+            ("modern", "silo", "ice")
         );
     }
 

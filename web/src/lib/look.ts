@@ -29,9 +29,19 @@ export const MODERN_THEMES: ModernTheme[] = [
   { id: 'plex', label: 'Plex', colourSets: darkAndLight() },
   { id: 'jellyfin', label: 'Jellyfin', colourSets: darkAndLight() },
   { id: 'emby', label: 'Emby', colourSets: darkAndLight() },
+  {
+    id: 'silo',
+    label: 'Silo',
+    // Silo is always dark; its sets differ in the accent only.
+    colourSets: [
+      { id: 'ember', label: 'Ember' },
+      { id: 'ice', label: 'Ice' },
+      { id: 'rose', label: 'Rose' },
+    ],
+  },
 ];
 
-/** The two colour sets that each theme has so far. */
+/** The two colour sets of most themes. */
 function darkAndLight(): ModernTheme['colourSets'] {
   return [
     { id: 'dark', label: 'Dark' },
@@ -190,6 +200,51 @@ export const MODERN_THEME_COLOURS: Record<string, ColourPair[]> = {
     pair('header', '--org-header-text', '#1c241c', '--org-header-bg', '#ffffff'),
     pair('sidebar', '--org-sidebar-text', '#4a564a', '--org-sidebar-bg', '#ffffff'),
     pair('sidebar active', '--org-sidebar-active', '#246b28', '--org-sidebar-bg', '#ffffff'),
+  ],
+  'm-silo-ember': [
+    pair('page', '--color-base-content', '#ecedef', '--color-base-100', '#0d0e11'),
+    pair('menu', '--color-base-content', '#ecedef', '--color-base-200', '#16181c'),
+    pair('heading', '--color-base-content', '#ecedef', '--color-base-300', '#21242a'),
+    pair('primary', '--color-primary-content', '#111215', '--color-primary', '#eceae5'),
+    pair('success', '--color-success-content', '#04150d', '--color-success', '#4cc38a'),
+    pair('warning', '--color-warning-content', '#1b1a1a', '--color-warning', '#f5b301'),
+    pair('error', '--color-error-content', '#1a0506', '--color-error', '#f2555a'),
+    pair('secondary', '--color-secondary-content', '#0d0e11', '--color-secondary', '#a3a9b5'),
+    pair('accent', '--color-accent-content', '#0d0e11', '--color-accent', '#ff8f57'),
+    pair('neutral', '--color-neutral-content', '#ecedef', '--color-neutral', '#08090b'),
+    pair('header', '--org-header-text', '#f2f3f5', '--org-header-bg', '#121317'),
+    pair('sidebar', '--org-sidebar-text', '#b6bac2', '--org-sidebar-bg', '#0a0b0d'),
+    pair('sidebar active', '--org-sidebar-active', '#ff8f57', '--org-sidebar-bg', '#0a0b0d'),
+  ],
+  'm-silo-ice': [
+    pair('page', '--color-base-content', '#ecedef', '--color-base-100', '#0d0e11'),
+    pair('menu', '--color-base-content', '#ecedef', '--color-base-200', '#16181c'),
+    pair('heading', '--color-base-content', '#ecedef', '--color-base-300', '#21242a'),
+    pair('primary', '--color-primary-content', '#111215', '--color-primary', '#eceae5'),
+    pair('success', '--color-success-content', '#04150d', '--color-success', '#4cc38a'),
+    pair('warning', '--color-warning-content', '#1b1a1a', '--color-warning', '#f5b301'),
+    pair('error', '--color-error-content', '#1a0506', '--color-error', '#f2555a'),
+    pair('secondary', '--color-secondary-content', '#0d0e11', '--color-secondary', '#a3a9b5'),
+    pair('accent', '--color-accent-content', '#0d0e11', '--color-accent', '#6cc3f7'),
+    pair('neutral', '--color-neutral-content', '#ecedef', '--color-neutral', '#08090b'),
+    pair('header', '--org-header-text', '#f2f3f5', '--org-header-bg', '#121317'),
+    pair('sidebar', '--org-sidebar-text', '#b6bac2', '--org-sidebar-bg', '#0a0b0d'),
+    pair('sidebar active', '--org-sidebar-active', '#6cc3f7', '--org-sidebar-bg', '#0a0b0d'),
+  ],
+  'm-silo-rose': [
+    pair('page', '--color-base-content', '#ecedef', '--color-base-100', '#0d0e11'),
+    pair('menu', '--color-base-content', '#ecedef', '--color-base-200', '#16181c'),
+    pair('heading', '--color-base-content', '#ecedef', '--color-base-300', '#21242a'),
+    pair('primary', '--color-primary-content', '#111215', '--color-primary', '#eceae5'),
+    pair('success', '--color-success-content', '#04150d', '--color-success', '#4cc38a'),
+    pair('warning', '--color-warning-content', '#1b1a1a', '--color-warning', '#f5b301'),
+    pair('error', '--color-error-content', '#1a0506', '--color-error', '#f2555a'),
+    pair('secondary', '--color-secondary-content', '#0d0e11', '--color-secondary', '#a3a9b5'),
+    pair('accent', '--color-accent-content', '#0d0e11', '--color-accent', '#ff7593'),
+    pair('neutral', '--color-neutral-content', '#ecedef', '--color-neutral', '#08090b'),
+    pair('header', '--org-header-text', '#f2f3f5', '--org-header-bg', '#121317'),
+    pair('sidebar', '--org-sidebar-text', '#b6bac2', '--org-sidebar-bg', '#0a0b0d'),
+    pair('sidebar active', '--org-sidebar-active', '#ff7593', '--org-sidebar-bg', '#0a0b0d'),
   ],
 };
 

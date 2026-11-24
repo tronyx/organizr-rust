@@ -57,7 +57,7 @@ describe('LookPicker', () => {
     const labels = [...themes.querySelectorAll('option')].map((option) =>
       option.textContent.trim(),
     );
-    expect(labels).toEqual(['Organizr', 'Plex', 'Jellyfin', 'Emby']);
+    expect(labels).toEqual(['Organizr', 'Plex', 'Jellyfin', 'Emby', 'Silo']);
     expect(screen.queryByRole('option', { name: 'Space Gray' })).not.toBeInTheDocument();
     // The theme has a dark and a light colour set; either can be chosen.
     expect(screen.getByRole('group', { name: 'Colours' })).toBeInTheDocument();
@@ -80,6 +80,30 @@ describe('LookPicker', () => {
       theme: 'jellyfin',
       colourSet: 'light',
     });
+  });
+
+  it('choosing_silo_moves_to_its_first_colour_set', async () => {
+    const sent = await open(MODERN);
+
+    await fireEvent.change(screen.getByRole('combobox', { name: 'Theme' }), {
+      target: { value: 'silo' },
+    });
+    await waitFor(() => expect(sent.some((request) => request.method === 'PUT')).toBe(true));
+    // Silo has no `dark` set: the first of its sets takes its place.
+    expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
+      layout: 'modern',
+      theme: 'silo',
+      colourSet: 'ember',
+    });
+  });
+
+  it('silo_offers_its_three_accent_sets', async () => {
+    await open({ ...MODERN, theme: 'silo', colourSet: 'ice' });
+
+    expect(screen.getByRole('radio', { name: 'Ice' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Ember' })).toBeEnabled();
+    expect(screen.getByRole('radio', { name: 'Rose' })).toBeEnabled();
+    expect(screen.queryByRole('radio', { name: 'Dark' })).not.toBeInTheDocument();
   });
 
   it('choosing_light_sends_the_light_colour_set', async () => {

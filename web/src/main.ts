@@ -1,5 +1,6 @@
 import { mount } from 'svelte';
 
+import '@fontsource-variable/plus-jakarta-sans/wght.css';
 import '@fontsource-variable/rubik/wght.css';
 import './app.css';
 import './icons/base.css';

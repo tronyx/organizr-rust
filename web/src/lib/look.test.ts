@@ -97,6 +97,15 @@ describe('applyLook', () => {
       { id: 'plex', label: 'Plex', colourSets: sets },
       { id: 'jellyfin', label: 'Jellyfin', colourSets: sets },
       { id: 'emby', label: 'Emby', colourSets: sets },
+      {
+        id: 'silo',
+        label: 'Silo',
+        colourSets: [
+          { id: 'ember', label: 'Ember' },
+          { id: 'ice', label: 'Ice' },
+          { id: 'rose', label: 'Rose' },
+        ],
+      },
     ]);
   });
 
@@ -112,6 +121,20 @@ describe('applyLook', () => {
       expect(modernThemeId(theme, 'purple')).toBe('m-organizr-dark');
     }
   });
+
+  it('silo_has_three_accent_sets_and_no_dark_set', () => {
+    for (const set of ['ember', 'ice', 'rose']) {
+      expect(modernThemeId('silo', set)).toBe(`m-silo-${set}`);
+      const root = document.createElement('html');
+      applyLook(modern('silo', set), undefined, {}, root);
+      expect(root.dataset.theme).toBe(`m-silo-${set}`);
+      // Every set of Silo is dark.
+      expect(root.dataset.colourSet).toBe('dark');
+    }
+    // `dark` and `light` are not sets of Silo: they give the default, as any unknown set.
+    expect(modernThemeId('silo', 'dark')).toBe('m-organizr-dark');
+    expect(modernThemeId('silo', 'light')).toBe('m-organizr-dark');
+  });
 });
 
 describe('the modern colour sets', () => {
@@ -125,6 +148,9 @@ describe('the modern colour sets', () => {
       'm-organizr-light',
       'm-plex-dark',
       'm-plex-light',
+      'm-silo-ember',
+      'm-silo-ice',
+      'm-silo-rose',
     ]);
     const names = (MODERN_THEME_COLOURS['m-organizr-dark'] ?? []).map((pair) => pair.name);
     expect(names).toHaveLength(13);
@@ -205,6 +231,41 @@ describe('the modern colour sets', () => {
           `${id} on ${end}`,
         ).toBeGreaterThanOrEqual(4.5);
       }
+    }
+  });
+
+  it('silo_has_off_white_buttons_with_dark_text', () => {
+    for (const id of ['m-silo-ember', 'm-silo-ice', 'm-silo-rose']) {
+      const pairs = MODERN_THEME_COLOURS[id] ?? [];
+      const primary = pairs.find((pair) => pair.name === 'primary');
+      const page = pairs.find((pair) => pair.name === 'page');
+      // Off-white: nearly as light as white, far lighter than the page.
+      expect(contrastRatio(primary?.background ?? '', '#ffffff'), id).toBeLessThan(1.25);
+      expect(contrastRatio(primary?.background ?? '', page?.background ?? ''), id).toBeGreaterThan(
+        12,
+      );
+      expect(contrastRatio(primary?.text ?? '', '#000000'), id).toBeLessThan(1.25);
+    }
+  });
+
+  it('the_silo_accent_reads_as_text_and_as_a_focus_ring', () => {
+    // Silo shows its accent for links, the help texts, the open menu entry and the focus
+    // ring. As text it needs 4.5:1 on every surface; as a ring 3:1 on the card behind it.
+    const css = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    for (const id of ['m-silo-ember', 'm-silo-ice', 'm-silo-rose']) {
+      const start = css.indexOf(`name: '${id}';`);
+      expect(start, id).toBeGreaterThan(-1);
+      const block = css.slice(start, css.indexOf('}', start));
+      const value = (name: string) =>
+        new RegExp(`--${name}: (#[0-9a-f]{6});`).exec(block)?.[1] ?? '-';
+      const accent = value('color-accent');
+      for (const surface of ['color-base-100', 'color-base-200', 'color-base-300']) {
+        expect(contrastRatio(accent, value(surface)), `${id} on ${surface}`).toBeGreaterThanOrEqual(
+          4.5,
+        );
+      }
+      // The open entry of the side menu is in the accent too.
+      expect(value('org-sidebar-active'), id).toBe(accent);
     }
   });
 

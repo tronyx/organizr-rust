@@ -388,6 +388,134 @@
   --noise: 0;
 }
 
+/* Silo: a near-black "cinema" look with cool-tinted surfaces, cards one step lighter than
+   the page, off-white text and off-white buttons with dark text. Its sets differ only in the
+   accent (Ember, Ice, Rose), which marks the links, the help texts, the open menu entry and
+   the focus ring (the rules keyed on `m-silo-` in the last utilities layer). It is our own
+   take on the colour feel, with no code or art of Silo. */
+@plugin 'daisyui/theme' {
+  name: 'm-silo-ember';
+  color-scheme: dark;
+
+  --color-base-100: #0d0e11;
+  --color-base-200: #16181c;
+  --color-base-300: #21242a;
+  --color-base-content: #ecedef;
+  --color-primary: #eceae5;
+  --color-primary-content: #111215;
+  --color-secondary: #a3a9b5;
+  --color-secondary-content: #0d0e11;
+  --color-accent: #ff8f57;
+  --color-accent-content: #0d0e11;
+  --color-neutral: #08090b;
+  --color-neutral-content: #ecedef;
+  --color-info: #5ab0e8;
+  --color-info-content: #06121b;
+  --color-success: #4cc38a;
+  --color-success-content: #04150d;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #f2555a;
+  --color-error-content: #1a0506;
+
+  --org-header-bg: #121317;
+  --org-header-text: #f2f3f5;
+  --org-sidebar-bg: #0a0b0d;
+  --org-sidebar-text: #b6bac2;
+  --org-sidebar-active: #ff8f57;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-silo-ice';
+  color-scheme: dark;
+
+  --color-base-100: #0d0e11;
+  --color-base-200: #16181c;
+  --color-base-300: #21242a;
+  --color-base-content: #ecedef;
+  --color-primary: #eceae5;
+  --color-primary-content: #111215;
+  --color-secondary: #a3a9b5;
+  --color-secondary-content: #0d0e11;
+  --color-accent: #6cc3f7;
+  --color-accent-content: #0d0e11;
+  --color-neutral: #08090b;
+  --color-neutral-content: #ecedef;
+  --color-info: #5ab0e8;
+  --color-info-content: #06121b;
+  --color-success: #4cc38a;
+  --color-success-content: #04150d;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #f2555a;
+  --color-error-content: #1a0506;
+
+  --org-header-bg: #121317;
+  --org-header-text: #f2f3f5;
+  --org-sidebar-bg: #0a0b0d;
+  --org-sidebar-text: #b6bac2;
+  --org-sidebar-active: #6cc3f7;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'm-silo-rose';
+  color-scheme: dark;
+
+  --color-base-100: #0d0e11;
+  --color-base-200: #16181c;
+  --color-base-300: #21242a;
+  --color-base-content: #ecedef;
+  --color-primary: #eceae5;
+  --color-primary-content: #111215;
+  --color-secondary: #a3a9b5;
+  --color-secondary-content: #0d0e11;
+  --color-accent: #ff7593;
+  --color-accent-content: #0d0e11;
+  --color-neutral: #08090b;
+  --color-neutral-content: #ecedef;
+  --color-info: #5ab0e8;
+  --color-info-content: #06121b;
+  --color-success: #4cc38a;
+  --color-success-content: #04150d;
+  --color-warning: #f5b301;
+  --color-warning-content: #1b1a1a;
+  --color-error: #f2555a;
+  --color-error-content: #1a0506;
+
+  --org-header-bg: #121317;
+  --org-header-text: #f2f3f5;
+  --org-sidebar-bg: #0a0b0d;
+  --org-sidebar-text: #b6bac2;
+  --org-sidebar-active: #ff7593;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
 /* The other themes of PHP Organizr, rebuilt for this interface: the built-in theme "Blue"
    and the 11 themes of the theme marketplace (github.com/Organizr/Organizr-Themes). The
    colours come from the style sheets of each theme. The themes of theme.park take them
@@ -4851,5 +4979,47 @@
   [data-layout='modern'][data-theme^='m-jellyfin-'] .org-header {
     border-bottom-width: 2px;
     border-image: linear-gradient(90deg, var(--color-secondary), var(--color-primary)) 1;
+  }
+
+  /* Silo: the buttons are off-white, so the accent marks what is small: the links, the help
+     texts, the open entry of the settings menu and the focus ring (with the accent the open
+     entry of the side menu has, `--org-sidebar-active`). The accent is pale against an
+     off-white button, so the ring of a button stands 2px off it, on the card, where it
+     reaches well over 3:1. */
+  [data-layout='modern'][data-theme^='m-silo-'] :focus-visible {
+    --tw-ring-color: var(--color-accent);
+    outline-color: var(--color-accent);
+  }
+
+  [data-layout='modern'][data-theme^='m-silo-']
+    :is(.btn-primary, .org-form-button, .org-login-button):focus-visible {
+    outline-offset: 2px;
+  }
+
+  [data-layout='modern'][data-theme^='m-silo-'] .org-form-control:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-accent) 35%, transparent);
+  }
+
+  [data-layout='modern'][data-theme^='m-silo-'] :is(.link, .org-form-help) {
+    color: var(--color-accent);
+  }
+
+  [data-layout='modern'][data-theme^='m-silo-'] .m-settings-group a[aria-current='page'] {
+    background: var(--color-base-300);
+    color: var(--color-accent);
+    box-shadow: inset 3px 0 0 0 var(--color-accent);
+  }
+
+  /* The font of Silo, a heavier sans-serif. Only this rule names it, so the browser fetches
+     the face only while Silo is on, and drops it when the theme changes. */
+  [data-layout='modern'][data-theme^='m-silo-'] {
+    font-family:
+      'Plus Jakarta Sans Variable', 'Rubik Variable', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  [data-layout='modern'][data-theme^='m-silo-']
+    :is(h1, h2, h3, h4, .card-title, .btn, .org-form-button, .org-login-button) {
+    font-weight: 600;
   }
 }

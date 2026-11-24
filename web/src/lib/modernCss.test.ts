@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { MODERN_THEMES, modernThemeId } from './look';
+import { applyLook, MODERN_THEMES, modernThemeId } from './look';
 
 const css = readFileSync(resolve(__dirname, '../app.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -647,7 +647,7 @@ describe('the brand themes of the modern layout', () => {
     return [...block.matchAll(/(--[\w-]+):/g)].map((match) => match[1] as string);
   }
 
-  it('the_offered_themes_are_the_four_themes_in_both_colour_sets', () => {
+  it('the_offered_themes_are_the_five_themes_and_their_colour_sets', () => {
     expect(OFFERED).toEqual([
       'm-organizr-dark',
       'm-organizr-light',
@@ -657,6 +657,9 @@ describe('the brand themes of the modern layout', () => {
       'm-jellyfin-light',
       'm-emby-dark',
       'm-emby-light',
+      'm-silo-ember',
+      'm-silo-ice',
+      'm-silo-rose',
     ]);
   });
 
@@ -690,7 +693,7 @@ describe('the brand themes of the modern layout', () => {
     expect(block).toContain(button?.selector ?? '-');
   });
 
-  it('only_jellyfin_rules_name_a_brand_theme', () => {
+  it('only_jellyfin_and_silo_rules_name_a_brand_theme', () => {
     const named = rules().filter((rule) => /data-theme\^?='m-(plex|emby)-/.test(rule.selector));
     expect(named).toEqual([]);
     for (const rule of gradientRules()) {
@@ -698,5 +701,128 @@ describe('the brand themes of the modern layout', () => {
         true,
       );
     }
+    const silo = rules().filter((rule) => rule.selector.includes('m-silo-'));
+    expect(silo.length).toBeGreaterThan(0);
+    for (const rule of silo) {
+      for (const part of selectorParts(rule.selector)) {
+        expect(part.startsWith(`${SCOPE}[data-theme^='m-silo-']`), part).toBe(true);
+      }
+    }
+  });
+});
+
+describe('the Silo theme of the modern layout', () => {
+  const SILO = `${SCOPE}[data-theme^='m-silo-']`;
+  const siloRules = () => rules().filter((rule) => rule.selector.startsWith(SILO));
+  /** The rules of the last utilities layer, where they beat daisyUI and Tailwind. */
+  const lastBlock = () => css.slice(css.lastIndexOf('@layer utilities'));
+
+  it('silo_focus_rings_use_the_accent', () => {
+    const focus = siloRules().find((rule) => rule.selector === `${SILO} :focus-visible`);
+    expect(focus?.body ?? '').toMatch(/outline-color:\s*var\(--color-accent\)/);
+    // The rings of the shadcn parts (a box shadow) take the accent too.
+    expect(focus?.body ?? '').toMatch(/--tw-ring-color:\s*var\(--color-accent\)/);
+    expect(lastBlock()).toContain(`${SILO} :focus-visible {`);
+    // A field in focus gets an accent border and glow instead of the off-white.
+    const field = siloRules().find((rule) => rule.selector.includes('.org-form-control:focus'));
+    expect(field?.body ?? '').toMatch(/border-color:\s*var\(--color-accent\)/);
+    expect(field?.body ?? '').not.toContain('--color-primary');
+  });
+
+  it('silo_off_white_buttons_keep_a_gap_for_the_focus_ring', () => {
+    // The accent is pale against the off-white button: the ring stands off the button, on
+    // the card, where it reaches 3:1.
+    const gap = siloRules().find(
+      (rule) =>
+        rule.selector.includes('.btn-primary') &&
+        rule.selector.includes('.org-form-button') &&
+        rule.selector.includes(':focus-visible'),
+    );
+    expect(gap?.body ?? '').toMatch(/outline-offset:\s*2px/);
+    expect(lastBlock()).toContain(gap?.selector ?? '-');
+  });
+
+  it('silo_links_help_texts_and_the_open_settings_entry_use_the_accent', () => {
+    const links = siloRules().find(
+      (rule) => rule.selector.includes('.link') && rule.selector.includes('.org-form-help'),
+    );
+    expect(links?.body ?? '').toMatch(/(^|;)\s*color:\s*var\(--color-accent\)/);
+    const open = siloRules().find((rule) =>
+      rule.selector.includes(".m-settings-group a[aria-current='page']"),
+    );
+    expect(open?.body ?? '').toMatch(/(^|;)\s*color:\s*var\(--color-accent\)/);
+    expect(open?.body ?? '').toMatch(/background:\s*var\(--color-base-300\)/);
+    expect(lastBlock()).toContain(open?.selector ?? '-');
+  });
+
+  /** The rule that gives Silo its font. */
+  function fontRule(): Rule | undefined {
+    return rules().find((rule) => /font-family:\s*'Plus Jakarta Sans Variable'/.test(rule.body));
+  }
+
+  it('only_the_silo_rule_names_the_silo_font', () => {
+    const named = rules().filter((rule) => rule.body.includes('Plus Jakarta'));
+    expect(named).toHaveLength(1);
+    expect(fontRule()?.selector).toBe(SILO);
+    const main = readFileSync(resolve(__dirname, '../main.ts'), 'utf8');
+    expect(main).toContain("import '@fontsource-variable/plus-jakarta-sans/wght.css';");
+    const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8')) as {
+      devDependencies: Record<string, string>;
+    };
+    expect(pkg.devDependencies['@fontsource-variable/plus-jakarta-sans']).toBe('5.3.0');
+  });
+
+  it('the_silo_font_rule_stops_matching_after_a_switch_to_plex', () => {
+    const rule = fontRule();
+    expect(rule).toBeDefined();
+    const root = document.createElement('html');
+    const style = document.createElement('style');
+    style.textContent = `${rule?.selector ?? '-'} { ${rule?.body ?? ''} }`;
+    document.head.append(style);
+    try {
+      applyLook(
+        { layout: 'modern', theme: 'silo', colourSet: 'ember', source: 'user' },
+        undefined,
+        {},
+        root,
+      );
+      expect(root.matches(rule?.selector ?? '-')).toBe(true);
+      applyLook(
+        { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+        undefined,
+        {},
+        root,
+      );
+      expect(root.matches(rule?.selector ?? '-')).toBe(false);
+      // On the page itself the declared family goes with the switch.
+      const page = document.documentElement;
+      applyLook(
+        { layout: 'modern', theme: 'silo', colourSet: 'rose', source: 'user' },
+        undefined,
+        {},
+        page,
+      );
+      expect(getComputedStyle(page).fontFamily).toContain('Plus Jakarta Sans Variable');
+      applyLook(
+        { layout: 'modern', theme: 'plex', colourSet: 'dark', source: 'user' },
+        undefined,
+        {},
+        page,
+      );
+      expect(getComputedStyle(page).fontFamily).not.toContain('Plus Jakarta');
+    } finally {
+      style.remove();
+      delete document.documentElement.dataset.layout;
+      delete document.documentElement.dataset.theme;
+      delete document.documentElement.dataset.colourSet;
+    }
+  });
+
+  it('silo_headings_and_buttons_are_heavier', () => {
+    const heavy = siloRules().find(
+      (rule) => rule.selector.includes('h1') && rule.selector.includes('.btn'),
+    );
+    expect(Number(/font-weight:\s*(\d+)/.exec(heavy?.body ?? '')?.[1])).toBeGreaterThanOrEqual(600);
+    expect(lastBlock()).toContain(heavy?.selector ?? '-');
   });
 });

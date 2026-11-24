@@ -118,6 +118,57 @@ async fn an_admin_default_brand_theme_reaches_a_guest() {
 }
 
 #[tokio::test]
+async fn user_chooses_silo_and_its_accent_sets() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let robin = seed::logged_in(database, &app, "robin", 4).await;
+
+        for set in ["ember", "ice", "rose"] {
+            let body = json!({"layout": "modern", "theme": "silo", "colourSet": set});
+            let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
+            let own =
+                json!({"layout": "modern", "theme": "silo", "colourSet": set, "source": "user"});
+            assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+            assert_eq!(answer.data(), own);
+        }
+        // Without a colour set Silo gets its first one, Ember.
+        let body = json!({"layout": "modern", "theme": "silo"});
+        let answer = call(&app, As::User(&robin), "PUT", "/user/look", Some(body)).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let launch = call(&app, As::User(&robin), "GET", "/launch", None).await;
+        assert_eq!(
+            launch.data()["look"],
+            json!({"layout": "modern", "theme": "silo", "colourSet": "ember", "source": "user"})
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn an_admin_default_of_silo_reaches_a_guest() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app_with(
+            database,
+            &[
+                ("layout", json!("modern")),
+                ("modernTheme", json!("silo")),
+                ("modernColourSet", json!("rose")),
+            ],
+        );
+
+        let answer = call(&app, As::Guest, "GET", "/launch", None).await;
+
+        assert_eq!(
+            answer.data()["look"],
+            json!({"layout": "modern", "theme": "silo", "colourSet": "rose", "source": "default"})
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn user_sets_and_clears_their_look() {
     on_each_engine(async |database| {
         seed::installed(database).await;
@@ -256,6 +307,10 @@ async fn invalid_values_are_refused_with_422() {
             ),
             (
                 json!({"layout": "modern", "theme": "plex", "colourSet": "purple"}),
+                "colourSet is not valid",
+            ),
+            (
+                json!({"layout": "modern", "theme": "silo", "colourSet": "dark"}),
                 "colourSet is not valid",
             ),
         ];
