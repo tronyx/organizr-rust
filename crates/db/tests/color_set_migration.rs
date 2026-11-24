@@ -173,3 +173,82 @@ async fn a_database_without_the_setting_stays_without_it() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn only_the_new_setting_stays_as_it_is() {
+    at_previous_version(async |database| {
+        store_setting(database, "modernColorSet", "\"ember\"").await;
+
+        database.migrate().await.expect("the migration applies");
+
+        assert_eq!(
+            settings(database).await,
+            [("modernColorSet".to_owned(), "\"ember\"".to_owned())]
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn a_failed_step_leaves_the_old_names_and_the_migration_pending() {
+    at_previous_version(async |database| {
+        store_old_look(database).await;
+        // Without the table of the settings, the second step of the migration fails.
+        database
+            .connection()
+            .execute_unprepared("DROP TABLE settings")
+            .await
+            .expect("the table of the settings is dropped");
+
+        assert!(database.migrate().await.is_err());
+
+        // The first step, the rename of the column, was rolled back with it.
+        database
+            .connection()
+            .execute_unprepared("SELECT modern_colour_set FROM user_preferences")
+            .await
+            .expect("the column keeps its old name");
+        assert!(
+            database
+                .has_pending_migrations()
+                .await
+                .expect("pending are read")
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn down_gives_back_the_old_names_and_values() {
+    at_previous_version(async |database| {
+        store_old_look(database).await;
+        store_setting(database, "modernColourSet", "\"rose\"").await;
+        database.migrate().await.expect("the migration applies");
+
+        database
+            .migrate_down_steps(1)
+            .await
+            .expect("the migration rolls back");
+
+        let row = database
+            .connection()
+            .query_one_raw(sea_orm::Statement::from_string(
+                database.connection().get_database_backend(),
+                "SELECT modern_colour_set FROM user_preferences WHERE user_id = 5",
+            ))
+            .await
+            .expect("the old column reads")
+            .expect("the look is there");
+        assert_eq!(
+            row.try_get::<Option<String>>("", "modern_colour_set")
+                .expect("the value reads")
+                .as_deref(),
+            Some("rose")
+        );
+        assert_eq!(
+            settings(database).await,
+            [("modernColourSet".to_owned(), "\"rose\"".to_owned())]
+        );
+    })
+    .await;
+}

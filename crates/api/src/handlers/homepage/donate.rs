@@ -246,7 +246,7 @@ pub async fn success() -> Response {
 pub async fn cancel() -> Response {
     notice_page::page(
         StatusCode::OK,
-        "Donation Cancelled",
+        "Donation Canceled",
         "Taking you back...",
         true,
     )

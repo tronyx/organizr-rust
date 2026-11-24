@@ -55,7 +55,7 @@ async fn the_admin_default_is_the_look_of_a_person_who_chose_none() {
 }
 
 #[tokio::test]
-async fn user_chooses_the_light_colours_of_the_modern_theme() {
+async fn user_chooses_the_light_colors_of_the_modern_theme() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let app = installed_app(database);

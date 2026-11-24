@@ -874,7 +874,7 @@ describe('Settings, Main: the form of PHP', () => {
     );
   });
 
-  it('shows the British words of PHP in American spelling, and keeps the names', async () => {
+  it('shows the fixed texts of PHP in American spelling, and data as stored', async () => {
     // The Netdata fields of PHP are labeled "Colour"; the server passes the label on as it is.
     await showMain({
       'GET settings/main': {
@@ -891,6 +891,14 @@ describe('Settings, Main: the form of PHP', () => {
                 { name: 'Default', value: '' },
               ],
             },
+            {
+              // The server fills these options from data, such as the libraries of Plex.
+              type: 'select',
+              label: 'Libraries',
+              name: 'netdata1Library',
+              value: 'films',
+              options: [{ name: 'Colour Films', value: 'films' }],
+            },
           ],
         },
       },
@@ -900,6 +908,9 @@ describe('Settings, Main: the form of PHP', () => {
     const field = screen.getByRole('combobox', { name: 'Color' });
     expect(field).toHaveAttribute('id', 'php-netdata1Colour');
     expect(screen.queryByText('Colour')).toBeNull();
+    const library = screen.getByRole('combobox', { name: 'Libraries' });
+    expect(within(library).getByRole('option', { name: 'Colour Films' })).toBeInTheDocument();
+    expect(screen.queryByText('Color Films')).toBeNull();
   });
 
   it('sends only the settings that changed, with one request', async () => {

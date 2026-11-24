@@ -291,7 +291,7 @@ async fn pages_after_a_payment_and_the_item_name_no_key() {
             (
                 "cancel",
                 StatusCode::OK,
-                "Donation Cancelled",
+                "Donation Canceled",
                 "Taking you back...",
             ),
             (

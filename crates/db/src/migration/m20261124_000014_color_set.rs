@@ -4,6 +4,10 @@
 //!
 //! When a database somehow holds both settings, the new one is kept and the old one is
 //! dropped.
+//!
+//! The steps run in one transaction on both engines, also on `SQLite`, where
+//! `sea-orm-migration` adds none by default: a failed step leaves the old names and the
+//! migration pending, never a column renamed without its setting.
 
 use sea_orm_migration::prelude::*;
 
@@ -35,6 +39,10 @@ pub struct Migration;
 
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
+    fn use_transaction(&self) -> Option<bool> {
+        Some(true)
+    }
+
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
             .alter_table(

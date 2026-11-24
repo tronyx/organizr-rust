@@ -2,7 +2,10 @@
   // A form of the settings as PHP Organizr shows it: a panel with its title, the groups
   // as tabs down the left, and the fields of the chosen group in two columns, each with
   // its label above it. The form comes from the server (D-96); the Admin saves every
-  // changed setting with one request.
+  // changed setting with one request. PHP's fixed texts (labels, help, headings, buttons)
+  // show in American spelling through `american()`. The names of the options do not: the
+  // server fills many of them from data (groups, users, tabs, libraries, themes), which
+  // show exactly as stored, and no fixed option of PHP has a British word.
   import type { Snippet } from 'svelte';
   import { onMount } from 'svelte';
 
@@ -367,7 +370,7 @@
     >
       {#each optionsOf(field) as option (String(option.value))}
         <option value={String(option.value)} disabled={option.disabled}>
-          {american(option.name)}
+          {option.name}
         </option>
       {/each}
     </select>
@@ -397,7 +400,7 @@
           disabled={option.disabled}
           selected={(form[field.name] as string[]).includes(String(option.value))}
         >
-          {american(option.name)}
+          {option.name}
         </option>
       {/each}
     </select>
@@ -516,7 +519,7 @@
     {#if field.type === 'select-input'}
       <datalist id={`${id}-choices`}>
         {#each optionsOf(field) as option (String(option.value))}
-          <option value={String(option.value)}>{american(option.name)}</option>
+          <option value={String(option.value)}>{option.name}</option>
         {/each}
       </datalist>
     {/if}

@@ -223,6 +223,14 @@ impl Database {
             .map_err(DbError::Engine)
     }
 
+    /// Rolls back the last `steps` migrations. For tests of a migration's `down`.
+    #[doc(hidden)]
+    pub async fn migrate_down_steps(&self, steps: u32) -> Result<(), DbError> {
+        migration::Migrator::down(&self.connection, Some(steps))
+            .await
+            .map_err(DbError::Engine)
+    }
+
     /// The connection, for tests that read or write rows directly.
     #[doc(hidden)]
     pub const fn connection(&self) -> &DatabaseConnection {
