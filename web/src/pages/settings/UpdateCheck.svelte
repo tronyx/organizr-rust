@@ -1,9 +1,12 @@
 <script lang="ts">
-  // The versions: this one, and the newest release that the last check found. A button
-  // asks GitHub at once.
+  // The page Updates: the settings of the update check and of the automatic updates, above
+  // the versions. The versions are this one and the newest release that the last check
+  // found; a button asks GitHub at once.
   import { api, failureText } from '../../lib/api';
   import { session } from '../../lib/session.svelte';
   import type { UpdateStatus } from '../../lib/types';
+  import { UPDATES } from '../../settings/forms';
+  import SettingsForm from '../../settings/SettingsForm.svelte';
 
   let {
     ondone,
@@ -36,6 +39,8 @@
     }
   }
 </script>
+
+<SettingsForm page={UPDATES} {ondone} />
 
 <section class="mt-8" aria-labelledby="versions-title">
   <h2 id="versions-title" class="text-base font-semibold">Versions</h2>

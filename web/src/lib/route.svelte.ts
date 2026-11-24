@@ -9,10 +9,10 @@ export type SettingsSection =
   | 'general'
   | 'sign-in'
   | 'login-security'
-  | 'general-other'
   | 'appearance'
   | 'themes'
   | 'tabs'
+  | 'tab-options'
   | 'categories'
   | 'groups'
   | 'users'
@@ -62,10 +62,10 @@ export const PAGES = {
   generalSettings: '#/settings/general',
   signInSettings: '#/settings/sign-in',
   loginSecuritySettings: '#/settings/login-security',
-  generalOtherSettings: '#/settings/general/other',
   appearanceSettings: '#/settings/appearance',
   themeSettings: '#/settings/themes',
   tabSettings: '#/settings/tabs',
+  tabOptionsSettings: '#/settings/tabs/options',
   categorySettings: '#/settings/categories',
   groupSettings: '#/settings/groups',
   userSettings: '#/settings/users',
@@ -127,14 +127,14 @@ export function parseRoute(hash: string): Route {
     case '/settings':
     case '/settings/tabs':
       return { page: 'settings', section: 'tabs' };
+    case '/settings/tabs/options':
+      return { page: 'settings', section: 'tab-options' };
     case '/settings/general':
       return { page: 'settings', section: 'general' };
     case '/settings/sign-in':
       return { page: 'settings', section: 'sign-in' };
     case '/settings/login-security':
       return { page: 'settings', section: 'login-security' };
-    case '/settings/general/other':
-      return { page: 'settings', section: 'general-other' };
     case '/settings/appearance':
       return { page: 'settings', section: 'appearance' };
     case '/settings/themes':

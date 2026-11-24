@@ -29,10 +29,11 @@ describe('parseRoute', () => {
       page: 'settings',
       section: 'login-security',
     });
-    expect(parseRoute(PAGES.generalOtherSettings)).toEqual({
+    expect(parseRoute(PAGES.tabOptionsSettings)).toEqual({
       page: 'settings',
-      section: 'general-other',
+      section: 'tab-options',
     });
+    expect(PAGES.tabOptionsSettings).toBe('#/settings/tabs/options');
     expect(parseRoute(PAGES.recover)).toEqual({ page: 'recover' });
     expect(parseRoute(PAGES.account)).toEqual({ page: 'account' });
   });

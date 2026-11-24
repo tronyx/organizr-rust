@@ -188,6 +188,11 @@ test('the_side_menu_scrolls_inside_itself_on_a_long_page', async ({ page }) => {
       await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
       await expect(page.locator('.m-page-heading h1')).toHaveText(label);
       await expect(page.locator('.org-tab-body [aria-label="Loading"]')).toHaveCount(0);
+      if (address.endsWith('/logs')) {
+        // The log is tall only once its rows are in, under the settings of the log.
+        await expect(page.locator('table[aria-label="Log"] tbody tr').first()).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Next page' })).toBeVisible();
+      }
 
       const menu = page.locator('.m-settings-side');
       const donate = menu.getByRole('link', { name: 'Donate' });

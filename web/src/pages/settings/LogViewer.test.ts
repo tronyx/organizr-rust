@@ -180,6 +180,35 @@ describe('LogViewer', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('Not Authorized');
   });
 
+  it('shows_the_log_settings_above_the_viewer_and_applies_a_saved_page_size_at_once', async () => {
+    let stored: Record<string, unknown> = { ...CONFIG.data };
+    const sent = stubApi({
+      'GET config': () => ({ data: stored }),
+      'PUT config': (request) => {
+        stored = { ...stored, ...(request.body as Record<string, unknown>) };
+        return { message: 'Config items updated' };
+      },
+      'GET log/0': pageOf([record('a user logged in')]),
+      'GET launch': { data: { user: null } },
+    });
+    const ondone = vi.fn();
+    render(LogViewer, { ondone });
+
+    const table = await screen.findByRole('table', { name: 'Log' });
+    const heading = screen.getByRole('heading', { name: 'Logs', level: 2 });
+    expect(heading.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByLabelText('Log Page Size')).toHaveValue('25');
+
+    await fireEvent.change(screen.getByLabelText('Log Page Size'), { target: { value: '50' } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() => expect(ondone).toHaveBeenCalledWith('The settings are saved.'));
+    expect(sent.filter((request) => request.method === 'PUT').map((r) => r.body)).toEqual([
+      { logPageSize: '50' },
+    ]);
+    await vi.waitFor(() => expect(queries().at(-1)?.get('pageSize')).toBe('50'));
+  });
+
   it('has an address of its own in the settings', () => {
     expect(parseRoute('#/settings/logs')).toEqual({ page: 'settings', section: 'logs' });
   });

@@ -52,6 +52,7 @@ describe('DatabaseJournal', () => {
 describe('UpdateCheck', () => {
   it('asks for the newest version and says what it found', async () => {
     stubApi({
+      'GET config': { data: { checkForUpdate: true } },
       'GET update/check': {
         data: { current: '0.1.0', latest: '0.2.0', updateAvailable: true, releaseUrl: null },
       },
@@ -68,6 +69,7 @@ describe('UpdateCheck', () => {
 
   it('shows why the check failed', async () => {
     stubApi({
+      'GET config': { data: { checkForUpdate: true } },
       'GET update/check': {
         status: 500,
         message: 'The newest version could not be read from GitHub',

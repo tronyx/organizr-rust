@@ -17,7 +17,6 @@
   import ExtensionsEditor from './ExtensionsEditor.svelte';
   import PhpSettingsForm from './PhpSettingsForm.svelte';
   import PluginCards from './PluginCards.svelte';
-  import GeneralOtherSettings from './GeneralOtherSettings.svelte';
   import GeneralSettings from './GeneralSettings.svelte';
   import GroupsEditor from './GroupsEditor.svelte';
   import HomepageItems from './HomepageItems.svelte';
@@ -26,6 +25,7 @@
   import LoginSecuritySettings from './LoginSecuritySettings.svelte';
   import LoginSettings from './LoginSettings.svelte';
   import SignInSettings from './SignInSettings.svelte';
+  import TabOptionsSettings from './TabOptionsSettings.svelte';
   import TabsEditor from './TabsEditor.svelte';
   import ThemeMarketplace from './ThemeMarketplace.svelte';
   import UpdateCheck from './UpdateCheck.svelte';
@@ -156,8 +156,8 @@
       <SignInSettings ondone={(message) => (done = message)} />
     {:else if section === 'login-security'}
       <LoginSecuritySettings ondone={(message) => (done = message)} />
-    {:else if section === 'general-other'}
-      <GeneralOtherSettings ondone={(message) => (done = message)} />
+    {:else if section === 'tab-options'}
+      <TabOptionsSettings ondone={(message) => (done = message)} />
     {:else if section === 'appearance'}
       <AppearanceSettings ondone={(message) => (done = message)} />
     {:else if section === 'themes'}

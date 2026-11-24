@@ -1,10 +1,13 @@
 <script lang="ts">
-  // The backups of the install: make one, save one to this computer, delete one. Admins and
-  // Co-Admins can use them, as in PHP (D-74); anybody else is told so instead of the list.
+  // The page Backup: the settings of the automatic backup above the backups of the install.
+  // A backup can be made, saved to this computer and deleted. Admins and Co-Admins can use
+  // them, as in PHP (D-74); anybody else is told so instead of the settings and the list.
   import { onMount } from 'svelte';
 
   import { api, apiUrl, failureText } from '../../lib/api';
   import { session } from '../../lib/session.svelte';
+  import { BACKUP } from '../../settings/forms';
+  import SettingsForm from '../../settings/SettingsForm.svelte';
 
   interface Backup {
     name: string;
@@ -64,6 +67,10 @@
 
   onMount(load);
 </script>
+
+{#if mayBackUp}
+  <SettingsForm page={BACKUP} {ondone} />
+{/if}
 
 <section class="mt-8" aria-labelledby="backups-title">
   <h2 id="backups-title" class="text-base font-semibold">Backups</h2>

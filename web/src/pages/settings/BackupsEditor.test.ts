@@ -22,6 +22,16 @@ function listOf(names: string[]) {
   };
 }
 
+/** The settings of the backups, as `GET /config` sends them. */
+const CONFIG = {
+  data: {
+    autoBackupCronEnabled: true,
+    autoBackupCronSchedule: '@daily',
+    keepBackupsCountCron: '7',
+    backupLocation: '/data/backups',
+  },
+};
+
 /** Signs in a person of the group with the given level. */
 function signIn(groupID: number, group: string) {
   session.launch = { user: { groupID, group, loggedin: true } } as unknown as Launch;
@@ -48,7 +58,7 @@ describe('BackupsEditor', () => {
 
   it('lets a Co-Admin use the backups, as PHP does', async () => {
     signIn(1, 'Co-Admin');
-    stubApi({ 'GET backup': listOf([NAME]) });
+    stubApi({ 'GET config': CONFIG, 'GET backup': listOf([NAME]) });
     render(BackupsEditor, { ondone: () => {} });
 
     expect(await screen.findByRole('table', { name: 'Backups' })).toBeTruthy();
@@ -57,7 +67,7 @@ describe('BackupsEditor', () => {
   });
 
   it('lists the backups with a link that saves the file', async () => {
-    stubApi({ 'GET backup': listOf([NAME]) });
+    stubApi({ 'GET config': CONFIG, 'GET backup': listOf([NAME]) });
     render(BackupsEditor, { ondone: () => {} });
 
     const table = await screen.findByRole('table', { name: 'Backups' });
@@ -72,6 +82,7 @@ describe('BackupsEditor', () => {
   it('makes a backup and shows the new list', async () => {
     const names: string[] = [];
     const sent = stubApi({
+      'GET config': CONFIG,
       'GET backup': () => listOf(names),
       'POST backup': () => {
         names.push(NAME);
@@ -92,6 +103,7 @@ describe('BackupsEditor', () => {
   it('deletes a backup by its name', async () => {
     const names = [NAME];
     const sent = stubApi({
+      'GET config': CONFIG,
       'GET backup': () => listOf(names),
       [`DELETE backup/${encodeURIComponent(NAME)}`]: () => {
         names.length = 0;
@@ -109,10 +121,37 @@ describe('BackupsEditor', () => {
   });
 
   it('shows why the server refused', async () => {
-    stubApi({ 'GET backup': { status: 401, message: 'Not Authorized' } });
+    stubApi({ 'GET config': CONFIG, 'GET backup': { status: 401, message: 'Not Authorized' } });
     render(BackupsEditor, { ondone: () => {} });
     expect((await screen.findByRole('alert')).textContent).toContain('Not Authorized');
     expect(screen.queryByRole('button', { name: 'Make a backup now' })).toBeNull();
+  });
+
+  it('shows_the_backup_settings_above_the_list_and_saves_them', async () => {
+    const sent = stubApi({
+      'GET config': CONFIG,
+      'GET backup': listOf([NAME]),
+      'PUT config': { message: 'Config items updated' },
+      'GET launch': { data: { user: { groupID: 0, group: 'Admin', loggedin: true } } },
+    });
+    const ondone = vi.fn();
+    render(BackupsEditor, { ondone });
+
+    const table = await screen.findByRole('table', { name: 'Backups' });
+    const heading = await screen.findByRole('heading', { name: 'Backup', level: 2 });
+    expect(heading.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByLabelText('Auto-Backup Organizr')).toBeChecked();
+    expect(screen.getByLabelText('Backup Save Path')).toHaveValue('/data/backups');
+
+    await fireEvent.input(screen.getByLabelText('Backup Save Path'), {
+      target: { value: '/srv/backups' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() => expect(ondone).toHaveBeenCalledWith('The settings are saved.'));
+    expect(sent.filter((request) => request.method === 'PUT').map((r) => r.body)).toEqual([
+      { backupLocation: '/srv/backups' },
+    ]);
   });
 
   it('has an address of its own in the settings', () => {

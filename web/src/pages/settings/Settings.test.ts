@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { plexToken } from '../../lib/plexLogin';
 import { session } from '../../lib/session.svelte';
-import type { Account, EditorData, Tab } from '../../lib/types';
+import { SETTINGS_MENU } from '../../lib/settingsMenu';
+import type { Account, EditorData, Launch, Tab } from '../../lib/types';
 import { stubApi, type CannedAnswer, type SentRequest } from '../../test-helpers';
 import Settings from './Settings.svelte';
 
@@ -962,6 +963,28 @@ describe('Settings, General, Sign-in, and Login & Security', () => {
     expect(screen.getByText('Only the Admin uploads a custom certificate.')).toBeInTheDocument();
   });
 
+  it('general_shows_the_certificate_upload_to_an_admin', async () => {
+    session.launch = {
+      ...(LAUNCH.data as Record<string, unknown>),
+      user: { groupID: 0, group: 'Admin', loggedin: true },
+    } as unknown as Launch;
+    try {
+      await showPage('general', {
+        'GET certificate/custom': { data: { loaded: false, certificates: 0 } },
+      });
+
+      await sectionTab('Certificate');
+      expect(screen.getByRole('heading', { name: 'Custom certificate' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Upload the certificate' })).toBeInTheDocument();
+      expect(await screen.findByTestId('certificate-status')).toHaveTextContent(
+        'Custom Certificate not found',
+      );
+      expect(screen.queryByText('Only the Admin uploads a custom certificate.')).toBeNull();
+    } finally {
+      session.launch = null;
+    }
+  });
+
   it('general_makes_a_new_api_key_of_20_characters', async () => {
     const sent = await showPage('general', { 'PUT config': {} });
 
@@ -1120,202 +1143,135 @@ describe('Settings, General, Sign-in, and Login & Security', () => {
   });
 });
 
-describe('Settings, Main (other): the rest of the form of PHP', () => {
-  /** A short form in the shape of `GET settings/main`, with the groups of PHP. */
-  const MAIN = {
-    Socks: [{ type: 'switch', label: 'Enable Debug Log', name: 'socksDebug', value: false }],
-    'Settings Page': [
-      { type: 'select', label: 'Default Settings Tab', name: 'defaultSettingsTab', value: '0' },
-    ],
-    API: [
-      {
-        type: 'password-alt-copy',
-        label: 'Organizr API',
-        name: 'organizrAPI',
-        value: '***Secure***',
-      },
-    ],
-    Authentication: [
-      { type: 'select', label: 'Authentication Type', name: 'authType', value: 'internal' },
-    ],
-    Login: [{ type: 'switch', label: 'Remember Me', name: 'rememberMe', value: true }],
-    'Auth Proxy': [{ type: 'switch', label: 'Auth Proxy', name: 'authProxyEnabled', value: false }],
-    Security: [
-      { type: 'number', label: 'Max Login Attempts', name: 'loginAttempts', value: '5' },
-      { type: 'input', label: 'iFrame Sandbox', name: 'sandbox', value: 'allow-scripts' },
-      { type: 'input', label: 'iFrame Allow Policy', name: 'iframeAllow', value: '' },
-    ],
-    Logs: [{ type: 'number', label: 'Maximum Log Files', name: 'maxLogFiles', value: '7' }],
-    Other: [{ type: 'switch', label: 'Check For Update', name: 'checkForUpdate', value: true }],
+describe('Settings, SSO, Logs, Updates, Backup, and Tab Options', () => {
+  /** The stored settings of the five pages, as `GET /config` sends them. */
+  const CONFIG = {
+    plexToken: '',
+    plexID: '',
+    plexAdmin: 'robin@example.com',
+    ssoPlex: false,
+    ssoTautulli: true,
+    tautulliURL: 'http://tautulli.example.com:8181',
+    oidcEnabled: false,
+    logLevel: 'INFO',
+    maxLogFiles: '7',
+    logPageSize: '25',
+    logLiveUpdateRefresh: '2500',
+    sendLogsToSlack: false,
+    checkForUpdate: true,
+    branch: 'v2-develop',
+    autoUpdateCronEnabled: false,
+    autoUpdateCronSchedule: '@weekly',
+    autoBackupCronEnabled: true,
+    autoBackupCronSchedule: '@daily',
+    keepBackupsCountCron: '7',
+    backupLocation: '/data/backups',
+    sandbox: 'allow-scripts,allow-forms',
+    iframeAllow: 'fullscreen',
+    pingAuth: '1',
+    pingMs: true,
+    unsortedTabs: 'top',
   };
 
-  async function showOther(answers: Answers = {}) {
+  /** The log of the Logs page: one record, in the shape of `GET log/0`. */
+  const LOG = {
+    data: {
+      pageInfo: { results: 1, totalPages: 1, pageSize: '25', page: 1 },
+      results: [
+        {
+          log_level: 'INFO',
+          message: 'a user logged in',
+          channel: 'Login',
+          username: 'zoe',
+          trace_id: 'trace-1',
+          request_id: null,
+          file: 'crates/api/src/handlers/login.rs',
+          line: 117,
+          context: {},
+          remote_ip_address: '192.0.2.7',
+          datetime: '2026-11-20 03:15:00.123456',
+          timezone: 'UTC',
+        },
+      ],
+      files: ['2026-11-20'],
+    },
+  };
+
+  /** An Admin, signed in. */
+  const ADMIN_LAUNCH: CannedAnswer = {
+    data: {
+      ...(LAUNCH.data as Record<string, unknown>),
+      user: { groupID: 0, group: 'Admin', loggedin: true, username: 'admin' },
+    },
+  };
+
+  async function showPage(
+    section: 'login' | 'logs' | 'updates' | 'backups' | 'tab-options',
+    answers: Answers = {},
+  ) {
     const sent = stubApi({
       'GET tabs': { data: DATA },
       'GET users': { data: USERS },
-      'GET launch': LAUNCH,
-      'GET settings/main': { data: MAIN },
+      'GET groups': { data: DATA.groups },
+      'GET launch': ADMIN_LAUNCH,
+      'GET config': { data: CONFIG },
+      'GET log/0': LOG,
+      'GET backup': { data: { total_size: '0 B', total_files: 0, files: null } },
+      'PUT config': {},
       ...answers,
     });
-    render(Settings, { section: 'general-other' });
-    await screen.findByRole('tablist', { name: 'Organizr Settings' });
+    await session.load();
+    render(Settings, { section });
+    await screen.findByRole('button', { name: 'Save' });
     return sent;
   }
 
-  /** Opens a group of the form; the menu of the settings has tabs of the same names. */
-  function group(name: string) {
-    const form = screen.getByRole('tablist', { name: 'Organizr Settings' });
+  function sectionTab(page: string, name: string) {
+    const form = screen.getByRole('tablist', { name: page });
     return fireEvent.click(within(form).getByRole('tab', { name }));
   }
 
-  it('shows only the groups without a new page, in the order of their names', async () => {
-    await showOther();
-
-    const tabs = within(screen.getByRole('tablist', { name: 'Organizr Settings' }));
-    expect(tabs.getAllByRole('tab').map((tab) => tab.textContent?.trim())).toEqual([
-      'Logs',
-      'Other',
-      'Security',
-    ]);
-    // Of Security, only the fields of the frames stay here.
-    await group('Security');
-    expect(screen.getByLabelText('iFrame Sandbox')).toHaveValue('allow-scripts');
-    expect(screen.getByLabelText('iFrame Allow Policy')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Max Login Attempts')).toBeNull();
-  });
-
-  it('sends only the settings that changed, with one request', async () => {
-    const sent = await showOther({ 'PUT config': { message: 'Config items updated' } });
-
-    await group('Logs');
-    await fireEvent.input(screen.getByLabelText('Maximum Log Files'), { target: { value: '9' } });
-    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-    await statusSays('The settings are saved.');
-    expect(changes(sent)).toEqual([['PUT config', { maxLogFiles: '9' }]]);
-  });
-
-  it('shows the fixed texts of PHP in American spelling, and data as stored', async () => {
-    // The Netdata fields of PHP are labeled "Colour"; the server passes the label on as it is.
-    await showOther({
-      'GET settings/main': {
-        data: {
-          ...MAIN,
-          Netdata: [
-            {
-              type: 'select',
-              label: 'Colour',
-              name: 'netdata1Colour',
-              value: '',
-              options: [
-                { name: 'Red', value: 'fe3912' },
-                { name: 'Default', value: '' },
-              ],
-            },
-            {
-              // The server fills these options from data, such as the libraries of Plex.
-              type: 'select',
-              label: 'Libraries',
-              name: 'netdata1Library',
-              value: 'films',
-              options: [{ name: 'Colour Films', value: 'films' }],
-            },
-          ],
-        },
-      },
-    });
-    await group('Netdata');
-
-    const field = screen.getByRole('combobox', { name: 'Color' });
-    expect(field).toHaveAttribute('id', 'php-netdata1Colour');
-    expect(screen.queryByText('Colour')).toBeNull();
-    const library = screen.getByRole('combobox', { name: 'Libraries' });
-    expect(within(library).getByRole('option', { name: 'Colour Films' })).toBeInTheDocument();
-    expect(screen.queryByText('Color Films')).toBeNull();
-  });
-
-  it('says so when the form cannot be loaded', async () => {
-    stubApi({
-      'GET tabs': { data: DATA },
-      'GET users': { data: USERS },
-      'GET launch': LAUNCH,
-      'GET settings/main': { status: 401, message: 'Not Authorized' },
-    });
-    render(Settings, { section: 'general-other' });
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('Not Authorized');
-  });
-});
-
-describe('Settings, SSO: the groups of OpenID Connect live on Sign-in', () => {
-  it('leaves out the groups of OpenID Connect', async () => {
-    stubApi({
-      'GET tabs': { data: DATA },
-      'GET users': { data: USERS },
-      'GET launch': LAUNCH,
-      'GET settings/sso': {
-        data: {
-          Plex: [{ type: 'switch', label: 'Enable', name: 'ssoPlex', value: false }],
-          'OIDC Global': [
-            { type: 'switch', label: 'Enable OIDC', name: 'oidcEnabled', value: false },
-          ],
-          'OIDC: Authentik': [
-            { type: 'switch', label: 'Enable', name: 'oidcAuthentikEnabled', value: false },
-          ],
-          'OIDC: Keycloak': [
-            { type: 'switch', label: 'Enable', name: 'oidcKeycloakEnabled', value: false },
-          ],
-          'OIDC: PocketID': [
-            { type: 'switch', label: 'Enable', name: 'oidcPocketidEnabled', value: false },
-          ],
-          'OIDC: Zitadel': [
-            { type: 'switch', label: 'Enable', name: 'oidcZitadelEnabled', value: false },
-          ],
-          Tautulli: [{ type: 'switch', label: 'Enable', name: 'ssoTautulli', value: false }],
-        },
-      },
-    });
-    render(Settings, { section: 'login' });
-
-    await screen.findByRole('tab', { name: 'Plex' });
-    const tabs = within(screen.getByRole('tablist', { name: 'Single Sign-On' }));
-    expect(tabs.getAllByRole('tab').map((tab) => tab.textContent?.trim())).toEqual([
-      'Plex',
-      'Tautulli',
-    ]);
-  });
-});
-
-describe('Settings, SSO: the Plex buttons of PHP', () => {
-  const PLEX_FORM = {
-    Plex: [
-      { type: 'password-alt', label: 'API Key/Token', name: 'plexToken', value: '' },
-      { type: 'button', label: 'Get Plex Token', name: '', text: 'Retrieve' },
-      { type: 'password-alt', label: 'Plex Machine', name: 'plexID', value: '' },
-      { type: 'button', label: 'Get Plex Machine', name: '', text: 'Retrieve' },
-    ],
-  };
-  const SERVER = { address: '203.0.113.5', owned: 1 };
-
-  function showSso(servers: CannedAnswer | (() => CannedAnswer)) {
-    const sent = stubApi({
-      'GET tabs': { data: DATA },
-      'GET users': { data: USERS },
-      'GET launch': LAUNCH,
-      'GET settings/sso': { data: PLEX_FORM },
-      'GET plex/servers': servers,
-      'PUT config': {},
-    });
-    render(Settings, { section: 'login' });
-    return sent;
+  function sectionNames(page: string) {
+    return within(screen.getByRole('tablist', { name: page }))
+      .getAllByRole('tab')
+      .map((tab) => tab.textContent?.trim());
   }
 
-  it('fills in the token of the login of Plex, which the Admin then saves', async () => {
+  /** Whether the first element comes before the second one in the page. */
+  function isAbove(first: HTMLElement, second: HTMLElement) {
+    return (first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  }
+
+  afterEach(() => {
+    session.launch = null;
+  });
+
+  it('sso_shows_its_sections_without_openid_connect', async () => {
+    const sent = await showPage('login');
+
+    expect(screen.getByRole('heading', { name: 'Single sign-on', level: 2 })).toBeInTheDocument();
+    expect(sectionNames('Single sign-on')).toEqual([
+      'Plex',
+      'Tautulli',
+      'Overseerr',
+      'Petio',
+      'Ombi',
+      'Jellyfin',
+      'Komga',
+    ]);
+    expect(screen.getByLabelText('Plex Admin Username or Email')).toHaveValue('robin@example.com');
+    expect(screen.queryByLabelText('Enable OIDC')).toBeNull();
+    await sectionTab('Single sign-on', 'Tautulli');
+    expect(screen.getByLabelText('Enable')).toBeChecked();
+    expect(sent.some((request) => request.path.startsWith('settings/'))).toBe(false);
+  });
+
+  it('sso_fills_in_the_token_of_the_login_of_plex_which_the_admin_then_saves', async () => {
     const popup = { closed: false, close: vi.fn(), location: { href: '' } };
     const open = vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
     vi.mocked(plexToken).mockResolvedValue('made-up-plex-token');
-    const sent = showSso({ data: [] });
-    const buttons = await screen.findAllByRole('button', { name: 'Retrieve' });
+    const sent = await showPage('login', { 'GET plex/servers': { data: [] } });
+    const buttons = screen.getAllByRole('button', { name: 'Retrieve' });
 
     await fireEvent.click(buttons[0] as HTMLElement);
 
@@ -1331,17 +1287,16 @@ describe('Settings, SSO: the Plex buttons of PHP', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
-      expect(sent.find((request) => request.method === 'PUT')?.body).toEqual({
-        plexToken: 'made-up-plex-token',
-      }),
+      expect(changes(sent)).toEqual([['PUT config', { plexToken: 'made-up-plex-token' }]]),
     );
     open.mockRestore();
   });
 
-  it('sets the machine of the one owned server, or lets the Admin choose one', async () => {
-    let servers = [{ ...SERVER, name: 'Media', machineIdentifier: 'made-up-id' }];
-    const saved = showSso(() => ({ data: servers }));
-    const machine = (await screen.findAllByRole('button', { name: 'Retrieve' }))[1] as HTMLElement;
+  it('sso_sets_the_machine_of_the_one_owned_server_or_lets_the_admin_choose_one', async () => {
+    const server = { address: '203.0.113.5', owned: 1 };
+    let servers = [{ ...server, name: 'Media', machineIdentifier: 'made-up-id' }];
+    const sent = await showPage('login', { 'GET plex/servers': () => ({ data: servers }) });
+    const machine = screen.getAllByRole('button', { name: 'Retrieve' })[1] as HTMLElement;
 
     await fireEvent.click(machine);
     expect(await screen.findByText(/The machine of Media is set/)).toHaveAttribute(
@@ -1350,20 +1305,125 @@ describe('Settings, SSO: the Plex buttons of PHP', () => {
     );
 
     servers = [
-      { ...SERVER, name: 'Media', machineIdentifier: 'made-up-id' },
-      { ...SERVER, name: 'Other', machineIdentifier: 'other-id' },
+      { ...server, name: 'Media', machineIdentifier: 'made-up-id' },
+      { ...server, name: 'Other', machineIdentifier: 'other-id' },
     ];
     await fireEvent.click(machine);
     const choice = await screen.findByRole('combobox', { name: 'Plex server' });
     await fireEvent.change(choice, { target: { value: 'other-id' } });
     await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() =>
-      expect(saved.find((request) => request.method === 'PUT')?.body).toEqual({
-        plexID: 'other-id',
-      }),
-    );
+
+    await waitFor(() => expect(changes(sent)).toEqual([['PUT config', { plexID: 'other-id' }]]));
     // Only the servers of the account count.
-    expect(saved.find((request) => request.path === 'plex/servers')).toBeDefined();
+    expect(sent.find((request) => request.path === 'plex/servers')).toBeDefined();
+  });
+
+  it('logs_shows_its_form_above_the_log_viewer_and_saves_its_keys', async () => {
+    const sent = await showPage('logs');
+
+    expect(sectionNames('Logs')).toEqual(['Logs', 'Slack']);
+    const table = await screen.findByRole('table', { name: 'Log' });
+    expect(isAbove(screen.getByRole('heading', { name: 'Logs', level: 2 }), table)).toBe(true);
+    expect(screen.getByLabelText('Log Level')).toHaveValue('INFO');
+
+    await fireEvent.input(screen.getByLabelText('Maximum Log Files'), { target: { value: '9' } });
+    await sectionTab('Logs', 'Slack');
+    await fireEvent.click(screen.getByLabelText('Send Logs to Slack'));
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([['PUT config', { maxLogFiles: '9', sendLogsToSlack: true }]]);
+  });
+
+  it('updates_shows_its_sections_above_the_versions_and_saves_its_keys', async () => {
+    const sent = await showPage('updates');
+
+    expect(sectionNames('Updates')).toEqual(['Update check', 'Automatic updates']);
+    expect(
+      isAbove(
+        screen.getByRole('heading', { name: 'Updates', level: 2 }),
+        screen.getByRole('heading', { name: 'Versions', level: 2 }),
+      ),
+    ).toBe(true);
+    expect(screen.getByLabelText('Check For Update')).toBeChecked();
+    expect(screen.getByLabelText('Branch')).toBeDisabled();
+
+    await sectionTab('Updates', 'Automatic updates');
+    expect(screen.getByLabelText('Cron Schedule')).toHaveValue('@weekly');
+    await fireEvent.click(screen.getByLabelText('Auto-Update Organizr'));
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([['PUT config', { autoUpdateCronEnabled: true }]]);
+  });
+
+  it('backup_shows_its_section_above_the_list_and_saves_its_keys', async () => {
+    const sent = await showPage('backups');
+
+    expect(sectionNames('Backup')).toEqual(['Automatic backup']);
+    expect(
+      isAbove(
+        screen.getByRole('heading', { name: 'Backup', level: 2 }),
+        await screen.findByRole('heading', { name: 'Backups', level: 2 }),
+      ),
+    ).toBe(true);
+    expect(screen.getByLabelText('Backup Save Path')).toHaveValue('/data/backups');
+    expect(screen.getByLabelText('Cron Schedule')).toHaveValue('@daily');
+
+    await fireEvent.input(screen.getByLabelText('# Backups Keep'), { target: { value: '3' } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([['PUT config', { keepBackupsCountCron: '3' }]]);
+  });
+
+  it('tab_options_shows_its_sections_and_saves_its_keys', async () => {
+    const sent = await showPage('tab-options');
+
+    expect(screen.getByRole('heading', { name: 'Tab options', level: 2 })).toBeInTheDocument();
+    expect(sectionNames('Tab options')).toEqual(['iFrames', 'Ping and sounds', 'Unsorted tabs']);
+    await sectionTab('Tab options', 'Ping and sounds');
+    // The groups come from the server.
+    expect(screen.getByLabelText('Minimum Authentication')).toHaveValue('1');
+    expect(
+      within(screen.getByLabelText('Minimum Authentication')).getByRole('option', {
+        name: 'Co-Admin',
+      }),
+    ).toBeInTheDocument();
+    await fireEvent.click(screen.getByLabelText('Show Ping Time'));
+    await sectionTab('Tab options', 'Unsorted tabs');
+    await fireEvent.change(screen.getByLabelText('Unsorted Tab Placement'), {
+      target: { value: 'bottom' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await statusSays('The settings are saved.');
+    expect(changes(sent)).toEqual([['PUT config', { pingMs: false, unsortedTabs: 'bottom' }]]);
+  });
+
+  it('nothing_of_the_old_main_page_is_left', () => {
+    // No page of the menu is the temporary "Main (other)" any more.
+    const sections: string[] = SETTINGS_MENU.flatMap((group) =>
+      group.pages.map((page) => page.section),
+    );
+    expect(sections).not.toContain('general-other');
+    expect(SETTINGS_MENU.flatMap((group) => group.pages.map((page) => page.label))).not.toContain(
+      'Main (other)',
+    );
+    // No code of the interface asks for the old forms of Main and SSO.
+    const sources = import.meta.glob<string>(
+      ['/src/**/*.ts', '/src/**/*.svelte', '!**/*.test.ts'],
+      {
+        query: '?raw',
+        import: 'default',
+        eager: true,
+      },
+    );
+    expect(Object.keys(sources).length).toBeGreaterThan(50);
+    const asking = Object.entries(sources)
+      .filter(([, text]) => /['"`]settings\/(main|sso)['"`?]/.test(text))
+      .map(([path]) => path);
+    expect(asking).toEqual([]);
   });
 });
 

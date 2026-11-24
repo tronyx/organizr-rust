@@ -48,12 +48,18 @@ describe('SettingsNav', () => {
       'Plugins',
       'System Settings',
     ]);
+    expect(SETTINGS_MENU[0]?.pages.map((page) => page.label)).toEqual([
+      'Tabs',
+      'Categories',
+      'Homepage Items',
+      'Homepage Order',
+      'Tab Options',
+    ]);
     expect(SETTINGS_MENU[5]?.pages.map((page) => page.label)).toEqual([
       'About',
       'General',
       'Sign-in',
       'Login & Security',
-      'Main (other)',
       'SSO',
       'Logs',
       'Updates',

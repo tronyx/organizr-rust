@@ -32,6 +32,7 @@ export const SETTINGS_MENU: [MenuGroup, ...MenuGroup[]] = [
       { section: 'categories', page: 'categorySettings', label: 'Categories' },
       { section: 'homepage', page: 'homepageSettings', label: 'Homepage Items' },
       { section: 'homepage-order', page: 'homepageOrderSettings', label: 'Homepage Order' },
+      { section: 'tab-options', page: 'tabOptionsSettings', label: 'Tab Options' },
     ],
   },
   {
@@ -79,7 +80,6 @@ export const SETTINGS_MENU: [MenuGroup, ...MenuGroup[]] = [
       { section: 'general', page: 'generalSettings', label: 'General' },
       { section: 'sign-in', page: 'signInSettings', label: 'Sign-in' },
       { section: 'login-security', page: 'loginSecuritySettings', label: 'Login & Security' },
-      { section: 'general-other', page: 'generalOtherSettings', label: 'Main (other)' },
       { section: 'login', page: 'loginSettings', label: 'SSO' },
       { section: 'logs', page: 'logSettings', label: 'Logs' },
       { section: 'updates', page: 'updateSettings', label: 'Updates' },
