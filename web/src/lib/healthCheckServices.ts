@@ -11,6 +11,9 @@ export interface ServiceRow {
   /** The address inside the network. */
   internal: string;
   enabled: boolean;
+  /** Whether a request to the service carries the API key of Organizr, for a service
+   *  behind the forward auth of Organizr. */
+  sendKey: boolean;
 }
 
 /** The fields of a service in the setting: the label of each one, and the part of its name. */
@@ -20,6 +23,8 @@ const FIELDS = [
   { label: 'External URL', part: 'external', type: 'input', key: 'external' },
   { label: 'Internal URL', part: 'internal', type: 'input', key: 'internal' },
   { label: 'Enabled', part: 'enabled', type: 'switch', key: 'enabled' },
+  // Not a field of PHP Organizr: a service without it gets the API key, as in PHP.
+  { label: 'Send API Key', part: 'sendKey', type: 'switch', key: 'sendKey' },
 ] as const;
 
 /** The values of a list that PHP stores as a list, or as a map with the places as keys. */
@@ -57,6 +62,8 @@ export function fromSetting(setting: unknown): ServiceRow[] {
       external: text('External URL'),
       internal: text('Internal URL'),
       enabled: isOn(byLabel.get('Enabled')),
+      // A service of PHP Organizr has no switch, and gets the key, as in PHP.
+      sendKey: byLabel.has('Send API Key') ? isOn(byLabel.get('Send API Key')) : true,
     });
   }
   return rows;
@@ -84,9 +91,9 @@ export function toSetting(rows: ServiceRow[]): unknown {
   );
 }
 
-/** A new service with nothing in it, switched on. */
+/** A new service with nothing in it, switched on, that gets no API key. */
 export function emptyRow(): ServiceRow {
-  return { name: '', uuid: '', external: '', internal: '', enabled: true };
+  return { name: '', uuid: '', external: '', internal: '', enabled: true, sendKey: false };
 }
 
 /** What an import of the checks of a Healthchecks account found. */
@@ -105,8 +112,8 @@ const CHECK_ID = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0
 /**
  * Adds the checks of a Healthchecks account that the list does not have yet, as the
  * button "Import Services" of PHP: each check by its name and the id in its ping
- * address, without addresses, switched on. A check whose id is in the list already is
- * left out.
+ * address, without addresses, switched on, without the API key. A check whose id is in
+ * the list already is left out.
  */
 export function importChecks(rows: ServiceRow[], checks: unknown): Imported {
   const known = new Set(rows.map((row) => row.uuid.trim().toLowerCase()).filter(Boolean));

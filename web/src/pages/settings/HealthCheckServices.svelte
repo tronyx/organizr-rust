@@ -125,6 +125,11 @@
     not answer. The button that imports the checks adds each check of the Healthchecks account of
     the homepage item Healthchecks that the list does not have yet.
   </p>
+  <p class="my-2 max-w-2xl text-sm">
+    <strong>API key</strong> sends the API key of Organizr to the service, which has all the rights of
+    an Admin. Switch it on only for a service behind the forward auth of Organizr, at an address inside
+    the network.
+  </p>
   {#if error}
     <div role="alert" class="alert alert-error mb-4"><span>{error}</span></div>
   {/if}
@@ -139,6 +144,7 @@
               <th scope="col">Address inside the network</th>
               <th scope="col">Address from the internet</th>
               <th scope="col">On</th>
+              <th scope="col">API key</th>
               <th scope="col"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -182,6 +188,14 @@
                     class="toggle toggle-sm"
                     aria-label="Check {what}"
                     bind:checked={row.enabled}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="checkbox"
+                    class="toggle toggle-sm"
+                    aria-label="Send the API key to {what}"
+                    bind:checked={row.sendKey}
                   />
                 </td>
                 <td>

@@ -23,7 +23,8 @@ pub struct Service {
     /// The key of the service in the setting.
     pub key: String,
     /// The fields of the service as the setting holds them: `Service Name`, `UUID`,
-    /// `External URL`, `Internal URL` and `Enabled`.
+    /// `External URL`, `Internal URL`, `Enabled`, and `Send API Key`, which PHP does not
+    /// have.
     pub fields: Map<String, Value>,
 }
 
@@ -59,7 +60,19 @@ impl Service {
     pub fn external(&self) -> &str {
         self.text("External URL")
     }
+
+    /// Whether a request to the service carries the API key of Organizr. A service
+    /// without the switch, as every service of PHP Organizr, gets the key, as in PHP.
+    /// A new service has the switch, off (D-130).
+    pub fn sends_key(&self) -> bool {
+        self.fields
+            .get(SEND_KEY)
+            .is_none_or(|value| is_on(Some(value)))
+    }
 }
+
+/// The label of the switch that sends the API key of Organizr to a service.
+pub const SEND_KEY: &str = "Send API Key";
 
 /// The services of the `HEALTHCHECKS-all-items` setting that are switched on and have
 /// an id. The setting holds, for each service, a list of fields with a `label` and a
@@ -138,20 +151,22 @@ fn is_web_address(address: &str) -> bool {
     address.starts_with("http://") || address.starts_with("https://")
 }
 
-/// Asks one address of a service. The request carries the API key of Organizr in the
-/// header `Token`, so a service behind the forward auth of Organizr lets it in. The
-/// certificate of the service is not checked, as in the PHP application.
-async fn answers(http: &Outbound, address: &str, api_key: &str, rules: Rules) -> bool {
+/// Asks one address of a service. With a key, the request carries the API key of
+/// Organizr in the header `Token`, so a service behind the forward auth of Organizr lets
+/// it in. The certificate of the service is not checked, as in the PHP application.
+async fn answers(http: &Outbound, address: &str, api_key: Option<&str>, rules: Rules) -> bool {
     let address = address.trim();
     if !is_web_address(address) {
         tracing::warn!("an address of a health check has no http:// or https://");
         return false;
     }
-    let request = http
+    let mut request = http
         .client(address, true)
         .get(address)
-        .header("Token", api_key)
         .timeout(SERVICE_TIME_LIMIT);
+    if let Some(key) = api_key {
+        request = request.header("Token", key);
+    }
     match request.send().await {
         Ok(response) => rules.passes(response.status().as_u16()),
         Err(error) => {
@@ -189,13 +204,14 @@ pub async fn run(http: &Outbound, settings: &Settings) -> Value {
             !service.internal().is_empty(),
             !service.external().is_empty(),
         );
+        let key = service.sends_key().then_some(settings.api_key.as_str());
         let mut results = Map::new();
         let mut passed = false;
         if inside || outside {
             ping(http, &format!("{base}/{}/start", service.id())).await;
         }
         if inside {
-            passed = answers(http, service.internal(), &settings.api_key, rules).await;
+            passed = answers(http, service.internal(), key, rules).await;
             results.insert(
                 "internal".to_owned(),
                 json!(if passed { "Success" } else { "Error" }),
@@ -205,7 +221,7 @@ pub async fn run(http: &Outbound, settings: &Settings) -> Value {
             let result = if inside && passed {
                 "Not needed"
             } else {
-                passed = answers(http, service.external(), &settings.api_key, rules).await;
+                passed = answers(http, service.external(), key, rules).await;
                 if passed { "Success" } else { "Error" }
             };
             results.insert("external".to_owned(), json!(result));

@@ -25,6 +25,8 @@ describe('HealthCheckServices', () => {
 
     const name = await screen.findByLabelText<HTMLInputElement>('Name of service 1');
     expect(name.value).toBe('Plex');
+    // A service of PHP Organizr gets the API key, as in PHP.
+    expect(screen.getByLabelText('Send the API key to Plex')).toBeChecked();
     const save = screen.getByRole('button', { name: 'Save the services' });
     expect(save.hasAttribute('disabled')).toBe(true);
 
@@ -35,6 +37,8 @@ describe('HealthCheckServices', () => {
     await fireEvent.input(screen.getByLabelText('Id of the check of Sonarr'), {
       target: { value: 'another-id' },
     });
+    // A new service gets no API key until the Admin switches it on.
+    expect(screen.getByLabelText('Send the API key to Sonarr')).not.toBeChecked();
     await fireEvent.click(save);
 
     await vi.waitFor(() => expect(ondone).toHaveBeenCalledWith('The services are saved.'));
@@ -50,8 +54,10 @@ describe('HealthCheckServices', () => {
       '',
       '',
       true,
+      false,
     ]);
     expect(items?.['0']?.[2]?.value).toBe('https://plex.example.com');
+    expect(items?.['0']?.[5]).toMatchObject({ label: 'Send API Key', value: true });
   });
 
   it('imports the checks of Healthchecks that the list does not have, unsaved', async () => {

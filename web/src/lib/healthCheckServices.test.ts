@@ -25,7 +25,13 @@ const STORED = {
     { label: 'UUID', value: 'another-id' },
     { label: 'Enabled', value: 'true' },
   ],
-  '2': 'not a service',
+  '2': [
+    { label: 'Service Name', value: 'Radarr' },
+    { label: 'UUID', value: 'third-id' },
+    { label: 'Enabled', value: true },
+    { label: 'Send API Key', value: false },
+  ],
+  '3': 'not a service',
 };
 
 describe('fromSetting', () => {
@@ -37,9 +43,29 @@ describe('fromSetting', () => {
         external: 'https://plex.example.com',
         internal: '',
         enabled: false,
+        sendKey: true,
       },
-      { name: 'Sonarr', uuid: 'another-id', external: '', internal: '', enabled: true },
+      {
+        name: 'Sonarr',
+        uuid: 'another-id',
+        external: '',
+        internal: '',
+        enabled: true,
+        sendKey: true,
+      },
+      {
+        name: 'Radarr',
+        uuid: 'third-id',
+        external: '',
+        internal: '',
+        enabled: true,
+        sendKey: false,
+      },
     ]);
+  });
+
+  it('sends the API key to a service of PHP Organizr, which has no switch for it', () => {
+    expect(fromSetting(STORED).map((row) => row.sendKey)).toEqual([true, true, false]);
   });
 
   it('reads no services from an empty setting', () => {
@@ -58,6 +84,7 @@ describe('toSetting', () => {
         external: 'https://plex.example.com',
         internal: '',
         enabled: true,
+        sendKey: true,
       },
       { ...emptyRow(), name: 'Sonarr', enabled: false },
     ];
@@ -77,6 +104,12 @@ describe('toSetting', () => {
     expect(setting['1']?.[4]).toEqual({
       label: 'Enabled',
       name: 'HEALTHCHECKS-all-items[1].enabled',
+      type: 'switch',
+      value: false,
+    });
+    expect(setting['1']?.[5]).toEqual({
+      label: 'Send API Key',
+      name: 'HEALTHCHECKS-all-items[1].sendKey',
       type: 'switch',
       value: false,
     });
@@ -108,7 +141,15 @@ describe('importChecks', () => {
     expect(imported.added).toEqual(['Sonarr']);
     expect(imported.rows).toEqual([
       rows[0],
-      { name: 'Sonarr', uuid: ID_B, external: '', internal: '', enabled: true },
+      // An imported check gets no API key.
+      {
+        name: 'Sonarr',
+        uuid: ID_B,
+        external: '',
+        internal: '',
+        enabled: true,
+        sendKey: false,
+      },
     ]);
     // The list that was handed in stays as it was.
     expect(rows).toHaveLength(1);

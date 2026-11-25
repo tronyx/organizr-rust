@@ -31,7 +31,7 @@ The window **HealthChecks Settings** has four sections.
 | Services | (the list) | `HEALTHCHECKS-all-items` | Empty | Your services, with **Add a service**, **Import the checks of Healthchecks**, **Save the services** and **Run the checks now** |
 
 > [!WARNING]
-> Each check sends Organizr's API key to the service, and the API key has all the rights of an Admin. Read [Keep the API key safe](#-keep-the-api-key-safe) before you add a service.
+> A service with **API key** switched on gets Organizr's API key, and the API key has all the rights of an Admin. Read [Keep the API key safe](#-keep-the-api-key-safe) before you switch it on.
 
 ## 🚀 Use it
 
@@ -50,6 +50,7 @@ The window **HealthChecks Settings** has four sections.
 | Address inside the network | The address Organizr uses on your network, for example `http://sonarr:8989`. Tried first |
 | Address from the internet | Tried only when the inside address is empty or doesn't answer |
 | Check (switch) | Switched off, the service is left out of every run |
+| API key (switch) | Sends Organizr's API key with each request. Switch it on only for a service behind Organizr's [forward auth](forward-auth.md). Off for a new service |
 
 ### 📥 Import your checks from Healthchecks
 
@@ -57,7 +58,7 @@ Already have your checks at Healthchecks? Let Organizr fill the list:
 
 1. In the section **Connection**, enter the **URL** and **Token** (an API key) of your Healthchecks account, and select **Save**.
 2. Switch on the homepage item **Healthchecks** (**Settings › Tab Editor › Homepage Items**). The import uses the account of this item, so the item must be on and your group must be allowed to see it.
-3. In the section **Services**, select **Import the checks of Healthchecks**. Organizr adds every check that the list doesn't have yet, with its name and id, switched on and without addresses. A check whose id is already in the list is skipped.
+3. In the section **Services**, select **Import the checks of Healthchecks**. Organizr adds every check that the list doesn't have yet, with its name and id, switched on, without addresses and without the API key. A check whose id is already in the list is skipped.
 4. Enter the addresses of the new services.
 5. Select **Save the services**. The import saves nothing by itself.
 
@@ -82,19 +83,21 @@ curl -H "Token: <API key>" https://organizr.example.com/api/v2/plugins/healthche
 
 ## 🔒 Keep the API key safe
 
-Every request to a service carries Organizr's API key in the header `Token`. That's on purpose: a service behind Organizr's [forward auth](forward-auth.md) lets the request in, because Organizr knows its own key.
+A service with **API key** switched on gets Organizr's API key in the header `Token` with each request. That's for a service behind Organizr's [forward auth](forward-auth.md): it lets the request in, because Organizr knows its own key. A service with the switch off gets no key.
 
-The catch: the key goes to **every** address on the list, and Organizr doesn't check the service's certificate (many services on a home network have one that no authority signed). So anybody who can watch the traffic between Organizr and a listed address can copy the key and get Admin rights. Over `http://`, the key travels in plain text.
+New services, and checks you import from Healthchecks, start with the switch off. Services from before this switch, and services imported from PHP Organizr, start with it on, as PHP sent the key to every service. Switch it off for each one that isn't behind forward auth.
+
+The catch: the key goes to **every** address of a service with the switch on, and Organizr doesn't check the service's certificate (many services on a home network have one that no authority signed). So anybody who can watch the traffic between Organizr and a listed address can copy the key and get Admin rights. Over `http://`, the key travels in plain text.
 
 The safe setup:
 
-1. Put only services you run yourself on the list. Never a site of somebody else.
+1. Switch **API key** on only for services you run yourself, behind Organizr's forward auth. Never for a site of somebody else.
 2. Use the **Address inside the network** whenever you can, best of all a Docker network name such as `http://sonarr:8989`, so the request never leaves your server.
 3. Leave **Address from the internet** empty, unless the service really can't be reached from inside. A request over the internet, with an unchecked certificate, can be read by anybody on the way: a public Wi-Fi, a provider, a cloud host.
 4. If you think the key leaked, have the Admin make a new one: **Settings › System Settings › General**, **Generate New API Key** (Co-Admins can't see the key). Scripts that use the old key then get `401`, so update them.
 
 > [!TIP]
-> **401 Error as Success** and **403 Error as Success** let a check pass when a service refuses the request at its login. The check then shows that the service is up, not that it works behind its login. The key is still sent, so this doesn't replace the steps above.
+> **401 Error as Success** and **403 Error as Success** let a check pass when a service refuses the request at its login. The check then shows that the service is up, not that it works behind its login. With these, a service behind forward auth can also be checked with **API key** off.
 
 ## 👤 Who can use it
 

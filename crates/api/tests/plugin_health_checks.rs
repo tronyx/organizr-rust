@@ -136,6 +136,58 @@ async fn run_asks_each_service_and_pings_healthchecks_with_the_result() {
     .await;
 }
 
+/// A service with the switch "Send API Key", which a service of PHP Organizr does not have.
+fn item_with_key_switch(name: &str, id: &str, internal: &str, sends_key: &Value) -> Value {
+    let mut fields = item(name, id, internal, "", true);
+    fields
+        .as_array_mut()
+        .expect("the fields are a list")
+        .push(json!({"type": "switch", "label": "Send API Key", "value": sends_key}));
+    fields
+}
+
+#[tokio::test]
+async fn api_key_goes_only_to_the_services_that_have_it_switched_on() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let (service, pings) = (services().await, healthchecks().await);
+        let at = |path: &str| format!("{}{path}", service.url());
+        let items = json!({
+            // A service of PHP Organizr has no switch: it gets the key, as before.
+            "0": item("Old", "id-old", &at("/guarded"), "", true),
+            "1": item_with_key_switch("On", "id-on", &at("/guarded"), &json!(true)),
+            "2": item_with_key_switch("Off", "id-off", &at("/guarded"), &json!(false)),
+            "3": item_with_key_switch("Open", "id-open", &at("/up"), &json!(false)),
+        });
+        let app = installed_app_with(
+            database,
+            &[
+                ("HEALTHCHECKS-enabled", json!(true)),
+                ("HEALTHCHECKS-all-items", items),
+                ("HEALTHCHECKS-PingURL", json!(format!("{}/", pings.url()))),
+            ],
+        );
+
+        let answer = call(&app, As::Admin, "GET", PATH, None).await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let data = answer.data();
+        assert_eq!(data["0"]["results"], json!({"internal": "Success"}));
+        assert_eq!(data["1"]["results"], json!({"internal": "Success"}));
+        // Without the key, the guarded service refuses the request.
+        assert_eq!(data["2"]["results"], json!({"internal": "Error"}));
+        assert_eq!(data["3"]["results"], json!({"internal": "Success"}));
+        let tokens: Vec<Option<String>> = service
+            .seen()
+            .into_iter()
+            .map(|seen| seen.headers.get("token").cloned())
+            .collect();
+        let key = Some(seed::API_KEY.to_owned());
+        assert_eq!(tokens, [key.clone(), key, None, None]);
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn run_is_for_the_level_of_the_plugin_and_needs_the_plugin_to_be_ready() {
     on_each_engine(async |database| {
