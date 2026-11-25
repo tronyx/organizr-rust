@@ -1714,6 +1714,10 @@
 
 @theme {
   --font-sans: 'Rubik Variable', Rubik, ui-sans-serif, system-ui, sans-serif;
+  /* The small text of PHP (Bootstrap 3) is 12 pixels; with the root size of 14 pixels,
+     Tailwind's 0.75rem would be 10.5. */
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
 }
 
 @layer base {
@@ -1878,9 +1882,9 @@
     border-radius: 60px;
     background: #131313;
     color: #ffffff;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 500;
-    line-height: 10px;
+    line-height: 11px;
   }
 
   .org-menu .org-label + .org-label,
@@ -2313,7 +2317,7 @@
   .org-form-help {
     margin-left: 4px;
     color: var(--color-info);
-    font-size: 11px;
+    font-size: 13px;
     vertical-align: super;
     cursor: help;
   }
@@ -2578,7 +2582,7 @@
   .org-plugin-card small {
     display: block;
     padding-bottom: 10px;
-    font-size: 11px;
+    font-size: 12px;
     text-transform: uppercase;
   }
 
@@ -3044,9 +3048,9 @@
     border-radius: 60px;
     background: var(--color-info);
     color: #ffffff;
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 500;
-    line-height: 10.5px;
+    line-height: 12px;
   }
 
   .org-cards {
@@ -3686,7 +3690,7 @@
 
   .org-stat h3 small {
     color: #96a2b4;
-    font-size: 9px;
+    font-size: 12px;
     font-weight: 500;
   }
 
@@ -3716,9 +3720,9 @@
   }
 
   .org-stat-rank {
-    width: 12px;
+    width: 14px;
     color: #96a2b4;
-    font-size: 11px;
+    font-size: 12px;
     text-align: right;
   }
 
@@ -3823,4 +3827,22 @@
   .org-item .table-sm :where(thead, tfoot) {
     font-size: 13px;
   }
+}
+
+/* The small sizes of daisyUI, at least 12 pixels as the small buttons, badges and fields
+   of PHP (Bootstrap 3). With the root size of 14 pixels daisyUI makes them 9.6 to 10.5
+   pixels. These rules are outside the layers because daisyUI's layer comes after the
+   utilities; the Admin's custom CSS still loads after them. */
+.btn-sm,
+.btn-xs {
+  --fontsize: 12px;
+}
+
+.badge-sm,
+.stat-title,
+.input-sm,
+.select-sm,
+.file-input-sm,
+.file-input-sm::file-selector-button {
+  font-size: 12px;
 }
