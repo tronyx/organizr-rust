@@ -10,13 +10,15 @@ vi.mock('./pages/ModernShell.svelte', () => {
   throw new Error('Failed to fetch dynamically imported module');
 });
 
-// The modern style sheet loads when a test says so. `modernStyles.test.ts` tests the link.
-const styles = vi.hoisted(() => ({ loaded: () => {} }));
+// The modern style sheet loads, or fails, when a test says so. `modernStyles.test.ts` tests
+// the link.
+const styles = vi.hoisted(() => ({ loaded: () => {}, failed: () => {} }));
 vi.mock('./lib/modernStyles', () => ({
   loadModernStyles: vi.fn(
     () =>
-      new Promise<void>((resolve) => {
+      new Promise<void>((resolve, reject) => {
         styles.loaded = resolve;
+        styles.failed = () => reject(new Error('The style sheet did not load.'));
       }),
   ),
 }));
@@ -99,6 +101,50 @@ describe('App', () => {
     styles.loaded();
 
     await waitFor(() => expect(document.querySelector('.org-wizard')).not.toBeNull());
+    expect(document.querySelector('.loading-spinner')).toBeNull();
+  }, 30_000);
+
+  it('falls_back_to_the_original_shell_when_the_modern_style_sheet_does_not_load', async () => {
+    stubApi({ 'GET launch': launch('modern') });
+    const { default: App } = await import('./App.svelte');
+
+    render(App);
+    await waitFor(() => expect(loadModernStyles).toHaveBeenCalled(), { timeout: 10_000 });
+    styles.failed();
+
+    await waitFor(
+      () => expect(document.querySelector('.org-header.org-with-menu')).not.toBeNull(),
+      {
+        timeout: 10_000,
+      },
+    );
+    expect(document.querySelector('.loading-spinner')).toBeNull();
+  }, 30_000);
+
+  it('a_modern_screen_outside_the_shell_waits_for_the_sheet_after_the_shell_chunk_fails', async () => {
+    // The lock screen does not need the modern shell: a chunk of the shell that does not
+    // load must not let it draw before the modern rules apply.
+    const locked = launch('modern');
+    locked.data.user = {
+      ...locked.data.user,
+      loggedin: true,
+      locked: 1,
+    } as typeof locked.data.user;
+    stubApi({ 'GET launch': locked });
+    const { default: App } = await import('./App.svelte');
+
+    render(App);
+    await waitFor(() => expect(loadModernStyles).toHaveBeenCalled(), { timeout: 10_000 });
+    // The import of the app ran first, so its failure is handled once this one fails.
+    await expect(import('./pages/ModernShell.svelte')).rejects.toThrow();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.documentElement.dataset.layout).toBe('modern');
+    expect(document.querySelector('.loading-spinner')).not.toBeNull();
+    expect(document.querySelector('.org-lock-screen')).toBeNull();
+
+    styles.loaded();
+
+    await waitFor(() => expect(document.querySelector('.org-lock-screen')).not.toBeNull());
     expect(document.querySelector('.loading-spinner')).toBeNull();
   }, 30_000);
 });

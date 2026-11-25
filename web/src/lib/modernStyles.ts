@@ -10,13 +10,13 @@ const LINK_ID = 'org-modern-css';
 /** The id of the link to the style sheet of the Admin (`linkCustomCss` in `theme.ts`). */
 const CUSTOM_CSS_ID = 'org-custom-css';
 
-/** The load that runs or ran, so that the page links the sheet once. */
+/** The load that runs or ran, so that the page links the sheet once, also after a failure. */
 let loading: Promise<void> | null = null;
 
 /**
  * Links the modern style sheet, after the style sheet of the interface and before the
  * custom CSS of the Admin, and resolves when its rules apply. A sheet that does not load
- * rejects, and the next call tries again.
+ * rejects, and so does every later call: the page then keeps the original shell.
  */
 export function loadModernStyles(): Promise<void> {
   loading ??= new Promise<void>((resolve, reject) => {
@@ -29,7 +29,6 @@ export function loadModernStyles(): Promise<void> {
       'error',
       () => {
         link.remove();
-        loading = null;
         reject(new Error('The style sheet of the modern layout did not load.'));
       },
       { once: true },

@@ -56,14 +56,15 @@ describe('loadModernStyles', () => {
     expect(modernLink()?.nextElementSibling).toBe(custom);
   });
 
-  it('a_sheet_that_does_not_load_fails_and_a_later_call_tries_again', async () => {
+  it('a_sheet_that_does_not_load_fails_and_a_later_call_gives_the_same_failure', async () => {
+    // The page then keeps the original shell (`App.svelte`), so nothing asks again.
     const { loadModernStyles } = await freshModule();
     const failed = loadModernStyles();
     modernLink()?.dispatchEvent(new Event('error'));
     await expect(failed).rejects.toThrow(/modern/);
     expect(modernLink()).toBeNull();
 
-    void loadModernStyles();
-    expect(modernLink()).not.toBeNull();
+    expect(loadModernStyles()).toBe(failed);
+    expect(modernLink()).toBeNull();
   });
 });

@@ -32,18 +32,19 @@
     shown: number | undefined;
     covered: boolean;
   }> | null>(null);
-  // A chunk that does not load (after an update, a cached page may ask for an old one)
-  // leaves the person with the original shell, which always works.
-  let modernFailed = $state(false);
-  const modern = $derived(session.look.layout === 'modern' && !modernFailed);
+  // A chunk or style sheet that does not load (after an update, a cached page may ask for
+  // an old one) leaves the person with the original shell, which always works.
+  let shellFailed = $state(false);
+  let stylesFailed = $state(false);
+  const modern = $derived(session.look.layout === 'modern' && !shellFailed && !stylesFailed);
 
   // The rules of the modern layout come in their own style sheet, so people of the OG
   // layout never load them either. Every screen of the modern layout, also the set-up
   // wizard and the lock screen outside the modern shell, waits for them, so that nothing
-  // is drawn before its rules apply. A sheet that does not load leaves the original shell.
+  // is drawn before its rules apply, also when the chunk of the shell did not load.
   let modernStyled = $state(false);
   const waitingForStyles = $derived(
-    session.look.layout === 'modern' && !modernStyled && !modernFailed,
+    session.look.layout === 'modern' && !modernStyled && !stylesFailed,
   );
 
   $effect(() => {
@@ -53,7 +54,7 @@
           modernStyled = true;
         },
         () => {
-          modernFailed = true;
+          stylesFailed = true;
         },
       );
     }
@@ -66,7 +67,7 @@
           ModernShell = module.default;
         },
         () => {
-          modernFailed = true;
+          shellFailed = true;
         },
       );
     }
