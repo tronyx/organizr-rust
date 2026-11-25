@@ -83,10 +83,10 @@ location = /organizr-auth {
 
 ## 🟥 Nginx Proxy Manager
 
-Nginx Proxy Manager (NPM) is nginx with a web interface, so the same idea works through its **Advanced** tab.
+Nginx Proxy Manager (NPM) is nginx with a web interface, so the same idea works through its advanced settings, behind the gear icon of a proxy host.
 
 1. Open the proxy host of the application (for example `sonarr.example.com`), and select **Edit**.
-2. Open the **Advanced** tab.
+2. Select the gear icon to the right of the tabs.
 3. Paste this into **Custom Nginx Configuration**, and change the level, the Organizr address and the container name to yours:
 
    ```nginx
@@ -109,7 +109,7 @@ Nginx Proxy Manager (NPM) is nginx with a web interface, so the same idea works 
 
 NPM puts this text inside the `server` block of the host, so `auth_request` applies to the whole host, and `auth_request off` keeps the check itself unguarded. The NPM container must reach Organizr at `organizr:8080`, so put both on the same Docker network.
 
-If NPM gets the certificate for this host with an HTTP challenge, the challenge path must not ask Organizr. NPM serves it from its own `location ^~ /.well-known/acme-challenge/`; if a renewal fails, add `auth_request off;` for that path. This snippet follows the nginx example above, but hasn't been tested in NPM yet.
+A certificate from Let's Encrypt keeps renewing: NPM answers the HTTP challenge from its own `location ^~ /.well-known/acme-challenge/`, which switches `auth_request` off, so the challenge never asks Organizr. Tested with NPM 2.16.
 
 ## 🟦 Traefik
 
@@ -183,7 +183,7 @@ A caller who passed by an [allow list](#-allow-and-deny-lists) gets no such head
 > [!WARNING]
 > **If an application trusts `X-Organizr-User`, the proxy must set that header from Organizr's answer, and never pass on one the browser sent.** Otherwise anyone can send `X-Organizr-User: admin` themselves.
 >
-> - **nginx / NPM:** set it from the answer. `proxy_set_header` replaces whatever the browser sent:
+> - **nginx:** set it from the answer, inside the `location` that has the `proxy_pass` to the application. `proxy_set_header` replaces whatever the browser sent. In the `server` block they're ignored by every `location` that sets a header of its own:
 >   ```nginx
 >   auth_request_set $organizr_user $upstream_http_x_organizr_user;
 >   auth_request_set $organizr_email $upstream_http_x_organizr_email;
@@ -192,6 +192,7 @@ A caller who passed by an [allow list](#-allow-and-deny-lists) gets no such head
 >   proxy_set_header X-Organizr-Email $organizr_email;
 >   proxy_set_header X-Organizr-Group $organizr_group;
 >   ```
+> - **NPM:** the same six lines, but **not** in the gear's **Custom Nginx Configuration**. NPM's own `location /` sets headers of its own, so nginx ignores `proxy_set_header` lines from there, and the browser's copy reaches the application. Instead, open **Custom Locations**, select **Add Location**, enter `/` as **Location** with the application's **Scheme**, **Forward Hostname / IP** and **Forward Port**, and paste the lines into that location's gear field. The `auth_request` lines stay in the host's gear field. Tested with NPM 2.16.
 > - **Traefik:** `authResponseHeaders` overwrites the header when Organizr sends it. To also drop a browser's copy when Organizr sends none, put a `headers` middleware with `customRequestHeaders` that sets `X-Organizr-User`, `X-Organizr-Email` and `X-Organizr-Group` to `""` (an empty value removes the header) **before** `organizr-users` in the router's middlewares.
 > - **Caddy:** remove the browser's copy first, inside a `route` so the order is kept:
 >   ```caddyfile

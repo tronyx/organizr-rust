@@ -167,7 +167,7 @@ Keep `proxy_set_header Host $host`. Without it, nginx sends the name of the upst
 
 In Nginx Proxy Manager (NPM), select **Hosts › Proxy Hosts › Add Proxy Host**, and fill in:
 
-<!-- SCREENSHOT: npm-proxy-host.png | Nginx Proxy Manager, the "Add Proxy Host" dialog, Details tab filled in for organizr.example.com with forward host organizr and port 8080 -->
+![Nginx Proxy Manager, the Add Proxy Host dialog with organizr.example.com, forward host organizr and port 8080](images/npm-proxy-host.png)
 
 | Tab | Field | What to enter |
 | --- | --- | --- |
@@ -177,11 +177,11 @@ In Nginx Proxy Manager (NPM), select **Hosts › Proxy Hosts › Add Proxy Host*
 | Details | **Forward Port** | `8080` |
 | Details | **Block Common Exploits** | On |
 | Details | **Websockets Support** | Not needed; Organizr doesn't use WebSockets |
-| SSL | **SSL Certificate** | **Request a new SSL Certificate** (or pick yours) |
+| SSL | **SSL Certificate** | **Request a new Certificate** (or pick yours) |
 | SSL | **Force SSL** | On |
 | SSL | **HTTP/2 Support** | On |
 
-NPM sends `Host`, `X-Forwarded-For` and `X-Forwarded-Proto` by itself. For the chat plugin, paste this into **Advanced › Custom Nginx Configuration**:
+NPM sends `Host`, `X-Forwarded-For` and `X-Forwarded-Proto` by itself. For the chat plugin, select the gear icon to the right of the tabs, and paste this into **Custom Nginx Configuration**:
 
 ```nginx
 location = /api/v2/plugins/chat/events {
