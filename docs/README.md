@@ -88,3 +88,4 @@ New here? Read [Installation](installation.md), then [Reverse proxy](reverse-pro
 | [🏗️ Architecture](architecture.md) | The design of the rewrite, and the order in which it was built |
 | [🔍 Audit of PHP Organizr](audit.md) | What PHP Organizr does, route by route, as the rewrite found it |
 | [📚 Stack research](stack-research.md) | How the libraries of the rewrite were chosen |
+| [🧹 Settings that could be removed](unused-settings.md) | Settings from PHP that this version stores but never reads |
