@@ -2,7 +2,7 @@
 
 The invites plugin gives a person access to your Plex server with a code. A member of your install makes an invite, which is a record with a code. The invited person enters the code and the name of the own Plex account. Organizr then shares the Plex server with that account.
 
-The plugin works with Plex. The invited person can also make a new Plex account, or a user on your Emby server with the settings of the tab **Emby Settings**. When an invite shares the Plex server, it can also add the person to your Plex Home, and make an account in Komga and in Nextcloud, see [Plex Home](#plex-home), [Komga](#komga) and [Nextcloud](#nextcloud).
+The plugin works with Plex. The invited person can also make a new Plex account, or a user on your Emby server with the settings of the section **Emby**. When an invite shares the Plex server, it can also add the person to your Plex Home, and make an account in Komga and in Nextcloud, see [Plex Home](#plex-home), [Komga](#komga) and [Nextcloud](#nextcloud).
 
 ## Set it up
 
@@ -12,7 +12,7 @@ The plugin shares the server with the Plex token and the Plex ID of the install.
 2. Open **Settings**, select the tab **Plugins**, and select **Inactive**.
 3. Point at the card **Invites**, and select the button with the plug.
 4. Select **Active**. Point at the card **Invites**, and select the button with the panel. The window **Invites Settings** opens.
-5. On the tab **Plex Settings**, make sure that the fields **Plex Token** and **Plex Machine** hold a value. **System Settings**, **SSO**, tab **Plex** has the same two fields.
+5. In the section **Plex**, make sure that the fields **Plex Token** and **Plex Machine** hold a value. **System Settings**, **SSO**, section **Plex** has the same two fields.
 6. Fill in the other fields of the plugin, and select **Save**.
 
 | Field | Meaning |
@@ -55,13 +55,13 @@ A code works one time. When Plex refuses the share, the code stays good, and the
 
 ## Plex Home
 
-With **When user subscribe add him to Plex Home** (`INVITES-add-plex-home`) on the tab **Plex Settings**, a used invite also invites the e-mail address of the invite to the Plex Home of the owner of the Plex token. The person accepts that invitation at Plex. Plex decides who may join a Home; when it refuses, the log has the reason, and the invite stays used.
+With **When user subscribe add him to Plex Home** (`INVITES-add-plex-home`) in the section **Plex**, a used invite also invites the e-mail address of the invite to the Plex Home of the owner of the Plex token. The person accepts that invitation at Plex. Plex decides who may join a Home; when it refuses, the log has the reason, and the invite stays used.
 
 ## Komga
 
 When the Plex server is shared with an invited person, the plugin can also make an account for that person in [Komga](https://komga.org/). The account gets the e-mail address of the invite, a first password, roles and libraries.
 
-Set it up on the tab **Komga Settings** of the settings of the plugin:
+Set it up in the section **Komga** of the settings of the plugin:
 
 | Field | Key | Meaning |
 |---|---|---|
@@ -78,7 +78,7 @@ Every field must hold a value, as in PHP Organizr; otherwise no account is made,
 
 When the Plex server is shared with an invited person, the plugin can also make a user for that person in [Nextcloud](https://nextcloud.com/). The user gets the e-mail address of the invite as its id and address, the name that the person typed at the invite, and a random password that nobody is told. The person sets a password with the "Forgot password" link of Nextcloud, or logs in through the Plex app of Nextcloud.
 
-Set it up on the tab **Nextcloud Settings** of the settings of the plugin:
+Set it up in the section **Nextcloud** of the settings of the plugin:
 
 | Field | Key | Meaning |
 |---|---|---|
@@ -106,6 +106,8 @@ The plugin has these routes under `/api/v2/plugins/invites`.
 | `DELETE /plugins/invites/{code}` | Members with the level of the plugin | Delete an invite |
 | `GET /plugins/invites/{code}` | Everybody | Tell whether a code is good |
 | `POST /plugins/invites/{code}` | Everybody | Use a code for the Plex account in `usedby` |
+| `GET /plugins/invites/komga/libraries` | Admin, Co-Admin | The libraries of Komga as a list of `label` and `value`, for the settings. Empty when Komga is not set up or does not answer |
+| `GET /plugins/invites/nextcloud/groups` | Admin, Co-Admin | The groups of Nextcloud as a list of `label` and `value`, for the settings. Empty when Nextcloud is not set up or does not answer |
 
 A code holds letters, digits, `-` and `_`, and has 50 characters at most.
 

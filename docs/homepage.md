@@ -653,7 +653,7 @@ All three need these settings:
 | Id of the Plex server | `plexID` |
 | Do not check the certificate | `plexDisableCertCheck` |
 
-The token and the id are the ones of [the login through Plex](plex-login.md), in **System Settings**, **Main**, group **Authentication**. The address is the address of the Plex server itself, for example `http://192.168.1.10:32400`.
+The token and the id are the ones of [the login through Plex](plex-login.md), in **System Settings**, **Sign-in**, section **Sign-in method**. The page **SSO** has the same two fields. The address is the address of the Plex server itself, for example `http://192.168.1.10:32400`.
 
 Each item has a switch, a level and a place of its own:
 
@@ -705,7 +705,7 @@ The top bar can have a search of the Plex server. The search button opens the wi
 | Minimum Authentication | `mediaSearchAuth` |
 | Media Search Server | `mediaSearchType`: `plex` |
 
-The settings are in the group **Media Search** of the Plex item. As in PHP Organizr, the search works with Plex only: PHP lists Emby as not available.
+The settings are in the section **Media search** of the Plex item. As in PHP Organizr, the search works with Plex only: PHP lists Emby as not available.
 
 A script can search with `GET /api/v2/homepage/plex/search/<text>`.
 
@@ -960,7 +960,7 @@ This item searches the indexers of [Prowlarr](https://prowlarr.com/) for a text,
 | Use a certificate of your own | `prowlarrUseCustomCertificate` |
 | Download with the download client of Prowlarr | `homepageProwlarrBackholeDownload` |
 
-Enter the address and the API key on the tab **Connection** of the item. The default settings of PHP Organizr name these keys with a capital letter, `ProwlarrURL`, but PHP reads and saves the keys above. An install that holds a value under the old name moves it to the new name when it starts (D-112).
+Enter the address and the API key in the section **Connection** of the item. The default settings of PHP Organizr name these keys with a capital letter, `ProwlarrURL`, but PHP reads and saves the keys above. An install that holds a value under the old name moves it to the new name when it starts (D-112).
 
 The table shows the date, the indexer, the title, the size, the grabs, the seeders and the leechers of each release. The release with the most seeders stands first.
 
@@ -1012,7 +1012,7 @@ This item shows up to seven charts. Each chart shows one number of an install of
 | Custom charts | `netdataCustom` |
 | Milliseconds between two loads | `homepageNetdataRefresh` |
 
-The settings of the item have a tab for each chart, **Chart 1** to **Chart 7**, the tab **Custom data** with **Custom definitions**, and the tab **Options** with **Refresh Seconds**, as in PHP Organizr.
+The settings of the item have a section for each chart, **Chart 1** to **Chart 7**, the section **Custom data** with **Custom definitions**, and the section **Options** with **Refresh Seconds**, as in PHP Organizr.
 
 Each chart has these settings, where `<N>` is the number of the chart from 1 to 7:
 

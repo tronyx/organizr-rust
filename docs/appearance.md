@@ -46,9 +46,9 @@ The Admin sets the default look of the install. A person who is logged in can ch
 To set the default look, as Admin:
 
 1. Open **Settings**, then **Appearance**.
-2. Open the group **Style & Themes**.
+2. Open the section **Style & Themes**.
 3. Choose **Default layout**. The theme of that layout shows below it, with a sample of its colors: **Theme** for OG Organizr, or **Modern theme** and **Modern color set** for Modern. With Modern, the OG **Theme** shows too, under the heading **OG Organizr**, for the people who choose the OG layout.
-4. Select **Save** at the top of the panel. The one button saves the look and the colors of the group together.
+4. Select **Save** at the top of the panel. The one button saves the look and the colors of the section together.
 
 Below the themes, the heading **Colors of the OG Organizr layout** stands over the color pickers. They apply to the OG Organizr layout only.
 
@@ -72,7 +72,7 @@ Organizr remembers your last theme for each layout. If you switch from the OG Or
 
 ### Custom CSS and colors
 
-[Custom CSS](custom-css.md) applies on both layouts. The colors in the group **Style & Themes** apply on the OG Organizr layout only. A modern theme sets its own colors. Motion in the modern layout stops when the system asks for reduced motion.
+[Custom CSS](custom-css.md) applies on both layouts. The colors in the section **Style & Themes** apply on the OG Organizr layout only. A modern theme sets its own colors. Motion in the modern layout stops when the system asks for reduced motion.
 
 ## Themes
 
@@ -88,7 +88,7 @@ Each color field takes a color, for example `#987654`, `rgb(20, 40, 60)` or `tea
 
 ## The picture of the login page
 
-The switch **Use Random Media Wallpaper From Media Server**, on the page **Appearance**, group **Login Page**, shows a picture of something that was played as the background of the login page. Organizr chooses the picture at random from the pictures that the homepage keeps of what plays now on Plex, Emby or Jellyfin and of the statistics of Tautulli. A picture counts only when it is at least as wide as the pictures of what plays: 1200 pixels times the setting **Image Cache Quality** (`cacheImageSize`). Until the homepage has kept such a picture, the login page shows the **Login Wallpaper**, or no picture. Setting key: `useRandomMediaImage`. Off by default (D-123).
+The switch **Use Random Media Wallpaper From Media Server**, on the page **Appearance**, section **Login page**, shows a picture of something that was played as the background of the login page. Organizr chooses the picture at random from the pictures that the homepage keeps of what plays now on Plex, Emby or Jellyfin and of the statistics of Tautulli. A picture counts only when it is at least as wide as the pictures of what plays: 1200 pixels times the setting **Image Cache Quality** (`cacheImageSize`). Until the homepage has kept such a picture, the login page shows the **Login Wallpaper**, or no picture. Setting key: `useRandomMediaImage`. Off by default (D-123).
 
 ## Custom CSS
 

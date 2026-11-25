@@ -7,12 +7,12 @@ The application sends e-mail through an SMTP server that you name in the setting
 1. Log in as an Admin or a Co-Admin.
 2. Open **Settings** > **Plugins** > **Inactive**. Point at the card **PHP Mailer**, and select the button with the plug. The plugin moves to **Active**.
 3. Open **Settings** > **Plugins** > **Active**. Point at the card **PHP Mailer**, and select the button with the panel. The window **PHP Mailer Settings** opens.
-4. On the tab **Host**, enter the SMTP server in **SMTP Host** and the port in **SMTP Port**.
-5. On the tab **Authentication**, choose the kind of encryption of your mail provider in **Authentication Type**. If the server asks for a login, switch **Authentication** on, and enter **Username** and **Password**. The password is stored sealed.
-6. On the tab **Sender Information**, enter **Sender Name** and **Sender Email**.
-7. On the tab **Test & Options**, enter the address of this site in **Domain Link Override**, for example `https://organizr.example.com/`. E-mails use it for their links.
+4. In the section **Host**, enter the SMTP server in **SMTP Host** and the port in **SMTP Port**.
+5. In the section **Authentication**, choose the kind of encryption of your mail provider in **Authentication Type**. If the server asks for a login, switch **Authentication** on, and enter **Username** and **Password**. The password is stored sealed.
+6. In the section **Sender**, enter **Sender Name** and **Sender Email**.
+7. In the section **Test and options**, enter the address of this site in **Domain Link Override**, for example `https://organizr.example.com/`. E-mails use it for their links.
 8. Select **Save**.
-9. On the tab **Test & Options**, select **Send** next to **Send Test**. The test e-mail goes to the address of your own account.
+9. In the section **Test and options**, select **Send** next to **Send Test**. The test e-mail goes to the address of your own account.
 
 If the test fails, the page shows the reason that the SMTP server gave.
 
@@ -36,8 +36,8 @@ The keys are those of the mail plugin of PHP Organizr, so an imported install ke
 
 | E-mail | When | Text |
 |---|---|---|
-| New password | A person asked for one. See [A new password](#a-new-password) | The template **Reset Password** on the tab **Templates** |
-| Welcome | A person made an account, and the switch **Send Welcome E-Mail** is on | The template **New Registration** on the tab **Templates** |
+| New password | A person asked for one. See [A new password](#a-new-password) | The template **Reset Password** in the section **Templates** |
+| Welcome | A person made an account, and the switch **Send Welcome E-Mail** is on | The template **New Registration** in the section **Templates** |
 | Login from a new device | A user logged in from a browser that has no other session of the account | Fixed |
 | Test | An Admin selected **Send** next to **Send Test** | Fixed |
 | E-mail of an Admin | A call of `POST /api/v2/plugins/php-mailer/email/send` | From the request |

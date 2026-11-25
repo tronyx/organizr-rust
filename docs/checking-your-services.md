@@ -84,7 +84,7 @@ The command writes the reason to the log, above the report. The log names the ad
 | Line | What to look at |
 |---|---|
 | plex.tv knows the stored Plex token | The setting `plexToken`. A Plex token stops working when the owner signs out of all devices. |
-| The stored id is one of them | The setting `plexID`. The tab **Login** of the settings lists the servers with their ids. |
+| The stored id is one of them | The setting `plexID`. The button **Get Plex Machine**, on the page **System Settings**, **Sign-in** or **SSO**, lists the servers with their ids. |
 | An application gives a session for the Plex token | The address of the application, and whether the application lets Plex accounts log in. The owner must be able to log in to the application with Plex. |
 | An application gives a session for the fallback user | The name and the password of the fallback user. For Overseerr, the name is an e-mail address. |
 | An application of the homepage gives its data | The address and the key of the application in the settings of [the homepage](homepage.md). For qBittorrent, the user name, the password and the version of the API. For Deluge, rTorrent, uTorrent, JDownloader and UniFi, the user name and the password. |

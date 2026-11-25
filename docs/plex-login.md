@@ -12,7 +12,7 @@ In both ways, only an account that you shared your Plex server with can log in.
 ## Set it up
 
 1. Log in as an Admin.
-2. Open **Settings**, then **System Settings**, then **Main**, and select the group **Authentication**.
+2. Open **Settings**, then **System Settings**, then **Sign-in**. The section **Sign-in method** opens.
 3. Set **Authentication Type**:
 
    | Choice | Meaning |

@@ -7,11 +7,11 @@ Each test is a route below `/api/v2`. A script can send the request with the API
 | Test | Button |
 |---|---|
 | A page in a frame | **Test the tab**, below the address in the dialog of a tab. The test uses the address in the dialog, also before you save. |
-| A folder | **Test Backup Save Path**, below the field **Backup Save Path** in the group "Cron" of **System Settings**, **Main**. The test uses the folder in the field, also before you save. |
-| A cron schedule | **Test Cron Schedule**, below each field **Cron Schedule**: in the group "Cron" of **System Settings**, **Main**, and in the group "Cron" of the health checks plugin. The test uses the schedule in the field, also before you save. |
+| A folder | **Test Backup Save Path**, below the field **Backup Save Path** on the page **System Settings**, **Backup**. The test uses the folder in the field, also before you save. |
+| A cron schedule | **Test Cron Schedule**, below each field **Cron Schedule**: on the pages **System Settings**, **Updates** and **System Settings**, **Backup**, and in the section "Schedule" of the health checks plugin. The test uses the schedule in the field, also before you save. |
 | The scheduler | No button. A script sends `GET /test/cron`. |
-| The webhook for the logs | **Test Slack**, in the group "Logs" of **System Settings**, **Main**. Save the settings before you test. |
-| The LDAP server | **Test Connection** and **Test Login**, in the group "Authentication" of **System Settings**, **Main**, when the authentication backend is LDAP. Save the settings before you test. See [Logging in with LDAP, FTP, Emby or Jellyfin](login-services.md#the-two-tests). |
+| The webhook for the logs | **Test Slack**, in the section "Slack" of **System Settings**, **Logs**. Save the settings before you test. |
+| The LDAP server | **Test Connection** and **Test Login**, in the section "Sign-in method" of **System Settings**, **Sign-in**, when the authentication backend is LDAP. Save the settings before you test. See [Logging in with LDAP, FTP, Emby or Jellyfin](login-services.md#the-two-tests). |
 
 The routes and their bodies:
 

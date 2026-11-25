@@ -2,7 +2,7 @@
 
 This version of Organizr builds its pages differently from PHP Organizr. Custom CSS written for PHP aims at PHP's ids and classes, such as `#allHealthChecks` or `.white-box`, and those names are not on these pages. This page lists the names that you can use instead, and shows how to change a PHP rule into a rule for this version.
 
-You enter custom CSS in **Settings**, **Customize**, **Appearance**, **Custom CSS**. [Appearance](appearance.md) tells you how the page loads it.
+You enter custom CSS in **Settings**, **Customize**, **Appearance**, section **Custom code**, field **Custom CSS**. [Appearance](appearance.md) tells you how the page loads it.
 
 ## The names you can rely on
 
@@ -23,7 +23,7 @@ Most custom CSS only changes colors. A CSS variable changes a color everywhere i
 
 ### The colors of the theme
 
-Each theme sets these. On the OG Organizr layout, the colors in the settings group **Style & Themes** set some of them too. A modern theme sets its own colors, so those settings do not change them. Your custom CSS comes after the theme, so your variables win on both layouts.
+Each theme sets these. On the OG Organizr layout, the colors in the settings section **Style & Themes** set some of them too. A modern theme sets its own colors, so those settings do not change them. Your custom CSS comes after the theme, so your variables win on both layouts.
 
 | Variable | What it colors |
 |---|---|

@@ -82,7 +82,7 @@ See [Reverse proxy](reverse-proxy.md#a-tab-in-a-frame). Or set the tab to open i
 ### The e-mail with a new password does not come
 
 1. Check that the plugin **PHP Mailer** is switched on in **Settings** > **Plugins**. Without it, the login page has no link **Forgot your password?**.
-2. Open the settings of **PHP Mailer**. On the tab **Test & Options**, select **Send** next to **Send Test**. The test e-mail goes to the address of your own account, and the page shows the reason that the SMTP server gave.
+2. Open the settings of **PHP Mailer**. In the section **Test and options**, select **Send** next to **Send Test**. The test e-mail goes to the address of your own account, and the page shows the reason that the SMTP server gave.
 3. Look for this line in the log:
 
    ```text

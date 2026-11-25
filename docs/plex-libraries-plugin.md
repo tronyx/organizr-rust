@@ -6,14 +6,14 @@ PHP Organizr has no such built-in plugin. Its marketplace had a plugin with the 
 
 ## Set it up
 
-The plugin uses the Plex token and the Plex ID of **Settings**, **System Settings**, **Main**, group **Authentication**. The token must be the one of the owner of the Plex server.
+The plugin uses the Plex token and the Plex ID of **Settings**, **System Settings**, **Sign-in**, section **Sign-in method**. The page **SSO** has the same two fields. The token must be the one of the owner of the Plex server.
 
 1. Log in as an Admin.
 2. Open **Settings** > **Plugins** > **Inactive**. Point at the card **Plex Libraries**, and select the button with the plug.
 3. Select **Active**. Point at the card **Plex Libraries**, and select the button with the panel. The window **Plex Libraries Settings** opens.
-4. On the tab **Options**, choose the level of the people who may use the page in **Minimum Authentication**, and the libraries that they may switch in **Libraries that users may switch**.
+4. In the section **Options**, choose the level of the people who may use the page in **Minimum Authentication**, and the libraries that they may switch in **Libraries that users may switch**.
 5. Select **Save**.
-6. On the tab **Tab**, select **Make the tab Plex Libraries**. The menu then has a tab that opens the page.
+6. In the section **Tab**, select **Make the tab Plex Libraries**. The menu then has a tab that opens the page.
 
 | Setting | Key | Default |
 |---|---|---|
@@ -36,7 +36,7 @@ Without a library in **Libraries that users may switch**, people see their libra
 
 | Route | Who | What |
 |---|---|---|
-| `GET /api/v2/plugins/plexlibraries/settings` | Admin, Co-Admin | The form of the settings |
+| `GET /api/v2/plugins/plexlibraries/libraries` | Admin, Co-Admin | The libraries of the Plex server as a list of `label` and `value`, for **Libraries that users may switch**. The list is empty when Plex is not set up or does not answer |
 | `GET /api/v2/plugins/plexlibraries/shares` | The level of the plugin | The shares that the caller sees, each library with `shared` and `changeable` |
 | `PUT /api/v2/plugins/plexlibraries/shares/{share}` | The level of the plugin | Sets the libraries of a share from the list `libraries` of ids |
 | `GET /api/v2/plugins/plexlibraries/setup/tab` | Admin, Co-Admin | Makes the tab of the page |

@@ -53,7 +53,7 @@ A backup holds the log files, because they are in the data folder.
 
 ## Settings
 
-Open **Settings** > **System Settings** > **Main**, and select the tab **Logs**.
+Open **Settings** > **System Settings** > **Logs**. The settings are above the log, in the section **Logs**. The section **Slack** holds the settings of a webhook for the log and the button **Test Slack**; Organizr does not send its log there yet (D-84). The address of the webhook is a secret: the field says that one is stored, and left empty it keeps that address.
 
 | Setting | Key | Default |
 |---|---|---|

@@ -69,4 +69,4 @@ The times are in the time zone of the server. Set the environment variable `TZ` 
 
 ## Test a schedule
 
-The settings of the backups and of the health checks plugin have a button **Test Cron Schedule** below the schedule. A script can ask the same question, and it can also ask whether the scheduler runs. [Tests of the settings](settings-tests.md) describes the two routes.
+The settings of the updates, of the backups and of the health checks plugin have a button **Test Cron Schedule** below the schedule. A script can ask the same question, and it can also ask whether the scheduler runs. [Tests of the settings](settings-tests.md) describes the two routes.

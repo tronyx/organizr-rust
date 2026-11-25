@@ -5,7 +5,7 @@ Organizr can check the password of a login with a server of yours: an LDAP direc
 ## Set it up
 
 1. Log in as an Admin.
-2. Open **Settings**, then **System Settings**, then **Main**, and select the group **Authentication**.
+2. Open **Settings**, then **System Settings**, then **Sign-in**. The section **Sign-in method** opens.
 3. Set **Authentication Type**:
 
    | Setting | Meaning |
@@ -36,7 +36,7 @@ Do not select "Backend Only" before an account of the service can log in as an A
 4. The password of the login becomes the password of the Organizr account. So the person can log in when the service cannot be reached, if the setting allows the passwords of Organizr.
 5. An Organizr account with a [second factor](second-factor.md) needs its code, as in every login.
 
-A login that the service refuses counts as a failed login. After the number of failed logins of the setting **Max Login Attempts** (in the group **Security**), the address of the client and the name are locked out for a time, whatever the service says.
+A login that the service refuses counts as a failed login. After the number of failed logins of the setting **Max Login Attempts** (on the page **Login & Security**, section **Lockout and sessions**), the address of the client and the name are locked out for a time, whatever the service says.
 
 A login with an empty password is refused without asking the LDAP or the FTP server. Many servers take an empty password as a login without a name.
 

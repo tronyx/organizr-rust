@@ -9,7 +9,7 @@ Bookmarks are apart from the tabs of the menu. A tab opens an application inside
 1. Log in as an Admin.
 2. Open **Settings**, select the tab **Plugins**, and select **Inactive**.
 3. Point at the card **Bookmark**, and select the button with the plug.
-4. Select **Active**. Point at the card **Bookmark**, and select the button with the panel. The window **Bookmark Settings** opens. The tab **Bookmarks** shows the editor of the bookmarks.
+4. Select **Active**. Point at the card **Bookmark**, and select the button with the panel. The window **Bookmark Settings** opens with the editor of the bookmarks.
 5. Enter the name of a category, and select **Add a category**.
 6. Select **Add a bookmark**, and fill in the form.
 7. Select **Make the tab Bookmarks**. The menu then has a tab that shows the page.

@@ -22,15 +22,15 @@ A service works when it answers with a success. A service that sends the browser
 3. Open **Settings**, select the tab **Plugins**, and select **Inactive**.
 4. Point at the card **HealthChecks**, and select the button with the plug.
 5. Select **Active**. Point at the card **HealthChecks**, and select the button with the panel. The window **HealthChecks Settings** opens.
-6. On the tab **Options**, enter in **URL** the address that the results go to. For healthchecks.io, this is `https://hc-ping.com/`. For your own install of Healthchecks, enter its address. Organizr adds `/ping`.
+6. In the section **Options**, enter in **URL** the address that the results go to. For healthchecks.io, this is `https://hc-ping.com/`. For your own install of Healthchecks, enter its address. Organizr adds `/ping`.
 7. Select **Save**.
-8. On the tab **Services**, select **Add a service** for each service. Enter its name, the id of its check, and one address or both.
+8. In the section **Services**, select **Add a service** for each service. Enter its name, the id of its check, and one address or both.
 9. Select **Save the services**.
 10. Select **Run the checks now**, and make sure that each service shows the result that you expect.
 
 ### Import the checks of your Healthchecks account
 
-When the homepage item **Healthchecks** is set up with the address and an API key of your Healthchecks account, the tab **Services** can fill the list for you. Select **Import the checks of Healthchecks**. Organizr adds each check of the account that the list does not have yet, with its name and its id, switched on and without addresses. A check whose id is in the list already is left out. Then enter the addresses of the new services, and select **Save the services**: the import saves nothing by itself.
+When the homepage item **Healthchecks** is set up with the address and an API key of your Healthchecks account, the section **Services** can fill the list for you. Select **Import the checks of Healthchecks**. Organizr adds each check of the account that the list does not have yet, with its name and its id, switched on and without addresses. A check whose id is in the list already is left out. Then enter the addresses of the new services, and select **Save the services**: the import saves nothing by itself.
 
 The API key must have full access. A read-only key of Healthchecks gives no ping address, so Organizr cannot read the ids, and says so.
 
@@ -47,7 +47,7 @@ The API key must have full access. A read-only key of Healthchecks gives no ping
 
 ## Run the checks on a schedule
 
-On the tab **Cron**, switch **Enable** on, and enter a schedule in **Cron Schedule**. The default is `*/5 * * * *`, which is every five minutes. [Scheduled jobs](scheduled-jobs.md) describes the form of a schedule.
+In the section **Schedule**, switch **Enable** on, and enter a schedule in **Cron Schedule**. The default is `*/5 * * * *`, which is every five minutes. [Scheduled jobs](scheduled-jobs.md) describes the form of a schedule.
 
 Organizr runs the checks itself. You need no entry in the cron table of your system, which PHP Organizr needs.
 
@@ -61,7 +61,7 @@ A request to a service carries the API key of Organizr in the header `Token`. A 
 
 This means that every address on the list gets the API key of Organizr, which has all rights of an Admin. Put only addresses of your own services on the list.
 
-If you do not want that for a service, you can count a refusal as an answer: on the tab **Options**, switch **401 Error as Success** or **403 Error as Success** on. The check then shows that the service is there, and not that it works behind its login.
+If you do not want that for a service, you can count a refusal as an answer: in the section **Options**, switch **401 Error as Success** or **403 Error as Success** on. The check then shows that the service is there, and not that it works behind its login.
 
 ## Good to know
 

@@ -30,11 +30,11 @@ Organizr builds this address from the address that the browser used, as PHP Orga
 
 1. Make a client for Organizr at the provider. See the section of your provider below. Write down the client ID, the client secret and the discovery address.
 2. Log in to Organizr as an Admin.
-3. Open **Settings**, then **System Settings**, then **SSO**.
-4. In the group **OIDC Global**, switch on **Enable OIDC Authentication**.
-5. In the group of your provider, for example **OIDC: Keycloak**, switch on **Enable** and the name of the provider, for example **Enable Keycloak**, and enter the discovery address, the client ID and the client secret.
+3. Open **Settings**, then **System Settings**, then **Sign-in**.
+4. In the section **OpenID Connect**, switch on **Enable OIDC Authentication**.
+5. In the section of your provider, for example **Keycloak**, switch on **Enable** and the name of the provider, for example **Enable Keycloak**, and enter the discovery address, the client ID and the client secret.
 6. Select **Save**.
-7. Select **Test** under **Test Connection** in the group of the provider. Organizr reads the discovery document and the signing keys of the provider, and shows the issuer.
+7. Select **Test** under **Test Connection** in the section of the provider. Organizr reads the discovery document and the signing keys of the provider, and shows the issuer.
 8. Log out, and try the button on the login page.
 
 ### The settings of each provider

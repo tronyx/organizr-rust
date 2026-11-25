@@ -23,11 +23,11 @@ A backup holds the password hashes of all users. Only an Admin or a Co-Admin can
 3. Select **Make a backup now**. The list shows the new backup.
 4. To copy a backup to your computer, select **Save** in its row.
 
-The backups are in the folder `backups` of the data folder. To use another folder, enter it in the field **Backup Save Path**, on the tab **Cron** of **Settings** > **System Settings** > **Main**. The folder must exist, and the user of the server must be able to write to it. Select **Test Backup Save Path** to see whether the folder exists.
+The backups are in the folder `backups` of the data folder. To use another folder, enter it in the field **Backup Save Path**, on the same page. The folder must exist, and the user of the server must be able to write to it. Select **Test Backup Save Path** to see whether the folder exists.
 
 ## Backups on a schedule
 
-These settings are on the tab **Cron** of **Settings** > **System Settings** > **Main**.
+These settings are in the section **Automatic backup** of **Settings** > **System Settings** > **Backup**, above the list of the backups.
 
 | Setting | Key | Default |
 |---|---|---|
