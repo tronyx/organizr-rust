@@ -59,7 +59,7 @@ export const INVITES_PLUGIN: FormPage = {
         },
         {
           key: 'plexID',
-          kind: 'secret',
+          kind: 'text',
           label: 'Plex Machine',
           placeholder: 'Use Get Plex Machine Button',
         },

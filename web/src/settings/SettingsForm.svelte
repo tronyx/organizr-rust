@@ -97,7 +97,7 @@
   type Block = { kind: 'grid'; cells: Cell[] } | { kind: 'part'; entry: PartEntry };
 
   let config = $state<Record<string, unknown> | null>(null);
-  let lists = $state<LoadedLists>({ lists: {}, frameTabs: [], failed: [] });
+  let lists = $state<LoadedLists>({ lists: {}, frameTabs: [], tabNames: {}, failed: [] });
   let start = $state<Record<string, FormValue>>({});
   let form = $state<Record<string, FormValue>>({});
   let loadError = $state<string | null>(null);
@@ -218,17 +218,34 @@
 
   /**
    * The choices of a field, with its value added when it is none of them. A multi-select
-   * without a choice to pick gets none added, so that it takes a text with commas.
+   * without a choice to pick gets none added, so that it takes a text with commas. A frame
+   * tab that the address leaves out shows by its name.
    */
   function choices(field: SettingField) {
     const all = choicesOf(field, lists, valueOf);
     if (field.kind === 'select') {
-      return withValue(all, form[field.key] ?? '');
+      const names = field.source === 'frame-tabs' ? lists.tabNames : {};
+      return withValue(all, form[field.key] ?? '', names);
     }
     if (field.kind === 'multi-select' && all.some((choice) => !choice.disabled)) {
       return withValue(all, form[field.key] ?? []);
     }
     return all;
+  }
+
+  /**
+   * Whether a multi-select of a list from the server has no choice to pick, because the list
+   * answered with none, as a plugin list does while its service is not set up.
+   */
+  function hasNoChoices(field: SettingField): boolean {
+    const source = field.source;
+    return (
+      field.kind === 'multi-select' &&
+      source !== undefined &&
+      source !== 'setting-values' &&
+      !lists.failed.includes(source) &&
+      !choicesOf(field, lists, valueOf).some((choice) => !choice.disabled)
+    );
   }
 
   /** The grids and parts of a section: a part takes the whole width between two grids. */
@@ -277,6 +294,16 @@
   function boxTitle(box: FoldBox): string {
     const title = box.titleKey === undefined ? '' : String(form[box.titleKey] ?? '');
     return title === '' ? box.fold : title;
+  }
+
+  /**
+   * The folding boxes with the fields that show, with the values as they stand in the form.
+   * A box that shows none of its fields is left out.
+   */
+  function shownBoxes(boxes: FoldBox[]): FoldBox[] {
+    return boxes
+      .map((box) => ({ ...box, fields: box.fields.filter((one) => isShown(one, form, license)) }))
+      .filter((box) => box.fields.length > 0);
   }
 
   /** Whether an entry of the grid shows, with the values as they stand in the form. */
@@ -426,6 +453,7 @@
     choices={choices(entry)}
     stored={config?.[entry.key] === SECURE}
     listFailed={entry.source !== undefined && lists.failed.includes(entry.source)}
+    listEmpty={hasNoChoices(entry)}
     bind:revealed={
       () => shownSecrets[entry.key] === true, (shown) => (shownSecrets[entry.key] = shown)
     }
@@ -544,21 +572,22 @@
   <div class="org-form-grid">
     {#each cells as cell, position (position)}
       {#if cell.kind === 'folds'}
-        <div class="org-form-group org-form-wide">
-          {#if cell.heading}<span class="org-form-label">{cell.heading}</span>{/if}
-          {#each cell.boxes as box, number (number)}
-            <details class="org-accordion">
-              <summary>{boxTitle(box)}</summary>
-              <div class="org-accordion-body">
-                {#each box.fields as inner (inner.key)}
-                  {#if isShown(inner, form, license)}
+        {@const boxes = shownBoxes(cell.boxes)}
+        {#if boxes.length > 0}
+          <div class="org-form-group org-form-wide">
+            {#if cell.heading}<span class="org-form-label">{cell.heading}</span>{/if}
+            {#each boxes as box, number (number)}
+              <details class="org-accordion">
+                <summary>{boxTitle(box)}</summary>
+                <div class="org-accordion-body">
+                  {#each box.fields as inner (inner.key)}
                     <div class="mb-4">{@render field(inner)}</div>
-                  {/if}
-                {/each}
-              </div>
-            </details>
-          {/each}
-        </div>
+                  {/each}
+                </div>
+              </details>
+            {/each}
+          </div>
+        {/if}
       {:else if entryShown(cell.entry)}
         <div class="org-form-group" class:org-form-wide={isWide(cell.entry)}>
           {@render other(section, cell.entry, cell.index)}

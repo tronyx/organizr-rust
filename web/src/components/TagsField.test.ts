@@ -36,4 +36,15 @@ describe('TagsField', () => {
     expect(screen.getByRole('button', { name: 'Remove value 1' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /the-key/ })).toBeNull();
   });
+
+  it('shows the values of a disabled field, and lets nothing change them', async () => {
+    const onchange = vi.fn();
+    render(TagsField, { id: 'ips', values: ['10.0.0.0/8'], disabled: true, onchange });
+
+    expect(screen.getByRole('textbox')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove 10.0.0.0/8' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Change 10.0.0.0/8' })).toBeDisabled();
+    await fireEvent.click(screen.getByRole('button', { name: 'Remove 10.0.0.0/8' }));
+    expect(onchange).not.toHaveBeenCalled();
+  });
 });

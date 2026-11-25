@@ -14,6 +14,7 @@
     stored = false,
     revealed = $bindable(false),
     listFailed = false,
+    listEmpty = false,
     onchange,
   }: {
     field: SettingField;
@@ -27,6 +28,8 @@
     revealed?: boolean;
     /** Whether the list of the choices could not be loaded. */
     listFailed?: boolean;
+    /** Whether the list of the choices was loaded and holds none. */
+    listEmpty?: boolean;
     onchange: (value: FormValue) => void;
   } = $props();
 
@@ -100,6 +103,7 @@
     values={list}
     placeholder={stored ? 'Values are stored' : field.placeholder}
     hidden={field.hiddenValues}
+    disabled={field.disabled}
     describedby={hint}
     onchange={(values) => onchange(values)}
   />
@@ -249,6 +253,10 @@
 {/if}
 {#if listFailed}
   <p class="text-error mt-1 text-sm">The list could not be loaded.</p>
+{:else if listEmpty}
+  <p class="mt-1 text-sm">
+    No choices were found. Set up the service and save, then open this form again.
+  </p>
 {/if}
 {#if field.help}
   <p id={hint} class="sr-only">{field.help}</p>

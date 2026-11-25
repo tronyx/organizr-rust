@@ -9,6 +9,7 @@
     values,
     placeholder,
     hidden = false,
+    disabled = false,
     describedby,
     onchange,
   }: {
@@ -17,6 +18,8 @@
     placeholder?: string;
     /** Whether the values are secrets, shown as dots, as PHP's `password-alt`. */
     hidden?: boolean;
+    /** Whether the field shows the values and cannot change them. */
+    disabled?: boolean;
     describedby?: string;
     onchange: (values: string[]) => void;
   } = $props();
@@ -43,10 +46,16 @@
   }
 
   function remove(index: number) {
+    if (disabled) {
+      return;
+    }
     onchange(values.filter((_, at) => at !== index));
   }
 
   function edit(index: number) {
+    if (disabled) {
+      return;
+    }
     add();
     typed = values[index] ?? '';
     remove(index);
@@ -71,6 +80,7 @@
         <button
           type="button"
           class="org-tag-text"
+          {disabled}
           aria-label={hidden ? `Change value ${index + 1}` : `Change ${value}`}
           onclick={() => edit(index)}
         >
@@ -79,6 +89,7 @@
         <button
           type="button"
           class="org-tag-remove"
+          {disabled}
           aria-label={hidden ? `Remove value ${index + 1}` : `Remove ${value}`}
           onclick={() => remove(index)}
         >
@@ -94,6 +105,7 @@
     class="org-tags-input"
     type={hidden ? 'password' : 'text'}
     autocomplete="off"
+    {disabled}
     placeholder={values.length === 0 ? placeholder : ''}
     aria-describedby={describedby}
     onkeydown={keydown}

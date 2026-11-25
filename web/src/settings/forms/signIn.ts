@@ -46,7 +46,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'plexID',
-          kind: 'secret',
+          kind: 'text',
           label: 'Plex Machine',
           placeholder: 'Use Get Plex Machine Button',
           shownWhen: 'plex',

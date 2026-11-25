@@ -13,19 +13,28 @@ export interface FrameTab {
   urlLocal: string | null;
 }
 
+/** The frame tabs of a caller, and the names of all tabs by their ids. */
+export interface LoadedTabs {
+  frameTabs: FrameTab[];
+  tabNames: Record<string, string>;
+}
+
 /**
  * The tabs that are on, show in a frame and are for a caller of the given level, as PHP's
- * `getIframeTabs()` lists them.
+ * `getIframeTabs()` lists them, with the names of all tabs.
  */
-export async function loadFrameTabs(level: number): Promise<FrameTab[]> {
+export async function loadTabs(level: number): Promise<LoadedTabs> {
   const { data } = await api<Omit<EditorData, 'users'>>('GET', 'tabs');
-  return data.tabs
-    .filter((tab: Tab) => tab.enabled === 1 && tab.type === 1 && tab.group_id >= level)
-    .map((tab: Tab) => ({
-      choice: { label: tab.name, value: String(tab.id) },
-      url: tab.url,
-      urlLocal: tab.url_local,
-    }));
+  return {
+    frameTabs: data.tabs
+      .filter((tab: Tab) => tab.enabled === 1 && tab.type === 1 && tab.group_id >= level)
+      .map((tab: Tab) => ({
+        choice: { label: tab.name, value: String(tab.id) },
+        url: tab.url,
+        urlLocal: tab.url_local,
+      })),
+    tabNames: Object.fromEntries(data.tabs.map((tab: Tab) => [String(tab.id), tab.name])),
+  };
 }
 
 /** The routes of the plugin lists, which answer with their choices. */
@@ -54,7 +63,7 @@ export async function loadList(source: ListSource, level = 999): Promise<Choice[
       return Object.keys(data).map((name) => ({ label: name, value: name }));
     }
     case 'frame-tabs':
-      return (await loadFrameTabs(level)).map((tab) => tab.choice);
+      return (await loadTabs(level)).frameTabs.map((tab) => tab.choice);
     case 'plex-libraries':
     case 'nextcloud-groups':
     case 'komga-libraries': {
@@ -67,12 +76,13 @@ export async function loadList(source: ListSource, level = 999): Promise<Choice[
 }
 
 /**
- * The lists that a page loaded, by their source; the frame tabs with their addresses; and
- * the sources that could not be loaded.
+ * The lists that a page loaded, by their source; the frame tabs with their addresses; the
+ * names of all tabs by their ids; and the sources that could not be loaded.
  */
 export interface LoadedLists {
   lists: Partial<Record<ListSource, Choice[]>>;
   frameTabs: FrameTab[];
+  tabNames: Record<string, string>;
   failed: ListSource[];
 }
 
@@ -84,12 +94,12 @@ export async function loadLists(fields: SettingField[], level: number): Promise<
   const sources = [
     ...new Set(fields.map((field) => field.source).filter((source) => source !== undefined)),
   ];
-  const loaded: LoadedLists = { lists: {}, frameTabs: [], failed: [] };
+  const loaded: LoadedLists = { lists: {}, frameTabs: [], tabNames: {}, failed: [] };
   await Promise.all(
     sources.map(async (source) => {
       try {
         if (source === 'frame-tabs') {
-          loaded.frameTabs = await loadFrameTabs(level);
+          ({ frameTabs: loaded.frameTabs, tabNames: loaded.tabNames } = await loadTabs(level));
         } else {
           loaded.lists[source] = await loadList(source, level);
         }
@@ -156,12 +166,17 @@ function sourcedChoices(
 /**
  * The choices with each value of the field added, once, when it is none of them, as an old
  * or hand-edited value: the list shows it, and a Save leaves it as it is. An empty value
- * adds nothing: the list shows its first choice, as PHP does.
+ * adds nothing: the list shows its first choice, as PHP does. `names` gives the label of a
+ * value that has one, as the name of a tab; another value shows as it is.
  */
-export function withValue(choices: Choice[], value: FormValue): Choice[] {
+export function withValue(
+  choices: Choice[],
+  value: FormValue,
+  names: Record<string, string> = {},
+): Choice[] {
   const values = Array.isArray(value) ? value : [String(value)];
   const missing = [...new Set(values)].filter(
     (one) => one !== '' && !choices.some((choice) => choice.value === one),
   );
-  return [...choices, ...missing.map((one) => ({ label: one, value: one }))];
+  return [...choices, ...missing.map((one) => ({ label: names[one] ?? one, value: one }))];
 }

@@ -473,7 +473,7 @@ describe('SettingsForm, the Plex buttons', () => {
             text: 'Retrieve',
             action: { kind: 'plex-token' },
           },
-          { key: 'plexID', kind: 'secret', label: 'Plex Machine' },
+          { key: 'plexID', kind: 'text', label: 'Plex Machine' },
           {
             kind: 'button',
             label: 'Get Plex Machine',
@@ -539,6 +539,20 @@ describe('SettingsForm, the Plex buttons', () => {
     await fireEvent.change(choice, { target: { value: 'other-id' } });
     await save();
     expect(await sentBody(sent)).toEqual({ plexID: 'other-id' });
+  });
+
+  it('shows the stored Plex machine on the sign-in page, and lets the Admin clear it', async () => {
+    const { sent } = await show(SIGN_IN, {
+      'GET config': { data: { authType: 'both', authBackend: 'plex', plexID: 'stored-id' } },
+      'PUT config': {},
+    });
+
+    const machine = screen.getByLabelText('Plex Machine');
+    expect(machine).toHaveAttribute('type', 'text');
+    expect(machine).toHaveValue('stored-id');
+    await fireEvent.input(machine, { target: { value: '' } });
+    await save();
+    expect(await sentBody(sent)).toEqual({ plexID: '' });
   });
 });
 
@@ -669,6 +683,63 @@ describe('SettingsForm, the lists', () => {
     expect(options('Target Tab')).toEqual(['Open in New Window', 'Music']);
   });
 
+  it('names a stored tab that the address leaves out, and keeps its value', async () => {
+    const { sent } = await show(CALENDAR, {
+      ...LIST_ANSWERS,
+      'GET config': {
+        data: {
+          ...((LIST_ANSWERS['GET config'] as CannedAnswer).data as object),
+          lidarrCalendarLink: 'http://lidarr.lan/',
+          lidarrFrameTarget: '1',
+        },
+      },
+      'PUT config': {},
+    });
+    await section('Options');
+
+    // Lidarr has another address, yet the stored tab shows by its name.
+    expect(options('Target Tab')).toEqual(['Open in New Window', 'Music', 'Lidarr']);
+    expect(screen.getByLabelText('Target Tab')).toHaveValue('1');
+
+    // The value stays as it is stored: a save of another change leaves it out.
+    await fireEvent.change(screen.getByLabelText('Minimum Authentication'), {
+      target: { value: '0' },
+    });
+    await save();
+    expect(await sentBody(sent)).toEqual({ homepageLidarrAuth: '0' });
+  });
+
+  it('shows the raw value of a stored tab that does not exist', async () => {
+    await show(CALENDAR, {
+      ...LIST_ANSWERS,
+      'GET config': {
+        data: {
+          ...((LIST_ANSWERS['GET config'] as CannedAnswer).data as object),
+          lidarrFrameTarget: '42',
+        },
+      },
+    });
+    await section('Options');
+
+    expect(options('Target Tab')).toEqual(['Open in New Window', 'Lidarr', 'Music', '42']);
+    expect(screen.getByLabelText('Target Tab')).toHaveValue('42');
+  });
+
+  it('names a stored tab that is off by its name', async () => {
+    await show(CALENDAR, {
+      ...LIST_ANSWERS,
+      'GET config': {
+        data: {
+          ...((LIST_ANSWERS['GET config'] as CannedAnswer).data as object),
+          lidarrFrameTarget: '3',
+        },
+      },
+    });
+    await section('Options');
+
+    expect(options('Target Tab')).toEqual(['Open in New Window', 'Lidarr', 'Music', 'Off']);
+  });
+
   it('offers the values of another setting, after the fixed choices', async () => {
     await show(CALENDAR, LIST_ANSWERS);
     await section('Options');
@@ -724,6 +795,59 @@ describe('SettingsForm, the lists', () => {
     await save();
 
     expect(await sentBody(sent)).toEqual({ 'INVITES-plexLibraries': 'films,shows,music' });
+  });
+
+  /** A page with one multi-select of the libraries of Plex. */
+  const LIBRARIES: FormPage = {
+    id: 'invites',
+    title: 'Invites',
+    sections: [
+      {
+        id: 'plex',
+        title: 'Plex',
+        entries: [
+          {
+            key: 'INVITES-plexLibraries',
+            kind: 'multi-select',
+            label: 'Libraries',
+            source: 'plex-libraries',
+          },
+        ],
+      },
+    ],
+  };
+  const NO_CHOICES =
+    'No choices were found. Set up the service and save, then open this form again.';
+
+  it('says how to get choices when a plugin list answers with none', async () => {
+    await show(LIBRARIES, {
+      'GET config': { data: { 'INVITES-plexLibraries': '' } },
+      'GET plugins/plexlibraries/libraries': { data: [] },
+    });
+
+    expect(screen.getByLabelText('Libraries').tagName).toBe('INPUT');
+    expect(screen.getByText(NO_CHOICES)).toBeInTheDocument();
+    expect(screen.queryByText('The list could not be loaded.')).not.toBeInTheDocument();
+  });
+
+  it('says that a plugin list failed, and not that it is empty, when it cannot be loaded', async () => {
+    await show(LIBRARIES, {
+      'GET config': { data: { 'INVITES-plexLibraries': '' } },
+      'GET plugins/plexlibraries/libraries': { status: 500, message: 'Plex is down' },
+    });
+
+    expect(screen.getByText('The list could not be loaded.')).toBeInTheDocument();
+    expect(screen.queryByText(NO_CHOICES)).not.toBeInTheDocument();
+  });
+
+  it('adds no note to a plugin list with choices', async () => {
+    await show(LIBRARIES, {
+      'GET config': { data: { 'INVITES-plexLibraries': '1' } },
+      'GET plugins/plexlibraries/libraries': { data: [{ label: 'Films', value: '1' }] },
+    });
+
+    expect(screen.getByLabelText('Libraries').tagName).toBe('SELECT');
+    expect(screen.queryByText(NO_CHOICES)).not.toBeInTheDocument();
   });
 
   it('adds a stored value that is none of the choices once, and an empty one not at all', () => {
@@ -1014,6 +1138,36 @@ describe('SettingsForm, the parts and the boxes', () => {
     const heading = screen.getByText('Edit Template');
     expect(heading).toHaveClass('org-form-label');
     expect(heading.closest('.org-form-group')?.querySelectorAll('details')).toHaveLength(2);
+  });
+
+  it('leaves out a box whose fields are all hidden, and the heading when no box is left', async () => {
+    const business = { license: 'business' } as const;
+    const page: FormPage = {
+      id: 'mail',
+      title: 'Mail',
+      sections: [
+        {
+          id: 'templates',
+          title: 'Templates',
+          entries: [
+            { kind: 'heading', text: 'Edit Template' },
+            { key: 'resetSubject', kind: 'text', label: 'Subject', fold: 'Reset Password' },
+            { key: 'hidden', kind: 'text', label: 'Hidden', fold: 'Business', ...business },
+            { key: 'title', kind: 'text', label: 'Title' },
+            { kind: 'heading', text: 'Business Templates' },
+            { key: 'other', kind: 'text', label: 'Other', fold: 'Other', ...business },
+          ],
+        },
+      ],
+    };
+    await show(page, { 'GET config': { data: { license: 'personal' } } });
+
+    const titles = [...document.querySelectorAll('details.org-accordion summary')].map((summary) =>
+      summary.textContent?.trim(),
+    );
+    expect(titles).toEqual(['Reset Password']);
+    expect(screen.getByText('Edit Template')).toBeInTheDocument();
+    expect(screen.queryByText('Business Templates')).toBeNull();
   });
 
   it('gives the templates of the mails their heading', () => {

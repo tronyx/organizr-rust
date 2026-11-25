@@ -81,6 +81,18 @@ describe('the definitions of the settings forms', () => {
     expect(notSecret).toEqual([]);
   });
 
+  it('draw as a secret only a setting that the server masks', () => {
+    const secrets = [...registry.matchAll(/:\s*Secret\s*=\s*"([^"]+)"/g)].map(
+      (match) => match[1] ?? '',
+    );
+    const notMasked = allPages()
+      .flatMap((page) => page.sections.flatMap((section) => section.entries))
+      .filter((entry): entry is SettingField => isField(entry) && isSecret(entry))
+      .filter((field) => !secrets.includes(field.key))
+      .map((field) => field.key);
+    expect([...new Set(notMasked)]).toEqual([]);
+  });
+
   it('hold the forty homepage items and the six plugin forms', () => {
     expect(HOMEPAGE_ITEMS).toHaveLength(40);
     expect(Object.keys(PLUGIN_FORMS).sort()).toEqual([
