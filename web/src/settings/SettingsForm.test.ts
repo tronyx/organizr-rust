@@ -1017,6 +1017,49 @@ describe('SettingsForm, the parts and the boxes', () => {
     expect(screen.getByLabelText('Script')).toBeInTheDocument();
   });
 
+  describe('a field that only the Admin changes while a switch is on', () => {
+    const TRUST: FormPage = {
+      id: 'trust',
+      title: 'Trust',
+      sections: [
+        {
+          id: 'one',
+          title: 'One',
+          entries: [
+            { key: 'html01', kind: 'code', label: 'HTML 01', adminOnlyWhen: 'trusted01' },
+            { key: 'trusted01', kind: 'switch', label: 'Trust 01', adminOnly: true },
+            { key: 'html02', kind: 'code', label: 'HTML 02', adminOnlyWhen: 'trusted02' },
+          ],
+        },
+      ],
+    };
+    const STORED = { html01: '<p>1</p>', trusted01: true, html02: '<p>2</p>', trusted02: false };
+
+    it('shows the field to a Co-Admin without letting them change it', async () => {
+      session.launch = launch(1);
+      const { sent } = await show(TRUST, {
+        'GET config': { data: STORED },
+        'GET launch': { data: launch(1) },
+        'PUT config': {},
+      });
+
+      expect(screen.getByLabelText('HTML 01')).toBeDisabled();
+      expect(screen.getByLabelText('HTML 01')).toHaveValue('<p>1</p>');
+      expect(screen.queryByLabelText('Trust 01')).toBeNull();
+      expect(screen.getByLabelText('HTML 02')).toBeEnabled();
+      await fireEvent.input(screen.getByLabelText('HTML 02'), { target: { value: '<p>Two</p>' } });
+      await save();
+
+      expect(await sentBody(sent)).toEqual({ html02: '<p>Two</p>' });
+    });
+
+    it('lets the Admin change it', async () => {
+      await show(TRUST, { 'GET config': { data: STORED } });
+
+      expect(screen.getByLabelText('HTML 01')).toBeEnabled();
+    });
+  });
+
   describe('the settings that only the Admin changes', () => {
     const STORED = {
       organizrAPI: 'abcdefghij0123456789',

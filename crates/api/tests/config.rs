@@ -162,6 +162,8 @@ async fn some_settings_are_changed_by_the_admin_only() {
             ("layout", json!("modern")),
             ("modernTheme", json!("organizr")),
             ("modernColorSet", json!("light")),
+            ("homepageCustomHTML01Trusted", json!(true)),
+            ("homepageCustomHTML08Trusted", json!("true")),
         ] {
             // The other setting of the request is not changed either.
             let body = json!({"title": "Home", key: value});
@@ -194,6 +196,41 @@ async fn some_settings_are_changed_by_the_admin_only() {
         let body = json!({"customCss": "body { margin: 0; }"});
         let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn html_of_a_trusted_item_is_changed_by_the_admin_only() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+
+        // A Co-Admin changes the HTML of an item that is not trusted.
+        let body = json!({"customHTML01": "<p>One</p>", "customHTML02": "<p>Two</p>"});
+        let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+
+        // Once an Admin trusts item 01, only an Admin changes its HTML (D-131).
+        change(&app, json!({"homepageCustomHTML01Trusted": true})).await;
+        let body = json!({"customHTML02": "<p>Second</p>", "customHTML01": "<script></script>"});
+        let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+        assert_refused(
+            &answer,
+            StatusCode::UNAUTHORIZED,
+            "Config item: customHTML01 can only be changed by an admin",
+        );
+        assert_eq!(setting(&app, "customHTML01").await, json!("<p>One</p>"));
+        assert_eq!(setting(&app, "customHTML02").await, json!("<p>Two</p>"));
+
+        // The item that is not trusted stays open to the Co-Admin.
+        let body = json!({"customHTML02": "<p>Second</p>"});
+        let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+
+        change(&app, json!({"customHTML01": "<p>First</p>"})).await;
+        assert_eq!(setting(&app, "customHTML01").await, json!("<p>First</p>"));
     })
     .await;
 }

@@ -141,6 +141,11 @@
     return !(isField(entry) && hiddenKeys.includes(entry.key));
   }
 
+  /** Whether the caller sees the field and cannot change it, because a switch leaves it to the Admin. */
+  function isLocked(entry: SettingField): boolean {
+    return !isAdmin && entry.adminOnlyWhen !== undefined && config?.[entry.adminOnlyWhen] === true;
+  }
+
   /** Whether the caller works with the entry: a field, a button or a part. */
   function isWorking(entry: Entry): boolean {
     return isField(entry) || entry.kind === 'button' || entry.kind === 'part';
@@ -464,7 +469,7 @@
 
 {#snippet field(entry: SettingField)}
   <FieldInput
-    field={entry}
+    field={isLocked(entry) ? { ...entry, disabled: true } : entry}
     value={form[entry.key] ?? ''}
     choices={choices(entry)}
     stored={config?.[entry.key] === SECURE}

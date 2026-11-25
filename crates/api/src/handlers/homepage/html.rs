@@ -24,7 +24,7 @@ use crate::handlers::fields::Refusal;
 use crate::state::AppState;
 
 /// The numbers of the items: `01` to `08`.
-const NUMBERS: [&str; 8] = ["01", "02", "03", "04", "05", "06", "07", "08"];
+pub(crate) const NUMBERS: [&str; 8] = ["01", "02", "03", "04", "05", "06", "07", "08"];
 
 /// What the browser may do with the document. `sandbox` without `allow-same-origin`
 /// makes it a page of no site. A link can open a window or, after a click, change the

@@ -36,6 +36,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - A login through Plex or Emby Connect never opens an Admin or Co-Admin account, except the Plex owner's, and no outside service replaces an Admin or Co-Admin password (D-127).
 - Proxy headers are believed only from the proxies in `ORGANIZR_TRUSTED_PROXIES`, and wrong passwords lock the client out for a while.
 - Custom HTML items run in a closed frame unless you trust them, and the About page loads nothing from other sites.
+- Only an Admin trusts a custom HTML item or changes the HTML of a trusted one (D-131).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

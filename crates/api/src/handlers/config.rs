@@ -21,6 +21,7 @@ use crate::caller::Caller;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::{Refusal, is_nothing_in_php};
+use crate::handlers::homepage::html;
 use crate::state::AppState;
 
 /// The level a caller needs for the configuration routes.
@@ -41,9 +42,13 @@ const REGISTRATION_PASSWORD: &str = "registrationPassword";
 const INSTALL_ID: &str = "uuid";
 
 /// Whether only an Admin can change a setting: the API key, the settings that let a
-/// proxy say who the caller is, the scripts that run on every page, and the default look
-/// (D-125).
-fn is_for_admins_only(key: &str) -> bool {
+/// proxy say who the caller is, the scripts that run on every page, the default look
+/// (D-125), and the trust of a custom HTML item with the HTML of a trusted item (D-131).
+///
+/// `settings` decides the settings that are for Admins only some of the time. Such a rule
+/// reads only settings that are always for Admins only, so for a Co-Admin the copy that
+/// takes the values of a request still holds what is stored.
+fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
     key == API_KEY
         || key.starts_with("authProxy")
         || key == "customJava"
@@ -51,6 +56,13 @@ fn is_for_admins_only(key: &str) -> bool {
         || key == "layout"
         || key == "modernTheme"
         || key == "modernColorSet"
+        || key
+            .strip_prefix("homepageCustomHTML")
+            .and_then(|rest| rest.strip_suffix("Trusted"))
+            .is_some_and(|number| html::NUMBERS.contains(&number))
+        || key
+            .strip_prefix("customHTML")
+            .is_some_and(|number| html::is_trusted(settings, number))
 }
 
 /// A setting as the API shows it to a caller of the given level.
@@ -163,7 +175,7 @@ async fn accepted(
             "Config item: {key} cannot be changed"
         )));
     }
-    if is_for_admins_only(key) && level != GroupLevel::ADMIN {
+    if level != GroupLevel::ADMIN && is_for_admins_only(key, settings) {
         return Err(Refusal::Request(
             StatusCode::UNAUTHORIZED,
             format!("Config item: {key} can only be changed by an admin"),
@@ -247,11 +259,17 @@ pub async fn change(
 
 #[cfg(test)]
 mod tests {
+    use organizr_settings::Settings;
+    use serde_json::Value;
+
     use super::is_for_admins_only;
 
     #[test]
     fn settings_for_admins_only() {
+        let mut settings = Settings::defaults();
         for key in [
+            "homepageCustomHTML01Trusted",
+            "homepageCustomHTML08Trusted",
             "organizrAPI",
             "authProxyEnabled",
             "authProxyHeaderName",
@@ -262,10 +280,25 @@ mod tests {
             "modernTheme",
             "modernColorSet",
         ] {
-            assert!(is_for_admins_only(key), "{key}");
+            assert!(is_for_admins_only(key, &settings), "{key}");
         }
-        for key in ["title", "customCss", "authBackend", "plexToken"] {
-            assert!(!is_for_admins_only(key), "{key}");
+        for key in [
+            "title",
+            "customCss",
+            "authBackend",
+            "plexToken",
+            "customHTML01",
+        ] {
+            assert!(!is_for_admins_only(key, &settings), "{key}");
+        }
+
+        // The HTML of a trusted item, and only of that item.
+        settings
+            .set("homepageCustomHTML01Trusted", &Value::Bool(true))
+            .expect("a switch takes true");
+        assert!(is_for_admins_only("customHTML01", &settings));
+        for key in ["customHTML02", "customHTML1", "customHTML01x"] {
+            assert!(!is_for_admins_only(key, &settings), "{key}");
         }
     }
 }

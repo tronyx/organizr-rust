@@ -1192,7 +1192,7 @@ For such an item, switch **Trust custom HTML 01: show it as a page of this site*
 ![The CustomHTML dialog with the Custom HTML Code field and the trust switch below it](images/custom-html-trust.png)
 
 > [!CAUTION]
-> Trust only HTML and scripts you wrote or fully know, from sites you control. Admins and Co-Admins can both change this switch and the HTML, so a Co-Admin can make a trusted item that runs as every Admin who opens the homepage. Each switch is off at the start, also after an import.
+> Trust only HTML and scripts you wrote or fully know, from sites you control. Only an Admin can change this switch, and only an Admin can change the HTML of a trusted item. A Co-Admin sees that HTML without being able to change it (D-131). Each switch is off at the start, also after an import.
 
 #### 📜 HTML from PHP Organizr
 

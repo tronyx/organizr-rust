@@ -92,6 +92,11 @@ export interface SettingField {
   foldTitleKey?: string;
   /** Only the Admin sees the field; the page does not send it for a Co-Admin. */
   adminOnly?: boolean;
+  /**
+   * The switch that, when its stored value is on, leaves the field to the Admin: a Co-Admin
+   * then sees the value and cannot change it, as the HTML of a trusted custom HTML item.
+   */
+  adminOnlyWhen?: string;
 }
 
 /** What a button does. */
