@@ -9,7 +9,7 @@ Let people log in to Organizr with an account from your identity provider: **Aut
 The short version: make a client at your provider, paste three values into Organizr, test.
 
 1. **At your provider**, make a client for Organizr. Follow the section for [Authentik](#-authentik), [Keycloak](#-keycloak), [PocketID](#-pocketid) or [Zitadel](#-zitadel). Write down three values: the **client ID**, the **client secret** and the **discovery URL**.
-2. Log in to Organizr as an Admin.
+2. Log in to Organizr as an Admin. Only an Admin can change these settings; a Co-Admin sees them but can't change them (D-133).
 3. Open **Settings › System Settings › Sign-in**.
 4. In the section **OpenID Connect**, switch on **Enable OIDC Authentication**.
 5. In the section of your provider, for example **Keycloak**, switch on **Enable Keycloak**. Enter the **Discovery URL**, the **Client ID** and the **Client Secret**.

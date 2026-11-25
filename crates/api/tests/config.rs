@@ -308,6 +308,50 @@ async fn login_backend_settings_are_changed_by_the_admin_only() {
 }
 
 #[tokio::test]
+async fn openid_connect_settings_are_changed_by_the_admin_only() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+
+        // The providers and the groups that an OpenID Connect login gives (D-133).
+        for (key, value) in [
+            ("oidcEnabled", json!(true)),
+            ("oidcAutoCreateUsers", json!(true)),
+            ("oidcLinkExistingUsers", json!(true)),
+            ("oidcDefaultGroupId", json!("0")),
+            ("oidcGroupMappings", json!(r#"{"staff": 0}"#)),
+            ("oidcUpdateGroupsOnLogin", json!(true)),
+            ("oidcKeycloakEnabled", json!(true)),
+            (
+                "oidcKeycloakDiscoveryUrl",
+                json!("https://idp.example.test/.well-known/openid-configuration"),
+            ),
+            ("oidcKeycloakClientSecret", json!("secret")),
+            ("oidcZitadelGroupClaim", json!("roles")),
+        ] {
+            let body = json!({"title": "Home", key: value});
+            let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+            assert_refused(
+                &answer,
+                StatusCode::UNAUTHORIZED,
+                &format!("Config item: {key} can only be changed by an admin"),
+            );
+        }
+        assert_eq!(setting(&app, "oidcDefaultGroupId").await, json!("4"));
+        assert_eq!(setting(&app, "title").await, json!("Organizr V2"));
+
+        change(
+            &app,
+            json!({"oidcDefaultGroupId": "3", "oidcEnabled": true}),
+        )
+        .await;
+        assert_eq!(setting(&app, "oidcDefaultGroupId").await, json!("3"));
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn key_that_is_no_setting_and_value_that_does_not_fit_are_refused() {
     on_each_engine(async |database| {
         seed::installed(database).await;

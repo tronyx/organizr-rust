@@ -211,4 +211,23 @@ describe('the definitions of the settings forms', () => {
     expect(days.length).toBeGreaterThanOrEqual(7);
     expect(texts).toContain('Emby server address');
   });
+
+  it('leave to the Admin, on every page, the settings that only the Admin changes', () => {
+    // The settings that the server takes from an Admin only (D-125, D-131 to D-133).
+    const always =
+      /^(oidc|authType$|authBackend|authBaseDN$|ldap(Bind|Type|SSL|TLS)|plexAdmin$|ignoreTFA)/;
+    const sometimes = ['embyURL', 'jellyfinURL', 'localIPList'];
+    const fields = allFields();
+    const open = fields
+      .filter((field) => always.test(field.key))
+      .filter((field) => field.adminChanges !== true && field.adminOnly !== true)
+      .map((field) => field.key);
+    expect(open).toEqual([]);
+    const unruled = fields
+      .filter((field) => sometimes.includes(field.key))
+      .filter((field) => typeof field.adminChanges !== 'object')
+      .map((field) => field.key);
+    expect(unruled).toEqual([]);
+    expect(fields.filter((field) => field.key.startsWith('oidc')).length).toBeGreaterThan(30);
+  });
 });

@@ -38,6 +38,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - Custom HTML items run in a closed frame unless you trust them, and the About page loads nothing from other sites.
 - Only an Admin trusts a custom HTML item or changes the HTML of a trusted one (D-131).
 - Only an Admin changes the sign-in settings, the Plex owner and the logins that skip the second factor. While a login uses the Emby or Jellyfin server, only an Admin changes its address (D-132).
+- Only an Admin changes the OpenID Connect settings, which pick the providers and the group a login gives (D-133).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

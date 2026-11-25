@@ -65,7 +65,8 @@ const LOGIN_SETTINGS: [&str; 15] = [
 /// Whether only an Admin can change a setting: the API key, the settings that let a
 /// proxy say who the caller is, the scripts that run on every page, the default look
 /// (D-125), the trust of a custom HTML item with the HTML of a trusted item (D-131), and
-/// the settings that a login trusts (D-132).
+/// the settings that a login trusts (D-132), among them every setting of OpenID Connect,
+/// which picks the providers and the group that a login gives (D-133).
 ///
 /// `settings` decides the settings that are for Admins only some of the time. Such a rule
 /// reads only settings that are always for Admins only, so for a Co-Admin the copy that
@@ -74,6 +75,7 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
     key == API_KEY
         || key.starts_with("authProxy")
         || LOGIN_SETTINGS.contains(&key)
+        || key.starts_with("oidc")
         || is_trusted_by_a_login(key, settings)
         || key == "customJava"
         || key == "customThemeJava"
@@ -322,6 +324,9 @@ mod tests {
             "ldapBindPassword",
             "plexAdmin",
             "ignoreTFALocal",
+            "oidcEnabled",
+            "oidcGroupMappings",
+            "oidcDefaultGroupId",
         ] {
             assert!(is_for_admins_only(key, &settings), "{key}");
         }
