@@ -32,6 +32,7 @@ export const OMBI: HomepageItemForm = {
         entries: [
           {
             key: 'ombiURL',
+            adminChanges: { key: 'ssoOmbi', values: [true] },
             kind: 'text',
             label: 'URL',
             help: 'Please make sure to use local IP address and port - You also may use local dns name too.',

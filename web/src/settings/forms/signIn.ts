@@ -196,7 +196,10 @@ export const SIGN_IN: FormPage = {
         { key: 'embyToken', kind: 'secret', label: 'Emby Token', shownWhen: 'emby' },
         {
           key: 'jellyfinURL',
-          adminChanges: { key: 'authBackend', values: ['jellyfin'] },
+          adminChanges: [
+            { key: 'authBackend', values: ['jellyfin'] },
+            { key: 'ssoJellyfin', values: [true] },
+          ],
           kind: 'text',
           label: 'Jellyfin URL',
           help: 'Please make sure to use local IP address and port - You also may use local dns name too.',

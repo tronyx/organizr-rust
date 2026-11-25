@@ -24,7 +24,7 @@ The cookies are set for the whole domain, for example `.example.com`. So the app
 
 ## 🚀 Set it up
 
-1. Log in as an Admin.
+1. Log in as an Admin. Single sign-on sends the password of every login to the applications, so only an Admin can switch it on, and only an Admin can change the address of an application while its single sign-on is on. A Co-Admin sees these settings but can't change them (D-135).
 2. Open **Settings › System Settings › SSO**. Each application has its own section.
 3. For each application you want, fill in its section and switch on **Enable**:
 

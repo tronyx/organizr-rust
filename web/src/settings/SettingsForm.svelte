@@ -150,8 +150,8 @@
     if (rule === true) {
       return true;
     }
-    const stored = config?.[rule.key];
-    return rule.values.some((value) => value === stored);
+    const rules = Array.isArray(rule) ? rule : [rule];
+    return rules.some(({ key, values }) => values.some((value) => value === config?.[key]));
   }
 
   /** Whether the caller works with the entry: a field, a button or a part. */

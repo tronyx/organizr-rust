@@ -48,6 +48,7 @@ export const OVERSEERR: HomepageItemForm = {
         entries: [
           {
             key: 'overseerrURL',
+            adminChanges: { key: 'ssoOverseerr', values: [true] },
             kind: 'text',
             label: 'URL',
             help: 'Please make sure to use local IP address and port - You also may use local dns name too.',

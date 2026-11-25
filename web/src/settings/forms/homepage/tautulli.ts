@@ -32,6 +32,7 @@ export const TAUTULLI: HomepageItemForm = {
         entries: [
           {
             key: 'tautulliURL',
+            adminChanges: { key: 'ssoTautulli', values: [true] },
             kind: 'tags',
             label: "Multiple URL's",
             help: 'Please make sure to use local IP address and port - You also may use local dns name too.',

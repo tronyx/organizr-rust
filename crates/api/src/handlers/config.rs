@@ -71,7 +71,9 @@ const HEALTH_CHECK_SERVICES: &str = "HEALTHCHECKS-all-items";
 /// (D-125), the trust of a custom HTML item with the HTML of a trusted item (D-131), and
 /// the settings that a login trusts (D-132), among them every setting of OpenID Connect,
 /// which picks the providers and the group that a login gives (D-133), and the services of
-/// the health checks plugin, which get the API key (D-134).
+/// the health checks plugin, which get the API key (D-134). Single sign-on sends the
+/// password of every login onward, so its switches are for Admins only, and so are its
+/// addresses while it is on (D-135).
 ///
 /// `settings` decides the settings that are for Admins only some of the time. Such a rule
 /// reads only settings that are always for Admins only, so for a Co-Admin the copy that
@@ -82,6 +84,7 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
         || LOGIN_SETTINGS.contains(&key)
         || key.starts_with("oidc")
         || key == HEALTH_CHECK_SERVICES
+        || key.starts_with("sso")
         || is_trusted_by_a_login(key, settings)
         || key == "customJava"
         || key == "customThemeJava"
@@ -99,14 +102,21 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
 
 /// Whether a login trusts a setting that is open to a Co-Admin otherwise: the address of
 /// the Emby or Jellyfin server that may vouch for an Admin, and the local network that
-/// needs no second factor (D-132). A login through Emby Connect opens no Admin account
-/// (D-127), so it does not count.
+/// needs no second factor (D-132), and the address that single sign-on sends the password
+/// of a login to (D-135). A login through Emby Connect opens no Admin account (D-127), so
+/// it does not count.
 fn is_trusted_by_a_login(key: &str, settings: &Settings) -> bool {
     let backend = settings.auth_backend.as_str();
     match key {
         "embyURL" => [login_backends::EMBY_LOCAL, login_backends::EMBY_ALL].contains(&backend),
-        "jellyfinURL" => backend == login_backends::JELLYFIN,
+        "jellyfinURL" => backend == login_backends::JELLYFIN || settings.sso_jellyfin,
+        "jellyfinSSOURL" => settings.sso_jellyfin,
         "localIPList" => settings.ignore_tfa_local,
+        "ombiURL" => settings.sso_ombi,
+        "overseerrURL" => settings.sso_overseerr,
+        "tautulliURL" => settings.sso_tautulli,
+        "petioURL" => settings.sso_petio,
+        "komgaURL" => settings.sso_komga,
         _ => false,
     }
 }
@@ -334,6 +344,8 @@ mod tests {
             "oidcGroupMappings",
             "oidcDefaultGroupId",
             "HEALTHCHECKS-all-items",
+            "ssoOmbi",
+            "ssoTautulliAuth",
         ] {
             assert!(is_for_admins_only(key, &settings), "{key}");
         }

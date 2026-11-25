@@ -30,7 +30,7 @@ export const SSO: FormPage = {
           label: 'Plex Admin Username or Email',
           adminChanges: true,
         },
-        { key: 'ssoPlex', kind: 'switch', label: 'Enable' },
+        { key: 'ssoPlex', kind: 'switch', label: 'Enable', adminChanges: true },
       ],
     },
     {
@@ -39,6 +39,7 @@ export const SSO: FormPage = {
       entries: [
         {
           key: 'tautulliURL',
+          adminChanges: { key: 'ssoTautulli', values: [true] },
           kind: 'tags',
           label: "Multiple URL's",
           help: 'Please make sure to use local IP address and port - You also may use local dns name too.',
@@ -46,11 +47,12 @@ export const SSO: FormPage = {
         },
         {
           key: 'ssoTautulliAuth',
+          adminChanges: true,
           kind: 'select',
           label: 'Minimum Authentication',
           source: 'groups',
         },
-        { key: 'ssoTautulli', kind: 'switch', label: 'Enable' },
+        { key: 'ssoTautulli', kind: 'switch', label: 'Enable', adminChanges: true },
       ],
     },
     {
@@ -59,6 +61,7 @@ export const SSO: FormPage = {
       entries: [
         {
           key: 'overseerrURL',
+          adminChanges: { key: 'ssoOverseerr', values: [true] },
           kind: 'text',
           label: 'URL',
           help: 'Please make sure to use local IP address and port - You also may use local dns name too.',
@@ -72,7 +75,7 @@ export const SSO: FormPage = {
           help: 'DO NOT SET THIS TO YOUR ADMIN ACCOUNT. We recommend you create a local account as a "catch all" for when Organizr is unable to perform SSO. Organizr will request a User Token based off of this user credentials',
         },
         { key: 'overseerrFallbackPassword', kind: 'secret', label: 'Overseerr Fallback Password' },
-        { key: 'ssoOverseerr', kind: 'switch', label: 'Enable' },
+        { key: 'ssoOverseerr', kind: 'switch', label: 'Enable', adminChanges: true },
       ],
     },
     {
@@ -81,6 +84,7 @@ export const SSO: FormPage = {
       entries: [
         {
           key: 'petioURL',
+          adminChanges: { key: 'ssoPetio', values: [true] },
           kind: 'text',
           label: 'URL',
           help: 'Please make sure to use local IP address and port - You also may use local dns name too.',
@@ -94,7 +98,7 @@ export const SSO: FormPage = {
           help: 'DO NOT SET THIS TO YOUR ADMIN ACCOUNT. We recommend you create a local account as a "catch all" for when Organizr is unable to perform SSO. Organizr will request a User Token based off of this user credentials',
         },
         { key: 'petioFallbackPassword', kind: 'secret', label: 'Petio Fallback Password' },
-        { key: 'ssoPetio', kind: 'switch', label: 'Enable' },
+        { key: 'ssoPetio', kind: 'switch', label: 'Enable', adminChanges: true },
       ],
     },
     {
@@ -103,6 +107,7 @@ export const SSO: FormPage = {
       entries: [
         {
           key: 'ombiURL',
+          adminChanges: { key: 'ssoOmbi', values: [true] },
           kind: 'text',
           label: 'URL',
           help: 'Please make sure to use local IP address and port - You also may use local dns name too.',
@@ -116,7 +121,7 @@ export const SSO: FormPage = {
           help: 'DO NOT SET THIS TO YOUR ADMIN ACCOUNT. We recommend you create a local account as a "catch all" for when Organizr is unable to perform SSO. Organizr will request a User Token based off of this user credentials',
         },
         { key: 'ombiFallbackPassword', kind: 'secret', label: 'Ombi Fallback Password' },
-        { key: 'ssoOmbi', kind: 'switch', label: 'Enable' },
+        { key: 'ssoOmbi', kind: 'switch', label: 'Enable', adminChanges: true },
       ],
     },
     {
@@ -125,7 +130,10 @@ export const SSO: FormPage = {
       entries: [
         {
           key: 'jellyfinURL',
-          adminChanges: { key: 'authBackend', values: ['jellyfin'] },
+          adminChanges: [
+            { key: 'authBackend', values: ['jellyfin'] },
+            { key: 'ssoJellyfin', values: [true] },
+          ],
           kind: 'text',
           label: 'Jellyfin API URL',
           help: 'Please make sure to use the local address to the API',
@@ -133,12 +141,13 @@ export const SSO: FormPage = {
         },
         {
           key: 'jellyfinSSOURL',
+          adminChanges: { key: 'ssoJellyfin', values: [true] },
           kind: 'text',
           label: 'Jellyfin SSO URL',
           help: "Please make sure to use the same (sub)domain to access Jellyfin as Organizr's",
           placeholder: 'http(s)://hostname:port',
         },
-        { key: 'ssoJellyfin', kind: 'switch', label: 'Enable' },
+        { key: 'ssoJellyfin', kind: 'switch', label: 'Enable', adminChanges: true },
       ],
     },
     {
@@ -147,13 +156,20 @@ export const SSO: FormPage = {
       entries: [
         {
           key: 'komgaURL',
+          adminChanges: { key: 'ssoKomga', values: [true] },
           kind: 'text',
           label: 'URL',
           help: 'Please make sure to use local IP address and port - You also may use local dns name too.',
           placeholder: 'http(s)://hostname:port',
         },
-        { key: 'ssoKomgaAuth', kind: 'select', label: 'Minimum Authentication', source: 'groups' },
-        { key: 'ssoKomga', kind: 'switch', label: 'Enable' },
+        {
+          key: 'ssoKomgaAuth',
+          kind: 'select',
+          label: 'Minimum Authentication',
+          source: 'groups',
+          adminChanges: true,
+        },
+        { key: 'ssoKomga', kind: 'switch', label: 'Enable', adminChanges: true },
         {
           key: 'komgaFallbackUser',
           kind: 'text',

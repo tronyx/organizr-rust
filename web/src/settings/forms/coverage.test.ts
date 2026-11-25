@@ -213,10 +213,20 @@ describe('the definitions of the settings forms', () => {
   });
 
   it('leave to the Admin, on every page, the settings that only the Admin changes', () => {
-    // The settings that the server takes from an Admin only (D-125, D-131 to D-133).
+    // The settings that the server takes from an Admin only (D-125, D-131 to D-135).
     const always =
-      /^(oidc|authType$|authBackend|authBaseDN$|ldap(Bind|Type|SSL|TLS)|plexAdmin$|ignoreTFA)/;
-    const sometimes = ['embyURL', 'jellyfinURL', 'localIPList'];
+      /^(oidc|sso|authType$|authBackend|authBaseDN$|ldap(Bind|Type|SSL|TLS)|plexAdmin$|ignoreTFA)/;
+    const sometimes = [
+      'embyURL',
+      'jellyfinURL',
+      'jellyfinSSOURL',
+      'localIPList',
+      'ombiURL',
+      'overseerrURL',
+      'tautulliURL',
+      'petioURL',
+      'komgaURL',
+    ];
     const fields = allFields();
     const open = fields
       .filter((field) => always.test(field.key))

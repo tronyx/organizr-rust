@@ -95,9 +95,10 @@ export interface SettingField {
   /**
    * Only the Admin changes the field; a Co-Admin sees the value and cannot change it.
    * `true` means always. A rule means while the stored value of its setting is one of its
-   * values, as the HTML of a trusted custom HTML item.
+   * values, as the HTML of a trusted custom HTML item; a list of rules, while any of them
+   * holds.
    */
-  adminChanges?: true | AdminRule;
+  adminChanges?: true | AdminRule | AdminRule[];
 }
 
 /** When only the Admin changes a field: while the stored setting has one of the values. */

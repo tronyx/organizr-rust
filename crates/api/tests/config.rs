@@ -390,6 +390,67 @@ async fn health_check_services_are_changed_by_the_admin_only() {
 }
 
 #[tokio::test]
+async fn single_sign_on_settings_are_changed_by_the_admin_only() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+
+        // The switches that send the password of every login onward (D-135).
+        for (key, value) in [
+            ("ssoOmbi", json!(true)),
+            ("ssoOverseerr", json!(true)),
+            ("ssoTautulli", json!(true)),
+            ("ssoTautulliAuth", json!("0")),
+            ("ssoJellyfin", json!(true)),
+            ("ssoPetio", json!(true)),
+            ("ssoKomga", json!(true)),
+            ("ssoKomgaAuth", json!("0")),
+            ("ssoPlex", json!(true)),
+        ] {
+            let body = json!({key: value});
+            let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+            assert_refused(
+                &answer,
+                StatusCode::UNAUTHORIZED,
+                &format!("Config item: {key} can only be changed by an admin"),
+            );
+        }
+
+        // The addresses stay open to a Co-Admin until single sign-on sends passwords there.
+        let addresses = [
+            ("ssoOmbi", "ombiURL"),
+            ("ssoOverseerr", "overseerrURL"),
+            ("ssoTautulli", "tautulliURL"),
+            ("ssoPetio", "petioURL"),
+            ("ssoKomga", "komgaURL"),
+            ("ssoJellyfin", "jellyfinURL"),
+            ("ssoJellyfin", "jellyfinSSOURL"),
+        ];
+        for (_, key) in addresses {
+            let body = json!({key: "http://service.example.test"});
+            let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+            assert_eq!(answer.status, StatusCode::OK, "{key}: {}", answer.body);
+        }
+        for (switch, key) in addresses {
+            change(&app, json!({switch: true})).await;
+            let body = json!({key: "http://elsewhere.example.test"});
+            let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+            assert_refused(
+                &answer,
+                StatusCode::UNAUTHORIZED,
+                &format!("Config item: {key} can only be changed by an admin"),
+            );
+            assert_eq!(
+                setting(&app, key).await,
+                json!("http://service.example.test")
+            );
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn key_that_is_no_setting_and_value_that_does_not_fit_are_refused() {
     on_each_engine(async |database| {
         seed::installed(database).await;

@@ -32,7 +32,10 @@ export const JELLYFIN: HomepageItemForm = {
         entries: [
           {
             key: 'jellyfinURL',
-            adminChanges: { key: 'authBackend', values: ['jellyfin'] },
+            adminChanges: [
+              { key: 'authBackend', values: ['jellyfin'] },
+              { key: 'ssoJellyfin', values: [true] },
+            ],
             kind: 'text',
             label: 'URL',
             help: 'Please make sure to use local IP address and port - You also may use local dns name too.',

@@ -1046,6 +1046,15 @@ describe('SettingsForm, the parts and the boxes', () => {
               label: 'Address',
               adminChanges: { key: 'backend', values: ['jellyfin', 'emby_local'] },
             },
+            {
+              key: 'shared',
+              kind: 'text',
+              label: 'Shared',
+              adminChanges: [
+                { key: 'backend', values: ['jellyfin'] },
+                { key: 'trusted01', values: [true] },
+              ],
+            },
           ],
         },
       ],
@@ -1074,6 +1083,8 @@ describe('SettingsForm, the parts and the boxes', () => {
       expect(screen.getByLabelText('Backend')).toBeDisabled();
       expect(screen.getByLabelText('Backend')).toHaveValue('emby_local');
       expect(screen.getByLabelText('Address')).toBeDisabled();
+      // The second rule of the list holds.
+      expect(screen.getByLabelText('Shared')).toBeDisabled();
       await fireEvent.input(screen.getByLabelText('HTML 02'), { target: { value: '<p>Two</p>' } });
       await save();
 
@@ -1091,11 +1102,12 @@ describe('SettingsForm, the parts and the boxes', () => {
     it('leaves a field to a Co-Admin while the stored value names no rule', async () => {
       session.launch = launch(1);
       await show(TRUST, {
-        'GET config': { data: { ...STORED, backend: 'emby_connect' } },
+        'GET config': { data: { ...STORED, backend: 'emby_connect', trusted01: false } },
         'GET launch': { data: launch(1) },
       });
 
       expect(screen.getByLabelText('Address')).toBeEnabled();
+      expect(screen.getByLabelText('Shared')).toBeEnabled();
     });
   });
 
