@@ -5,7 +5,9 @@ import { describe, expect, it } from 'vitest';
 import type { Entry, FormPage, SettingField } from '../model';
 import { isField, isSecret, settingKeys } from '../values';
 import expectedKeys from './expected-keys.json';
+import expectedKinds from './expected-kinds.json';
 import { allPages, HOMEPAGE_ITEMS, PLUGIN_FORMS } from './index';
+import { PHP_MAILER_PLUGIN } from './plugins/phpMailer';
 
 // The tests run in the folder `web`. The registry of the server says which settings are
 // secrets: `GET /config` sends `***Secure***` for them.
@@ -25,6 +27,24 @@ function textsOf(entry: Entry): string[] {
   if ('body' in entry) texts.push(entry.body);
   if ('fold' in entry) texts.push(entry.fold);
   return texts.filter((text): text is string => text !== undefined);
+}
+
+/** Every field of every page. */
+function allFields(): SettingField[] {
+  return allPages()
+    .flatMap((page) => page.sections.flatMap((section) => section.entries))
+    .filter(isField);
+}
+
+/** The field of a key on a page, which the test needs to find. */
+function fieldOf(page: FormPage, key: string): SettingField {
+  const found = page.sections
+    .flatMap((section) => section.entries)
+    .find((entry): entry is SettingField => isField(entry) && entry.key === key);
+  if (!found) {
+    throw new Error(`${page.id} has no field ${key}`);
+  }
+  return found;
 }
 
 function textsOfPage(page: FormPage): string[] {
@@ -103,5 +123,63 @@ describe('the definitions of the settings forms', () => {
       'plexlibraries',
       'speedtest',
     ]);
+  });
+
+  it('keep the kind of every key', () => {
+    const kinds: Record<string, Set<string>> = {};
+    for (const field of allFields()) {
+      (kinds[field.key] ??= new Set()).add(field.kind);
+    }
+    const found = Object.fromEntries(
+      Object.keys(kinds)
+        .sort()
+        .map((key) => [key, [...(kinds[key] ?? [])].sort()]),
+    );
+    expect(found).toEqual(expectedKinds);
+  });
+
+  it('offer Open in New Window first on the three Target Tab selects', () => {
+    const items = Object.fromEntries(HOMEPAGE_ITEMS.map((item) => [item.id, item.page]));
+    for (const [item, key] of [
+      ['lidarr', 'lidarrFrameTarget'],
+      ['radarr', 'radarrFrameTarget'],
+      ['sonarr', 'sonarrFrameTarget'],
+    ] as const) {
+      const page = items[item];
+      expect(page, item).toBeDefined();
+      const field = fieldOf(page as FormPage, key);
+      expect(field.label, key).toBe('Target Tab');
+      expect(field.source, key).toBe('frame-tabs');
+      expect(field.choices?.[0], key).toEqual({ label: 'Open in New Window', value: '' });
+    }
+  });
+
+  it('title the four custom mail templates by their stored names', () => {
+    for (const number of ['One', 'Two', 'Three', 'Four']) {
+      const name = `PHPMAILER-emailTemplateCustom-include-${number}Name`;
+      for (const key of [name, `PHPMAILER-emailTemplateCustom-include-${number}Subject`]) {
+        expect(fieldOf(PHP_MAILER_PLUGIN, key).foldTitleKey, key).toBe(name);
+      }
+      expect(
+        fieldOf(PHP_MAILER_PLUGIN, `PHPMAILER-emailTemplateCustom-include-${number}`).foldTitleKey,
+      ).toBe(name);
+    }
+  });
+
+  it('keep the corrected spellings of the old forms', () => {
+    const texts = allPages().flatMap((page) => [
+      ...textsOfPage(page),
+      ...page.sections.flatMap((section) =>
+        section.entries.flatMap((entry) =>
+          isField(entry) ? (entry.choices ?? []).map((choice) => choice.label) : [],
+        ),
+      ),
+    ]);
+    expect(texts.filter((text) => /\b(Tueday|adress)\b/i.test(text))).toEqual([]);
+    const days = allFields().filter((field) =>
+      (field.choices ?? []).some((choice) => choice.value === '2' && choice.label === 'Tuesday'),
+    );
+    expect(days.length).toBeGreaterThanOrEqual(7);
+    expect(texts).toContain('Emby server address');
   });
 });

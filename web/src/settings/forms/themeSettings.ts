@@ -1,4 +1,4 @@
-// The page Marketplace Settings of Customize: the theme marketplace.
+// The Marketplace Settings page of Customize: the theme marketplace.
 
 import type { FormPage } from '../model';
 

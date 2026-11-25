@@ -1207,3 +1207,187 @@ describe('SettingsForm, the parts and the boxes', () => {
     expect(templates?.entries[0]).toEqual({ kind: 'heading', text: 'Edit Template' });
   });
 });
+
+describe('SettingsForm, the buttons, fields and texts', () => {
+  const KINDS: FormPage = {
+    id: 'kinds',
+    title: 'Kinds',
+    sections: [
+      {
+        id: 'buttons',
+        title: 'Buttons',
+        entries: [
+          {
+            kind: 'button',
+            label: 'Sign in at Trakt',
+            text: 'Open Trakt',
+            action: { kind: 'open', url: 'api/v2/oauth/trakt' },
+          },
+          {
+            kind: 'button',
+            label: 'Find the place',
+            text: 'Open the map',
+            action: { kind: 'open', url: 'https://www.latlong.net/' },
+          },
+          {
+            kind: 'button',
+            label: 'Grab the sites',
+            text: 'Grab',
+            action: { kind: 'lookup', path: 'test/unifi/site' },
+          },
+          {
+            kind: 'button',
+            label: 'Update now',
+            text: 'Update',
+            action: { kind: 'none', why: 'The image updates itself.' },
+          },
+        ],
+      },
+      {
+        id: 'fields',
+        title: 'Fields',
+        entries: [
+          { key: 'organizrAPI', kind: 'secret-copy', label: 'Organizr API' },
+          { key: 'sonarrURL', kind: 'tags', label: 'URL' },
+        ],
+      },
+      {
+        id: 'texts',
+        title: 'Texts',
+        entries: [
+          { kind: 'notice', tone: 'warning', title: 'Careful', body: 'Read this first.' },
+          { kind: 'notice', tone: 'danger', body: 'This cannot be undone.' },
+          { kind: 'about', title: 'About Sonarr', body: 'What the item does.' },
+          { kind: 'socks', app: 'sonarr' },
+        ],
+      },
+    ],
+  };
+  const KIND_CONFIG = {
+    organizrAPI: 'abcdefghij0123456789',
+    sonarrURL: 'http://a:8989,http://b:8989',
+  };
+
+  it('opens an address of the API at the API, and another address as it is', async () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const { sent } = await show(KINDS, { 'GET config': { data: KIND_CONFIG } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Open Trakt' }));
+    expect(open).toHaveBeenLastCalledWith(
+      expect.stringMatching(/^http:\/\/[^/]+\/api\/v2\/oauth\/trakt$/),
+      '_blank',
+      'noopener',
+    );
+    await fireEvent.click(screen.getByRole('button', { name: 'Open the map' }));
+    expect(open).toHaveBeenLastCalledWith('https://www.latlong.net/', '_blank', 'noopener');
+    expect(changes(sent)).toEqual([]);
+    open.mockRestore();
+  });
+
+  it('looks up the sites and names them', async () => {
+    const { sent } = await show(KINDS, {
+      'GET config': { data: KIND_CONFIG },
+      'POST test/unifi/site': {
+        data: { data: [{ name: 'default', desc: 'Home' }, { name: 'shop' }] },
+      },
+    });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Grab' }));
+
+    expect(
+      await screen.findByText('The names of the sites are: Home: default, shop'),
+    ).toHaveAttribute('role', 'status');
+    expect(changes(sent)).toEqual([['POST test/unifi/site', undefined]]);
+  });
+
+  it('says why a button does nothing, and sends nothing', async () => {
+    const { sent } = await show(KINDS, { 'GET config': { data: KIND_CONFIG } });
+    const before = sent.length;
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Update' }));
+
+    expect(await screen.findByText('The image updates itself.')).toHaveAttribute('role', 'alert');
+    expect(sent).toHaveLength(before);
+  });
+
+  it('shows and hides a secret, and copies it', async () => {
+    const writeText = vi.fn(async () => undefined);
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
+    await show(KINDS, { 'GET config': { data: KIND_CONFIG } });
+    await section('Fields');
+
+    const key = screen.getByLabelText('Organizr API');
+    expect(key).toHaveAttribute('type', 'password');
+    expect(key).toHaveValue('abcdefghij0123456789');
+    await fireEvent.click(screen.getByRole('button', { name: 'Show Organizr API' }));
+    expect(key).toHaveAttribute('type', 'text');
+    await fireEvent.click(screen.getByRole('button', { name: 'Hide Organizr API' }));
+    expect(key).toHaveAttribute('type', 'password');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Copy Organizr API' }));
+    expect(writeText).toHaveBeenCalledWith('abcdefghij0123456789');
+  });
+
+  it('shows the stored values of a tags field, and saves an edit as a text with commas', async () => {
+    const { sent } = await show(KINDS, {
+      'GET config': { data: KIND_CONFIG },
+      'PUT config': {},
+    });
+    await section('Fields');
+
+    expect(screen.getByRole('button', { name: 'Change http://a:8989' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Change http://b:8989' })).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('button', { name: 'Remove http://a:8989' }));
+    const box = screen.getByLabelText('URL');
+    await fireEvent.input(box, { target: { value: 'http://c:8989' } });
+    await fireEvent.keyDown(box, { key: 'Enter' });
+    await save();
+
+    expect(await sentBody(sent)).toEqual({ sonarrURL: 'http://b:8989,http://c:8989' });
+  });
+
+  it('draws a disabled tags field that cannot be changed', async () => {
+    await show(
+      {
+        id: 'locked',
+        title: 'Locked',
+        sections: [
+          {
+            id: 'one',
+            title: 'One',
+            entries: [{ key: 'sonarrURL', kind: 'tags', label: 'URL', disabled: true }],
+          },
+        ],
+      },
+      { 'GET config': { data: KIND_CONFIG } },
+    );
+
+    expect(screen.getByLabelText('URL')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove http://a:8989' })).toBeDisabled();
+  });
+
+  it('draws the notices with their tone and title, the texts and the socks box', async () => {
+    await show(KINDS, { 'GET config': { data: KIND_CONFIG } });
+    await section('Texts');
+
+    const careful = screen
+      .getByRole('heading', { name: 'Careful', level: 3 })
+      .closest('.org-notice');
+    expect(careful).toHaveClass('org-notice-warning');
+    expect(careful).toHaveTextContent('Read this first.');
+    const danger = screen.getByText('This cannot be undone.').closest('.org-notice');
+    expect(danger).toHaveClass('org-notice-danger');
+    expect(danger?.querySelector('h3')).toBeNull();
+    const about = screen
+      .getByRole('heading', { name: 'About Sonarr', level: 3 })
+      .closest('.org-notice');
+    expect(about).toHaveTextContent('What the item does.');
+    expect(about).not.toHaveClass('org-notice-warning');
+    const socks = screen
+      .getByRole('heading', { name: 'API SOCKS', level: 3 })
+      .closest('.org-notice');
+    expect(socks?.querySelectorAll('code')).toHaveLength(2);
+    expect(socks).toHaveTextContent('api/v2/socks/sonarr/');
+    expect(socks).toHaveTextContent('api/v2/multiple/socks/sonarr/1/');
+  });
+});

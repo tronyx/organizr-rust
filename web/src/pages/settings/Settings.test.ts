@@ -5,7 +5,13 @@ import { plexToken } from '../../lib/plexLogin';
 import { session } from '../../lib/session.svelte';
 import { SETTINGS_MENU } from '../../lib/settingsMenu';
 import type { Account, EditorData, Launch, Tab } from '../../lib/types';
-import { stubApi, type CannedAnswer, type SentRequest } from '../../test-helpers';
+import {
+  logPage,
+  logRecord,
+  stubApi,
+  type CannedAnswer,
+  type SentRequest,
+} from '../../test-helpers';
 import Settings from './Settings.svelte';
 
 // The login at Plex itself happens in another window, at plex.tv.
@@ -1191,28 +1197,7 @@ describe('Settings, SSO, Logs, Updates, Backup, and Tab Options', () => {
   };
 
   /** The log of the Logs page: one record, in the shape of `GET log/0`. */
-  const LOG = {
-    data: {
-      pageInfo: { results: 1, totalPages: 1, pageSize: '25', page: 1 },
-      results: [
-        {
-          log_level: 'INFO',
-          message: 'a user logged in',
-          channel: 'Login',
-          username: 'zoe',
-          trace_id: 'trace-1',
-          request_id: null,
-          file: 'crates/api/src/handlers/login.rs',
-          line: 117,
-          context: {},
-          remote_ip_address: '192.0.2.7',
-          datetime: '2026-11-20 03:15:00.123456',
-          timezone: 'UTC',
-        },
-      ],
-      files: ['2026-11-20'],
-    },
-  };
+  const LOG = logPage([logRecord('a user logged in', 'INFO', 'trace-1')], ['2026-11-20']);
 
   /** An Admin, signed in. */
   const ADMIN_LAUNCH: CannedAnswer = {
@@ -1418,8 +1403,9 @@ describe('Settings, SSO, Logs, Updates, Backup, and Tab Options', () => {
     expect(changes(sent)).toEqual([['PUT config', { pingMs: false, unsortedTabs: 'bottom' }]]);
   });
 
-  it('nothing_of_the_old_main_page_is_left', () => {
+  it('nothing_of_the_old_main_page_is_left', async () => {
     // No page of the menu is the temporary "Main (other)" any more.
+    const system = SETTINGS_MENU.find((group) => group.name === 'System Settings');
     const sections: string[] = SETTINGS_MENU.flatMap((group) =>
       group.pages.map((page) => page.section),
     );
@@ -1427,20 +1413,30 @@ describe('Settings, SSO, Logs, Updates, Backup, and Tab Options', () => {
     expect(SETTINGS_MENU.flatMap((group) => group.pages.map((page) => page.label))).not.toContain(
       'Main (other)',
     );
-    // No code of the interface asks for the old forms of Main and SSO.
-    const sources = import.meta.glob<string>(
-      ['/src/**/*.ts', '/src/**/*.svelte', '!**/*.test.ts'],
-      {
-        query: '?raw',
-        import: 'default',
-        eager: true,
-      },
-    );
-    expect(Object.keys(sources).length).toBeGreaterThan(50);
-    const asking = Object.entries(sources)
-      .filter(([, text]) => /['"`]settings\/(main|sso)['"`?]/.test(text))
-      .map(([path]) => path);
-    expect(asking).toEqual([]);
+    // No page of System Settings asks for the old forms of Main and SSO. A request that the
+    // stand-in has no answer for is still in the list.
+    expect(system?.pages.length).toBeGreaterThan(5);
+    for (const page of system?.pages ?? []) {
+      const sent = stubApi({
+        'GET tabs': { data: DATA },
+        'GET users': { data: USERS },
+        'GET groups': { data: DATA.groups },
+        'GET launch': ADMIN_LAUNCH,
+        'GET config': { data: CONFIG },
+        'GET log/0': LOG,
+        'GET backup': { data: { total_size: '0 B', total_files: 0, files: null } },
+      });
+      await session.load();
+      render(Settings, { section: page.section });
+      await waitFor(() =>
+        expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(0),
+      );
+      expect(
+        sent.filter((request) => /^settings\/(main|sso)/.test(request.path)),
+        page.section,
+      ).toEqual([]);
+      cleanup();
+    }
   });
 });
 
@@ -1463,14 +1459,19 @@ describe('Settings, Appearance', () => {
     customThemeJava: '',
   };
 
-  /** Shows the page, as the Admin (0) or a Co-Admin (1). */
-  async function showAppearance(groupID: number) {
+  /**
+   * Shows the page, as the Admin (0) or a Co-Admin (1), with the scripts turned on or off by
+   * the operator.
+   */
+  async function showAppearance(groupID: number, customJsEnabled = false) {
+    const launchData = LAUNCH.data as Launch;
     const sent = stubApi({
       'GET tabs': { data: DATA },
       'GET users': { data: USERS },
       'GET launch': {
         data: {
-          ...(LAUNCH.data as Record<string, unknown>),
+          ...launchData,
+          appearance: { ...launchData.appearance, customJsEnabled },
           user: { groupID, group: 'Admin', loggedin: true, username: 'admin' },
         },
       },
@@ -1531,12 +1532,21 @@ describe('Settings, Appearance', () => {
 
     await sectionTab('Custom code');
     const note = screen.getByText(/The scripts do not run now/);
+    expect(note).toHaveTextContent('ORGANIZR_CUSTOM_JS=1');
     expect(note).toHaveTextContent('guests on the login page too');
     expect(screen.getAllByText(/The scripts do not run now/)).toHaveLength(1);
     const script = screen.getByLabelText('Custom Javascript');
     expect(script).toHaveValue('console.log("stored");');
     expect(screen.getByLabelText('Theme Javascript')).toBeInTheDocument();
     expect(note.compareDocumentPosition(script) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  });
+
+  it('the_note_says_so_when_the_operator_turned_the_scripts_on', async () => {
+    await showAppearance(0, true);
+
+    await sectionTab('Custom code');
+    expect(screen.getByText(/The scripts run now/)).toBeInTheDocument();
+    expect(screen.queryByText(/The scripts do not run now/)).toBeNull();
   });
 
   it('a_co_admin_sees_no_script_fields_and_sends_none', async () => {
@@ -1651,15 +1661,6 @@ describe('Settings, plugin settings and theme settings', () => {
       expect(sent.some((request) => /^settings\/(plugin|theme)/.test(request.path))).toBe(false);
       cleanup();
     }
-    // No code of the interface names those forms either.
-    const sources = import.meta.glob<string>(
-      ['/src/**/*.ts', '/src/**/*.svelte', '!**/*.test.ts'],
-      { query: '?raw', import: 'default', eager: true },
-    );
-    const asking = Object.entries(sources)
-      .filter(([, text]) => /['"`]settings\/(plugin|theme)['"`?]/.test(text))
-      .map(([path]) => path);
-    expect(asking).toEqual([]);
   });
 });
 

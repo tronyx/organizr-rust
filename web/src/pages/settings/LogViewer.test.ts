@@ -1,41 +1,9 @@
 import { fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { LogRecord } from '../../lib/logs';
 import { parseRoute } from '../../lib/route.svelte';
-import { stubApi } from '../../test-helpers';
+import { logPage, logRecord, stubApi } from '../../test-helpers';
 import LogViewer from './LogViewer.svelte';
-
-function record(message: string, level = 'INFO', trace = message): LogRecord {
-  return {
-    log_level: level,
-    message,
-    channel: 'Login',
-    username: 'zoe',
-    trace_id: trace,
-    request_id: null,
-    file: 'crates/api/src/handlers/login.rs',
-    line: 117,
-    context: {},
-    remote_ip_address: '192.0.2.7',
-    datetime: '2026-11-20 03:15:00.123456',
-    timezone: 'UTC',
-  };
-}
-
-function pageOf(
-  records: LogRecord[],
-  files = ['2026-11-20', '2026-11-19'],
-  total = records.length,
-) {
-  return {
-    data: {
-      pageInfo: { results: total, totalPages: Math.ceil(total / 25), pageSize: '25', page: 1 },
-      results: records,
-      files,
-    },
-  };
-}
 
 const CONFIG = { data: { logPageSize: '25', logLiveUpdateRefresh: '2500' } };
 
@@ -53,7 +21,7 @@ afterEach(() => {
 
 describe('LogViewer', () => {
   it('shows the records of the newest file with the page size of the settings', async () => {
-    stubApi({ 'GET config': CONFIG, 'GET log/0': pageOf([record('a user logged in')]) });
+    stubApi({ 'GET config': CONFIG, 'GET log/0': logPage([logRecord('a user logged in')]) });
     render(LogViewer, { ondone: () => {} });
 
     const table = await screen.findByRole('table', { name: 'Log' });
@@ -82,9 +50,9 @@ describe('LogViewer', () => {
   it('filters by level, picks a file and turns the pages', async () => {
     const sent = stubApi({
       'GET config': CONFIG,
-      'GET log/0': pageOf([record('one')], undefined, 30),
-      'GET log/1': pageOf([record('older')]),
-      'GET log/all': pageOf([record('everything')]),
+      'GET log/0': logPage([logRecord('one')], undefined, 30),
+      'GET log/1': logPage([logRecord('older')]),
+      'GET log/all': logPage([logRecord('everything')]),
     });
     render(LogViewer, { ondone: () => {} });
     await screen.findByText('one');
@@ -112,13 +80,13 @@ describe('LogViewer', () => {
 
   it('opens the details of a record by its trace id', async () => {
     const full = {
-      ...record('a login failed', 'WARNING', 'trace-1'),
+      ...logRecord('a login failed', 'WARNING', 'trace-1'),
       context: { attempts: 3 },
       request_id: 'request-9',
     };
     stubApi({
       'GET config': CONFIG,
-      'GET log/0': pageOf([record('a login failed', 'WARNING', 'trace-1')]),
+      'GET log/0': logPage([logRecord('a login failed', 'WARNING', 'trace-1')]),
       'GET log/all/trace-1': { data: full },
     });
     render(LogViewer, { ondone: () => {} });
@@ -137,7 +105,7 @@ describe('LogViewer', () => {
     const sent = stubApi({
       'GET config': CONFIG,
       'GET log/0': () =>
-        purged ? { data: false, message: 'Results for log: ' } : pageOf([record('x')]),
+        purged ? { data: false, message: 'Results for log: ' } : logPage([logRecord('x')]),
       'DELETE log/0': () => {
         purged = true;
         return { message: 'Log purged' };
@@ -155,7 +123,7 @@ describe('LogViewer', () => {
 
   it('loads the log again and again while the live update is on', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    stubApi({ 'GET config': CONFIG, 'GET log/0': pageOf([record('x')]) });
+    stubApi({ 'GET config': CONFIG, 'GET log/0': logPage([logRecord('x')]) });
     render(LogViewer, { ondone: () => {} });
     await screen.findByText('x');
     expect(queries()).toHaveLength(1);
@@ -188,7 +156,7 @@ describe('LogViewer', () => {
         stored = { ...stored, ...(request.body as Record<string, unknown>) };
         return { message: 'Config items updated' };
       },
-      'GET log/0': pageOf([record('a user logged in')]),
+      'GET log/0': logPage([logRecord('a user logged in')]),
       'GET launch': { data: { user: null } },
     });
     const ondone = vi.fn();
@@ -214,7 +182,7 @@ describe('LogViewer', () => {
   });
 
   it('loads the settings once when it opens', async () => {
-    const sent = stubApi({ 'GET config': CONFIG, 'GET log/0': pageOf([record('x')]) });
+    const sent = stubApi({ 'GET config': CONFIG, 'GET log/0': logPage([logRecord('x')]) });
     render(LogViewer, { ondone: () => {} });
 
     await screen.findByRole('table', { name: 'Log' });
@@ -227,7 +195,7 @@ describe('LogViewer', () => {
   it('shows the log with the default page size when the settings cannot be loaded', async () => {
     stubApi({
       'GET config': { status: 500, message: 'The database is busy' },
-      'GET log/0': pageOf([record('x')]),
+      'GET log/0': logPage([logRecord('x')]),
     });
     render(LogViewer, { ondone: () => {} });
 

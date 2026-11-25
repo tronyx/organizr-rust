@@ -2,6 +2,8 @@
 
 import { vi } from 'vitest';
 
+import type { LogRecord } from './lib/logs';
+
 /** One request that a component sent. */
 export interface SentRequest {
   method: string;
@@ -63,4 +65,37 @@ export function at<T>(list: ArrayLike<T>, index: number): T {
     throw new Error(`The list has no entry at ${index}`);
   }
   return found;
+}
+
+/** A record of the log of the server, with its message, its level and its trace id. */
+export function logRecord(message: string, level = 'INFO', trace = message): LogRecord {
+  return {
+    log_level: level,
+    message,
+    channel: 'Login',
+    username: 'zoe',
+    trace_id: trace,
+    request_id: null,
+    file: 'crates/api/src/handlers/login.rs',
+    line: 117,
+    context: {},
+    remote_ip_address: '192.0.2.7',
+    datetime: '2026-11-20 03:15:00.123456',
+    timezone: 'UTC',
+  };
+}
+
+/** The answer of `GET log/…` with the records, the files of the log and the total. */
+export function logPage(
+  records: LogRecord[],
+  files = ['2026-11-20', '2026-11-19'],
+  total = records.length,
+): CannedAnswer {
+  return {
+    data: {
+      pageInfo: { results: total, totalPages: Math.ceil(total / 25), pageSize: '25', page: 1 },
+      results: records,
+      files,
+    },
+  };
 }

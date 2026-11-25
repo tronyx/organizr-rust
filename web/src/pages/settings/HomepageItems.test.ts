@@ -99,15 +99,20 @@ describe('HomepageItems', () => {
   });
 
   it('every_item_has_enable_and_connection_first_and_options_socks_about_last', () => {
+    const head = ['Enable', 'Connection'];
     const tail = ['Options', 'API SOCKS', 'About'];
     for (const item of HOMEPAGE_ITEMS) {
       const titles = item.page.sections.map((section) => section.title);
-      const head = titles.filter((title) => title === 'Enable' || title === 'Connection');
-      expect(titles.slice(0, head.length), item.name).toEqual(head);
-      const last = titles.filter((title) => tail.includes(title));
-      expect(titles.slice(titles.length - last.length), item.name).toEqual(
-        tail.filter((title) => last.includes(title)),
-      );
+      const first = head.filter((title) => titles.includes(title));
+      const last = tail.filter((title) => titles.includes(title));
+      expect(titles.slice(0, first.length), item.name).toEqual(first);
+      expect(titles.slice(titles.length - last.length), item.name).toEqual(last);
+      // The own sections of the item stand between them, and none of those comes twice.
+      const own = titles.slice(first.length, titles.length - last.length);
+      expect(
+        own.filter((title) => head.includes(title) || tail.includes(title)),
+        item.name,
+      ).toEqual([]);
     }
   });
 
