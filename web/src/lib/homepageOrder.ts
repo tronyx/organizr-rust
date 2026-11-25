@@ -209,10 +209,10 @@ export const ORDER_TILES: Record<string, OrderTile> = {
     image: 'plugins/images/tabs/speedtest-icon.png',
     enabledBy: ['homepageSpeedtestEnabled'],
   },
-  // An item of this application only. It uses the picture of the Speedtest item.
+  // An item of this application only.
   homepageOrderNetronome: {
     color: 'bg-success',
-    image: 'plugins/images/tabs/speedtest-icon.png',
+    image: 'plugins/images/tabs/netronome.png',
     enabledBy: ['homepageNetronomeEnabled'],
   },
   homepageOrderNetdata: {

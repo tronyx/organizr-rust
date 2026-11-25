@@ -78,6 +78,7 @@ mylar.png
 navidrome.png
 netdata.png
 netgear.png
+netronome.png
 nextcloud.png
 nginxproxymanager.png
 nodered.png

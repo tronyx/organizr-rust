@@ -126,6 +126,7 @@ plugins/images/tabs/mylar.png
 plugins/images/tabs/navidrome.png
 plugins/images/tabs/netdata.png
 plugins/images/tabs/netgear.png
+plugins/images/tabs/netronome.png
 plugins/images/tabs/nextcloud.png
 plugins/images/tabs/nginxproxymanager.png
 plugins/images/tabs/nodered.png

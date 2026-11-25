@@ -6,7 +6,7 @@ import type { HomepageItemForm } from '../../model';
 export const NETRONOME: HomepageItemForm = {
   id: 'netronome',
   name: 'Netronome',
-  image: 'plugins/images/tabs/speedtest-icon.png',
+  image: 'plugins/images/tabs/netronome.png',
   category: 'Monitor',
   enabledKey: 'homepageNetronomeEnabled',
   page: {
