@@ -45,6 +45,8 @@ test('the modern layout shows the grouped menu and the user menu, and breaks no 
 
     await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
     const menu = page.getByRole('navigation', { name: 'Tabs' });
+    // The menu is a column of icons; it opens with its names under the pointer.
+    await page.locator('aside#m-menu').hover();
     const group = menu.locator('details', { hasText: 'Modern Media' });
     await group.getByText('Modern Media').click();
     await group.getByRole('link', { name: 'Modern Rox' }).click();
@@ -113,7 +115,7 @@ test('the modern layout shows the grouped menu and the user menu, and breaks no 
   expect(violations).toEqual([]);
 });
 
-test('the modern menu collapses to a column of icons, and stays so in this browser', async ({
+test('the modern menu is a column of icons that opens under the pointer, and the pin keeps it open', async ({
   page,
 }) => {
   await logIn(page);
@@ -139,10 +141,10 @@ test('the modern menu collapses to a column of icons, and stays so in this brows
     await settled();
     return page.locator('.org-content').evaluate((element) => element.getBoundingClientRect().left);
   };
+  const away = () => page.mouse.move(900, 600);
   const audit = async (where: string) => {
-    // Wait until the column has its width and no tooltip shows.
-    await page.mouse.move(900, 600);
-    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(0);
+    await away();
+    await expect.poll(width).toBeLessThanOrEqual(80);
     const result = await auditContrast(page);
     expect(result.checked, `texts checked on ${where}`).toBeGreaterThan(0);
     expect.soft(result.low, describeLowContrast(where, result.low)).toEqual([]);
@@ -153,11 +155,12 @@ test('the modern menu collapses to a column of icons, and stays so in this brows
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-layout', 'modern');
+    await away();
 
-    const collapse = page.getByRole('button', { name: 'Collapse the menu' });
-    await expect(collapse).toHaveAttribute('aria-expanded', 'true');
-    await expect(collapse).toHaveAttribute('aria-controls', 'm-menu');
-    // The column shrinks in a short time, and at once under reduced motion.
+    const pin = page.getByRole('button', { name: 'Pin the menu open' });
+    await expect(pin).toHaveAttribute('aria-pressed', 'false');
+    await expect(pin).toHaveAttribute('aria-controls', 'm-menu');
+    // The column opens and closes in a short time, and at once under reduced motion.
     const motion = () =>
       aside.evaluate((element) => {
         const style = getComputedStyle(element);
@@ -167,41 +170,59 @@ test('the modern menu collapses to a column of icons, and stays so in this brows
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await motion()).toMatch(/ 0s$/);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    const wideWidth = await width();
-    const wideLeft = await contentLeft();
-    expect(wideWidth).toBeGreaterThan(200);
 
-    await collapse.click();
-    const expand = page.getByRole('button', { name: 'Expand the menu' });
-    await expect(expand).toHaveAttribute('aria-expanded', 'false');
+    // At first the menu is a column of icons, and the page stands beside it.
     await expect.poll(width).toBeLessThanOrEqual(80);
-    await expect.poll(contentLeft).toBeLessThan(wideLeft);
-    expect(await contentLeft()).toBeCloseTo(await width(), 0);
-    await expect(page.getByRole('navigation', { name: 'Tabs' }).locator('summary')).toHaveCount(0);
-
-    // The name of a tab shows as a tooltip, under the pointer and for the keyboard.
+    const iconsLeft = await contentLeft();
+    expect(iconsLeft).toBeCloseTo(await width(), 0);
     const menu = page.getByRole('navigation', { name: 'Tabs' });
+    const media = menu.locator('summary[aria-label="Modern Media"]');
+    await expect(media).toBeVisible();
+    await expect(menu.getByText('Modern Media')).toHaveCount(0);
+
+    // Under the pointer it opens over the page, which keeps its place.
+    await aside.hover();
+    await expect.poll(width).toBeGreaterThan(200);
+    expect(await contentLeft()).toBeCloseTo(iconsLeft, 0);
+    await expect(menu.getByText('Modern Media')).toBeVisible();
+    // An open category keeps the pictures of its tabs in the column.
+    const group = menu.locator('details', {
+      has: page.locator('summary[aria-label="Modern Media"]'),
+    });
+    if ((await group.getAttribute('open')) === null) {
+      await media.click();
+    }
+    await expect(group).toHaveAttribute('open', '');
+    await away();
+    await expect.poll(width).toBeLessThanOrEqual(80);
     const rox = menu.getByRole('link', { name: 'Modern Rox' });
-    await rox.hover();
-    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveText('Modern Rox');
-    await page.mouse.move(900, 600);
-    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(0);
+    await expect(rox).toBeVisible();
+    // A closed category shows its picture only.
+    await aside.hover();
+    await media.click();
+    await expect(group).not.toHaveAttribute('open', '');
+    await away();
+    await expect.poll(width).toBeLessThanOrEqual(80);
+    await expect(rox).toBeHidden();
+
+    // The keyboard opens it too, until the focus leaves it.
     const docs = page
       .getByRole('navigation', { name: 'Organizr' })
       .getByRole('link', { name: 'Organizr Docs' });
     await docs.focus();
     await page.keyboard.press('Shift+Tab');
-    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(1);
-    const focused = await page.evaluate(() => document.activeElement?.getAttribute('aria-label'));
-    await expect(page.locator('[data-slot="tooltip-content"]')).toHaveText(focused ?? '');
-    // The focus ring shows on the focused entry.
+    await expect.poll(width).toBeGreaterThan(200);
     const ring = await page.evaluate(() => {
       const style = getComputedStyle(document.activeElement as Element);
       return style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0;
     });
     expect(ring, 'a focus ring on the focused entry').toBe(true);
+    await page.locator('.org-content').click({ position: { x: 600, y: 300 } });
+    await expect.poll(width).toBeLessThanOrEqual(80);
 
-    // A tab of the column opens.
+    // A tab of the menu opens.
+    await aside.hover();
+    await media.click();
     await rox.click();
     await expect(page).toHaveURL(/#Modern-Rox$/);
     await expect(page.frameLocator('iframe[title="Modern Rox"]').locator('body')).toContainText(
@@ -209,32 +230,29 @@ test('the modern menu collapses to a column of icons, and stays so in this brows
     );
     await expect(rox).toHaveAttribute('aria-current', 'page');
 
-    // The column stays after a reload.
-    await page.reload();
-    await expect(page.getByRole('button', { name: 'Expand the menu' })).toBeVisible();
-    await expect.poll(width).toBeLessThanOrEqual(80);
-
     // No text of the page is too faint with the column, in dark and in light.
-    await audit('the collapsed menu (organizr dark)');
+    await audit('the column of icons (organizr dark)');
     expect((await look('modern', 'light')).ok()).toBe(true);
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-color-set', 'light');
-    await expect.poll(width).toBeLessThanOrEqual(80);
-    await audit('the collapsed menu (organizr light)');
+    await audit('the column of icons (organizr light)');
 
-    await page.getByRole('button', { name: 'Expand the menu' }).click();
-    await expect(page.getByRole('button', { name: 'Collapse the menu' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-    await expect.poll(width).toBeCloseTo(wideWidth, 0);
-    await expect.poll(contentLeft).toBeCloseTo(wideLeft, 0);
+    // The pin keeps the menu open beside the page, also after a reload.
+    await page.getByRole('button', { name: 'Pin the menu open' }).click();
+    const unpin = page.getByRole('button', { name: 'Unpin the menu' });
+    await expect(unpin).toHaveAttribute('aria-pressed', 'true');
+    await away();
+    await expect.poll(width).toBeGreaterThan(200);
+    expect(await contentLeft()).toBeCloseTo(await width(), 0);
+    await page.reload();
+    await away();
+    await expect(page.getByRole('button', { name: 'Unpin the menu' })).toBeVisible();
+    await expect.poll(width).toBeGreaterThan(200);
     await expect(menu.getByText('Modern Media')).toBeVisible();
 
     // On a phone there is no such button; the drawer still opens.
-    await page.getByRole('button', { name: 'Collapse the menu' }).click();
     await page.setViewportSize({ width: 375, height: 800 });
-    await expect(page.getByRole('button', { name: /(Collapse|Expand) the menu/ })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /(Pin|Unpin) the menu/ })).toHaveCount(0);
     await page.getByRole('button', { name: 'Show the menu of tabs' }).click();
     const drawer = page.getByRole('dialog');
     await expect(drawer.getByRole('navigation', { name: 'Tabs' })).toBeVisible();
@@ -242,7 +260,7 @@ test('the modern menu collapses to a column of icons, and stays so in this brows
     await page.keyboard.press('Escape');
     await expect(drawer).toBeHidden();
   } finally {
-    await page.evaluate(() => localStorage.removeItem('organizr.modernMenuCollapsed'));
+    await page.evaluate(() => localStorage.removeItem('organizr.modernMenuPinned'));
     expect((await look('og')).ok()).toBe(true);
     await page.setViewportSize({ width: 1280, height: 720 });
   }
@@ -587,7 +605,6 @@ test('the shown tab of the column of icons has a bar of at least 3:1 in every mo
 
   try {
     await page.setViewportSize({ width: 1280, height: 720 });
-    await page.evaluate(() => localStorage.setItem('organizr.modernMenuCollapsed', 'true'));
     for (const theme of MODERN_THEMES) {
       for (const set of theme.colorSets) {
         expect((await look({ layout: 'modern', theme: theme.id, colorSet: set.id })).ok()).toBe(
@@ -596,6 +613,7 @@ test('the shown tab of the column of icons has a bar of at least 3:1 in every mo
         await page.goto('./#Modern-Rox');
         await page.reload();
         await expect(page.locator('html')).toHaveAttribute('data-theme', `m-${theme.id}-${set.id}`);
+        await page.mouse.move(900, 600);
         await expect(page.locator('aside#m-menu')).toHaveClass(/m-sidebar-icons/);
         const marker = await bar();
         const where = `the bar in m-${theme.id}-${set.id}`;
@@ -605,13 +623,13 @@ test('the shown tab of the column of icons has a bar of at least 3:1 in every mo
         expect.soft(marker.ratio, where).toBeGreaterThanOrEqual(3);
       }
     }
-    // Expanded, the shown tab has no bar: its name and fill mark it.
-    await page.evaluate(() => localStorage.removeItem('organizr.modernMenuCollapsed'));
+    // Open, the shown tab has no bar: its name and fill mark it.
+    await page.evaluate(() => localStorage.setItem('organizr.modernMenuPinned', 'true'));
     await page.reload();
     await expect(page.locator('aside#m-menu')).not.toHaveClass(/m-sidebar-icons/);
     expect((await bar()).content).toBe('none');
   } finally {
-    await page.evaluate(() => localStorage.removeItem('organizr.modernMenuCollapsed'));
+    await page.evaluate(() => localStorage.removeItem('organizr.modernMenuPinned'));
     expect((await look({ layout: 'og' })).ok()).toBe(true);
   }
 });

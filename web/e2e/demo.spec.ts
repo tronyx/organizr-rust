@@ -680,10 +680,13 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
     );
     expect(outside).toEqual([]);
 
-    // In the narrow card of a 1024 px window the column of the day is hidden: each row
-    // shows its day under the name, readable, and only once.
+    // In the narrow card of a 1024 px window, beside the menu pinned open, the column of
+    // the day is hidden: each row shows its day under the name, readable, and only once.
+    await page.evaluate(() => localStorage.setItem('organizr.modernMenuPinned', 'true'));
+    await page.reload();
     await page.setViewportSize({ width: 1024, height: 720 });
     const rows = page.locator('.org-users-table tbody tr');
+    await expect(rows.first()).toBeVisible();
     const count = await rows.count();
     expect(count).toBeGreaterThanOrEqual(2);
     for (let index = 0; index < count; index++) {
@@ -699,6 +702,7 @@ test('the Admin manages the users, and cannot delete the own account', async ({ 
     expect(audit.low, describeLowContrast('the narrow table of users', audit.low)).toEqual([]);
     await checkUserPages(page, 'modern');
   } finally {
+    await page.evaluate(() => localStorage.removeItem('organizr.modernMenuPinned'));
     expect((await look(null)).ok()).toBe(true);
     await page.reload();
   }

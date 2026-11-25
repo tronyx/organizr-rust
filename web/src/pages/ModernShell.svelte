@@ -9,8 +9,8 @@
   import RotateCwIcon from '@lucide/svelte/icons/rotate-cw';
   import XIcon from '@lucide/svelte/icons/x';
   import MenuIcon from '@lucide/svelte/icons/menu';
-  import PanelLeftCloseIcon from '@lucide/svelte/icons/panel-left-close';
-  import PanelLeftOpenIcon from '@lucide/svelte/icons/panel-left-open';
+  import PinIcon from '@lucide/svelte/icons/pin';
+  import PinOffIcon from '@lucide/svelte/icons/pin-off';
   import PaletteIcon from '@lucide/svelte/icons/palette';
   import { MediaQuery } from 'svelte/reactivity';
   import type { Snippet } from 'svelte';
@@ -37,7 +37,6 @@
     toggleFullScreen,
   } from '../lib/shellState.svelte';
   import LookPicker from '../components/LookPicker.svelte';
-  import MenuTip from '../components/MenuTip.svelte';
   import SceneLayer from '../components/SceneLayer.svelte';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import LanguageMenu from './LanguageMenu.svelte';
@@ -67,32 +66,58 @@
     }
   });
 
-  // On a wide screen the menu can shrink to a column of icons. The choice stays in this
-  // browser only; storage that is blocked leaves the menu open.
-  const COLLAPSED_KEY = 'organizr.modernMenuCollapsed';
-  function storedCollapsed(): boolean {
+  // On a wide screen the menu is a column of icons, as the sidebar of PHP Organizr: it
+  // opens over the page while the pointer is on it or the keyboard is in it, and closes
+  // again when they leave. The button at the left of the top bar pins it open, beside the
+  // page. The pin stays in this browser only; storage that is blocked leaves it unpinned.
+  const PINNED_KEY = 'organizr.modernMenuPinned';
+  function storedPinned(): boolean {
     try {
-      return localStorage.getItem(COLLAPSED_KEY) === 'true';
+      return localStorage.getItem(PINNED_KEY) === 'true';
     } catch {
       return false;
     }
   }
-  let collapsed = $state(storedCollapsed());
-  function toggleCollapsed() {
-    collapsed = !collapsed;
+  let pinned = $state(storedPinned());
+  function togglePinned() {
+    pinned = !pinned;
     try {
-      localStorage.setItem(COLLAPSED_KEY, String(collapsed));
+      localStorage.setItem(PINNED_KEY, String(pinned));
     } catch {
       // The choice holds until the page loads again.
     }
   }
   /**
-   * Other open tabs of this browser follow a collapse or an expand of the menu. A cleared
-   * storage (no key) opens the menu, as on a first visit.
+   * Other open tabs of this browser follow a pin or an unpin of the menu. A cleared
+   * storage (no key) unpins it, as on a first visit.
    */
   function followStorage(event: StorageEvent) {
-    if (event.key === COLLAPSED_KEY || event.key === null) {
-      collapsed = event.newValue === 'true';
+    if (event.key === PINNED_KEY || event.key === null) {
+      pinned = event.newValue === 'true';
+    }
+  }
+
+  /** Whether a mouse or a pen is on the menu. A finger opens nothing: it taps the icons. */
+  let pointerIn = $state(false);
+  /** Whether the keyboard is in the menu. A click that focuses a link does not count. */
+  let keyboardIn = $state(false);
+  function enter(event: PointerEvent) {
+    if (event.pointerType !== 'touch') {
+      pointerIn = true;
+    }
+  }
+  function focusIn(event: FocusEvent) {
+    const target = event.target as Element;
+    try {
+      keyboardIn = target.matches(':focus-visible');
+    } catch {
+      keyboardIn = true;
+    }
+  }
+  function focusOut(event: FocusEvent) {
+    const aside = event.currentTarget as Element;
+    if (!(event.relatedTarget instanceof Node && aside.contains(event.relatedTarget))) {
+      keyboardIn = false;
     }
   }
 
@@ -100,7 +125,9 @@
   // As in OG, a guest has the menu too: it holds the link to log in.
   const showMenu = $derived(hasMenu || !session.loggedIn);
   // The column of icons: only the menu at the left of a wide screen, never the drawer.
-  const icons = $derived(collapsed && wide.current);
+  const icons = $derived(wide.current && !pinned && !pointerIn && !keyboardIn);
+  // Unpinned, the open menu lies over the page instead of moving it.
+  const over = $derived(wide.current && !pinned && !icons);
   const links = $derived(menuLinkSwitches());
   const extras = $derived(extraLinks());
   const mediaSearch = $derived(mediaSearchService());
@@ -208,52 +235,25 @@
       <ul>
         {#if links.signout && session.loggedIn}
           <li>
-            <MenuTip label="Logout" on={icons}>
-              {#snippet children(tip)}
-                <button
-                  {...mergeProps(tip, { onclick: logOut })}
-                  type="button"
-                  class="w-full"
-                  aria-label="Logout"
-                >
-                  <i class="oi oi-fontawesome fa-sign-out text-xl" aria-hidden="true"></i>
-                  {#if !icons}<span class="truncate">Logout</span>{/if}
-                </button>
-              {/snippet}
-            </MenuTip>
+            <button onclick={logOut} type="button" class="w-full" aria-label="Logout">
+              <i class="oi oi-fontawesome fa-sign-out text-xl" aria-hidden="true"></i>
+              {#if !icons}<span class="truncate">Logout</span>{/if}
+            </button>
           </li>
         {:else if links.signout}
           <li>
-            <MenuTip label="Login/Register" on={icons}>
-              {#snippet children(tip)}
-                <a
-                  {...mergeProps(tip, { onclick: onpick })}
-                  href={PAGES.login}
-                  aria-label="Login/Register"
-                >
-                  <i class="oi oi-materialize mdi-login text-xl" aria-hidden="true"></i>
-                  {#if !icons}<span class="truncate">Login/Register</span>{/if}
-                </a>
-              {/snippet}
-            </MenuTip>
+            <a onclick={onpick} href={PAGES.login} aria-label="Login/Register">
+              <i class="oi oi-materialize mdi-login text-xl" aria-hidden="true"></i>
+              {#if !icons}<span class="truncate">Login/Register</span>{/if}
+            </a>
           </li>
         {/if}
         {#each extras as link (link.name)}
           <li>
-            <MenuTip label={link.name} on={icons}>
-              {#snippet children(tip)}
-                <a
-                  {...tip}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={link.name}
-                >
-                  <i class="oi {link.icon} text-xl" aria-hidden="true"></i>
-                  {#if !icons}<span class="truncate">{link.name}</span>{/if}
-                </a>
-              {/snippet}
-            </MenuTip>
+            <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label={link.name}>
+              <i class="oi {link.icon} text-xl" aria-hidden="true"></i>
+              {#if !icons}<span class="truncate">{link.name}</span>{/if}
+            </a>
           </li>
         {/each}
       </ul>
@@ -287,7 +287,7 @@
               <Tooltip.Content>Menu</Tooltip.Content>
             </Tooltip.Root>
           {:else if showMenu}
-            {@const label = collapsed ? 'Expand the menu' : 'Collapse the menu'}
+            {@const label = pinned ? 'Unpin the menu' : 'Pin the menu open'}
             <Tooltip.Root>
               <Tooltip.Trigger>
                 {#snippet child({ props })}
@@ -295,14 +295,14 @@
                     variant="ghost"
                     class={barToggle}
                     aria-label={label}
-                    aria-expanded={!collapsed}
+                    aria-pressed={pinned}
                     aria-controls="m-menu"
-                    {...mergeProps(props, { onclick: toggleCollapsed })}
+                    {...mergeProps(props, { onclick: togglePinned })}
                   >
-                    {#if collapsed}
-                      <PanelLeftOpenIcon aria-hidden="true" />
+                    {#if pinned}
+                      <PinOffIcon aria-hidden="true" />
                     {:else}
-                      <PanelLeftCloseIcon aria-hidden="true" />
+                      <PinIcon aria-hidden="true" />
                     {/if}
                   </Button>
                 {/snippet}
@@ -445,7 +445,14 @@
       {/if}
 
       {#if showMenu && wide.current}
-        <aside id="m-menu" class={['org-sidebar', icons && 'm-sidebar-icons']}>
+        <aside
+          id="m-menu"
+          class={['org-sidebar', icons && 'm-sidebar-icons', over && 'm-sidebar-over']}
+          onpointerenter={enter}
+          onpointerleave={() => (pointerIn = false)}
+          onfocusin={focusIn}
+          onfocusout={focusOut}
+        >
           {#if !icons}
             <div class="org-sidebar-head">Navigation</div>
           {/if}
@@ -484,7 +491,7 @@
           'flex flex-col',
           'org-content',
           showMenu && wide.current && 'm-with-menu',
-          showMenu && icons && 'm-with-icons',
+          showMenu && wide.current && !pinned && 'm-with-icons',
         ]}
       >
         {#if session.canManage && session.launch?.settings.misc.checkForUpdate !== false}

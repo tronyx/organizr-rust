@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { frames as loadedFrames } from '../lib/frames.svelte';
 import type { MenuCategory, MenuTab } from '../lib/types';
 import Menu from './Menu.svelte';
-import MenuWithTips from './MenuWithTips.test.svelte';
 import TabFrames from './TabFrames.svelte';
 
 function tab(id: number, name: string, changes: Partial<MenuTab> = {}): MenuTab {
@@ -151,11 +150,15 @@ describe('Menu, collapsed', () => {
     expect(screen.getByText('Media')).toBeInTheDocument();
   });
 
-  it('shows the modern tabs as a flat column of pictures, each named and the shown one marked', () => {
-    const { container } = render(MenuWithTips, { ...props, variant: 'modern', collapsed: true });
+  it('shows the modern menu as a column of pictures, each named and the shown one marked', () => {
+    const { container } = render(Menu, { ...props, variant: 'modern', collapsed: true });
 
-    // No category to open: the tabs stand in one list, without their names as text.
-    expect(container.querySelector('details')).toBeNull();
+    // A category keeps its place with its picture only; it is open, because it holds the
+    // shown tab, so the picture of that tab stands under it. No name shows as text.
+    const summary = container.querySelector('summary');
+    expect(summary).toHaveAccessibleName('Media');
+    expect(summary?.closest('details')).toHaveAttribute('open');
+    expect(summary?.querySelector('.org-label, .org-arrow')).toBeNull();
     expect(screen.queryByText('Media')).toBeNull();
     expect(screen.queryByText('Plex Server')).toBeNull();
     // Each link keeps its name for a screen reader, and the shown tab is marked.
@@ -164,6 +167,18 @@ describe('Menu, collapsed', () => {
       'aria-current',
       'page',
     );
+  });
+
+  it('keeps a category closed in the column of icons when no tab of it is shown', () => {
+    const { container } = render(Menu, {
+      ...props,
+      shown: 1,
+      variant: 'modern',
+      collapsed: true,
+    });
+
+    expect(container.querySelector('details')).not.toHaveAttribute('open');
+    expect(container.querySelector('summary')).toHaveAccessibleName('Media');
   });
 
   it('shows the modern tabs with their names and categories when not collapsed', () => {

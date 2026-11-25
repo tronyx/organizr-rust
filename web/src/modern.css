@@ -100,10 +100,32 @@
   }
 
   [data-layout='modern'] .m-sidebar-icons .org-menu a,
-  [data-layout='modern'] .m-sidebar-icons .org-menu button {
+  [data-layout='modern'] .m-sidebar-icons .org-menu button,
+  [data-layout='modern'] .m-sidebar-icons .org-menu summary {
     position: relative;
     justify-content: center;
     padding: 6px;
+  }
+
+  /* An open category, in the column of icons: the pictures of its tabs under its own, on
+     a faint band, as the tabs of an open category of PHP stay under it. */
+  [data-layout='modern'] .m-sidebar-icons .org-menu .m-group[open] > div {
+    margin: 0 6px 4px;
+    padding: 2px 0;
+    border-radius: var(--radius-field);
+    background: color-mix(in oklab, var(--color-base-300) 55%, transparent);
+  }
+
+  [data-layout='modern'] .m-sidebar-icons .org-menu .m-group[open] > div a {
+    margin: 1px 2px;
+    padding: 6px;
+  }
+
+  /* Unpinned, the open menu lies over the page, as the sidebar of PHP opens under the
+     pointer, and the page keeps its place beside the column of icons. */
+  [data-layout='modern'] .org-sidebar.m-sidebar-over {
+    z-index: 40;
+    box-shadow: 0 10px 30px color-mix(in oklab, var(--color-neutral) 45%, transparent);
   }
 
   /* The tab that is shown, in the column of icons: its name is not there to see, so a bar

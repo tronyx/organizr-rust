@@ -133,6 +133,8 @@ describe('ModernShell', () => {
   });
 
   it('tabs_are_grouped_by_category', async () => {
+    // Pinned, the menu shows the names.
+    localStorage.setItem('organizr.modernMenuPinned', 'true');
     await openShell();
 
     const menu = screen.getByRole('navigation', { name: 'Tabs' });
@@ -153,6 +155,7 @@ describe('ModernShell', () => {
   });
 
   it('open_tab_is_marked_current', async () => {
+    localStorage.setItem('organizr.modernMenuPinned', 'true');
     await openShell(true, 2);
 
     expect(screen.getByRole('link', { name: 'Plex Server' })).toHaveAttribute(
@@ -352,23 +355,22 @@ describe('ModernShell', () => {
     );
   });
 
-  it('menu_collapses_to_icons_and_expands_again', async () => {
+  it('menu_is_a_column_of_icons_that_opens_under_the_pointer', async () => {
     await openShell(true, 2);
-    const toggle = screen.getByRole('button', { name: 'Collapse the menu' });
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(toggle).toHaveAttribute('aria-controls', 'm-menu');
-    const aside = document.getElementById('m-menu');
-    expect(aside?.tagName).toBe('ASIDE');
-    expect(aside).not.toHaveClass('m-sidebar-icons');
-
-    await fireEvent.click(toggle);
-    const expand = screen.getByRole('button', { name: 'Expand the menu' });
-    expect(expand).toHaveAttribute('aria-expanded', 'false');
+    const aside = document.getElementById('m-menu') as HTMLElement;
+    expect(aside.tagName).toBe('ASIDE');
     expect(aside).toHaveClass('m-sidebar-icons');
+    expect(aside).not.toHaveClass('m-sidebar-over');
     expect(document.querySelector('.org-content')).toHaveClass('m-with-menu', 'm-with-icons');
+    expect(document.querySelector('.org-sidebar-head')).toBeNull();
 
-    // Every tab keeps its name and shows its picture; the categories have no heading.
+    // A category shows its picture only; it is open because it holds the shown tab, so the
+    // pictures of its tabs stand under it.
     const menu = screen.getByRole('navigation', { name: 'Tabs' });
+    const category = menu.querySelector('summary');
+    expect(category).toHaveAccessibleName('Media');
+    expect(category?.closest('details')).toHaveAttribute('open');
+    expect(within(menu).queryByText('Media')).not.toBeInTheDocument();
     const links = within(menu).getAllByRole('link');
     expect(links.map((link) => link.getAttribute('aria-label'))).toEqual([
       'Status',
@@ -377,65 +379,94 @@ describe('ModernShell', () => {
     ]);
     for (const link of links) {
       expect(link.textContent?.trim()).toBe(link.getAttribute('aria-label')?.charAt(0));
-      expect(link.querySelector('[aria-hidden="true"]')).not.toBeNull();
     }
     expect(within(menu).getByRole('link', { name: 'Plex Server' })).toHaveAttribute(
       'aria-current',
       'page',
     );
-    expect(menu.querySelector('details, summary')).toBeNull();
-    expect(within(menu).queryByText('Media')).not.toBeInTheDocument();
-    expect(document.querySelector('.org-sidebar-head')).toBeNull();
     // The links at the end are icons too, with their names.
     const extras = screen.getByRole('navigation', { name: 'Organizr' });
     expect(within(extras).getByRole('button', { name: 'Logout' }).textContent?.trim()).toBe('');
-    expect(within(extras).getByRole('link', { name: 'Organizr Docs' })).toBeInTheDocument();
 
-    await fireEvent.click(expand);
-    expect(screen.getByRole('button', { name: 'Collapse the menu' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
+    // A mouse on the menu opens it over the page, which keeps its place.
+    await fireEvent.pointerEnter(aside, { pointerType: 'mouse' });
     expect(aside).not.toHaveClass('m-sidebar-icons');
-    expect(within(menu).getByText('Media').closest('details')).not.toBeNull();
+    expect(aside).toHaveClass('m-sidebar-over');
+    expect(document.querySelector('.org-content')).toHaveClass('m-with-icons');
+    expect(document.querySelector('.org-sidebar-head')).not.toBeNull();
+    expect(within(menu).getByText('Media').closest('details')).toHaveAttribute('open');
+
+    // It closes when the mouse leaves.
+    await fireEvent.pointerLeave(aside, { pointerType: 'mouse' });
+    expect(aside).toHaveClass('m-sidebar-icons');
+
+    // A finger opens nothing: it taps the icons.
+    await fireEvent.pointerEnter(aside, { pointerType: 'touch' });
+    expect(aside).toHaveClass('m-sidebar-icons');
   });
 
-  it('a_collapsed_tab_shows_its_name_as_a_tooltip', async () => {
-    // jsdom has no ResizeObserver, which the placing of a tooltip uses.
-    vi.stubGlobal(
-      'ResizeObserver',
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    localStorage.setItem('organizr.modernMenuCollapsed', 'true');
-    await openShell();
+  it('a_closed_category_shows_only_its_picture_in_the_column', async () => {
+    await openShell(true, 1);
+    const menu = screen.getByRole('navigation', { name: 'Tabs' });
+    expect(menu.querySelector('details')).not.toHaveAttribute('open');
+    expect(menu.querySelector('summary')).toHaveAccessibleName('Media');
+  });
 
-    const link = screen.getByRole('link', { name: 'Sonarr' });
-    // The pointer rests on the tab. (The keyboard focus is checked in the browser: the
-    // tooltip waits for `:focus-visible`, which jsdom does not have.)
-    await fireEvent.pointerEnter(link, { pointerType: 'mouse' });
-    await fireEvent.pointerMove(link, { pointerType: 'mouse' });
-    const tip = await waitFor(() => {
-      const found = document.querySelector('[data-slot="tooltip-content"]');
-      expect(found).not.toBeNull();
-      return found as HTMLElement;
+  it('the_keyboard_opens_the_menu_until_it_leaves', async () => {
+    await openShell(true, 2);
+    const aside = document.getElementById('m-menu') as HTMLElement;
+    const link = screen.getByRole('link', { name: 'Status' });
+    vi.spyOn(link, 'matches').mockImplementation((selector) => selector === ':focus-visible');
+
+    await fireEvent.focusIn(link);
+    expect(aside).toHaveClass('m-sidebar-over');
+    // Focus that moves within the menu keeps it open.
+    await fireEvent.focusOut(link, {
+      relatedTarget: screen.getByRole('link', { name: 'Sonarr' }),
     });
-    expect(tip).toHaveTextContent('Sonarr');
-    expect(tip).toHaveClass('text-sm');
-    // The link has its name once: the tooltip does not describe it with the same text.
-    expect(link).toHaveAccessibleName('Sonarr');
-    expect(link).not.toHaveAttribute('aria-describedby');
+    expect(aside).toHaveClass('m-sidebar-over');
+    await fireEvent.focusOut(link, { relatedTarget: document.body });
+    expect(aside).toHaveClass('m-sidebar-icons');
   });
 
-  it('the_collapse_toggle_is_only_on_a_wide_screen', async () => {
+  it('a_click_that_focuses_a_link_does_not_keep_the_menu_open', async () => {
+    await openShell(true, 2);
+    const aside = document.getElementById('m-menu') as HTMLElement;
+    const link = screen.getByRole('link', { name: 'Status' });
+    vi.spyOn(link, 'matches').mockImplementation(() => false);
+
+    await fireEvent.focusIn(link);
+    expect(aside).toHaveClass('m-sidebar-icons');
+  });
+
+  it('the_pin_keeps_the_menu_open_beside_the_page', async () => {
+    await openShell(true, 2);
+    const pin = screen.getByRole('button', { name: 'Pin the menu open' });
+    expect(pin).toHaveAttribute('aria-pressed', 'false');
+    expect(pin).toHaveAttribute('aria-controls', 'm-menu');
+
+    await fireEvent.click(pin);
+    const unpin = screen.getByRole('button', { name: 'Unpin the menu' });
+    expect(unpin).toHaveAttribute('aria-pressed', 'true');
+    const aside = document.getElementById('m-menu') as HTMLElement;
+    expect(aside).not.toHaveClass('m-sidebar-icons');
+    expect(aside).not.toHaveClass('m-sidebar-over');
+    expect(document.querySelector('.org-content')).toHaveClass('m-with-menu');
+    expect(document.querySelector('.org-content')).not.toHaveClass('m-with-icons');
+    // The mouse leaving changes nothing.
+    await fireEvent.pointerLeave(aside, { pointerType: 'mouse' });
+    expect(aside).not.toHaveClass('m-sidebar-icons');
+
+    await fireEvent.click(unpin);
+    expect(aside).toHaveClass('m-sidebar-icons');
+  });
+
+  it('the_pin_is_only_on_a_wide_screen', async () => {
     screen_({ wide: false });
-    localStorage.setItem('organizr.modernMenuCollapsed', 'true');
+    localStorage.setItem('organizr.modernMenuPinned', 'true');
     await openShell();
 
-    expect(screen.queryByRole('button', { name: /(Collapse|Expand) the menu/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /(Pin|Unpin) the menu/ })).toBeNull();
     expect(screen.getByRole('button', { name: 'Show the menu of tabs' })).toBeInTheDocument();
     // The drawer shows the whole menu, with its headings.
     await fireEvent.click(screen.getByRole('button', { name: 'Show the menu of tabs' }));
@@ -444,40 +475,40 @@ describe('ModernShell', () => {
     expect(drawer).not.toHaveClass('m-sidebar-icons');
   });
 
-  it('the_collapsed_menu_is_remembered_in_this_browser', async () => {
-    localStorage.setItem('organizr.modernMenuCollapsed', 'true');
+  it('the_pin_is_remembered_in_this_browser', async () => {
+    localStorage.setItem('organizr.modernMenuPinned', 'true');
     await openShell();
-    expect(screen.getByRole('button', { name: 'Expand the menu' })).toBeInTheDocument();
-    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
+    expect(screen.getByRole('button', { name: 'Unpin the menu' })).toBeInTheDocument();
+    expect(document.getElementById('m-menu')).not.toHaveClass('m-sidebar-icons');
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Expand the menu' }));
-    expect(localStorage.getItem('organizr.modernMenuCollapsed')).toBe('false');
-    await fireEvent.click(screen.getByRole('button', { name: 'Collapse the menu' }));
-    expect(localStorage.getItem('organizr.modernMenuCollapsed')).toBe('true');
+    await fireEvent.click(screen.getByRole('button', { name: 'Unpin the menu' }));
+    expect(localStorage.getItem('organizr.modernMenuPinned')).toBe('false');
+    await fireEvent.click(screen.getByRole('button', { name: 'Pin the menu open' }));
+    expect(localStorage.getItem('organizr.modernMenuPinned')).toBe('true');
   });
 
-  it('the_menu_follows_a_collapse_or_expand_in_another_tab_of_the_browser', async () => {
+  it('the_menu_follows_a_pin_or_unpin_in_another_tab_of_the_browser', async () => {
     await openShell();
-    expect(document.getElementById('m-menu')).not.toHaveClass('m-sidebar-icons');
+    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
 
     // Another tab stores the choice: this one gets a `storage` event.
-    const change = (newValue: string | null, key: string | null = 'organizr.modernMenuCollapsed') =>
+    const change = (newValue: string | null, key: string | null = 'organizr.modernMenuPinned') =>
       fireEvent(window, new StorageEvent('storage', { key, newValue }));
     await change('true');
-    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
-    expect(screen.getByRole('button', { name: 'Expand the menu' })).toBeInTheDocument();
+    expect(document.getElementById('m-menu')).not.toHaveClass('m-sidebar-icons');
+    expect(screen.getByRole('button', { name: 'Unpin the menu' })).toBeInTheDocument();
     // Another key changes nothing.
     await change('false', 'organizr.other');
-    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
-    await change('false');
     expect(document.getElementById('m-menu')).not.toHaveClass('m-sidebar-icons');
-    // A cleared storage opens the menu, as on a first visit.
+    await change('false');
+    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
+    // A cleared storage unpins the menu, as on a first visit.
     await change('true');
     await change(null, null);
-    expect(document.getElementById('m-menu')).not.toHaveClass('m-sidebar-icons');
+    expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
   });
 
-  it('the_menu_starts_open_and_still_collapses_when_storage_is_blocked', async () => {
+  it('the_menu_starts_unpinned_and_still_pins_when_storage_is_blocked', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new DOMException('blocked', 'SecurityError');
     });
@@ -485,9 +516,10 @@ describe('ModernShell', () => {
       throw new DOMException('blocked', 'SecurityError');
     });
     await openShell();
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Collapse the menu' }));
     expect(document.getElementById('m-menu')).toHaveClass('m-sidebar-icons');
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Pin the menu open' }));
+    expect(document.getElementById('m-menu')).not.toHaveClass('m-sidebar-icons');
     expect(screen.getByRole('link', { name: 'Status' })).toBeInTheDocument();
   });
 
