@@ -195,9 +195,12 @@ describe('JellyStat', () => {
     expect(poster.querySelector('img')?.getAttribute('src')).toBe(
       `${url}/proxy/Items/Images/Primary?id=815&fillWidth=200&quality=90`,
     );
-    // A series that is known by its name only has no picture of JellyStat.
+    // A series that is known by its name only has no picture of JellyStat: it shows the
+    // picture "Poster coming soon" of PHP.
     const series = screen.getByRole('list', { name: 'Most Watched TV Shows' });
-    expect(within(series).getByRole('button').querySelector('img')).toBeNull();
+    expect(within(series).getByRole('button').querySelector('img')?.getAttribute('src')).toBe(
+      'plugins/images/homepage/no-list.png',
+    );
     expect(screen.queryByRole('list', { name: 'Most Listened Music' })).toBeNull();
   });
 

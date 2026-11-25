@@ -7,7 +7,8 @@
   import { api, failureText } from '../../lib/api';
   import {
     type MediaService,
-    pictureAddress,
+    posterAddress,
+    showNoPoster,
     type PlexAnswer,
     type PlexItem,
     SERVICE_NAMES,
@@ -95,16 +96,10 @@
       {:else}
         <ul class="org-search-results" aria-label="Results in {SERVICE_NAMES[service]}">
           {#each results as result, index (index)}
-            {@const picture = pictureAddress(result.imageURL)}
+            {@const picture = posterAddress(result.imageURL)}
             <li>
               <button type="button" onclick={() => (chosen = result)}>
-                {#if picture}
-                  <img src={picture} alt="" loading="lazy" />
-                {:else}
-                  <span class="org-poster-empty" aria-hidden="true">
-                    {[...result.title][0] ?? '?'}
-                  </span>
-                {/if}
+                <img src={picture} alt="" loading="lazy" onerror={showNoPoster} />
                 <span class="truncate text-xs">{result.title}</span>
               </button>
             </li>

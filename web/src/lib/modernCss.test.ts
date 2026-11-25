@@ -168,7 +168,6 @@ const HOMEPAGE_CLASSES = [
   'org-posters',
   'org-poster',
   'org-poster-corner',
-  'org-poster-empty',
   'org-stream',
   'org-stream-picture',
   'org-stream-info',

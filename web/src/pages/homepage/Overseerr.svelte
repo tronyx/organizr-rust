@@ -4,7 +4,7 @@
   import Dialog from '../../components/Dialog.svelte';
   import { api, failureText } from '../../lib/api';
   import { itemData } from '../../lib/itemData.svelte';
-  import { pictureAddress } from '../../lib/plex';
+  import { pictureAddress, posterAddress, showNoPoster } from '../../lib/plex';
   import PosterRow from './PosterRow.svelte';
   import RequestSearch from './RequestSearch.svelte';
   import { session } from '../../lib/session.svelte';
@@ -136,7 +136,7 @@
     buttons={canRequest ? searchButton : undefined}
   >
     {#each shown as request (request.request_id)}
-      {@const picture = pictureAddress(request.poster)}
+      {@const picture = posterAddress(request.poster)}
       {@const state = STATES[stateOf(request)]}
       <li class="org-poster">
         <button
@@ -147,13 +147,7 @@
             error = null;
           }}
         >
-          {#if picture}
-            <img src={picture} alt="" loading="lazy" />
-          {:else}
-            <span class="org-poster-empty" aria-hidden="true">
-              {[...(request.title ?? '?')][0] ?? '?'}
-            </span>
-          {/if}
+          <img src={picture} alt="" loading="lazy" onerror={showNoPoster} />
           <!-- The color of the corner says how far the request is. -->
           <span
             class="org-poster-corner"

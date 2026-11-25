@@ -79,7 +79,7 @@ describe('Ombi', () => {
     const list = await screen.findByRole('list', { name: 'Requests' });
     expect(rowTexts(list)).toEqual([
       'The Show Waiting',
-      'D Denied Film Denied',
+      'Denied Film Denied',
       'The Film Available',
     ]);
     // The requests of Overseerr are not asked for.
@@ -155,7 +155,7 @@ describe('Ombi', () => {
     render(Homepage, { title: 'Homepage' });
 
     const list = await screen.findByRole('list', { name: 'Requests' });
-    expect(rowTexts(list)).toEqual(['The Show Waiting', 'D Denied Film Denied']);
+    expect(rowTexts(list)).toEqual(['The Show Waiting', 'Denied Film Denied']);
     await fireEvent.click(screen.getByRole('button', { name: /The Show/ }));
     const dialog = await screen.findByRole('dialog', { hidden: true });
     expect(dialog.textContent).toContain('Requested by Pat the alias');

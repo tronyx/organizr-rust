@@ -71,10 +71,12 @@ describe('Overseerr', () => {
     expect(rows.map((row) => row.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
       'The Film Available',
       'Waiting Film Waiting',
-      'D Denied Film Denied',
+      'Denied Film Denied',
     ]);
-    // The picture that stands for "no picture" is not shown.
-    expect(rows[2]?.querySelector('img')).toBeNull();
+    // A request without a poster shows the picture "Poster coming soon" of PHP.
+    expect(rows[2]?.querySelector('img')?.getAttribute('src')).toBe(
+      'plugins/images/homepage/no-list.png',
+    );
 
     await fireEvent.click(screen.getByRole('button', { name: 'Filter Requests' }));
     await fireEvent.click(screen.getByLabelText('Denied'));

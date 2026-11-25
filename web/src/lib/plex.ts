@@ -91,6 +91,22 @@ export function pictureAddress(address: string | undefined): string | null {
   return address;
 }
 
+/** The picture that PHP Organizr shows for a poster it does not have: "Poster coming soon". */
+export const NO_POSTER = 'plugins/images/homepage/no-list.png';
+
+/** The address of a poster, or the picture for a poster that is missing. */
+export function posterAddress(address: string | undefined): string {
+  return pictureAddress(address) ?? NO_POSTER;
+}
+
+/** Shows the picture for a missing poster instead of a poster that does not load. */
+export function showNoPoster(event: Event): void {
+  const image = event.currentTarget as HTMLImageElement;
+  if (!image.src.endsWith(NO_POSTER)) {
+    image.src = NO_POSTER;
+  }
+}
+
 /** The address of an item in the web interface of its server, when it is a web address. */
 export function linkOf(item: PlexItem): string | null {
   const address = (item.address ?? '').trim();

@@ -3323,8 +3323,7 @@
     cursor: pointer;
   }
 
-  .org-search-results img,
-  .org-search-results .org-poster-empty {
+  .org-search-results img {
     width: 100%;
     aspect-ratio: 2 / 3;
     object-fit: cover;
@@ -3514,18 +3513,11 @@
     cursor: pointer;
   }
 
-  .org-poster img,
-  .org-poster-empty {
+  .org-poster img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     background: var(--color-base-300);
-  }
-
-  .org-poster-empty {
-    display: grid;
-    place-items: center;
-    font-size: 28px;
   }
 
   .org-poster-corner {

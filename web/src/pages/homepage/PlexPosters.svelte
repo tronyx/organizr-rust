@@ -3,7 +3,8 @@
   // its item.
   import {
     type MediaService,
-    pictureAddress,
+    posterAddress,
+    showNoPoster,
     type PlexItem,
     SERVICE_NAMES,
     subtitleOf,
@@ -61,14 +62,10 @@
 
 <PosterRow {title} {label} filters={byKind && kinds.length > 0 ? kindFilters : undefined}>
   {#each listed as item, index (index)}
-    {@const picture = pictureAddress(item.imageURL)}
+    {@const picture = posterAddress(item.imageURL)}
     <li class="org-poster">
       <button type="button" title="{item.title} {subtitleOf(item)}" onclick={() => show(item)}>
-        {#if picture}
-          <img src={picture} alt="" loading="lazy" />
-        {:else}
-          <span class="org-poster-empty" aria-hidden="true">{[...item.title][0] ?? '?'}</span>
-        {/if}
+        <img src={picture} alt="" loading="lazy" onerror={showNoPoster} />
         <span class="sr-only">{item.title}</span>
         <span class="sr-only">{subtitleOf(item)}</span>
       </button>

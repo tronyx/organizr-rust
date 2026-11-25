@@ -2,7 +2,13 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/sve
 import { describe, expect, it } from 'vitest';
 
 import type { PlexItem } from '../../lib/plex';
-import { pictureAddress, streamsSummary, streamText } from '../../lib/plex';
+import {
+  NO_POSTER,
+  pictureAddress,
+  posterAddress,
+  streamsSummary,
+  streamText,
+} from '../../lib/plex';
 import { stubApi } from '../../test-helpers';
 import Plex from './Plex.svelte';
 
@@ -104,6 +110,34 @@ describe('Plex', () => {
     ).toContain('app.plex.tv');
   });
 
+  it('shows the picture "Poster coming soon" of PHP for a poster that is missing or fails', async () => {
+    stubApi({
+      'GET homepage/plex/recent': {
+        data: {
+          content: [
+            item('No Picture', { imageURL: 'plugins/images/homepage/no-list.png' }),
+            item('Empty Picture', { imageURL: '' }),
+            item('Broken Picture'),
+          ],
+        },
+      },
+    });
+    render(Plex, { part: 'recent' });
+
+    const source = (name: string) =>
+      screen.getByRole('button', { name: new RegExp(name) }).querySelector('img');
+    await screen.findByRole('button', { name: /No Picture/ });
+    expect(source('No Picture')?.getAttribute('src')).toBe(NO_POSTER);
+    expect(source('Empty Picture')?.getAttribute('src')).toBe(NO_POSTER);
+    // No letter stands in for a poster any more.
+    expect(document.querySelector('.org-poster-empty')).toBeNull();
+    // A poster that does not load gives way to the same picture.
+    const broken = source('Broken Picture') as HTMLImageElement;
+    expect(broken.getAttribute('src')).toBe('data/cache/plex-815-list.jpg');
+    await fireEvent.error(broken);
+    expect(broken.getAttribute('src')).toBe(NO_POSTER);
+  });
+
   it('shows the videos of the playlist that is chosen', async () => {
     stubApi({
       'GET homepage/plex/playlists': {
@@ -187,6 +221,12 @@ describe('plex helpers', () => {
     expect(pictureAddress('api/v2/homepage/image?source=plex&key=1-list')).toBe(
       'api/v2/homepage/image?source=plex&key=1-list',
     );
+    // A poster always has a picture: its own, or the one for a missing poster.
+    expect(posterAddress('plugins/images/homepage/no-list.png')).toBe(NO_POSTER);
+    expect(posterAddress('')).toBe(NO_POSTER);
+    expect(posterAddress(undefined)).toBe(NO_POSTER);
+    expect(posterAddress('api/v2/homepage/image?source=emby&type=&img=1')).toBe(NO_POSTER);
+    expect(posterAddress('data/cache/plex-1-list.jpg')).toBe('data/cache/plex-1-list.jpg');
   });
 
   it('say how a stream plays', () => {

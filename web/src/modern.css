@@ -1073,12 +1073,6 @@
     outline-offset: 1px;
   }
 
-  [data-layout='modern'] .org-poster-empty {
-    background: var(--color-base-300);
-    color: var(--color-base-content);
-    font-weight: 600;
-  }
-
   [data-layout='modern'] .org-poster-corner {
     border-top: 30px solid var(--org-state, var(--color-primary));
     border-left: 30px solid transparent;
