@@ -4,7 +4,7 @@
 
 The homepage is your dashboard: one page with live boxes ("items") for Plex, Sonarr, your downloaders, your calendars, your monitors and more. This page shows you how to switch it on, set up each item, and what every setting does.
 
-<!-- SCREENSHOT: homepage-modern.png | The homepage in the modern layout with Plex "Playing now", Recently added, the calendar and a downloader, dark theme -->
+![The homepage on the modern layout, with a download queue, Plex streams and recently added items](images/homepage-modern.png)
 
 ## 🧭 How homepage items work
 
@@ -27,7 +27,7 @@ The tab starts with the group **User**, so guests don't see it until you change 
 5. Select **Save** at the bottom of the dialog.
 6. Select **Test Connection**, if the item has one. Green text means the service answered.
 
-<!-- SCREENSHOT: homepage-item-plex.png | Settings › Tab Editor › Homepage Items with the Plex dialog open: Enable section, Connection section with URL, API Key/Token and the Retrieve buttons -->
+![Settings › Tab Editor › Homepage Items with the Plex dialog open](images/homepage-item-plex.png)
 
 Fields named **Multiple URL's** or **Multiple API Key/Token's** take several values: type one, then press Enter or a comma, or click outside the field, and it becomes a chip. Select a chip to edit it again.
 
@@ -60,7 +60,7 @@ These items have a **Test Connection** button: Plex, Emby, Jellyfin, Emby live T
 2. Select **Save**. The test reads the stored settings, so the button is off ("Save the settings before you test.") while you have unsaved changes.
 3. Select **Test Connection**. Green text means the service answered; red text says what's wrong.
 
-<!-- SCREENSHOT: test-connection.png | The Sonarr dialog after Test Connection: one shot with the green success text, one with a red error such as a wrong API key -->
+![The Plex dialog, section Connection, after Test Connection with the green success text](images/test-connection.png)
 
 Only an Admin or a Co-Admin can run a test. A script can run one with `POST /api/v2/test/<name>`. The name is in the test row of each item below, for example `pihole`, `adguard` or `embyLiveTVTracker`; the second UniFi button is `test/unifi/site`.
 
@@ -668,7 +668,7 @@ The Overseerr and Ombi items have a search button (🔍, "Request a Show or Movi
 3. Select a poster. Its details open.
 4. Select **Request**. A message confirms it, and the list reloads. A title that's already available or requested shows its state instead of the button.
 
-<!-- SCREENSHOT: request-search.png | The "Request a Show or Movie" dialog on the Overseerr item with search results as posters, one marked Available, and the details of one result with the Request button -->
+![The "Request a Show or Movie" dialog with search results as posters, one marked Available](images/request-search.png)
 
 The button shows only when all of these are true: the item is on, you have its **Minimum Authentication** and its **Minimum Group to Request**, single sign-on for the service is on (**Settings › System Settings › SSO**), and your browser has the service's session from that sign-on.
 
@@ -1165,7 +1165,7 @@ For such an item, switch **Trust custom HTML 01: show it as a page of this site*
 - It can embed pages that only your site may frame, and the browser sends your login to them.
 - **A script in the item can do everything the viewer can do in Organizr.** That includes scripts the HTML loads from other sites. When an Admin opens the homepage, such a script can change settings, create users or read secrets as that Admin.
 
-<!-- SCREENSHOT: custom-html-trust.png | The CustomHTML dialog, section Custom HTML 01, with the Custom HTML Code field and the switch "Trust custom HTML 01: show it as a page of this site" below it, switched off -->
+![The CustomHTML dialog with the Custom HTML Code field and the trust switch below it](images/custom-html-trust.png)
 
 > [!CAUTION]
 > Trust only HTML and scripts you wrote or fully know, from sites you control. Admins and Co-Admins can both change this switch and the HTML, so a Co-Admin can make a trusted item that runs as every Admin who opens the homepage. Each switch is off at the start, also after an import.

@@ -26,7 +26,7 @@ A backup also holds the password hashes of every user, and the log files (with u
 
 ## 🚀 Make a backup now
 
-<!-- SCREENSHOT: backup-page.png | Settings › System Settings › Backup as Admin: the Automatic backup section at the top, then the Backups list with two backups, the Make a backup now button, and the download (Save) and trash (Delete) buttons in a row -->
+![Settings › System Settings › Backup with the automatic backup settings and the list of backups](images/backup-page.png)
 
 1. Log in as an Admin or a Co-Admin.
 2. Open **Settings › System Settings › Backup**.

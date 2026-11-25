@@ -55,7 +55,7 @@ An extension is a folder inside the `plugins` folder of your data folder. The fo
 
 Before an extension runs, the Admin approves it. The dialog **Approve the extension <name>** lists everything the extension will be able to do:
 
-<!-- SCREENSHOT: extension-approval.png | Settings › Plugins › Marketplace, the dialog "Approve the extension Hello" open, with the list "What the extension can do" showing storage, a http:<host> site and http-local, the SHA-256 line, and the Cancel / Approve and switch on buttons -->
+![The "Approve the extension" dialog with the list of what the extension can do](images/extension-approval.png)
 
 | Line in the dialog | What it means in plain words |
 |---|---|

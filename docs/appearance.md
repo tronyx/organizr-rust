@@ -19,8 +19,8 @@ A layout is the frame around every page: the top bar and the menu. Organizr has 
 | Settings pages | Tabs along the top, as in PHP | A side menu at the left |
 | Starts on | Installs that you update or import from PHP | New installs |
 
-<!-- SCREENSHOT: homepage-og.png | The homepage on the OG Organizr layout, Organizr theme, with a few tabs in the menu and a Plex item -->
-<!-- SCREENSHOT: homepage-modern.png | The homepage on the modern layout, Organizr Dark theme, with the menu as a column of icons and one category open -->
+![The homepage on the OG Organizr layout](images/homepage-og.png)
+![The homepage on the modern layout, with a download queue, Plex streams and recently added items](images/homepage-modern.png)
 
 A new install starts on the modern layout. An install that you update, or that you import from PHP Organizr, stays on the OG Organizr layout, so nobody sees a change until someone picks one.
 
@@ -96,7 +96,7 @@ The Admin sets the default look of the install. Anyone who is logged in can pick
 
 ### 👑 Set the default look (Admin)
 
-<!-- SCREENSHOT: style-themes.png | Settings › Customize › Appearance, section Style & Themes, with Default layout set to Modern, the Modern theme and Modern color set with their color samples, the OG Organizr theme below, then Reset Colors and the color pickers under "Colors of the OG Organizr layout" -->
+![Settings › Customize › Appearance, section Style & Themes](images/style-themes.png)
 
 1. Open **Settings › Customize › Appearance**.
 2. Open the section **Style & Themes**.
@@ -109,7 +109,7 @@ Only the Admin can change the default layout, modern theme and color set. A Co-A
 
 ### 🪄 Pick your own look
 
-<!-- SCREENSHOT: look-picker.png | The Look picker opened from the modern top bar: layout choice, the theme list and the color sets with their swatches, and the Use the default button -->
+![The Look picker in the modern top bar, with the layouts, themes and color sets](images/look-picker.png)
 
 The **Look** picker is in three places:
 
@@ -166,7 +166,7 @@ Icons that the import copied from PHP's `data/favicon` folder are served at thei
 
 ## 💅 Custom CSS
 
-<!-- SCREENSHOT: custom-code-page.png | Settings › Customize › Appearance, section Custom code, signed in as Admin: the Custom CSS and Theme CSS fields, the note that says whether the scripts run (ORGANIZR_CUSTOM_JS) with its warning, and the Custom Javascript and Theme Javascript fields -->
+![Settings › Customize › Appearance, section Custom code](images/custom-code-page.png)
 
 The section **Custom code** of **Settings › Customize › Appearance** has two style sheets, **Custom CSS** and **Theme CSS**, for every page on both layouts.
 

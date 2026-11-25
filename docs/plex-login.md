@@ -24,7 +24,7 @@ Either way, only a Plex account that your server is shared with can log in, plus
 2. Open **Settings › System Settings › Sign-in**. The section **Sign-in method** opens.
 3. Set **Authentication Type** to **Organizr DB + Backend**. (See [the choices](#-authentication-type-choices) below.)
 4. Set **Authentication Backend** to **Plex**. The Plex fields appear.
-   <!-- SCREENSHOT: sign-in-settings.png | Settings › System Settings › Sign-in, section Sign-in method, with Authentication Type = Organizr DB + Backend, Authentication Backend = Plex, and the Plex fields (API Key/Token, Get Plex Token, Plex Machine ID, Get Plex Machine, Plex Admin Username or Email, Enable Plex oAuth) visible -->
+   ![Settings › System Settings › Sign-in with the Plex fields](images/sign-in-settings.png)
 5. Next to **Get Plex Token**, select **Retrieve**. A small Plex window opens. Log in there **as the owner of the Plex server**. The token fills in **API Key/Token**. Organizr uses it to read the list of accounts your server is shared with.
 6. Select **Save**. The next step needs the saved token.
 7. Next to **Get Plex Machine**, select **Retrieve**. If the owner has one server, its ID fills in **Plex Machine ID**. If there are several, choose the server from the list. The field shows the ID as dots; select the eye button to see it.
@@ -32,7 +32,7 @@ Either way, only a Plex account that your server is shared with can log in, plus
 9. Optional: to show the **Log in with Plex** button, switch on **Enable Plex oAuth**.
 10. Select **Save**.
 11. Log out, and try it. With the button switched on, the login page shows **Log in with Plex**.
-    <!-- SCREENSHOT: login-plex-button.png | The Organizr login page with the user name and password fields and the "Log in with Plex" button below them -->
+    ![The login page with the "Log in with Plex" button](images/login-plex-button.png)
 
 > [!TIP]
 > The same **API Key/Token**, **Plex Machine ID** and **Plex Admin Username or Email** also appear on **Settings › System Settings › SSO**, section **Plex**. The Plex item of the [homepage](homepage.md) uses the same **API Key/Token** and **Plex Machine ID** too. They are the same settings everywhere, so you only fill them in once.

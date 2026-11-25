@@ -15,7 +15,7 @@ Every built-in plugin starts switched off. You switch one on from its card:
 3. Point at the card **Bookmark**, and select the plug button. The card moves to **Active**.
 4. Open **Settings › Plugins › Active**, point at the card **Bookmark**, and select the panel button. The window **Bookmark Settings** opens.
 
-<!-- SCREENSHOT: plugin-card-buttons.png | Settings › Plugins › Active, the pointer on a plugin card, showing the panel button (settings) and the power button (switch off); next to it the same card on Inactive with the plug button -->
+![Settings › Plugins › Inactive, the pointer on a plugin card showing its plug button](images/plugin-card-buttons.png)
 
 | Button | Where | What it does |
 |---|---|---|

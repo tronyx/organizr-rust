@@ -30,7 +30,7 @@ services:
 
 ## 👀 Read the log in the web page
 
-<!-- SCREENSHOT: logs-details.png | Settings › System Settings › Logs as Admin: the File, Level, Reload, Live update and Purge Log controls, and one record with Details open showing the Trace ID, the Request ID, the File (source place) and the context -->
+![Settings › System Settings › Logs with the log records](images/logs-details.png)
 
 An Admin or a Co-Admin can read the log on **Settings › System Settings › Logs**, below the settings:
 

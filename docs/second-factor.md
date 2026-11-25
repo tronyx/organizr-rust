@@ -13,7 +13,7 @@ Each user does this for their own account.
 1. Log in.
 2. Open the menu with your name (top right), and select **Account Settings**.
 3. In the **Second factor** card, select **Set a second factor up**. A QR code and a key appear.
-   <!-- SCREENSHOT: second-factor-qr.png | Account Settings, card "Second factor", after "Set a second factor up": the QR code, the key below it, the code field and the "Switch the second factor on" button -->
+   ![Account Settings, card "Second factor", with the QR code and the code field](images/second-factor-qr.png)
 4. Scan the QR code with your authenticator app. Can't scan it? Type the key shown below the picture into the app instead.
 5. **Save that key in your password manager**, or somewhere else safe. With it, you can add the code to a new phone later. Without it, a lost phone means an Admin has to help (see [Lost your phone?](#-lost-your-phone)).
 6. Type the code that the app shows, and select **Switch the second factor on**. The page says: "The second factor is on. Your next login asks for a code."

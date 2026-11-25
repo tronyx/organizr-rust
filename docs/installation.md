@@ -60,8 +60,6 @@ The project has no release yet. The tag `develop` holds the newest state, and it
    this install is not set up; the set-up wizard asks for the set-up code K7QM-2XWD-9RTB
    ```
 
-   <!-- SCREENSHOT: setup-code-log.png | A terminal with the output of docker compose logs organizr, the set-up code line highlighted -->
-
 5. Open `http://<your server>:8080` in a browser and fill in the [set-up wizard](#-the-set-up-wizard).
 
    `<your server>` is the address of the machine that runs Docker, for example `http://192.168.1.10:8080`, or `http://localhost:8080` on that machine itself.
@@ -86,7 +84,7 @@ Then read the set-up code with `docker logs organizr 2>&1 | grep "set-up code"`.
 
 A new install shows the wizard to anyone who opens it. Only someone who can read the container's log knows the set-up code, so only you can finish it. The code changes each time the container starts; after a restart, read it again.
 
-<!-- SCREENSHOT: wizard-steps.png | The set-up wizard of a new install, the whole form with the three panels: Proof that this is your server, The Admin account, The install -->
+![The set-up wizard of a new install, with the set-up code, the Admin account and the install panels](images/wizard-steps.png)
 
 | Panel | Field | What to enter |
 | --- | --- | --- |
@@ -125,7 +123,7 @@ A tab is an application in Organizr's menu, for example Sonarr. Here's how to ad
 1. Open **Settings › Tab Editor › Tabs**.
 2. Select the round ➕ button (**Add a tab**) at the top right of the list.
 
-   <!-- SCREENSHOT: tab-editor-add.png | Settings › Tab Editor › Tabs with the round + button highlighted, and the "Add a tab" dialog open next to it -->
+   ![Settings › Tab Editor › Tabs with the "Add a tab" dialog open](images/tab-editor-add.png)
 
 3. Fill in the dialog:
 

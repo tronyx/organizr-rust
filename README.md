@@ -9,7 +9,7 @@
 > [!NOTE]
 > Not released yet. The image tag `develop` holds the newest state, and it can change at any time. Try it, and keep your PHP install until you're happy with it.
 
-<!-- SCREENSHOT: homepage-modern.png | The homepage on the modern layout, dark theme, with a few tabs in the menu and the Plex, Sonarr and a downloader item on the page -->
+![The homepage on the modern layout, with a download queue, Plex streams and recently added items](docs/images/homepage-modern.png)
 
 ## ✨ Features
 
