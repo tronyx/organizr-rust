@@ -13,11 +13,18 @@
   import Login from './Login.svelte';
   import Recover from './Recover.svelte';
   import Register from './Register.svelte';
-  import Settings from './settings/Settings.svelte';
   import SpeedTest from './SpeedTest.svelte';
   import UseInvite from './UseInvite.svelte';
 
   let { content }: { content: Exclude<Content, { kind: 'frame' }> } = $props();
+
+  // The settings load when someone opens them: most visits never do, and the page with its
+  // forms is a large part of the interface. The chunk loads once and stays.
+  let settingsPage: Promise<typeof import('./settings/Settings.svelte')> | null = null;
+  function loadSettings() {
+    settingsPage ??= import('./settings/Settings.svelte');
+    return settingsPage;
+  }
 </script>
 
 {#if content.kind === 'login'}
@@ -41,7 +48,16 @@
 {:else if content.kind === 'plexLibraries'}
   <PlexLibraries title={content.tab.name} />
 {:else if content.kind === 'settings'}
-  <Settings section={content.section} />
+  {#await loadSettings()}
+    <span class="loading loading-spinner m-6" aria-label="Loading"></span>
+  {:then module}
+    <module.default section={content.section} />
+  {:catch}
+    <!-- After an update, a page that is still open may ask for a chunk that is gone. -->
+    <Notice title="Settings">
+      <p>The settings could not be loaded. Reload the page to get the current version.</p>
+    </Notice>
+  {/await}
 {:else if content.kind === 'notAllowed'}
   <Notice title="Settings">
     <p>Only an Admin or a Co-Admin can open the settings.</p>
