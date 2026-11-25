@@ -5,8 +5,11 @@
    * of the fields.
    */
   export interface SectionPart {
-    /** Loads the values of the part. The form calls it after it loads, and after it saves. */
-    load(): Promise<void>;
+    /**
+     * Loads the values of the part from the settings that the form loaded, with anything
+     * else that the part needs. The form calls it after it loads, and after it saves.
+     */
+    load(config: Record<string, unknown>): Promise<void>;
     /** The settings that the part changed, as `PUT /config` takes them. */
     changes(): Record<string, unknown>;
     /**
@@ -52,6 +55,7 @@
     parts = {},
     hiddenSections = [],
     hiddenKeys = [],
+    onload,
     ondone,
   }: {
     /** The definition of the page. */
@@ -64,6 +68,12 @@
     hiddenSections?: string[];
     /** Settings that this page leaves out, by their keys: the form does not send them either. */
     hiddenKeys?: string[];
+    /**
+     * Called with the settings each time the form loads them, after it opens and after a
+     * save, so that the page needs no load of its own; with `null` when they could not be
+     * loaded.
+     */
+    onload?: (config: Record<string, unknown> | null) => void;
     /** Called with a sentence about what was saved. */
     ondone: (message: string) => void;
   } = $props();
@@ -176,6 +186,7 @@
   const hasChanges = $derived(Object.keys(changed).length > 0);
 
   async function load() {
+    let handed = false;
     try {
       const [answer, loaded] = await Promise.all([
         api<Record<string, unknown>>('GET', 'config'),
@@ -186,8 +197,13 @@
       start = initialValues(shown, answer.data);
       form = initialValues(shown, answer.data);
       loadError = null;
-      await Promise.all(shownParts.map((part) => part.load()));
+      onload?.(answer.data);
+      handed = true;
+      await Promise.all(shownParts.map((part) => part.load(answer.data)));
     } catch (failure) {
+      if (!handed) {
+        onload?.(null);
+      }
       loadError = failureText(failure);
     }
   }

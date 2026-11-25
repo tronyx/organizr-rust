@@ -207,6 +207,32 @@ describe('LogViewer', () => {
       { logPageSize: '50' },
     ]);
     await vi.waitFor(() => expect(queries().at(-1)?.get('pageSize')).toBe('50'));
+    // The settings load once for the form and the log, and once again after the save.
+    expect(
+      sent.filter((request) => request.method === 'GET' && request.path === 'config'),
+    ).toHaveLength(2);
+  });
+
+  it('loads the settings once when it opens', async () => {
+    const sent = stubApi({ 'GET config': CONFIG, 'GET log/0': pageOf([record('x')]) });
+    render(LogViewer, { ondone: () => {} });
+
+    await screen.findByRole('table', { name: 'Log' });
+    expect(
+      sent.filter((request) => request.method === 'GET' && request.path === 'config'),
+    ).toHaveLength(1);
+    expect(queries()[0]?.get('pageSize')).toBe('25');
+  });
+
+  it('shows the log with the default page size when the settings cannot be loaded', async () => {
+    stubApi({
+      'GET config': { status: 500, message: 'The database is busy' },
+      'GET log/0': pageOf([record('x')]),
+    });
+    render(LogViewer, { ondone: () => {} });
+
+    await screen.findByRole('table', { name: 'Log' });
+    expect(queries()[0]?.get('pageSize')).toBe('50');
   });
 
   it('has an address of its own in the settings', () => {

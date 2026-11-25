@@ -2,8 +2,6 @@
   // The page Logs: the settings of the log above the log of the server. The log shows the
   // records of a log file in pages, filtered by level, with a live update and a button that
   // purges the file. A saved page size or refresh time applies to it at once.
-  import { onMount } from 'svelte';
-
   import { api, failureText } from '../../lib/api';
   import {
     levelClass,
@@ -47,14 +45,19 @@
   const pages = $derived(page ? Math.max(page.pageInfo.totalPages, 1) : 1);
   const current = $derived(Math.floor(offset / pageSize) + 1);
 
-  /** The page size and the time of the live update, from the settings. */
-  async function loadSettings() {
-    try {
-      const config = (await api<Record<string, unknown>>('GET', 'config')).data;
+  /**
+   * Takes the page size and the time of the live update from the settings that the form
+   * loaded, and shows the log the first time. Settings that could not be loaded leave the
+   * defaults of PHP Organizr, or the values from before.
+   */
+  async function settingsLoaded(config: Record<string, unknown> | null) {
+    if (config) {
       pageSize = Number(config.logPageSize) || 50;
       refresh = Number(config.logLiveUpdateRefresh) || 5000;
-    } catch {
-      // The defaults of PHP Organizr stay.
+    }
+    if (!ready) {
+      await load();
+      ready = true;
     }
   }
 
@@ -121,10 +124,12 @@
     }
   }
 
-  /** Passes on what the form saved, and shows the log with the saved settings. */
-  async function saved(message: string) {
+  /**
+   * Passes on what the form saved, and shows the log with the saved settings, which the form
+   * loaded again before it calls this.
+   */
+  function saved(message: string) {
     ondone(message);
-    await loadSettings();
     restart();
   }
 
@@ -135,15 +140,9 @@
     const timer = setInterval(() => void load(), refresh);
     return () => clearInterval(timer);
   });
-
-  onMount(async () => {
-    await loadSettings();
-    await load();
-    ready = true;
-  });
 </script>
 
-<SettingsForm page={LOGS} ondone={saved} />
+<SettingsForm page={LOGS} onload={settingsLoaded} ondone={saved} />
 
 <section class="mt-8" aria-labelledby="log-title">
   <h2 id="log-title" class="text-base font-semibold">Log</h2>

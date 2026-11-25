@@ -5,7 +5,7 @@
 import type { Choice } from '../settings/model';
 import { loadList, withValue } from '../settings/lists';
 import type { SectionPart } from '../settings/SettingsForm.svelte';
-import { api, failureText } from './api';
+import { failureText } from './api';
 import { MODERN_THEMES } from './look';
 
 /** The id of the part entry that holds the look. */
@@ -59,15 +59,12 @@ export class LookForm implements SectionPart {
     return MODERN_THEMES.find((theme) => theme.id === this.form.modernTheme)?.colorSets ?? [];
   }
 
-  async load() {
+  /** Loads the look from the settings that the form loaded, and the installed themes. */
+  async load(config: Record<string, unknown>) {
     try {
       // A list that cannot be loaded leaves the stored theme as the only choice, with a
       // note, as the form does for its lists.
-      const [answer, themes] = await Promise.all([
-        api<Record<string, unknown>>('GET', 'config'),
-        loadList('themes').catch(() => null),
-      ]);
-      const config = answer.data;
+      const themes = await loadList('themes').catch(() => null);
       const loaded: LookValues = {
         layout: text(config.layout, 'og'),
         theme: typeof config.theme === 'string' ? config.theme : '',

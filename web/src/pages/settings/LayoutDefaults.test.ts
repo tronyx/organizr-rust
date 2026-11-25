@@ -61,6 +61,14 @@ async function open(
 }
 
 describe('the group Style & Themes', () => {
+  it('loads the settings once for the form and the look', async () => {
+    const { sent } = await open();
+
+    expect(
+      sent.filter((request) => request.method === 'GET' && request.path === 'config'),
+    ).toHaveLength(1);
+  });
+
   it('replaces_the_layout_tab_and_keeps_its_place', async () => {
     await open();
 
@@ -251,10 +259,11 @@ describe('the group Style & Themes', () => {
       layout: 'modern',
       modernTheme: 'emby',
     });
-    // The form and the look load again, and so does the session, for the look of the page.
+    // The form loads again and hands the settings to the look, and the session loads again,
+    // for the look of the page.
     const after = sent.slice(before).map((request) => `${request.method} ${request.path}`);
     expect(after).toEqual(expect.arrayContaining(['GET config', 'GET themes', 'GET launch']));
-    expect(after.filter((request) => request === 'GET config')).toHaveLength(2);
+    expect(after.filter((request) => request === 'GET config')).toHaveLength(1);
     expect(after.some((request) => request.startsWith('GET settings/'))).toBe(false);
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Save the layout' })).toBeNull();

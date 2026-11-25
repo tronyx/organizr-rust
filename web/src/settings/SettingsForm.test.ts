@@ -136,6 +136,7 @@ async function show(
     parts: Record<string, SectionPart>;
     hiddenSections: string[];
     hiddenKeys: string[];
+    onload: (config: Record<string, unknown> | null) => void;
   }> = {},
 ) {
   const sent = stubApi({
@@ -940,12 +941,42 @@ describe('SettingsForm, the parts and the boxes', () => {
     expect(screen.getByText('The scripts note')).toBeInTheDocument();
     await section('Certificate');
     expect(screen.getByText('The certificate part')).toBeInTheDocument();
-    expect(certificate.load).toHaveBeenCalled();
+    // The part takes the settings that the form loaded, and loads none of its own.
+    expect(certificate.load).toHaveBeenCalledWith(PART_CONFIG);
 
     await save();
 
     expect(await sentBody(sent)).toEqual({ certificateChanged: true });
     await waitFor(() => expect(certificate.saved).toHaveBeenCalled());
+    await waitFor(() => expect(certificate.load).toHaveBeenCalledTimes(2));
+  });
+
+  it('hands the loaded settings to the page, after it loads and after it saves', async () => {
+    const onload = vi.fn();
+    const { sent, ondone } = await show(
+      PARTS,
+      { 'GET config': { data: PART_CONFIG }, 'PUT config': {} },
+      { onload },
+    );
+    expect(onload).toHaveBeenCalledExactlyOnceWith(PART_CONFIG);
+
+    await fireEvent.input(screen.getByLabelText('Title'), { target: { value: 'Away' } });
+    await save();
+
+    await waitFor(() => expect(ondone).toHaveBeenCalled());
+    expect(onload).toHaveBeenCalledTimes(2);
+    expect(
+      sent.filter((request) => request.method === 'GET' && request.path === 'config'),
+    ).toHaveLength(2);
+  });
+
+  it('tells the page when the settings cannot be loaded', async () => {
+    const onload = vi.fn();
+    stubApi({ 'GET config': { status: 500, message: 'The database is busy' } });
+    render(SettingsForm, { page: PARTS, ondone: vi.fn(), onload });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('The database is busy');
+    expect(onload).toHaveBeenCalledExactlyOnceWith(null);
   });
 
   it('leaves out the Admin-only fields and parts for a Co-Admin, and never sends them', async () => {
