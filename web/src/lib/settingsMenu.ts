@@ -1,5 +1,7 @@
-// The menu of the settings: the groups and pages of PHP Organizr's main tabs and sub
-// tabs. Both layouts read it: OG draws it as tabs, the modern layout as a side menu.
+// The menu of the settings: the groups of PHP Organizr's main tabs, each with its pages.
+// Most pages are PHP's sub tabs. Sign-in, Login & Security and Tab Options are pages that
+// PHP does not have: they hold settings that PHP shows on its other pages. Both layouts
+// read the menu: OG draws it as tabs, the modern layout as a side menu.
 
 import { PAGES, type SettingsSection } from './route.svelte';
 
@@ -13,9 +15,8 @@ export interface MenuPage {
 }
 
 /**
- * The settings in the main tabs and the tabs under them of PHP Organizr, with its
- * names and its pictures. A section of this application is under the tab of PHP that
- * holds the same settings.
+ * A main tab of PHP Organizr, with its name and its picture, and the pages under it. A
+ * page that PHP does not have is under the tab of PHP that holds its settings.
  */
 export interface MenuGroup {
   name: string;

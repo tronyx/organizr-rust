@@ -1,6 +1,8 @@
 <script lang="ts">
-  // The settings: the general settings, the editors for tabs, categories, groups and
-  // users, the settings of the e-mails, the backups and the log.
+  // The settings: the menu of the groups and their pages, and the page that the address
+  // names. The pages of settings draw our own definitions with `SettingsForm`; the editors
+  // for tabs, categories, groups and users, the plugins, the marketplace, the images, the
+  // backups and the log have their own components.
   import { onMount, type Component } from 'svelte';
 
   import { api, failureText } from '../../lib/api';

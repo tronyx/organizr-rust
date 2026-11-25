@@ -1,8 +1,15 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
-import type { Entry, FormPage } from '../model';
-import { settingKeys } from '../values';
+import type { Entry, FormPage, SettingField } from '../model';
+import { isField, isSecret, settingKeys } from '../values';
 import expectedKeys from './expected-keys.json';
 import { allPages, HOMEPAGE_ITEMS, PLUGIN_FORMS } from './index';
+
+// The tests run in the folder `web`. The registry of the server says which settings are
+// secrets: `GET /config` sends `***Secure***` for them.
+const registry = readFileSync(resolve(process.cwd(), '../crates/settings/src/registry.rs'), 'utf8');
 
 /** The British spellings that no fixed text may hold. */
 const BRITISH = /\b(colour|colours|cancelled|behaviour|centre|favourite|licence)\b/i;
@@ -59,6 +66,19 @@ describe('the definitions of the settings forms', () => {
       const sections = page.sections.map((section) => section.id);
       expect(new Set(sections).size, page.id).toBe(sections.length);
     }
+  });
+
+  it('draw every setting that the server masks as a secret', () => {
+    const secrets = [...registry.matchAll(/:\s*Secret\s*=\s*"([^"]+)"/g)].map(
+      (match) => match[1] ?? '',
+    );
+    expect(secrets.length).toBeGreaterThan(0);
+    const notSecret = allPages()
+      .flatMap((page) => page.sections.flatMap((section) => section.entries))
+      .filter((entry): entry is SettingField => isField(entry) && secrets.includes(entry.key))
+      .filter((field) => !isSecret(field))
+      .map((field) => field.key);
+    expect(notSecret).toEqual([]);
   });
 
   it('hold the forty homepage items and the six plugin forms', () => {

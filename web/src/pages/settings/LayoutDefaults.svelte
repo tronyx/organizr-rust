@@ -98,6 +98,9 @@
         <!-- A sample of the colors of the chosen theme. -->
         <ThemeSwatch theme={themeId(look.form.theme)} />
       </div>
+      {#if look.themesFailed}
+        <p class="text-error mt-1 text-sm">The list could not be loaded.</p>
+      {/if}
     </div>
     <div class="org-form-wide mt-4">
       <h3 class="font-semibold">Colors of the OG Organizr layout</h3>

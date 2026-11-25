@@ -1,7 +1,7 @@
 <script lang="ts">
-  // System Settings, General: the API key, the default settings page, the debug log, the
-  // custom certificate and the journal mode of the database. The certificate and the
-  // journal mode are parts of their own, which save by themselves.
+  // System Settings, General: the API key, which only the Admin sees, the default settings
+  // page, the debug log, the custom certificate and the journal mode of the database. The
+  // certificate and the journal mode are parts of their own, which save by themselves.
   import { session } from '../../lib/session.svelte';
   import { ADMIN } from '../../lib/types';
   import { GENERAL } from '../../settings/forms';

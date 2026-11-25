@@ -33,13 +33,18 @@ function launchOf(groupID: number) {
 }
 
 /** Opens the page on the section, as the Admin (0) or a Co-Admin (1). */
-async function open(config: Record<string, unknown> = CONFIG, groupID = 0) {
+async function open(
+  config: Record<string, unknown> = CONFIG,
+  groupID = 0,
+  answers: Parameters<typeof stubApi>[0] = {},
+) {
   const sent = stubApi({
     'GET launch': launchOf(groupID),
     'GET config': { data: { ...CONFIG, ...config } },
     // The themes that are installed, as `GET themes` gives them.
     'GET themes': { data: { Organizr: {}, Nord: {} } },
     'PUT config': {},
+    ...answers,
   });
   await session.load();
   const ondone = vi.fn();
@@ -117,6 +122,26 @@ describe('the group Style & Themes', () => {
     expect(theme).toHaveValue('Plexy');
     expect(within(theme).getByRole('option', { name: 'Nord' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('a_failed_list_of_themes_leaves_the_stored_theme_with_a_note', async () => {
+    const { panel, save, puts } = await open({}, 0, {
+      'GET themes': { status: 500, message: 'The themes are away' },
+    });
+
+    const theme = within(panel).getByRole('combobox', { name: 'Theme' });
+    expect(
+      within(theme)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Organizr']);
+    expect(theme.closest('.org-form-group')).toHaveTextContent('The list could not be loaded.');
+    // The rest of the look still loads and saves.
+    await fireEvent.change(within(panel).getByRole('combobox', { name: 'Default layout' }), {
+      target: { value: 'modern' },
+    });
+    await save();
+    expect(puts().map((request) => request.body)).toEqual([{ layout: 'modern' }]);
   });
 
   it('modern_shows_the_modern_selects_and_switching_back_keeps_the_values', async () => {

@@ -44,7 +44,7 @@
     Section,
     SettingField,
   } from './model';
-  import { changedSettings, initialValues, isShown } from './values';
+  import { changedSettings, fieldsOf, initialValues, isField, isShown } from './values';
 
   let {
     page,
@@ -67,6 +67,9 @@
     /** Called with a sentence about what was saved. */
     ondone: (message: string) => void;
   } = $props();
+
+  /** The start of an address of the API in a button that opens a page. */
+  const API_PREFIX = 'api/v2/';
 
   /** A Plex server, as `GET plex/servers` lists it. */
   interface PlexServer {
@@ -116,10 +119,6 @@
   const level = $derived(session.launch?.user?.groupID ?? 999);
   const license = $derived(String(config?.license ?? ''));
 
-  function isField(entry: Entry): entry is SettingField {
-    return 'key' in entry;
-  }
-
   function isPart(entry: Entry): entry is PartEntry {
     return 'kind' in entry && entry.kind === 'part';
   }
@@ -132,15 +131,30 @@
     return !(isField(entry) && hiddenKeys.includes(entry.key));
   }
 
+  /** Whether the caller works with the entry: a field, a button or a part. */
+  function isWorking(entry: Entry): boolean {
+    return isField(entry) || entry.kind === 'button' || entry.kind === 'part';
+  }
+
+  /**
+   * Whether a section shows with the entries that the caller keeps of it. A section that
+   * lost every field, button and part to the caller shows no tab, also when a notice of it
+   * is left; a section that holds only texts shows as it is.
+   */
+  function showsSection(section: Section, kept: Entry[]): boolean {
+    return kept.length === section.entries.length ? kept.length > 0 : kept.some(isWorking);
+  }
+
   /** The page as the caller sees it: what it leaves out is never sent either. */
   const shown = $derived<FormPage>({
     ...page,
     sections: page.sections
       .filter((section) => !hiddenSections.includes(section.id))
-      .map((section) => ({ ...section, entries: section.entries.filter(keeps) }))
-      .filter((section) => section.entries.length > 0),
+      .map((section) => ({ section, kept: section.entries.filter(keeps) }))
+      .filter(({ section, kept }) => showsSection(section, kept))
+      .map(({ section, kept }) => ({ ...section, entries: kept })),
   });
-  const fields = $derived(shown.sections.flatMap((section) => section.entries.filter(isField)));
+  const fields = $derived(fieldsOf(shown));
   /** The parts that the page shows. */
   const shownParts = $derived(
     shown.sections
@@ -301,7 +315,9 @@
     }
     if (action.kind === 'open') {
       window.open(
-        action.url.startsWith('api/') ? apiUrl(action.url.slice(7)) : action.url,
+        action.url.startsWith(API_PREFIX)
+          ? apiUrl(action.url.slice(API_PREFIX.length))
+          : action.url,
         '_blank',
         'noopener',
       );

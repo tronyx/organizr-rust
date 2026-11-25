@@ -5,23 +5,30 @@ import { SECURE } from '../lib/settingsForm';
 import type { Entry, FormPage, FormValue, SettingField } from './model';
 
 /** Whether an entry is a field that holds a setting. */
-function isField(entry: Entry): entry is SettingField {
+export function isField(entry: Entry): entry is SettingField {
   return 'key' in entry;
 }
 
 /** Every field of the page, in order. */
-function fieldsOf(page: FormPage): SettingField[] {
+export function fieldsOf(page: FormPage): SettingField[] {
   return page.sections.flatMap((section) => section.entries.filter(isField));
-}
-
-/** Whether the field is a secret: the server only says that one is stored. */
-function isSecret(field: SettingField): boolean {
-  return field.kind === 'secret' || field.kind === 'secret-copy';
 }
 
 /** Whether the field holds a list of values. */
 function isList(field: SettingField): boolean {
   return field.kind === 'multi-select' || field.kind === 'tags';
+}
+
+/**
+ * Whether the field is a secret: the server only says that one is stored. A list with
+ * hidden values, such as the API keys of an app, is a secret as a whole.
+ */
+export function isSecret(field: SettingField): boolean {
+  return (
+    field.kind === 'secret' ||
+    field.kind === 'secret-copy' ||
+    (isList(field) && field.hiddenValues === true)
+  );
 }
 
 /** The keys of the settings that the page holds, in order. */
@@ -34,9 +41,12 @@ function valueOf(field: SettingField, value: unknown): FormValue {
   if (field.kind === 'switch') {
     return value === true || value === 'true' || value === 1 || value === '1';
   }
-  if (isSecret(field)) {
+  if (isSecret(field) && value === SECURE) {
     // A stored secret is shown as empty; the field says that a value is stored.
-    return value === SECURE ? '' : String(value ?? '');
+    return isList(field) ? [] : '';
+  }
+  if (isSecret(field) && !isList(field)) {
+    return String(value ?? '');
   }
   if (isList(field)) {
     if (Array.isArray(value)) {
@@ -65,7 +75,7 @@ export function initialValues(
 
 /**
  * The settings that the Admin changed, as `PUT /config` takes them. A secret that is left
- * empty keeps its stored value.
+ * empty, or a secret list that is left without values, keeps its stored value.
  */
 export function changedSettings(
   page: FormPage,
@@ -79,7 +89,7 @@ export function changedSettings(
     if (after === undefined || JSON.stringify(before) === JSON.stringify(after)) {
       continue;
     }
-    if (isSecret(field) && after === '') {
+    if (isSecret(field) && (after === '' || (Array.isArray(after) && after.length === 0))) {
       continue;
     }
     changed[field.key] = Array.isArray(after) ? after.join(',') : after;

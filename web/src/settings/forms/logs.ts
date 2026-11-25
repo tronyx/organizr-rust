@@ -95,7 +95,7 @@ export const LOGS: FormPage = {
         },
         {
           key: 'slackLogWebhook',
-          kind: 'text',
+          kind: 'secret',
           label: 'Slack Webhook URL',
           help: 'If using Discord make sure to end the URL with /slack',
           placeholder: 'http(s)://hostname:port',

@@ -98,7 +98,7 @@
   <TagsField
     {id}
     values={list}
-    placeholder={field.placeholder}
+    placeholder={stored ? 'Values are stored' : field.placeholder}
     hidden={field.hiddenValues}
     describedby={hint}
     onchange={(values) => onchange(values)}

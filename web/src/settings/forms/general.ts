@@ -10,12 +10,13 @@ export const GENERAL: FormPage = {
       id: 'api',
       title: 'API key',
       entries: [
-        { key: 'organizrAPI', kind: 'secret-copy', label: 'Organizr API' },
+        { key: 'organizrAPI', kind: 'secret-copy', label: 'Organizr API', adminOnly: true },
         {
           kind: 'button',
           label: 'Generate New API Key',
           text: 'Generate',
           action: { kind: 'new-key', key: 'organizrAPI' },
+          adminOnly: true,
         },
         {
           kind: 'notice',

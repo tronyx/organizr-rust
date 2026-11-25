@@ -411,12 +411,14 @@ export const SIGN_IN: FormPage = {
       entries: [
         {
           key: 'authProxyEnabled',
+          adminOnly: true,
           kind: 'switch',
           label: 'Auth Proxy',
           help: 'Enable option to set Auth Proxy Header Login',
         },
         {
           key: 'authProxyWhitelist',
+          adminOnly: true,
           kind: 'text',
           label: 'Auth Proxy Whitelist',
           help: 'IPv4 only at the moment - This must be set to work, will accept subnet or IP address',
@@ -424,6 +426,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'authProxyHeaderName',
+          adminOnly: true,
           kind: 'text',
           label: 'Auth Proxy Header Name',
           help: 'Please choose a unique value for added security',
@@ -431,6 +434,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'authProxyHeaderNameEmail',
+          adminOnly: true,
           kind: 'text',
           label: 'Auth Proxy Header Name for Email',
           help: 'Please choose a unique value for added security',
@@ -438,12 +442,14 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'authProxyOverrideLogout',
+          adminOnly: true,
           kind: 'switch',
           label: 'Override Logout',
           help: 'Enable option to set custom Logout URL for Auth Proxy',
         },
         {
           key: 'authProxyLogoutURL',
+          adminOnly: true,
           kind: 'text',
           label: 'Logout URL',
           help: 'Logout URL to redirect user for Auth Proxy',

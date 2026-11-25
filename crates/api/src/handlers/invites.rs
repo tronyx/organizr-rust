@@ -676,7 +676,7 @@ pub(crate) async fn komga_libraries(state: &AppState, settings: &Settings) -> Op
 
 /// `GET /plugins/invites/nextcloud/groups`: the groups of the Nextcloud of the plugin, for
 /// Admins and Co-Admins, as a list of `{label, value}`. The list is empty when Nextcloud is
-/// not set up or does not answer. Not a route of PHP: its form holds the list.
+/// not set up or does not answer. Not a route of PHP: PHP's settings form holds the list.
 pub async fn nextcloud_group_list(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
@@ -692,7 +692,7 @@ pub async fn nextcloud_group_list(
 
 /// `GET /plugins/invites/komga/libraries`: the libraries of the Komga of the plugin, for
 /// Admins and Co-Admins, as a list of `{label, value}`. The list is empty when Komga is not
-/// set up or does not answer. Not a route of PHP: its form holds the list.
+/// set up or does not answer. Not a route of PHP: PHP's settings form holds the list.
 pub async fn komga_library_list(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,

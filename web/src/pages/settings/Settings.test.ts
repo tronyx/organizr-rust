@@ -933,6 +933,18 @@ describe('Settings, General, Sign-in, and Login & Security', () => {
     return fireEvent.click(screen.getByRole('tab', { name }));
   }
 
+  /** Signs the Admin in: only the Admin sees the API key and the auth proxy. */
+  function asAdmin() {
+    session.launch = {
+      ...(LAUNCH.data as Record<string, unknown>),
+      user: { groupID: 0, group: 'Admin', loggedin: true },
+    } as unknown as Launch;
+  }
+
+  afterEach(() => {
+    session.launch = null;
+  });
+
   function sectionNames(page: string) {
     return within(screen.getByRole('tablist', { name: page }))
       .getAllByRole('tab')
@@ -943,19 +955,14 @@ describe('Settings, General, Sign-in, and Login & Security', () => {
     await showPage('general');
 
     expect(screen.getByRole('heading', { name: 'General', level: 2 })).toBeInTheDocument();
+    // Only the Admin sees the API key, so its section is not there.
     expect(sectionNames('General')).toEqual([
-      'API key',
       'Default settings page',
       'Debug',
       'Certificate',
       'Database',
     ]);
-    // A stored secret is never sent to the page: the field says that it has a value.
-    expect(screen.getByLabelText('Organizr API')).toHaveValue('');
-    expect(screen.getByLabelText('Organizr API')).toHaveAttribute(
-      'placeholder',
-      'A value is stored',
-    );
+    expect(screen.queryByLabelText('Organizr API')).toBeNull();
     await sectionTab('Default settings page');
     expect(screen.getByLabelText('Default Settings Tab')).toHaveValue('5');
     // The certificate and the journal mode keep their own parts.
@@ -986,7 +993,16 @@ describe('Settings, General, Sign-in, and Login & Security', () => {
   });
 
   it('general_makes_a_new_api_key_of_20_characters', async () => {
+    asAdmin();
     const sent = await showPage('general', { 'PUT config': {} });
+
+    expect(sectionNames('General')[0]).toBe('API key');
+    // A stored secret is never sent to the page: the field says that it has a value.
+    expect(screen.getByLabelText('Organizr API')).toHaveValue('');
+    expect(screen.getByLabelText('Organizr API')).toHaveAttribute(
+      'placeholder',
+      'A value is stored',
+    );
 
     await fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
     await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -1011,6 +1027,7 @@ describe('Settings, General, Sign-in, and Login & Security', () => {
   });
 
   it('sign_in_shows_its_sections', async () => {
+    asAdmin();
     await showPage('sign-in');
 
     expect(screen.getByRole('heading', { name: 'Sign-in', level: 2 })).toBeInTheDocument();

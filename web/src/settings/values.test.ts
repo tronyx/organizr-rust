@@ -56,6 +56,14 @@ describe('initialValues', () => {
     expect(values).toEqual({ a: ['a', 'b'], b: ['a', 'b'], c: [], d: [] });
   });
 
+  it('reads a stored list of secrets as no values, and an empty one as no values', () => {
+    const p = page(
+      field('a', 'tags', { hiddenValues: true }),
+      field('b', 'tags', { hiddenValues: true }),
+    );
+    expect(initialValues(p, { a: SECURE, b: '' })).toEqual({ a: [], b: [] });
+  });
+
   it('gives an empty text for a missing key and the JSON text of an object', () => {
     const p = page(field('a', 'text'), field('b', 'text'), field('c', 'number'));
     expect(initialValues(p, { b: { x: 1 }, c: 5 })).toEqual({ a: '', b: '{"x":1}', c: '5' });
@@ -86,6 +94,13 @@ describe('changedSettings', () => {
   it('does not send a secret left empty, and sends one that was typed', () => {
     expect(changedSettings(p, { ...start, pw: 'old' }, { ...start, pw: '' })).toEqual({});
     expect(changedSettings(p, start, { ...start, pw: 'new' })).toEqual({ pw: 'new' });
+  });
+
+  it('keeps a stored list of secrets left without values, and sends the values typed', () => {
+    const keys = page(field('keys', 'tags', { hiddenValues: true }));
+    expect(changedSettings(keys, { keys: [] }, { keys: [] })).toEqual({});
+    expect(changedSettings(keys, { keys: ['a'] }, { keys: [] })).toEqual({});
+    expect(changedSettings(keys, { keys: [] }, { keys: ['k1', 'k2'] })).toEqual({ keys: 'k1,k2' });
   });
 
   it('sends a changed text', () => {

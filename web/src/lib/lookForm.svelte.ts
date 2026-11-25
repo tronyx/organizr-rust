@@ -43,6 +43,8 @@ export class LookForm implements SectionPart {
   });
   /** The choices of the theme of the OG layout: the installed themes. */
   themes = $state<Choice[]>([]);
+  /** Whether the list of the installed themes could not be loaded. */
+  themesFailed = $state(false);
   loadError = $state<string | null>(null);
 
   /** Whether the person may change the layout and the modern theme: the Admin. */
@@ -59,9 +61,11 @@ export class LookForm implements SectionPart {
 
   async load() {
     try {
+      // A list that cannot be loaded leaves the stored theme as the only choice, with a
+      // note, as the form does for its lists.
       const [answer, themes] = await Promise.all([
         api<Record<string, unknown>>('GET', 'config'),
-        loadList('themes'),
+        loadList('themes').catch(() => null),
       ]);
       const config = answer.data;
       const loaded: LookValues = {
@@ -71,7 +75,8 @@ export class LookForm implements SectionPart {
         modernColorSet: text(config.modernColorSet, 'dark'),
       };
       // A stored theme that is not installed still shows, and stays as it is.
-      this.themes = withValue(themes, loaded.theme);
+      this.themes = withValue(themes ?? [], loaded.theme);
+      this.themesFailed = themes === null;
       this.form = { ...loaded };
       // A color set the theme does not have shows the first set, as `chooseTheme` does. The
       // server applies that set anyway, so it is no change: the form starts unchanged.

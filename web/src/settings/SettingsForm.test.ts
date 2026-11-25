@@ -7,7 +7,9 @@ import { session } from '../lib/session.svelte';
 import type { Launch, Tab } from '../lib/types';
 import { stubApi, type CannedAnswer, type SentRequest } from '../test-helpers';
 import { withValue } from './lists';
+import { GENERAL } from './forms/general';
 import { PHP_MAILER_PLUGIN } from './forms/plugins/phpMailer';
+import { SIGN_IN } from './forms/signIn';
 import type { FormPage } from './model';
 import SettingsForm, { type SectionPart } from './SettingsForm.svelte';
 
@@ -844,6 +846,99 @@ describe('SettingsForm, the parts and the boxes', () => {
     await show(PARTS, { 'GET config': { data: PART_CONFIG } });
 
     expect(screen.getByLabelText('Script')).toBeInTheDocument();
+  });
+
+  describe('the settings that only the Admin changes', () => {
+    const STORED = {
+      organizrAPI: 'abcdefghij0123456789',
+      defaultSettingsTab: '0',
+      authType: 'internal',
+      authProxyEnabled: true,
+      authProxyWhitelist: '10.0.0.0/24',
+      authProxyHeaderName: 'X-Forwarded-User',
+      license: 'personal',
+    };
+    const LISTS = { 'GET groups': { status: 500, message: 'Not in this test' } };
+
+    function tabNames(): (string | undefined)[] {
+      return screen.getAllByRole('tab').map((tab) => tab.textContent?.trim());
+    }
+
+    it('leaves out the API key and its button for a Co-Admin, with the section', async () => {
+      session.launch = launch(1);
+      const { sent } = await show(GENERAL, {
+        'GET config': { data: STORED },
+        'GET launch': { data: launch(1) },
+        'PUT config': {},
+      });
+
+      expect(tabNames()).not.toContain('API key');
+      expect(screen.queryByLabelText('Organizr API')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Generate' })).toBeNull();
+      await fireEvent.change(screen.getByLabelText('Default Settings Tab'), {
+        target: { value: '1' },
+      });
+      await save();
+
+      expect(await sentBody(sent)).toEqual({ defaultSettingsTab: '1' });
+    });
+
+    it('leaves out the Auth proxy for a Co-Admin, with the section', async () => {
+      session.launch = launch(1);
+      const { sent } = await show(SIGN_IN, {
+        'GET config': { data: STORED },
+        'GET launch': { data: launch(1) },
+        'PUT config': {},
+        ...LISTS,
+      });
+
+      expect(tabNames()).not.toContain('Auth proxy');
+      expect(screen.queryByLabelText('Auth Proxy')).toBeNull();
+      expect(screen.queryByLabelText('Auth Proxy Whitelist')).toBeNull();
+      await fireEvent.change(screen.getByLabelText('Authentication Type'), {
+        target: { value: 'both' },
+      });
+      await save();
+
+      expect(await sentBody(sent)).toEqual({ authType: 'both' });
+    });
+
+    it('shows the API key, its button and the Auth proxy to the Admin', async () => {
+      await show(GENERAL, { 'GET config': { data: STORED } });
+      expect(tabNames()).toContain('API key');
+      expect(screen.getByLabelText('Organizr API')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Generate' })).toBeInTheDocument();
+      cleanup();
+
+      await show(SIGN_IN, { 'GET config': { data: STORED }, ...LISTS });
+      await section('Auth proxy');
+      expect(screen.getByLabelText('Auth Proxy Whitelist')).toHaveValue('10.0.0.0/24');
+    });
+
+    it('keeps a section that holds only texts for a Co-Admin', async () => {
+      session.launch = launch(1);
+      await show(
+        {
+          id: 'texts',
+          title: 'Texts',
+          sections: [
+            { id: 'about', title: 'About', entries: [{ kind: 'about', body: 'What it does' }] },
+            {
+              id: 'key',
+              title: 'Key',
+              entries: [
+                { key: 'organizrAPI', kind: 'secret-copy', label: 'Key', adminOnly: true },
+                { kind: 'notice', tone: 'info', body: 'About the key' },
+              ],
+            },
+          ],
+        },
+        { 'GET config': { data: STORED }, 'GET launch': { data: launch(1) } },
+      );
+
+      expect(tabNames()).toEqual(['About']);
+      expect(screen.getByText('What it does')).toBeInTheDocument();
+    });
   });
 
   it('leaves out the hidden sections and settings', async () => {

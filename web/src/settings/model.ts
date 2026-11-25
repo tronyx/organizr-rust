@@ -60,7 +60,10 @@ export interface SettingField {
   sourceArg?: string;
   /** The values of a list are secrets, shown as dots. */
   hiddenValues?: boolean;
-  /** The language of a code editor. */
+  /**
+   * The language of the code that the setting holds. It describes the setting; the form
+   * does not use it to draw the field.
+   */
   language?: 'css' | 'html' | 'javascript' | 'json';
   /** The field shows only for the sign-in back end that the rule names, or one of them. */
   shownWhen?: SignInRule | SignInRule[];
@@ -107,6 +110,8 @@ export interface ButtonEntry {
   action: Action;
   /** The button shows only for the sign-in back end that the rule names, or one of them. */
   shownWhen?: SignInRule | SignInRule[];
+  /** Only the Admin sees the button. */
+  adminOnly?: boolean;
 }
 
 /** A notice with a color, an optional title and a text. */
@@ -183,7 +188,10 @@ export interface HomepageItemForm {
   name: string;
   image: string;
   category: string;
-  /** The key of the switch that turns the item on, or empty when the item has none. */
+  /**
+   * The key of the switch that turns the item on, or empty when the item has none. It
+   * describes the item; the form does not use it to draw the page.
+   */
   enabledKey: string;
   /** The item shows only for a license that this text contains, as `license` of a field. */
   license?: string;
