@@ -63,7 +63,7 @@ docker compose exec organizr organizr reset-second-factor --user "<user name>"
 
 The setting **Ignore External 2FA on Local Subnet** (`ignoreTFALocal`, in **Settings › System Settings › Sign-in**) skips the code for logins from your local network. It's off in a new install.
 
-"Local" always includes `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` and loopback, plus what you list in **Override Local IP or Subnet** (**Settings › System Settings › Login & Security**).
+"Local" always includes `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` and loopback, plus what you list in **Override Local IP or Subnet** (**Settings › System Settings › Login & Security**). Only an Admin can change the switch, and only an Admin can change that list while the switch is on (D-132).
 
 > [!WARNING]
 > Switch it on only when Organizr sees the real address of every visitor. That means: behind a reverse proxy that is listed in [`ORGANIZR_TRUSTED_PROXIES`](reverse-proxy.md#-organizr_trusted_proxies), with no direct port open to the outside. Otherwise a visitor from the internet can look "local" (for example, a trusted-proxy range wide enough to cover other containers, or a proxy that sends no `X-Forwarded-For`, so every request seems to come from the proxy or a Docker gateway address) and skip the code. After you switch it on, log in once from outside and check on **Settings › System Settings › Logs** that your outside address shows up.

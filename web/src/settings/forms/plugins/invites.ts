@@ -184,6 +184,7 @@ export const INVITES_PLUGIN: FormPage = {
         },
         {
           key: 'embyURL',
+          adminChanges: { key: 'authBackend', values: ['emby_local', 'emby_all'] },
           kind: 'text',
           label: 'Emby server address',
           placeholder: 'localhost:8086',

@@ -31,7 +31,7 @@ export const CUSTOMHTML: HomepageItemForm = {
             wide: true,
             language: 'html',
             help: 'When an Admin trusts this item, only an Admin can change its HTML.',
-            adminOnlyWhen: 'homepageCustomHTML01Trusted',
+            adminChanges: { key: 'homepageCustomHTML01Trusted', values: [true] },
           },
           {
             key: 'homepageCustomHTML01Trusted',
@@ -60,7 +60,7 @@ export const CUSTOMHTML: HomepageItemForm = {
             wide: true,
             language: 'html',
             help: 'When an Admin trusts this item, only an Admin can change its HTML.',
-            adminOnlyWhen: 'homepageCustomHTML02Trusted',
+            adminChanges: { key: 'homepageCustomHTML02Trusted', values: [true] },
           },
           {
             key: 'homepageCustomHTML02Trusted',
@@ -89,7 +89,7 @@ export const CUSTOMHTML: HomepageItemForm = {
             wide: true,
             language: 'html',
             help: 'When an Admin trusts this item, only an Admin can change its HTML.',
-            adminOnlyWhen: 'homepageCustomHTML03Trusted',
+            adminChanges: { key: 'homepageCustomHTML03Trusted', values: [true] },
           },
           {
             key: 'homepageCustomHTML03Trusted',
@@ -118,7 +118,7 @@ export const CUSTOMHTML: HomepageItemForm = {
             wide: true,
             language: 'html',
             help: 'When an Admin trusts this item, only an Admin can change its HTML.',
-            adminOnlyWhen: 'homepageCustomHTML04Trusted',
+            adminChanges: { key: 'homepageCustomHTML04Trusted', values: [true] },
           },
           {
             key: 'homepageCustomHTML04Trusted',
@@ -147,7 +147,7 @@ export const CUSTOMHTML: HomepageItemForm = {
             wide: true,
             language: 'html',
             help: 'When an Admin trusts this item, only an Admin can change its HTML.',
-            adminOnlyWhen: 'homepageCustomHTML05Trusted',
+            adminChanges: { key: 'homepageCustomHTML05Trusted', values: [true] },
           },
           {
             key: 'homepageCustomHTML05Trusted',
@@ -176,7 +176,7 @@ export const CUSTOMHTML: HomepageItemForm = {
             wide: true,
             language: 'html',
             help: 'When an Admin trusts this item, only an Admin can change its HTML.',
-            adminOnlyWhen: 'homepageCustomHTML06Trusted',
+            adminChanges: { key: 'homepageCustomHTML06Trusted', values: [true] },
           },
           {
             key: 'homepageCustomHTML06Trusted',
@@ -205,7 +205,7 @@ export const CUSTOMHTML: HomepageItemForm = {
             wide: true,
             language: 'html',
             help: 'When an Admin trusts this item, only an Admin can change its HTML.',
-            adminOnlyWhen: 'homepageCustomHTML07Trusted',
+            adminChanges: { key: 'homepageCustomHTML07Trusted', values: [true] },
           },
           {
             key: 'homepageCustomHTML07Trusted',
@@ -234,7 +234,7 @@ export const CUSTOMHTML: HomepageItemForm = {
             wide: true,
             language: 'html',
             help: 'When an Admin trusts this item, only an Admin can change its HTML.',
-            adminOnlyWhen: 'homepageCustomHTML08Trusted',
+            adminChanges: { key: 'homepageCustomHTML08Trusted', values: [true] },
           },
           {
             key: 'homepageCustomHTML08Trusted',

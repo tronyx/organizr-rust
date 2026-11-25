@@ -1026,14 +1026,38 @@ describe('SettingsForm, the parts and the boxes', () => {
           id: 'one',
           title: 'One',
           entries: [
-            { key: 'html01', kind: 'code', label: 'HTML 01', adminOnlyWhen: 'trusted01' },
+            {
+              key: 'html01',
+              kind: 'code',
+              label: 'HTML 01',
+              adminChanges: { key: 'trusted01', values: [true] },
+            },
             { key: 'trusted01', kind: 'switch', label: 'Trust 01', adminOnly: true },
-            { key: 'html02', kind: 'code', label: 'HTML 02', adminOnlyWhen: 'trusted02' },
+            {
+              key: 'html02',
+              kind: 'code',
+              label: 'HTML 02',
+              adminChanges: { key: 'trusted02', values: [true] },
+            },
+            { key: 'backend', kind: 'text', label: 'Backend', adminChanges: true },
+            {
+              key: 'address',
+              kind: 'text',
+              label: 'Address',
+              adminChanges: { key: 'backend', values: ['jellyfin', 'emby_local'] },
+            },
           ],
         },
       ],
     };
-    const STORED = { html01: '<p>1</p>', trusted01: true, html02: '<p>2</p>', trusted02: false };
+    const STORED = {
+      html01: '<p>1</p>',
+      trusted01: true,
+      html02: '<p>2</p>',
+      trusted02: false,
+      backend: 'emby_local',
+      address: 'http://emby',
+    };
 
     it('shows the field to a Co-Admin without letting them change it', async () => {
       session.launch = launch(1);
@@ -1047,6 +1071,9 @@ describe('SettingsForm, the parts and the boxes', () => {
       expect(screen.getByLabelText('HTML 01')).toHaveValue('<p>1</p>');
       expect(screen.queryByLabelText('Trust 01')).toBeNull();
       expect(screen.getByLabelText('HTML 02')).toBeEnabled();
+      expect(screen.getByLabelText('Backend')).toBeDisabled();
+      expect(screen.getByLabelText('Backend')).toHaveValue('emby_local');
+      expect(screen.getByLabelText('Address')).toBeDisabled();
       await fireEvent.input(screen.getByLabelText('HTML 02'), { target: { value: '<p>Two</p>' } });
       await save();
 
@@ -1057,6 +1084,18 @@ describe('SettingsForm, the parts and the boxes', () => {
       await show(TRUST, { 'GET config': { data: STORED } });
 
       expect(screen.getByLabelText('HTML 01')).toBeEnabled();
+      expect(screen.getByLabelText('Backend')).toBeEnabled();
+      expect(screen.getByLabelText('Address')).toBeEnabled();
+    });
+
+    it('leaves a field to a Co-Admin while the stored value names no rule', async () => {
+      session.launch = launch(1);
+      await show(TRUST, {
+        'GET config': { data: { ...STORED, backend: 'emby_connect' } },
+        'GET launch': { data: launch(1) },
+      });
+
+      expect(screen.getByLabelText('Address')).toBeEnabled();
     });
   });
 

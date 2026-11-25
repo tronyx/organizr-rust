@@ -50,6 +50,7 @@ When the service says yes, Organizr picks the Organizr account like this:
 > - **Emby Connect never opens an Admin or Co-Admin account.** Anyone can create an Emby Connect account with any free name, so such a login fails.
 > - **LDAP, FTP and your own Emby or Jellyfin server can open any account, the Admin's too**, when the name or e-mail address matches. You run those servers, so you decide who has which name there. Make sure nobody on the service can have the name or e-mail address of your Organizr Admin, or give the Admin a name the service doesn't have.
 > - **No service ever replaces the password of an Admin or Co-Admin account.** It stays the one set in Organizr.
+> - **Only an Admin changes the sign-in settings.** A Co-Admin sees them but can't change them, so a Co-Admin can't point the login at a server of their own. While a login uses your Emby or Jellyfin server, only an Admin can change **Emby URL** or **Jellyfin URL** either (D-132).
 
 After someone changes their password on the service, **the old one keeps working in Organizr** (with **Organizr DB + Backend**) until they log in once with the new one.
 

@@ -24,7 +24,12 @@ export const SSO: FormPage = {
           text: 'Retrieve',
           action: { kind: 'plex-machine' },
         },
-        { key: 'plexAdmin', kind: 'text', label: 'Plex Admin Username or Email' },
+        {
+          key: 'plexAdmin',
+          kind: 'text',
+          label: 'Plex Admin Username or Email',
+          adminChanges: true,
+        },
         { key: 'ssoPlex', kind: 'switch', label: 'Enable' },
       ],
     },
@@ -120,6 +125,7 @@ export const SSO: FormPage = {
       entries: [
         {
           key: 'jellyfinURL',
+          adminChanges: { key: 'authBackend', values: ['jellyfin'] },
           kind: 'text',
           label: 'Jellyfin API URL',
           help: 'Please make sure to use the local address to the API',

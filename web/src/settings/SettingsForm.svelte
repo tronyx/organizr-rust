@@ -141,9 +141,17 @@
     return !(isField(entry) && hiddenKeys.includes(entry.key));
   }
 
-  /** Whether the caller sees the field and cannot change it, because a switch leaves it to the Admin. */
+  /** Whether the caller sees the field and cannot change it, because it is left to the Admin. */
   function isLocked(entry: SettingField): boolean {
-    return !isAdmin && entry.adminOnlyWhen !== undefined && config?.[entry.adminOnlyWhen] === true;
+    const rule = entry.adminChanges;
+    if (isAdmin || rule === undefined) {
+      return false;
+    }
+    if (rule === true) {
+      return true;
+    }
+    const stored = config?.[rule.key];
+    return rule.values.some((value) => value === stored);
   }
 
   /** Whether the caller works with the entry: a field, a button or a part. */

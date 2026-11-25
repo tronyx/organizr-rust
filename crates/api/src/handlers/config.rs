@@ -22,6 +22,7 @@ use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::{Refusal, is_nothing_in_php};
 use crate::handlers::homepage::html;
+use crate::handlers::login_backends;
 use crate::state::AppState;
 
 /// The level a caller needs for the configuration routes.
@@ -41,9 +42,30 @@ const REGISTRATION_PASSWORD: &str = "registrationPassword";
 /// session cookie.
 const INSTALL_ID: &str = "uuid";
 
+/// The settings that choose and address the service that vouches for a login, the Plex
+/// owner, and the logins that need no second factor (D-132).
+const LOGIN_SETTINGS: [&str; 15] = [
+    "authType",
+    "authBackend",
+    "authBackendHost",
+    "authBackendHostPrefix",
+    "authBackendHostSuffix",
+    "authBackendDomain",
+    "authBaseDN",
+    "ldapBindUsername",
+    "ldapBindPassword",
+    "ldapType",
+    "ldapSSL",
+    "ldapTLS",
+    "plexAdmin",
+    "ignoreTFALocal",
+    "ignoreTFAIfPlexOAuth",
+];
+
 /// Whether only an Admin can change a setting: the API key, the settings that let a
 /// proxy say who the caller is, the scripts that run on every page, the default look
-/// (D-125), and the trust of a custom HTML item with the HTML of a trusted item (D-131).
+/// (D-125), the trust of a custom HTML item with the HTML of a trusted item (D-131), and
+/// the settings that a login trusts (D-132).
 ///
 /// `settings` decides the settings that are for Admins only some of the time. Such a rule
 /// reads only settings that are always for Admins only, so for a Co-Admin the copy that
@@ -51,6 +73,8 @@ const INSTALL_ID: &str = "uuid";
 fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
     key == API_KEY
         || key.starts_with("authProxy")
+        || LOGIN_SETTINGS.contains(&key)
+        || is_trusted_by_a_login(key, settings)
         || key == "customJava"
         || key == "customThemeJava"
         || key == "layout"
@@ -63,6 +87,20 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
         || key
             .strip_prefix("customHTML")
             .is_some_and(|number| html::is_trusted(settings, number))
+}
+
+/// Whether a login trusts a setting that is open to a Co-Admin otherwise: the address of
+/// the Emby or Jellyfin server that may vouch for an Admin, and the local network that
+/// needs no second factor (D-132). A login through Emby Connect opens no Admin account
+/// (D-127), so it does not count.
+fn is_trusted_by_a_login(key: &str, settings: &Settings) -> bool {
+    let backend = settings.auth_backend.as_str();
+    match key {
+        "embyURL" => [login_backends::EMBY_LOCAL, login_backends::EMBY_ALL].contains(&backend),
+        "jellyfinURL" => backend == login_backends::JELLYFIN,
+        "localIPList" => settings.ignore_tfa_local,
+        _ => false,
+    }
 }
 
 /// A setting as the API shows it to a caller of the given level.
@@ -279,15 +317,22 @@ mod tests {
             "layout",
             "modernTheme",
             "modernColorSet",
+            "authType",
+            "authBackend",
+            "ldapBindPassword",
+            "plexAdmin",
+            "ignoreTFALocal",
         ] {
             assert!(is_for_admins_only(key, &settings), "{key}");
         }
         for key in [
             "title",
             "customCss",
-            "authBackend",
             "plexToken",
             "customHTML01",
+            "embyURL",
+            "jellyfinURL",
+            "localIPList",
         ] {
             assert!(!is_for_admins_only(key, &settings), "{key}");
         }

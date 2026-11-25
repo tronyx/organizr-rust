@@ -32,6 +32,7 @@ export const EMBYLIVETVTRACKER: HomepageItemForm = {
         entries: [
           {
             key: 'embyURL',
+            adminChanges: { key: 'authBackend', values: ['emby_local', 'emby_all'] },
             kind: 'text',
             label: 'URL',
             help: 'Please make sure to use local IP address and port - You also may use local dns name too.',

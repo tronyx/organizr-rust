@@ -93,10 +93,17 @@ export interface SettingField {
   /** Only the Admin sees the field; the page does not send it for a Co-Admin. */
   adminOnly?: boolean;
   /**
-   * The switch that, when its stored value is on, leaves the field to the Admin: a Co-Admin
-   * then sees the value and cannot change it, as the HTML of a trusted custom HTML item.
+   * Only the Admin changes the field; a Co-Admin sees the value and cannot change it.
+   * `true` means always. A rule means while the stored value of its setting is one of its
+   * values, as the HTML of a trusted custom HTML item.
    */
-  adminOnlyWhen?: string;
+  adminChanges?: true | AdminRule;
+}
+
+/** When only the Admin changes a field: while the stored setting has one of the values. */
+export interface AdminRule {
+  key: string;
+  values: (string | boolean)[];
 }
 
 /** What a button does. */

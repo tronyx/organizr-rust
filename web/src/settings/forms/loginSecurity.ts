@@ -36,6 +36,7 @@ export const LOGIN_SECURITY: FormPage = {
         },
         {
           key: 'localIPList',
+          adminChanges: { key: 'ignoreTFALocal', values: [true] },
           kind: 'tags',
           label: 'Override Local IP or Subnet',
           help: 'IPv4 only at the moment - This will set your login as local if your IP falls within the From and To',

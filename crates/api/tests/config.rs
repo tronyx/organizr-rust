@@ -236,6 +236,78 @@ async fn html_of_a_trusted_item_is_changed_by_the_admin_only() {
 }
 
 #[tokio::test]
+async fn login_backend_settings_are_changed_by_the_admin_only() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+
+        // The settings that choose and address the service that vouches for a login (D-132).
+        for (key, value) in [
+            ("authType", json!("both")),
+            ("authBackend", json!("jellyfin")),
+            ("authBackendHost", json!("ldap://ldap.example.test")),
+            ("authBackendHostPrefix", json!("uid=")),
+            ("authBackendHostSuffix", json!(",dc=example")),
+            ("authBackendDomain", json!("example.test")),
+            ("authBaseDN", json!("dc=example")),
+            ("ldapBindUsername", json!("bind")),
+            ("ldapBindPassword", json!("secret")),
+            ("ldapType", json!("2")),
+            ("ldapSSL", json!(true)),
+            ("ldapTLS", json!(true)),
+            ("plexAdmin", json!("cora")),
+            ("ignoreTFALocal", json!(true)),
+            ("ignoreTFAIfPlexOAuth", json!(true)),
+        ] {
+            let body = json!({key: value});
+            let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+            assert_refused(
+                &answer,
+                StatusCode::UNAUTHORIZED,
+                &format!("Config item: {key} can only be changed by an admin"),
+            );
+        }
+
+        // The addresses of Emby, Jellyfin and the local network are open to a Co-Admin
+        // until a login trusts them.
+        let open = json!({
+            "embyURL": "http://emby.example.test",
+            "jellyfinURL": "http://jellyfin.example.test",
+            "localIPList": "192.168.1.0/24",
+        });
+        let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(open.clone())).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+
+        for (trusting, key) in [
+            (json!({"authBackend": "jellyfin"}), "jellyfinURL"),
+            (json!({"authBackend": "emby_local"}), "embyURL"),
+            (json!({"authBackend": "emby_all"}), "embyURL"),
+            (json!({"ignoreTFALocal": true}), "localIPList"),
+        ] {
+            change(&app, trusting).await;
+            let body = json!({key: "http://elsewhere.example.test"});
+            let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+            assert_refused(
+                &answer,
+                StatusCode::UNAUTHORIZED,
+                &format!("Config item: {key} can only be changed by an admin"),
+            );
+        }
+        assert_eq!(setting(&app, "embyURL").await, open["embyURL"]);
+        assert_eq!(setting(&app, "jellyfinURL").await, open["jellyfinURL"]);
+
+        // A login through Emby Connect opens no Admin account (D-127), so its server stays
+        // open to a Co-Admin, and the Jellyfin address once no login uses it.
+        change(&app, json!({"authBackend": "emby_connect"})).await;
+        let body = json!({"embyURL": "http://emby2.example.test", "jellyfinURL": "http://j2.example.test"});
+        let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn key_that_is_no_setting_and_value_that_does_not_fit_are_refused() {
     on_each_engine(async |database| {
         seed::installed(database).await;

@@ -12,6 +12,7 @@ export const SIGN_IN: FormPage = {
       entries: [
         {
           key: 'authType',
+          adminChanges: true,
           kind: 'select',
           label: 'Authentication Type',
           choices: [
@@ -22,6 +23,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'authBackend',
+          adminChanges: true,
           kind: 'select',
           label: 'Authentication Backend',
           shownWhen: 'backend',
@@ -61,6 +63,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'plexAdmin',
+          adminChanges: true,
           kind: 'text',
           label: 'Plex Admin Username or Email',
           placeholder: 'Admin username for Plex',
@@ -69,6 +72,7 @@ export const SIGN_IN: FormPage = {
         { key: 'plexoAuth', kind: 'switch', label: 'Enable Plex oAuth', shownWhen: 'plex' },
         {
           key: 'ignoreTFAIfPlexOAuth',
+          adminChanges: true,
           kind: 'switch',
           label: 'Ignore 2FA if Plex OAuth',
           help: 'Enabling this will disable Organizr 2FA (If applicable) if User uses Plex OAuth to login',
@@ -83,12 +87,14 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'ignoreTFALocal',
+          adminChanges: true,
           kind: 'switch',
           label: 'Ignore External 2FA on Local Subnet',
           help: 'Enabling this will bypass external 2FA security if user is on local Subnet',
         },
         {
           key: 'authBackendHost',
+          adminChanges: true,
           kind: 'text',
           label: 'Host Address',
           help: 'Please make sure to use local IP address and port - You also may use local dns name too.',
@@ -97,6 +103,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'authBaseDN',
+          adminChanges: true,
           kind: 'text',
           label: 'Host Base DN',
           placeholder: 'cn=%s,dc=sub,dc=domain,dc=com',
@@ -104,6 +111,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'authBackendHostPrefix',
+          adminChanges: true,
           kind: 'text',
           label: 'Account Prefix',
           placeholder:
@@ -112,15 +120,29 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'authBackendHostSuffix',
+          adminChanges: true,
           kind: 'text',
           label: 'Account Suffix',
           placeholder: 'Account suffix - start with comma - ,ou=people,dc=domain,dc=tld',
           shownWhen: 'ldap',
         },
-        { key: 'ldapBindUsername', kind: 'text', label: 'Bind Username', shownWhen: 'ldap' },
-        { key: 'ldapBindPassword', kind: 'secret', label: 'Bind Password', shownWhen: 'ldap' },
+        {
+          key: 'ldapBindUsername',
+          kind: 'text',
+          label: 'Bind Username',
+          shownWhen: 'ldap',
+          adminChanges: true,
+        },
+        {
+          key: 'ldapBindPassword',
+          kind: 'secret',
+          label: 'Bind Password',
+          shownWhen: 'ldap',
+          adminChanges: true,
+        },
         {
           key: 'ldapType',
+          adminChanges: true,
           kind: 'select',
           label: 'LDAP Backend Type',
           shownWhen: 'ldap',
@@ -132,6 +154,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'ldapSSL',
+          adminChanges: true,
           kind: 'switch',
           label: 'Enable LDAP SSL',
           help: 'This will enable the use of SSL for LDAP connections',
@@ -139,6 +162,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'ldapTLS',
+          adminChanges: true,
           kind: 'switch',
           label: 'Enable LDAP TLS',
           help: 'This will enable the use of TLS for LDAP connections',
@@ -162,6 +186,7 @@ export const SIGN_IN: FormPage = {
         },
         {
           key: 'embyURL',
+          adminChanges: { key: 'authBackend', values: ['emby_local', 'emby_all'] },
           kind: 'text',
           label: 'Emby URL',
           help: 'Please make sure to use local IP address and port - You also may use local dns name too.',
@@ -171,6 +196,7 @@ export const SIGN_IN: FormPage = {
         { key: 'embyToken', kind: 'secret', label: 'Emby Token', shownWhen: 'emby' },
         {
           key: 'jellyfinURL',
+          adminChanges: { key: 'authBackend', values: ['jellyfin'] },
           kind: 'text',
           label: 'Jellyfin URL',
           help: 'Please make sure to use local IP address and port - You also may use local dns name too.',
