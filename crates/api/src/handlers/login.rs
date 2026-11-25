@@ -287,6 +287,7 @@ async fn check_login(
             password: (!with_plex_token).then_some(request.password),
             plex_token: Some(&account.token),
             found_by: None,
+            may_open_privileged: external_login::is_plex_owner(settings, account),
         },
         Vouched::Server(account) => ExternalAccount {
             username: &account.username,
@@ -294,6 +295,7 @@ async fn check_login(
             password: Some(request.password),
             plex_token: None,
             found_by: Some(&account.typed),
+            may_open_privileged: !account.open,
         },
     };
     let done = external::log_in(

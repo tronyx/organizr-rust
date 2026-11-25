@@ -108,6 +108,27 @@ async fn ldap_login_makes_an_account_with_the_name_in_lower_case_and_the_mail_of
 }
 
 #[tokio::test]
+async fn ldap_login_of_a_co_admin_opens_the_account_but_keeps_its_password() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let server = ldap_server(false).await;
+        let app = installed_app_with(database, &ldap_settings(server.port(), "both", &[]));
+        let _ = seed::logged_in(database, &app, "kim", 1).await;
+        let kim = LDAP_PEOPLE[1];
+
+        let answer = log_in(&app, "kim", kim.password).await;
+
+        // The directory is one that the Admin runs, so its login still opens the account.
+        assert!(logged_in(&answer), "{}", answer.body);
+        // No service replaces the password of an Admin or a Co-Admin.
+        let account = user(database, "kim").await.expect("the account is there");
+        assert!(has_password(&account, seed::USER_PASSWORD));
+        assert!(!has_password(&account, kim.password));
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn ldap_login_finds_the_account_by_the_typed_name_and_updates_its_password() {
     on_each_engine(async |database| {
         seed::installed(database).await;
@@ -402,6 +423,31 @@ async fn emby_connect_login_makes_an_account_with_the_name_and_address_of_connec
         // The password of Emby itself is not the one of Emby Connect.
         let local = log_in(&app, "robin", "robin-media-password").await;
         assert_eq!(local.status, StatusCode::UNAUTHORIZED);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn emby_connect_never_opens_a_co_admin_account_but_the_local_emby_server_does() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let stand_in = media_stand_in("/Users/AuthenticateByName").await;
+        // A Co-Admin has the name of an account of Emby Connect, where anyone can make one.
+        let plain = installed_app_with(database, &[]);
+        let _ = seed::logged_in(database, &plain, "robin", 1).await;
+        let connect = media_app(database, &stand_in, "emby_connect");
+
+        let refused = log_in(&connect, "robin", "robin-connect-password").await;
+        assert_eq!(refused.status, StatusCode::UNAUTHORIZED, "{}", refused.body);
+
+        // The Emby server of the install is one that the Admin runs: its login opens
+        // the account, and keeps the password of the account.
+        let local = media_app(database, &stand_in, "emby_local");
+        let answer = log_in(&local, "robin", "robin-media-password").await;
+        assert!(logged_in(&answer), "{}", answer.body);
+        let robin = user(database, "robin").await.expect("the account is there");
+        assert!(has_password(&robin, seed::USER_PASSWORD));
+        assert_eq!(database.users().list().await.expect("it loads").len(), 2);
     })
     .await;
 }

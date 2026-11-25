@@ -11,6 +11,7 @@
 use axum::Router;
 use axum::http::StatusCode;
 use organizr_api::router;
+use organizr_auth::password::{self, PasswordCheck};
 use organizr_auth::secrets::plex_token_name;
 use organizr_auth::two_factor::code_at;
 use organizr_db::Database;
@@ -73,6 +74,13 @@ async fn user(database: &Database, name: &str) -> Option<organizr_domain::User> 
         .find_by_username(name)
         .await
         .expect("the lookup works")
+}
+
+fn has_password(user: &organizr_domain::User, password: &str) -> bool {
+    matches!(
+        password::verify(password, &user.password_hash),
+        PasswordCheck::Correct { .. }
+    )
 }
 
 #[tokio::test]
@@ -288,6 +296,91 @@ async fn account_of_organizr_is_found_by_the_address_of_the_plex_account() {
         .await;
         assert_eq!(me.data()["username"], json!(seed::ADMIN_NAME));
         assert_eq!(me.data()["groupID"], json!(0));
+        // The Plex password does not replace the password of the Admin.
+        let admin = user(database, seed::ADMIN_NAME).await.expect("is there");
+        assert!(has_password(&admin, seed::ADMIN_PASSWORD));
+        assert!(!has_password(&admin, owner.password));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn plex_friend_does_not_get_an_admin_account_of_the_same_name() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let settings = plex_settings(&[("authType", json!("both")), ("plexoAuth", json!(true))]);
+        let app = app_with(database, &plex, &settings);
+        // The Admin happens to have the name of a Plex account that the server is shared with.
+        let admin = user(database, seed::ADMIN_NAME).await.expect("is there");
+        let path = format!("/users/{}", admin.id.get());
+        let renamed = call(
+            &app,
+            As::Admin,
+            "PUT",
+            &path,
+            Some(json!({"username": "Robin"})),
+        )
+        .await;
+        assert_eq!(renamed.status, StatusCode::OK, "{}", renamed.body);
+
+        // Neither the Plex password nor the Plex token of that account opens the Admin.
+        let with_password = log_in_with_password(&app, "robin", ROBIN.password).await;
+        assert_eq!(
+            with_password.status,
+            StatusCode::UNAUTHORIZED,
+            "{}",
+            with_password.body
+        );
+        let with_token = log_in_with_token(&app, ROBIN.token).await;
+        assert_eq!(
+            with_token.status,
+            StatusCode::UNAUTHORIZED,
+            "{}",
+            with_token.body
+        );
+
+        // The Admin keeps the own password, which still opens the account, and no
+        // account was made.
+        let admin = user(database, "Robin").await.expect("is there");
+        assert!(has_password(&admin, seed::ADMIN_PASSWORD));
+        assert_eq!(database.users().list().await.expect("it loads").len(), 1);
+        let own = log_in_with_password(&app, "Robin", seed::ADMIN_PASSWORD).await;
+        assert_eq!(own.status, StatusCode::OK, "{}", own.body);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn plex_friend_does_not_get_a_co_admin_account_of_the_same_address() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let app = app_with(
+            database,
+            &plex,
+            &plex_settings(&[("authType", json!("both"))]),
+        );
+        // A Co-Admin has the address of a Plex account that the server is shared with.
+        let _ = seed::logged_in(database, &app, "kim", 1).await;
+        let kim = user(database, "kim").await.expect("is there");
+        let path = format!("/users/{}", kim.id.get());
+        let changed = call(
+            &app,
+            As::Admin,
+            "PUT",
+            &path,
+            Some(json!({"email": ROBIN.email})),
+        )
+        .await;
+        assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
+
+        let refused = log_in_with_password(&app, ROBIN.email, ROBIN.password).await;
+
+        assert_eq!(refused.status, StatusCode::UNAUTHORIZED, "{}", refused.body);
+        let kim = user(database, "kim").await.expect("is there");
+        assert!(has_password(&kim, seed::USER_PASSWORD));
+        assert_eq!(database.users().list().await.expect("it loads").len(), 2);
     })
     .await;
 }

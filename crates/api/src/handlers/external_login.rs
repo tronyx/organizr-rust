@@ -21,13 +21,18 @@ pub const PLEX_BACKEND: &str = "plex";
 /// The time that all applications of single sign-on have together, as in PHP.
 const HAND_OFF_TIME: Duration = Duration::from_mins(1);
 
+/// Whether the Plex account is the one of the `plexAdmin` setting: the owner of the
+/// server, whom the Admin named.
+pub fn is_plex_owner(settings: &Settings, account: &PlexAccount) -> bool {
+    let admin = settings.plex_admin.to_lowercase();
+    !admin.is_empty()
+        && (admin == account.username.to_lowercase() || admin == account.email.to_lowercase())
+}
+
 /// Whether an account may log in to this install: it is the account of the `plexAdmin`
 /// setting, or the owner of the Plex server shared the server with it.
 async fn is_approved(state: &AppState, settings: &Settings, account: &PlexAccount) -> bool {
-    let admin = settings.plex_admin.to_lowercase();
-    if !admin.is_empty()
-        && (admin == account.username.to_lowercase() || admin == account.email.to_lowercase())
-    {
+    if is_plex_owner(settings, account) {
         return true;
     }
     let Some(plex) = state.plex() else {

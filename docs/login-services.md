@@ -31,9 +31,9 @@ Do not select "Backend Only" before an account of the service can log in as an A
 ## What a login does
 
 1. Organizr sends the name and the password to the service. For every service but the three of Emby, the name is first written in lower case, as in PHP Organizr.
-2. When the service says yes, Organizr looks for its own account with that name, or with that e-mail address, in any letter case.
+2. When the service says yes, Organizr looks for its own account with that name, or with that e-mail address, in any letter case. Emby Connect never gets an Admin or Co-Admin account: anyone can make an Emby Connect account with any free name, so such a login fails. LDAP, FTP and the Emby server are services that you run, so their logins can open any account.
 3. If there is no such account, Organizr makes one in the group of new users. The name is the name that the person typed; for Emby Connect, it is the name of the Emby Connect account. The e-mail address is the `mail` of the LDAP entry, or the address of the Emby Connect account. For the other services, the account gets an address that only stands in for one, as in PHP Organizr.
-4. The password of the login becomes the password of the Organizr account. So the person can log in when the service cannot be reached, if the setting allows the passwords of Organizr.
+4. The password of the login becomes the password of the Organizr account. So the person can log in when the service cannot be reached, if the setting allows the passwords of Organizr. An Admin or Co-Admin account keeps its own password.
 5. An Organizr account with a [second factor](second-factor.md) needs its code, as in every login.
 
 A login that the service refuses counts as a failed login. After the number of failed logins of the setting **Max Login Attempts** (on the page **Login & Security**, section **Lockout and sessions**), the address of the client and the name are locked out for a time, whatever the service says.

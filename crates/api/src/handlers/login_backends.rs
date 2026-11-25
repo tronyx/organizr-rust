@@ -77,6 +77,9 @@ pub struct Vouched {
     pub username: String,
     /// The e-mail address of a new account, or nothing.
     pub email: String,
+    /// Whether anyone can make an account at the service, as at Emby Connect. Such a
+    /// login never opens an Admin or Co-Admin account.
+    pub open: bool,
 }
 
 /// The hosts of the `authBackendHost` setting for LDAP, and the port of all of them.
@@ -148,6 +151,7 @@ pub async fn check(
         typed: typed.clone(),
         username: typed.clone(),
         email,
+        open: false,
     };
     match backend {
         LDAP => by_ldap(settings, &typed, password).await.map(plain),
@@ -226,6 +230,7 @@ async fn by_emby_connect(
                 account.username
             },
             email: account.email,
+            open: true,
         }),
         Ok(None) => None,
         Err(error) => {

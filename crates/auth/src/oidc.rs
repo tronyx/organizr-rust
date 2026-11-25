@@ -381,7 +381,7 @@ async fn regroup(
 
 /// Whether the account is in a group of the level Admin or Co-Admin, as it is stored
 /// now. An account whose group is gone counts as one.
-async fn is_privileged(database: &Database, user: &User) -> Result<bool, DbError> {
+pub(crate) async fn is_privileged(database: &Database, user: &User) -> Result<bool, DbError> {
     Ok(database
         .groups()
         .find(user.group)

@@ -37,6 +37,11 @@ pub struct ExternalAccount<'a> {
     /// password; `username` and `email` are then only those of a new account. Without
     /// it, the account is the one with `username`, or else with `email`.
     pub found_by: Option<&'a str>,
+    /// Whether the login may open an Admin or Co-Admin account. A service where anyone
+    /// can make an account, as Plex and Emby Connect, may not, unless the account is the
+    /// owner that the settings name. A directory that the Admin runs (LDAP, FTP, a local
+    /// Emby server) may.
+    pub may_open_privileged: bool,
 }
 
 /// What a login through another service did.
@@ -51,6 +56,10 @@ pub struct ExternalLogin {
 /// account is the one that [`ExternalAccount::found_by`] names, or else the one with
 /// the user name or the e-mail address of the service, in any letter case. When there
 /// is none, an account is made in the group of new users.
+///
+/// An Admin or Co-Admin account is opened only when
+/// [`ExternalAccount::may_open_privileged`] allows it, and the password of the service
+/// never replaces the password of such an account.
 ///
 /// The second factor of an Organizr account is asked for as in every login, unless
 /// `second_factor.skip` says that this login needs none.
@@ -72,7 +81,17 @@ pub async fn log_in(
     let password = account.password.filter(|password| !password.is_empty());
 
     let (user, created) = if let Some(user) = user {
-        if let Some(password) = password {
+        let privileged = crate::oidc::is_privileged(database, &user).await?;
+        if privileged && !account.may_open_privileged {
+            tracing::warn!(
+                user = %user.username,
+                "a login through another service may not open an Admin or Co-Admin account"
+            );
+            return Err(LoginError::WrongCredentials);
+        }
+        if let Some(password) = password
+            && !privileged
+        {
             mirror_password(database, &user, password).await?;
         }
         (user, false)

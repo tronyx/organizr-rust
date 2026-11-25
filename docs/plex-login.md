@@ -45,11 +45,11 @@ Do not select "Backend Only" before a Plex account can log in as an Admin. With 
 
 1. Plex confirms the account: by its password, or by the token of the small window.
 2. Organizr looks for the account in the list of the accounts that the server is shared with. With **Strict Plex Friends** off, every friend of the owner passes, also one who has only another server of the owner.
-3. Organizr looks for its own account with the user name of the Plex account, or else with its e-mail address.
+3. Organizr looks for its own account with the user name of the Plex account, or else with its e-mail address. An Admin or Co-Admin account is used only for the owner named in **Plex Admin Username or Email**. For any other Plex account with the name or the address of an Admin or a Co-Admin, the login fails: anyone can make a Plex account with any free name.
 4. If there is no such account, Organizr makes one in the group of new users.
 5. Organizr stores the Plex token of the user, sealed. [Single sign-on](single-sign-on.md) uses it.
 
-After a login with the Plex password, that password is also the password of the Organizr account. So the person can log in when plex.tv cannot be reached, if the setting allows the passwords of Organizr.
+After a login with the Plex password, that password is also the password of the Organizr account. So the person can log in when plex.tv cannot be reached, if the setting allows the passwords of Organizr. The password of an Admin or a Co-Admin account never changes this way: it stays the one that was set in Organizr.
 
 An account that Organizr made for a login with the button has a random password that nobody knows. The person can get a password of their own with **Forgot your password?**, if the install sends [e-mail](email.md).
 
