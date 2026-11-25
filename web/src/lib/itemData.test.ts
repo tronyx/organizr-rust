@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { DEFAULT_REFRESH, refreshTime, SHORTEST_REFRESH } from './itemData.svelte';
-import { durationText, fromNow, localDateTime, timeSpanSeconds, timeSpanText } from './time';
+import {
+  durationText,
+  fromNow,
+  localDateTime,
+  longDateTime,
+  timeSpanSeconds,
+  timeSpanText,
+} from './time';
 
 describe('refreshTime', () => {
   it('is the setting, which the server sends as text', () => {
@@ -100,5 +107,27 @@ describe('localDateTime', () => {
     expect(localDateTime('')).toBe('');
     expect(localDateTime('soon')).toBe('soon');
     expect(localDateTime('2026-13-45 99:99:99')).toBe('2026-13-45 99:99:99');
+  });
+});
+
+describe('longDateTime', () => {
+  const zone = process.env.TZ;
+  afterEach(() => {
+    process.env.TZ = zone;
+  });
+
+  it('gives a UTC time of the server in the local time of the browser, as moment LLL', () => {
+    process.env.TZ = 'America/Chicago';
+    expect(longDateTime('2026-11-18 19:02:06')).toBe('November 18, 2026 1:02 PM');
+    expect(longDateTime('2026-11-18T19:02:06Z')).toBe('November 18, 2026 1:02 PM');
+    expect(longDateTime('2026-11-18 19:02')).toBe('November 18, 2026 1:02 PM');
+    expect(longDateTime('2026-01-05 06:30:00')).toBe('January 5, 2026 12:30 AM');
+    process.env.TZ = 'UTC';
+    expect(longDateTime('2026-09-01 12:00:00')).toBe('September 1, 2026 12:00 PM');
+  });
+
+  it('gives back a text that is no time', () => {
+    expect(longDateTime('next week')).toBe('next week');
+    expect(longDateTime('')).toBe('');
   });
 });

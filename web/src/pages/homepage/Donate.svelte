@@ -2,7 +2,8 @@
   // The donate item: a person names an amount and pays it on a page of Stripe. The
   // item can list the donations of the person.
   import { api, apiUrl, failureText } from '../../lib/api';
-  import { type DonateOptions, dollars, momentText } from '../../lib/statistics';
+  import { type DonateOptions, dollars } from '../../lib/statistics';
+  import { longDateTime } from '../../lib/time';
 
   let { options }: { options: DonateOptions } = $props();
 
@@ -88,7 +89,7 @@
           <tbody>
             {#each donations as donation, index (index)}
               <tr>
-                <td class="whitespace-nowrap">{momentText(donation.date)}</td>
+                <td class="whitespace-nowrap">{longDateTime(donation.date)}</td>
                 <td>{donation.email ?? ''}</td>
                 <td>{dollars(Number(donation.amount))}</td>
               </tr>

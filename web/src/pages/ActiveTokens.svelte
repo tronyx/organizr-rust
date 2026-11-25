@@ -2,6 +2,7 @@
   // The panel "Active Tokens" of the account page of PHP Organizr: the sessions of the
   // own account, with the button that ends one. The server never sends a token itself,
   // so the column Token says which session is this one.
+  import { longDateTime } from '../lib/time';
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../lib/api';
@@ -19,10 +20,9 @@
   let error = $state<string | null>(null);
   let done = $state<string | null>(null);
 
-  /** A time of the server, in UTC, as the date and time of this browser. */
+  /** A time of the server, in UTC, in the local time of this browser, as PHP shows it. */
   function when(text: string): string {
-    const time = new Date(`${text.replace(' ', 'T')}Z`);
-    return Number.isNaN(time.getTime()) ? text : time.toLocaleString();
+    return longDateTime(text);
   }
 
   async function load() {

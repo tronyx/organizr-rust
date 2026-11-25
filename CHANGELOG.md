@@ -27,6 +27,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - The set-up wizard asks for a set-up code from the log, so nobody else can take over a new install.
 - The pages are new, so custom CSS written for PHP needs the names in [Custom CSS](docs/custom-css.md). Custom JavaScript runs only when the server starts with `ORGANIZR_CUSTOM_JS=1`.
 - The settings pages group the settings by topic. The Auth proxy section of PHP isn't shown, because this version logs nobody in from a header; [Forward auth](docs/forward-auth.md) and [OpenID Connect](docs/openid-connect.md) do that job (D-96).
+- Dates show as PHP shows them, in the local time of the browser: "Nov 18, 2026 1:02 PM" in Manage Users, and "November 18, 2026 1:02 PM" for sessions, chat messages and donations.
 - Each service of the health checks plugin has an **API key** switch. Only a service with the switch on gets Organizr's API key; services from before the switch keep getting it, and new or imported ones start with it off (D-130).
 
 ### Security

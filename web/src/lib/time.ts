@@ -74,7 +74,51 @@ export function timeSpanText(text: string | null | undefined): string {
   return seconds === null || Math.round(seconds) === 0 ? '' : durationText(seconds);
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/** A time of this browser as moment.js writes it in English: the month whole (`LLL`,
+ *  "November 18, 2026 1:02 PM") or in three letters (`ll LT`, "Nov 18, 2026 1:02 PM"). */
+function momentForm(time: Date, month: 'long' | 'short'): string {
+  const name = MONTHS[time.getMonth()] ?? '';
+  const hours = time.getHours();
+  const minutes = String(time.getMinutes()).padStart(2, '0');
+  return (
+    `${month === 'long' ? name : name.slice(0, 3)} ${time.getDate()}, ${time.getFullYear()} ` +
+    `${hours % 12 || 12}:${minutes} ${hours < 12 ? 'AM' : 'PM'}`
+  );
+}
+
+/** The time of a server text in UTC, "2026-11-18 19:02:06" or an ISO time; null for
+ *  another text. */
+function serverTime(text: string): Date | null {
+  const trimmed = text.trim();
+  const match = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)$/.exec(trimmed);
+  const time = new Date(match ? `${match[1]}T${match[2]}Z` : trimmed);
+  return /^\d{4}-\d{2}-\d{2}/.test(trimmed) && !Number.isNaN(time.getTime()) ? time : null;
+}
+
+/**
+ * A time that the server gives, in the local time of the browser and in the long form of
+ * PHP Organizr: "November 18, 2026 1:02 PM", the `LLL` of moment.js in English. PHP uses it
+ * for sessions, chat messages and donations. A text without a time is given back as it is.
+ */
+export function longDateTime(text: string): string {
+  const time = serverTime(text);
+  return time ? momentForm(time, 'long') : text;
+}
 
 /**
  * A date and time that the server gives in UTC ("2026-11-18 19:02:06"), in the local time
@@ -87,10 +131,5 @@ export function localDateTime(text: string): string {
   if (!time || Number.isNaN(time.getTime())) {
     return text;
   }
-  const hours = time.getHours();
-  const minutes = String(time.getMinutes()).padStart(2, '0');
-  return (
-    `${MONTHS[time.getMonth()] ?? ''} ${time.getDate()}, ${time.getFullYear()} ` +
-    `${hours % 12 || 12}:${minutes} ${hours < 12 ? 'AM' : 'PM'}`
-  );
+  return momentForm(time, 'short');
 }

@@ -2,17 +2,11 @@
   // The page of the chat plugin: the messages, the people who wrote lately at the side,
   // and a field for a new message. New messages come from the stream of the server, so
   // the page asks for the list only when the stream (re)opens.
+  import { longDateTime } from '../lib/time';
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../lib/api';
-  import {
-    MESSAGE_LIMIT,
-    chatWriters,
-    eventsUrl,
-    messageTime,
-    parseEvent,
-    type ChatMessage,
-  } from '../lib/chat';
+  import { MESSAGE_LIMIT, chatWriters, eventsUrl, parseEvent, type ChatMessage } from '../lib/chat';
   import { pictureOf } from '../lib/picture';
   import { session } from '../lib/session.svelte';
 
@@ -87,8 +81,9 @@
     }
   }
 
+  /** The time of a message in the local time of this browser, as PHP shows it. */
   function shownTime(date: string): string {
-    return messageTime(date)?.toLocaleString() ?? date;
+    return longDateTime(date);
   }
 
   function pictureAddress(gravatar: string, name: string): string | null {
