@@ -190,7 +190,7 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.12 -color
 | `ci` | Each push and pull request to `develop` or `main` | Rust format, clippy and tests (with PostgreSQL), the extension tests, `cargo-deny` (through its GitHub action), the web checks and build, clippy and `cargo test -p organizr --features embedded-web --locked` with the interface built in, the browser tests, and the real applications |
 | `lint` | Same | hadolint on `docker/Dockerfile` and `parity/oracle/Dockerfile`, actionlint, and the docs checks |
 | `build` | On request, each push to `main`, and a pull request to `main` that changes the image | Builds, tests and publishes the image. See [Releases and images](docs/releases.md) |
-| `scan` | Mondays, and on request | Scans the published images for vulnerabilities |
+| `scan` | Mondays, and on request | Scans the published images for vulnerabilities, and files the ones with a fix in the Security tab |
 | `sync-wiki` | Each push to `develop` that changes `docs/` | Copies `docs/` to the wiki |
 
 ## 📝 Commits and branches

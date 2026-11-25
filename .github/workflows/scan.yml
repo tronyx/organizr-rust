@@ -2,8 +2,9 @@ name: scan
 
 # Scans the published images for known vulnerabilities, once a week and on request.
 # The build stops only for a finding that has a correction. This run lists every
-# finding of the levels HIGH and CRITICAL, and fails when one of them has a correction:
-# a new build with newer base images then removes it.
+# finding of the levels HIGH and CRITICAL, files the ones that have a correction in the
+# Security tab of the repository, and fails when there is one: a new build with newer
+# base images then removes it.
 on:
   schedule:
     - cron: "23 6 * * 1"
@@ -18,16 +19,23 @@ concurrency:
 
 jobs:
   scan:
-    name: Scan the image (${{ matrix.tag }})
+    name: Scan the image (${{ matrix.tag }}, ${{ matrix.architecture }})
     runs-on: ubuntu-26.04
     permissions:
+      contents: read
       packages: read
+      security-events: write
     strategy:
       fail-fast: false
       matrix:
         tag:
           - develop
           - latest
+        architecture:
+          - amd64
+          - arm64
+    env:
+      TRIVY: ghcr.io/aquasecurity/trivy:0.76.2
     steps:
       - name: Log in to the registry
         uses: docker/login-action@v4.8.0
@@ -40,11 +48,16 @@ jobs:
         id: pull
         env:
           TAG: ${{ matrix.tag }}
+          ARCHITECTURE: ${{ matrix.architecture }}
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY,,}:${TAG}"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
-          if docker pull "${image}"; then
+          if docker pull --platform "linux/${ARCHITECTURE}" "${image}"; then
             echo "found=true" >> "$GITHUB_OUTPUT"
+            # The commit the image was built from: its findings are filed under it.
+            revision=$(docker image inspect --format \
+              '{{index .Config.Labels "org.opencontainers.image.revision"}}' "${image}")
+            echo "revision=${revision}" >> "$GITHUB_OUTPUT"
           else
             # Before the first release, the tag latest does not exist.
             echo "::notice::There is no image ${image} to scan."
@@ -55,17 +68,55 @@ jobs:
         if: steps.pull.outputs.found == 'true'
         env:
           IMAGE: ${{ steps.pull.outputs.image }}
+          ARCHITECTURE: ${{ matrix.architecture }}
         run: |
+          mkdir -p "$RUNNER_TEMP/trivy-cache"
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            ghcr.io/aquasecurity/trivy:0.76.2 image \
-            --scanners vuln --severity HIGH,CRITICAL --no-progress "${IMAGE}"
+            -v "$RUNNER_TEMP/trivy-cache:/root/.cache/trivy" "${TRIVY}" image \
+            --platform "linux/${ARCHITECTURE}" --scanners vuln --severity HIGH,CRITICAL \
+            --no-progress "${IMAGE}"
 
-      - name: Fail for a finding that has a correction
+      - name: Write the findings that have a correction
         if: steps.pull.outputs.found == 'true'
         env:
           IMAGE: ${{ steps.pull.outputs.image }}
+          ARCHITECTURE: ${{ matrix.architecture }}
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            ghcr.io/aquasecurity/trivy:0.76.2 image \
-            --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
-            --exit-code 1 --no-progress "${IMAGE}"
+            -v "$RUNNER_TEMP/trivy-cache:/root/.cache/trivy" -v "$RUNNER_TEMP:/out" "${TRIVY}" image \
+            --platform "linux/${ARCHITECTURE}" --scanners vuln --severity HIGH,CRITICAL \
+            --ignore-unfixed --skip-db-update --no-progress \
+            --format json --output /out/trivy.json "${IMAGE}"
+          docker run --rm -v "$RUNNER_TEMP:/out" "${TRIVY}" convert \
+            --format sarif --output /out/trivy.sarif /out/trivy.json
+
+      # GitHub takes findings of a private repository only with its paid Code Security.
+      - name: Check whether the Security tab takes findings
+        id: visibility
+        if: steps.pull.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          private=$(gh api "repos/${GITHUB_REPOSITORY}" --jq .private)
+          echo "private=${private}" >> "$GITHUB_OUTPUT"
+          if [[ "${private}" == "true" ]]; then
+            echo "::notice::The repository is private, so the findings are not filed in the Security tab."
+          fi
+
+      # The findings go to the Security tab, under the branch of the tag and the commit
+      # of the image. Each run replaces the findings of the last one for that branch and
+      # architecture, so a finding that a new image removed is closed there.
+      - name: File the findings in the Security tab
+        if: steps.pull.outputs.found == 'true' && steps.visibility.outputs.private == 'false'
+        uses: github/codeql-action/upload-sarif@v4.38.2
+        with:
+          sarif_file: ${{ runner.temp }}/trivy.sarif
+          category: trivy-${{ matrix.architecture }}
+          ref: refs/heads/${{ matrix.tag == 'latest' && 'main' || 'develop' }}
+          sha: ${{ steps.pull.outputs.revision }}
+
+      - name: Fail for a finding that has a correction
+        if: steps.pull.outputs.found == 'true'
+        run: |
+          docker run --rm -v "$RUNNER_TEMP:/out" "${TRIVY}" convert \
+            --format table --exit-code 1 --quiet /out/trivy.json

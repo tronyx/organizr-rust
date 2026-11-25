@@ -40,6 +40,15 @@ Please leave out real passwords, tokens and keys. Test values are fine.
 
 This is a project run in spare time, so please be patient. Please give us a reasonable time to fix the problem before you talk about it in public.
 
+## 🛡️ How the project watches for problems
+
+| What | How |
+|---|---|
+| Rust libraries | `cargo-deny` checks them against the RustSec advisory database in each CI run |
+| Libraries, base images and workflow tools | Renovate opens a pull request for each new version, a week after it's out, once its GitHub app is installed ([Releases](docs/releases.md#-updates-with-renovate)) |
+| Known vulnerabilities in the libraries | GitHub's Dependabot alerts watch `Cargo.lock` and `web/package-lock.json`, once they're switched on in the repository settings |
+| The image | Trivy scans each build, and the published images every Monday. A build with a fixable HIGH or CRITICAL vulnerability isn't published, and the weekly findings go to the Security tab ([Releases](docs/releases.md#-the-weekly-scan)) |
+
 ## ✅ Hardening checklist
 
 A quick list for anyone running Organizr. Each item links to the page with the details.

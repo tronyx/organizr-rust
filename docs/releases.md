@@ -106,7 +106,9 @@ docker buildx imagetools inspect ghcr.io/tronyx/organizr-rust:develop --format '
 
 ## 🔎 The weekly scan
 
-New vulnerabilities become known after an image is published. The workflow `scan` scans the published `develop` and `latest` images every Monday (06:23 UTC), and on request. It lists each finding of the levels HIGH and CRITICAL, and fails when a finding has a fix. A new build with updated base images then removes it. Until the first release, it skips `latest`, which does not exist yet.
+New vulnerabilities become known after an image is published. The workflow `scan` scans the published `develop` and `latest` images, for amd64 and arm64, every Monday (06:23 UTC), and on request. It lists each finding of the levels HIGH and CRITICAL, and fails when a finding has a fix. A new build with updated base images then removes it. Until the first release, it skips `latest`, which does not exist yet.
+
+The findings that have a fix are also filed in the **Security** tab of the repository, under **Code scanning**, with the branch and the commit of the image. Each run replaces the findings of the last one, so a finding that a new image removed is closed there. GitHub takes these findings only from a public repository (or with its paid Code Security), so while the repository is private, the run says so and skips this step.
 
 ## 🧰 For maintainers: pinned versions and updates
 
