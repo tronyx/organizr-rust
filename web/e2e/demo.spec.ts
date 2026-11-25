@@ -53,6 +53,40 @@ test('the server hands out the page with a strict security policy', async ({ pag
   await expect(page).toHaveTitle('Organizr V2');
 });
 
+test('the server sends the compressed copy of a script that the browser accepts', async ({
+  page,
+}) => {
+  // The browser loaded the script of the page in Brotli, the smallest copy.
+  const scripts: { encoding: string | undefined; vary: string | undefined }[] = [];
+  page.on('response', (response) => {
+    if (/\/assets\/index-[^/]+\.js$/.test(response.url())) {
+      const headers = response.headers();
+      scripts.push({ encoding: headers['content-encoding'], vary: headers['vary'] });
+    }
+  });
+  await page.goto('./');
+  await expect(page).toHaveTitle('Organizr V2');
+  expect(scripts).toEqual([{ encoding: 'br', vary: 'accept-encoding' }]);
+
+  // A client that accepts only gzip gets gzip, and one that accepts none gets the file.
+  const path = new URL(page.url()).origin;
+  const html = await (await page.request.get(`${path}/`)).text();
+  const script = /src="\.\/(assets\/index-[^"]+\.js)"/.exec(html)?.[1];
+  expect(script, 'the page names its script').toBeTruthy();
+  for (const [accept, encoding] of [
+    ['gzip', 'gzip'],
+    ['identity', undefined],
+  ] as const) {
+    const answer = await page.request.get(`${path}/${script}`, {
+      headers: { 'accept-encoding': accept },
+    });
+    expect(answer.ok()).toBe(true);
+    expect(answer.headers()['content-encoding'], accept).toBe(encoding);
+    // The client gets the same script either way.
+    expect((await answer.text()).length).toBeGreaterThan(100_000);
+  }
+});
+
 /** The address of the server of the tests. */
 const ADDRESS_URL = `http://${ADDRESS}/`;
 

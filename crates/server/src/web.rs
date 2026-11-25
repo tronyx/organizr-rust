@@ -5,6 +5,9 @@
 //! files and hands them out. A binary without the feature answers the address of the
 //! page with a short notice, so the server and its tests can be built without Node.
 //!
+//! The build also writes a Brotli and a gzip copy of each text file. The server sends the
+//! copy that the browser accepts, so a page load moves about a quarter of the bytes.
+//!
 //! The interface finds its pages by the part of the address after the `#`, which a
 //! browser does not send. So the server only hands out files, and the interface works
 //! at the root of a host and in a sub-folder alike.
@@ -79,6 +82,73 @@ fn content_type(name: &str) -> &'static str {
     }
 }
 
+/// Whether the build stores compressed copies of the file: text files only. Pictures and
+/// fonts are compressed already.
+fn is_compressible(name: &str) -> bool {
+    let ending = name.rsplit_once('.').map_or("", |(_, ending)| ending);
+    matches!(ending, "html" | "js" | "css" | "svg" | "json" | "txt")
+}
+
+/// A compressed copy of a file, which the build writes next to it (`web/scripts/compress.mjs`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Encoding {
+    Brotli,
+    Gzip,
+}
+
+impl Encoding {
+    /// The name of the encoding in `Accept-Encoding` and `Content-Encoding`.
+    const fn token(self) -> &'static str {
+        match self {
+            Self::Brotli => "br",
+            Self::Gzip => "gzip",
+        }
+    }
+
+    /// The ending that the build gives the copy.
+    const fn ending(self) -> &'static str {
+        match self {
+            Self::Brotli => ".br",
+            Self::Gzip => ".gz",
+        }
+    }
+}
+
+/// The weight that `Accept-Encoding` gives an encoding: its own entry, or else the entry
+/// `*`. `None` when the header names neither.
+fn weight(accept: &str, token: &str) -> Option<f32> {
+    let mut star = None;
+    for entry in accept.split(',') {
+        let mut parts = entry.split(';');
+        let name = parts.next().unwrap_or("").trim();
+        let quality = parts
+            .find_map(|part| part.trim().strip_prefix("q="))
+            .map_or(Some(1.0), |value| value.trim().parse::<f32>().ok());
+        let Some(quality) = quality else { continue };
+        if name.eq_ignore_ascii_case(token) {
+            return Some(quality);
+        }
+        if name == "*" {
+            star = Some(quality);
+        }
+    }
+    star
+}
+
+/// The compressed copy of a file that the browser accepts and the build stored: Brotli
+/// first, as it is the smaller, then gzip. `None` sends the file as it is.
+fn encoded_copy(name: &str, accept: &str, exists: impl Fn(&str) -> bool) -> Option<Encoding> {
+    if !is_compressible(name) {
+        return None;
+    }
+    [Encoding::Brotli, Encoding::Gzip]
+        .into_iter()
+        .find(|encoding| {
+            weight(accept, encoding.token()).is_some_and(|quality| quality > 0.0)
+                && exists(&format!("{name}{}", encoding.ending()))
+        })
+}
+
 /// Whether the file is a font.
 fn is_font(name: &str) -> bool {
     content_type(name).starts_with("font/")
@@ -125,6 +195,17 @@ pub async fn serve_files(request: Request, next: Next) -> Response {
     let Some((name, content)) = found else {
         return next.run(request).await;
     };
+    let accept = request
+        .headers()
+        .get(header::ACCEPT_ENCODING)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("");
+    let encoding = encoded_copy(&name, accept, |copy| file(copy).is_some());
+    let content = match encoding.and_then(|encoding| file(&format!("{name}{}", encoding.ending())))
+    {
+        Some(copy) => copy,
+        None => content,
+    };
 
     let body = if request.method() == Method::HEAD {
         Body::empty()
@@ -146,6 +227,16 @@ pub async fn serve_files(request: Request, next: Next) -> Response {
         header::CACHE_CONTROL,
         HeaderValue::from_static(caching(&name)),
     );
+    if is_compressible(&name) {
+        // Caches keep one answer for each encoding that a browser accepts.
+        headers.insert(header::VARY, HeaderValue::from_static("accept-encoding"));
+    }
+    if let Some(encoding) = encoding {
+        headers.insert(
+            header::CONTENT_ENCODING,
+            HeaderValue::from_static(encoding.token()),
+        );
+    }
     if is_font(&name) {
         // A custom HTML item of the homepage is a page of no site. Its frame can use
         // the icon fonts only when every site may load them.
@@ -178,7 +269,113 @@ mod tests {
     use http_body_util::BodyExt;
     use tower::ServiceExt;
 
-    use super::{CONTENT_SECURITY_POLICY, caching, content_type, file_name, serve_files};
+    use super::{
+        CONTENT_SECURITY_POLICY, Encoding, caching, content_type, encoded_copy, file_name,
+        is_compressible, serve_files,
+    };
+
+    #[test]
+    fn browser_gets_the_best_copy_it_accepts() {
+        let both = |name: &str| {
+            matches!(
+                name,
+                "assets/index-abc.js.br"
+                    | "assets/index-abc.js.gz"
+                    | "plugins/images/tabs/plex.png.br"
+            )
+        };
+        let gzip_only = |name: &str| name == "assets/index-abc.js.gz";
+        let script = "assets/index-abc.js";
+
+        assert_eq!(
+            encoded_copy(script, "gzip, deflate, br", both),
+            Some(Encoding::Brotli)
+        );
+        assert_eq!(
+            encoded_copy(script, "gzip, deflate, br", gzip_only),
+            Some(Encoding::Gzip)
+        );
+        assert_eq!(encoded_copy(script, "gzip", both), Some(Encoding::Gzip));
+        assert_eq!(encoded_copy(script, "BR", both), Some(Encoding::Brotli));
+        // A weight of 0 refuses an encoding.
+        assert_eq!(
+            encoded_copy(script, "br;q=0, gzip;q=0.5", both),
+            Some(Encoding::Gzip)
+        );
+        assert_eq!(encoded_copy(script, "br;q=0.0, gzip;q=0", both), None);
+        assert_eq!(encoded_copy(script, "*", both), Some(Encoding::Brotli));
+        assert_eq!(encoded_copy(script, "*;q=0", both), None);
+        assert_eq!(encoded_copy(script, "identity", both), None);
+        assert_eq!(encoded_copy(script, "", both), None);
+        // Without a stored copy the file goes out as it is.
+        assert_eq!(encoded_copy(script, "br, gzip", |_| false), None);
+        // A picture or a font is compressed already, and has no copy.
+        assert_eq!(
+            encoded_copy("plugins/images/tabs/plex.png", "br", both),
+            None
+        );
+    }
+
+    #[test]
+    fn only_text_files_are_compressed() {
+        for name in [
+            "index.html",
+            "assets/index-abc.js",
+            "assets/index-abc.css",
+            "favicon.svg",
+            "manifest.json",
+            "robots.txt",
+        ] {
+            assert!(is_compressible(name), "{name}");
+        }
+        for name in [
+            "plugins/images/tabs/plex.png",
+            "assets/icons-abc.woff2",
+            "assets/themify-abc.woff",
+            "assets/index-abc.js.br",
+            "file",
+        ] {
+            assert!(!is_compressible(name), "{name}");
+        }
+    }
+
+    async fn send_accepting(path: &str, accept: &str) -> Answer {
+        let request = Request::builder()
+            .uri(path)
+            .header(header::ACCEPT_ENCODING, accept)
+            .body(Body::empty())
+            .expect("the request is valid");
+        let response = app().oneshot(request).await.expect("the router answers");
+        let status = response.status();
+        let headers = response.headers().clone();
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("the body can be read")
+            .to_bytes();
+        Answer {
+            status,
+            headers,
+            body: String::from_utf8_lossy(&body).into_owned(),
+        }
+    }
+
+    #[cfg(not(feature = "embedded-web"))]
+    #[tokio::test]
+    async fn page_without_a_compressed_copy_goes_out_as_it_is() {
+        let answer = send_accepting("/", "br, gzip").await;
+
+        assert_eq!(answer.status, StatusCode::OK);
+        assert_eq!(answer.header(header::CONTENT_ENCODING), None);
+        // Caches keep one answer for each encoding the browser accepts.
+        assert_eq!(answer.header(header::VARY), Some("accept-encoding"));
+        assert!(
+            answer.body.starts_with("<!doctype html>"),
+            "{}",
+            answer.body
+        );
+    }
 
     /// A stand-in for the API behind the middleware.
     fn app() -> Router {
