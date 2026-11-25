@@ -58,7 +58,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Connection tests (`/test/*`) | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102 |
 | Certificates and TLS | D-11, D-17, D-60, D-85, D-86, D-98, D-104 |
 | Outbound requests and SSRF | D-08, D-16, D-55, D-81, D-91, D-122 |
-| Built-in plugins | D-44, D-66, D-67, D-68, D-69, D-94, D-95, D-115, D-116, D-118 to D-121, D-130 |
+| Built-in plugins | D-44, D-66, D-67, D-68, D-69, D-94, D-95, D-115, D-116, D-118 to D-121, D-130, D-134 |
 | Extensions and the marketplaces | D-17, D-40, D-41, D-75, D-94, D-122 |
 | Look, themes, custom CSS and JavaScript | D-42, D-92, D-93, D-110, D-125 |
 | Languages | D-109 |
@@ -77,7 +77,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/wizard` | D-19, D-38, D-46 |
 | `GET /status` | D-21, D-46 |
 | `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125, D-128 |
-| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133 |
+| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134 |
 | `/users`, `/users/{id}` | D-05, D-15, D-52, D-57 |
 | `POST /users/register` | D-36, D-37, D-38 |
 | `POST /users/recover` | D-09, D-58 |
@@ -119,7 +119,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/socks/…`, `/multiple/socks/…` | D-91 |
 | `/plugins`, `/plugins/manage/{plugin}`, `/plugins/marketplace` | D-94, D-116 |
 | `/plugins/chat/*` | D-44, D-95 |
-| `/plugins/healthchecks/*` | D-66, D-130 |
+| `/plugins/healthchecks/*` | D-66, D-130, D-134 |
 | `/plugins/speedtest/*` | D-67 |
 | `/plugins/bookmark/*` | D-32, D-68, D-115 |
 | `/plugins/invites/*` | D-69, D-118, D-119, D-120 |
@@ -289,6 +289,7 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-131 | **Only an Admin trusts a custom HTML item, and only an Admin changes the HTML of a trusted item.** Who changes the custom HTML items, on top of D-76. PHP lets a Co-Admin change every custom HTML item, and each item runs as a page of the site there. A trusted item can do all that its viewer can do, so a Co-Admin who could trust an item could act as every Admin who opens the homepage. (1) `PUT /config` takes `homepageCustomHTML{number}Trusted` only from an Admin, as the API key and the custom JavaScript (D-125). (2) While an item is trusted, `PUT /config` takes its `customHTML{number}` only from an Admin. A Co-Admin still changes the HTML of an item that is not trusted, and the switches and levels of every item. A refusal answers `401` with `Config item: {key} can only be changed by an admin`, and the request changes nothing. (3) The settings page hides the trust switch from a Co-Admin, and shows the HTML of a trusted item to a Co-Admin without letting them change it. Found by the security audit of 2026-11-25; decided by the owner of the project on 2026-11-25. |
 | D-132 | **Only an Admin changes the settings that a login trusts.** Who changes the sign-in settings, on top of D-127. PHP lets a Co-Admin change every sign-in setting. LDAP, FTP, Emby Local, Emby All and Jellyfin can open an Admin account, so a Co-Admin who could point the login at a server of their own could log in as the Admin. (1) `PUT /config` takes these settings only from an Admin: `authType`, `authBackend`, `authBackendHost`, `authBackendHostPrefix`, `authBackendHostSuffix`, `authBackendDomain`, `authBaseDN`, `ldapBindUsername`, `ldapBindPassword`, `ldapType`, `ldapSSL`, `ldapTLS`, the Plex owner `plexAdmin`, and the logins with no second factor `ignoreTFALocal` and `ignoreTFAIfPlexOAuth`. (2) Some settings are for Admins only while a login trusts them: `embyURL` while `authBackend` is `emby_local` or `emby_all`, `jellyfinURL` while it is `jellyfin`, and `localIPList` while `ignoreTFALocal` is on. Otherwise a Co-Admin still changes them, as for the homepage. Emby Connect opens no Admin account (D-127), so it leaves `embyURL` open. A refusal answers `401` with `Config item: {key} can only be changed by an admin`, and the request changes nothing. (3) The settings pages show these fields to a Co-Admin without letting them change them. Found by the security audit of 2026-11-25; decided by the owner of the project on 2026-11-25. |
 | D-133 | **Only an Admin changes the settings of OpenID Connect.** Who changes the OpenID Connect settings, on top of D-87 to D-90. These settings pick the providers that may vouch for a login, and the group that a login gives, Admin included: a mapping or the default group may name level `0`. A Co-Admin who could change them could log in as a new Admin through a provider of their own. (1) `PUT /config` takes every setting whose key starts with `oidc` only from an Admin. A refusal answers `401` with `Config item: {key} can only be changed by an admin`, and the request changes nothing. (2) The Sign-in page shows these fields to a Co-Admin without letting them change them. Found by the security audit of 2026-11-25; decided by the owner of the project on 2026-11-25. |
+| D-134 | **Only an Admin changes the services of the health checks plugin.** Who changes `HEALTHCHECKS-all-items`, on top of D-66 and D-130. A service may get the API key of Organizr, which has the rights of an Admin, and a service without the switch `Send API Key` gets it, as in PHP. A Co-Admin who could add a service could have the key sent to an address of their own. (1) `PUT /config` takes `HEALTHCHECKS-all-items` only from an Admin. A refusal answers `401` with `Config item: HEALTHCHECKS-all-items can only be changed by an admin`, and the request changes nothing. (2) The other settings of the plugin send no key (the pings carry only the id of the check), so a Co-Admin still switches the plugin on and off and changes the schedule, the ping address, the status codes that pass and the level that may start a run. (3) The settings page shows the services to a Co-Admin without letting them change them; a Co-Admin can still start a run. Found by the security audit of 2026-11-25; decided by the owner of the project on 2026-11-25. |
 
 ## ✅ Kept exactly as PHP has it
 

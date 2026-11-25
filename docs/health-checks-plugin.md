@@ -103,7 +103,8 @@ The safe setup:
 
 | Who | Can do |
 |---|---|
-| Admin, Co-Admin | Switch the plugin on, change its settings and the list of services |
+| Admin | Change the list of services, which can get the API key (D-134) |
+| Admin, Co-Admin | Switch the plugin on, change its other settings, and start a run on the settings page. A Co-Admin sees the services but can't change them |
 | Users of the **Minimum Authentication** group or above | Start a run by hand through `GET /api/v2/plugins/healthchecks/run` |
 | A program with the API key | Start a run the same way |
 

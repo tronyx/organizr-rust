@@ -62,11 +62,16 @@ const LOGIN_SETTINGS: [&str; 15] = [
     "ignoreTFAIfPlexOAuth",
 ];
 
+/// The services of the health checks plugin: the addresses that a run asks, and whether
+/// each gets the API key.
+const HEALTH_CHECK_SERVICES: &str = "HEALTHCHECKS-all-items";
+
 /// Whether only an Admin can change a setting: the API key, the settings that let a
 /// proxy say who the caller is, the scripts that run on every page, the default look
 /// (D-125), the trust of a custom HTML item with the HTML of a trusted item (D-131), and
 /// the settings that a login trusts (D-132), among them every setting of OpenID Connect,
-/// which picks the providers and the group that a login gives (D-133).
+/// which picks the providers and the group that a login gives (D-133), and the services of
+/// the health checks plugin, which get the API key (D-134).
 ///
 /// `settings` decides the settings that are for Admins only some of the time. Such a rule
 /// reads only settings that are always for Admins only, so for a Co-Admin the copy that
@@ -76,6 +81,7 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
         || key.starts_with("authProxy")
         || LOGIN_SETTINGS.contains(&key)
         || key.starts_with("oidc")
+        || key == HEALTH_CHECK_SERVICES
         || is_trusted_by_a_login(key, settings)
         || key == "customJava"
         || key == "customThemeJava"
@@ -327,6 +333,7 @@ mod tests {
             "oidcEnabled",
             "oidcGroupMappings",
             "oidcDefaultGroupId",
+            "HEALTHCHECKS-all-items",
         ] {
             assert!(is_for_admins_only(key, &settings), "{key}");
         }

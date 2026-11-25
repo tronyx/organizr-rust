@@ -352,6 +352,44 @@ async fn openid_connect_settings_are_changed_by_the_admin_only() {
 }
 
 #[tokio::test]
+async fn health_check_services_are_changed_by_the_admin_only() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+
+        // The services get the API key, so only an Admin names them (D-134).
+        let services = json!([{
+            "Service Name": "Elsewhere",
+            "UUID": "a1b2",
+            "Internal URL": "http://elsewhere.example.test",
+            "Enabled": "true",
+        }]);
+        let body = json!({"HEALTHCHECKS-all-items": services.clone()});
+        let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+        assert_refused(
+            &answer,
+            StatusCode::UNAUTHORIZED,
+            "Config item: HEALTHCHECKS-all-items can only be changed by an admin",
+        );
+        assert_eq!(setting(&app, "HEALTHCHECKS-all-items").await, json!(""));
+
+        // The other settings of the plugin send no key, and stay open to a Co-Admin.
+        let body = json!({
+            "HEALTHCHECKS-enabled": true,
+            "HEALTHCHECKS-PingURL": "https://ping.example.test",
+            "HEALTHCHECKS-cron-run-schedule": "*/10 * * * *",
+        });
+        let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+
+        change(&app, json!({"HEALTHCHECKS-all-items": services.clone()})).await;
+        assert_eq!(setting(&app, "HEALTHCHECKS-all-items").await, services);
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn key_that_is_no_setting_and_value_that_does_not_fit_are_refused() {
     on_each_engine(async |database| {
         seed::installed(database).await;

@@ -4,6 +4,8 @@
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../../lib/api';
+  import { session } from '../../lib/session.svelte';
+  import { ADMIN } from '../../lib/types';
   import {
     emptyRow,
     fromSetting,
@@ -28,6 +30,8 @@
   let busy = $state(false);
   let results = $state<Results | null>(null);
 
+  /** Only an Admin changes the services, which may get the API key (D-134). */
+  const isAdmin = $derived(session.launch?.user?.groupID === ADMIN);
   const hasChanges = $derived(rows !== null && JSON.stringify(rows) !== saved);
 
   async function load() {
@@ -134,8 +138,14 @@
     <div role="alert" class="alert alert-error mb-4"><span>{error}</span></div>
   {/if}
   {#if rows}
+    {#if !isAdmin}
+      <p class="my-2 max-w-2xl text-sm">
+        Only an Admin can change the services, because they can get the API key. You can run the
+        checks.
+      </p>
+    {/if}
     <form onsubmit={save}>
-      <div class="overflow-x-auto">
+      <fieldset class="min-w-0 overflow-x-auto" disabled={!isAdmin}>
         <table class="table-sm table" aria-label="Services of the health checks">
           <thead>
             <tr>
@@ -145,7 +155,7 @@
               <th scope="col">Address from the internet</th>
               <th scope="col">On</th>
               <th scope="col">API key</th>
-              <th scope="col"><span class="sr-only">Actions</span></th>
+              {#if isAdmin}<th scope="col"><span class="sr-only">Actions</span></th>{/if}
             </tr>
           </thead>
           <tbody>
@@ -198,35 +208,39 @@
                     bind:checked={row.sendKey}
                   />
                 </td>
-                <td>
-                  <button
-                    type="button"
-                    class="btn btn-ghost btn-xs"
-                    aria-label="Remove {what}"
-                    onclick={() => (rows = (rows ?? []).filter((_, place) => place !== index))}
-                  >
-                    Remove
-                  </button>
-                </td>
+                {#if isAdmin}
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-xs"
+                      aria-label="Remove {what}"
+                      onclick={() => (rows = (rows ?? []).filter((_, place) => place !== index))}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                {/if}
               </tr>
             {/each}
           </tbody>
         </table>
-      </div>
+      </fieldset>
       <div class="mt-2 flex flex-wrap gap-2">
-        <button
-          type="button"
-          class="btn btn-sm"
-          onclick={() => (rows = [...(rows ?? []), emptyRow()])}
-        >
-          Add a service
-        </button>
-        <button type="button" class="btn btn-sm" disabled={busy} onclick={importNow}>
-          Import the checks of Healthchecks
-        </button>
-        <button type="submit" class="btn btn-sm btn-primary" disabled={busy || !hasChanges}>
-          Save the services
-        </button>
+        {#if isAdmin}
+          <button
+            type="button"
+            class="btn btn-sm"
+            onclick={() => (rows = [...(rows ?? []), emptyRow()])}
+          >
+            Add a service
+          </button>
+          <button type="button" class="btn btn-sm" disabled={busy} onclick={importNow}>
+            Import the checks of Healthchecks
+          </button>
+          <button type="submit" class="btn btn-sm btn-primary" disabled={busy || !hasChanges}>
+            Save the services
+          </button>
+        {/if}
         <button type="button" class="btn btn-sm" disabled={busy || hasChanges} onclick={runNow}>
           {#if busy}<span class="loading loading-spinner loading-xs"></span>{/if}
           Run the checks now

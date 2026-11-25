@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { session } from '../../lib/session.svelte';
+import type { Launch } from '../../lib/types';
 import { stubApi } from '../../test-helpers';
 import HealthCheckServices from './HealthCheckServices.svelte';
 
@@ -13,6 +15,19 @@ const STORED = {
     { label: 'Enabled', type: 'switch', value: true },
   ],
 };
+
+/** The launch answer of a caller of the given group, as far as the list reads it. */
+function launch(groupID: number): Launch {
+  return { user: { loggedin: true, groupID, locked: 0 } } as Launch;
+}
+
+beforeEach(() => {
+  session.launch = launch(0);
+});
+
+afterEach(() => {
+  session.launch = null;
+});
 
 describe('HealthCheckServices', () => {
   it('shows the stored services and saves a new one in the form of PHP Organizr', async () => {
@@ -163,5 +178,29 @@ describe('HealthCheckServices', () => {
     await fireEvent.click(await screen.findByRole('button', { name: /Run the checks now/ }));
 
     expect((await screen.findByRole('alert')).textContent).toContain('User does not have access');
+  });
+
+  it('shows the services to a Co-Admin, who can only run the checks', async () => {
+    session.launch = launch(1);
+    stubApi({
+      'GET config': { data: { 'HEALTHCHECKS-all-items': STORED } },
+      'GET plugins/healthchecks/run': { data: {} },
+    });
+    render(HealthCheckServices, { ondone: vi.fn() });
+
+    const name = await screen.findByLabelText<HTMLInputElement>('Name of service 1');
+    expect(name.value).toBe('Plex');
+    expect(name).toBeDisabled();
+    expect(screen.getByLabelText('Send the API key to Plex')).toBeDisabled();
+    for (const button of [
+      'Add a service',
+      'Import the checks of Healthchecks',
+      'Save the services',
+      'Remove Plex',
+    ]) {
+      expect(screen.queryByRole('button', { name: button })).toBeNull();
+    }
+    expect(screen.getByText(/Only an Admin can change the services/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Run the checks now/ })).toBeEnabled();
   });
 });
