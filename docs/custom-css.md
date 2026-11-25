@@ -208,7 +208,8 @@ The modern layout uses these same classes, so a rule for them applies on both la
 | `.m-with-menu` | The page area, when the menu is beside it. Below 1024 pixels the menu is a drawer, and the class is absent |
 | `#m-menu` | The menu at the left on a wide screen (an `aside` with `.org-sidebar`) |
 | `.m-sidebar-icons` | On `.org-sidebar` while the menu is a column of icons. The column is `4rem` wide |
-| `.m-with-icons` | On the page area, with `.m-with-menu`, while the menu beside it is a column of icons |
+| `.m-sidebar-over` | On `.org-sidebar` while the menu is open over the page: under the pointer or with the keyboard in it, and not pinned |
+| `.m-with-icons` | On the page area, with `.m-with-menu`, while the menu is not pinned. The page then stands beside the column of icons, also while the menu is open over it |
 | `.m-dot` | The dot of a tab in the column of icons, on the corner of its picture. It shows whether the application of the tab answers |
 | `.org-menu-extras` | The links at the end of the menu |
 

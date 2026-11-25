@@ -24,7 +24,7 @@ In both ways, only an account that you shared your Plex server with can log in.
 4. Set **Authentication Backend** to **Plex**. The Plex fields appear.
 5. Next to **API Key/Token**, select **Retrieve** under **Get Plex Token**. Log in at Plex in the small window, as the owner of the server. Organizr puts the token of the owner into the field. With the token, Organizr reads the list of the accounts that the server is shared with.
 6. Select **Save**. The next step uses the saved token.
-7. Select **Retrieve** under **Get Plex Machine**. If the owner has one server, Organizr puts its id into **Plex Machine**. If the owner has more, choose the server in the list.
+7. Select **Retrieve** under **Get Plex Machine**. If the owner has one server, Organizr puts its id into **Plex Machine ID**. If the owner has more, choose the server in the list. The field shows the id as dots; select the eye button to see it.
 8. Enter the Plex user name or the e-mail address of the owner in **Plex Admin Username or Email**. The owner is on no list of shared accounts, so this setting lets the owner log in.
 9. To show the button, switch **Enable Plex oAuth** on.
 10. Select **Save**.
