@@ -54,10 +54,21 @@ function textsOfPage(page: FormPage): string[] {
   ];
 }
 
+/** Settings of the old forms that no page shows. The server keeps them, but nothing
+ *  reads them: this application logs nobody in from a header of an auth proxy. */
+const HIDDEN_KEYS = [
+  'authProxyEnabled',
+  'authProxyHeaderName',
+  'authProxyHeaderNameEmail',
+  'authProxyLogoutURL',
+  'authProxyOverrideLogout',
+  'authProxyWhitelist',
+];
+
 describe('the definitions of the settings forms', () => {
-  it('give every setting of the old forms a field', () => {
+  it('give every setting of the old forms a field, but the hidden ones', () => {
     const keys = [...new Set(allPages().flatMap(settingKeys))].sort();
-    expect(keys).toEqual(expectedKeys);
+    expect(keys).toEqual(expectedKeys.filter((key) => !HIDDEN_KEYS.includes(key)));
   });
 
   it('define no key twice on one page', () => {
@@ -137,7 +148,13 @@ describe('the definitions of the settings forms', () => {
         ),
       ]),
     );
-    expect(found).toEqual(expectedKinds);
+    const shown = Object.fromEntries(
+      Object.entries(expectedKinds).map(([page, kinds]) => [
+        page,
+        Object.fromEntries(Object.entries(kinds).filter(([key]) => !HIDDEN_KEYS.includes(key))),
+      ]),
+    );
+    expect(found).toEqual(shown);
   });
 
   it('hide the Plex machine ID on every page that holds it', () => {

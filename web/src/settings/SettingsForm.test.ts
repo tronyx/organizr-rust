@@ -1052,17 +1052,21 @@ describe('SettingsForm, the parts and the boxes', () => {
       expect(await sentBody(sent)).toEqual({ defaultSettingsTab: '1' });
     });
 
-    it('leaves out the Auth proxy for a Co-Admin, with the section', async () => {
-      session.launch = launch(1);
+    it('shows the API key and its button to the Admin', async () => {
+      await show(GENERAL, { 'GET config': { data: STORED } });
+      expect(tabNames()).toContain('API key');
+      expect(screen.getByLabelText('Organizr API')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Generate' })).toBeInTheDocument();
+    });
+
+    it('shows no Auth proxy, not even to the Admin, and sends none of its stored values', async () => {
       const { sent } = await show(SIGN_IN, {
         'GET config': { data: STORED },
-        'GET launch': { data: launch(1) },
         'PUT config': {},
         ...LISTS,
       });
 
       expect(tabNames()).not.toContain('Auth proxy');
-      expect(screen.queryByLabelText('Auth Proxy')).toBeNull();
       expect(screen.queryByLabelText('Auth Proxy Whitelist')).toBeNull();
       await fireEvent.change(screen.getByLabelText('Authentication Type'), {
         target: { value: 'both' },
@@ -1070,18 +1074,6 @@ describe('SettingsForm, the parts and the boxes', () => {
       await save();
 
       expect(await sentBody(sent)).toEqual({ authType: 'both' });
-    });
-
-    it('shows the API key, its button and the Auth proxy to the Admin', async () => {
-      await show(GENERAL, { 'GET config': { data: STORED } });
-      expect(tabNames()).toContain('API key');
-      expect(screen.getByLabelText('Organizr API')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Generate' })).toBeInTheDocument();
-      cleanup();
-
-      await show(SIGN_IN, { 'GET config': { data: STORED }, ...LISTS });
-      await section('Auth proxy');
-      expect(screen.getByLabelText('Auth Proxy Whitelist')).toHaveValue('10.0.0.0/24');
     });
 
     it('keeps a section that holds only texts for a Co-Admin', async () => {

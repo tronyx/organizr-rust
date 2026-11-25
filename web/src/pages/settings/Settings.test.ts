@@ -1094,7 +1094,6 @@ describe('Settings, General, Sign-in, and Login & Security', () => {
       'Keycloak',
       'PocketID',
       'Zitadel',
-      'Auth proxy',
     ]);
     expect(screen.getByLabelText('Host Address')).toHaveValue('ldap://dc.example.com');
   });

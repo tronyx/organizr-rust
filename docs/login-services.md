@@ -59,7 +59,7 @@ After someone changes their password on the service, **the old one keeps working
 - A login with an empty password is refused without asking the LDAP or FTP server. Many servers treat an empty password as an anonymous login.
 
 > [!NOTE]
-> **Settings › System Settings › Sign-in** also has an **Auth proxy** section (**Auth Proxy**, **Auth Proxy Whitelist**, **Auth Proxy Header Name**, …). It's kept from PHP Organizr: Organizr stores these settings, but this version doesn't log anyone in from a header. To put a login in front of your apps, use [Forward auth](forward-auth.md); to log in through Authentik and similar, use [OpenID Connect](openid-connect.md).
+> PHP Organizr had an **Auth proxy** section that logged people in from a header of a proxy. This version doesn't do that, so the section isn't shown. To put a login in front of your apps, use [Forward auth](forward-auth.md); to log in through Authentik and similar, use [OpenID Connect](openid-connect.md).
 
 ## 📇 LDAP
 
