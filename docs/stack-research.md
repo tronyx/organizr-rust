@@ -1,11 +1,15 @@
-# Stack research: condensed findings (2026-11-18)
+# 🔬 Stack research: condensed findings (2026-11-18)
+
+[← All documentation](README.md)
+
+> [!NOTE]
+> **Internal background for contributors.** You don't need this page to run Organizr. It keeps the findings of the research that chose the stack, as they were on 2026-11-18, with the versions of that day. The build later dropped several of these libraries and chose the `ring` provider for TLS; [What changed since the plan](architecture.md#-what-changed-since-the-plan) lists the differences, and the root `Cargo.toml`, `Cargo.lock` and `web/package.json` hold the versions in use.
 
 Four research agents compared the options. Versions were checked against crates.io and the npm registry on the date above.
 
+Outcome: the owner chose to support SQLite and PostgreSQL, with SeaORM 2.0.4 as the data layer (one query set for both engines). The other recommendations were accepted. See [Architecture](architecture.md).
 
-Outcome: the owner chose to support SQLite and PostgreSQL, with SeaORM 2.0.4 as the data layer (one query set for both engines). The other recommendations were accepted. See `architecture.md`.
-
-## A. Database agent — recommends SQLite (WAL) + SQLx 0.9.1, against the owner's stated preference
+## 🗄️ A. Database agent — recommends SQLite (WAL) + SQLx 0.9.1, against the owner's stated preference
 - Reasoning (architecture, no benchmarks): Postgres strengths (concurrent writers, replicas, HA) unused; costs: 2nd container, credentials, major-version dump/restore (postgres 18 image changed data path), idle RAM on arm64, CI service container. SQLite: one binary, in-process reads, tests need no Docker.
 - Strongest argument FOR Postgres: SQLite WAL unsafe on NFS/SMB bind mounts. Mitigation: detect FS at start-up, refuse or fall back to rollback journal.
 - If Postgres anyway: compose sidecar `postgres:18-alpine`, never bundled in the image. SQLx either way. Two engines from day one => SeaORM 2.0.4 instead (not compile-time checked).
@@ -17,7 +21,7 @@ Outcome: the owner chose to support SQLite and PostgreSQL, with SeaORM 2.0.4 as 
 - Backups: VACUUM INTO snapshot + data folder zipped. Decide whether key file goes in the zip.
 - Risks: NFS; sqlx SQLite nullability inference; rebuild migrations; bundled SQLite >= 3.51.3 (WAL-reset bug) — add a test; importer data quality (orphan tabs, case-duplicate names, mixed dates); e-mail uniqueness undecided; master key loss.
 
-## B. Web framework + auth agent — Axum 0.8.9, own DB sessions
+## 🌐 B. Web framework + auth agent — Axum 0.8.9, own DB sessions
 - Axum 0.8.9 (2026-04-14; 0.9 unreleased, breaking) on hyper 1.x + tower-http 0.7.1. Reason: security record (hyper no advisory since 2022; actix-http had seven in Nov 2026), shares hyper/tower with reqwest. Actix 4.20.0 has regex/tail routes closer to Slim but own HTTP stack.
 - Sessions: opaque 256-bit random token cookie, SHA-256 hash in `sessions`, moka cache (~30 s TTL, explicit invalidation). No JWT, no tower-sessions (0.15.0; opaque blob, no UA/IP columns), no axum-login (0.18.0; stale dependency chain).
 - CSRF: `tower_http::csrf::CsrfLayer` (Sec-Fetch-Site/Origin) + SameSite=Lax; exempt forward-auth routes; state-changing GETs need per-route check. Accept and ignore legacy `formKey`.
@@ -28,7 +32,7 @@ Outcome: the owner chose to support SQLite and PostgreSQL, with SeaORM 2.0.4 as 
 - Prototype early: Slim optional-segment route expander (`/status[/]`, `/auth[/[{group}[/{type}[/{ips}]]]]`, `/auth-{group}` prefix-in-segment, `/{*route}` not matching empty tail, `?group=X` rewrite as outer layer); PHP-identical JSON formatter (4-space indent, \u0022, \uXXXX, preserve_order); body rules extractor; hyper-util serve loop for header_read_timeout; raw path via OriginalUri for proxy routes.
 - Cannot reproduce: 204 with a JSON body (hyper refuses body on 204); header-name case (lower-case unless title_case_headers).
 
-## C. Front-end agent — Svelte 5 + Vite 8 + TypeScript 6, no SvelteKit
+## 🎨 C. Front-end agent — Svelte 5 + Vite 8 + TypeScript 6, no SvelteKit
 - Client-only SPA; Tailwind 4 + daisyUI 5; Bits UI for accessible behavior; embedded with rust-embed; TS types from Rust with ts-rs. Nothing was installed or built by the agent (sizes unmeasured).
 - Why: auto-escaping with `{@html}` the only raw sink (lint-banned); plain Vite index.html has external scripts only => CSP `script-src 'self'; style-src 'self'` with no unsafe-inline. SvelteKit 3.0.0 (2026-10-01) is a fresh major, SPA fallback uses absolute asset paths (breaks sub-folder installs), inline bootstrap script. Leptos (0.8.23, 0.9 rc) / Dioxus (0.7.10, 0.8 alpha): breaking releases pending, widgets need JS interop, CSP needs wasm-unsafe-eval. htmx: second HTML API + untyped JS; between majors. React 19.3.1 / Vue 3.5.45 viable seconds. SolidJS 2.0.0 one day old.
 - npm versions verified: svelte 5.58.0, vite 8.3.8, @sveltejs/vite-plugin-svelte 7.3.1, typescript 6.0.3 (not 7.0.2: svelte-check ^5||^6, typescript-eslint <6.1.0), svelte-check 4.7.8, tailwindcss + @tailwindcss/vite 4.3.5, daisyui 5.8.1, bits-ui 2.21.0, @tanstack/svelte-query 6.4.3, svelte-dnd-action 0.9.80, @event-calendar/core 5.19.0, embla-carousel-svelte 8.6.0, codemirror 6.0.2 (+ lang-css 6.3.1, lang-javascript 6.2.5, lang-html 6.4.12), dompurify 3.4.18, vitest 5.1.1, @testing-library/svelte 5.4.2, jsdom 31.0.1, @playwright/test 1.65.1, eslint 10.15.0, eslint-plugin-svelte 3.24.1, typescript-eslint 8.73.0, prettier 3.10.1, prettier-plugin-svelte 4.2.0. Node 26 LTS for the build stage.
@@ -41,7 +45,7 @@ Outcome: the owner chose to support SQLite and PostgreSQL, with SeaORM 2.0.4 as 
 - Settings forms: Rust registry (key, kind, label, help, group, min level, secret flag, options); test that every key has a descriptor; kind = tagged enum exported to TS; drop raw `html`/`attr` fields -> typed kinds (button{action,target}); secrets never sent, only is_set; save changed keys only; per-key errors.
 - CI: svelte-check, ESLint, Prettier check, Vitest, build, ts-rs drift check (git diff --exit-code), Playwright with CSP enforced failing on securitypolicyviolation. Renovate with min release age, Svelte grouped.
 - Risks/prototypes: iframe manager first (frames stay mounted, preload, sandbox, ping dots, split view, timeouts); CodeMirror adds a <style> tag (nonce or shadow root); old themes and custom JS target Bootstrap 3 DOM + jQuery globals and will not carry over (features stay, old files do not apply); stored tab icons reference legacy icon fonts (fontawesome::, materialize::, themify::, simpleline::, weathericon::, alphanumeric::, url::) so those fonts must ship; decode entity-encoded data once; mailer template editor was TinyMCE (decide replacement); chat uses hosted Pusher -> SSE; `npm ci --ignore-scripts` untested.
-## D. Plugins/extensibility + supporting crates agent
+## 🧩 D. Plugins/extensibility + supporting crates agent
 - Marketplace reality: plugin marketplace (Organizr/Organizr-Plugins plugins.json) has 2 entries: "Test" template and "Plex Libraries" v1.0.4 (2022). Theme marketplace (Organizr/Organizr-Themes) has 11 CSS-only themes (2018–2021). Outside: MediaButler PHP plugin (2018), "NGXC" special-cased in code. So about one real third-party PHP plugin exists.
 - Marketplace code holes: TLS verify off for GitHub calls, no pin/hash, path traversal from remote JSON, recursive delete of a remotely named folder; update uses shell_exec, chmod 777, state-changing GETs.
 - Recommendation: 7 bundled plugins compiled in behind a `Plugin` trait (metadata, settings descriptor, routes, cron jobs, static assets); port Plex Libraries as 8th after license check. Third-party: WASM components on wasmtime direct, pinned to 48.x LTS, behind a cargo feature, built AFTER core parity (fallback Extism 1.41.0). Host API capability-gated, admin-approved at install: HTTP out to manifest-listed hosts, config for own prefix, own KV store, log, current user. Exports: describe, handle-request under /api/v2/plugins/<name>/, run-job, render-page. Marketplace keeps endpoints + JSON shape plus wasm_url, sha256, permissions. wasmtime had 44 advisories in 2026 -> feature-gated.
@@ -53,5 +57,5 @@ Outcome: the owner chose to support SQLite and PostgreSQL, with SeaORM 2.0.4 as 
 - Flags: chrono flagged unmaintained (RUSTSEC-2026-0543, 2026-11-17) -> use jiff; lettre had six advisories published 2026-11-18 (one confirmed fixed in 0.11.24); zip nine advisories in 2026 (fixed >= 9.0.0 for those checked); one rustls provider everywhere (aws-lc-rs 1.19.0).
 - Prototype early: multi-arch build of aws-lc-rs + bundled SQLite (+ wasmtime); legacy crypto test vectors from the PHP container (AES-CBC, $2y$ bcrypt, TOTP window); php-literal-parser on a real config.php; LDAP StartTLS on rustls; ICMP in a non-root container.
 
-## E. Resolution check (mine)
+## ✅ E. Resolution check (by the implementer)
 - Throwaway manifest, 2026-11-18: the full dependency set with SeaORM 2.0.4 for both engines resolved together (635 packages, Rust 1.100.0, SQLx 0.9.1 underneath, no OpenSSL or native-tls). All listed feature names valid. Not compiled.

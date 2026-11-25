@@ -1,170 +1,173 @@
-# Extensions
+# 🧩 Extensions
 
-An extension is a program of another author that adds routes to Organizr. PHP Organizr runs PHP files of other authors with all the rights of the application. This application runs an extension in a sandbox. A sandbox is a closed space in which a program can reach only what the host gives it.
+[← All documentation](README.md)
 
-An extension is a WebAssembly component. WebAssembly is a format for programs that run in such a sandbox. An author can write an extension in Rust or in another language that compiles to WebAssembly components.
+Extensions add new features to Organizr: small programs by other authors that answer on routes of their own. This page shows how to install one, what the approval dialog asks you, and how to write your own.
 
-## What an extension can do
+## 🤔 What an extension is
 
-| An extension can | An extension cannot |
+An extension is a **WebAssembly component** that runs in a **sandbox**. WebAssembly is a format for small programs; a sandbox is a closed box in which a program can reach only what Organizr hands it. So an extension can't touch your files, your database or your network on its own.
+
+That's a big change from PHP Organizr, which runs other people's PHP plugins with all the rights of the whole application.
+
+| An extension can | An extension can't |
 |---|---|
 | Answer requests to its own routes | Read or write files |
-| See the user name and the access level of the caller | Open network connections of its own |
-| Send requests to the sites that it names, when the Admin approved them (see [Requests to other sites](#requests-to-other-sites)) | Reach a site that the Admin did not approve |
-| Write lines to the log of Organizr | Read the database, the settings or the secrets of Organizr |
-| Keep values of its own, when the Admin gave the permission `storage` | See the cookies or the API key of a caller |
-| Read the time and get random numbers | Read the environment of the server |
+| See the user name and access level of whoever calls it | Open network connections of its own |
+| Send requests to the sites it names, once you approved them (see [Network permissions](#-network-permissions)) | Reach a site you didn't approve |
+| Write lines to Organizr's log | Read Organizr's database, settings or secrets |
+| Keep values of its own, when you gave it the permission `storage` | See the caller's cookies or API key |
+| Read the time and get random numbers | Read the server's environment |
 
-Each call of an extension has limits. A call that passes a limit is stopped, and the caller gets the status 502.
+> [!IMPORTANT]
+> The sandbox keeps an extension away from your files and network, but not away from its callers. It sees who calls it and what they send, and it decides what its routes answer. Approve only extensions whose author you trust.
 
-| Limit | Value |
-|---|---|
-| Memory of one call | 64 MiB |
-| Work of one call | About two thousand million steps of WebAssembly, which is a few seconds |
-| Body of a request | 1 MiB |
-| Body of an answer | 8 MiB |
-| Stored values, keys and values together | 1 MiB |
-| File of the component | 32 MiB |
-| Requests to other sites in one call | 20 |
-| Body of one request to another site | 1 MiB |
-| Body of the answer of another site | 4 MiB |
-| Time of one request to another site | 10 seconds |
+## 🛒 Install from the marketplace
 
-One extension handles one request at a time.
+The container image comes with the project's marketplace: a list of extensions you can install with one click.
 
-## Install an extension
+1. Log in as the Admin.
+2. Open **Settings › Plugins › Marketplace**. The section **Extensions** lists what's installed; below it, the heading **Marketplace** lists what you can install.
+3. Select **Install** next to an extension. Organizr downloads its file into the `plugins` folder of your data folder, and checks it against the SHA-256 in the list.
+4. The extension now shows in the **Extensions** list above, as **Not approved**. Select **Approve**.
+5. Read the approval dialog (see [The approval dialog](#-the-approval-dialog)), then select **Approve and switch on**.
 
-An extension is a folder in the folder `plugins` of the data folder. The name of the folder is the id of the extension: small letters, digits and hyphens.
+An install never approves an extension by itself: step 5 is always yours.
+
+When the list names a newer file than the one you have, the marketplace shows **Another file is installed** and offers **Install** again. The new file then waits for a new approval.
+
+## 📂 Install by hand
+
+An extension is a folder inside the `plugins` folder of your data folder. The folder's name is the extension's id: lowercase letters, digits and hyphens.
 
 ```text
 <data folder>/plugins/hello/plugin.wasm
 <data folder>/plugins/hello/plugin.json
 ```
 
-1. Copy the folder of the extension into the folder `plugins` of the data folder.
-2. Log in as the Admin.
-3. Open **Settings**, and select the tab **Plugins**. The section **Extensions** lists the folder.
-4. Select **Approve** for the extension. A dialog shows what the extension can do.
-5. Select **Approve and switch on**.
+1. Copy the extension's folder into `<data folder>/plugins/`.
+2. Log in as the Admin, and open **Settings › Plugins › Marketplace**. The section **Extensions** lists the folder.
+3. Select **Approve**, read the dialog, and select **Approve and switch on**.
 
-Approve an extension only when you trust its author. The sandbox keeps an extension away from your files and your network. But an extension sees who calls it, and it decides what its own routes answer.
+`<data folder>` is the folder you mount at `/config` in the container (see [Installation](installation.md)).
 
-The approval is for one file. Organizr stores the SHA-256 of the file, which is a fingerprint of its content. When the file changes, the extension stops, and the list says so. The Admin then approves the new file.
+## ✅ The approval dialog
 
-Only the Admin approves, switches off and deletes extensions. A Co-Admin sees the list.
+Before an extension runs, the Admin approves it. The dialog **Approve the extension <name>** lists everything the extension will be able to do:
 
-## Use an extension
+<!-- SCREENSHOT: extension-approval.png | Settings › Plugins › Marketplace, the dialog "Approve the extension Hello" open, with the list "What the extension can do" showing storage, a http:<host> site and http-local, the SHA-256 line, and the Cancel / Approve and switch on buttons -->
 
-The routes of an extension are below `/api/v2/extension/<id>/`. For the example extension:
-
-```sh
-curl -H "token: <API key>" https://organizr.example.com/api/v2/extension/hello/hello
-```
-
-To show a page of an extension in the menu, make a tab with the address of that page, for example `api/v2/extension/hello/page`. The browser keeps the document of an extension apart from Organizr, as it does for the custom HTML of the homepage. A script of the extension cannot read the cookies of Organizr.
-
-The file `plugin.json` names the group with the least access that can call the extension. A caller with less access gets the status 401.
-
-## Write an extension
-
-The folder `examples/extension-template` of the repository holds a small extension in Rust. The file `crates/plugins/wit/extension.wit` describes the interface: the function `handle` that an extension exports, and the functions of `host` that it can call.
-
-1. Install the Rust target for WebAssembly components:
-
-   ```sh
-   rustup target add wasm32-wasip2
-   ```
-
-2. Copy the folder `examples/extension-template`, with the folder `crates/plugins/wit`. Change the path of the interface in `src/lib.rs` when you move the folders.
-3. Build the component:
-
-   ```sh
-   cargo build --release --target wasm32-wasip2
-   ```
-
-4. Copy the file `target/wasm32-wasip2/release/extension_template.wasm` as `plugin.wasm` into the folder of your extension.
-5. Write the file `plugin.json` next to it:
-
-   ```json
-   {
-     "name": "Hello",
-     "version": "1.0.0",
-     "description": "Greets the caller.",
-     "author": "Your name",
-     "permissions": ["storage"],
-     "least_access": 4
-   }
-   ```
-
-| Field of `plugin.json` | Meaning |
+| Line in the dialog | What it means in plain words |
 |---|---|
-| `name`, `version` | Shown in the list. Both are necessary |
-| `description`, `author` | Shown in the list |
-| `permissions` | The permissions that the extension asks for: `storage`, `http:<host>` for each site, and `http-local`. See [Requests to other sites](#requests-to-other-sites) |
-| `least_access` | The level of the group with the least access that can call the extension: 0 is the Admin, 1 the Co-Admin, 999 everybody. Without it, the level is 1 |
+| Answer requests of: … | Who can call it: **The Admin**, **Groups of the level N and above**, or **Everybody, also without a login** |
+| See the user name and the level of each caller | It knows who's using it. Every extension gets this |
+| Write lines to the log | It can write to Organizr's log. Every extension gets this |
+| Keep values of its own in the database of Organizr (`storage`) | It can save its own data (up to 1 MiB). It still can't read Organizr's data |
+| Send requests to the site `<host>` (`http:<host>`) | It can talk to that one site on the internet. See the warning below |
+| Reach the sites that it names also when they are on your local network (`http-local`) | Its approved sites may be on your home network: this computer, a private network or a link-local network |
+| SHA-256 of the file | A fingerprint of the exact file you approve |
 
-An extension gets these headers of a request: `accept`, `accept-language`, `content-type` and `user-agent`. It can set these headers of its answer: `content-type`, `cache-control` and `content-disposition`.
+The approval covers **this one file**. Organizr stores its SHA-256. If the file changes, the extension stops and shows "The file changed after the approval. The extension does not run." until you approve it again.
 
-## Requests to other sites
+> [!NOTE]
+> The SHA-256 proves that the file is the one the marketplace list names, so nobody swapped it on the way. It doesn't prove that the file is safe. Read what an extension asks for before you approve it.
 
-An extension sends a request to another site with the function `send-request` of `host`. It can reach only the sites that its file `plugin.json` names, and only after the Admin approved them with the extension (D-122).
+### 🌐 Network permissions
+
+> [!WARNING]
+> An approved site can receive everything the extension sees: your users' names and access levels, and whatever they send to the extension. Approve a site only when you're happy for the extension to send it that. Be extra careful with `http-local`: it lets the extension reach services on your home network, such as your router or NAS, if it names them.
 
 | Permission | What it allows |
 |---|---|
-| `http:<host>` | Requests to this one host, over `http` or `https`, on any port. Write the host in small letters, for example `http:api.github.com`. Each site needs a permission of its own: `http:github.com` does not allow `api.github.com` |
-| `http-local` | Requests to the approved sites also when they are on a local network: this computer, a private network or a link-local network. Without it, such a request is refused |
+| `http:<host>` | Requests to this one host, over `http` or `https`, on any port. Each site needs its own permission: `http:github.com` doesn't allow `api.github.com` |
+| `http-local` | Requests to the approved sites even when they resolve to a local address. Without it, such a request is refused |
 
-The server checks each request before it sends it:
+## 🚀 Use an extension
 
-1. The address must use `http` or `https`, and its host must be one of the approved sites.
-2. The server resolves the name of the host. When one of its addresses is on a local network, the request needs `http-local`.
-3. The request goes to the address that the server checked, and to no other. The server follows no redirect: the extension gets the answer with the redirect, and decides itself. Over `https`, the certificate is checked.
+- **Open** next to a switched-on extension calls the extension's root route in a new window.
+- To put an extension's page in your menu, make a tab with the address of that page, for example `api/v2/extension/hello/page`.
+- Scripts call its routes under `/api/v2/extension/<id>/`:
 
-A request that is refused, or that fails, gives the extension an error with the reason. The extension decides what its caller sees.
+```bash
+curl -H "token: <API key>" https://organizr.example.com/api/v2/extension/hello/hello
+```
 
-## The routes of the management
+`<API key>` is the key from **Settings › System Settings › General**, section **API key**. `hello` is the extension's id.
 
-| Route | For | Purpose |
-|---|---|---|
-| `GET /api/v2/extensions` | Admin and Co-Admin | The extensions of the folder, with their state |
-| `POST /api/v2/extensions/{id}/enable` | Admin | Approve the file with the fields `sha256` and `permissions`, and switch the extension on |
-| `POST /api/v2/extensions/{id}/disable` | Admin | Switch the extension off. Its values stay |
-| `DELETE /api/v2/extensions/{id}` | Admin | Delete the folder, the approval and the values |
+The browser keeps an extension's page apart from Organizr, the same way as custom HTML on the homepage, so its scripts can't read Organizr's cookies. After you click a link in it, though, the page *can* replace the whole Organizr window, for example with a fake login page. Treat a login form that suddenly appears after a click with suspicion.
 
-## A server without extensions
+## 👤 Who can use it
 
-The runtime for extensions is a build feature with the name `wasm-plugins`. The container image has it. A server that was built without the feature has none of these routes, and the settings show no section **Extensions**.
+| Who | Can do |
+|---|---|
+| Admin | Install, approve, switch off and delete extensions |
+| Co-Admin | See the list |
+| Callers of the extension's group and above (its `least_access`) | Call its routes. Anyone below gets `401` |
 
-## The marketplace
+> [!CAUTION]
+> The trash button deletes at once, with no undo: the extension's folder, its approval and its stored values.
 
-A marketplace is a list of extensions on a web server. With a marketplace, the Admin installs an extension from the settings page.
+## 🩺 Troubleshooting
 
-Organizr reads the address of the list from the environment variable `ORGANIZR_EXTENSION_MARKETPLACE`. The container image sets it to the list of the project, which is in the repository `tronyx/organizr-rust-marketplace`:
+| Problem | Why, and what to do |
+|---|---|
+| **Settings › Plugins › Marketplace** shows no **Extensions** section | The server was built without the `wasm-plugins` feature. The container image has it |
+| No **Marketplace** heading | `ORGANIZR_EXTENSION_MARKETPLACE` is empty or not set (see [The marketplace list](#-the-marketplace-list)) |
+| The extension shows "The file changed after the approval…" | Its file changed. Select **Approve** again, if you trust the new file |
+| A call answers `502` | The call passed one of the [limits](#-limits), or the extension failed. Check the [log](log.md) |
+| A call answers `401` | The caller's group is below the extension's `least_access` |
+| A request of the extension to a site fails | The site isn't approved, or it is on your local network and `http-local` isn't approved |
+| The marketplace won't install a file | The file's SHA-256 doesn't match the list. Organizr refuses changed files |
+
+## 📚 Details
+
+### 📏 Limits
+
+Each call of an extension has limits. A call that passes one is stopped, and the caller gets `502`. One extension handles one request at a time.
+
+| Limit | Value |
+|---|---|
+| Memory of one call | 64 MiB |
+| Work of one call | About two billion WebAssembly steps, a few seconds |
+| Body of a request | 1 MiB |
+| Body of an answer | 8 MiB |
+| Stored values, keys and values together | 1 MiB |
+| Size of the component file | 32 MiB |
+| Requests to other sites in one call | 20 |
+| Body of one request to another site | 1 MiB |
+| Body of the answer of another site | 4 MiB |
+| Time of one request to another site | 10 seconds |
+
+An extension gets these request headers: `accept`, `accept-language`, `content-type` and `user-agent`. It can set these answer headers: `content-type`, `cache-control` and `content-disposition`.
+
+### 🔍 How Organizr checks a request to another site
+
+An extension sends a request with the function `send-request` of `host`. It reaches only the sites its `plugin.json` names, and only after the Admin approved them (D-122). Before each request, the server:
+
+1. Checks that the address uses `http` or `https`, and that its host is an approved site.
+2. Resolves the host name. When one of its addresses is on a local network, the request needs `http-local`.
+3. Sends the request to the address it checked, and no other. It follows no redirect: the extension gets the redirect answer and decides itself. Over `https`, the certificate is checked.
+
+A request that is refused or fails gives the extension an error with the reason. The extension decides what its caller sees.
+
+### 🛒 The marketplace list
+
+Organizr reads the address of the list from the environment variable `ORGANIZR_EXTENSION_MARKETPLACE`. The container image sets it to the project's own list, in the project's repository `tronyx/organizr-rust-marketplace`:
 
 ```text
 https://raw.githubusercontent.com/tronyx/organizr-rust-marketplace/main/extensions.json
 ```
 
-To use another list, set the variable to its address. Use only a list whose owner you trust. The owner of a list decides which files it names.
+The image trusts that list by default. Whoever controls a list decides which files it offers, so set the variable to another list only when you trust its owner.
 
-To switch the marketplace off, set the variable to an empty value. The settings then show no marketplace:
+To switch the marketplace off, set the variable to an empty value. The page then shows no marketplace:
 
 ```yaml
 environment:
   ORGANIZR_EXTENSION_MARKETPLACE: ""
 ```
 
-A server that you start without the container image has no marketplace until you set the variable.
-
-1. Open **Settings**, and select the tab **Plugins**. The section **Extensions** shows the heading **Marketplace**.
-2. Select **Install** for an extension. Organizr downloads its file into the folder `plugins` of the data folder.
-3. Approve the extension in the list above the marketplace, as an extension that you copied by hand.
-
-Organizr installs a file only when it has the SHA-256 that the list names. So a file that was changed on its way, or on its server, is not installed. An install does not approve an extension.
-
-When the list names a newer file than the installed one, the marketplace shows **Another file is installed**, and offers the install again. The new file then waits for a new approval.
-
-### The format of the list
+A server you start without the container image has no marketplace until you set the variable.
 
 The list is a JSON file:
 
@@ -180,19 +183,69 @@ The list is a JSON file:
       "permissions": ["storage"],
       "least_access": 4,
       "download": "https://example.com/hello/plugin.wasm",
-      "sha256": "the SHA-256 of the file, as 64 small hex characters"
+      "sha256": "the SHA-256 of the file, as 64 lowercase hex characters"
     }
   ]
 }
 ```
 
-The fields `id`, `name`, `version`, `download` and `sha256` are necessary. The other fields have the meaning that they have in `plugin.json`. An install writes them into the `plugin.json` of the extension.
+`id`, `name`, `version`, `download` and `sha256` are required. The other fields mean what they mean in `plugin.json`, and an install writes them into the extension's `plugin.json`.
 
-| Route | For | Purpose |
+### 🔗 The routes
+
+| Route | For | What it does |
 |---|---|---|
-| `GET /api/v2/extensions/marketplace` | Admin and Co-Admin | The extensions of the list, with what is installed |
-| `POST /api/v2/extensions/marketplace/{id}` | Admin | Download and install one extension |
+| `GET /api/v2/extensions` | Admin, Co-Admin | The extensions in the folder, with their state |
+| `POST /api/v2/extensions/{id}/enable` | Admin | Approves the file with the fields `sha256` and `permissions`, and switches the extension on |
+| `POST /api/v2/extensions/{id}/disable` | Admin | Switches the extension off. Its stored values stay |
+| `DELETE /api/v2/extensions/{id}` | Admin | Deletes the folder, the approval and the stored values |
+| `GET /api/v2/extensions/marketplace` | Admin, Co-Admin | The extensions of the list, with what's installed |
+| `POST /api/v2/extensions/marketplace/{id}` | Admin | Downloads and installs one extension |
 
-## What is not built
+### 🏗️ A server without extensions
 
-The marketplace routes of PHP Organizr, `/plugins/marketplace` and `/plugins/manage/{plugin}`, install nothing: the marketplace of PHP lists PHP plugins, which this application cannot run (D-94).
+The extension runtime is a build feature named `wasm-plugins`. The container image has it. A server built without it has none of these routes, and the settings show no **Extensions** section.
+
+### 🛠️ Write an extension
+
+The folder `examples/extension-template` of the repository holds a small extension in Rust. The file `crates/plugins/wit/extension.wit` describes the interface: the function `handle` that an extension exports, and the functions of `host` it can call. Any language that compiles to WebAssembly components works too.
+
+1. Install the Rust target for WebAssembly components:
+
+   ```bash
+   rustup target add wasm32-wasip2
+   ```
+
+2. Copy the folder `examples/extension-template`, along with the folder `crates/plugins/wit`. If you move the folders, fix the path of the interface in `src/lib.rs`.
+3. Build the component:
+
+   ```bash
+   cargo build --release --target wasm32-wasip2
+   ```
+
+4. Copy `target/wasm32-wasip2/release/extension_template.wasm` as `plugin.wasm` into your extension's folder.
+5. Write `plugin.json` next to it:
+
+   ```json
+   {
+     "name": "Hello",
+     "version": "1.0.0",
+     "description": "Greets the caller.",
+     "author": "Your name",
+     "permissions": ["storage"],
+     "least_access": 4
+   }
+   ```
+
+| Field of `plugin.json` | What it means |
+|---|---|
+| `name`, `version` | Shown in the list. Both are required |
+| `description`, `author` | Shown in the list |
+| `permissions` | What the extension asks for: `storage`, `http:<host>` for each site, and `http-local`. Write hosts in lowercase, for example `http:api.github.com` |
+| `least_access` | The group level with the least access that may call it: `0` the Admin, `1` Co-Admin, `999` everybody. Without it, `1` |
+
+To debug, write lines with the `log` function of `host`. They land in Organizr's log with the field `extension` set to your extension's id. Debug lines show only at the debug level: **Log Level** in **Settings › System Settings › Logs** for the log file, and `ORGANIZR_LOG=debug` for the container output (see [Log](log.md)).
+
+### 🐘 What PHP Organizr had
+
+The marketplace routes of PHP Organizr, `/plugins/marketplace` and `/plugins/manage/{plugin}`, install nothing here: PHP's marketplace lists PHP plugins, which this application can't run (D-94).

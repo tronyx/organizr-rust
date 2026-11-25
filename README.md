@@ -1,83 +1,98 @@
-# Organizr in Rust
+# 🏠 Organizr (Rust)
 
-This project is a new version of [Organizr](https://github.com/causefx/Organizr), written in Rust. Organizr is a start page for the web applications of a home server. It shows each application as a tab, and it controls who can open which tab.
+[![Build](https://img.shields.io/github/actions/workflow/status/tronyx/organizr-rust/build.yml?branch=develop&label=build)](https://github.com/tronyx/organizr-rust/actions/workflows/build.yml)
+[![Image](https://img.shields.io/badge/image-ghcr.io%2Ftronyx%2Forganizr--rust-blue?logo=docker)](https://github.com/tronyx/organizr-rust/pkgs/container/organizr-rust)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 
-The project keeps the API of Organizr 2.1.5000, so that scripts and reverse proxies continue to work. [Deviations](docs/deviations.md) lists each place where an answer is different, and the reason.
+[Organizr](https://github.com/causefx/Organizr) is one start page for your home server: Plex, Sonarr, your downloaders and the rest as tabs, behind one login that decides who sees what. This is a rewrite of PHP Organizr 2.1.5000 in Rust, in one small container, and it keeps the PHP API, so your scripts and reverse proxy rules keep working.
 
-## State of the project
+> [!NOTE]
+> Not released yet. The image tag `develop` holds the newest state, and it can change at any time. Try it, and keep your PHP install until you're happy with it.
 
-The project is not released yet. The image with the tag `develop` holds the newest state.
+<!-- SCREENSHOT: homepage-modern.png | The homepage on the modern layout, dark theme, with a few tabs in the menu and the Plex, Sonarr and a downloader item on the page -->
 
-These parts work:
+## ✨ Features
 
-- Users, groups, tabs, categories, settings and the set-up wizard
-- Login with a password, with Plex, with a second factor, and password recovery by e-mail
-- Forward auth for a reverse proxy, and single sign-on to Plex, Jellyfin, Ombi, Overseerr, Petio, Tautulli and Komga
-- The import of an install of PHP Organizr
-- The homepage with Plex, Tautulli, Overseerr, Sonarr, Radarr, Lidarr, SABnzbd, qBittorrent, NZBGet, Transmission, Pi-hole, Healthchecks, Uptime Kuma, weather and custom HTML
-- The plugins for bookmarks, health checks, invites, e-mail, Plex Libraries and the speed test
-- Backup and restore, also on a schedule
-- Extensions of other authors, which run in a sandbox and reach only the sites that you approve
+- 🗂 **Tabs, categories, users and groups**: each application in your menu, opened inside Organizr or in a new window, shown only to the groups you pick.
+- 🏠 **A homepage with about 40 items**: Plex, Emby, Jellyfin, Tautulli, Overseerr, Ombi, the Sonarr/Radarr/Lidarr calendar, SABnzbd, qBittorrent, NZBGet, Transmission, Deluge, Pi-hole, AdGuard Home, Uptime Kuma, weather, custom HTML and more. See [Homepage](docs/homepage.md).
+- 🔐 **Log in your way**: Organizr passwords, Plex, LDAP, FTP, Emby, Jellyfin, or OpenID Connect (Authentik, Keycloak, PocketID, Zitadel), with an optional second factor and a lock screen.
+- 🔗 **Single sign-on** to Plex, Jellyfin, Ombi, Overseerr, Petio, Tautulli and Komga, and **forward auth**, so your reverse proxy can guard your other applications with Organizr's login.
+- 🧩 **Seven built-in plugins**: bookmarks, chat, health checks, invites, e-mail (PHP Mailer), Plex Libraries and speed test. Plus **extensions** by other authors, which run in a sandbox and reach only the sites you approve. Approve only extensions whose author you trust.
+- 🎨 **Two layouts**: the classic OG Organizr layout with its 13 themes, and a modern layout with 10 themes. Each person can pick their own look, and their language from more than 30.
+- 💾 **Backups and restore**, also on a schedule, with no cron table: the scheduler runs inside the server.
+- 🧳 **Import from PHP Organizr**: users with their passwords and second factors, tabs, settings, pictures and plugin data, in one command that never changes the old install.
+- 🗄 **SQLite or PostgreSQL**, with a one-way move from SQLite to PostgreSQL when you outgrow it.
+- 🧰 **Handy commands**: `import`, `move-to-postgres`, `check` (ask all your services at once), `restore` and `healthcheck`. See [Configuration](docs/configuration.md#-commands).
+- 🔒 **Safe by default**: no shell in the image, runs as a non-root user, encrypts the secrets it stores, and trusts no proxy headers until you say so.
 
-Where this application works differently from PHP Organizr, and the few parts of PHP that it leaves out on purpose, are listed in [Deviations](docs/deviations.md).
+## 🚀 Quick start
 
-## Start it
+You need Docker with Docker Compose, on an `amd64` or `arm64` machine.
 
-You need Docker. The image is for the architectures `amd64` and `arm64`.
+> [!IMPORTANT]
+> Coming from PHP Organizr? Stop after step 1 and follow [Moving from PHP Organizr](docs/moving-from-php.md): the import must run before the first start.
 
-1. Copy the file [docker/examples/compose.sqlite.yaml](docker/examples/compose.sqlite.yaml) to your server.
-2. Run this command in the folder of the file:
+1. Make a folder, and save [docker/examples/compose.sqlite.yaml](docker/examples/compose.sqlite.yaml) in it as `compose.yaml`:
 
-   ```sh
-   docker compose -f compose.sqlite.yaml up -d
+   ```bash
+   mkdir organizr && cd organizr
    ```
 
-3. Open `http://<your server>:8080` in a browser.
-4. Read the set-up code from the log of the container. The wizard asks for it:
+2. Start Organizr:
 
-   ```sh
-   docker compose -f compose.sqlite.yaml logs organizr
+   ```bash
+   docker compose up -d
    ```
 
-5. Complete the wizard.
+3. Get the set-up code from the log:
 
-Organizr stores its data in the volume `/config`. The container runs as the user with the UID 65532, and not as root. [Installation](docs/installation.md) tells you more: `docker run`, the data folder, updates, and the settings of the container.
+   ```bash
+   docker compose logs organizr | grep "set-up code"
+   ```
 
-To use PostgreSQL in place of SQLite, start from [docker/examples/compose.postgres.yaml](docker/examples/compose.postgres.yaml). [Choosing a database](docs/choosing-a-database.md) tells you which one fits your install.
+   It's on a line like `... the set-up wizard asks for the set-up code K7QM-2XWD-9RTB`.
 
-## Move from PHP Organizr
+4. Open `http://<your server>:8080`, where `<your server>` is the address of the machine that runs Docker (for example `http://192.168.1.10:8080`).
+5. Fill in the set-up wizard with the code and your Admin account. [Installation](docs/installation.md#-the-set-up-wizard) explains each field, and how to add your first tab.
 
-[Moving from PHP Organizr](docs/moving-from-php.md) is a checklist for the move. [Importing](docs/importing.md) tells you how to bring the users, tabs, settings and pictures of your PHP install into a new install. The import does not change the old install.
+Your data lives in the volume `<folder>_organizr-data` (`organizr_organizr-data` here). A named volume needs nothing; a host folder must belong to the user `65532`. Want PostgreSQL instead? Start from [compose.postgres.yaml](docker/examples/compose.postgres.yaml), and see [Choosing a database](docs/choosing-a-database.md).
 
-Custom CSS written for PHP Organizr needs changes, because the pages use other ids and classes. [Custom CSS](docs/custom-css.md) lists the names to use, with a table that turns the names of PHP into them.
+> [!WARNING]
+> Port 8080 speaks plain HTTP. Never forward it from your router. To reach Organizr from outside, put a [reverse proxy](docs/reverse-proxy.md) with HTTPS in front, set `ORGANIZR_TRUSTED_PROXIES` to the proxy's address, then remove the `ports:` lines. Docker opens published ports past firewalls such as ufw and firewalld.
 
-## Settings of the container
+[Installation](docs/installation.md) covers `docker run`, the data folder, updates and rollbacks; [Configuration](docs/configuration.md) lists every setting of the container.
 
-Most settings are in the web interface. A few are environment variables, because Organizr needs them before it can read its database: the data folder, the database, the port, the trusted reverse proxies, the marketplace for extensions, the key for the stored secrets, and custom JavaScript. [Installation](docs/installation.md#settings-of-the-container) lists them.
+## 💻 What's different from PHP Organizr
 
-Behind a reverse proxy, set `ORGANIZR_TRUSTED_PROXIES`. [Reverse proxy](docs/reverse-proxy.md) tells you why, with examples for nginx, Traefik and Caddy.
+- 🐳 One container with no PHP, web server or cron. The database is chosen with an environment variable, not in the wizard.
+- 🔒 Stricter security: a set-up code for the wizard, proxy headers believed only from trusted proxies, a server-side login lockout, and sandboxed custom HTML and extensions.
+- 🎨 The pages are new, so custom CSS from PHP needs new names: see [Custom CSS](docs/custom-css.md). Custom JavaScript runs only when you switch it on.
+- 🧩 Plugins by other authors are WebAssembly extensions, not PHP files.
 
-## Documentation
+[Deviations](docs/deviations.md) lists every difference, with its reason. [Release notes](docs/release-notes.md) has the ones you're most likely to notice.
 
-| Subject | Page |
+## 📖 Documentation
+
+| Section | What you'll find |
 | --- | --- |
-| Start and update | [Installation](docs/installation.md), [Troubleshooting](docs/troubleshooting.md) |
-| Database | [Choosing a database](docs/choosing-a-database.md) |
-| Move from PHP Organizr | [Moving from PHP Organizr](docs/moving-from-php.md), [Importing](docs/importing.md) |
-| Stored secrets and their key | [Secrets](docs/secrets.md) |
-| Backup and restore | [Backups](docs/backups.md) |
-| Login | [Plex login](docs/plex-login.md), [LDAP, FTP, Emby and Jellyfin login](docs/login-services.md), [OpenID Connect login](docs/openid-connect.md), [Second factor](docs/second-factor.md), [Single sign-on](docs/single-sign-on.md), [Lock screen](docs/lock-screen.md) |
-| Reverse proxy | [Reverse proxy](docs/reverse-proxy.md), [Forward auth](docs/forward-auth.md), [API SOCKS](docs/socks.md) |
-| E-mail | [E-mail](docs/email.md) |
-| Look of the pages | [Appearance](docs/appearance.md), [Custom CSS](docs/custom-css.md) |
-| Homepage | [Homepage](docs/homepage.md), [Checking your services](docs/checking-your-services.md), [Tests of the settings](docs/settings-tests.md) |
-| Plugins | [Bookmarks](docs/bookmark-plugin.md), [Health checks](docs/health-checks-plugin.md), [Invites](docs/invites-plugin.md), [Speed test](docs/speed-test-plugin.md) |
-| Extensions of other authors | [Extensions](docs/extensions.md) |
-| Scheduled work | [Scheduled jobs](docs/scheduled-jobs.md) |
-| The log of the server | [The log](docs/log.md) |
-| Images and their checks | [Releases](docs/releases.md) |
-| Design | [Architecture](docs/architecture.md), [Audit of PHP Organizr](docs/audit.md), [Deviations](docs/deviations.md) |
+| [🚀 Getting started](docs/README.md#-getting-started) | Installation, moving from PHP, databases, troubleshooting and recovery |
+| [🧭 Using Organizr](docs/README.md#-using-organizr) | The homepage, appearance, e-mail and backups |
+| [🔐 Logging in](docs/README.md#-logging-in) | Plex, LDAP, OpenID Connect, second factor, single sign-on |
+| [🌐 Proxies and the API](docs/README.md#-proxies-and-the-api) | Reverse proxy, forward auth, API SOCKS |
+| [🧩 Plugins and extensions](docs/README.md#-plugins-and-extensions) | The built-in plugins and sandboxed extensions |
+| [🔩 Running the server](docs/README.md#-running-the-server) | Secrets and their key, scheduled jobs, the log, releases and the security policy |
+| [📚 Reference](docs/README.md#-reference) | Every environment variable and command, and every deviation from PHP |
 
-## License
+[All documentation](docs/README.md) lists every page.
 
-The project has the license GPL-3.0, as Organizr has. [Third-party assets](docs/third-party-assets.md) lists the pictures and icons of other projects that the image holds.
+## 🤝 Contributing
+
+Bug reports, ideas and pull requests are welcome. The [contributing guide](CONTRIBUTING.md) tells you how to build, test and check a change.
+
+## 🔒 Security
+
+Don't open a public issue for a security vulnerability. Follow the [security policy](SECURITY.md) to report it privately.
+
+## 📄 License
+
+GPL-3.0, as Organizr. See [LICENSE](LICENSE). [Third-party assets](docs/third-party-assets.md) lists the pictures and icons of other projects that the image holds.

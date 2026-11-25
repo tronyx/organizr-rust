@@ -1,71 +1,129 @@
-# The health checks plugin
+# 💓 The health checks plugin
 
-The health checks plugin asks your services whether they answer, and tells [Healthchecks](https://healthchecks.io/) the result. Healthchecks then warns you when a service is down, and also when Organizr itself stops sending results.
+[← All documentation](README.md)
 
-This plugin sends results. The [health checks item](homepage.md#health-checks) of the homepage shows the state of your checks. You can use one without the other.
+The health checks plugin asks your services whether they answer, and reports each result to [Healthchecks](https://healthchecks.io/). Healthchecks then warns you when a service goes down, and also when Organizr itself stops reporting.
 
-## How a run works
+This plugin *sends* results. The [Healthchecks homepage item](homepage.md#-health-checks) *shows* the state of your checks. You can use either one without the other.
 
-Each service on your list has a check at Healthchecks. A run does this for each service that is switched on:
+## 🔌 Switch it on
 
-1. It tells Healthchecks that the check starts.
-2. It asks the address of the service inside your network, if the service has one.
-3. If that address does not answer, or the service has none, it asks the address from the internet.
-4. It tells Healthchecks that the service works, or that it failed.
+1. Log in as an Admin or a Co-Admin.
+2. Open **Settings › Plugins › Inactive**, point at the card **HealthChecks**, and select the plug button.
+3. Open **Settings › Plugins › Active**, point at the card **HealthChecks**, and select the panel button. The window **HealthChecks Settings** opens.
 
-A service works when it answers with a success. A service that sends the browser on to another address works when that address answers with a success.
+Not sure which button is which? See [the plugin card buttons](bookmark-plugin.md#-switch-it-on).
 
-## Set it up
+## ⚙️ Settings
 
-1. Make one check at Healthchecks for each service, and copy the id of each check. The id is the last part of the ping address of the check.
-2. Log in to Organizr as an Admin.
-3. Open **Settings**, select the tab **Plugins**, and select **Inactive**.
-4. Point at the card **HealthChecks**, and select the button with the plug.
-5. Select **Active**. Point at the card **HealthChecks**, and select the button with the panel. The window **HealthChecks Settings** opens.
-6. In the section **Options**, enter in **URL** the address that the results go to. For healthchecks.io, this is `https://hc-ping.com/`. For your own install of Healthchecks, enter its address. Organizr adds `/ping`.
-7. Select **Save**.
-8. In the section **Services**, select **Add a service** for each service. Enter its name, the id of its check, and one address or both.
-9. Select **Save the services**.
-10. Select **Run the checks now**, and make sure that each service shows the result that you expect.
+The window **HealthChecks Settings** has four sections.
 
-### Import the checks of your Healthchecks account
+| Section | Label | Key | Default | What it does |
+|---|---|---|---|---|
+| — | (the card's plug button) | `HEALTHCHECKS-enabled` | Off | Switches the plugin on |
+| Schedule | Enable | `HEALTHCHECKS-cron-run-enabled` | Off | Runs the checks on a schedule |
+| Schedule | Cron Schedule | `HEALTHCHECKS-cron-run-schedule` | `*/5 * * * *` | When the checks run. Cron format, or `@hourly`, `@daily`, `@monthly` |
+| Options | Minimum Authentication | `HEALTHCHECKS-Auth-include` | Co-Admin | The group with the least access that may start a run by hand |
+| Options | URL | `HEALTHCHECKS-PingURL` | `https://hc-ping.com/` | Where the results go. For your own Healthchecks server, enter its address; Organizr adds `/ping` |
+| Options | 401 Error as Success | `HEALTHCHECKS-401-enabled` | Off | Counts the answer `401` as "the service works" |
+| Options | 403 Error as Success | `HEALTHCHECKS-403-enabled` | Off | Counts the answer `403` as "the service works" |
+| Connection | URL, Token | `healthChecksURL`, `healthChecksToken` | `https://healthchecks.io/api/v1/checks/`, empty | The API address and API key of your Healthchecks account, for the import button. Leave **URL** as it is unless you run your own Healthchecks server. The **Healthchecks** homepage item uses the same two fields |
+| Services | (the list) | `HEALTHCHECKS-all-items` | Empty | Your services, with **Add a service**, **Import the checks of Healthchecks**, **Save the services** and **Run the checks now** |
 
-When the homepage item **Healthchecks** is set up with the address and an API key of your Healthchecks account, the section **Services** can fill the list for you. Select **Import the checks of Healthchecks**. Organizr adds each check of the account that the list does not have yet, with its name and its id, switched on and without addresses. A check whose id is in the list already is left out. Then enter the addresses of the new services, and select **Save the services**: the import saves nothing by itself.
+> [!WARNING]
+> Each check sends Organizr's API key to the service, and the API key has all the rights of an Admin. Read [Keep the API key safe](#-keep-the-api-key-safe) before you add a service.
 
-The API key must have full access. A read-only key of Healthchecks gives no ping address, so Organizr cannot read the ids, and says so.
+## 🚀 Use it
 
-| Setting | Key |
+### 📋 Set up your services
+
+1. In Healthchecks, make one check per service. Copy each check's id: the last part of its ping address.
+2. In **HealthChecks Settings**, section **Options**, check **URL**. Leave it at `https://hc-ping.com/` for healthchecks.io, or enter the address of your own Healthchecks server. Select **Save**.
+3. In the section **Services**, select **Add a service** for each service. Enter its name, the id of its check, and one address or both (see the table below).
+4. Select **Save the services**.
+5. Select **Run the checks now**. Each service shows its result; make sure it's the one you expect.
+
+| Field | What to enter |
 |---|---|
-| Use the plugin | `HEALTHCHECKS-enabled` |
-| Address that the results go to | `HEALTHCHECKS-PingURL` |
-| Services | `HEALTHCHECKS-all-items` |
-| Level for a run by hand | `HEALTHCHECKS-Auth-include` |
-| Count 401 as "the service works" | `HEALTHCHECKS-401-enabled` |
-| Count 403 as "the service works" | `HEALTHCHECKS-403-enabled` |
-| Run on a schedule | `HEALTHCHECKS-cron-run-enabled` |
-| Schedule | `HEALTHCHECKS-cron-run-schedule` |
+| Name | Any name you like |
+| Id | The id of the check at Healthchecks |
+| Address inside the network | The address Organizr uses on your network, for example `http://sonarr:8989`. Tried first |
+| Address from the internet | Tried only when the inside address is empty or doesn't answer |
+| Check (switch) | Switched off, the service is left out of every run |
 
-## Run the checks on a schedule
+### 📥 Import your checks from Healthchecks
 
-In the section **Schedule**, switch **Enable** on, and enter a schedule in **Cron Schedule**. The default is `*/5 * * * *`, which is every five minutes. [Scheduled jobs](scheduled-jobs.md) describes the form of a schedule.
+Already have your checks at Healthchecks? Let Organizr fill the list:
 
-Organizr runs the checks itself. You need no entry in the cron table of your system, which PHP Organizr needs.
+1. In the section **Connection**, enter the **URL** and **Token** (an API key) of your Healthchecks account, and select **Save**.
+2. Switch on the homepage item **Healthchecks** (**Settings › Tab Editor › Homepage Items**). The import uses the account of this item, so the item must be on and your group must be allowed to see it.
+3. In the section **Services**, select **Import the checks of Healthchecks**. Organizr adds every check that the list doesn't have yet, with its name and id, switched on and without addresses. A check whose id is already in the list is skipped.
+4. Enter the addresses of the new services.
+5. Select **Save the services**. The import saves nothing by itself.
 
-A run that still goes on when the next one is due is not started a second time.
+> [!NOTE]
+> The import needs a Healthchecks API key with full access. A read-only key gives no ping addresses, so Organizr can't read the ids, and says so.
 
-To start a run from another program, call `GET /api/v2/plugins/healthchecks/run` with the API key of Organizr in the header `Token`.
+### ⏰ Run the checks on a schedule
 
-## Services behind the login of Organizr
+1. In the section **Schedule**, switch **Enable** on.
+2. Enter a schedule in **Cron Schedule**. The default, `*/5 * * * *`, runs every five minutes. [Scheduled jobs](scheduled-jobs.md) explains the format.
+3. Select **Save**.
 
-A request to a service carries the API key of Organizr in the header `Token`. A service that your reverse proxy protects with [forward auth](forward-auth.md) lets the request in, because Organizr knows its own key.
+Organizr runs the schedule itself, so you need no cron entry on your system (PHP Organizr needs one). A run that is still going when the next one is due isn't started twice.
 
-This means that every address on the list gets the API key of Organizr, which has all rights of an Admin. Put only addresses of your own services on the list.
+To start a run from another program, call this route with Organizr's API key:
 
-If you do not want that for a service, you can count a refusal as an answer: in the section **Options**, switch **401 Error as Success** or **403 Error as Success** on. The check then shows that the service is there, and not that it works behind its login.
+```bash
+curl -H "Token: <API key>" https://organizr.example.com/api/v2/plugins/healthchecks/run
+```
 
-## Good to know
+`<API key>` is the key from **Settings › System Settings › General**, section **API key**.
 
-- The certificate of a service is not checked. The run asks whether the service answers, and many services inside a network have a certificate that no authority signed.
-- An address must start with `http://` or `https://`.
-- A service without an address fails at each run.
-- PHP Organizr can fill the list from the checks of your Healthchecks account. This application does not have that button yet.
+## 🔒 Keep the API key safe
+
+Every request to a service carries Organizr's API key in the header `Token`. That's on purpose: a service behind Organizr's [forward auth](forward-auth.md) lets the request in, because Organizr knows its own key.
+
+The catch: the key goes to **every** address on the list, and Organizr doesn't check the service's certificate (many services on a home network have one that no authority signed). So anybody who can watch the traffic between Organizr and a listed address can copy the key and get Admin rights. Over `http://`, the key travels in plain text.
+
+The safe setup:
+
+1. Put only services you run yourself on the list. Never a site of somebody else.
+2. Use the **Address inside the network** whenever you can, best of all a Docker network name such as `http://sonarr:8989`, so the request never leaves your server.
+3. Leave **Address from the internet** empty, unless the service really can't be reached from inside. A request over the internet, with an unchecked certificate, can be read by anybody on the way: a public Wi-Fi, a provider, a cloud host.
+4. If you think the key leaked, have the Admin make a new one: **Settings › System Settings › General**, **Generate New API Key** (Co-Admins can't see the key). Scripts that use the old key then get `401`, so update them.
+
+> [!TIP]
+> **401 Error as Success** and **403 Error as Success** let a check pass when a service refuses the request at its login. The check then shows that the service is up, not that it works behind its login. The key is still sent, so this doesn't replace the steps above.
+
+## 👤 Who can use it
+
+| Who | Can do |
+|---|---|
+| Admin, Co-Admin | Switch the plugin on, change its settings and the list of services |
+| Users of the **Minimum Authentication** group or above | Start a run by hand through `GET /api/v2/plugins/healthchecks/run` |
+| A program with the API key | Start a run the same way |
+
+## 🩺 Troubleshooting
+
+| Problem | Why, and what to do |
+|---|---|
+| A service always fails | Its address must start with `http://` or `https://`. A service with no address at all fails every run |
+| A service behind a login fails | Put it behind Organizr's forward auth, or switch on **401 Error as Success** / **403 Error as Success** |
+| The import says the key can only read | Use a Healthchecks API key with full access |
+| The import finds no checks | Fill in **URL** and **Token** in the section **Connection**, and switch on the homepage item **Healthchecks** |
+| Healthchecks gets nothing | Check **URL** in the section **Options**. Run the checks by hand and read the [log](log.md) |
+| `401 "User does not have access"` from the run route | The plugin is off, the list is empty, or your group is below **Minimum Authentication** |
+
+## 📚 Details
+
+### 🔄 How a run works
+
+For each service that is switched on, a run:
+
+1. Tells Healthchecks that the check starts (`<ping URL>/<id>/start`).
+2. Asks the address inside the network, if the service has one.
+3. If that address doesn't answer, or there is none, asks the address from the internet.
+4. Tells Healthchecks the service works (`<ping URL>/<id>`) or failed (`<ping URL>/<id>/fail`).
+
+A service works when it answers with a success. A service that redirects works when the address it redirects to answers with a success. A service has 60 seconds to answer; Healthchecks has 30 seconds to take a ping.

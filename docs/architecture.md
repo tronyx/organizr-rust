@@ -1,12 +1,38 @@
-# Organizr → Rust: Phase 2 architecture and scaffolding plan
+# 📐 Architecture: the plan of the rewrite
 
-Date: 2026-11-18. Baseline: Organizr 2.1.5000 (upstream `v2-develop` at `2c1d4199`). Status: approved by the owner on 2026-11-18.
+[← All documentation](README.md)
 
-## 1. Intent, goals, limits
+> [!NOTE]
+> **Internal background for contributors.** You don't need this page to run Organizr. It is the Phase 2 architecture and scaffolding plan, written before the build on 2026-11-18. The code is the reference: where the build went another way, [What changed since the plan](#-what-changed-since-the-plan) says so, and [Releases and images](releases.md) and the user pages describe the current state. [CONTRIBUTING](../CONTRIBUTING.md) has the commands to build and test.
+
+Date: 2026-11-18. Baseline: Organizr 2.1.5000 (upstream `v2-develop` at `2c1d4199`). Status: approved by the owner on 2026-11-18. The section numbers stay as they are, because other files refer to them (for example section 5 in `Cargo.toml` and section 6 in [the deviations](deviations.md)).
+
+## 🔄 What changed since the plan
+
+Checked against the code in November 2026:
+
+- **It compiles and runs.** Milestones 0 to 19 are built; the "Not yet compiled" of section 5 is history.
+- **Fewer libraries.** The workspace does not use `utoipa`, `ts-rs`, `moka`, `governor`, `axum-extra`, `hyper-util`, `tracing-appender`, `minijinja`, `scraper`, `quick-xml`, `dxr`, `diqwest`, `image`, `infer`, `icalendar`, `mime_guess`, `axum-test`, `wiremock` or `insta`. The root `Cargo.toml` is the list that counts.
+  - There is no OpenAPI document and no generated TypeScript types: the interface has its own types.
+  - There is no in-process session cache: each request looks its session up in the database, so a deleted session ends at once (also for forward auth).
+  - Login limits are the project's own code (`crates/auth/src/login_limit.rs`), not `governor`.
+  - XML is read with `roxmltree`, and the log file is the server's own code (`crates/server/src/log_file.rs`).
+- **TLS with `ring`.** rustls, reqwest, lettre, ldap3 and suppaftp use the `ring` provider, not `aws-lc-rs` (D-85, D-87).
+- **The interface** uses fewer packages than section 5 lists: no TanStack Query, svelte-dnd-action, Event Calendar, Embla or CodeMirror. It adds `@lucide/svelte`, `@internationalized/date`, `clsx`, `tailwind-merge`, `tailwind-variants`, `tw-animate-css` and the Fontsource fonts of the modern themes. `web/package.json` is the list that counts.
+- **No network-share check.** The server does not detect an NFS or SMB share at start-up (section 3.1 planned it). Put a SQLite data folder on a local disk, or use PostgreSQL.
+- **The commands of the binary** are `serve`, `import`, `restore`, `move-to-postgres`, `check` and `healthcheck`. There is no `reset-password`.
+- **Custom pages** in `data/pages` are not served, and custom routes are WebAssembly extensions (D-75, D-82). Custom JavaScript runs only with `ORGANIZR_CUSTOM_JS=1` (D-93), not with a switch in the settings.
+- **Themes** are never downloaded: the 11 marketplace themes are built in (D-92).
+- **Plex Libraries** is written new from the plex.tv API, because the marketplace plugin has no license (D-121). Shuck Stop is dropped (D-116).
+- **The update check** sends no e-mail (D-23).
+- **Images** are published to GHCR: `develop` on request, `latest` on each push to `main`. A scan runs every week; there is no weekly rebuild. See [Releases and images](releases.md).
+- **The checks** run with `cargo test`, not `cargo nextest`, and CI runs no `cargo machete`: an unused dependency fails the build through the `unused_dependencies` lint instead. See [CONTRIBUTING](../CONTRIBUTING.md).
+
+## 🎯 1. Intent, goals, limits
 
 **Intent.** Replace the PHP Organizr with a Rust application that does everything the original does, runs as one multi-architecture Docker image, and is safer and easier to maintain.
 
-**Goals**
+### ✅ Goals
 
 - Every feature of Organizr 2.1.5000 has a working equivalent.
 - The JSON API under `/api/v2` keeps its paths, methods, status codes, messages and JSON shapes, except for the approved deviations in section 7.
@@ -14,35 +40,39 @@ Date: 2026-11-18. Baseline: Organizr 2.1.5000 (upstream `v2-develop` at `2c1d419
 - An entirely new front end.
 - Security holes found in the audit are fixed.
 
-**Non-goals**
+### 🚫 Non-goals
 
 - Running existing PHP plugins, PHP custom routes or PHP custom pages. A Rust binary cannot execute PHP.
 - Accepting session cookies issued by the PHP app. Every user logs in once after the switch.
 - MySQL or MariaDB as a database for the new app. Reading a legacy MySQL install in the importer can be added later if needed.
 - Porting the MediaButler plugin (not upstream, switched off in the live config). Its settings are imported and kept.
 
-**Anti-goals** (would make the project a failure even if it works)
+### 💥 Anti-goals
+
+These would make the project a failure even if it works.
 
 - A literal translation of the PHP class into Rust (global response state, string flags, one giant object).
 - Live data, tokens or password hashes in the repository.
 - A feature silently missing after the switch.
 
-## 2. Decisions decided by the owner
+## 📝 2. Decisions made by the owner
 
 | Topic | Decision |
 |---|---|
 | Existing data | One-time importer |
-| Front end | New, framework chosen by me |
-| PHP-only features | My call, but no feature may be lost |
+| Front end | New, framework chosen by the implementer |
+| PHP-only features | The implementer's call, but no feature may be lost |
 | Integrations | Port all of them |
 | Bugs | Keep the wire contract, fix security holes, record each deviation for approval |
 | Database | The person installing chooses SQLite or PostgreSQL. SQLite is the default and the documented recommendation |
 | Data layer | SeaORM (one set of queries for both engines) |
 | Deviations | The list in section 7 is approved |
 | Pace | One slice per step: code, tests, commit, push, short report, then wait |
-| Git | I may commit and push to `organizr-rust` only |
+| Git | The implementer may commit and push to `organizr-rust` only |
 
-## 3. Stack (selected with four research agents; versions checked against crates.io and npm on 2026-11-18)
+## 🧱 3. Stack
+
+Selected with four research agents; versions checked against crates.io and npm on 2026-11-18. [Stack research](stack-research.md) has their findings, and [What changed since the plan](#-what-changed-since-the-plan) names what the build left out.
 
 | Layer | Choice | Why | Main alternative and why not |
 |---|---|---|---|
@@ -62,9 +92,9 @@ Date: 2026-11-18. Baseline: Organizr 2.1.5000 (upstream `v2-develop` at `2c1d419
 | Third-party extensions | WebAssembly components on wasmtime (LTS line), behind a cargo feature, built after core parity | Sandboxed replacement for "download PHP and run it" | Scripting engines: weaker sandbox or C code in-process. Sidecar containers: no one-click install |
 | Container | Multi-stage build, distroless glibc runtime, non-root, one volume, one process | Small attack surface; mirrors the Docker-Nagios pipeline | Alpine/musl: allocator and DNS differences for no gain |
 
-### 3.1 Database: two engines, SQLite recommended
+### 💾 3.1 Database: two engines, SQLite recommended
 
-The person installing chooses the engine with one setting, `ORGANIZR_DATABASE_URL`. Without it the app creates a SQLite file in the data volume. A `postgres://` URL selects PostgreSQL. The first-run wizard does not offer this choice. It shows the engine in use and refuses a set-up that names another one (D-46). See `choosing-a-database.md`.
+The person installing chooses the engine with one setting, `ORGANIZR_DATABASE_URL`. Without it the app creates a SQLite file in the data volume. A `postgres://` URL selects PostgreSQL. The first-run wizard does not offer this choice. It shows the engine in use and refuses a set-up that names another one (D-46). See [Choosing a database](choosing-a-database.md).
 
 | | SQLite (WAL mode), the default | PostgreSQL 18 (separate container) |
 |---|---|---|
@@ -72,9 +102,9 @@ The person installing chooses the engine with one setting, `ORGANIZR_DATABASE_UR
 | Speed for this workload | Reads are in-process function calls; forward-auth needs no network hop | Every query crosses a socket. Faster only with many concurrent writers, which this app does not have |
 | Robustness | Transactions, foreign keys, CHECK constraints. One writer at a time (irrelevant at a few writes per second) | Stricter types, flexible schema changes, concurrent writers, replication |
 | Upgrades | Nothing to upgrade separately | Major versions need a dump and restore |
-| Real weakness | **Unsafe on NFS or SMB shares.** The app detects this at start-up and refuses or falls back to the slower rollback journal | Larger memory use on small arm64 boards |
+| Real weakness | **Unsafe on NFS or SMB shares.** The plan was to detect this at start-up and refuse or fall back to the slower rollback journal; that check is not built | Larger memory use on small arm64 boards |
 
-Why SQLite is recommended: for one app instance with a few writes per second it is as robust as PostgreSQL and faster, with nothing extra to run. Choose PostgreSQL when the data folder is on a network share, when a PostgreSQL server already exists and is backed up, or when more than one app instance is wanted. `docs/choosing-a-database.md` will explain this for users.
+Why SQLite is recommended: for one app instance with a few writes per second it is as robust as PostgreSQL and faster, with nothing extra to run. Choose PostgreSQL when the data folder is on a network share, when a PostgreSQL server already exists and is backed up, or when more than one app instance is wanted. [Choosing a database](choosing-a-database.md) explains this for users.
 
 What two engines mean for the design:
 
@@ -85,7 +115,7 @@ What two engines mean for the design:
 - **SQLite-only routes.** `GET /database/journal` and `PUT /database/journal/{option}` answer on PostgreSQL with `409 "The journal mode applies only to a database on SQLite"` (D-97).
 - **Docker.** Two compose examples: single container with SQLite, and with a PostgreSQL sidecar.
 
-## 4. Workspace and directory layout
+## 📁 4. Workspace and directory layout
 
 ```
 organizr-rust/
@@ -105,25 +135,31 @@ organizr-rust/
 │   │                          backends (Plex, Emby, Jellyfin, LDAP, FTP), Plex OAuth, OIDC, auth proxy,
 │   │                          SSO hand-off, forward-auth decision
 │   ├── integrations/          organizr-integrations: outbound client, SSRF guard, one module per service
-│   ├── plugins/               organizr-plugins: Plugin trait, bundled plugins, (later) WebAssembly host
+│   ├── plugins/               organizr-plugins: Plugin trait, bundled plugins, WebAssembly host
+│   │                          (feature wasm-plugins)
 │   ├── api/                   organizr-api: router, envelope and PHP-compatible JSON writer, extractors,
-│   │                          unified ApiError → HTTP response, all handlers, OpenAPI, exported TS types
+│   │                          unified ApiError → HTTP response, all handlers
 │   ├── import/                organizr-import: PHP config parser, legacy SQLite reader, legacy AES
 │   │                          decryption, dry-run report
-│   ├── server/                organizr (binary): bootstrap, scheduler, embedded web assets;
-│   │                          subcommands serve, import, healthcheck, reset-password
+│   ├── server/                organizr (binary): bootstrap, scheduler, log file, embedded web assets
+│   │                          (feature embedded-web); subcommands serve, import, restore,
+│   │                          move-to-postgres, check, healthcheck
 │   └── testkit/               organizr-testkit (dev only): app on a temp database, upstream mocks,
 │                              replay of recorded PHP cases
-├── web/                       Svelte front end (src/shell, auth, homepage/widgets, settings, plugins, lib);
-│                              two layouts: the OG Organizr shell and the modern shell (pages/ModernShell.svelte)
+├── web/                       Svelte front end (src/pages, components, settings, lib, icons, scenes; e2e/);
+│                              two layouts: the OG Organizr shell (pages/Shell.svelte) and the modern
+│                              shell (pages/ModernShell.svelte)
 ├── parity/
 │   ├── oracle/                compose file that runs real Organizr 2.1.5000 with synthetic seed data
 │   ├── recorder/              drives the oracle and writes cases
-│   └── cases/                 recorded request/response pairs (synthetic data only)
-├── docker/                    Dockerfile, compose.sqlite.yml, compose.postgres.yml, .hadolint.yaml
-├── docs/                      audit.md, architecture.md, deviations.md, stack-research.md,
-│                              choosing-a-database.md, importing.md
-└── .github/workflows/         ci.yml, build.yml, scan.yml, lint.yml
+│   ├── cases/                 recorded request/response pairs (synthetic data only)
+│   ├── services/              run.sh: asks real Sonarr, Radarr, SABnzbd and qBittorrent
+│   └── php-*/, legacy-install/  generators of PHP test vectors and of a synthetic PHP install
+├── examples/extension-template/  a small extension to copy
+├── docker/                    Dockerfile, .hadolint.yaml, examples/compose.sqlite.yaml,
+│                              examples/compose.postgres.yaml
+├── docs/                      the user and contributor docs (copied to the wiki)
+└── .github/                   workflows ci, lint, build, scan, sync-wiki; scripts of the docs checks
 ```
 
 Dependency direction: `domain` ← `settings` ← `db` ← `auth`, `integrations`, `plugins` ← `api` ← `server`. `import` uses `domain`, `settings`, `db` and `auth`, which seals the secrets of the old install again. Nothing depends on `api` except `server` and `testkit`.
@@ -137,9 +173,12 @@ How the four architectural rules are enforced:
 
 Error handling: `thiserror` enums in `domain`, `db`, `auth`, `integrations`, `plugins`, `api`; `anyhow` only in `server` (start-up) and the importer command.
 
-## 5. Exact dependencies
+## 📦 5. Exact dependencies
 
-Resolved together in a throwaway manifest on 2026-11-18: 635 packages on Rust 1.100, every feature name valid, no OpenSSL and no native-tls in the tree. Not yet compiled; first compile is milestone 0.
+Resolved together in a throwaway manifest on 2026-11-18: 635 packages on Rust 1.100, every feature name valid, no OpenSSL and no native-tls in the tree. Not yet compiled at the time; the first compile was milestone 0.
+
+> [!NOTE]
+> This is the planned set. The root `Cargo.toml` and `web/package.json` hold the set in use; [What changed since the plan](#-what-changed-since-the-plan) names the differences.
 
 ```toml
 [workspace]
@@ -256,31 +295,31 @@ Added later, with its milestone: `wasmtime` (48.x LTS line) behind the `wasm-plu
 
 Changed later: the crate `icalendar` of the list above is not used. The application reads calendars in the iCal format with its own reader on `jiff`, which keeps `chrono` out of the build. See D-79 in [deviations.md](deviations.md).
 
-Tools: cargo-nextest 0.9.152, cargo-deny 0.21.0, cargo-machete 0.10.1.
+Tools planned: cargo-nextest 0.9.152, cargo-deny 0.21.0, cargo-machete 0.10.1. In use: cargo-deny (in CI).
 
-Front end (`web/package.json`): svelte 5.58.0, vite 8.3.8, @sveltejs/vite-plugin-svelte 7.3.1, typescript 6.0.3, svelte-check 4.7.8, tailwindcss and @tailwindcss/vite 4.3.5, daisyui 5.8.1, bits-ui 2.21.0, @tanstack/svelte-query 6.4.3, svelte-dnd-action 0.9.80, @event-calendar/core 5.19.0, embla-carousel-svelte 8.6.0, codemirror 6.0.2 with CSS, JavaScript and HTML language packs, vitest 5.1.1, @testing-library/svelte 5.4.2, jsdom 31.0.1, @playwright/test 1.65.1, eslint 10.15.0, eslint-plugin-svelte 3.24.1, typescript-eslint 8.73.0, prettier 3.10.1, prettier-plugin-svelte 4.2.0. Build stage on Node 26 LTS.
+Front end as planned (`web/package.json` has the real list): svelte 5.58.0, vite 8.3.8, @sveltejs/vite-plugin-svelte 7.3.1, typescript 6.0.3, svelte-check 4.7.8, tailwindcss and @tailwindcss/vite 4.3.5, daisyui 5.8.1, bits-ui 2.21.0, @tanstack/svelte-query 6.4.3, svelte-dnd-action 0.9.80, @event-calendar/core 5.19.0, embla-carousel-svelte 8.6.0, codemirror 6.0.2 with CSS, JavaScript and HTML language packs, vitest 5.1.1, @testing-library/svelte 5.4.2, jsdom 31.0.1, @playwright/test 1.65.1, eslint 10.15.0, eslint-plugin-svelte 3.24.1, typescript-eslint 8.73.0, prettier 3.10.1, prettier-plugin-svelte 4.2.0. Build stage on Node 26 LTS.
 
-## 6. How PHP-only features are kept
+## 🔁 6. How PHP-only features are kept
 
 | Original feature | Replacement | What changes for the user |
 |---|---|---|
-| 7 bundled plugins | Compiled in. Same routes, settings and cron jobs | Nothing |
-| Plugin marketplace | Same endpoints and list format. Entries carry a WebAssembly component, a SHA-256 and a permission list; the admin approves permissions at install | Existing PHP entries show as "not compatible". The one real marketplace plugin (Plex Libraries) is ported as a bundled plugin, license permitting |
-| Custom PHP routes and pages | Local WebAssembly plugins in `data/plugins/`, and plain HTML pages in `data/pages/` rendered by the app | PHP files must be rewritten. The importer lists any it finds and never runs them. The live install has none |
-| Theme marketplace, custom CSS | Same endpoints and install flow, with safe downloads. Themes are CSS files against a documented set of custom properties | Old theme CSS targets the old page structure and does not apply to the new front end. The 11 marketplace themes are rebuilt as native themes |
-| Custom JavaScript and custom HTML blocks | Kept. Custom JS is served as a file, admin-only, with a safe-mode switch. Custom HTML blocks run in a sandboxed frame | Existing snippets that use jQuery or old element ids need rewriting |
-| Self-update | Scheduled version check with a notice in the UI and optional e-mail. Old `/update/*` routes stay and answer `409` with the current and latest version | Updating means pulling the new image |
+| 7 bundled plugins | Compiled in. Same routes, settings and cron jobs | Nothing, except that Shuck Stop is dropped: its service shut down (D-116) |
+| Plugin marketplace | Same endpoints and list format. Entries carry a WebAssembly component, a SHA-256 and a permission list; the admin approves permissions at install | Existing PHP entries show as "not compatible". The one real marketplace plugin (Plex Libraries) has no license, so a Plex Libraries plugin was written new and built in (D-121) |
+| Custom PHP routes and pages | WebAssembly extensions in the folder `plugins` of the data folder (D-75). Pages in `data/pages/` are not served (D-82) | PHP files must be rewritten. The importer lists any it finds and never runs them. The live install has none |
+| Theme marketplace, custom CSS | Same endpoints and install flow, but nothing is downloaded: the marketplace themes are built in (D-92). Custom CSS targets a documented set of variables and classes ([Custom CSS](custom-css.md)) | Old theme CSS targets the old page structure and does not apply to the new front end. The 11 marketplace themes are rebuilt as native themes |
+| Custom JavaScript and custom HTML blocks | Kept. Custom JS is served as a file, admin-only, and runs only when the server starts with `ORGANIZR_CUSTOM_JS=1` (D-93). Custom HTML blocks run in a sandboxed frame, unless the Admin marks one as trusted (D-61, D-76) | Existing snippets that use jQuery or old element ids need rewriting |
+| Self-update | Scheduled version check with a notice in the UI (no e-mail: PHP has no setting for one, D-23). Old `/update/*` routes stay and answer `409` with the current and latest version | Updating means pulling the new image |
 | `cron.php` + system cron | In-process scheduler with overlap guard and timeouts | No cron entry needed |
 | Chat over Pusher | Built-in server-sent events | No Pusher account needed |
 | Config as a PHP file | Settings and secrets tables with a typed registry | Bootstrap values (data path, port, database URL, trusted proxies, master key) come from environment variables |
 
 The WebAssembly extension system is the largest single item that exists only to keep a rarely used feature. It is scheduled last so it cannot delay the rest, and it stays behind a build feature because the runtime has a high advisory rate. The host, the approval by an Admin, the routes and the marketplace are built: see [Extensions](extensions.md).
 
-## 7. Deviations from the PHP behavior
+## 🔀 7. Deviations from the PHP behavior
 
-See `deviations.md`. It lists every approved difference from Organizr 2.1.5000, each with an id that the parity tests refer to.
+See [the deviations](deviations.md). It lists every approved difference from Organizr 2.1.5000, each with an id that the parity tests refer to.
 
-## 8. Importer
+## 🚚 8. Importer
 
 `organizr import --from <old /config or web root> [--database <file>] [--dry-run]`, run once against an empty new database. [Importing an install of PHP Organizr](importing.md) is the guide for the person who runs it.
 
@@ -298,7 +337,7 @@ Dry-run mode prints the report and writes nothing. Testing uses a synthetic lega
 
 The tables of the plugins (`invites`, `BOOKMARK-*`, `chatroom`) are imported with the features that use them. The table `options` is not imported. A legacy install on MySQL or PostgreSQL is refused with a clear message until that reader exists.
 
-## 9. Parity verification
+## 🧪 9. Parity verification
 
 - **Oracle.** Real Organizr 2.1.5000 in a container (`parity/oracle`), seeded with synthetic users, tabs and config, with upstream services replaced by canned responses.
 - **Recording.** A recorder sends each case (method, path, headers, body, as guest / user / co-admin / admin / API key) and stores status, selected headers and body.
@@ -306,9 +345,9 @@ The tables of the plugins (`invites`, `BOOKMARK-*`, `chatroom`) are imported wit
 - **Integrations.** Each service module is tested against recorded upstream responses served by wiremock; where a live instance is available, recordings come from it and are scrubbed first.
 - **Legacy crypto.** Test vectors for AES-CBC, `$2y$` bcrypt and the TOTP window are generated in the oracle container.
 - **Front end.** Component tests (Vitest) and browser tests (Playwright) against the real binary with the Content-Security-Policy enforced.
-- **Every slice ends with** `cargo fmt --check`, `cargo check`, `cargo clippy -- -D warnings`, `cargo nextest run`, `cargo deny check`, and for front-end slices `svelte-check`, ESLint, Vitest and a build, all with zero warnings.
+- **Every slice ends with** `cargo fmt --check`, `cargo check`, `cargo clippy -- -D warnings`, `cargo nextest run`, `cargo deny check`, and for front-end slices `svelte-check`, ESLint, Vitest and a build, all with zero warnings. (In practice the tests run with `cargo test`; [CONTRIBUTING](../CONTRIBUTING.md) lists the checks of today.)
 
-## 10. Migration order
+## 📅 10. Migration order
 
 Each numbered item is one or more vertical slices. A slice is finished when its parity tests and the checks above pass.
 
@@ -322,7 +361,7 @@ Each numbered item is one or more vertical slices. A slice is finished when its 
 | 5 | Importer | Section 8, with dry-run; verified locally against the live copy |
 | 6 | API foundation | Envelope, `ApiError`, body-parsing rules, trusted-proxy client IP, `Principal`, level guard, CSRF, request ids, logging, catch-all 404, `/status`, `/ping`, `/rox` |
 | 7 | Core auth | Login with local passwords, logout, sessions, API key, rate limit, 2FA, lock screen, `/token/*`, `/users/register`, recovery, mailer plugin (needed for auth mail) |
-| 8 | Forward auth | `/auth`, `/auth-{group}`, `/organizr-auth`, Traefik redirect, response headers, cache |
+| 8 | Forward auth | `/auth`, `/auth-{group}`, `/organizr-auth`, Traefik redirect, response headers, cache (not built: each request reads the session from the database) |
 | 9 | Core data slices | Users → groups → categories → tabs → `/launch` → `/config` and `/settings/*` → images and icons → backups → logs → news, sponsors, ip, help → wizard and first run → `/test/*` basics |
 | 10 | Front-end shell | Build pipeline, login and lock screen, tab shell with iframe manager, settings forms, tab/category/user/group editors, image manager, logs, backups |
 | 11 | External auth | Plex (password and OAuth), Jellyfin, Emby, LDAP, FTP, auth proxy, local bypass, OIDC (four providers), SSO hand-off to Plex, Ombi, Overseerr, Tautulli, Petio, Jellyfin, Komga, user import |
@@ -332,19 +371,19 @@ Each numbered item is one or more vertical slices. A slice is finished when its 
 | 15 | Remaining plugins | Invites (with Plex, Emby, Komga, Nextcloud), bookmarks, health checks, speed test, chat, Plex Libraries. Shuck Stop was dropped: its service shut down (D-116) |
 | 16 | Scheduler and upkeep | Auto-backup, plugin jobs, session purge, version check, `/update/*` |
 | 17 | Themes and customization | Appearance settings, native themes, theme marketplace, custom CSS/JS, languages (32 packs reused) |
-| 18 | Release pipeline | Per-architecture image builds, manifest, Trivy gate, SBOM and provenance, weekly rebuild, dependency updates, both compose examples, user docs including `choosing-a-database.md` |
+| 18 | Release pipeline | Per-architecture image builds, manifest, Trivy gate, SBOM and provenance, weekly scan, dependency updates, both compose examples, user docs including `choosing-a-database.md` |
 | 19 | Extension system | WebAssembly host, plugin template, marketplace install, local plugins and custom routes |
 | 20 | Cutover | Import the live install, run next to the PHP app behind nginx, full replay, switch |
 
-## 11. Working method in Phase 3
+## 👷 11. Working method in Phase 3
 
-- One slice per step: code, tests, checks, commit, push, short report, then wait for the go-ahead. This follows the standing one-change-per-step rule; commit and push are done by me for this repository only.
+- One slice per step: code, tests, checks, commit, push, short report, then wait for the go-ahead. This follows the standing one-change-per-step rule; commit and push are done by the implementer for this repository only.
 - Work happens on a `develop` branch; `main` receives reviewed releases through pull requests the owner opens.
-- Images are pushed to GHCR only while the repository is private.
+- Images are pushed to GHCR only while the repository is private. (Now: the `build` workflow publishes to GHCR, `develop` on request and `latest` on each push to `main`; see [Releases and images](releases.md).)
 - Sub-agents are used for independent integration modules once the framework for them exists (milestone 13), each with its own review.
 - Anything that turns out to need a deviation not listed in section 7 stops the slice and is raised first.
 
-## 12. Risks
+## 🚧 12. Risks
 
 | Risk | Mitigation |
 |---|---|
@@ -355,4 +394,4 @@ Each numbered item is one or more vertical slices. A slice is finished when its 
 | Upstream services differ by version (Pi-hole 5 vs 6, Sonarr 3 vs 4) | Port what 2.1.5000 does; record against real instances where available |
 | Old themes and custom snippets do not fit the new UI | Native themes; documented theme contract; safe mode for custom JS |
 | Loss of the master key makes stored secrets unreadable | First-run and backup documentation; key file inside the data volume by default |
-| Advisory churn (lettre, zip, wasmtime) | cargo-deny in CI, weekly rebuild, automated dependency updates |
+| Advisory churn (lettre, zip, wasmtime) | cargo-deny in CI, weekly scan of the images, automated dependency updates |

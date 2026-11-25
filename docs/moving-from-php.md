@@ -1,81 +1,175 @@
-# Moving from PHP Organizr
+# 🧳 Moving from PHP Organizr
 
-This page is a checklist for a move from PHP Organizr 2.1 to this version. Each step links to the page with the details.
+[← All documentation](README.md)
 
-The move never changes the old install. You can run both side by side, and switch the reverse proxy to the new install when it is ready.
+This is your checklist for moving from PHP Organizr 2.1 to this version, from the import to the reverse proxy. Each step links to the page with the details.
 
-## 1. Before the move
+The move never changes your old install. You can run both side by side, and switch your reverse proxy to the new one when it's ready.
 
-- Make a copy of the folder of the old install, or stop the old Organizr during the import.
-- Check the database of the old install. The import reads SQLite only. An old install with MySQL or PostgreSQL cannot be imported.
-- Write down what you changed by hand: custom CSS, custom JavaScript, custom HTML items, and files that you added in `data/pages`, `data/routes` or `data/plugins`. This version cannot run PHP files, so those do not come along.
-- Choose the database of the new install: SQLite or PostgreSQL. See [Choosing a database](choosing-a-database.md).
+> [!IMPORTANT]
+> Run the import **before** you open the new install in a browser. Don't complete the set-up wizard: the import builds the install for you, and it refuses a database that already holds records.
 
-## 2. Import
+## 📋 1. Before the move
 
-Run the import before the first start of the new install. Do not complete the set-up wizard: the import makes the install.
+- 🗄 **Check the old database.** The import reads SQLite only. An old install on MySQL or PostgreSQL can't be imported.
+- 📝 **Write down what you changed by hand**: custom CSS, custom JavaScript, custom HTML items, and files you added in `data/pages`, `data/routes` or `data/plugins`. This version can't run PHP files, so those don't come along.
+- 🧭 **Choose the database of the new install**: SQLite or PostgreSQL. See [Choosing a database](choosing-a-database.md). Not sure? SQLite.
+- 📂 **Find the old folder.** If PHP Organizr ran in Docker (the `organizr/organizr` or linuxserver image), it's the host folder you mounted as `/config`: the one that holds `www/`. On a server without Docker, it's the folder with `index.php` and `data/`. Below, it's `/path/to/old/config`.
 
-```sh
+## 🚚 2. Import
+
+These steps use Docker Compose with SQLite. For PostgreSQL, see [With PostgreSQL](#-with-postgresql) below.
+
+1. Stop the old Organizr, or make a copy of its folder. A database that changes during the import can give an incomplete result.
+2. Make a folder for the new install, and save [compose.sqlite.yaml](../docker/examples/compose.sqlite.yaml) in it as `compose.yaml`. Don't start it yet.
+
+   ```bash
+   mkdir organizr && cd organizr
+   ```
+
+3. Do a dry run. It reads the old install, prints a report, and writes nothing:
+
+   ```bash
+   docker compose run --rm -v /path/to/old/config:/old:ro organizr import --from /old --dry-run
+   ```
+
+   `/path/to/old/config` is the old folder from step 1 of the checklist. `:ro` mounts it read-only, so nothing can change it.
+
+   > [!TIP]
+   > **`permission denied`?** The import runs as the user `65532`, and PHP Organizr often lets only its owner into `www/db`. The error starts with `cannot look at /old/www/db/...: Permission denied (os error 13)`. ([Importing](importing.md#-if-you-see-permission-denied) has the whole message.) Let that one user in, just for the import:
+   >
+   > ```bash
+   > sudo setfacl -R -m u:65532:rX /path/to/old/config/www/db
+   > ```
+   >
+   > Take it away again after the import with `sudo setfacl -R -x u:65532 /path/to/old/config/www/db`. No `setfacl`? Install the `acl` package, or use `sudo chmod o+rx /path/to/old/config/www/db` and undo it afterward with `sudo chmod o-rx /path/to/old/config/www/db`: that folder holds your password hashes. If the database file itself isn't world-readable, `setfacl` is the way.
+
+4. Read the report. A healthy one looks like this:
+
+   ```text
+   Dry run: nothing was written.
+
+   These records would be imported:
+          6  groups
+         14  users
+          5  categories
+         23  tabs
+          2  bookmark categories
+         11  bookmarks
+          3  invites
+        120  chat messages
+         58  settings that differ from the default
+          9  uploaded pictures
+          2  other files
+
+   Sessions are not imported (31 found). Every user logs in again, with the same password.
+
+   Repairs:
+     - The tab "plex" is now called "plex (2)", because another tab has the same name.
+
+   Tables that this version does not import yet (their rows stay in the old database):
+     - options: 3 rows
+   ```
+
+   Check that the counts match your install, and read every line under **Repairs**, **Left out** and **To look at**. A few repairs are normal: PHP checked less than this version. [The report](importing.md#-the-report) explains each part.
+
+5. Run the import for real: the same command without `--dry-run`.
+
+   ```bash
+   docker compose run --rm -v /path/to/old/config:/old:ro organizr import --from /old
+   ```
+
+   It ends with `The import is complete.` and the same report. Keep it: it lists what to look at afterward.
+
+6. Start the new install:
+
+   ```bash
+   docker compose up -d
+   ```
+
+   Organizr listens on port `8080` in the container, and runs as the user `65532`, not as root.
+
+7. Copy the new key for the stored secrets to a safe place, away from your backups:
+
+   ```bash
+   docker compose cp organizr:/config/secret.key ./secret.key
+chmod 600 ./secret.key
+   ```
+
+   Without this file, the passwords and tokens in the database can't be read again. See [Secrets](secrets.md).
+
+8. Open `http://<your server>:8080` and log in with your old user name and password. The set-up wizard doesn't appear: the import already set the install up.
+
+The import brings over the users with their passwords and second factors, the groups, categories and tabs, the settings, the API key, the pictures, and the records of the bookmark, invite and chat plugins. Every user logs in again, with their old password. [Importing](importing.md) lists exactly what comes along and what it repairs.
+
+### 🐘 With PostgreSQL
+
+Save [compose.postgres.yaml](../docker/examples/compose.postgres.yaml) as `compose.yaml` and set the password in both places. Then run the same steps 3 to 8. `docker compose run` starts the database first and waits until it's ready, so the import writes straight into PostgreSQL.
+
+Keep the volume `<project>_organizr-data` with PostgreSQL too: it holds `secret.key` and the pictures.
+
+### 🐳 Without Compose
+
+If you start Organizr with `docker run -v organizr-data:/config`, run the import with the same volume:
+
+```bash
 docker run --rm \
   -v organizr-data:/config \
   -v /path/to/old/config:/old:ro \
   ghcr.io/tronyx/organizr-rust:develop \
-  import --from /old --data-dir /config --dry-run
+  import --from /old --dry-run
 ```
 
-Read the report of the dry run, then run the same command without `--dry-run`.
+> [!WARNING]
+> Use the volume that your server will mount. Compose calls it `<project>_organizr-data` (for example `organizr_organizr-data`), not `organizr-data`. An import into the wrong volume looks fine, but the server then starts empty and shows the set-up wizard. `docker volume ls` lists the names.
 
-For a new install with PostgreSQL, start only the database first, and run the import with the settings of the container of Organizr, so that it writes into PostgreSQL. With [compose.postgres.yaml](../docker/examples/compose.postgres.yaml):
+### 🆘 You already completed the wizard
 
-```sh
-docker compose -f compose.postgres.yaml up -d database
-docker compose -f compose.postgres.yaml run --rm -v /path/to/old/config:/old:ro organizr import --from /old --data-dir /config --dry-run
+Then the database holds records, and the import stops with `the new database is not empty; an import needs a new, empty database, so nothing was changed`. If the new install holds nothing you want to keep, delete it and start over:
+
+```bash
+docker compose down -v
 ```
 
-Then run the second command again without `--dry-run`, and start everything with `docker compose -f compose.postgres.yaml up -d`. Do not start Organizr before the import: the import needs an empty database. The volume `/config` still holds the key for the stored secrets and the pictures, so keep it also with PostgreSQL. [Importing](importing.md) tells you what the import takes, what it repairs, and what the report means.
+This deletes the new install's volumes (with PostgreSQL, the database too). Your old install isn't touched. Then go back to step 3.
 
-The import brings the users with their passwords and second factors, the groups, categories and tabs, the settings, the API key, the pictures, and the records of the bookmark, invite and chat plugins. Every user logs in again, with the old password.
+## 🌐 3. The reverse proxy
 
-After the import, make a copy of the file `secret.key` in the data folder, at a safe place. See [Secrets](secrets.md).
+- Point your proxy at the new container, port `8080`.
+- Add the proxy's address to `ORGANIZR_TRUSTED_PROXIES`. Without it, tabs and links use `http://`, and the log shows the proxy as the caller. [Trusted proxies](reverse-proxy.md#-organizr_trusted_proxies) shows how to find the address.
+- Tabs with a path, such as `/sonarr/`, need a location for each application in your proxy. Without it, the tab shows Organizr inside Organizr.
+- Once the proxy works, remove the `ports:` lines from `compose.yaml`, so nobody reaches Organizr around the proxy.
 
-## 3. Start the new install
-
-Start the container with the same volume and the same database settings as the import. See [Installation](installation.md).
-
-Organizr listens on port `8080` in the container, and runs as the user `65532`, not as root.
-
-## 4. The reverse proxy
-
-- Point the proxy of Organizr at the new container, port `8080`.
-- Add the address of the proxy to `ORGANIZR_TRUSTED_PROXIES`. Without it, the tabs and links use `http://`, and the log shows the proxy as the caller.
-- Tabs with a path, such as `/sonarr/`, need a location for each application in the proxy of Organizr. Without it, the tab shows Organizr inside Organizr.
-
-[Reverse proxy](reverse-proxy.md) has examples for nginx, Traefik and Caddy.
+[Reverse proxy](reverse-proxy.md) has examples for nginx, Nginx Proxy Manager, SWAG, Traefik and Caddy.
 
 The forward auth routes of PHP Organizr work as before, also the old forms such as `/api/v2/auth?group=1`. One difference: Organizr believes the forwarding headers of a trusted proxy only. See [Forward auth](forward-auth.md).
 
-## 5. Appearance
+## 🎨 4. Appearance
 
-- **Themes**: the themes of the marketplace are rebuilt for this version. Install your theme again in **Settings**, **Customize**, **Marketplace**.
+- **Layout**: an imported install stays on the OG Organizr layout, so nothing changes for your users until you pick another. See [Appearance](appearance.md).
+- **Themes**: the marketplace themes are rebuilt for this version. Install yours again in **Settings › Customize › Marketplace**.
 - **Custom CSS**: the pages use other ids and classes. Change your custom CSS once, with the table in [Custom CSS](custom-css.md).
 - **Custom JavaScript**: it runs only when the container has `ORGANIZR_CUSTOM_JS=1`. See [Appearance](appearance.md).
 
-## 6. Homepage
+## 🏠 5. Homepage
 
-- **Custom HTML items** run in a closed frame. A script in an item cannot reach the page of Organizr or its cookies. If an item needs that, switch on **Trust custom HTML 01** (with the number of the item) in its settings. See [Homepage](homepage.md#trusted-items).
+- **Custom HTML items** run in a closed frame. A script in an item can't reach Organizr's page or its cookies. If an item needs that, switch on **Trust custom HTML 01** (with the number of the item) in its settings. Trust only HTML you wrote: a trusted item runs with the session of everyone who opens the homepage. See [Homepage](homepage.md).
 - Links in custom HTML to the pop-ups of PHP, such as `#new-request`, open the matching search or page.
-- Test the connection of each item with its button **Test Connection**, in **Settings**, **Homepage Items**. See [Homepage](homepage.md#test-the-connection-of-a-service).
+- Test each item with its **Test Connection** button, in **Settings › Tab Editor › Homepage Items**. See [Homepage](homepage.md).
 
-## 7. Things that work differently
+## 🔀 6. Things that work differently
 
-- **Scheduled jobs** run inside the server. Remove the cron entry for `cron.php`. See [Scheduled jobs](scheduled-jobs.md).
-- **Password recovery** sends a new password that works for 24 hours, next to the old password. The old password stays good until somebody logs in with the new one. See [E-mail](email.md).
-- **Plugins of other authors** are WebAssembly extensions, not PHP files. See [Extensions](extensions.md).
-- **The log** goes to the output of the container and to the folder `logs` in the data folder. See [The log](log.md).
+- ⏰ **Scheduled jobs** run inside the server. Remove the cron entry for `cron.php`. See [Scheduled jobs](scheduled-jobs.md).
+- ✉ **Password recovery** sends a new password that works for 24 hours, next to the old one. The old password keeps working until somebody logs in with the new one. See [E-mail](email.md).
+- 🧩 **Plugins of other authors** are WebAssembly extensions, not PHP files. See [Extensions](extensions.md).
+- 📜 **The log** goes to the container output and to the folder `logs` in the data folder. See [The log](log.md).
 
-[Release notes](release-notes.md) lists the differences that you are most likely to notice, and [Deviations](deviations.md) lists every one, with its reason.
+[Release notes](release-notes.md) lists the differences you're most likely to notice, and [Deviations](deviations.md) lists every one, with its reason.
 
-## 8. When everything works
+## ✅ 7. When everything works
 
-- Make a backup of the new install. See [Backups](backups.md).
-- Keep the old install and its database for a while. The import leaves the table `options` and the PHP files that you added in the old install.
+- 💾 Make a backup of the new install. See [Backups](backups.md). With PostgreSQL, also save the database with `pg_dump`; see [Choosing a database](choosing-a-database.md#-back-up-postgresql).
+- 🔌 Take the old install off the network: stop it, or remove it from your proxy. It still holds the same password hashes and API key, and the secrets of your services under PHP's weaker encryption.
+- 🧊 Keep the old folder for a while as a cold copy, readable only by you. The import leaves the table `options` and the PHP files you added there.
+- 🔑 If the old API key was ever in a URL or a shared script, make a new one in **Settings › System Settings › General** (**Generate New API Key**).
+- 🔒 Undo the `setfacl` or `chmod` from step 3, if you used it.

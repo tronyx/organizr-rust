@@ -1,18 +1,42 @@
-# Custom CSS
+# 💅 Custom CSS
 
-This version of Organizr builds its pages differently from PHP Organizr. Custom CSS written for PHP aims at PHP's ids and classes, such as `#allHealthChecks` or `.white-box`, and those names are not on these pages. This page lists the names that you can use instead, and shows how to change a PHP rule into a rule for this version.
+[← All documentation](README.md)
 
-You enter custom CSS in **Settings**, **Customize**, **Appearance**, section **Custom code**, field **Custom CSS**. [Appearance](appearance.md) tells you how the page loads it.
+This page lists the CSS names you can safely aim at, and shows how to turn a PHP Organizr rule into one that works here. Read it when you want to restyle Organizr, or when your old custom CSS stopped doing anything.
 
-## The names you can rely on
+## 🚀 Quick example
 
-The CSS variables and classes on this page are stable: a release does not change them without a note in the release notes. The tests of the project fail if the interface stops using one of them, or if custom CSS stops reaching them.
+Want greener "up" colors and rounder health check cards? This is all it takes:
 
-The pages have other classes too, for example the classes of Tailwind such as `flex` or `px-4`. Do not aim at those. They can change in any release.
+```css
+:root {
+    --color-success: #2ecc71;
+}
+.org-item-healthchecks .org-card {
+    border-radius: 12px;
+}
+```
 
-## Colors: CSS variables
+1. Open **Settings › Customize › Appearance**.
+2. Open the section **Custom code**, and paste the rule into the field **Custom CSS**.
+3. Select **Save**.
+4. Reload the page. Everything that means "works" or "up" is now your green, and the health check cards have round corners.
 
-Most custom CSS only changes colors. A CSS variable changes a color everywhere it is used, without a selector for each place. Set the variables on `:root`:
+[Appearance](appearance.md#-custom-css) tells you how the page loads your CSS (after the theme, so your rules win).
+
+## 🤔 Why PHP rules don't work here
+
+This version of Organizr builds its pages differently from PHP Organizr. Custom CSS written for PHP aims at PHP's ids and classes, such as `#allHealthChecks` or `.white-box`, and those names aren't on these pages. Use the names on this page instead; [From PHP to this version](#-from-php-to-this-version) has a lookup table.
+
+## 🤝 The names you can rely on
+
+The CSS variables and classes on this page are stable: a release doesn't change them without a note in the release notes. The project's tests fail if the interface stops using one of them, or if custom CSS stops reaching them.
+
+The pages have other classes too, for example Tailwind classes such as `flex` or `px-4`. Don't aim at those. They can change in any release.
+
+## 🎨 Colors: CSS variables
+
+Most custom CSS only changes colors. A CSS variable changes a color everywhere it's used, without a selector for each place. Set the variables on `:root`:
 
 ```css
 :root {
@@ -21,9 +45,9 @@ Most custom CSS only changes colors. A CSS variable changes a color everywhere i
 }
 ```
 
-### The colors of the theme
+### 🌈 The theme colors
 
-Each theme sets these. On the OG Organizr layout, the colors in the settings section **Style & Themes** set some of them too. A modern theme sets its own colors, so those settings do not change them. Your custom CSS comes after the theme, so your variables win on both layouts.
+Each theme sets these. On the OG Organizr layout, the colors in **Style & Themes** set some of them too. A modern theme sets its own colors, so those settings don't change them. Your custom CSS comes after the theme, so your variables win on both layouts.
 
 | Variable | What it colors |
 |---|---|
@@ -37,16 +61,16 @@ Each theme sets these. On the OG Organizr layout, the colors in the settings sec
 | `--color-warning` | Things that need attention |
 | `--color-error` | Things that failed or are down |
 
-### The bar at the top and the menu
+### 🧭 The top bar and the menu
 
 | Variable | What it colors |
 |---|---|
 | `--org-header-bg`, `--org-header-text` | The bar at the top, and its text |
 | `--org-sidebar-bg`, `--org-sidebar-text` | The menu on the left, and its text |
 | `--org-sidebar-active` | The tab that is open in the menu |
-| `--org-swatch-edge` | The border of each color sample (`.org-swatch`) in the look picker. By default 55 % of the text color of the page mixed into its background, about 3:1 |
+| `--org-swatch-edge` | The border of each color sample (`.org-swatch`) in the look picker. By default 55 % of the page's text color mixed into its background, about 3:1 |
 
-### The states of the calendar
+### 📅 The calendar states
 
 | Variable | State | PHP class |
 |---|---|---|
@@ -58,23 +82,25 @@ Each theme sets these. On the OG Organizr layout, the colors in the settings sec
 | `--org-event-upcoming` | An iCal event that is ahead | `text-info` |
 | `--org-event-over` | An iCal event that is over | `text-dark` |
 
-The modern layout sets these variables from the colors of its theme. A rule in your custom CSS for one of them still wins on both layouts.
+The modern layout sets these from the colors of its theme. A rule in your custom CSS for one of them still wins on both layouts.
 
-### The colors of the services
+### 🔖 The service colors
 
-The color of each service is a variable too, for example `--org-brand-plex`, `--org-brand-emby` and `--org-brand-sonarr`. The modern layout uses them for the colored edge of the tiles of **Homepage Order**. Change one to change that edge.
+Each service has a color variable too, for example `--org-brand-plex`, `--org-brand-emby` and `--org-brand-sonarr`. The modern layout uses them for the colored edge of the tiles on **Homepage Order**. Change one to change that edge.
 
-## The layout and the theme
+### 🚦 The state of a card
 
-Custom CSS applies on both layouts. The element `<html>` has attributes that tell which look is on, so a rule can aim at one of them:
+The tone classes (`.org-tone-success` and its siblings, listed under [Homepage items](#-homepage-items)) each set the variable `--org-state`, which colors the edge and the icon of a card. Set `--org-state` inside one of them to recolor that state.
+
+## 🎯 Aim at one layout or theme
+
+Custom CSS applies on both layouts. The `<html>` element has attributes that tell which look is on, so a rule can aim at one of them:
 
 | Attribute | Value |
 |---|---|
 | `data-layout` | `og` for the OG Organizr layout, `modern` for the modern layout |
-| `data-theme` | The theme. On the modern layout it is `m-` followed by the theme and its color set, for example `m-organizr-dark`, `m-plex-light` or `m-silo-ember` |
-| `data-color-set` | `light` when the colors of the modern theme are light, else `dark`. For example Silo is always `dark`, and Prism Daydream is `light`. The OG Organizr layout does not have it |
-
-To hide every scene, add `.m-scene { display: none; }`. The page then shows the plain color of the theme. The scene still loads, so the theme still costs the same to open.
+| `data-theme` | The theme. On the modern layout it's `m-` followed by the theme and its color set, for example `m-organizr-dark`, `m-plex-light` or `m-silo-ember` |
+| `data-color-set` | `light` when the modern theme's colors are light, else `dark`. For example Silo is always `dark`, and Prism Daydream is `light`. The OG Organizr layout doesn't have it |
 
 A rule for the modern layout only starts with `[data-layout='modern']`:
 
@@ -84,136 +110,132 @@ A rule for the modern layout only starts with `[data-layout='modern']`:
 }
 ```
 
-## Classes
+To hide every scene, add `.m-scene { display: none; }`. The page then shows the theme's plain color. The scene still loads, so the theme still costs the same to open.
 
-### Homepage
+## 🧩 Classes, by part of the page
 
-| Class | What it is |
-|---|---|
-| `.org-item` | Each homepage item |
-| `.org-item-<kind>` | One kind of item, for example `.org-item-healthchecks`, `.org-item-calendar`, `.org-item-monitorr`, `.org-item-uptimekuma` or `.org-item-customhtml`. The kinds are listed below |
-| `.org-item-title` | The title of an item, with the line after it |
-| `.org-count` | The number in the title, for example the number of health checks |
-| `.org-cards` | A list of small cards: health checks, Monitorr, Uptime Kuma |
-| `.org-card` | One card. Its left edge shows the state |
-| `.org-card-row` | The name, the picture and the icon of a card |
-| `.org-card-icon` | The icon of the state |
-| `.org-card-tag` | A tag of a health check |
-| `.org-card-more` | The times of a health check, which a click shows |
-| `.org-tone-success`, `.org-tone-warning`, `.org-tone-error`, `.org-tone-info`, `.org-tone-primary` | The state of a card. Each sets the variable `--org-state`, which colors the edge and the icon |
+The **Layout** column says where a class exists: **Both** for both layouts, **Modern** for the modern layout only.
 
-Each item also has the attribute `data-item` with the key of the item, for example `data-item="homepageOrdercustomhtml01"`. Use it to aim at one of several items of the same kind.
+### 🧭 Top bar and menu
+
+| Class | Layout | What it is |
+|---|---|---|
+| `.org-header` | Both | The bar at the top |
+| `.org-header-link` | Both | A link or button in the bar at the top |
+| `.org-logo` | Both | The logo or the name in the bar at the top |
+| `.org-sidebar` | Both | The menu on the left |
+| `.org-sidebar-head` | Both | The title of the menu |
+| `.org-menu` | Both | The list of tabs in the menu |
+| `.org-menu-extras` | Modern | The links at the end of the menu |
+| `.org-swatch` | Both | A color sample of a theme in the look picker |
+| `.org-swatch-dot` | Both | One color of that sample: the text, primary and accent colors of the theme |
+| `.m-shown` | Modern | The name of the open tab in the bar at the top |
+| `.m-look` | Modern | The box of the **Look** button in the bar at the top |
+| `.m-look-panel` | Modern | The look picker that the **Look** button opens |
+| `.m-user` | Modern | The user button in the bar at the top |
+| `.m-user-name` | Modern | The name in that button. On a phone a long name ends in "…" |
+| `#m-menu` | Modern | The menu at the left on a wide screen (an `aside` with `.org-sidebar`) |
+| `.m-sidebar-icons` | Modern | On `.org-sidebar` while the menu is a column of icons. The column is `4rem` wide |
+| `.m-sidebar-over` | Modern | On `.org-sidebar` while the menu is open over the page: under the pointer or with the keyboard in it, and not pinned |
+| `.m-dot` | Modern | The dot of a tab in the column of icons, on the corner of its picture. It shows whether the tab's application answers |
+| `.m-with-menu` | Modern | The page area, when the menu is beside it. Below 1024 pixels the menu is a drawer, and the class is absent |
+| `.m-with-icons` | Modern | On the page area, with `.m-with-menu`, while the menu is not pinned. The page then stands beside the column of icons, also while the menu is open over it |
+
+### 🎬 Scenes
+
+| Class | Layout | What it is |
+|---|---|---|
+| `.m-scene` | Modern | The moving scene behind the page, on the themes Nocturne, Riot, Tempest, Circuit and Prism |
+| `.m-scene-nocturne`, `.m-scene-riot`, `.m-scene-tempest`, `.m-scene-circuit`, `.m-scene-prism` | Modern | The scene of one theme |
+| `.m-scene-paused` | Modern | On `.m-scene` while the scene stands still |
+
+### 🏠 Homepage items
+
+| Class | Layout | What it is |
+|---|---|---|
+| `.org-item` | Both | Each homepage item |
+| `.org-item-<kind>` | Both | One kind of item, for example `.org-item-healthchecks`, `.org-item-calendar`, `.org-item-monitorr`, `.org-item-uptimekuma` or `.org-item-customhtml`. The kinds are listed below the table |
+| `.org-item-title` | Both | The title of an item, with the line after it |
+| `.org-count` | Both | The number in the title, for example the number of health checks |
+| `.org-cards` | Both | A list of small cards: health checks, Monitorr, Uptime Kuma |
+| `.org-card` | Both | One card. Its left edge shows the state |
+| `.org-card-row` | Both | The name, the picture and the icon of a card |
+| `.org-card-icon` | Both | The icon of the state |
+| `.org-card-tag` | Both | A tag of a health check |
+| `.org-card-more` | Both | The times of a health check, which a click shows |
+| `.org-tone-success`, `.org-tone-warning`, `.org-tone-error`, `.org-tone-info`, `.org-tone-primary` | Both | The state of a card. Each sets the variable `--org-state`, which colors the edge and the icon |
+| `.org-fill` | Both | A box filled with the color of its state, with `.org-tone-success`, `.org-tone-warning`, `.org-tone-error`, `.org-tone-info`, `.org-tone-primary` or `.org-tone-neutral` |
+| `.org-tile` | Both | A dark tile in the Monitorr, UniFi, OctoPrint and Speedtest items |
+| `.org-adguard-card` | Both | A card of numbers in the AdGuard Home item. The item sets its color itself, so change it with `background-color`, `color` or `box-shadow` |
+| `.org-speedtest-icon` | Both | The icon of a card in the Speedtest item. The item sets its color itself, so change it with `color` or `background-color` |
+| `.org-netdata-track` | Both | The empty track of a gauge in the Netdata item |
+
+On the modern layout, `.org-tile`, `.org-fill`, `.org-adguard-card`, `.org-speedtest-icon` and `.org-netdata-track` get their colors from the theme.
+
+Each item also has the attribute `data-item` with the item's key, for example `data-item="homepageOrdercustomhtml01"`. Use it to aim at one of several items of the same kind.
 
 The kinds of items: `adguard`, `bookmarks`, `calendar`, `customhtml`, `deluge`, `donate`, `downloader`, `embylivetv`, `embyrecent`, `embystreams`, `healthchecks`, `jackett`, `jdownloader`, `jellyfinrecent`, `jellyfinstreams`, `jellystat`, `monitorr`, `netdata`, `nzbget`, `octoprint`, `ombi`, `overseerr`, `pihole`, `plexplaylists`, `plexrecent`, `plexstreams`, `prompage`, `prowlarr`, `qbittorrent`, `radarrqueue`, `rtorrent`, `sabnzbd`, `sonarrqueue`, `speedtest`, `tautulli`, `transmission`, `unifi`, `uptimekuma`, `utorrent` and `weather`.
 
-### Calendar
+### 📅 Calendar
 
-| Class | What it is |
-|---|---|
-| `.org-calendar` | The calendar |
-| `.org-calendar-bar` | The bar with the month and the buttons |
-| `.org-calendar-grid` | The table of the month, week or day view |
-| `.org-today` | Today, in the table |
-| `.org-calendar-event` | An event in the week and day views |
-| `.org-calendar-time` | The time and the icon of an event |
-| `.org-event-downloaded`, `.org-event-unreleased`, `.org-event-missing`, `.org-event-premiere`, `.org-event-unmonitored`, `.org-event-upcoming`, `.org-event-over` | The state of an event. Each takes its color from the variable of the same name |
+| Class | Layout | What it is |
+|---|---|---|
+| `.org-calendar` | Both | The calendar |
+| `.org-calendar-bar` | Both | The bar with the month and the buttons |
+| `.org-calendar-grid` | Both | The table of the month, week or day view |
+| `.org-calendar-other` | Both | A day outside the month that the calendar shows |
+| `.org-today` | Both | Today, in the table |
+| `.org-calendar-event` | Both | An event in the week and day views |
+| `.org-calendar-time` | Both | The time and the icon of an event |
+| `.org-event-downloaded`, `.org-event-unreleased`, `.org-event-missing`, `.org-event-premiere`, `.org-event-unmonitored`, `.org-event-upcoming`, `.org-event-over` | Both | The state of an event. Each takes its color from the variable of the same name |
 
-### Settings
+### 🔑 Login page and lock screen
 
-| Class | What it is |
-|---|---|
-| `.org-panel` | A panel of the settings |
-| `.org-panel-heading` | The title bar of a panel |
-| `.org-panel-body` | The content of a panel |
+| Class | Layout | What it is |
+|---|---|---|
+| `.org-login-register` | Both | The login page under the bar at the top, with the wallpaper |
+| `.org-login-sidebar` | Both | The panel on the right that holds the form |
+| `.org-login-box` | Both | The login form in that panel |
+| `.org-login-box-logo` | Both | The logo or the name in the form. It shows on phones only |
+| `.org-login-logo` | Both | The picture of the logo |
+| `.org-login-card` | Both | The box of the minimal login page |
+| `.org-login-form` | Both | The form on the login page and on the pages to register, to recover a password and to use an invite |
+| `.org-login-title` | Both | The heading of that form |
+| `.org-lock-screen` | Both | The lock screen, with the wallpaper |
+| `.org-lock-box` | Both | The box of the lock screen |
+| `.org-lock-name` | Both | The name of the person on the lock screen |
 
-The other classes of the settings, such as `.org-table` and `.org-form-control`, are the same on both layouts. So a rule for them applies on both layouts, unless it starts with `[data-layout='og']` or `[data-layout='modern']`.
+### 🔧 Settings
 
-The table of Manage Users has these classes on both layouts:
+| Class | Layout | What it is |
+|---|---|---|
+| `.org-panel` | Both | A panel of the settings |
+| `.org-panel-heading` | Both | The title bar of a panel |
+| `.org-panel-body` | Both | The content of a panel |
+| `.org-click-row` | Both | A table row that opens its item with a click |
+| `.m-settings` | Modern | The settings page, beside the side menu |
+| `.m-settings-side` | Modern | The column that holds the side menu |
+| `.m-settings-nav` | Modern | The side menu |
+| `.m-settings-group` | Modern | One group of pages in the side menu, with its title |
+| `.m-settings-button` | Modern | The **Settings menu** button, below 1024 pixels. It opens the drawer |
+| `.m-settings-button-text`, `.m-settings-button-label`, `.m-settings-button-place` | Modern | The text in that button: the box, the label and the name of the open page |
+| `.m-settings-sheet` | Modern | The drawer that holds the menu |
+| `.m-settings-sheet-head` | Modern | The title of the drawer |
+| `.m-page-heading` | Modern | The heading of the open page, with the name of its group below it |
 
-| Class | What it is |
-|---|---|
-| `.org-users-table` | The table of the users |
-| `.org-users-scroll` | The box around the table, which scrolls sideways when the table is wider |
-| `.org-users-avatar`, `.org-users-email`, `.org-users-date` | The cells of the columns Avatar, Email and Date Registered. On the modern layout, in a narrow card, the columns Avatar and Date Registered are left out, a long address is cut short, and the date shows under the name |
-| `.org-users-date-line` | The date under the name, in a narrow card on the modern layout |
-| `.org-users-actions` | The buttons Edit and Delete of a row |
-| `.org-click-row` | A row that opens its item with a click |
+The other settings classes, such as `.org-table` and `.org-form-control`, are the same on both layouts. So a rule for them applies on both layouts, unless it starts with `[data-layout='og']` or `[data-layout='modern']`.
 
-The modern layout also has these classes for the settings. They exist on the modern layout only:
+#### 👥 The Manage Users table
 
-| Class | What it is |
-|---|---|
-| `.m-settings` | The settings page, beside the side menu |
-| `.m-settings-side` | The column that holds the side menu |
-| `.m-settings-nav` | The side menu |
-| `.m-settings-group` | One group of pages in the side menu, with its title |
-| `.m-settings-button` | The button **Settings menu**, below 1024 pixels. It opens the drawer |
-| `.m-settings-button-text`, `.m-settings-button-label`, `.m-settings-button-place` | The text in that button: the box, the label and the name of the open page |
-| `.m-settings-sheet` | The drawer that holds the menu |
-| `.m-settings-sheet-head` | The title of the drawer |
-| `.m-page-heading` | The heading of the open page, with the name of its group below it |
+| Class | Layout | What it is |
+|---|---|---|
+| `.org-users-table` | Both | The table of the users |
+| `.org-users-scroll` | Both | The box around the table, which scrolls sideways when the table is wider |
+| `.org-users-avatar`, `.org-users-email`, `.org-users-date` | Both | The cells of the columns Avatar, Email and Date Registered. On the modern layout, in a narrow card, the columns Avatar and Date Registered are left out, a long address is cut short, and the date shows under the name |
+| `.org-users-date-line` | Both | The date under the name, in a narrow card on the modern layout |
+| `.org-users-actions` | Both | The Edit and Delete buttons of a row |
 
-Some homepage items have these classes on both layouts. On the modern layout they get their colors from the theme:
-
-| Class | What it is |
-|---|---|
-| `.org-adguard-card` | A card of numbers in the AdGuard Home item. The item sets its color itself, so change it in custom CSS with `background-color`, `color` or `box-shadow` |
-| `.org-speedtest-icon` | The icon of a card in the Speedtest item. The item sets its color itself, so change it in custom CSS with `color` or `background-color` |
-| `.org-tile` | A dark tile in the Monitorr, UniFi, OctoPrint and Speedtest items |
-| `.org-fill` | A box filled with the color of its state, with `.org-tone-success`, `.org-tone-warning`, `.org-tone-error`, `.org-tone-info`, `.org-tone-primary` or `.org-tone-neutral` |
-| `.org-calendar-other` | A day of the calendar outside the month that it shows |
-| `.org-netdata-track` | The empty track of a gauge in the Netdata item |
-
-### Login page and lock screen
-
-| Class | What it is |
-|---|---|
-| `.org-login-register` | The login page under the bar at the top, with the wallpaper |
-| `.org-login-sidebar` | The panel on the right that holds the form |
-| `.org-login-box` | The login form in that panel |
-| `.org-login-box-logo` | The logo or the name in the form. It shows on phones only |
-| `.org-login-logo` | The picture of the logo |
-| `.org-login-card` | The box of the minimal login page |
-| `.org-login-form` | The form on the login page and on the pages to register, to recover a password and to use an invite |
-| `.org-login-title` | The heading of that form |
-| `.org-lock-screen` | The lock screen, with the wallpaper |
-| `.org-lock-box` | The box of the lock screen |
-| `.org-lock-name` | The name of the person on the lock screen |
-
-### Bar at the top and menu
-
-| Class | What it is |
-|---|---|
-| `.org-header` | The bar at the top |
-| `.org-header-link` | A link or button in the bar at the top |
-| `.org-logo` | The logo or the name in the bar at the top |
-| `.org-sidebar` | The menu on the left |
-| `.org-sidebar-head` | The title of the menu |
-| `.org-menu` | The list of tabs in the menu |
-| `.org-swatch` | A color sample of a theme in the look picker, on both layouts |
-| `.org-swatch-dot` | One color of that sample: the text, primary and accent colors of the theme |
-
-The modern layout uses these same classes, so a rule for them applies on both layouts. The modern layout also has these classes. They exist on the modern layout only:
-
-| Class | What it is |
-|---|---|
-| `.m-shown` | The name of the open tab in the bar at the top |
-| `.m-look` | The box of the button **Look** in the bar at the top |
-| `.m-look-panel` | The look picker that the button **Look** opens |
-| `.m-user` | The button of the user in the bar at the top |
-| `.m-user-name` | The name in that button. On a phone a long name ends in "…" |
-| `.m-scene` | The moving scene behind the page, on the themes Nocturne, Riot, Tempest, Circuit and Prism |
-| `.m-scene-nocturne`, `.m-scene-riot`, `.m-scene-tempest`, `.m-scene-circuit`, `.m-scene-prism` | The scene of one theme |
-| `.m-scene-paused` | On `.m-scene` while the scene stands still |
-| `.m-with-menu` | The page area, when the menu is beside it. Below 1024 pixels the menu is a drawer, and the class is absent |
-| `#m-menu` | The menu at the left on a wide screen (an `aside` with `.org-sidebar`) |
-| `.m-sidebar-icons` | On `.org-sidebar` while the menu is a column of icons. The column is `4rem` wide |
-| `.m-sidebar-over` | On `.org-sidebar` while the menu is open over the page: under the pointer or with the keyboard in it, and not pinned |
-| `.m-with-icons` | On the page area, with `.m-with-menu`, while the menu is not pinned. The page then stands beside the column of icons, also while the menu is open over it |
-| `.m-dot` | The dot of a tab in the column of icons, on the corner of its picture. It shows whether the application of the tab answers |
-| `.org-menu-extras` | The links at the end of the menu |
-
-## From PHP to this version
+## 🔄 From PHP to this version
 
 | PHP | This version |
 |---|---|
@@ -237,11 +259,11 @@ The modern layout uses these same classes, so a rule for them applies on both la
 | `.loginLogo` | `.org-login-logo` |
 | `#lockScreen .white-box` | `.org-lock-screen .org-lock-box` |
 
-Some parts of PHP have no counterpart here, so their rules have nothing to change: for example `.blockUI`, `.slideInRight` and the panels of the second factor in `#login-panels`.
+Some parts of PHP have no counterpart here, so their rules have nothing to change: for example `.blockUI`, `.slideInRight` and the second-factor panels in `#login-panels`.
 
-### An example
+### 🔨 A worked conversion
 
-This PHP rule puts the health checks in the middle, in cards of 210 pixels with 5 pixels of space on each side:
+This PHP rule centers the health checks, in cards of 210 pixels with 5 pixels of space on each side:
 
 ```css
 .healthCheckCards {
@@ -274,8 +296,9 @@ In PHP, a column holds the card. Here the card is the column, so the space betwe
 }
 ```
 
-## When a rule does not apply
+## 🩺 When a rule does not apply
 
 - The page loads custom CSS after its own style sheet, and outside its layers. So a rule of the same strength wins without `!important`.
 - A style written on the element itself needs `!important`. The wallpaper of the login page and of the lock screen is such a style.
 - Check the layout before you copy a PHP rule that moves things, such as `position: fixed`. The pages are laid out differently. For example, `.org-login-sidebar` is already placed over the full height of the page, so `left: 0; right: 0; margin: 0 auto` puts it in the middle.
+- An `@import` or a font from another site doesn't load: the page takes styles only from its own server.

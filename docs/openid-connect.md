@@ -1,182 +1,218 @@
-# Logging in with an OpenID Connect provider
+# 🪪 Logging in with OpenID Connect
 
-Organizr can let people log in with an account of an identity provider: Authentik, Keycloak, PocketID or Zitadel. The login page then shows a button for each provider, for example **Log in with Keycloak**. The person logs in at the provider, and the provider sends the person back to Organizr, logged in.
+[← All documentation](README.md)
 
-The provider must speak OpenID Connect, a standard way to log in with another service.
+Let people log in to Organizr with an account from your identity provider: **Authentik**, **Keycloak**, **PocketID** or **Zitadel**. The login page gets a button for each provider, for example **Log in with Keycloak**. The person logs in at the provider and comes back to Organizr, logged in. OpenID Connect (OIDC) is the standard way to "log in with another service" that all four speak.
 
-## How a login works
+## 🚀 Set it up
 
-1. The person selects the button of the provider. Organizr sends the browser to the login page of the provider.
-2. The person logs in there. The provider sends the browser back to Organizr, to the redirect address of the provider (see below), with a one-time code.
-3. Organizr gives the code to the provider and gets an ID token for it. The ID token says who the person is.
-4. Organizr checks the ID token: the signature against the keys of the provider, the issuer, the audience (the client ID), the expiry time and the nonce (a random value of this login). A token that fails a check gives no session.
-5. Organizr finds the account of the person, links it, or makes it (see [Accounts](#accounts)), and starts a session as after any other login. The browser goes to the start page.
+The short version: make a client at your provider, paste three values into Organizr, test.
 
-The login uses PKCE, a check that only the browser that started a login can finish it. While the person is at the provider, Organizr keeps the values of the login in a cookie of its own, `organizr_oidc_login`. The cookie is sealed with the key of the install, so nobody can read or change it. It lasts 10 minutes, and Organizr deletes it when the browser comes back. A login that takes longer than 10 minutes must start again.
+1. **At your provider**, make a client for Organizr. Follow the section for [Authentik](#-authentik), [Keycloak](#-keycloak), [PocketID](#-pocketid) or [Zitadel](#-zitadel). Write down three values: the **client ID**, the **client secret** and the **discovery URL**.
+2. Log in to Organizr as an Admin.
+3. Open **Settings › System Settings › Sign-in**.
+4. In the section **OpenID Connect**, switch on **Enable OIDC Authentication**.
+5. In the section of your provider, for example **Keycloak**, switch on **Enable Keycloak**. Enter the **Discovery URL**, the **Client ID** and the **Client Secret**.
+6. Select **Save**.
+7. In the same section, next to **Test Connection**, select **Test**. Organizr reads the discovery document and the signing keys of the provider, and shows the issuer.
+8. Log out, and try the new button on the login page.
 
-## The redirect address
+Before you link anyone, read [Accounts and linking](#-accounts-and-linking): it decides who gets which Organizr account.
 
-Each provider needs the address to which it sends the browser back. Enter it at the provider exactly as follows:
+## 🔁 The redirect address
 
-```
+Your provider asks where to send people back after the login. Give it this address:
+
+```text
 https://organizr.example.com/api/v2/oidc/<provider>/callback
 ```
 
-Use the address at which people open Organizr. In place of `<provider>`, write `authentik`, `keycloak`, `pocketid` or `zitadel`. For example, for Keycloak: `https://organizr.example.com/api/v2/oidc/keycloak/callback`.
+- Replace `organizr.example.com` with the address people use to open Organizr.
+- Replace `<provider>` with `authentik`, `keycloak`, `pocketid` or `zitadel`.
 
-Organizr builds this address from the address that the browser used, as PHP Organizr does. Behind a reverse proxy, Organizr knows that the browser used HTTPS only when the proxy is trusted. Put the address of the proxy in `ORGANIZR_TRUSTED_PROXIES` (see [Forward auth](forward-auth.md)). Otherwise Organizr sends `http://` and the provider refuses the login, because the address is not the one you entered.
+For example, for Keycloak:
 
-## Set it up
+```text
+https://organizr.example.com/api/v2/oidc/keycloak/callback
+```
 
-1. Make a client for Organizr at the provider. See the section of your provider below. Write down the client ID, the client secret and the discovery address.
-2. Log in to Organizr as an Admin.
-3. Open **Settings**, then **System Settings**, then **Sign-in**.
-4. In the section **OpenID Connect**, switch on **Enable OIDC Authentication**.
-5. In the section of your provider, for example **Keycloak**, switch on **Enable** and the name of the provider, for example **Enable Keycloak**, and enter the discovery address, the client ID and the client secret.
-6. Select **Save**.
-7. Select **Test** under **Test Connection** in the section of the provider. Organizr reads the discovery document and the signing keys of the provider, and shows the issuer.
-8. Log out, and try the button on the login page.
+> [!IMPORTANT]
+> **Behind a reverse proxy, list the proxy in [`ORGANIZR_TRUSTED_PROXIES`](reverse-proxy.md#-organizr_trusted_proxies).** Organizr builds the redirect address from the address the browser used, as PHP Organizr does. It only knows the browser used HTTPS when the proxy is trusted. Otherwise it sends `http://`, and the provider refuses the login because the address doesn't match.
 
-### The settings of each provider
+## 🦊 Authentik
 
-| Field | Setting | Meaning |
+1. In the Authentik admin interface, open **Applications › Providers**, and create an **OAuth2/OpenID Provider**.
+2. Set **Client type** to **Confidential**.
+3. Under **Redirect URIs/Origins**, add the redirect address with `authentik`: `https://organizr.example.com/api/v2/oidc/authentik/callback`.
+4. Choose a **Signing Key**, so that Authentik signs the ID tokens with a key of its own.
+5. Copy the **Client ID** and **Client Secret**.
+6. Create an **Application** for the provider. Its **slug** is part of the discovery URL.
+7. Your discovery URL is `https://authentik.example.com/application/o/<slug>/.well-known/openid-configuration`.
+
+Groups: Authentik puts the user's groups in the claim `groups` of the scope `profile`, so the default scopes are enough.
+
+## 🔐 Keycloak
+
+1. In the Keycloak admin console, choose the realm, open **Clients**, and select **Create client**.
+2. Keep **OpenID Connect**, and enter a client ID, for example `organizr`.
+3. Switch on **Client authentication**, and keep **Standard flow** on.
+4. Under **Valid redirect URIs**, add the redirect address with `keycloak`: `https://organizr.example.com/api/v2/oidc/keycloak/callback`.
+5. Under **Credentials**, copy the client secret.
+6. For groups: open the **Client scopes** tab of the client, select the dedicated scope, and add the mapper **Group Membership** with the token claim name `groups`.
+7. Your discovery URL is `https://keycloak.example.com/realms/<realm>/.well-known/openid-configuration`.
+
+With **Full group path** on, Keycloak writes a group as `/parent/child`. A mapping in Organizr matches it by the full name, by the name without the first `/`, or by the last part, `child`.
+
+## 🎒 PocketID
+
+1. In PocketID, open **OIDC Clients**, and add a client.
+2. Under **Callback URLs**, add the redirect address with `pocketid`: `https://organizr.example.com/api/v2/oidc/pocketid/callback`.
+3. Copy the client ID and client secret that PocketID shows.
+4. For groups: in Organizr, set **Scopes** of the **PocketID** section to `openid,profile,email,groups`.
+5. Your discovery URL is `https://pocketid.example.com/.well-known/openid-configuration`.
+
+## 🌐 Zitadel
+
+1. In the Zitadel console, open your project, and add an application of the type **Web**.
+2. Choose the authentication method **POST**, so that Zitadel takes the client secret in the body of the request.
+3. Add the redirect address with `zitadel`: `https://organizr.example.com/api/v2/oidc/zitadel/callback`.
+4. Copy the client ID and client secret.
+5. For roles: in the project settings, switch on **Assert Roles on Authentication**.
+6. Your discovery URL is `https://zitadel.example.com/.well-known/openid-configuration`, or the address of your instance.
+
+Zitadel sends the roles in the claim `urn:zitadel:iam:org:project:roles`, as an object. Organizr takes the role names from it. The default scopes already ask for this claim.
+
+## 📋 The provider settings
+
+Each provider section (**Authentik**, **Keycloak**, **PocketID**, **Zitadel**) has the same fields:
+
+| Field | Setting | What it does |
 |---|---|---|
-| Enable … | `oidc<Provider>Enabled` | Shows the button of the provider on the login page |
-| Display Name | `oidc<Provider>Name` | The text of the button: **Log in with** and this name |
-| Discovery URL | `oidc<Provider>DiscoveryUrl` | The address of the discovery document of the provider. It ends with `/.well-known/openid-configuration` |
-| Client ID | `oidc<Provider>ClientId` | The ID of the client of Organizr at the provider |
-| Client Secret | `oidc<Provider>ClientSecret` | The secret of that client. Organizr stores it sealed, as every secret setting (see [Secrets](secrets.md)), and never shows it again |
-| Scopes | `oidc<Provider>Scopes` | What Organizr asks the provider for, with commas between the scopes. `openid` is always asked for |
-| Group Claim Override | `oidc<Provider>GroupClaim` | The claim of the token that holds the groups. Empty: the global **Group Claim Name** |
+| **Enable …** (for example **Enable Keycloak**) | `oidc<Provider>Enabled` | Shows the button of the provider on the login page |
+| **Display Name** | `oidc<Provider>Name` | The button text: **Log in with** plus this name |
+| **Discovery URL** | `oidc<Provider>DiscoveryUrl` | The address of the provider's discovery document. It ends with `/.well-known/openid-configuration` |
+| **Client ID** | `oidc<Provider>ClientId` | The ID of the Organizr client at the provider |
+| **Client Secret** | `oidc<Provider>ClientSecret` | The secret of that client. Stored encrypted (see [Secrets](secrets.md)), and never shown again |
+| **Scopes** | `oidc<Provider>Scopes` | What Organizr asks the provider for, separated by commas. `openid` is always asked for |
+| **Group Claim Override** | `oidc<Provider>GroupClaim` | The claim that holds the groups. Empty: the global **Group Claim Name** |
 
 `<Provider>` is `Authentik`, `Keycloak`, `Pocketid` or `Zitadel`. Organizr sends the client secret in the body of the token request (`client_secret_post`), as PHP Organizr does. The provider must allow that.
 
-## Authentik
+> [!WARNING]
+> **Use the provider's host name in the Discovery URL, not an IP address.** Organizr doesn't check the certificate of an HTTPS address that is an IP address (no authority signs certificates for addresses). Someone who can pretend to be that IP on your network could then read the client secret and forge logins.
 
-1. In the admin interface of Authentik, open **Applications** > **Providers**, and create an **OAuth2/OpenID Provider**.
-2. Set **Client type** to **Confidential**.
-3. Under **Redirect URIs/Origins**, add the redirect address with `authentik`, for example `https://organizr.example.com/api/v2/oidc/authentik/callback`.
-4. Select a **Signing Key**, so that Authentik signs the ID tokens with a key of its own.
-5. Create an **Application** for the provider. Its slug is part of the discovery address.
-6. The discovery address is `https://authentik.example.com/application/o/<slug>/.well-known/openid-configuration`.
+## 👥 Groups
 
-Authentik puts the groups of the user in the claim `groups` of the scope `profile`.
+A login can put the person in an Organizr group, based on the groups or roles the provider sends.
 
-## Keycloak
-
-1. In the admin console of Keycloak, select the realm, open **Clients**, and select **Create client**.
-2. Keep **OpenID Connect**, and enter a client ID, for example `organizr`.
-3. Switch on **Client authentication**, and keep **Standard flow** on.
-4. Under **Valid redirect URIs**, add the redirect address with `keycloak`.
-5. Under **Credentials**, copy the client secret.
-6. For the groups: open **Client scopes** of the client, select the dedicated scope, and add the mapper **Group Membership** with the token claim name `groups`.
-7. The discovery address is `https://keycloak.example.com/realms/<realm>/.well-known/openid-configuration`.
-
-With **Full group path** on, Keycloak writes a group as `/parent/child`. A mapping matches that group by its full name, by the name without the first `/`, or by its last part, `child`.
-
-## PocketID
-
-1. In PocketID, open **OIDC Clients**, and add a client.
-2. Under **Callback URLs**, add the redirect address with `pocketid`.
-3. Copy the client ID and the client secret that PocketID shows.
-4. For the groups, add `groups` to the field **Scopes** of PocketID in Organizr: `openid,profile,email,groups`.
-5. The discovery address is `https://pocketid.example.com/.well-known/openid-configuration`.
-
-## Zitadel
-
-1. In the console of Zitadel, open the project, and add an application of the type **Web**.
-2. Select the authentication method **POST**, so that Zitadel takes the client secret in the body of the request.
-3. Add the redirect address with `zitadel`.
-4. Copy the client ID and the client secret.
-5. For the roles: in the settings of the project, switch on **Assert Roles on Authentication**.
-6. The discovery address is `https://zitadel.example.com/.well-known/openid-configuration`, or the address of your instance.
-
-Zitadel sends the roles in the claim `urn:zitadel:iam:org:project:roles`, as an object. Organizr takes the names of the roles from it. The scopes of the default ask for this claim.
-
-## Groups
-
-A login can put the person in a group of Organizr, from the groups or roles that the provider sends.
-
-| Field | Setting | Meaning |
+| Field | Setting | What it does |
 |---|---|---|
-| Group Claim Name | `oidcGroupClaimName` | The claim that holds the groups, when the provider has no claim of its own. Default: `groups` |
-| Group Mappings (JSON) | `oidcGroupMappings` | From a group of the provider to the level of a group of Organizr |
-| Group Mapping Mode | `oidcGroupMappingMode` | **First Match**, **Highest Privilege (lowest ID)** (the most access) or **Lowest Privilege (highest ID)** (the least access) |
-| Default Group | `oidcDefaultGroupId` | The group for a person with no mapped group |
-| Update Groups on Login | `oidcUpdateGroupsOnLogin` | Off: only a new account gets the group of the mappings |
+| **Group Claim Name** | `oidcGroupClaimName` | The claim that holds the groups, when the provider has no override. Default: `groups` |
+| **Group Mappings (JSON)** | `oidcGroupMappings` | From a provider group to the level of an Organizr group |
+| **Group Mapping Mode** | `oidcGroupMappingMode` | **First Match**, **Highest Privilege (lowest ID)** (the most access) or **Lowest Privilege (highest ID)** (the least access) |
+| **Default Group** | `oidcDefaultGroupId` | The group for a person with no mapped group |
+| **Update Groups on Login** | `oidcUpdateGroupsOnLogin` | Off: only a new account gets the group from the mappings. On: every login updates it |
 
-A mapping names levels, not names of groups: 0 is Admin, 1 Co-Admin, 2 Super User, 3 Power User, 4 User and 999 Guest. For example:
+A mapping names **levels**, not group names: `0` Admin, `1` Co-Admin, `2` Super User, `3` Power User, `4` User, `999` Guest. For example:
 
 ```json
 {"organizr-admins": 0, "organizr-family": 3, "organizr-users": 4}
 ```
 
-A value that is not a level from 0 to 999 does not count. When no group of Organizr has the level, the person goes into the default group of Organizr.
+A value that isn't a level from 0 to 999 doesn't count. When no Organizr group has the level, the person goes into the default group of Organizr.
 
-## Accounts
+> [!CAUTION]
+> **A mapping to `0` or `1` makes every member of that provider group an Admin or Co-Admin** (when their account is made, or at every login with **Update Groups on Login**). Make sure only you can add people to that group at the provider.
 
-| Field | Setting | Meaning |
+## 🔗 Accounts and linking
+
+| Field | Setting | What it does |
 |---|---|---|
-| Auto-Create Users | `oidcAutoCreateUsers` | A person with no account gets one, with a random password |
-| Link Existing Users | `oidcLinkExistingUsers` | An account of Organizr with the user name, or the e-mail address, of the person becomes the account of the person |
+| **Auto-Create Users** | `oidcAutoCreateUsers` | A person with no account gets one, with a random password |
+| **Link Existing Users** | `oidcLinkExistingUsers` | An Organizr account with the same user name, or e-mail address, becomes the person's account (never an Admin or Co-Admin account; see below). The user name is the claim `preferred_username`, or else `name`, or else `sub` |
 
-Organizr stores, for each linked account, the subject (`sub`) of the person at the provider: the identifier of the account there, from the checked ID token. It looks for the account in this order:
+For each linked account, Organizr stores the person's **subject** (`sub`) at the provider: the provider's permanent ID for that account, taken from the checked ID token. At each login, Organizr looks for the account in this order:
 
-1. The account linked to this subject at this provider. A new user name or e-mail address at the provider does not matter.
-2. Else the account with the user name of the person, in any letter case, or else, unless the provider says that it has not checked it (`email_verified` is `false`), the account with the e-mail address. The user name is the claim `preferred_username`, or else `name`, or else `sub`. Such an account is used only:
-   - when it is linked to no provider yet, and **Link Existing Users** is on, and it is not an Admin or a Co-Admin account; or
-   - when it is linked to this provider but has no subject yet, as an account that PHP Organizr linked, or that this application linked before it stored subjects.
+1. **The account linked to this subject at this provider.** A new user name or e-mail address at the provider doesn't matter.
+2. **Else, an account with the same user name** (any letter case), **or else the same e-mail address**. The e-mail address is skipped when the provider says it hasn't checked it (`email_verified` is `false`). Such an account is used only:
+   - when it's linked to no provider yet, **Link Existing Users** is on, and it is **not** an Admin or Co-Admin account; or
+   - when it's linked to this provider but has no subject yet: an account that PHP Organizr linked, or that an older version of this application linked.
 
-   An account linked to another subject, or to another provider, is refused, also when the name and the address match.
-3. Else, with accounts on, a new account in the group of the mappings, with the subject. Its picture is the claim `picture` when that is a web address.
+   An account linked to another subject, or to another provider, is refused, even when the name and address match.
+3. **Else, with Auto-Create Users on, a new account** in the group from the mappings, with the subject. Its picture is the claim `picture`, when that is a web address.
 
-The first login of a linked account without a subject decides: the subject of that login is stored, and from then on only that subject logs in to the account. The log of Organizr names the user, the provider and the subject each time a subject is stored, so an Admin can check that the right person made that first login.
+The first login of a linked account without a subject decides: that login's subject is stored, and from then on only that subject gets in. The Organizr log names the user, the provider and the subject each time a subject is stored, so you can check that the right person made that first login.
 
-Linking never gives a person an Admin or a Co-Admin account by name or address. Such an account logs in through a provider only when it is linked to it, whatever the settings say. The level counts as it is stored at the time of the login. Switch linking on only when the provider decides the user names and the e-mail addresses, and people cannot choose them freely.
+> [!IMPORTANT]
+> **Linking never hands out an Admin or Co-Admin account by name or e-mail address.** Such an account logs in through a provider only after it was linked on purpose (see below), whatever the settings say. The level counts as stored at the time of the login.
+>
+> Switch **Link Existing Users** on only when the provider decides the user names and e-mail addresses, checks e-mail addresses, and doesn't let people sign themselves up. Some providers leave out `email_verified`; Organizr then treats the address as checked.
 
-### Link your account
+### 👑 Link an Admin account safely
 
-A person who is logged in can link the own account to a provider, also an Admin or a Co-Admin account:
+To log in to your Admin (or any) account through a provider, link it yourself while you're logged in. This works for Admin and Co-Admin accounts too, and it's the only way they can use a provider.
 
-1. Open **Account Settings** in the menu with your name.
-2. Under **Log in through a provider**, select **Link to** the provider.
-3. Log in at the provider. The browser comes back to the account page, which says that the account is linked.
+1. Log in to Organizr with the account's password. (If **Auto-Redirect to OIDC** is on, open `https://organizr.example.com/#noredirect` to get the password form.)
+2. Open the menu with your name, and select **Account Settings**.
+3. Under **Log in through a provider**, select **Link to** next to the provider.
+   <!-- SCREENSHOT: account-link-provider.png | Account Settings, section "Log in through a provider", with the "Link to" buttons, and for a linked account the "Password of this account" field and the "Unlink from" button -->
+4. Log in at the provider **with the provider account that should own this Organizr account**. The browser comes back to the account page, which says the account is linked.
+5. Log out, and log in with the provider button to check it.
+6. Keep the account's Organizr password. You need it to unlink, and it's your way back in if the provider is down (use `#noredirect`).
 
-The link stores the subject of the login at the provider. The user names and the e-mail addresses may differ, because the person has logged in to both accounts. The link is refused when another Organizr account is linked to the same account of the provider. It is finished only in the session that started it, and it makes no account and no new session. A link to another provider, or to another account of the same provider, replaces the old link.
+What a link does:
 
-After the link, the account logs in through the provider whatever **Link Existing Users** says, by the subject.
+- It stores the subject of that provider login. The user names and e-mail addresses may differ: you've proven you own both accounts.
+- It's refused when another Organizr account is already linked to the same provider account.
+- It only finishes in the session that started it. It makes no account and no new session.
+- A link to another provider, or to another account at the same provider, replaces the old link.
+- After the link, the account logs in through the provider by its subject, whatever **Link Existing Users** says.
 
-To take the link away, enter the password of the account in **Password of this account**, and select **Unlink from** the provider. The account then logs in with its password again. An account that a provider made has a random password that nobody knows: get a new password by e-mail first.
+**To unlink:** enter the account's password in **Password of this account**, and select **Unlink from** next to the provider. The account then logs in with its password again. An account that a provider made has a random password that nobody knows: get a new one by e-mail first ([Forgot your password?](email.md#-a-new-password)).
 
-An account that PHP Organizr had linked (`auth_service` `oidc::<provider>`) keeps its link when the install is imported. PHP stores no subject, so the first login through the provider stores it, as above.
+**Imported links:** an account that PHP Organizr had linked (`auth_service` `oidc::<provider>`) keeps its link after the import. PHP stored no subject, so the first login through the provider stores it, as above.
 
-A login through a provider does not ask for the [second factor](second-factor.md) of Organizr, as in PHP Organizr: the provider checks the person. The session lasts the days of the setting **Remember Me Length** (`rememberMeDays`).
+### 🎫 Second factor and session length
 
-## The login page and the logout
+A login through a provider doesn't ask for the Organizr [second factor](second-factor.md), as in PHP Organizr: the provider checks the person (switch on the provider's own second factor). The session lasts **Remember Me Length** days (`rememberMeDays`, in **Settings › System Settings › Login & Security**).
 
-| Field | Setting | Meaning |
+## 🚪 The login page and logout
+
+These are in the **OpenID Connect** section:
+
+| Field | Setting | What it does |
 |---|---|---|
-| Auto-Redirect to OIDC | `oidcAutoRedirect` | The login page sends the browser to the provider at once |
-| Auto-Redirect Provider | `oidcAutoRedirectProvider` | The provider for that |
-| Custom Logout URL | `oidcAutoRedirectLogoutUrl` | Where the browser goes after a logout, for example the logout page of the provider |
+| **Auto-Redirect to OIDC** | `oidcAutoRedirect` | The login page sends the browser straight to the provider |
+| **Auto-Redirect Provider** | `oidcAutoRedirectProvider` | Which provider that is |
+| **Custom Logout URL** | `oidcAutoRedirectLogoutUrl` | Where the browser goes after a logout, for example the provider's logout page |
 
-To reach the login page with the redirect on, for example to log in with the password of the Admin, add `#noredirect` to the address: `https://organizr.example.com/#noredirect`. After a logout, the login page of that browser tab does not send the person to the provider again, so the person is not logged in again at once.
+To reach the normal login page while the redirect is on (for example, to log in with the Admin password), add `#noredirect` to the address: `https://organizr.example.com/#noredirect`. After a logout, the login page in that browser tab doesn't send you back to the provider, so you aren't logged straight in again.
 
-## When something fails
+## 🩺 When something fails
 
-A login that fails shows a page **Login Failed** with the reason, and a link back to the login page. The log of Organizr says more. It never holds a token, a code or the client secret.
+A failed login shows a **Login Failed** page with the reason and a link back to the login page. The Organizr log says more. It never holds a token, a code or the client secret.
 
 | Text | Cause |
 |---|---|
 | Invalid or expired state parameter | The login took longer than 10 minutes, the browser lost the login cookie, or the answer belongs to another login |
-| Failed to exchange authorization code | The provider refused the code or the client secret, or cannot be reached |
-| Invalid ID token | The signature, the issuer, the audience or the time of the ID token is wrong |
+| Failed to exchange authorization code | The provider refused the code or the client secret, or can't be reached |
+| Invalid ID token | The signature, issuer, audience or time of the ID token is wrong |
 | Invalid nonce | The ID token belongs to another login |
-| Failed to create or link user | No account fits and the settings make none, the user name or the e-mail address is taken, or the account with that name or address is linked to another account of the provider, or to another provider |
-| Another account is already linked to this account of the provider | A link names an account of the provider that another Organizr account is linked to |
+| Failed to create or link user | No account fits and the settings make none; the user name or e-mail address is taken; or the account with that name or address is linked to another provider account, or another provider |
+| Another account is already linked to this account of the provider | A link names a provider account that another Organizr account is already linked to |
 | The link must be finished in the session that started it | The browser came back from a link without the session that started it |
 | The provider refused the login | The provider sent an error, for example `access_denied` |
 
-## Differences from PHP Organizr
+## 🔧 How a login works
 
-The differences are entries D-87 to D-90 of [the list of deviations](deviations.md).
+1. The person selects the provider's button. Organizr sends the browser to the provider's login page.
+2. The person logs in there. The provider sends the browser back to the [redirect address](#-the-redirect-address), with a one-time code.
+3. Organizr gives the code to the provider and gets an ID token. The ID token says who the person is.
+4. Organizr checks the ID token: the signature (against the provider's keys), the issuer, the audience (the client ID), the expiry time and the nonce (a random value for this login). A token that fails any check gives no session.
+5. Organizr finds, links or makes the account (see [Accounts and linking](#-accounts-and-linking)), and starts a session as after any other login. The browser goes to the start page.
+
+The login uses PKCE, a check that only the browser that started a login can finish it. While the person is at the provider, Organizr keeps the login's values in its own cookie, `organizr_oidc_login`. The cookie is encrypted with the key of the install, so nobody can read or change it. It lasts 10 minutes, and Organizr deletes it when the browser comes back. A login that takes longer than 10 minutes has to start again.
+
+## 🐘 Differences from PHP Organizr
+
+The differences are entries D-87 to D-90 of [Deviations](deviations.md).

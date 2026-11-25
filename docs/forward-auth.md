@@ -1,75 +1,69 @@
-# Forward auth
+# 🚪 Forward auth
 
-With forward auth, the login of Organizr protects your other applications. A reverse proxy asks Organizr about each request for an application. Organizr answers "yes" or "no" from the session cookie of the browser. The application itself needs no login.
+[← All documentation](README.md)
 
-A reverse proxy is the web server in front of your applications, for example nginx, Traefik or Caddy.
+Use the Organizr login as the bouncer for your other applications. Your reverse proxy asks Organizr about every request for, say, Sonarr, and Organizr answers "yes" or "no" based on the browser's session cookie. You need this page if you want Sonarr, Radarr and friends reachable from outside, but only for people logged in to Organizr.
 
-## What you need
+A reverse proxy is the web server in front of your applications, for example nginx, Nginx Proxy Manager, Traefik or Caddy. Set it up first with [Reverse proxy](reverse-proxy.md).
 
-- The other application and Organizr are on the same domain, for example `sonarr.example.com` and `organizr.example.com`. The login cookie of Organizr is for the whole domain, so the browser sends it to both.
-- The reverse proxy is listed in `ORGANIZR_TRUSTED_PROXIES`. Organizr believes the forwarding headers of a listed proxy only. Without the entry, Organizr sees the address of the proxy as the address of every caller.
+## 🧭 How it works
 
-## The question
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant P as Reverse proxy
+    participant O as Organizr
+    participant A as Sonarr
+    B->>P: sonarr.example.com (with the Organizr cookie)
+    P->>O: /api/v2/auth/1 (same cookie)
+    alt logged in, level 1 or better
+        O-->>P: 200 and X-Organizr-User
+        P->>A: the request
+        A-->>B: the page, through the proxy
+    else not logged in, or level too low
+        O-->>P: 401 (or 302 for Traefik)
+        P-->>B: redirect to the Organizr login, with return=
+    end
+```
 
-The proxy sends a request to one of these routes. Every HTTP method asks the same question.
+After the login, Organizr sends the browser back to the address it wanted (see [After the login](#-after-the-login)). Organizr checks every request fresh; it keeps no cache of answers, so a user you lock or remove is stopped at their next request.
 
-| Route | Meaning |
-|---|---|
-| `/api/v2/auth/{group}` | The caller needs the level `{group}` or more access |
-| `/api/v2/auth-{group}` | The same, in a short form |
-| `/api/v2/organizr-auth/{group}` | The same route under another name |
-| `/api/v2/auth/{group}/{type}/{ips}` | The same, with a list of addresses |
+## 📋 What you need
 
-`{group}` is the level of a group: `0` for Admin, `1` for Co-Admin, `4` for User in a new install, `999` for everybody. A user passes when the level of the user is that number or a smaller one. So `/api/v2/auth/4` lets Users, Power Users, Super Users, Co-Admins and Admins through.
+> [!WARNING]
+> **The application must be reachable only through the proxy.** Forward auth only guards requests that go through the proxy. If Sonarr still publishes its port (`ports: - "8989:8989"`), anyone on your network reaches it directly, and Organizr never hears about it. Docker opens published ports past host firewalls such as ufw and firewalld. Remove the `ports:` of the application's container (the proxy reaches it over the Docker network), or bind them to the host only: `"127.0.0.1:8989:8989"`. Keep the application's own login on if you can, as a second lock.
 
-`{group}` can also be the name of a tab. The question is then about the group of that tab. If no tab has the name, the question is about the Admin.
+- **One domain.** The application and Organizr share a domain, for example `sonarr.example.com` and `organizr.example.com`. The Organizr login cookie is set for the whole domain (`.example.com`), so the browser sends it to both.
 
-Without a `{group}`, the question is about the Admin.
+  > [!CAUTION]
+  > Every site under that domain gets the Organizr login cookie. Put only applications you trust under the same domain.
 
-### Lists of addresses
+- **A trusted proxy.** The proxy is listed in [`ORGANIZR_TRUSTED_PROXIES`](reverse-proxy.md#-organizr_trusted_proxies). Organizr believes the forwarding headers (`X-Forwarded-For`, `X-Forwarded-Proto`) only from a listed proxy. Without the entry, every caller seems to come from the proxy's address. List only your proxy there, not a whole range: allow lists and local-network rules are only as safe as this setting.
 
-`{type}` and `{ips}` add a list of addresses to the question. `{ips}` holds addresses and host names, which commas separate.
+## 🎯 Choose the level
 
-| `{type}` | Meaning |
-|---|---|
-| `allow`, `whitelist`, `white`, `wl`, `w` | A caller from one of the addresses passes, whatever the group |
-| `deny`, `blacklist`, `black`, `bl`, `b` | A caller from one of the addresses does not pass |
+Each application needs a level. A user passes when their level is that number **or a smaller one** (smaller means more access):
 
-The short form takes the lists from the query: `whitelist` and `blacklist`, or `type` and `ips`. For example `/api/v2/auth-1?whitelist=192.168.1.10`.
+| Level | Group in a new install | Route to use |
+|---|---|---|
+| `0` | Admin | `/api/v2/auth/0` |
+| `1` | Co-Admin | `/api/v2/auth/1` |
+| `2` | Super User | `/api/v2/auth/2` |
+| `3` | Power User | `/api/v2/auth/3` |
+| `4` | User | `/api/v2/auth/4` |
+| `999` | Guest (everybody, also not logged in) | `/api/v2/auth/999` |
 
-An entry of a list is one address. A network such as `192.168.1.0/24` is not an entry.
+So `/api/v2/auth/4` lets in Users, Power Users, Super Users, Co-Admins and Admins. Use the form `/api/v2/auth/<level>` for new setups; the other forms in [All routes](#-all-routes) exist for old proxy files.
 
-### The group in the query
+## 🟩 nginx
 
-A query that holds `group=` asks in the short form, and everything after `group=` is the group. So `/api/v2/auth?group=1` and `/api/v2/?group=1` are the same question as `/api/v2/auth-1`. Old proxy configurations use this form.
-
-## The answer
-
-| Status | Meaning |
-|---|---|
-| `200` | The caller passes |
-| `401` | The caller does not pass |
-| `302` | The caller does not pass, and the browser must go to the login page. See [Traefik](#traefik) |
-
-A `200` answer for a caller who passed by the group has three headers. The proxy can hand them to the application.
-
-| Header | Value |
-|---|---|
-| `X-Organizr-User` | The name of the user, or `Guest` |
-| `X-Organizr-Email` | The e-mail address of the user |
-| `X-Organizr-Group` | The level of the user |
-
-A locked user does not pass. A caller who is not logged in is a guest, with the level `999`.
-
-## nginx
-
-nginx asks with the `auth_request` module. This example protects one application for the level 1.
+nginx asks with the `auth_request` module. This protects Sonarr for level 1 (Co-Admins and Admins):
 
 ```nginx
 # In the server block of the application.
 location / {
     auth_request /organizr-auth;
-    # A caller who does not pass goes to the login page of Organizr.
+    # Not allowed in? Go to the Organizr login page, and come back afterwards.
     error_page 401 =302 https://organizr.example.com/?return=$scheme://$host$request_uri;
     proxy_pass http://sonarr:8989;
 }
@@ -84,11 +78,42 @@ location = /organizr-auth {
 }
 ```
 
-After the login, Organizr sends the browser back to the address in `return`.
+- `organizr.example.com` is the address of your Organizr.
+- `organizr:8080` and `sonarr:8989` are the container names and ports on the Docker network that nginx shares with them.
 
-## Traefik
+## 🟥 Nginx Proxy Manager
 
-Traefik asks with the `forwardAuth` middleware.
+Nginx Proxy Manager (NPM) is nginx with a web interface, so the same idea works through its **Advanced** tab.
+
+1. Open the proxy host of the application (for example `sonarr.example.com`), and select **Edit**.
+2. Open the **Advanced** tab.
+3. Paste this into **Custom Nginx Configuration**, and change the level, the Organizr address and the container name to yours:
+
+   ```nginx
+   auth_request /organizr-auth;
+   error_page 401 =302 https://organizr.example.com/?return=$scheme://$host$request_uri;
+
+   location = /organizr-auth {
+       internal;
+       auth_request off;
+       proxy_pass http://organizr:8080/api/v2/auth/1;
+       proxy_pass_request_body off;
+       proxy_set_header Content-Length "";
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Forwarded-Proto $scheme;
+   }
+   ```
+
+4. Select **Save**.
+5. Open the application in a private browser window. You should land on the Organizr login page.
+
+NPM puts this text inside the `server` block of the host, so `auth_request` applies to the whole host, and `auth_request off` keeps the check itself unguarded. The NPM container must reach Organizr at `organizr:8080`, so put both on the same Docker network.
+
+If NPM gets the certificate for this host with an HTTP challenge, the challenge path must not ask Organizr. NPM serves it from its own `location ^~ /.well-known/acme-challenge/`; if a renewal fails, add `auth_request off;` for that path. This snippet follows the nginx example above, but hasn't been tested in NPM yet.
+
+## 🟦 Traefik
+
+Traefik asks with the `forwardAuth` middleware. In a file provider:
 
 ```yaml
 http:
@@ -102,16 +127,36 @@ http:
           - "X-Organizr-Group"
 ```
 
-Traefik hands the answer of Organizr to the browser when the caller does not pass. So Organizr can send the browser to its login page itself. It does that in two cases:
+Or as Docker labels, on the Organizr container (the middleware) and on the application (the router):
 
-- The setting `traefikAuthEnable` is on.
-- The request has the header `X-Forwarded-Server: traefik`. Traefik writes its host name into that header, so this applies when the host name of the Traefik container is `traefik`.
+```yaml
+services:
+  organizr:
+    labels:
+      - "traefik.http.middlewares.organizr-users.forwardauth.address=http://organizr:8080/api/v2/auth/4"
+      - "traefik.http.middlewares.organizr-users.forwardauth.authResponseHeaders=X-Organizr-User,X-Organizr-Email,X-Organizr-Group"
+  sonarr:
+    labels:
+      - "traefik.http.routers.sonarr.middlewares=organizr-users@docker"
+```
 
-The answer is then a redirect to Organizr, with the address that the caller wanted in `return`. The setting `traefikDomainOverride` names the address of Organizr for this redirect, for example `https://organizr.example.com/`. Without it, Organizr uses the address of the request.
+With `exposedByDefault: false` in Traefik, each of these containers also needs the label `traefik.enable=true`.
 
-## Caddy
+### 🔁 Sending Traefik users to the login page
 
-Caddy asks with the `forward_auth` directive.
+When the caller doesn't pass, Traefik hands Organizr's answer straight to the browser. So Organizr can answer with a redirect to its own login page (`302`, with the wanted address in `return`). It does that when either is true:
+
+- **Enable Traefik Auth Redirect** (`traefikAuthEnable`) is on, in **Settings › System Settings › Login & Security**, section **Access**.
+- The request has the header `X-Forwarded-Server: traefik` and comes from a trusted proxy. Traefik writes its host name into that header, so this applies when the Traefik container's host name is `traefik`.
+
+> [!WARNING]
+> Switch on **Enable Traefik Auth Redirect** only when Traefik is your only forward-auth proxy. nginx `auth_request` treats a `302` from Organizr as an error (`500`), so nginx-protected apps would break. And Traefik must be listed in [`ORGANIZR_TRUSTED_PROXIES`](reverse-proxy.md#-organizr_trusted_proxies): otherwise Organizr ignores its `X-Forwarded-*` headers and the redirect has no `return=` address.
+
+**Traefik Domain for Return Override** (`traefikDomainOverride`), in the same section, sets the Organizr address for this redirect, for example `https://organizr.example.com/`. Without it, Organizr uses the address of the request.
+
+## 🟨 Caddy
+
+Caddy asks with the `forward_auth` directive:
 
 ```caddyfile
 sonarr.example.com {
@@ -123,17 +168,108 @@ sonarr.example.com {
 }
 ```
 
-## After the login
+## 🪪 Passing the user to the application
 
-A person who was sent to the login page comes with the wanted address in `return`. After the login, Organizr sends the browser there.
+A `200` answer for a caller who passed **by their level** has three headers. The proxy can hand them to the application, for example for an app that supports header login:
 
-Organizr follows such an address only when it belongs to this site: the host of Organizr itself, or a host that shares the login cookie with it. A link with the address of another site in `return` leads nowhere. PHP Organizr follows every address.
+| Header | Value |
+|---|---|
+| `X-Organizr-User` | The user name, or `Guest` |
+| `X-Organizr-Email` | The user's e-mail address |
+| `X-Organizr-Group` | The user's level |
 
-## What differs from PHP Organizr
+A caller who passed by an [allow list](#-allow-and-deny-lists) gets no such headers.
 
-- PHP Organizr believes the forwarding headers of every sender. This application believes a proxy in `ORGANIZR_TRUSTED_PROXIES` only. So a caller cannot claim an address of an allow list, and cannot make Organizr write another address into the redirect to the login page.
-- In PHP Organizr, `group=` in the query of every API route makes the request a forward-auth question. Here it does that for the forward-auth routes and for `/api/v2/` only.
-- The name of a tab is compared as text. In PHP Organizr, `%` and `_` in the name stand for other characters.
-- A host name in a list stands for all its addresses, with IPv6. In PHP Organizr it stands for its first IPv4 address.
+> [!WARNING]
+> **If an application trusts `X-Organizr-User`, the proxy must set that header from Organizr's answer, and never pass on one the browser sent.** Otherwise anyone can send `X-Organizr-User: admin` themselves.
+>
+> - **nginx / NPM:** set it from the answer. `proxy_set_header` replaces whatever the browser sent:
+>   ```nginx
+>   auth_request_set $organizr_user $upstream_http_x_organizr_user;
+>   auth_request_set $organizr_email $upstream_http_x_organizr_email;
+>   auth_request_set $organizr_group $upstream_http_x_organizr_group;
+>   proxy_set_header X-Organizr-User $organizr_user;
+>   proxy_set_header X-Organizr-Email $organizr_email;
+>   proxy_set_header X-Organizr-Group $organizr_group;
+>   ```
+> - **Traefik:** `authResponseHeaders` overwrites the header when Organizr sends it. To also drop a browser's copy when Organizr sends none, put a `headers` middleware with `customRequestHeaders` that sets `X-Organizr-User`, `X-Organizr-Email` and `X-Organizr-Group` to `""` (an empty value removes the header) **before** `organizr-users` in the router's middlewares.
+> - **Caddy:** remove the browser's copy first, inside a `route` so the order is kept:
+>   ```caddyfile
+>   route {
+>       request_header -X-Organizr-*
+>       forward_auth organizr:8080 {
+>           uri /api/v2/auth/1
+>           copy_headers X-Organizr-User X-Organizr-Email X-Organizr-Group
+>       }
+>       reverse_proxy sonarr:8989
+>   }
+>   ```
+
+## 📍 Allow and deny lists
+
+You can add a list of addresses to the question:
+
+| Form | Example |
+|---|---|
+| Long form, in the path | `/api/v2/auth/1/allow/192.168.1.10,192.168.1.11` |
+| Short form, in the query | `/api/v2/auth-1?whitelist=192.168.1.10` |
+
+| Kind | Also spelled | What it does |
+|---|---|---|
+| `allow` | `whitelist`, `white`, `wl`, `w` | A caller from one of the addresses passes, whatever their level |
+| `deny` | `blacklist`, `black`, `bl`, `b` | A caller from one of the addresses doesn't pass |
+
+- Separate entries with commas. Each entry is **one** address or a host name. A network such as `192.168.1.0/24` is not an entry.
+- The short form reads `whitelist` and `blacklist`, or `type` and `ips`, from the query.
+- Prefer addresses. A host name lets in every address its DNS answers with (IPv4 and IPv6), so whoever controls that DNS name (a dynamic-DNS name, for example) controls who passes.
+- The caller's address is only as reliable as [`ORGANIZR_TRUSTED_PROXIES`](reverse-proxy.md#-organizr_trusted_proxies). List only your proxy there.
+
+## 🔙 After the login
+
+Someone sent to the login page arrives with the address they wanted in `return`. After the login, Organizr sends the browser there.
+
+Organizr follows that address only when it belongs to this site: the Organizr host itself, or a host that shares the login cookie with it. A link with another site in `return` leads nowhere, so nobody can use your login page to bounce people to a look-alike site. PHP Organizr follows every address.
+
+## 🩺 When Organizr is down
+
+The proxy can't get a `200`, so it refuses the request and shows an error page. Nothing gets through unchecked. Every request to a protected app costs one quick call to Organizr, so keep Organizr close to the proxy (same host or Docker network).
+
+## 📖 Reference
+
+### 📚 All routes
+
+Every HTTP method asks the same question.
+
+| Route | Meaning |
+|---|---|
+| `/api/v2/auth/{group}` | The caller needs the level `{group}`, or more access. **Use this one** |
+| `/api/v2/auth-{group}` | The same, in a short form |
+| `/api/v2/organizr-auth/{group}` | The same route under another name |
+| `/api/v2/auth/{group}/{type}/{ips}` | The same, with an [allow or deny list](#-allow-and-deny-lists) |
+
+- `{group}` can also be the name of a tab. The question is then about the group of that tab. If no tab has that name, the question is about the Admin.
+- Without a `{group}`, the question is about the Admin.
+- The long form without a `{type}` uses the kind `deny` with the only address `192.0.0.0`.
+
+### 🧾 The group in the query
+
+A query that holds `group=` asks in the short form, and everything after `group=` is the group. So `/api/v2/auth?group=1` and `/api/v2/?group=1` ask the same as `/api/v2/auth-1`. Old proxy configurations use this form.
+
+### 🚦 The answer
+
+| Status | Meaning |
+|---|---|
+| `200` | The caller passes |
+| `401` | The caller doesn't pass |
+| `302` | The caller doesn't pass, and the browser should go to the login page. See [Traefik](#-sending-traefik-users-to-the-login-page) |
+
+A locked user doesn't pass. A caller who isn't logged in is a guest, with the level `999`.
+
+### 🐘 What differs from PHP Organizr
+
+- PHP Organizr believes the forwarding headers of every sender. This version believes only a proxy in `ORGANIZR_TRUSTED_PROXIES`. So a caller can't claim an address on an allow list, and can't make Organizr write another address into the redirect to the login page.
+- In PHP Organizr, `group=` in the query of **any** API route makes the request a forward-auth question. Here it does that only for the forward-auth routes and for `/api/v2/`.
+- The name of a tab is compared as plain text. In PHP Organizr, `%` and `_` in the name stand for other characters.
+- A host name in a list stands for all its addresses, IPv6 included. In PHP Organizr it stands for its first IPv4 address.
 
 [Deviations](deviations.md) has the full entry, D-59.

@@ -1,8 +1,13 @@
-# Organizr → Rust: Phase 1 audit and specification
+# 🔍 Audit of PHP Organizr
+
+[← All documentation](README.md)
+
+> [!NOTE]
+> **Internal background for contributors.** You don't need this page to run Organizr. It is the Phase 1 audit and specification of the rewrite: a description of **PHP Organizr** (2.1.2490, with an addendum for 2.1.5000), not of this version. For what this version does differently, read [the deviations](deviations.md); its [index by API route](deviations.md#-find-an-entry-by-api-route) maps the routes below to their entries. [Architecture](architecture.md) is the plan that followed this audit.
 
 Source audited: a clone of `causefx/Organizr`, branch `v2-develop`, commit `c095c115` (2024-05-29), Organizr version `2.1.2490`.
 
-## 0. Coverage of this audit
+## 📏 0. Coverage of this audit
 
 | Area | Depth |
 |---|---|
@@ -18,7 +23,7 @@ Source audited: a clone of `causefx/Organizr`, branch `v2-develop`, commit `c095
 
 Anything marked "not yet audited" gets its own detailed pass when its slice comes up in Phase 3.
 
-## 1. Application shape
+## 🧱 1. Application shape
 
 - About 35,000 lines of first-party PHP under `api/`. Slim 4 front controller at `api/v2/index.php`.
 - One class, `Organizr` (`api/classes/organizr.class.php`, 7,636 lines), built from 20 function traits and 38 homepage-item traits. Plugins are classes that **extend** `Organizr`.
@@ -30,7 +35,7 @@ Anything marked "not yet audited" gets its own detailed pass when its slice come
 - `cron.php`: called every minute by system cron, local/server callers only. Schedules auto-update, auto-backup, plugin cron jobs (`$GLOBALS['cron']`) and `advancedCron.php` files, then writes a timestamp file.
 - Composer dependencies and what they do: dibi (DB layer), lcobucci/jwt, composer/semver, phpmailer, rmccue/requests (all outbound HTTP), kryptonit3 sonarr/couchpotato/sickrage clients, pusher (chat plugin), pragmarx/google2fa (TOTP), adldap2 (LDAP), swagger-php, oauth2-trakt, php-html-parser (scrape), php-json-logger, line-reader (log paging), php-cron-scheduler, simshaun/recurr (iCal recurrence), stripe (donate item), ramsey/uuid.
 
-### Response envelope (the wire contract)
+### 📨 Response envelope (the wire contract)
 
 ```json
 {
@@ -48,9 +53,9 @@ Anything marked "not yet audited" gets its own detailed pass when its slice come
 - Unknown route: `404`, `result:error`, `message:"Endpoint Not Found or Defined"`, `data:{endpoint, method}`.
 - Slim error middleware is on with `displayErrorDetails = true`: an uncaught exception returns Slim's HTML/JSON error page with a stack trace.
 
-## 2. Authentication and authorization model
+## 🔐 2. Authentication and authorization model
 
-### Groups (lower number = more access)
+### 👥 Groups (lower number = more access)
 
 | group_id | Name | Notes |
 |---|---|---|
@@ -64,13 +69,13 @@ Anything marked "not yet audited" gets its own detailed pass when its slice come
 
 `qualifyRequest(N)` passes when `currentLevel <= N`. The three values used on routes: **1** (admin or co-admin), **998** (any logged-in user), **999** (anyone). Plugins and homepage items read their level from config (`*-Auth-include`, `homepage*Auth`, `*SocksAuth`).
 
-### How the current level is resolved
+### 🪜 How the current level is resolved
 
 1. Header `Token: <key>` or query `?apikey=<key>`: if the value is exactly 20 characters and equals config `organizrAPI`, level = 0. The request then runs as a synthetic user `{username:"Organizr API", group:"Admin", groupID:0}`.
 2. Otherwise the cookie `organizr_token_<uuid>` (or `organizr_token_temp` before setup) holds a JWT. Level = the user's `groupID`.
 3. Otherwise 999 (guest; the guest row is read from `groups`).
 
-### Session token
+### 🎫 Session token
 
 - JWT, HS256, key = config `organizrHash` (plain text). Claims: `iss:"Organizr"`, `aud:"Organizr"`, `jti:"4f1g23a12aa"` (constant), `iat`, `nbf`, `exp`, plus `name`, `group`, `groupID`, `email`, `image`, `userID`.
 - The token must also exist in table `tokens` for that user with `expires > now`. User fields are re-read from `users` on every request (JWT claims are only a fallback).
@@ -78,14 +83,14 @@ Anything marked "not yet audited" gets its own detailed pass when its slice come
 - A failed check deletes the cookie. Cookies are set twice (once for the parsed parent domain, once for the full host), `SameSite=None; Secure; HttpOnly` only when the request is HTTPS (by `X-Forwarded-Proto` or `HTTPS`).
 - Lifetime: 1 day, or `rememberMeDays` (default 7) when the login body contains any `remember` key. Capped at 365.
 
-### Form key (CSRF-like check)
+### 🔑 Form key (CSRF-like check)
 
 - `formKey` = `password_hash(substr(organizrHash, 2, 10), BCRYPT)`, injected into the page by `index.php`.
 - `checkRoute()` requires it on **POST only** (body field `formKey` or header `formkey`), verified with `password_verify`. A valid API key skips it. PUT and DELETE are never checked.
 - Bypass list: `/api/v2/upgrade`, `/update`, `/force`, `/auth`, `/wizard`, `/login`, `/wizard/path`, `/login/api`, `/plex/register`.
 - Only some routes call `checkRoute()` at all (column **FK** in section 3).
 
-### Login flow (`POST /login`), in order
+### 🚪 Login flow (`POST /login`), in order
 
 1. Username is lower-cased unless the auth backend name contains `emby`.
 2. Lockout: if body `loginAttempts` (client-supplied counter) is above config `loginAttempts` (default `'5'`), or a `lockout` cookie exists → set `lockout` cookie for `loginLockout` ms (default 60000), `403 "User is locked out"`.
@@ -97,7 +102,7 @@ Anything marked "not yet audited" gets its own detailed pass when its slice come
 8. Failure: `401 "User credentials incorrect"`, or `403 "User is locked out"` when the client counter has reached the limit.
 9. New-device e-mail when this User-Agent has at most one token for the user and the mailer plugin is enabled.
 
-### Forward auth (`/auth`, `/auth-{group}`, `/organizr-auth`), any method
+### 🛂 Forward auth (`/auth`, `/auth-{group}`, `/organizr-auth`), any method
 
 Used by nginx `auth_request` and Traefik forward-auth. Inputs: `group` (number, or a tab name that is looked up to its `group_id`), `type` (`allow`/`deny` and aliases), `ips` (comma list; host names are resolved). A query string `?group=X` rewrites the request URI to `auth-X` before routing.
 
@@ -107,17 +112,17 @@ Used by nginx `auth_request` and Traefik forward-auth. Inputs: `group` (number, 
 - Otherwise `401 "User is not Authorized or User is locked"`; when the caller is Traefik (`X-Forwarded-Server: traefik`) or `traefikAuthEnable` is on, `401` with a `Location` header to the Organizr login plus `?return=<original URL>`.
 - `data` always carries `{user, group, email, user_ip, requested_group, uuid}`.
 
-### Secrets at rest
+### 🔐 Secrets at rest
 
 - User passwords: bcrypt (`password_hash`), compatible with any standard bcrypt verifier (`$2y$`).
 - Config secrets (any key containing `password`, DB password, registration password): `openssl_encrypt` AES-256-CBC, key = `organizrHash`, IV = the key truncated or padded to 16 bytes with a fixed filler string, base64 output. OpenSSL pads a short key with zero bytes to 32.
 - `GET /config` masks only `organizrHash`. The API key, tokens and encrypted passwords are returned to admins and co-admins.
 
-## 3. Endpoint and route inventory
+## 🚏 3. Endpoint and route inventory
 
 All paths are under `/api/v2`. **Lvl** = `qualifyRequest` argument (`—` = none at route level). **FK** = route calls `checkRoute()` (form key on POST). Unless noted, the response is the standard envelope and handlers put their result in `data`.
 
-### 3.1 Root, status, session
+### 🏁 3.1 Root, status, session
 
 | Method | Path | Lvl | FK | Request | Response and notes |
 |---|---|---|---|---|---|
@@ -141,7 +146,7 @@ All paths are under `/api/v2`. **Lvl** = `qualifyRequest` argument (`—` = none
 | GET | `/ping/{ping}` | — | | | Same for one host. **No auth** |
 | GET | `/rox` | — | | | Easter egg; `GET /roxinsocks` → `301` |
 
-### 3.2 Users, groups, tabs, categories
+### 👤 3.2 Users, groups, tabs, categories
 
 | Method | Path | Lvl | FK | Request | Response and notes |
 |---|---|---|---|---|---|
@@ -174,7 +179,7 @@ All paths are under `/api/v2`. **Lvl** = `qualifyRequest` argument (`—` = none
 
 `✓*` = `checkRoute()` is called but it only checks POST, so it has no effect on PUT/DELETE.
 
-### 3.3 Configuration, settings, system
+### 🔧 3.3 Configuration, settings, system
 
 | Method | Path | Lvl | FK | Notes |
 |---|---|---|---|---|
@@ -213,7 +218,7 @@ All paths are under `/api/v2`. **Lvl** = `qualifyRequest` argument (`—` = none
 | GET | `/test/cron` | 1 | | Whether the cron timestamp file is fresh |
 | ANY | `/socks/{app}/{route:.*}`; `/multiple/socks/{app}/{instance}/{route:.*}` | per-app config | | Reverse proxy to sonarr, radarr, lidarr, sabnzbd, nzbget, tautulli, qbittorrent. 404 unsupported app; 409 disabled or wrong single/multiple form. Upstream body returned as-is with JSON content type |
 
-### 3.4 Homepage integrations (71 routes)
+### 🏠 3.4 Homepage integrations (71 routes)
 
 No route-level check. Each handler runs `homepageItemPermissions()` against its own config keys and returns, in order: `409 "<key> module is not enabled"`, `401 "User not approved to view this homepage item"`, `422 "<key> was not supplied"`.
 
@@ -225,7 +230,7 @@ No route-level check. Each handler runs `homepageItemPermissions()` against its 
 - Search and misc: `GET /homepage/{jackett,prowlarr}/{query}`, `POST /homepage/{jackett,prowlarr}/download/`, `GET /homepage/youtube/{query}`, `POST /homepage/scrape`
 - Donate (Stripe): `GET /homepage/donate`, `/homepage/donate/[{amount}]`, `/homepage/donate/{success,cancel,error}` (HTML), `POST /homepage/donate`
 
-### 3.5 Bundled plugins (42 routes)
+### 🧩 3.5 Bundled plugins (42 routes)
 
 | Plugin | Routes | Notes |
 |---|---|---|
@@ -237,9 +242,9 @@ No route-level check. Each handler runs `homepageItemPermissions()` against its 
 | shuck-stop | settings, `GET run` | Drive price watcher; has cron |
 | speedTest | settings | LibreSpeed back end in `misc/*.php` (called directly, outside the API) |
 
-## 4. Data model and state
+## 💾 4. Data model and state
 
-### 4.1 Tables (SQLite DDL is the source; rewritten by string replacement for MySQL/Postgres)
+### 📋 4.1 Tables (SQLite DDL is the source; rewritten by string replacement for MySQL/Postgres)
 
 | Table | Columns |
 |---|---|
@@ -256,7 +261,7 @@ No route-level check. Each handler runs `homepageItemPermissions()` against its 
 
 Seed data at setup: six groups (0–4, 999); tabs `Settings` (`api/v2/page/settings`, level 1, enabled) and `Homepage` (`api/v2/page/homepage`, level 4, disabled); category `Unsorted` (`category_id` 0, default).
 
-### 4.2 Relationships (all implicit; there are no foreign keys)
+### 🔗 4.2 Relationships (all implicit; there are no foreign keys)
 
 - `users.group_id` → `groups.group_id` (not `groups.id`). `users.group` is a denormalized copy of the name; renaming a group does not update users.
 - `tabs.category_id` → `categories.category_id` (not `categories.id`). Deleting a category leaves its tabs pointing at nothing.
@@ -264,14 +269,14 @@ Seed data at setup: six groups (0–4, 999); tabs `Settings` (`api/v2/page/setti
 - `tokens.user_id` → `users.id`. Deleting a user deletes the tokens in code.
 - Exactly one row should have `default = 1` in each of `groups`, `categories`, `tabs`; kept by "clear all, then set" in code, with no constraint.
 
-### 4.3 State outside the database
+### 📂 4.3 State outside the database
 
 - **Config**: `data/config/config.php`, a PHP file returning an array, **rewritten in full on every change** with the previous copy kept as `config.bak.php`. 710 default keys in `api/config/default.php`, plus each plugin's `config.php`. Missing keys are filled from defaults on load. Numbers are mostly stored as strings (`'7'`, `'5'`, `'60000'`).
 - **Files**: `data/userTabs/` (uploaded images), `data/cache/` (cached media images), `data/plugins/`, `data/routes/`, `data/pages/`, backups in `<dbLocation>/backups/`, JSON-lines log files (rotated by count), cron timestamp file, upgrade lock files `DBLOCK.txt`/`completed.txt`.
 - **Marker files** in the web root switch behavior: `Docker.txt`, `Dev.txt`, `Demo.txt`, `Github.txt` (commit hash used for cache-busting).
 - **Cookies**: `organizr_token_<uuid>`, `organizr_user_uuid` (7 days), `lockout`, `organizrOAuth`, `oAuth`, and SSO cookies `mpt`, `Auth`, `connect.sid`, `petio_jwt`, `komga_token`, `tautulli_token_<uuid>`, Jellyfin `user-*` and `jellyfin_credentials`.
 
-### 4.4 Implicit state machines
+### 🔄 4.4 Implicit state machines
 
 - **Install**: no config → `wizard` → configured. `status.action` and `launch.status` report it. Config version is compared on each request and upgrade steps run in sequence (2.0.0-beta-200 … 2.1.2200), holding a lock file.
 - **User session**: guest → (login; maybe `2FA needed`) → logged in → locked (lock screen; `users.locked = 1`, fails forward-auth) → unlocked → logged out. Parallel client-side lockout by cookie.
@@ -280,9 +285,9 @@ Seed data at setup: six groups (0–4, 999); tabs `Settings` (`api/v2/page/setti
 - **Requests (Ombi/Overseerr)**: pending → approved/denied → available/unavailable; state lives in the upstream service.
 - **Self-update**: download → unzip → move → cleanup, each a separate GET.
 
-## 5. Hidden quirks, edge cases and probable bugs
+## 🐛 5. Hidden quirks, edge cases and probable bugs
 
-### 5.1 Security-relevant
+### 🔒 5.1 Security-relevant
 
 1. **Client IP is taken from request headers without any trusted-proxy check** (`Client-IP`, then `X-Forwarded-For`, …; first comma item). Everything IP-based can be spoofed by a direct client: the "local" bypasses, forward-auth allow lists, the auth-proxy whitelist (password-less login), the IP blacklist, cron access.
 2. **`POST /users/recover` resets the password of any account by e-mail**, with no token, no confirmation and no rate limit. When the mailer is off the new password is thrown away and the user is locked out.
@@ -299,7 +304,7 @@ Seed data at setup: six groups (0–4, 999); tabs `Settings` (`api/v2/page/setti
 13. **Backend login overwrites the local password** with whatever the external backend accepted.
 14. **Plugin and theme marketplace, `data/routes`, `data/pages`**: remote and local PHP is executed with full rights.
 
-### 5.2 PHP semantics that shape the API
+### 🐘 5.2 PHP semantics that shape the API
 
 15. **`setAPIResponse` ignores falsy arguments.** A handler cannot clear `message` or `data`, cannot set `data` to `false`, `0`, `[]` or `""`, and `setAPIResponse(null, 'Tab added')` keeps whatever result and status were there. Several "success" paths return a body from an earlier step.
 16. **`204` responses carry a JSON body** (`"Tab deleted"`, `"Token revoked"`, …). Most HTTP clients and servers drop it; some proxies reject it.
@@ -325,7 +330,7 @@ Seed data at setup: six groups (0–4, 999); tabs `Settings` (`api/v2/page/setti
 36. **Error handler recursion**: PHP warnings are added to the response only if the caller is level ≤ 1, which itself reads headers and config during error handling.
 37. **SOCKS proxy**: forwards only `Content-Type` and one auth header; unknown methods become GET; query string rebuilt with `http_build_query` (changes encoding and drops duplicates); upstream status code is not passed through (always the envelope's code, normally 200).
 
-## 6. What cannot be carried over as-is
+## 🚫 6. What cannot be carried over as-is
 
 - **PHP as the extension mechanism**: plugins extending the `Organizr` class, marketplace downloads of PHP, custom routes and pages. A compiled Rust binary cannot load these.
 - **`config.php`** as a PHP source file.
@@ -333,11 +338,11 @@ Seed data at setup: six groups (0–4, 999); tabs `Settings` (`api/v2/page/setti
 - **Per-request construction** of the whole application; in Rust this becomes shared state built once, with per-request extractors.
 - **`cron.php` driven by system cron**; becomes an in-process scheduler.
 
-## 6a. Addendum (2026-11-18): baseline moves to 2.1.5000
+## 🆕 6a. Addendum (2026-11-18): baseline moves to 2.1.5000
 
 The owner's live install runs Organizr **2.1.5000** (upstream `v2-develop` at `2c1d4199`, 2026-05-19), 212 commits after the clone audited above. The rewrite baseline is 2.1.5000. Differences from sections 1–5:
 
-**New upstream features**
+### ✨ New upstream features
 
 - **OIDC login** (`league/oauth2-client`): `GET /oidc/providers` (public, on the form-key bypass list), `GET /oidc/{provider}/authorize`, `GET /oidc/{provider}/callback` (writes HTML and returns outside the envelope), `GET /oidc/{provider}/test` (level 1). Providers: Authentik, Keycloak, PocketID, Zitadel. Discovery URL, PKCE, state held in a PHP session cookie (10 minutes, `SameSite=Lax`), group-claim mapping to Organizr groups (first / highest / lowest privilege), auto-create and link-by-email, auto-redirect from the login page (`#noredirect` to skip), custom logout URL. About 45 new config keys.
 - **Local login bypass**: `bypassLoginForLocal` + `localLoginUserId` log a "local" caller in as a fixed user with no password. `POST /login` skips it when the body has `bypass`, `username` or `oAuth`. Depends on the spoofable client IP (5.1 item 1).
@@ -345,7 +350,7 @@ The owner's live install runs Organizr **2.1.5000** (upstream `v2-develop` at `2
 - **Invites plugin**: Komga and Nextcloud account creation, Plex Home, Plex library labels (11 new functions).
 - **Pi-hole** item reworked (v6 API). Komga SSO moved to `/api/v2/users/me`.
 
-**Upstream fixes that change the audit**
+### 🩹 Upstream fixes that change the audit
 
 - `POST /users/recover` now needs the mailer enabled (`422 "Email functionality is not enabled"`) and always answers `200 "If the email exists in our system, a password reset has been sent to the user"`. Quirk 2 in 5.1 is reduced to "no rate limit, no confirmation step".
 - `POST /wizard` refuses with `401` once config and DB exist.
@@ -353,7 +358,9 @@ The owner's live install runs Organizr **2.1.5000** (upstream `v2-develop` at `2
 - Backend login no longer overwrites the stored password when no password was sent.
 - 808 default config keys (was 710).
 
-**What a real, long-lived install taught us (structure only; no live data is kept in this repository)**
+### 🏠 What a real, long-lived install taught us
+
+Structure only; no live data is kept in this repository.
 
 - Expired session rows are never purged; a long-lived install holds over a thousand.
 - **Mixed date formats in the same column**: older rows are `2018-05-08T01:28:03Z`, newer rows `2027-02-13 00:08:49`. Columns can be declared `DATE`/`TIMESTAMP` on an old install but `DATETIME` in current DDL. `users.locked` is often `NULL`. Column order differs from the DDL (`add_to_admin`, `group_id_max` appended by upgrades). The importer must read by column name and accept both date formats and NULLs.
@@ -362,8 +369,8 @@ The owner's live install runs Organizr **2.1.5000** (upstream `v2-develop` at `2
 - Installs carry local additions outside `data/`: extra tab and category images, extra CSS and JS files, static help pages. The importer report lists them.
 - Typical deployment: behind nginx, linuxserver-style `/config` layout, SQLite in rollback-journal mode.
 
-## 7. Notes for Phase 2 and 3
+## 📝 7. Notes for Phase 2 and 3
 
 - The toolchain is pinned to Rust 1.100. The parity oracle (real Organizr) runs in a container.
 - `rust-anything` supports PHP only in preview, at whole-app level (`app record` / `app replay` of a `php -S` server). Its useful idea for this project is the method: record the PHP app's real HTTP responses and replay them against the Rust build.
-- `docker-nagios-develop` build pattern to mirror: per-architecture builds (amd64, arm64) joined with `buildx imagetools create`, pushed to Docker Hub and GHCR, Trivy gate on CRITICAL, SBOM and provenance, hadolint, weekly rebuild.
+- `docker-nagios-develop` build pattern to mirror: per-architecture builds (amd64, arm64) joined with `buildx imagetools create`, pushed to Docker Hub and GHCR, Trivy gate on CRITICAL, SBOM and provenance, hadolint, weekly rebuild. (This project took the pattern with changes: it publishes to GHCR only, the Trivy gate stops on HIGH and CRITICAL findings that have a fix, and a weekly scan replaces the weekly rebuild. See [Releases and images](releases.md).)

@@ -1,75 +1,83 @@
-# API SOCKS
+# 🧦 API SOCKS
 
-With the API SOCKS, a script reaches the API of an application through Organizr. Organizr passes the request on to the address of the application in the settings. So the application needs no port forward and no reverse proxy of its own.
+[← All documentation](README.md)
 
-The name comes from PHP Organizr. It has nothing to do with the SOCKS protocol of proxies.
+The API SOCKS lets a script reach the API of Sonarr, Radarr and a few others **through Organizr**. Organizr passes the request on to the application's address from the settings, so the application needs no port forward and no reverse proxy of its own. You need this page if a script or a mobile app should talk to your apps from outside.
 
-## The applications
+The name comes from PHP Organizr. It has nothing to do with the SOCKS proxy protocol.
 
-| Application | Address in the path | Where the script puts the key of the application |
+## 📱 The applications
+
+| Application | Name in the path | Where the script puts the application's key |
 |---|---|---|
 | Sonarr | `sonarr` | The header `X-Api-Key` |
 | Radarr | `radarr` | The header `X-Api-Key` |
 | Lidarr | `lidarr` | The header `X-Api-Key` |
 | SABnzbd | `sabnzbd` | The query field `apikey` |
-| NZBGet | `nzbget` | The header `Authorization` with the user name and the password, or the path: `/<user>:<password>/jsonrpc` |
+| NZBGet | `nzbget` | The header `Authorization` with the user name and password, or the path: `/<user>:<password>/jsonrpc` |
 | Tautulli | `tautulli` | The query field `apikey` |
 | qBittorrent | `qbittorrent` | No key. qBittorrent must let Organizr in without a login, for example with "Bypass authentication for clients in whitelisted IP subnets" |
 
-Organizr never adds the key from its own settings. The script brings the key, as with PHP Organizr. So a person who can use the API SOCKS can do only what the key of that person allows.
+**Organizr never adds the key from its own settings.** The script brings the key, as with PHP Organizr. So a caller can do only what their own key allows.
 
-## Switching it on
+## 🚀 Switch it on
 
-Open **Settings**, then **Tab Editor**, then **Homepage Items**, and select the picture of the application. Each of the seven applications has two settings in the group **API SOCKS**:
+1. Open **Settings › Tab Editor › Homepage Items**, and select the picture of the application.
+2. In the application's address field, enter its **full address with the host**, for example `http://192.168.1.20:8989`.
+3. In the group **API SOCKS**, switch on **Enable**. It's off at the start.
+4. Set **Minimum Authentication** to the group with the least access that may use it. It starts at the guest level, which means **everybody, also people who aren't logged in**. Pick a level with more access unless the application checks a key itself.
+5. Select **Save**.
 
-- **Enable** switches the API SOCKS of the application on. It is off at the start.
-- **Minimum Authentication** names the group with the least access that may use it. At the start it is the guest level, so everybody may use it once it is on. Choose a level with more access unless the application asks for a key itself.
+> [!CAUTION]
+> **An address that is only a path, together with the guest level, makes Organizr an open relay.** An address such as `/sonarr` works as in PHP Organizr: Organizr puts the scheme and host of the incoming request in front of it. That host comes from the caller's `Host` header, so anybody on the internet could make Organizr send requests to any host they like. Use a full address, and a level above guest.
 
-Use a full address with its host, such as `http://192.168.1.20:8989`. An address that is only a path, such as `/sonarr`, works as in PHP Organizr: Organizr puts the scheme and the host of the request in front. The host then comes from the `Host` header of the caller, so a caller can choose where such a request goes.
+## 🚨 Watch out
 
-## Warnings
+- **NZBGet and a proxy password.** Organizr passes the caller's `Authorization` header on to NZBGet, as PHP Organizr does. A browser behind a reverse proxy that asks for a password sends that password in this header. With the API SOCKS of NZBGet on, that password reaches NZBGet.
+- **Applications that trust Organizr.** An application that lets requests from Organizr's address in without a key (such as qBittorrent with "Bypass authentication for clients in whitelisted IP subnets") lets in everybody who has the level of its API SOCKS, for every method, DELETE included. Choose the level with care.
 
-- **NZBGet and a password of a reverse proxy.** Organizr passes the `Authorization` header of the caller on to NZBGet, as PHP Organizr does. A browser behind a reverse proxy that asks for a password sends that password in this header. With the API SOCKS of NZBGet on, that password then reaches NZBGet.
-- **Addresses that are only a path.** An address such as `/sonarr` takes its host from the request, so the caller chooses the host. Enter the full address of the application instead.
-- **Applications that trust Organizr.** An application that lets requests from the address of Organizr in without a key, such as qBittorrent with "Bypass authentication for clients in whitelisted IP subnets", lets in everybody who has the level of its API SOCKS, for every method, also DELETE. Choose the level with care.
+## 🔗 The address of a request
 
-## The address of a request
+With one address in the settings:
 
-For one address in the settings:
-
-```
+```text
 https://organizr.example.com/api/v2/socks/sonarr/api/v3/queue?page=2
 ```
 
-Organizr sends `GET http://192.168.1.20:8989/api/v3/queue?page=2` to Sonarr. Everything after `/socks/sonarr` goes after the address of Sonarr: the path, and the query.
+Organizr sends `GET http://192.168.1.20:8989/api/v3/queue?page=2` to Sonarr. Everything after `/socks/sonarr` (the path and the query) goes after Sonarr's address.
 
-When the address field holds several addresses with commas between them, name the place of the address, from 1:
+When the address field holds several addresses separated by commas, name the one you want by its position, starting at 1:
 
-```
+```text
 https://organizr.example.com/api/v2/multiple/socks/sonarr/2/api/v3/queue
 ```
 
-The form must match the settings. With commas, `/socks/` gets `409 "Multiple URLs found in field, please use /api/v2/multiple/socks endpoint"`. Without commas, `/multiple/socks/` gets `409 "Multiple endpoint accessed but multiple URLs not found in field, please use /api/v2/socks endpoint"`.
+The form must match the settings:
 
-## What goes to the application
+- With commas, `/socks/` gets `409 "Multiple URLs found in field, please use /api/v2/multiple/socks endpoint"`.
+- Without commas, `/multiple/socks/` gets `409 "Multiple endpoint accessed but multiple URLs not found in field, please use /api/v2/socks endpoint"`.
 
-- **Method**: GET, POST, PUT and DELETE go as they are. PATCH and OPTIONS go as GET, as in PHP Organizr.
-- **Body**: a POST takes a body of JSON or of a form, a PUT one of JSON, at most 2 MiB. Other bodies, and the body of a DELETE, do not go.
-- **Headers**: only the key header of the application and `Content-Type`. Cookies and the `token` header of Organizr never leave Organizr. Only NZBGet gets the `Authorization` header, as its key.
-- **Query**: every field of the query, except `apikey` when it holds the API key of Organizr.
+## 📤 What goes to the application
 
-The path cannot leave the address of the application. A part `.` or `..`, or a code such as `%2e%2e` or `%2f`, gets `400 "The path must not leave the address of the application"`.
+| Part | What Organizr passes on |
+|---|---|
+| **Method** | GET, POST, PUT and DELETE as they are. PATCH and OPTIONS go as GET, as in PHP Organizr |
+| **Body** | A POST with a JSON or form body, a PUT with a JSON body, at most 2 MiB. Other bodies, and the body of a DELETE, are dropped |
+| **Headers** | Only the application's key header and `Content-Type`. Cookies and the Organizr `token` header never leave Organizr. Only NZBGet gets the `Authorization` header, as its key |
+| **Query** | Every field, except `apikey` when it holds the Organizr API key |
 
-## The answer
+The path can't leave the application's address. A part `.` or `..`, or an encoded form such as `%2e%2e` or `%2f`, gets `400 "The path must not leave the address of the application"`.
 
-The answer holds the body of the answer of the application, as it is. Its status is always 200 and its content type is JSON, as in PHP Organizr. A script reads the body to see whether the application accepted the request.
+## 📥 The answer
+
+The answer holds the application's response body as it is. Its status is always `200` and its content type is JSON, as in PHP Organizr. A script reads the body to see whether the application accepted the request.
 
 | Status | Text | Meaning |
 |---|---|---|
-| `404` | `Application not supported for socks` | The name in the path is not one of the seven |
-| `409` | `SOCKS module is not enabled` | The switch of the application is off |
-| `401` | `Not Authorized` | The caller does not have the level |
-| `409` | `Instance not found in field` | The place in the multiple form names no address |
-| `500` | A text without the address | The application cannot be reached, or does not answer within 120 seconds |
+| `404` | `Application not supported for socks` | The name in the path isn't one of the seven |
+| `409` | `SOCKS module is not enabled` | The application's **Enable** switch is off |
+| `401` | `Not Authorized` | The caller doesn't have the level |
+| `409` | `Instance not found in field` | The position in the multiple form names no address |
+| `500` | A text without the address | The application can't be reached, or doesn't answer within 120 seconds |
 
-The log never holds the address of a request or the body of an answer, because both can hold keys.
+The log never holds the address of a request or the body of an answer, because both can contain keys.

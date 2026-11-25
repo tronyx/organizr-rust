@@ -1,85 +1,115 @@
-# Single sign-on
+# 🔗 Single sign-on
 
-With single sign-on, a person who logs in to Organizr is logged in to your other applications too: Plex Web, Ombi, Overseerr, Tautulli, Petio, Komga and Jellyfin.
+[← All documentation](README.md)
 
-## How it works
+Log in to Organizr once, and you're logged in to your other applications too: **Plex Web, Ombi, Overseerr, Tautulli, Petio, Komga and Jellyfin**. No second login screen when you open a tab. You need this page if your users keep asking "why do I have to log in again?"
 
-At a login, Organizr asks each application for a session of the user. It hands each session to the browser as the cookie that the application itself sets after a login. When the person opens the application, the browser sends the cookie, and the application sees a user who is logged in.
+## 🧠 How it works
 
-For this, the application and Organizr must be on the same domain, for example `organizr.example.com` and `ombi.example.com`. The cookies are for the whole domain, `.example.com`. An application that is reached by another domain, or by an IP address, does not get them.
+When someone logs in to Organizr, Organizr asks each application for a session for that user. It hands each session to the browser as the same cookie the application would set after its own login. When the person opens the application, the browser sends the cookie, and the application sees a logged-in user.
 
-Organizr asks with what the login brought:
+What Organizr uses to ask:
 
-- After a login through Plex, with the Plex token of the user. See [Logging in with a Plex account](plex-login.md).
-- After a login with a password of Organizr, with the user name, or the e-mail address, and that password. This works when the user has the same name and password in the application.
+- **After a Plex login**, the user's Plex token. See [Logging in with a Plex account](plex-login.md).
+- **After a login with an Organizr password**, the user name (or e-mail address) and that password. This works when the user has the same name and password in the application.
 
 A logout of Organizr makes the browser drop the cookies.
 
-## Set it up
+### 🌍 Everything on one domain
+
+The cookies are set for the whole domain, for example `.example.com`. So the applications and Organizr must share it: `organizr.example.com`, `ombi.example.com`, and so on. An application reached by another domain, or by an IP address, doesn't get the cookies.
+
+> [!WARNING]
+> **Every site under that domain receives the cookies**, including the Organizr login cookie, whether it's one of your apps or not. A compromised or untrusted app on a sibling subdomain can read every visitor's Organizr session. Put only applications you trust under the same domain as Organizr.
+
+## 🚀 Set it up
 
 1. Log in as an Admin.
-2. Open **Settings**, then **System Settings**, then **SSO**.
-3. For each application, select its group, switch **Enable** on, and enter its address.
-4. Select **Save**.
-5. Log out and log in again. The sessions are made at a login.
+2. Open **Settings › System Settings › SSO**. Each application has its own section.
+3. For each application you want, fill in its section and switch on **Enable**:
 
-| Application | Switch | Address | Cookie |
+   | Section | What to fill in |
+   |---|---|
+   | **Plex** | **API Key/Token**, **Plex Machine ID** and **Plex Admin Username or Email** (the same settings as the [Plex login](plex-login.md#-set-it-up)) |
+   | **Tautulli** | **Multiple URL's** (one address or several) and **Minimum Authentication** |
+   | **Overseerr** | **URL**, **API Key/Token**, and optionally a [fallback user](#-fallback-users) |
+   | **Petio** | **URL**, **API Key/Token**, and optionally a [fallback user](#-fallback-users) |
+   | **Ombi** | **URL**, **API Key/Token**, and optionally a [fallback user](#-fallback-users) |
+   | **Jellyfin** | **Jellyfin API URL** and **Jellyfin SSO URL** (see [Jellyfin](#-jellyfin)) |
+   | **Komga** | **URL**, **Minimum Authentication**, and the [Komga](#-komga) passwords |
+
+4. Select **Save**.
+5. Log out and log in again. Sessions are only made at a login.
+
+### 📋 The switches and cookies
+
+| Application | Switch | Address setting | Cookie it gets |
 |---|---|---|---|
-| Plex Web | `ssoPlex` | | `mpt`, the Plex token of the user |
+| Plex Web | `ssoPlex` | | `mpt`, the user's Plex token |
 | Ombi | `ssoOmbi` | `ombiURL` | `Auth` |
 | Overseerr | `ssoOverseerr` | `overseerrURL` | `connect.sid` |
 | Tautulli | `ssoTautulli` | `tautulliURL` | `tautulli_token_<id of the install>` |
 | Petio | `ssoPetio` | `petioURL` | `petio_jwt` |
-| Komga | `ssoKomga` | `komgaURL` | `komga_token`. See [Komga](#komga) |
-| Jellyfin | `ssoJellyfin` | `jellyfinURL` and `jellyfinSSOURL` | `jellyfin_credentials` and `user-<user>-<server>`. See [Jellyfin](#jellyfin) |
+| Komga | `ssoKomga` | `komgaURL` | `komga_token`. See [Komga](#-komga) |
+| Jellyfin | `ssoJellyfin` | `jellyfinURL` and `jellyfinSSOURL` | `jellyfin_credentials` and `user-<user>-<server>`. See [Jellyfin](#-jellyfin) |
 
-### Fallback users
+> [!CAUTION]
+> **The Plex cookie holds the user's Plex token, and scripts on any page of your domain can read it.** Plex Web needs it that way. Switch on SSO for Plex only when you trust every application on the domain.
 
-Ombi, Overseerr and Petio can have a fallback user: `ombiFallbackUser` with `ombiFallbackPassword`, `overseerrFallbackUser` with `overseerrFallbackPassword`, and `petioFallbackUser` with `petioFallbackPassword`. A user whom the application does not know is then logged in as the fallback user. Without a fallback user, such a user gets no session of that application.
+## 🛟 Fallback users
+
+Ombi, Overseerr and Petio can have a fallback user: `ombiFallbackUser` with `ombiFallbackPassword`, `overseerrFallbackUser` with `overseerrFallbackPassword`, and `petioFallbackUser` with `petioFallbackPassword`. (The form labels them **… Fallback Email** and **… Fallback Password**.) A user the application doesn't know is then logged in as the fallback user. Without a fallback user, such a user simply gets no session for that application.
 
 For Overseerr, the fallback user is an e-mail address.
 
-### Ombi imports its users
+> [!WARNING]
+> **Everyone the application doesn't know gets the rights of the fallback account**: guests who signed up with the registration password included. Make it an account with the fewest rights, never an admin of the application.
 
-When the first login of a person through Plex or Emby makes their account in Organizr, Organizr asks Ombi to import the users of that media server, as PHP Organizr does. So Ombi knows the new person, and single sign-on to Ombi works for them. This happens when **Authentication Backend** (`authBackend`) is `plex` or one of the Emby backends, and the address `ombiURL` and the key `ombiToken` of Ombi are set. Organizr does not wait for Ombi: the login goes on, and the log says whether Ombi ran the import (D-124).
+## 📥 Ombi imports its users
 
-### Tautulli
+When someone's first login through Plex or Emby creates their Organizr account, Organizr asks Ombi to import the users of that media server, as PHP Organizr does. So Ombi knows the new person, and SSO to Ombi works for them right away.
 
-`tautulliURL` can hold more than one address, with commas between them. Each Tautulli install gets its own cookie, at the path of the install.
+This happens when **Authentication Backend** (`authBackend`) is `plex` or one of the Emby backends, and Ombi's **URL** (`ombiURL`) and **API Key/Token** (`ombiToken`) are set. Organizr doesn't wait for Ombi: the login goes on, and the log says whether Ombi ran the import (D-124).
 
-`ssoTautulliAuth` is a level. Only users of that level, or with more access, get a session of Tautulli.
+## 📊 Tautulli
 
-### Komga
+- **Multiple URL's** (`tautulliURL`) can hold more than one address, with commas between them. Each Tautulli install gets its own cookie, at the path of the install.
+- **Minimum Authentication** (`ssoTautulliAuth`) is a level. Only users of that level, or with more access, get a Tautulli session.
 
-Komga knows its users by their e-mail address. Organizr asks Komga for a session with the e-mail address of the user and the password of the login.
+## 📚 Komga
 
-| Setting | Meaning |
+Komga knows its users by their e-mail address. Organizr asks Komga for a session with the user's e-mail address and the password of the login.
+
+| Setting | What it does |
 |---|---|
-| `ssoKomgaAuth` | A level. Only users of that level, or with more access, get a session of Komga |
-| `komgaSSOMasterPassword` | **Komga Master Password**: the password for a login that brings none, through Plex or OpenID Connect |
-| `komgaFallbackUser`, `komgaFallbackPassword` | The fallback account, an e-mail address and its password |
+| **Minimum Authentication** (`ssoKomgaAuth`) | A level. Only users of that level, or with more access, get a Komga session |
+| **Komga Master Password** (`komgaSSOMasterPassword`) | The password Organizr uses for a login that brings none (through Plex or OpenID Connect) |
+| **Komga Fallback Email**, **Komga Fallback Password** (`komgaFallbackUser`, `komgaFallbackPassword`) | The fallback account: an e-mail address and its password |
 
-A logout of Organizr also ends the session at Komga. PHP Organizr asks an address that a current Komga no longer has, so there the session lives on (D-117).
+> [!WARNING]
+> With **Komga Master Password** set, every Plex or OpenID Connect login gets a Komga session through it. Like the fallback user, give it as few rights as you can.
 
-### Jellyfin
+A logout of Organizr also ends the session at Komga. PHP Organizr calls an address that current Komga versions no longer have, so there the session lives on (D-117).
 
-Jellyfin keeps its login in the storage of the browser, not in a cookie. So Organizr does two things:
+## 🪼 Jellyfin
 
-1. At a login with a password, it asks Jellyfin for a session with the user name and the password. It hands the session to the browser as two cookies, as PHP Organizr does: `jellyfin_credentials`, with the address of Jellyfin, the user and the access token, and `user-<user>-<server>`, with the user.
-2. The page of Organizr copies the two cookies into the storage of the browser. Jellyfin reads them there and shows the user as logged in.
+Jellyfin keeps its login in the browser's storage, not in a cookie. So Organizr does two things:
 
-The storage of the browser belongs to one site. So the copy of step 2 works only when Jellyfin is a path of the site of Organizr, for example `https://organizr.example.com/jellyfin`. The settings:
+1. At a login with a password, it asks Jellyfin for a session with the user name and password. It hands the session to the browser as two cookies, as PHP Organizr does: `jellyfin_credentials` (the Jellyfin address, the user and the access token) and `user-<user>-<server>` (the user).
+2. The Organizr page copies the two cookies into the browser's storage. Jellyfin reads them there and shows the user as logged in.
 
-| Setting | Meaning |
+Browser storage belongs to one site. So step 2 only works when Jellyfin is a **path** of the Organizr site, for example `https://organizr.example.com/jellyfin`.
+
+| Setting | What it does |
 |---|---|
-| **Jellyfin API URL** (`jellyfinURL`) | The address that Organizr asks, for example `http://jellyfin:8096` |
+| **Jellyfin API URL** (`jellyfinURL`) | The address Organizr calls, for example `http://jellyfin:8096` |
 | **Jellyfin SSO URL** (`jellyfinSSOURL`) | The address of Jellyfin in the browser, for example `https://organizr.example.com/jellyfin` |
 
-In Jellyfin, enter the path as the **Base URL** in **Dashboard**, **Networking**. The [Reverse proxy](reverse-proxy.md#a-tab-with-a-path) page tells you how to send a path to an application.
+In Jellyfin, enter the path as the **Base URL** in **Dashboard › Networking**. [A tab with a path](reverse-proxy.md#-a-tab-with-a-path) shows how to send a path to an application.
 
-#### Jellyfin on a site of its own
+### 🏡 Jellyfin on a site of its own
 
-When Jellyfin has a site of its own, for example `https://jellyfin.example.com`, the page of Organizr cannot write into its storage. A script on the pages of Jellyfin then does the copy. With nginx, add this to the location of Jellyfin:
+When Jellyfin has its own site, for example `https://jellyfin.example.com`, the Organizr page can't write into its storage. A small script on the Jellyfin pages does the copy instead. With nginx, add this to the Jellyfin location:
 
 ```nginx
 location / {
@@ -92,17 +122,16 @@ location / {
 }
 ```
 
-The script holds no `$`: nginx reads `$` in `sub_filter` as the start of a variable. Set **Jellyfin SSO URL** to the address of that site. Organizr and Jellyfin must share the domain, as for every application of single sign-on.
+The script contains no `$` on purpose: nginx reads `$` in `sub_filter` as the start of a variable. Set **Jellyfin SSO URL** to the address of that site. Organizr and Jellyfin must still share the domain.
 
-#### What to know about Jellyfin
+### 💡 Good to know about Jellyfin
 
-- A login through Plex or OpenID Connect brings no password, so it gets no session of Jellyfin. The user logs in to Jellyfin as usual.
-- A logout of Organizr drops the cookies, and the page of Organizr takes the login of Jellyfin out of the storage of the browser.
-- With Jellyfin on a site of its own, the page of Organizr cannot reach the storage of that site. After a logout of Organizr, Jellyfin stays logged in until the person logs out in Jellyfin. And while the cookies are there, the script copies the login again, also after a logout in Jellyfin.
-- The access token of Jellyfin is in a cookie that scripts of the pages on your domain can read, as in PHP Organizr, and Jellyfin keeps it in the storage of the browser itself.
+- A login through Plex or OpenID Connect brings no password, so it gets no Jellyfin session. The user logs in to Jellyfin as usual.
+- A logout of Organizr drops the cookies, and the Organizr page removes the Jellyfin login from the browser's storage.
+- With Jellyfin on its own site, the Organizr page can't reach that site's storage. After a logout of Organizr, Jellyfin stays logged in until the person logs out in Jellyfin. And while the cookies are there, the script copies the login back, even after a logout in Jellyfin.
+- The Jellyfin access token is in a cookie that scripts on your domain's pages can read, as in PHP Organizr, and Jellyfin keeps it in the browser's storage itself.
 
-## Good to know
+## 🔧 Good to know
 
-- An application that does not answer does not stop the login. Organizr waits for each application for at most one minute, divided by the number of applications that are switched on.
-- Organizr checks the certificate of an application that it reaches by a name over HTTPS. It does not check the certificate of an application that it reaches by an IP address over HTTPS, because no authority signs a certificate for such an address.
-- The Plex cookie holds the Plex token of the user, and scripts of the pages on your domain can read it. Plex Web needs that. Switch `ssoPlex` on only when you trust every application on the domain.
+- **A slow app doesn't block the login.** Organizr waits for each application at most one minute, divided by the number of applications switched on.
+- **Certificates:** Organizr checks the certificate of an application it reaches by a **name** over HTTPS. It does **not** check the certificate of an application it reaches by an **IP address** over HTTPS, because no authority signs certificates for addresses. Use names if the connection crosses a network you don't trust.

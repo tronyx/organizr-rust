@@ -1,17 +1,39 @@
 # Organizr with SQLite, the default database: one container and one volume.
-# Start it with: docker compose -f compose.sqlite.yaml up -d
+#
+# Save this file as compose.yaml in a new folder (for example "organizr"), then run
+# this in that folder:
+#   docker compose up -d
+#   docker compose logs organizr | grep "set-up code"
+# Open http://<your server>:8080 and enter the set-up code in the wizard.
+# Coming from PHP Organizr? Run the import before you open the wizard:
+# see docs/moving-from-php.md.
+#
+# Compose puts the folder name in front of the names: the volume becomes
+# <folder>_organizr-data and the container <folder>-organizr-1.
+# Every setting of the container is in docs/configuration.md.
 services:
   organizr:
     image: ghcr.io/tronyx/organizr-rust:develop
     restart: unless-stopped
     ports:
+      # Plain HTTP. Fine on your home network, but never forward it from your router.
+      # Once a reverse proxy with HTTPS sits in front, remove these two lines (or use
+      # "127.0.0.1:8080:8080"), so that nobody can reach Organizr around the proxy.
       - "8080:8080"
     volumes:
-      # The database, the key for the stored secrets and the uploaded pictures.
+      # The database, the key for the stored secrets (secret.key), the uploaded
+      # pictures, the logs and the backups. "docker compose down -v" deletes it.
       - organizr-data:/config
+    # Behind a reverse proxy, trust only the address of the proxy itself, and remove
+    # the "ports:" lines above. Never trust a whole Docker range such as 172.16.0.0/12
+    # while port 8080 is published: every other container, and on some setups every
+    # client of the published port, could then fake its address. To find the
+    # address of your proxy container:
+    #   docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' <proxy>
+    # See docs/reverse-proxy.md for a fixed address that survives restarts.
     # environment:
-    #   # The addresses of your reverse proxy, when Organizr runs behind one.
-    #   ORGANIZR_TRUSTED_PROXIES: "172.16.0.0/12"
+    #   ORGANIZR_TRUSTED_PROXIES: "172.20.0.2"   # the address of your proxy
+    #   TZ: "America/New_York"                   # your time zone, for the schedules
 
 volumes:
   organizr-data:
