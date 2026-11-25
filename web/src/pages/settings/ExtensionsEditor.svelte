@@ -162,7 +162,7 @@
 {#if rows || error}
   <section class="mt-8" aria-labelledby="extensions-title">
     <h2 id="extensions-title" class="text-base font-semibold">Extensions</h2>
-    <p class="my-2 max-w-2xl text-sm">
+    <p class="my-2 max-w-2xl">
       An extension is a program of another author in the folder plugins of the data folder. It runs
       in a sandbox: it has no files and no network. It answers requests only after the Admin
       approved it.
@@ -171,10 +171,10 @@
       <div role="alert" class="alert alert-error mb-4"><span>{error}</span></div>
     {/if}
     {#if rows && rows.length === 0}
-      <p class="text-sm">There are no extensions in the folder.</p>
+      <p>There are no extensions in the folder.</p>
     {:else if rows}
       <div class="overflow-x-auto">
-        <table class="table-sm table" aria-label="Extensions">
+        <table class="org-table org-table-grid" aria-label="Extensions">
           <thead>
             <tr>
               <th scope="col">Extension</th>
@@ -189,62 +189,65 @@
                 <td>
                   <span class="font-medium">{row.name}</span>
                   {row.version}
-                  {#if row.author}<span class="text-xs">by {row.author}</span>{/if}
-                  <br /><span class="text-xs">{row.description}</span>
+                  {#if row.author}<span class="opacity-70">by {row.author}</span>{/if}
+                  <br /><span>{row.description}</span>
                 </td>
                 <td>{levelText(row.least_access)}</td>
                 <td>{stateOf(row)}</td>
-                <td class="whitespace-nowrap">
-                  {#if row.enabled}
-                    <a
-                      class="btn btn-ghost btn-xs"
-                      href={apiUrl(`extension/${row.id}/`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Open
-                    </a>
-                  {/if}
-                  {#if canChange}
+                <td>
+                  <span class="flex flex-wrap items-center gap-2">
                     {#if row.enabled}
+                      <a
+                        class="org-form-button"
+                        href={apiUrl(`extension/${row.id}/`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Open
+                      </a>
+                    {/if}
+                    {#if canChange}
+                      {#if row.enabled}
+                        <button
+                          type="button"
+                          class="org-form-button"
+                          disabled={busy}
+                          aria-label="Switch {row.name} off"
+                          onclick={() =>
+                            act(
+                              () => api('POST', `extensions/${row.id}/disable`),
+                              `The extension ${row.name} is switched off.`,
+                            )}
+                        >
+                          Switch off
+                        </button>
+                      {:else if !row.problem}
+                        <button
+                          type="button"
+                          class="org-form-button"
+                          disabled={busy}
+                          aria-label="Approve {row.name}"
+                          onclick={() => (asking = row)}
+                        >
+                          Approve
+                        </button>
+                      {/if}
                       <button
                         type="button"
-                        class="btn btn-ghost btn-xs"
+                        class="org-round-button org-round-danger"
                         disabled={busy}
-                        aria-label="Switch {row.name} off"
+                        aria-label="Delete {row.name}"
+                        title="Delete"
                         onclick={() =>
                           act(
-                            () => api('POST', `extensions/${row.id}/disable`),
-                            `The extension ${row.name} is switched off.`,
+                            () => api('DELETE', `extensions/${row.id}`),
+                            `The extension ${row.name} is deleted.`,
                           )}
                       >
-                        Switch off
-                      </button>
-                    {:else if !row.problem}
-                      <button
-                        type="button"
-                        class="btn btn-ghost btn-xs"
-                        disabled={busy}
-                        aria-label="Approve {row.name}"
-                        onclick={() => (asking = row)}
-                      >
-                        Approve
+                        <i class="oi-themify ti-trash" aria-hidden="true"></i>
                       </button>
                     {/if}
-                    <button
-                      type="button"
-                      class="btn btn-ghost btn-xs"
-                      disabled={busy}
-                      aria-label="Delete {row.name}"
-                      onclick={() =>
-                        act(
-                          () => api('DELETE', `extensions/${row.id}`),
-                          `The extension ${row.name} is deleted.`,
-                        )}
-                    >
-                      Delete
-                    </button>
-                  {/if}
+                  </span>
                 </td>
               </tr>
             {/each}
@@ -257,15 +260,15 @@
     {/if}
     {#if market}
       <h3 class="mt-6 font-medium">Marketplace</h3>
-      <p class="my-2 max-w-2xl text-sm">
+      <p class="my-2 max-w-2xl">
         An install downloads the file of an extension and makes sure that it is the file that the
         marketplace names. The extension then waits for your approval in the list above.
       </p>
       {#if market.length === 0}
-        <p class="text-sm">The marketplace offers no extensions.</p>
+        <p>The marketplace offers no extensions.</p>
       {:else}
         <div class="overflow-x-auto">
-          <table class="table-sm table" aria-label="Extensions of the marketplace">
+          <table class="org-table org-table-grid" aria-label="Extensions of the marketplace">
             <thead>
               <tr>
                 <th scope="col">Extension</th>
@@ -279,15 +282,15 @@
                   <td>
                     <span class="font-medium">{row.name}</span>
                     {row.version}
-                    {#if row.author}<span class="text-xs">by {row.author}</span>{/if}
-                    <br /><span class="text-xs">{row.description}</span>
+                    {#if row.author}<span class="opacity-70">by {row.author}</span>{/if}
+                    <br /><span>{row.description}</span>
                   </td>
                   <td>{marketState(row)}</td>
                   <td>
                     {#if canChange && !row.problem && !(row.installed && row.up_to_date)}
                       <button
                         type="button"
-                        class="btn btn-ghost btn-xs"
+                        class="org-form-button"
                         disabled={busy}
                         aria-label="Install {row.name}"
                         onclick={() =>

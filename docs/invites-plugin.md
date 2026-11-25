@@ -12,7 +12,7 @@ The plugin shares the server with the Plex token and the Plex ID of the install.
 2. Open **Settings**, select the tab **Plugins**, and select **Inactive**.
 3. Point at the card **Invites**, and select the button with the plug.
 4. Select **Active**. Point at the card **Invites**, and select the button with the panel. The window **Invites Settings** opens.
-5. In the section **Plex**, make sure that the fields **Plex Token** and **Plex Machine** hold a value. **System Settings**, **SSO**, section **Plex** has the same two fields.
+5. In the section **Plex**, make sure that the fields **Plex Token** and **Plex Machine ID** hold a value. **System Settings**, **SSO**, section **Plex** has the same two fields.
 6. Fill in the other fields of the plugin, and select **Save**.
 
 | Field | Meaning |

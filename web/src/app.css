@@ -2215,11 +2215,12 @@
     width: 50px;
   }
 
+  /* PHP's .tabEditorIcon: pictures and icons 35 pixels wide. */
   .org-table-picture img,
   .org-table-picture i {
-    max-width: 30px;
-    max-height: 30px;
-    font-size: 26px;
+    max-width: 35px;
+    max-height: 35px;
+    font-size: 30px;
   }
 
   .org-table-select {
@@ -2582,23 +2583,28 @@
   }
 
   /* The tiles of Homepage Order, with the colors of PHP. */
+  /* Boxes at least 320 pixels wide, so the longest name fits: four per row on a wide page,
+     as PHP's col-md-3 boxes, and fewer where the page is narrower. */
   .org-order-tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
     gap: 10px;
   }
 
+  /* PHP's .homepage-drag: 60 pixels high, rounded by 10, the picture as high as the box
+     inside its padding. */
   .org-order-tile {
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: 40px;
+    height: 60px;
     padding: 5px 10px;
-    border-radius: 3px;
+    border-radius: 10px;
     background-position: right 10px center;
     background-repeat: no-repeat;
-    background-size: 30px;
+    background-size: auto 50px;
     color: #ffffff;
+    font-size: 13px;
   }
 
   .org-order-tile.org-faded {
@@ -2625,7 +2631,7 @@
 
   .org-order-handle {
     padding: 4px;
-    font-size: 16px;
+    font-size: 18px;
     touch-action: none;
   }
 
@@ -2640,16 +2646,21 @@
 
   .org-order-name {
     flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
     font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .org-order-moves {
     display: inline-flex;
-    margin-right: 36px;
+    margin-right: 56px;
   }
 
   .org-order-moves button {
     padding: 2px 4px;
+    font-size: 16px;
     cursor: pointer;
   }
 

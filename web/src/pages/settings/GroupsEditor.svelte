@@ -84,7 +84,7 @@
         {#each groups as group (group.id)}
           <tr>
             <td class="org-table-picture text-center">
-              <Picture image={group.image} name={group.group} />
+              <Picture image={group.image} name={group.group} editor />
             </td>
             <th scope="row" translate="no">{group.group}</th>
             <td class="text-center">{userCount(group)}</td>

@@ -48,7 +48,7 @@
     <div role="alert" class="alert alert-error my-2"><span>{error}</span></div>
   {/if}
   {#if status}
-    <p class="my-2 text-sm">
+    <p class="my-2">
       This install runs version {status.current}.
       {#if status.latest}
         The newest release is version {status.latest}.
@@ -57,8 +57,8 @@
       {/if}
     </p>
   {/if}
-  <button type="button" class="btn btn-sm" disabled={busy} onclick={check}>
+  <button type="button" class="org-form-button" disabled={busy} onclick={check}>
     {#if busy}<span class="loading loading-spinner loading-xs"></span>{/if}
-    Look for a new version now
+    Check for updates now
   </button>
 </section>

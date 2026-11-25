@@ -61,6 +61,11 @@ export interface SettingField {
   /** The values of a list are secrets, shown as dots. */
   hiddenValues?: boolean;
   /**
+   * A text field whose value shows as dots until the Admin shows it, as a secret does. The
+   * server still sends the value, so the form fills it in and the Admin can change it.
+   */
+  masked?: boolean;
+  /**
    * The language of the code that the setting holds. It describes the setting; the form
    * does not use it to draw the field.
    */

@@ -150,7 +150,7 @@
           .filter((part) => part !== ''),
       )}
   />
-{:else if field.kind === 'secret' || field.kind === 'secret-copy'}
+{:else if field.kind === 'secret' || field.kind === 'secret-copy' || field.masked}
   <div class="org-input-group">
     <input
       {id}

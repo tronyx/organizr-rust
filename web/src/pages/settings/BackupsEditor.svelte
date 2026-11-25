@@ -74,7 +74,7 @@
 
 <section class="mt-8" aria-labelledby="backups-title">
   <h2 id="backups-title" class="text-base font-semibold">Backups</h2>
-  <p class="my-2 max-w-2xl text-sm">
+  <p class="my-2 max-w-2xl">
     A backup is a zip file with the pictures and the other files of the data folder. With SQLite, it
     also holds the database. With PostgreSQL, save the database with the tools of PostgreSQL. A
     backup never holds the key for the stored secrets: keep a copy of the file secret.key at a safe
@@ -95,7 +95,7 @@
   {#if list}
     <button
       type="button"
-      class="btn btn-sm btn-primary mb-4"
+      class="org-form-button mb-4"
       disabled={busy}
       onclick={() => act(() => api('POST', 'backup'), 'The backup is made.')}
     >
@@ -103,13 +103,13 @@
       Make a backup now
     </button>
     {#if list.files === null}
-      <p class="text-sm">There are no backups yet.</p>
+      <p>There are no backups yet.</p>
     {:else}
-      <p class="text-sm">
+      <p>
         {list.total_files} backups, {list.total_size} in all.
       </p>
       <div class="overflow-x-auto">
-        <table class="table-sm table" aria-label="Backups">
+        <table class="org-table org-table-grid" aria-label="Backups">
           <thead>
             <tr>
               <th scope="col">File</th>
@@ -121,31 +121,35 @@
           <tbody>
             {#each list.files as backup (backup.name)}
               <tr>
-                <td class="font-mono text-xs">{backup.name}</td>
+                <td class="font-mono">{backup.name}</td>
                 <td class="whitespace-nowrap">{dateText(backup.date)}</td>
                 <td class="whitespace-nowrap">{backup.size}</td>
                 <td class="whitespace-nowrap">
-                  <a
-                    class="btn btn-ghost btn-xs"
-                    href={apiUrl(`backup/${encodeURIComponent(backup.name)}`)}
-                    download={backup.name}
-                    aria-label="Save {backup.name} to this computer"
-                  >
-                    Save
-                  </a>
-                  <button
-                    type="button"
-                    class="btn btn-ghost btn-xs"
-                    disabled={busy}
-                    aria-label="Delete {backup.name}"
-                    onclick={() =>
-                      act(
-                        () => api('DELETE', `backup/${encodeURIComponent(backup.name)}`),
-                        'The backup is deleted.',
-                      )}
-                  >
-                    Delete
-                  </button>
+                  <span class="inline-flex gap-2">
+                    <a
+                      class="org-round-button org-round-info"
+                      href={apiUrl(`backup/${encodeURIComponent(backup.name)}`)}
+                      download={backup.name}
+                      aria-label="Save {backup.name} to this computer"
+                      title="Save"
+                    >
+                      <i class="oi-themify ti-download" aria-hidden="true"></i>
+                    </a>
+                    <button
+                      type="button"
+                      class="org-round-button org-round-danger"
+                      disabled={busy}
+                      aria-label="Delete {backup.name}"
+                      title="Delete"
+                      onclick={() =>
+                        act(
+                          () => api('DELETE', `backup/${encodeURIComponent(backup.name)}`),
+                          'The backup is deleted.',
+                        )}
+                    >
+                      <i class="oi-themify ti-trash" aria-hidden="true"></i>
+                    </button>
+                  </span>
                 </td>
               </tr>
             {/each}

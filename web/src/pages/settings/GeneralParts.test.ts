@@ -60,7 +60,7 @@ describe('UpdateCheck', () => {
     const ondone = vi.fn();
     render(UpdateCheck, { ondone });
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Look for a new version now' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Check for updates now' }));
 
     expect(await screen.findByText(/The newest release is version 0.2.0/)).toBeTruthy();
     expect(screen.getByText(/runs version 0.1.0/)).toBeTruthy();
@@ -76,7 +76,7 @@ describe('UpdateCheck', () => {
       },
     });
     render(UpdateCheck, { ondone: () => {} });
-    await fireEvent.click(screen.getByRole('button', { name: 'Look for a new version now' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Check for updates now' }));
     expect((await screen.findByRole('alert')).textContent).toContain('could not be read');
   });
 });

@@ -36,7 +36,7 @@ Do not select "Backend Only" before a Plex account can log in as an Admin. With 
 | Authentication Type | `authType`: `internal`, `both` or `external` |
 | Authentication Backend | `authBackend`: `plex` |
 | API Key/Token | `plexToken` |
-| Plex Machine | `plexID` |
+| Plex Machine ID | `plexID` |
 | Plex Admin Username or Email | `plexAdmin` |
 | Strict Plex Friends | `plexStrictFriends` |
 | Enable Plex oAuth | `plexoAuth` |

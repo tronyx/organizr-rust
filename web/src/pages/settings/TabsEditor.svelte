@@ -155,7 +155,7 @@
                 </button>
               </span>
             </td>
-            <td class="org-table-picture"><Picture image={tab.image} name={tab.name} /></td>
+            <td class="org-table-picture"><Picture image={tab.image} name={tab.name} editor /></td>
             <th scope="row" translate="no">{tab.name}</th>
             <td>
               <select

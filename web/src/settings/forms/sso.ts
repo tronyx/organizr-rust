@@ -17,7 +17,7 @@ export const SSO: FormPage = {
           text: 'Retrieve',
           action: { kind: 'plex-token' },
         },
-        { key: 'plexID', kind: 'text', label: 'Plex Machine' },
+        { key: 'plexID', kind: 'text', label: 'Plex Machine ID', masked: true },
         {
           kind: 'button',
           label: 'Get Plex Machine',

@@ -140,6 +140,16 @@ describe('the definitions of the settings forms', () => {
     expect(found).toEqual(expectedKinds);
   });
 
+  it('hide the Plex machine ID on every page that holds it', () => {
+    const fields = allFields().filter((field) => field.key === 'plexID');
+    expect(fields).toHaveLength(4);
+    for (const field of fields) {
+      expect(field.label).toBe('Plex Machine ID');
+      expect(field.kind).toBe('text');
+      expect(field.masked).toBe(true);
+    }
+  });
+
   it('offer Open in New Window first on the three Target Tab selects', () => {
     const items = Object.fromEntries(HOMEPAGE_ITEMS.map((item) => [item.id, item.page]));
     for (const [item, key] of [

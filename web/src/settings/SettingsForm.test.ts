@@ -542,15 +542,18 @@ describe('SettingsForm, the Plex buttons', () => {
     expect(await sentBody(sent)).toEqual({ plexID: 'other-id' });
   });
 
-  it('shows the stored Plex machine on the sign-in page, and lets the Admin clear it', async () => {
+  it('hides the stored Plex machine ID on the sign-in page, and lets the Admin show and clear it', async () => {
     const { sent } = await show(SIGN_IN, {
       'GET config': { data: { authType: 'both', authBackend: 'plex', plexID: 'stored-id' } },
       'PUT config': {},
     });
 
-    const machine = screen.getByLabelText('Plex Machine');
-    expect(machine).toHaveAttribute('type', 'text');
+    const machine = screen.getByLabelText('Plex Machine ID');
+    expect(machine).toHaveAttribute('type', 'password');
     expect(machine).toHaveValue('stored-id');
+    await fireEvent.click(screen.getByRole('button', { name: 'Show Plex Machine ID' }));
+    expect(machine).toHaveAttribute('type', 'text');
+    expect(screen.getByRole('button', { name: 'Hide Plex Machine ID' })).toBeTruthy();
     await fireEvent.input(machine, { target: { value: '' } });
     await save();
     expect(await sentBody(sent)).toEqual({ plexID: '' });

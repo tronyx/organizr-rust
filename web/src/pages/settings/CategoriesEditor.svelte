@@ -110,7 +110,7 @@
                   </button>
                 </span>
                 <span class="org-table-picture">
-                  <Picture image={category.image} name={category.category} />
+                  <Picture image={category.image} name={category.category} editor />
                 </span>
               </span>
             </td>

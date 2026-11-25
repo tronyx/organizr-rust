@@ -6,17 +6,22 @@
     image,
     name,
     large = false,
+    editor = false,
     avatar = false,
   }: {
     image: string | null;
     name: string;
     /** The size of the menu at the left: 30 pixels, as PHP Organizr shows a tab. */
     large?: boolean;
+    /** The size of the editors of tabs, categories and groups: 35 pixels, as PHP shows them. */
+    editor?: boolean;
     /** The avatar of a user in a table: a circle of 45 pixels, as PHP Organizr shows it. */
     avatar?: boolean;
   } = $props();
 
-  const size = $derived(avatar ? 'size-[45px] rounded-full' : large ? 'size-[30px]' : 'size-6');
+  const size = $derived(
+    avatar ? 'size-[45px] rounded-full' : editor ? 'size-[35px]' : large ? 'size-[30px]' : 'size-6',
+  );
 
   // An image that does not load gives way to the letter.
   let failed = $state<string | null>(null);
@@ -32,7 +37,10 @@
     onerror={() => (failed = image)}
   />
 {:else if picture.kind === 'icon'}
-  <span class={[size, 'grid shrink-0 place-items-center text-lg']} aria-hidden="true">
+  <span
+    class={[size, 'grid shrink-0 place-items-center', editor ? 'text-[30px]' : 'text-lg']}
+    aria-hidden="true"
+  >
     <i class={picture.classes}></i>
   </span>
 {:else}
@@ -40,7 +48,8 @@
     class={[
       size,
       'bg-neutral text-neutral-content grid shrink-0 place-items-center font-semibold',
-      avatar ? 'text-base' : 'rounded text-xs',
+      avatar || editor ? 'text-base' : 'rounded text-xs',
+      editor && 'rounded',
     ]}
     aria-hidden="true"
   >

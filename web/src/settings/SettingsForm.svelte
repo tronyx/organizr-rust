@@ -426,7 +426,7 @@
 
   /**
    * Lists the Plex servers that the account of the saved token owns. With one server, its
-   * id goes into the field Plex Machine; with more, the Admin chooses one.
+   * id goes into the field Plex Machine ID; with more, the Admin chooses one.
    */
   async function getPlexMachine(key: string) {
     if ('plexToken' in changed) {
