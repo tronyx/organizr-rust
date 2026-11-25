@@ -1742,7 +1742,7 @@
     color: var(--color-base-content);
   }
 
-  /* Cards of the dark gray of OG (Monitorr, OctoPrint, Speedtest Tracker, UniFi). */
+  /* Cards of the dark gray of OG (Monitorr, OctoPrint, Speedtest Tracker, Netronome, UniFi). */
   [data-layout='modern'] .org-item .org-tile {
     border: 1px solid var(--color-base-300);
     border-radius: var(--radius-box);
@@ -1754,7 +1754,8 @@
     overflow: hidden;
   }
 
-  [data-layout='modern'] .org-item-speedtest .org-tile p.text-sm {
+  [data-layout='modern'] .org-item-speedtest .org-tile p.text-sm,
+  [data-layout='modern'] .org-item-netronome .org-tile p.text-sm {
     color: color-mix(in oklab, var(--color-base-content) 72%, var(--color-base-100));
   }
 

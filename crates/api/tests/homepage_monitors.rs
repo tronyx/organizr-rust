@@ -1,5 +1,6 @@
 //! The items of the homepage that show the state of a service: AdGuard Home, Netdata,
-//! Monitorr, Speedtest Tracker, OctoPrint and UniFi, against stand-ins for them.
+//! Monitorr, Speedtest Tracker, Netronome, OctoPrint and UniFi, against stand-ins for
+//! them.
 
 #![allow(
     clippy::expect_used,
@@ -481,6 +482,120 @@ async fn speed_test_item_fails_with_the_answers_of_php() {
         let answer = get(&app, "/homepage/speedtest/data").await;
         assert_eq!(answer.status, StatusCode::CONFLICT);
         assert_eq!(answer.message(), json!("SpeedTest connection error"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn netronome_item_gives_the_last_test_and_the_average_of_the_time_range() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let service = homepage_services::netronome().await;
+        let settings = |range: &str| -> Settings {
+            vec![
+                ("homepageNetronomeEnabled", json!(true)),
+                ("netronomeURL", json!(service.url())),
+                ("homepageNetronomeHeader", json!("Line")),
+                ("homepageNetronomeTimeRange", json!(range)),
+            ]
+        };
+        let app = installed_app_with(database, &settings("week"));
+
+        let answer = get(&app, "/homepage/netronome/data").await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let data = answer.data();
+        assert_eq!(
+            data["data"]["current"],
+            json!({
+                "ping": 12.345, "download": 250.12, "upload": 40.26, "jitter": 1.25,
+                "server": "A server", "type": "speedtest", "time": "2026-11-03T10:00:00Z",
+            })
+        );
+        assert_eq!(data["data"]["maximum"]["download"], json!(260.5));
+        assert_eq!(data["data"]["maximum"]["ping"], json!(20));
+        // A latency without a unit is a count of milliseconds.
+        assert_eq!(data["data"]["minimum"]["ping"], json!(9.5));
+        assert_eq!(data["data"]["minimum"]["upload"], json!(35));
+        let average = data["data"]["average"]["download"].as_f64();
+        assert!(average.is_some_and(|speed| (speed - 236.9567).abs() < 0.001));
+        assert_eq!(data["data"]["tests"], json!(3));
+        assert_eq!(
+            data["options"],
+            json!({"title": "Line", "titleToggle": true, "timeRange": "week"})
+        );
+        // The request is for the public history, and it carries no login.
+        let seen = service.seen();
+        assert_eq!(seen.len(), 1);
+        assert_eq!(
+            seen[0].path,
+            "/api/speedtest/public/history?timeRange=week&page=1&limit=1000"
+        );
+        assert_eq!(seen[0].header("authorization"), None);
+        assert_eq!(seen[0].header("cookie"), None);
+
+        // A time range without a test: the last test is an older one, and there is no
+        // average.
+        let app = installed_app_with(database, &settings("24h"));
+        let answer = get(&app, "/homepage/netronome/data").await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let data = answer.data();
+        assert_eq!(
+            data["data"]["current"]["time"],
+            json!("2026-11-03T10:00:00Z")
+        );
+        assert_eq!(data["data"].get("average"), None);
+        assert_eq!(data["options"]["timeRange"], json!("24h"));
+        assert_eq!(
+            service.seen()[2].path,
+            "/api/speedtest/public/history?timeRange=all&page=1&limit=1"
+        );
+
+        // A text that is no time range of Netronome never goes into the request.
+        let app = installed_app_with(database, &settings("all&limit=5"));
+        let answer = get(&app, "/homepage/netronome/data").await;
+        assert_eq!(answer.data()["options"]["timeRange"], json!("week"));
+        assert!(service.seen()[3].path.contains("timeRange=week&"));
+
+        is_refused_as_every_item(
+            database,
+            "/homepage/netronome/data",
+            "netronome",
+            &vec![
+                ("homepageNetronomeEnabled", json!(true)),
+                ("netronomeURL", json!(NOWHERE)),
+            ],
+        )
+        .await;
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn netronome_item_fails_as_the_speed_test_item() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let settings = |url: String| -> Settings {
+            vec![
+                ("homepageNetronomeEnabled", json!(true)),
+                ("netronomeURL", json!(url)),
+            ]
+        };
+        let app = installed_app_with(database, &settings(NOWHERE.to_owned()));
+        let answer = get(&app, "/homepage/netronome/data").await;
+        assert_eq!(answer.status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert!(!answer.body.contains("127.0.0.1"), "{}", answer.body);
+
+        // A service that is no Netronome refuses the request, or answers with something
+        // that is no history.
+        for other in [
+            homepage_services::netdata().await,
+            homepage_services::speedtest_tracker().await,
+        ] {
+            let app = installed_app_with(database, &settings(other.url()));
+            let answer = get(&app, "/homepage/netronome/data").await;
+            assert_eq!(answer.status, StatusCode::CONFLICT);
+            assert_eq!(answer.message(), json!("Netronome connection error"));
+        }
     })
     .await;
 }

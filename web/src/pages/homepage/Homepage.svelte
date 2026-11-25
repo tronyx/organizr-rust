@@ -23,6 +23,7 @@
   import JellyStat from './JellyStat.svelte';
   import Monitorr from './Monitorr.svelte';
   import Netdata from './Netdata.svelte';
+  import Netronome from './Netronome.svelte';
   import Octoprint from './Octoprint.svelte';
   import Overseerr from './Overseerr.svelte';
   import Pihole from './Pihole.svelte';
@@ -77,6 +78,7 @@
     'netdata',
     'monitorr',
     'speedtest',
+    'netronome',
     'octoprint',
     'unifi',
     'prompage',
@@ -201,6 +203,8 @@
           <Monitorr />
         {:else if item.kind === 'speedtest'}
           <SpeedtestTracker />
+        {:else if item.kind === 'netronome'}
+          <Netronome />
         {:else if item.kind === 'octoprint'}
           <Octoprint />
         {:else if item.kind === 'unifi'}

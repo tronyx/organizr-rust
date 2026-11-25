@@ -37,7 +37,7 @@ The command reads your settings: the Plex token of the owner, the id of the Plex
 | Calendars | Sonarr, Radarr, Lidarr, SickRage, CouchPotato and Trakt |
 | Download clients | SABnzbd, qBittorrent, Deluge, rTorrent, uTorrent and JDownloader |
 | Indexers | Jackett and Prowlarr |
-| Monitors | Healthchecks, Uptime Kuma, AdGuard Home, Netdata, Monitorr, Speedtest Tracker, OctoPrint and UniFi |
+| Monitors | Healthchecks, Uptime Kuma, AdGuard Home, Netdata, Monitorr, Speedtest Tracker, Netronome, OctoPrint and UniFi |
 | Other | The weather service |
 
 NZBGet, Transmission, Pi-hole and PromPage aren't checked yet. Use their **Test Connection** button instead.

@@ -768,6 +768,17 @@
     "speedtestHeader": "text",
     "speedtestHeaderToggle": "switch"
   },
+  "homepage-netronome": {
+    "homepageNetronomeEnabled": "switch",
+    "homepageNetronomeAuth": "select",
+    "netronomeURL": "text",
+    "netronomeDisableCertCheck": "switch",
+    "netronomeUseCustomCertificate": "switch",
+    "homepageNetronomeTimeRange": "select",
+    "homepageNetronomeRefresh": "select",
+    "homepageNetronomeHeader": "text",
+    "homepageNetronomeHeaderToggle": "switch"
+  },
   "homepage-tautulli": {
     "homepageTautulliEnabled": "switch",
     "homepageTautulliAuth": "select",

@@ -64,7 +64,7 @@ These items have a **Test Connection** button: Plex, Emby, Jellyfin, Emby live T
 
 Only an Admin or a Co-Admin can run a test. A script can run one with `POST /api/v2/test/<name>`. The name is in the test row of each item below, for example `pihole`, `adguard` or `embyLiveTVTracker`; the second UniFi button is `test/unifi/site`.
 
-Items without a test button (Healthchecks, Uptime Kuma, CouchPotato, iCal, Netdata, Monitorr, Speedtest Tracker, OctoPrint, PromPage, Weather and air, Trakt, Donate, Bookmarks) show their error on the homepage instead. `organizr check` also tests many services at once: see [Checking your services](checking-your-services.md). [Tests of the settings](settings-tests.md) covers the tests that aren't about homepage items.
+Items without a test button (Healthchecks, Uptime Kuma, CouchPotato, iCal, Netdata, Monitorr, Speedtest Tracker, Netronome, OctoPrint, PromPage, Weather and air, Trakt, Donate, Bookmarks) show their error on the homepage instead. `organizr check` also tests many services at once: see [Checking your services](checking-your-services.md). [Tests of the settings](settings-tests.md) covers the tests that aren't about homepage items.
 
 ### 🔄 How often items refresh
 
@@ -169,6 +169,7 @@ What the file must be, and what it does:
 | | [🚫 AdGuard Home](#-adguard-home) | Queries, blocks and block lists |
 | | [📉 Netdata](#-netdata) | Up to seven gauges or rings |
 | | [⚡ Speedtest Tracker](#-speedtest-tracker) | The last speed test |
+| | [📡 Netronome](#-netronome) | The last speed test, with the average of a time range |
 | | [📶 UniFi](#-unifi) | Wi-Fi, LAN, WAN and VPN of a UniFi network |
 | | [🐙 OctoPrint](#-octoprint) | Your 3D printer and its webcam |
 | | [⛅ Weather and air](#-weather-and-air) | Weather, air quality and pollen |
@@ -1048,6 +1049,29 @@ A chart whose entry is missing or incomplete shows the reason and no number.
 | Homepage Order | `homepageOrderSpeedtest` | |
 
 **Good to know:** this item isn't the [speed test plugin](speed-test-plugin.md). The plugin measures the connection between your browser and Organizr; this item shows what another service measured.
+
+### 📡 Netronome
+
+**Shows:** the last speed test of a [Netronome](https://github.com/autobrr/netronome) install: ping, download and upload, plus the average, highest and lowest values of the tests in a time range you pick. A line under the cards names the server, the kind of test, the jitter and the time of the last test, and how many tests the time range holds. PHP Organizr has no such item.
+
+**You need:** only Netronome's address. Netronome has no API key, and Organizr reads its public speed test history (`api/speedtest/public/history`) without a login. You don't give Organizr a Netronome user name or password, and you don't have to add Organizr to Netronome's IP whitelist.
+
+| Section › Label | Key | Notes |
+|---|---|---|
+| Enable › **Enable** / **Minimum Authentication** | `homepageNetronomeEnabled` / `homepageNetronomeAuth` | |
+| Connection › **URL** | `netronomeURL` | If Netronome has a base URL, include it: `http://netronome:7575/netronome` |
+| Connection › **Disable Certificate Check** / **Use Custom Certificate** | `netronomeDisableCertCheck` / `netronomeUseCustomCertificate` | |
+| Options › **Time Range** | `homepageNetronomeTimeRange` | `24h`, `3d`, `week` (the default) or `month` |
+| Options › **Refresh Seconds** | `homepageNetronomeRefresh` | Default 300,000 ms (5 minutes) |
+| Options › **Title** / **Toggle Title** | `homepageNetronomeHeader` / `homepageNetronomeHeaderToggle` | |
+| Homepage Order | `homepageOrderNetronome` | |
+
+**Good to know:**
+
+- The average, highest and lowest values show when the time range holds two tests or more. Organizr reads at most 1,000 tests of the time range.
+- The last test is always the newest one of the install, even when it's older than the time range.
+- Netronome's other data, such as the packet loss monitors and the agents, needs a login, so the item doesn't show it.
+- The item's tile in the Homepage Order and its card in the settings use the Speedtest Tracker picture.
 
 ### 📶 UniFi
 

@@ -19,7 +19,9 @@ use organizr_integrations::ombi::Install as Ombi;
 use organizr_integrations::sickrage::Install as SickRage;
 use organizr_integrations::trakt::{self, Account, Calendar};
 use organizr_integrations::unifi::Controller;
-use organizr_integrations::{adguard, downloaders_more, emby_live_tv, pihole, speedtest_tracker};
+use organizr_integrations::{
+    adguard, downloaders_more, emby_live_tv, netronome, pihole, speedtest_tracker,
+};
 use organizr_settings::Settings;
 use serde_json::Value;
 
@@ -481,7 +483,33 @@ async fn ask_monitors(settings: &Settings, http: &Outbound, lines: &mut Vec<Line
         )
         .await;
     }
+    ask_netronome(settings, http, lines).await;
     ask_octoprint_and_unifi(settings, http, lines).await;
+}
+
+async fn ask_netronome(settings: &Settings, http: &Outbound, lines: &mut Vec<Line>) {
+    if settings.netronome_url.is_empty() {
+        return;
+    }
+    let question = "Netronome gives its speed tests".to_owned();
+    asked(
+        question,
+        &settings.netronome_url,
+        lines,
+        async |url| match netronome::results(
+            http,
+            url,
+            netronome::time_range(&settings.homepage_netronome_time_range),
+            settings.netronome_disable_cert_check,
+        )
+        .await
+        {
+            Ok(Some(_)) => Outcome::Passed,
+            Ok(None) => failed("the application refused the request"),
+            Err(error) => failed(error),
+        },
+    )
+    .await;
 }
 
 async fn ask_octoprint_and_unifi(settings: &Settings, http: &Outbound, lines: &mut Vec<Line>) {
@@ -572,7 +600,7 @@ mod tests {
     }
 
     /// The questions of a report that asks every application of this part.
-    const QUESTIONS: [&str; 19] = [
+    const QUESTIONS: [&str; 20] = [
         "The Emby server lists what plays now",
         "The Jellyfin server lists what plays now",
         "JellyStat gives its libraries",
@@ -590,6 +618,7 @@ mod tests {
         "Netdata gives the load of the processors",
         "Monitorr gives the states of its services",
         "Speedtest Tracker gives its last result",
+        "Netronome gives its speed tests",
         "OctoPrint gives its job",
         "UniFi takes the login and gives the health of the site",
     ];
@@ -657,9 +686,10 @@ mod tests {
             homepage_services::monitorr().await,
             homepage_services::speedtest_tracker().await,
         );
-        let (octoprint, unifi) = (
+        let (octoprint, unifi, netronome) = (
             homepage_services::octoprint().await,
             homepage_services::unifi_classic().await,
+            homepage_services::netronome().await,
         );
         let settings: Vec<(&str, Value)> = vec![
             ("embyURL", json!(emby.url())),
@@ -696,6 +726,7 @@ mod tests {
             ("netdataURL", json!(netdata.url())),
             ("monitorrURL", json!(monitorr.url())),
             ("speedtestURL", json!(speedtest.url())),
+            ("netronomeURL", json!(netronome.url())),
             ("octoprintURL", json!(octoprint.url())),
             ("octoprintToken", json!(OCTOPRINT_KEY)),
             ("unifiURL", json!(unifi.url())),
@@ -792,10 +823,11 @@ mod tests {
             ("prowlarrToken", wrong.clone()),
             // This AdGuard Home needs a login, which the homepage does not send.
             ("adguardURL", json!(adguard.url())),
-            // Each of these three is asked at an application that does not know the path.
+            // Each of these four is asked at an application that does not know the path.
             ("netdataURL", json!(monitorr.url())),
             ("monitorrURL", json!(netdata.url())),
             ("speedtestURL", json!(netdata.url())),
+            ("netronomeURL", json!(netdata.url())),
             ("octoprintURL", json!(octoprint.url())),
             ("octoprintToken", wrong.clone()),
             ("unifiURL", json!(unifi.url())),

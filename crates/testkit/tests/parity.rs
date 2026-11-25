@@ -138,12 +138,32 @@ fn launch_differences(replay: Replay, case: &str) -> Replay {
                 replay.deviation_adds_in_order("D-121", case, pointer, key, value)
             }
         });
+    let replay = netronome_differences(replay, case, sorted_later);
     // The switches of Shuck Stop, which was removed (D-116).
     let replay = SHUCK_STOP_SWITCHES.iter().fold(replay, |replay, key| {
         replay.deviation_without("D-116", case, &format!("/response/data/plugins/{key}"))
     });
     // There is no configuration file whose path could be sent.
     replay.deviation_without("D-29", case, "/response/data/status/userConfigPath")
+}
+
+/// The Netronome item of this application in a launch (D-128): its time between two
+/// loads, and its place after the places of PHP.
+fn netronome_differences(replay: Replay, case: &str, sorted_later: bool) -> Replay {
+    let refresh = "/response/data/settings/homepage/refresh";
+    let (key, value) = ("homepageNetronomeRefresh", json!("300000"));
+    let replay = if sorted_later {
+        replay.deviation_adds("D-128", case, refresh, key, value)
+    } else {
+        replay.deviation_adds_in_order("D-128", case, refresh, key, value)
+    };
+    replay.deviation_adds(
+        "D-128",
+        case,
+        "/response/data/settings/homepage/order",
+        "homepageOrderNetronome",
+        json!("49"),
+    )
 }
 
 /// The switches of Shuck Stop that PHP lists among the switches of the plugins.
@@ -696,6 +716,21 @@ async fn config_routes_answer_like_php() {
             ("modernTheme", json!("organizr")),
         ] {
             replay = replay.deviation_adds_in_order("D-125", all, data, key, value);
+        }
+        // The settings of the Netronome item of this application (D-128).
+        for (key, value) in [
+            ("homepageNetronomeAuth", json!("1")),
+            ("homepageNetronomeEnabled", json!(false)),
+            ("homepageNetronomeHeader", json!("Netronome")),
+            ("homepageNetronomeHeaderToggle", json!(true)),
+            ("homepageNetronomeRefresh", json!("300000")),
+            ("homepageNetronomeTimeRange", json!("week")),
+            ("homepageOrderNetronome", json!("49")),
+            ("netronomeDisableCertCheck", json!(false)),
+            ("netronomeURL", json!("")),
+            ("netronomeUseCustomCertificate", json!(false)),
+        ] {
+            replay = replay.deviation_adds_in_order("D-128", all, data, key, value);
         }
         // Each custom HTML item has a switch that PHP does not have.
         for number in 1..=8 {

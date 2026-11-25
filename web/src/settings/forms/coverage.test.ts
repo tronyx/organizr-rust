@@ -113,8 +113,8 @@ describe('the definitions of the settings forms', () => {
     expect([...new Set(notMasked)]).toEqual([]);
   });
 
-  it('hold the forty homepage items and the six plugin forms', () => {
-    expect(HOMEPAGE_ITEMS).toHaveLength(40);
+  it('hold the forty-one homepage items and the six plugin forms', () => {
+    expect(HOMEPAGE_ITEMS).toHaveLength(41);
     expect(Object.keys(PLUGIN_FORMS).sort()).toEqual([
       'chat',
       'healthchecks',

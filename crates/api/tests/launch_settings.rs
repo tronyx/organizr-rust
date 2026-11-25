@@ -496,7 +496,8 @@ async fn homepage_items_come_in_the_order_of_their_places() {
             ]
         );
         assert_eq!(order.last(), Some(&"homepageOrdercustomhtml02"));
-        assert_eq!(order.len(), 48);
+        // The 48 items of PHP, and the Netronome item (D-128).
+        assert_eq!(order.len(), 49);
     })
     .await;
 }

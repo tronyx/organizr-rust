@@ -53,7 +53,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Log, errors and request ids | D-13, D-34, D-84 |
 | E-mail | D-09, D-58, D-82 |
 | Scheduled jobs | D-33, D-43, D-66, D-74 |
-| Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126 |
+| Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128 |
 | Custom HTML items | D-61, D-76, D-111 |
 | Connection tests (`/test/*`) | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102 |
 | Certificates and TLS | D-11, D-17, D-60, D-85, D-86, D-98, D-104 |
@@ -76,8 +76,8 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/2fa`, `/2fa/{type}` | D-57 |
 | `/wizard` | D-19, D-38, D-46 |
 | `GET /status` | D-21, D-46 |
-| `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125 |
-| `/config` | D-06, D-07, D-53, D-112, D-116, D-125 |
+| `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125, D-128 |
+| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128 |
 | `/users`, `/users/{id}` | D-05, D-15, D-52, D-57 |
 | `POST /users/register` | D-36, D-37, D-38 |
 | `POST /users/recover` | D-09, D-58 |
@@ -112,6 +112,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/homepage/tautulli/*`, `/homepage/weather/*` | D-63, D-81 |
 | `/homepage/pihole/stats`, `/homepage/adguard/stats` | D-71, D-80, D-101, D-102 |
 | `/homepage/netdata`, `monitorr`, `octoprint`, `unifi`, `prompage`, `jellystat` | D-80, D-81 |
+| `/homepage/netronome/data` | D-128 |
 | `/homepage/donate*`, `/homepage/youtube/{query}`, `POST /homepage/scrape` | D-16, D-81 |
 | `/test/{service}` | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102 |
 | `/socks/…`, `/multiple/socks/…` | D-91 |
@@ -281,6 +282,7 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-125 | **Each person can pick their own layout, theme and color set; the Admin sets the defaults.** The look of the page for each person. PHP has one theme and one style for the install. Here each person may choose the own layout, theme and color set, and the Admin sets the defaults. `GET /launch` has a key `look` after `update`, with `layout`, `theme`, `colorSet` and `source` (`user` or `default`). `GET /config` has three more settings: `layout` (`og` or `modern`; the set-up wizard stores `modern` for a new install, and an install without the setting has `og`), `modernTheme` and `modernColorSet`. The section **Style & Themes** of Customize, Appearance (PHP's group "Colors & Themes") has the default layout and the theme of each layout at its top. `PUT /user/look` is a new route: a logged-in user sends `layout`, `theme` and `colorSet`, and gets the look that applies; `layout` as `null` forgets the whole choice. `theme` and `style` of `GET /launch` stay the settings of the install, as in PHP. Existing installs keep their stored choice through a migration. Decided under the standing approval of 2026-11-22 to build what is left of PHP Organizr. |
 | D-126 | **A poster that does not load shows "Poster coming soon" instead of a broken picture.** A poster of the homepage that does not load. As in PHP, an item without a poster shows the picture "Poster coming soon" (`plugins/images/homepage/no-list.png`), which the server names in its answer. Here a poster whose address does not load shows that picture too, where PHP shows a broken picture. This holds for the rows of posters, the requests and the results of the media search. Decided by the owner of the project on 2026-11-25. |
 | D-127 | **A login through Plex or Emby Connect never opens an Admin or Co-Admin account (except the Plex owner's), and no service replaces an Admin or Co-Admin password.** The Organizr account that a login through another service opens. As in PHP, a login through Plex, LDAP, FTP, Emby or Emby Connect opens the account with the user name, or else the e-mail address, of the service. (1) A login through Plex or Emby Connect, where anyone can make an account with any free name, never opens an Admin or Co-Admin account; the login fails. The one exception is the Plex account of the owner, named in `plexAdmin`. PHP opens any account, so a person with the name of an Admin on plex.tv, who is a friend of the server, got the Admin account. (2) The password of the service never replaces the password of an Admin or Co-Admin account. PHP replaces it, so after one login through LDAP, FTP or Emby, the Organizr password of the Admin was gone. Other accounts take the password of the service, as in PHP. Decided by the owner of the project on 2026-11-25. |
+| D-128 | **New: the Netronome item shows the last speed test of a Netronome install, read without a login.** The Netronome item of the homepage. PHP has no such item. [Netronome](https://github.com/autobrr/netronome) is an application that runs speed tests. (1) `GET /homepage/netronome/data` answers with `data.current` (the last speed test: `ping` in milliseconds, `download` and `upload` in megabits in a second, `jitter`, `server`, `type` and `time`, or `null` when the install has no test), and with `data.average`, `data.maximum`, `data.minimum` and the count `data.tests` when the time range of the settings holds at least two tests. The last test is the last one of the install, also when it is older than the time range. `options` holds `title`, `titleToggle` and `timeRange`. (2) Netronome has no API key. Organizr reads the public history of the speed tests, `api/speedtest/public/history`, without a login, and at most 1000 tests of the time range. It asks for no session, so the item shows nothing of the packet loss monitors and the agents of Netronome. (3) The item is checked as every item: the switch `homepageNetronomeEnabled`, the level `homepageNetronomeAuth` and the address `netronomeURL`. An install that cannot be reached is `500` with a text that names no address, and an answer that is no history of Netronome is `409 "Netronome connection error"`, as the Speedtest Tracker item answers. (4) The settings are `homepageNetronomeEnabled`, `homepageNetronomeAuth`, `homepageOrderNetronome` (49), `netronomeURL`, `netronomeDisableCertCheck`, `netronomeUseCustomCertificate`, `homepageNetronomeHeader`, `homepageNetronomeHeaderToggle`, `homepageNetronomeRefresh` (300000) and `homepageNetronomeTimeRange` (`24h`, `3d`, `week` or `month`; another text counts as `week`). `GET /config` and the settings pages show them, and `GET /launch` has `homepageNetronomeRefresh` in `settings.homepage.refresh` and `homepageOrderNetronome` in `settings.homepage.order`. PHP has none of them. (5) The tile of the item in the Homepage Order and its card in the settings use the picture of the Speedtest item. (6) `organizr check` asks Netronome for its speed tests when `netronomeURL` has a value. Decided by the owner of the project on 2026-11-25. |
 
 ## ✅ Kept exactly as PHP has it
 

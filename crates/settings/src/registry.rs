@@ -576,6 +576,7 @@ settings! {
     homepage_order_emby_live_tv_tracker: TextNumber<u32> = "homepageOrderEmbyLiveTVTracker", 46;
     homepage_order_user_watch_stats: TextNumber<u32> = "homepageOrderUserWatchStats", 47;
     homepage_order_jelly_stat: TextNumber<u32> = "homepageOrderJellyStat", 48;
+    homepage_order_netronome: TextNumber<u32> = "homepageOrderNetronome", 49;
     homepage_emby_live_tv_tracker_enabled: Flag = "homepageEmbyLiveTVTrackerEnabled", false;
     homepage_emby_live_tv_tracker_auth: TextNumber<u32> = "homepageEmbyLiveTVTrackerAuth", 1;
     homepage_emby_live_tv_tracker_refresh: TextNumber<u64> = "homepageEmbyLiveTVTrackerRefresh", 5;
@@ -805,6 +806,15 @@ settings! {
     speedtest_header: Text = "speedtestHeader", "Speedtest".to_owned();
     speedtest_disable_cert_check: Flag = "speedtestDisableCertCheck", false;
     speedtest_use_custom_certificate: Flag = "speedtestUseCustomCertificate", false;
+    homepage_netronome_enabled: Flag = "homepageNetronomeEnabled", false;
+    homepage_netronome_auth: TextNumber<u32> = "homepageNetronomeAuth", 1;
+    homepage_netronome_refresh: TextNumber<u64> = "homepageNetronomeRefresh", 300_000;
+    netronome_url: Text = "netronomeURL", String::new();
+    netronome_disable_cert_check: Flag = "netronomeDisableCertCheck", false;
+    netronome_use_custom_certificate: Flag = "netronomeUseCustomCertificate", false;
+    homepage_netronome_header_toggle: Flag = "homepageNetronomeHeaderToggle", true;
+    homepage_netronome_header: Text = "homepageNetronomeHeader", "Netronome".to_owned();
+    homepage_netronome_time_range: Text = "homepageNetronomeTimeRange", "week".to_owned();
     homepage_netdata_enabled: Flag = "homepageNetdataEnabled", false;
     homepage_netdata_refresh: TextNumber<u64> = "homepageNetdataRefresh", 10_000;
     homepage_netdata_auth: TextNumber<u32> = "homepageNetdataAuth", 1;
@@ -1217,8 +1227,8 @@ mod tests {
     ];
 
     /// The settings of this application that PHP Organizr does not have, each with its
-    /// default: those of the Plex Libraries plugin (D-121) and the look settings of the
-    /// Admin (D-125).
+    /// default: those of the Plex Libraries plugin (D-121), the look settings of the
+    /// Admin (D-125) and those of the Netronome item (D-128).
     fn own_plugin_settings() -> Vec<(&'static str, Value)> {
         vec![
             ("PLEXLIBRARIES-enabled", json!(false)),
@@ -1227,6 +1237,16 @@ mod tests {
             ("layout", json!("og")),
             ("modernTheme", json!("organizr")),
             ("modernColorSet", json!("dark")),
+            ("homepageOrderNetronome", json!("49")),
+            ("homepageNetronomeEnabled", json!(false)),
+            ("homepageNetronomeAuth", json!("1")),
+            ("homepageNetronomeRefresh", json!("300000")),
+            ("netronomeURL", json!("")),
+            ("netronomeDisableCertCheck", json!(false)),
+            ("netronomeUseCustomCertificate", json!(false)),
+            ("homepageNetronomeHeaderToggle", json!(true)),
+            ("homepageNetronomeHeader", json!("Netronome")),
+            ("homepageNetronomeTimeRange", json!("week")),
         ]
     }
 

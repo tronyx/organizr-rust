@@ -2211,6 +2211,56 @@ pub async fn speedtest_tracker() -> StandIn {
     StandIn::start(Router::new().route("/api/speedtest/latest", get(speedtest_latest))).await
 }
 
+fn netronome_test(id: u32, latency: &str, download: f64, upload: f64, time: &str) -> Value {
+    json!({
+        "id": id,
+        "serverName": "A server",
+        "serverId": "1234",
+        "serverHost": "speedtest.example.com:8080",
+        "testType": "speedtest",
+        "downloadSpeed": download,
+        "uploadSpeed": upload,
+        "latency": latency,
+        "jitter": 1.25,
+        "isScheduled": true,
+        "createdAt": time,
+    })
+}
+
+/// The history of the Netronome stand-in. It has three tests in the last week and none
+/// in the last 24 hours, and one older test that only a request for every test gets.
+async fn netronome_history(RawQuery(query): RawQuery) -> Response {
+    let query = query.unwrap_or_default();
+    let parameter = |name: &str| {
+        query
+            .split('&')
+            .find_map(|pair| pair.strip_prefix(&format!("{name}=")))
+            .unwrap_or_default()
+            .to_owned()
+    };
+    let week = vec![
+        netronome_test(4, "12.345ms", 250.12, 40.26, "2026-11-03T10:00:00Z"),
+        netronome_test(3, "20ms", 200.25, 35.0, "2026-11-02T10:00:00Z"),
+        netronome_test(2, "9.5", 260.5, 41.0, "2026-11-01T10:00:00Z"),
+    ];
+    let old = netronome_test(1, "1.2s", 100.0, 10.0, "2026-09-01T10:00:00Z");
+    let mut tests = match parameter("timeRange").as_str() {
+        "24h" => Vec::new(),
+        "week" | "3d" | "month" => week,
+        _ => week.into_iter().chain([old]).collect(),
+    };
+    let total = tests.len();
+    let limit: usize = parameter("limit").parse().unwrap_or(20);
+    tests.truncate(limit);
+    axum::Json(json!({"data": tests, "total": total, "page": 1, "limit": limit})).into_response()
+}
+
+/// A stand-in for Netronome: the public history of its speed tests.
+pub async fn netronome() -> StandIn {
+    StandIn::start(Router::new().route("/api/speedtest/public/history", get(netronome_history)))
+        .await
+}
+
 /// The API key of the OctoPrint stand-in.
 pub const OCTOPRINT_KEY: &str = "made-up-octoprint-key";
 

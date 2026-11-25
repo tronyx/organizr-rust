@@ -30,6 +30,7 @@ import { LIDARR } from './homepage/lidarr';
 import { MISC } from './homepage/misc';
 import { MONITORR } from './homepage/monitorr';
 import { NETDATA } from './homepage/netdata';
+import { NETRONOME } from './homepage/netronome';
 import { NZBGET } from './homepage/nzbget';
 import { OCTOPRINT } from './homepage/octoprint';
 import { OMBI } from './homepage/ombi';
@@ -107,6 +108,7 @@ export const HOMEPAGE_ITEMS: HomepageItemForm[] = [
   SICKRAGE,
   SONARR,
   SPEEDTEST,
+  NETRONOME,
   TAUTULLI,
   TRAKT,
   TRANSMISSION,

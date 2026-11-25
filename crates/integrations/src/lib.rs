@@ -25,6 +25,7 @@ pub mod ldap;
 pub mod media_login;
 pub mod monitorr;
 pub mod netdata;
+pub mod netronome;
 pub mod nextcloud;
 pub mod octoprint;
 pub mod oidc;

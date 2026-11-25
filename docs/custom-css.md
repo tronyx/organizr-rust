@@ -174,7 +174,7 @@ On the modern layout, `.org-tile`, `.org-fill`, `.org-adguard-card`, `.org-speed
 
 Each item also has the attribute `data-item` with the item's key, for example `data-item="homepageOrdercustomhtml01"`. Use it to aim at one of several items of the same kind.
 
-The kinds of items: `adguard`, `bookmarks`, `calendar`, `customhtml`, `deluge`, `donate`, `downloader`, `embylivetv`, `embyrecent`, `embystreams`, `healthchecks`, `jackett`, `jdownloader`, `jellyfinrecent`, `jellyfinstreams`, `jellystat`, `monitorr`, `netdata`, `nzbget`, `octoprint`, `ombi`, `overseerr`, `pihole`, `plexplaylists`, `plexrecent`, `plexstreams`, `prompage`, `prowlarr`, `qbittorrent`, `radarrqueue`, `rtorrent`, `sabnzbd`, `sonarrqueue`, `speedtest`, `tautulli`, `transmission`, `unifi`, `uptimekuma`, `utorrent` and `weather`.
+The kinds of items: `adguard`, `bookmarks`, `calendar`, `customhtml`, `deluge`, `donate`, `downloader`, `embylivetv`, `embyrecent`, `embystreams`, `healthchecks`, `jackett`, `jdownloader`, `jellyfinrecent`, `jellyfinstreams`, `jellystat`, `monitorr`, `netdata`, `netronome`, `nzbget`, `octoprint`, `ombi`, `overseerr`, `pihole`, `plexplaylists`, `plexrecent`, `plexstreams`, `prompage`, `prowlarr`, `qbittorrent`, `radarrqueue`, `rtorrent`, `sabnzbd`, `sonarrqueue`, `speedtest`, `tautulli`, `transmission`, `unifi`, `uptimekuma`, `utorrent` and `weather`.
 
 ### 📅 Calendar
 

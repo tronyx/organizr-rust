@@ -20,6 +20,7 @@ pub mod indexers;
 pub mod jellystat;
 pub mod monitorr;
 pub mod netdata;
+pub mod netronome;
 pub mod octoprint;
 pub mod ombi;
 pub mod overseerr;
@@ -187,6 +188,7 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
         "homepageOrderNetdata" => ("netdata", netdata::permissions()),
         "homepageOrderMonitorr" => ("monitorr", monitorr::permissions()),
         "homepageOrderSpeedtest" => ("speedtest", speedtest_tracker::permissions()),
+        "homepageOrderNetronome" => ("netronome", netronome::permissions()),
         "homepageOrderOctoprint" => ("octoprint", octoprint::permissions()),
         "homepageOrderunifi" => ("unifi", unifi::permissions()),
         "homepageOrderPromPage" => ("prompage", prompage::permissions()),

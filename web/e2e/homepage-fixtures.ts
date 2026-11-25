@@ -1127,6 +1127,37 @@ export const HOMEPAGE_FIXTURES: HomepageFixture[] = [
     ],
   },
   {
+    kind: 'netronome',
+    settings: { homepageNetronomeEnabled: true, netronomeURL: 'https://netronome.invalid' },
+    routes: [
+      {
+        pattern: 'homepage/netronome/data',
+        normal: {
+          data: {
+            current: {
+              ping: 12.345,
+              download: 250.12,
+              upload: 40.26,
+              jitter: 1.25,
+              server: 'A server',
+              type: 'speedtest',
+              time: '2026-11-03T10:00:00Z',
+            },
+            average: { ping: 13.5, download: 240, upload: 39 },
+            maximum: { ping: 20, download: 260.5, upload: 41 },
+            minimum: { ping: 9.5, download: 200.25, upload: 35 },
+            tests: 3,
+          },
+          options: { title: 'Line speed', titleToggle: true, timeRange: 'week' },
+        },
+        empty: {
+          data: { current: null },
+          options: { title: 'Line speed', titleToggle: true, timeRange: 'week' },
+        },
+      },
+    ],
+  },
+  {
     kind: 'octoprint',
     settings: {
       homepageOctoprintEnabled: true,

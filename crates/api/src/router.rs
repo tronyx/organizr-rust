@@ -358,6 +358,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/homepage/speedtest/data",
             &get(homepage::speedtest_tracker::data),
         )?
+        .route("/homepage/netronome/data", &get(homepage::netronome::data))?
         .route("/homepage/octoprint/data", &get(homepage::octoprint::data))?
         .route("/homepage/unifi/data", &get(homepage::unifi::data))?
         .route(
