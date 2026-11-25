@@ -94,6 +94,17 @@
     return failure;
   }
 
+  async function removeSecondFactor(user: Account): Promise<string | null> {
+    const failure = await change(
+      () => api('DELETE', `users/2fa/${user.id}`),
+      'The second factor is removed.',
+    );
+    if (failure === null) {
+      dialog = null;
+    }
+    return failure;
+  }
+
   function setLocked(user: Account, locked: boolean) {
     void run(
       () => api('PUT', `users/${user.id}`, { locked: asSwitch(locked) }),
@@ -302,6 +313,8 @@
       groups={data.groups}
       focusPassword={dialog.password ?? false}
       onsave={save}
+      onremoveSecondFactor={() =>
+        dialog?.user ? removeSecondFactor(dialog.user) : Promise.resolve(null)}
       onclose={() => (dialog = null)}
     />
   {/key}

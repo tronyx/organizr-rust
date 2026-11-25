@@ -33,56 +33,31 @@ From now on, the login page asks for your password first, and then for the code.
 Without a code, you can't log in. A new password by e-mail doesn't help either: it doesn't remove the second factor.
 
 1. **Do you have the key you saved at set-up?** Add it to the authenticator app on your new phone. The codes are the same as before. Done.
-2. **No key?** Someone has to remove the second factor from the database. There's no button for this in Organizr yet, not even for an Admin. The steps below work for any account, also the Admin's own.
+2. **No key?** Ask an Admin or a Co-Admin to remove your second factor in Manage Users, as below.
+3. **Are you the Admin, and nobody else can log in to do it?** Remove it with the command on the server, as below.
+
+After the removal, log in with the password only. Then set up a new second factor, and keep the key this time.
 
 > [!TIP]
 > If **Ignore External 2FA on Local Subnet** was already on before you lost the phone, you can still log in without a code from your home network. See [Logins from your own network](#-logins-from-your-own-network).
 
-### 🪶 Remove a second factor with SQLite
+### 👥 Remove it in Manage Users
 
-This is the default database. The Organizr image has no `sqlite3` tool, so these steps borrow a small Alpine container for a minute.
+1. Log in as an Admin or a Co-Admin.
+2. Open **Settings › User Management › Manage Users**, and select **Edit** in the row of the user (or click the row).
+3. Under **Second factor**, select **Remove second factor**, and confirm.
 
-1. Make a backup first: **Settings › System Settings › Backup** (or copy the volume, if you can't log in at all).
-2. Stop Organizr, in the folder with your compose file:
+The section shows only for a user who has a second factor. Only an Admin can remove the second factor of an Admin.
 
-   ```bash
-   docker compose stop organizr
-   ```
+### 💻 Remove it with the command on the server
 
-3. Open a shell in a throw-away container that has your data volume at `/config`:
-
-   ```bash
-   docker run --rm -it -v <project>_organizr-data:/config alpine:3 sh
-   ```
-
-   `<project>` is the Compose project name, usually the name of the folder that holds your compose file. `docker volume ls` lists the exact volume name. With `docker run`, use the volume name you chose, for example `organizr-data`.
-4. In that shell, install `sqlite3`, clear the second factor, and give the files back to the Organizr user (UID 65532):
-
-   ```bash
-   apk add --no-cache sqlite
-   sqlite3 /config/organizr.db "UPDATE users SET two_factor_kind = NULL, two_factor_secret = NULL WHERE username_key = lower('<user name>');"
-   chown 65532:65532 /config/organizr.db*
-   exit
-   ```
-
-   `<user name>` is the user name as **Settings › User Management › Manage Users** shows it; letter case doesn't matter. `sqlite3` prints nothing when it works.
-5. Start Organizr again:
-
-   ```bash
-   docker compose start organizr
-   ```
-
-6. Log in with the password only. Then set up a new second factor, and keep the key this time.
-
-### 🐘 Remove a second factor with PostgreSQL
-
-With the example `compose.postgres.yaml`, the database service is called `database`, and the user and database are both `organizr`. Organizr can keep running.
+This works for any account, also when nobody can log in. In the folder with your compose file, run:
 
 ```bash
-docker compose exec database psql -U organizr -d organizr -c "UPDATE users SET two_factor_kind = NULL, two_factor_secret = NULL WHERE username_key = lower('<user name>');"
+docker compose exec organizr organizr reset-second-factor --user "<user name>"
 ```
 
-`<user name>` is the user name as **Settings › User Management › Manage Users** shows it; letter case doesn't matter. The answer `UPDATE 1` means one account was changed; `UPDATE 0` means no user has that name.
+`<user name>` is the user name as **Settings › User Management › Manage Users** shows it; letter case doesn't matter. Organizr can keep running. The command says what it did: `The second factor of <user name> is removed.`, or that the user had none. With `docker run`, use `docker exec <container> organizr reset-second-factor --user "<user name>"`.
 
 ## 🏠 Logins from your own network
 
@@ -114,4 +89,5 @@ The setting **Ignore External 2FA on Local Subnet** (`ignoreTFALocal`, in **Sett
 | `POST /api/v2/2fa` | Checks `code` against `secret`. `type` is `google`. A wrong code gets status `401` |
 | `PUT /api/v2/2fa` | Saves `secret` as the second factor of the caller. `type` is `google` |
 | `DELETE /api/v2/2fa` | Removes the second factor of the caller |
+| `DELETE /api/v2/users/2fa/{id}` | Removes the second factor of the user with the id. For an Admin or a Co-Admin; only an Admin for an Admin. Not in PHP Organizr ([D-129](deviations.md)) |
 | `POST /api/v2/login` | Takes the code in the field `tfaCode`. Without it, an account with a second factor gets `422 "2FA Code Needed"` |

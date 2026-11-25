@@ -3,13 +3,14 @@
   import Dialog from '../../components/Dialog.svelte';
   import PictureField from '../../components/PictureField.svelte';
   import { changedFields, GUEST_LEVEL } from '../../lib/editor';
-  import type { Account, Group } from '../../lib/types';
+  import { SECOND_FACTOR_KIND, type Account, type Group } from '../../lib/types';
 
   let {
     user,
     groups,
     focusPassword = false,
     onsave,
+    onremoveSecondFactor,
     onclose,
   }: {
     /** The user to change. `null` for a new user. */
@@ -19,6 +20,8 @@
     focusPassword?: boolean;
     /** Stores the fields. Returns why the server refused them, or `null`. */
     onsave: (fields: Record<string, unknown>) => Promise<string | null>;
+    /** Removes the second factor of the user. Returns why the server refused, or `null`. */
+    onremoveSecondFactor: () => Promise<string | null>;
     onclose: () => void;
   } = $props();
 
@@ -37,6 +40,23 @@
   let password = $state('');
   let error = $state<string | null>(null);
   let busy = $state(false);
+
+  // svelte-ignore state_referenced_locally
+  const hasSecondFactor = user?.auth_service === SECOND_FACTOR_KIND;
+
+  async function removeSecondFactor() {
+    const name = user?.username ?? '';
+    if (
+      !confirm(
+        `Remove the second factor of ${name}? ${name} then logs in with the password alone, until a new second factor is set up.`,
+      )
+    ) {
+      return;
+    }
+    busy = true;
+    error = await onremoveSecondFactor();
+    busy = false;
+  }
 
   async function save(event: SubmitEvent) {
     event.preventDefault();
@@ -119,6 +139,27 @@
 
         <label class="label" for="user-image">Picture</label>
         <PictureField id="user-image" bind:value={image} name={username} />
+
+        {#if hasSecondFactor}
+          <!-- For a person who lost the authenticator app: the user then logs in with the
+               password and can set up a new second factor. -->
+          <p class="label" id="user-second-factor">Second factor</p>
+          <div
+            class="flex flex-wrap items-center gap-2"
+            aria-labelledby="user-second-factor"
+            role="group"
+          >
+            <span>On</span>
+            <button
+              type="button"
+              class="btn btn-error btn-sm"
+              disabled={busy}
+              onclick={removeSecondFactor}
+            >
+              Remove second factor
+            </button>
+          </div>
+        {/if}
       {/if}
     </fieldset>
 

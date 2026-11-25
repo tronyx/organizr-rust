@@ -13,6 +13,7 @@ function account(id: number, username: string, changes: Partial<Account> = {}): 
     locked: 0,
     image: null,
     register_date: '2026-11-18 19:02:06',
+    auth_service: 'internal',
     ...changes,
   };
 }

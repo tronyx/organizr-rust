@@ -38,13 +38,13 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 
 | Topic | Entries |
 |---|---|
-| Sign-in, sessions and lockouts | D-02, D-03, D-04, D-09, D-18, D-27, D-30, D-33, D-34, D-35, D-57, D-58, D-73, D-127 |
+| Sign-in, sessions and lockouts | D-02, D-03, D-04, D-09, D-18, D-27, D-30, D-33, D-34, D-35, D-57, D-58, D-73, D-127, D-129 |
 | Logins through Plex, LDAP, FTP, Emby and Jellyfin | D-60, D-85, D-86, D-99, D-107, D-124, D-127 |
 | OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105 |
 | Single sign-on to other apps | D-60, D-114, D-117 |
 | Forward auth, proxies and client addresses | D-01, D-49, D-59 |
 | The set-up wizard and the database | D-19, D-38, D-46, D-97 |
-| Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82 |
+| Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129 |
 | Tabs and categories | D-28, D-32, D-39, D-47, D-48 |
 | Settings and configuration | D-06, D-07, D-14, D-29, D-45, D-53, D-96, D-106, D-112, D-116 |
 | Pictures, icons and favicons | D-10, D-54, D-56, D-93, D-123, D-126 |
@@ -82,6 +82,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `POST /users/register` | D-36, D-37, D-38 |
 | `POST /users/recover` | D-09, D-58 |
 | `/users/lock`, `/users/unlock` | D-73 |
+| `/users/2fa/{id}` | D-129 |
 | `POST /users/import/{type}` | D-82 |
 | `PUT /user/look` | D-125 |
 | `/groups` | D-31, D-51 |
@@ -113,6 +114,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/homepage/pihole/stats`, `/homepage/adguard/stats` | D-71, D-80, D-101, D-102 |
 | `/homepage/netdata`, `monitorr`, `octoprint`, `unifi`, `prompage`, `jellystat` | D-80, D-81 |
 | `/homepage/netronome/data` | D-128 |
+| D-129 | **New: an Admin or a Co-Admin removes the second factor of another user, in Manage Users or with a command.** The second factor of a login. (1) `DELETE /users/2fa/{id}` removes the second factor of the user with the id, for an Admin or a Co-Admin, and a script with the API key. Only an Admin removes the second factor of an Admin: a Co-Admin gets `401 "Only admins can remove the second factor of admins"`. A user who has no second factor is no error. An id without a user is `404 "User not found"`. The answer is `200` with the message `Second factor removed`. (2) The dialog of a user in **Manage Users** shows **Second factor** with a **Remove second factor** button when the user has one. (3) The command `organizr reset-second-factor --user <name>` removes the second factor on the server, for the case that nobody who could do it can log in. PHP has none of this: there, the second factor is removed in the database. Decided by the owner of the project on 2026-11-25. |
 | `/homepage/donate*`, `/homepage/youtube/{query}`, `POST /homepage/scrape` | D-16, D-81 |
 | `/test/{service}` | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102 |
 | `/socks/…`, `/multiple/socks/…` | D-91 |

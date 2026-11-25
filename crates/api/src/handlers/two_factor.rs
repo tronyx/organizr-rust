@@ -5,6 +5,9 @@
 //! a QR code for an authenticator app. `POST /2fa` checks a code of the app against the
 //! secret. `PUT /2fa` saves the secret for the account. From then on, a login of the
 //! account needs a code. `DELETE /2fa` removes the second factor.
+//!
+//! `DELETE /users/2fa/{id}` removes the second factor of another user, for an Admin or a
+//! Co-Admin. PHP has no such route (D-129).
 
 use axum::Extension;
 use axum::extract::{Path, State};
@@ -22,6 +25,7 @@ use crate::caller::{Caller, now_stamp};
 use crate::envelope::{Envelope, NoContent, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
+use crate::handlers::users::{is_admin, user_at};
 use crate::state::AppState;
 
 /// The name that an authenticator app shows for a script with the API key.
@@ -188,4 +192,36 @@ pub async fn remove(
         tracing::info!(user = %user.username, "a user removed the second factor");
     }
     Ok(NoContent.into_response())
+}
+
+/// The level that removes the second factor of another user.
+const MANAGER: GroupLevel = GroupLevel::CO_ADMIN;
+
+/// `DELETE /users/2fa/{id}`: removes the second factor of a user, for a person who has
+/// lost the authenticator app. Only an Admin removes the second factor of an Admin. A
+/// user without a second factor is no error. PHP has no such route (D-129).
+pub async fn remove_for_user(
+    State(state): State<AppState>,
+    Extension(caller): Extension<Caller>,
+    Path(id): Path<String>,
+) -> Result<Envelope<NoData>, Refusal> {
+    caller.require(MANAGER)?;
+    let database = state.database();
+    let not_found = || Refusal::not_found("User not found");
+    let user = user_at(database, &id).await?.ok_or_else(not_found)?;
+    let groups = database.groups().list().await?;
+    if is_admin(&groups, &user) && caller.level() != GroupLevel::ADMIN {
+        return Err(Refusal::not_authorized(
+            "Only admins can remove the second factor of admins",
+        ));
+    }
+    if !database.users().set_two_factor(user.id, None).await? {
+        // Another request deleted the user after the lookup above.
+        return Err(not_found());
+    }
+    let by = caller.user().map_or("a script with the API key", |caller| {
+        caller.authenticated.user.username.as_str()
+    });
+    tracing::info!(user = %user.username, by, "the second factor of a user was removed");
+    Ok(Envelope::success(NoData).with_message("Second factor removed"))
 }

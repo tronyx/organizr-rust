@@ -7,6 +7,7 @@ mod healthcheck;
 mod import;
 mod log_file;
 mod move_to_postgres;
+mod reset_second_factor;
 mod restore;
 mod scheduler;
 mod secret_key;
@@ -40,6 +41,8 @@ enum Command {
     Check(check::Args),
     /// Put the files and the database of a backup back. Stop the server first.
     Restore(restore::Args),
+    /// Remove the second factor of a user who lost the authenticator app.
+    ResetSecondFactor(reset_second_factor::Args),
 }
 
 #[tokio::main]
@@ -51,6 +54,7 @@ async fn main() -> anyhow::Result<()> {
         Command::MoveToPostgres(args) => move_to_postgres::run(args).await,
         Command::Check(args) => check::run(args).await,
         Command::Restore(args) => restore::run(&args),
+        Command::ResetSecondFactor(args) => reset_second_factor::run(args).await,
     }
 }
 

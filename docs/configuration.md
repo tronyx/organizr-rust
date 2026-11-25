@@ -58,6 +58,7 @@ The image runs `organizr serve` by default. The other commands run in a one-off 
 | `move-to-postgres` | Copies the SQLite database into an empty PostgreSQL database. Stop the server first. See [Choosing a database](choosing-a-database.md#-move-from-sqlite-to-postgresql) | `docker compose run --rm organizr move-to-postgres --dry-run` |
 | `check` | Asks plex.tv, Ombi, Overseerr, Tautulli and the homepage services what Organizr asks them, with your stored settings. See [Checking your services](checking-your-services.md) | `docker compose exec organizr organizr check` |
 | `restore` | Puts the files and the database of a backup back. Stop the server first. See [Backups](backups.md) | `docker compose run --rm organizr restore --from "/config/backups/<file>.zip" --overwrite` |
+| `reset-second-factor` | Removes the second factor of a user who lost the authenticator app. See [Second factor](second-factor.md#-lost-your-phone) | `docker compose exec organizr organizr reset-second-factor --user "<user name>"` |
 
 `organizr --version` prints the version, and `organizr <command> --help` lists the options of a command.
 
@@ -66,7 +67,7 @@ The image runs `organizr serve` by default. The other commands run in a one-off 
 
 ### 📑 Options of each command
 
-`serve`, `import`, `move-to-postgres`, `check` and `restore` share the storage options: `--data-dir`, `--database-url`, `--secret-key` and `--secret-key-file`. They read the same environment variables as `serve`, so inside the container you rarely need them.
+`serve`, `import`, `move-to-postgres`, `check`, `restore` and `reset-second-factor` share the storage options: `--data-dir`, `--database-url`, `--secret-key` and `--secret-key-file`. They read the same environment variables as `serve`, so inside the container you rarely need them.
 
 | Command | Option | What it does |
 | --- | --- | --- |
@@ -79,6 +80,7 @@ The image runs `organizr serve` by default. The other commands run in a one-off 
 | `move-to-postgres` | `--dry-run` | Prints what would be copied, and writes nothing |
 | `restore` | `--from <file>` | The backup zip file |
 | `restore` | `--overwrite` | Replaces the database when one exists. Without it, the command stops and changes nothing |
+| `reset-second-factor` | `--user <name>` | The user whose second factor is removed, in any letter case |
 
 ## 🚪 Ports
 

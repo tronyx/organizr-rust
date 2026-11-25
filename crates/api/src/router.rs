@@ -598,6 +598,9 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/users/unlock", &post(lock::unlock_own))?
         .route("/users/lock/{id}", &post(lock::lock_user))?
         .route("/users/unlock/{id}", &post(lock::unlock_user))?
+        // Not a route of PHP: an Admin or a Co-Admin removes the second factor of a user
+        // (D-129).
+        .route("/users/2fa/{id}", &delete(two_factor::remove_for_user))?
         .route(
             "/users/{id}",
             &get(users::one)

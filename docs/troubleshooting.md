@@ -213,16 +213,13 @@ A restart also clears any login lockout, because Organizr keeps the count of fai
 
 ### 📱 I lost my second factor
 
-Without the authenticator app, the account can't log in, and a new password by e-mail doesn't remove the second factor. An Admin has no button for this yet. Remove it in the database:
+Without the authenticator app, the account can't log in, and a new password by e-mail doesn't remove the second factor. An Admin or a Co-Admin removes it in **Settings › User Management › Manage Users** (**Edit**, then **Remove second factor**). When nobody who could do that can log in, run this in the folder with your compose file:
 
-1. Stop Organizr: `docker compose stop organizr`.
-2. Open the database, as shown in [Edit the database by hand](#-edit-the-database-by-hand), and run:
+```bash
+docker compose exec organizr organizr reset-second-factor --user "<user name>"
+```
 
-   ```sql
-   UPDATE users SET two_factor_kind = NULL, two_factor_secret = NULL WHERE username_key = '<user name in small letters>';
-   ```
-
-3. Start Organizr: `docker compose up -d`. Log in with the password only, then set up the second factor again in your account. See [Second factor](second-factor.md).
+Then log in with the password only, and set up the second factor again in your account. [Lost your phone?](second-factor.md#-lost-your-phone) has the details.
 
 ### 🗝 I lost secret.key
 

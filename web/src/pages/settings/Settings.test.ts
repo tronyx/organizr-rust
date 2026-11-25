@@ -70,6 +70,7 @@ function account(id: number, username: string, changes: Partial<Account> = {}): 
     locked: 0,
     image: null,
     register_date: '2026-11-18 19:02:06',
+    auth_service: 'internal',
     ...changes,
   };
 }
@@ -77,7 +78,11 @@ function account(id: number, username: string, changes: Partial<Account> = {}): 
 const USERS: Account[] = [
   account(1, 'admin', { group: 'Admin', group_id: 0 }),
   account(3, 'zoe'),
-  account(4, 'Yan', { locked: 1, register_date: '2026-12-01 08:00:00' }),
+  account(4, 'Yan', {
+    locked: 1,
+    register_date: '2026-12-01 08:00:00',
+    auth_service: 'google',
+  }),
 ];
 
 const LAUNCH: CannedAnswer = {
@@ -685,6 +690,51 @@ describe('Settings, users', () => {
     selection?.removeAllRanges();
     await fireEvent.click(address);
     expect(await screen.findByRole('dialog', { name: 'Change the user zoe' })).toBeInTheDocument();
+  });
+
+  it('removes the second factor of a user who has one, after a question', async () => {
+    const sent = await show('users', {
+      'DELETE users/2fa/4': { message: 'Second factor removed' },
+    });
+    const ask = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+
+    // A user without a second factor has nothing to remove.
+    await fireEvent.click(within(rowOf('zoe')).getByRole('button', { name: 'Edit zoe' }));
+    let dialog = await screen.findByRole('dialog', { name: 'Change the user zoe' });
+    expect(within(dialog).queryByText('Second factor')).not.toBeInTheDocument();
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    await fireEvent.click(within(rowOf('Yan')).getByRole('button', { name: 'Edit Yan' }));
+    dialog = await screen.findByRole('dialog', { name: 'Change the user Yan' });
+    const remove = within(dialog).getByRole('button', { name: 'Remove second factor' });
+    await fireEvent.click(remove);
+    expect(ask).toHaveBeenCalledWith(
+      'Remove the second factor of Yan? Yan then logs in with the password alone, until a new second factor is set up.',
+    );
+    expect(changes(sent)).toEqual([]);
+
+    await fireEvent.click(remove);
+    await statusSays('The second factor is removed.');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(changes(sent)).toEqual([['DELETE users/2fa/4', undefined]]);
+  });
+
+  it('shows why the second factor was not removed', async () => {
+    await show('users', {
+      'DELETE users/2fa/4': {
+        status: 401,
+        message: 'Only admins can remove the second factor of admins',
+      },
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    await fireEvent.click(within(rowOf('Yan')).getByRole('button', { name: 'Edit Yan' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Change the user Yan' });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Remove second factor' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'Only admins can remove the second factor of admins',
+    );
   });
 
   it('changes the group of a user that a click on the row opened', async () => {

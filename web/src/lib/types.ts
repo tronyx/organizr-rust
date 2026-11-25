@@ -242,7 +242,13 @@ export interface Account {
   image: string | null;
   /** When the user was stored: `2026-11-18 19:02:06`, in UTC. */
   register_date: string;
+  /** How the user logs in: the service that checks the password (`internal`, `plex`, …),
+   *  or the kind of the second factor (`google`) when the user has one. */
+  auth_service: string;
 }
+
+/** The kind of second factor that the application has. */
+export const SECOND_FACTOR_KIND = 'google';
 
 /** What the settings pages show: the answers of `GET /tabs` and `GET /users`. */
 export interface EditorData {

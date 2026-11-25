@@ -347,3 +347,72 @@ async fn stored_factor_that_cannot_be_used_refuses_the_login() {
     })
     .await;
 }
+
+/// Removes the second factor of a user through the route of the managers.
+async fn delete(app: &Router, who: As<'_>, path: &str) -> Answer {
+    call(app, who, "DELETE", path, None).await
+}
+
+#[tokio::test]
+async fn manager_removes_the_second_factor_of_another_user() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let boss = seed::logged_in(database, &app, "pat", 1).await;
+        let admin = seed::logged_in(database, &app, "zed", 0).await;
+        let robin = seed::logged_in(database, &app, "robin", 4).await;
+        let user_of = async |name: &str| {
+            database
+                .users()
+                .find_by_username(name)
+                .await
+                .expect("the lookup works")
+                .expect("the user is there")
+                .id
+        };
+        let robin_id = user_of("robin").await;
+        let admin_id = user_of("zed").await;
+        add_second_factor(&app, &robin).await;
+        add_second_factor(&app, &admin).await;
+
+        // A guest and a user without the level of a Co-Admin cannot.
+        let path = format!("/users/2fa/{robin_id}");
+        for who in [As::Guest, As::User(&robin)] {
+            let refused = delete(&app, who, &path).await;
+            assert_eq!(refused.status, StatusCode::UNAUTHORIZED, "{}", refused.body);
+        }
+        assert!(stored_factor(database, robin_id).await.is_some());
+
+        let removed = delete(&app, As::User(&boss), &path).await;
+        assert_eq!(removed.status, StatusCode::OK, "{}", removed.body);
+        assert_eq!(removed.message(), json!("Second factor removed"));
+        assert_eq!(stored_factor(database, robin_id).await, None);
+        assert_eq!(log_in(&app, "robin", None).await.status, StatusCode::OK);
+        // A user without a second factor is no error.
+        let again = delete(&app, As::User(&boss), &path).await;
+        assert_eq!(again.status, StatusCode::OK, "{}", again.body);
+
+        for path in ["/users/2fa/987654", "/users/2fa/abc"] {
+            let missing = delete(&app, As::User(&boss), path).await;
+            assert_eq!(missing.status, StatusCode::NOT_FOUND, "{path}");
+            assert_eq!(missing.message(), json!("User not found"));
+        }
+
+        // Only an Admin removes the second factor of an Admin.
+        let path = format!("/users/2fa/{admin_id}");
+        let refused = delete(&app, As::User(&boss), &path).await;
+        assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            refused.message(),
+            json!("Only admins can remove the second factor of admins")
+        );
+        assert!(stored_factor(database, admin_id).await.is_some());
+        let done = delete(&app, As::User(&admin), &path).await;
+        assert_eq!(done.status, StatusCode::OK, "{}", done.body);
+        assert_eq!(stored_factor(database, admin_id).await, None);
+        // A script with the API key acts as an Admin.
+        let script = delete(&app, As::Admin, &path).await;
+        assert_eq!(script.status, StatusCode::OK, "{}", script.body);
+    })
+    .await;
+}
