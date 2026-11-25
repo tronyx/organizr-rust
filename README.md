@@ -69,7 +69,7 @@ Your data lives in the volume `<folder>_organizr-data` (`organizr_organizr-data`
 - 🎨 The pages are new, so custom CSS from PHP needs new names: see [Custom CSS](docs/custom-css.md). Custom JavaScript runs only when you switch it on.
 - 🧩 Plugins by other authors are WebAssembly extensions, not PHP files.
 
-[Deviations](docs/deviations.md) lists every difference, with its reason. [Release notes](docs/release-notes.md) has the ones you're most likely to notice.
+[Deviations](docs/deviations.md) lists every difference, with its reason. [Release notes](docs/release-notes.md) has the ones you're most likely to notice, and the [changelog](CHANGELOG.md) lists the notable changes as they come.
 
 ## 📖 Documentation
 

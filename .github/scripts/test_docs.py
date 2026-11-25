@@ -1,6 +1,7 @@
 """Checks the project's Markdown and the copy of docs/ in the wiki.
 
-Every relative link in the README, the pages in docs/ and CONTRIBUTING
+Every relative link in the README, the pages in docs/, CONTRIBUTING,
+SECURITY and the CHANGELOG
 must name a file that exists, and an #anchor must match a heading in it,
 by the rules GitHub uses to make a heading's anchor. The wiki copy made by
 docs_to_wiki.py must keep every page, rewrite the links as the wiki needs
@@ -42,7 +43,7 @@ docs_to_wiki = load_docs_to_wiki()
 
 def markdown_files(root: Path) -> list[Path]:
     """The Markdown files that readers follow links in."""
-    found = [root / "README.md", root / "CONTRIBUTING.md"]
+    found = [root / name for name in ("README.md", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md")]
     found += sorted((root / "docs").glob("**/*.md"))
     return [path for path in found if path.is_file()]
 

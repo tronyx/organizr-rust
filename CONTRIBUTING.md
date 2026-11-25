@@ -199,6 +199,7 @@ docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:1.7.12 -color
 - Keep commits small and focused: one change per commit, with its tests.
 - Write the subject in plain American English, as a short command: "Show the poster of PHP for a missing poster", not "Fixed posters". Explain the why in the body when it isn't obvious.
 - Use American spelling everywhere, also in code, setting keys and API names (`color`, `colorSet`, `canceled`).
+- A change that users or admins notice gets a line in [the changelog](CHANGELOG.md) under **Unreleased**, in the same commit, under **Added**, **Changed**, **Fixed**, **Security**, **Documentation** or **Project**.
 
 ## 🔀 Differences from PHP need an entry
 

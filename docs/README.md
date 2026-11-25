@@ -76,6 +76,7 @@ New here? Read [Installation](installation.md), then [Reverse proxy](reverse-pro
 | [🔧 Configuration](configuration.md) | Every environment variable and command, ports, the data folder, the health check, image tags and resources |
 | [↔️ Deviations](deviations.md) | Every place where this version answers differently from PHP Organizr, and why |
 | [🖼️ Third-party assets](third-party-assets.md) | The pictures and icons of other projects in the image, and their licenses |
+| [📜 Changelog](../CHANGELOG.md) | The notable changes, newest first |
 
 ## 👷 Development
 

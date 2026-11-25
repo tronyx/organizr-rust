@@ -51,6 +51,10 @@ Every difference is in [the deviations](deviations.md), with its reason. These a
 - **Updates** mean pulling a new image. The update page checks for a new version and installs nothing (details: D-23).
 - **No news on the About page.** The page has a strict security policy and loads nothing from other sites, so it can't fetch the Organizr news.
 
+## 📜 Changes as they come
+
+The [changelog](../CHANGELOG.md) lists each notable change, newest first. Until the first release, they're under **Unreleased**.
+
 ## 🧪 Checks
 
 Each image passes the checks in [Releases and images](releases.md#-the-checks-before-an-image-is-published) before it is published.
