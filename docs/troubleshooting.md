@@ -58,7 +58,7 @@ Put the old `secret.key` back in the data folder and start the container again. 
 ### 🆕 The log says a new key was written, on an install that already existed
 
 ```text
-a new key for the stored secrets was written; keep a copy of this file with your backups, because the secrets in the database cannot be read without it
+a new key for the stored secrets was written; keep a copy of this file in a safe place apart from your backups, because the secrets in the database cannot be read without it
 ```
 
 On a brand-new install, that's normal. On an existing one, it means Organizr didn't find its key: the volume isn't the one you meant (with Compose, it's `<project>_organizr-data`), or `ORGANIZR_SECRET_KEY_FILE` points to the wrong place. Stop Organizr, fix the mount or the path, and put the right `secret.key` in place before you enter any secret again.

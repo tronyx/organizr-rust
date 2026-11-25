@@ -25,7 +25,7 @@ export const PROMPAGE: HomepageItemForm = {
             key: 'promPageURL',
             kind: 'text',
             label: 'URL',
-            help: 'URL for Uptime Kuma e.g. http://kuma:3001 (no trailing slash)',
+            help: 'URL for PromPage e.g. http://prompage:3000 (no trailing slash)',
             placeholder: 'http://prompage:3000',
           },
         ],

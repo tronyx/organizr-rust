@@ -169,6 +169,8 @@ The report starts with `Dry run: nothing was written.` or `The import is complet
 | Settings that this application does not need | The names of the settings that weren't stored |
 | PHP files of the old install | Files that need a new home, because this version can't run them |
 
+After the report of a real import, a last line reminds you to keep a copy of the key and names where it is, for example `Keep a copy of the key file /config/secret.key in a safe place apart from your backups: the secrets in the database cannot be read without it.`
+
 The report holds names of records and of settings. It holds no password, no token and no key. [Moving from PHP Organizr](moving-from-php.md#-2-import) shows a sample.
 
 ## 🔓 If an encrypted value can't be opened

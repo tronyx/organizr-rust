@@ -92,14 +92,30 @@ impl StorageArgs {
         self.database_url.as_deref()
     }
 
+    /// The file that holds the key for the stored secrets.
+    fn key_file(&self) -> PathBuf {
+        self.secret_key_file
+            .clone()
+            .unwrap_or_else(|| self.data_dir.join(crate::secret_key::FILE_NAME))
+    }
+
     /// What seals the stored secrets. The key file is made when it is missing.
     pub fn secrets(&self) -> anyhow::Result<SecretBox> {
-        let key_file = self
-            .secret_key_file
-            .clone()
-            .unwrap_or_else(|| self.data_dir.join(crate::secret_key::FILE_NAME));
-        let key = crate::secret_key::load_or_create(self.secret_key.as_deref(), &key_file)?;
+        let key = crate::secret_key::load_or_create(self.secret_key.as_deref(), &self.key_file())?;
         SecretBox::new(&key).context("cannot use the key for the stored secrets")
+    }
+
+    /// A reminder to keep a copy of the key, which names where the key is.
+    pub fn key_reminder(&self) -> String {
+        let place = if self.secret_key.is_some() {
+            "the key in ORGANIZR_SECRET_KEY".to_owned()
+        } else {
+            format!("the key file {}", self.key_file().display())
+        };
+        format!(
+            "Keep a copy of {place} in a safe place apart from your backups: \
+             the secrets in the database cannot be read without it."
+        )
     }
 }
 
@@ -362,6 +378,31 @@ mod tests {
         // The test does not read the environment: no `ORGANIZR_CUSTOM_JS` is set there.
         assert!(!parsed(&["serve"]));
         assert!(parsed(&["serve", "--custom-js"]));
+    }
+
+    #[test]
+    fn key_reminder_names_where_the_key_is() {
+        let reminder = |words: &[&str]| {
+            Serve::try_parse_from(words)
+                .unwrap_or_else(|error| panic!("{error}"))
+                .args
+                .storage
+                .key_reminder()
+        };
+        let file = Path::new("/config").join("secret.key");
+
+        assert!(
+            reminder(&["serve", "--data-dir", "/config"])
+                .starts_with(&format!("Keep a copy of the key file {} ", file.display()))
+        );
+        assert!(
+            reminder(&["serve", "--secret-key-file", "/run/secrets/organizr_key"])
+                .contains("the key file /run/secrets/organizr_key in a safe place")
+        );
+        assert!(
+            reminder(&["serve", "--secret-key", &"0".repeat(64)])
+                .starts_with("Keep a copy of the key in ORGANIZR_SECRET_KEY ")
+        );
     }
 
     #[test]

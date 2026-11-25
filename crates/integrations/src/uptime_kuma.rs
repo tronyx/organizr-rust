@@ -35,11 +35,14 @@ pub async fn metrics(http: &Outbound, url: &str, key: &str) -> Result<String, Ku
         .timeout(TIME_LIMIT)
         .send()
         .await
-        .map_err(KumaError::Unreachable)?;
+        .map_err(|error| KumaError::Unreachable(error.without_url()))?;
     if !response.status().is_success() {
         return Err(KumaError::Status(response.status().as_u16()));
     }
-    response.text().await.map_err(KumaError::Unreachable)
+    response
+        .text()
+        .await
+        .map_err(|error| KumaError::Unreachable(error.without_url()))
 }
 
 /// The text between the first two quotation marks.
@@ -117,7 +120,8 @@ pub fn monitors(page: &str) -> Vec<Value> {
 mod tests {
     use serde_json::json;
 
-    use super::monitors;
+    use super::{metrics, monitors};
+    use crate::http::Outbound;
 
     const PAGE: &str = "# HELP monitor_status Monitor Status (1 = UP, 0= DOWN, 2= PENDING, 3= MAINTENANCE)\n\
 # TYPE monitor_status gauge\n\
@@ -130,6 +134,19 @@ monitor_status{monitor_name=\"Backup\",monitor_type=\"port\",monitor_url=\"null\
 monitor_response_time{monitor_name=\"Router\",monitor_type=\"ping\",monitor_url=\"null\",monitor_hostname=\"192.0.2.1\",monitor_port=\"null\"} 3\n\
 monitor_response_time{monitor_name=\"Blog\",monitor_type=\"http\",monitor_url=\"https://blog.example.com\",monitor_hostname=\"null\",monitor_port=\"null\"} -1\n\
 monitor_cert_days_remaining{monitor_name=\"Blog\",monitor_type=\"http\",monitor_url=\"https://blog.example.com\",monitor_hostname=\"null\",monitor_port=\"null\"} 61\n";
+
+    #[tokio::test]
+    async fn error_of_an_install_that_cannot_be_reached_names_no_address() {
+        let http = Outbound::new().expect("the client can be built");
+
+        let error = metrics(&http, "http://127.0.0.1:9", "key")
+            .await
+            .expect_err("nothing answers on port 9");
+
+        let text = error.to_string();
+        assert!(text.starts_with("Uptime Kuma cannot be reached"), "{text}");
+        assert!(!text.contains("127.0.0.1"), "{text}");
+    }
 
     #[test]
     fn monitors_come_with_status_and_latency() {

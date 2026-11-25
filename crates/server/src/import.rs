@@ -57,5 +57,6 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .await
         .context("the database did not close cleanly")?;
     println!("{report}");
+    println!("{}", args.storage.key_reminder());
     Ok(())
 }

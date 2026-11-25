@@ -56,8 +56,8 @@ fn create(file: &Path) -> anyhow::Result<MasterKey> {
         .with_context(|| format!("cannot write the key file {}", file.display()))?;
     tracing::warn!(
         file = %file.display(),
-        "a new key for the stored secrets was written; keep a copy of this file with your backups, \
-         because the secrets in the database cannot be read without it"
+        "a new key for the stored secrets was written; keep a copy of this file in a safe place \
+         apart from your backups, because the secrets in the database cannot be read without it"
     );
     Ok(key)
 }

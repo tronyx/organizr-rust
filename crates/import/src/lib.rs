@@ -56,7 +56,7 @@ pub enum ImportError {
     /// A place where a file of the PHP install can be could not be looked at, and the
     /// file was found in no other place.
     #[error(
-        "cannot look at {path}: {source}; the user that runs the import must be able to          enter each folder of that path (in the container image, that user has the UID 65532)"
+        "cannot look at {path}: {source}; the user that runs the import must be able to enter each folder of that path (in the container image, that user has the UID 65532)"
     )]
     Inaccessible {
         /// The path that could not be looked at.

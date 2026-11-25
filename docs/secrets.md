@@ -27,10 +27,10 @@ Organizr reads the key at start-up, from the first of these that is set:
 **On the first start**, when no variable is set and the key file doesn't exist yet, Organizr makes a new key, writes it to the key file (readable only by the user that runs Organizr, mode `0600`), and logs this warning:
 
 ```text
-a new key for the stored secrets was written; keep a copy of this file with your backups, because the secrets in the database cannot be read without it
+a new key for the stored secrets was written; keep a copy of this file in a safe place apart from your backups, because the secrets in the database cannot be read without it
 ```
 
-Despite that wording, keep the copy apart from your backup files (see [Back up the key](#-back-up-the-key)).
+See [Back up the key](#-back-up-the-key) for how to keep that copy.
 
 If the variable or the file holds something that isn't a key, Organizr refuses to start and says so.
 
