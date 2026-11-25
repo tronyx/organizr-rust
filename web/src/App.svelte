@@ -3,6 +3,7 @@
   import { fade } from 'svelte/transition';
 
   import { contentFor, shownTab } from './lib/menu';
+  import { loadModernStyles } from './lib/modernStyles';
   import { motion } from './lib/motion';
   import { rememberReturn } from './lib/returnTo';
   import { sceneOnPage } from './lib/scene';
@@ -36,6 +37,28 @@
   let modernFailed = $state(false);
   const modern = $derived(session.look.layout === 'modern' && !modernFailed);
 
+  // The rules of the modern layout come in their own style sheet, so people of the OG
+  // layout never load them either. Every screen of the modern layout, also the set-up
+  // wizard and the lock screen outside the modern shell, waits for them, so that nothing
+  // is drawn before its rules apply. A sheet that does not load leaves the original shell.
+  let modernStyled = $state(false);
+  const waitingForStyles = $derived(
+    session.look.layout === 'modern' && !modernStyled && !modernFailed,
+  );
+
+  $effect(() => {
+    if (waitingForStyles) {
+      void loadModernStyles().then(
+        () => {
+          modernStyled = true;
+        },
+        () => {
+          modernFailed = true;
+        },
+      );
+    }
+  });
+
   $effect(() => {
     if (modern && !ModernShell) {
       void import('./pages/ModernShell.svelte').then(
@@ -57,7 +80,11 @@
   });
 </script>
 
-{#if session.launch && session.needsSetUp}
+{#if session.launch && waitingForStyles}
+  <main class="grid min-h-screen place-items-center">
+    <span class="loading loading-spinner loading-lg" role="status" aria-label="Loading"></span>
+  </main>
+{:else if session.launch && session.needsSetUp}
   <Wizard />
 {:else if session.locked}
   <Locked />

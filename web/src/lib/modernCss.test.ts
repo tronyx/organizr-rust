@@ -5,7 +5,22 @@ import { describe, expect, it } from 'vitest';
 
 import { applyLook, MODERN_THEMES, modernThemeId } from './look';
 
-const css = readFileSync(resolve(__dirname, '../app.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+/** The text of a style sheet of `src`, without its comments. */
+const sheet = (name: string) =>
+  readFileSync(resolve(__dirname, '..', name), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+
+/** `app.css`: Tailwind, daisyUI and its themes, and the rules of OG. */
+const appCss = sheet('app.css');
+/** `modern.css`: the rules of the modern layout, which only the modern layout loads. */
+const modernCss = sheet('modern.css');
+/** Both sheets, in the order of the page. */
+const css = `${appCss}\n${modernCss}`;
+
+/** The last `@layer utilities` block of the modern rules, where they beat daisyUI and Tailwind. */
+const modernUtilities = () => modernCss.slice(modernCss.lastIndexOf('@layer utilities'));
+/** Everything that the page reads before that block: `app.css` and the start of `modern.css`. */
+const beforeModernUtilities = () =>
+  appCss + modernCss.slice(0, modernCss.lastIndexOf('@layer utilities'));
 
 interface Rule {
   selector: string;
@@ -19,14 +34,17 @@ const OFFERED = MODERN_THEMES.flatMap((theme) =>
   theme.colorSets.map((set) => modernThemeId(theme.id, set.id)),
 );
 
-/** Every `selector { declarations }` pair of the file, at any nesting depth. */
-function rules(): Rule[] {
+/** Every `selector { declarations }` pair of a text, at any nesting depth. */
+function rulesOf(text: string): Rule[] {
   const found: Rule[] = [];
-  for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+  for (const match of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     found.push({ selector: (match[1] ?? '').trim(), body: match[2] ?? '' });
   }
   return found;
 }
+
+/** The rules of both style sheets. */
+const rules = () => rulesOf(css);
 
 /** The parts of a selector list, split at the commas outside of parentheses and brackets. */
 function selectorParts(selector: string): string[] {
@@ -46,9 +64,9 @@ function selectorParts(selector: string): string[] {
   return parts;
 }
 
-/** The rules whose selector list has the modern scope in every one of its parts. */
+/** The rules of `modern.css` whose selector list has the modern scope in every one of its parts. */
 function modernRules(): Rule[] {
-  return rules().filter((rule) =>
+  return rulesOf(modernCss).filter((rule) =>
     selectorParts(rule.selector).every((part) => part.startsWith(SCOPE)),
   );
 }
@@ -259,6 +277,33 @@ describe('the modern CSS', () => {
     expect(mixed).toEqual([]);
   });
 
+  it('every_modern_rule_is_in_modern_css_and_only_there', () => {
+    // OG never loads `modern.css`: a rule of OG there would be lost, and a modern rule in
+    // `app.css` would reach every OG page.
+    const inApp = rulesOf(appCss).filter((rule) => rule.selector.includes(SCOPE));
+    expect(inApp.map((rule) => rule.selector)).toEqual([]);
+    const own = rulesOf(modernCss);
+    expect(own.length).toBeGreaterThan(300);
+    expect(modernRules()).toHaveLength(own.length);
+    // Every rule sits in a layer, so the custom CSS of the Admin (unlayered) still wins.
+    const topLevel: string[] = [];
+    let depth = 0;
+    let start = 0;
+    for (let index = 0; index < modernCss.length; index += 1) {
+      const character = modernCss[index];
+      if (depth === 0 && (character === '{' || character === ';')) {
+        topLevel.push(modernCss.slice(start, index).trim());
+      }
+      if (character === '{') depth += 1;
+      if (character === '}') depth -= 1;
+      if (depth === 0 && (character === '}' || character === ';')) start = index + 1;
+    }
+    expect(topLevel.length).toBeGreaterThan(1);
+    for (const prelude of topLevel) {
+      expect(prelude).toMatch(/^@layer (components|utilities)$|^@reference '\.\/app\.css'$/);
+    }
+  });
+
   it('the_selector_split_ignores_commas_inside_parentheses', () => {
     expect(selectorParts('.a:not(.b, :disabled), .c')).toEqual(['.a:not(.b, :disabled)', '.c']);
     expect(selectorParts('.a, .b')).toEqual(['.a', '.b']);
@@ -306,8 +351,8 @@ describe('the modern CSS', () => {
 
   it('the_menu_column_rules_that_beat_utilities_sit_in_the_utilities_layer', () => {
     // `w-full` on the button Logout and `ml-auto` on a dot are utilities.
-    const block = css.slice(css.lastIndexOf('@layer utilities'));
-    const before = css.slice(0, css.lastIndexOf('@layer utilities'));
+    const block = modernUtilities();
+    const before = beforeModernUtilities();
     for (const selector of [
       `${SCOPE} .m-sidebar-icons .org-menu button`,
       `${SCOPE} .m-sidebar-icons .org-menu .m-dot`,
@@ -320,9 +365,10 @@ describe('the modern CSS', () => {
 
   it('the_menu_column_moves_only_without_reduced_motion', () => {
     // The transitions sit in a `no-preference` query: under reduced motion there is none.
-    const query = css.indexOf('@media (prefers-reduced-motion: no-preference)');
+    expect(appCss).not.toContain('@media (prefers-reduced-motion: no-preference)');
+    const query = modernCss.indexOf('@media (prefers-reduced-motion: no-preference)');
     expect(query).toBeGreaterThan(-1);
-    const inside = css.slice(query, css.indexOf('@', query + 1));
+    const inside = modernCss.slice(query, modernCss.indexOf('@', query + 1));
     expect(inside).toContain(`${SCOPE} aside.org-sidebar {`);
     expect(inside).toContain(`${SCOPE} .org-content.m-with-menu {`);
     const column = rules().filter((rule) =>
@@ -410,7 +456,7 @@ describe('the modern dialog rules', () => {
   ];
 
   it('modern_dialog_rules_sit_in_the_utilities_layer_in_the_source', () => {
-    const block = css.slice(css.lastIndexOf('@layer utilities'));
+    const block = modernUtilities();
     for (const selector of [...dialogSelectors, ...partSelectors]) {
       expect(block).toContain(selector);
     }
@@ -428,8 +474,8 @@ describe('the modern dialog rules', () => {
   ];
 
   it('auth_rules_that_beat_daisyui_sit_in_the_utilities_layer', () => {
-    const block = css.slice(css.lastIndexOf('@layer utilities'));
-    const before = css.slice(0, css.lastIndexOf('@layer utilities'));
+    const block = modernUtilities();
+    const before = beforeModernUtilities();
     for (const selector of authSelectors) {
       expect(block, selector).toContain(`${selector} {`);
       expect(before, selector).not.toContain(`${selector} {`);
@@ -437,28 +483,36 @@ describe('the modern dialog rules', () => {
   });
 
   it('the_rules_that_beat_utilities_are_not_in_the_components_layer', () => {
-    const before = css.slice(0, css.lastIndexOf('@layer utilities'));
+    const before = beforeModernUtilities();
     for (const selector of [...dialogSelectors, ...partSelectors]) {
       expect(before, selector).not.toContain(`${selector} {`);
     }
   });
 
   const distDir = resolve(__dirname, '../../dist/assets');
-  const built = existsSync(distDir)
-    ? readdirSync(distDir).filter((name) => name.startsWith('index-') && name.endsWith('.css'))
-    : [];
+  /** The built style sheets whose name starts with `prefix`. */
+  const builtSheets = (prefix: string) =>
+    existsSync(distDir)
+      ? readdirSync(distDir).filter((name) => name.startsWith(prefix) && name.endsWith('.css'))
+      : [];
+  const built = builtSheets('index-');
 
   it.skipIf(built.length === 0)('modern_dialog_rules_are_in_the_utilities_layer_when_built', () => {
     const out = readFileSync(resolve(distDir, built[0] as string), 'utf8');
+    const modernBuilt = builtSheets('modern-');
+    expect(modernBuilt).toHaveLength(1);
+    const modernOut = readFileSync(resolve(distDir, modernBuilt[0] as string), 'utf8');
     // daisyUI holds the modal in `@layer utilities`; the modern rules must be in that
     // layer too (the `components` layer comes earlier and would lose), after the layer
-    // of the daisyUI modal rules that they override.
+    // of the daisyUI modal rules that they override. They come in the modern style sheet,
+    // which the page links after the main one, so they come after all of its rules.
     const componentsStart = out.indexOf('@layer components{');
     expect(componentsStart).toBeGreaterThanOrEqual(0);
     const utilitiesStart = out.indexOf('@layer utilities{');
     expect(utilitiesStart).toBeGreaterThan(componentsStart);
     const daisyModal = out.indexOf('@layer daisyui.l1.l2{.modal.modal-open', utilitiesStart);
     expect(daisyModal).toBeGreaterThan(utilitiesStart);
+    expect(out).not.toContain('[data-layout=modern]');
     for (const selector of [
       '.modal[open]{',
       '.modal-box{',
@@ -466,18 +520,38 @@ describe('the modern dialog rules', () => {
       '.m-settings-sheet-head{',
       '.org-sidebar-head{',
     ]) {
-      const at = out.lastIndexOf(`[data-layout=modern] ${selector}`);
-      expect(at, selector).toBeGreaterThan(daisyModal);
-      expect(out.slice(utilitiesStart, at)).not.toContain('@layer components{');
+      const at = modernOut.lastIndexOf(`[data-layout=modern] ${selector}`);
+      expect(at, selector).toBeGreaterThan(-1);
+      const layer = modernOut.lastIndexOf('@layer utilities{', at);
+      expect(layer, selector).toBeGreaterThan(-1);
+      expect(modernOut.slice(layer, at), selector).not.toContain('@layer components{');
     }
+  });
+
+  it.skipIf(built.length === 0)('the_built_modern_sheet_holds_no_tailwind_or_daisyui_rules', () => {
+    // `@reference` gives the modern sheet the Tailwind of `app.css` without its rules:
+    // every rule of the built sheet has the modern scope, and it starts no new layer.
+    const modernOut = readFileSync(
+      resolve(distDir, builtSheets('modern-')[0] ?? '-'),
+      'utf8',
+    ).replace(/\/\*[\s\S]*?\*\//g, '');
+    const layers = new Set([...modernOut.matchAll(/@layer ([^{;]+)/g)].map((match) => match[1]));
+    expect(layers).toEqual(new Set(['components', 'utilities']));
+    const ruleText = modernOut.replace(/@(layer|media|supports|container)[^{]*\{/g, '');
+    const selectors = [...ruleText.matchAll(/([^{}]+)\{[^{}]*\}/g)].map((match) => match[1] ?? '');
+    expect(selectors.length).toBeGreaterThan(300);
+    const bare = selectors.filter((selector) =>
+      selectorParts(selector).some((part) => !part.startsWith('[data-layout=modern]')),
+    );
+    expect(bare).toEqual([]);
   });
 });
 
 describe('the borders of the form controls', () => {
   /** The colors of a theme of the style sheet, by name. */
   function theme(name: string): Record<string, string> {
-    const start = css.indexOf(`name: '${name}'`);
-    const block = css.slice(start, css.indexOf('}', start));
+    const start = appCss.indexOf(`name: '${name}'`);
+    const block = appCss.slice(start, appCss.indexOf('}', start));
     return Object.fromEntries(
       [...block.matchAll(/--color-([\w-]+):\s*(#[0-9a-fA-F]{6})/g)].map((match) => [
         match[1] as string,
@@ -594,7 +668,7 @@ describe('the borders of the form controls', () => {
       );
     expect(found, 'a modern rule for the labels of the Speed test').not.toBeNull();
     // daisyUI's `.stat-title` sits in the utilities layer; the rule must be there too.
-    expect(css.slice(css.lastIndexOf('@layer utilities'))).toContain(selector);
+    expect(modernUtilities()).toContain(selector);
     const colors = theme(name);
     const text = luminance(
       mixOklab(colors['base-content'] as string, colors['base-200'] as string, Number(found?.[1])),
@@ -618,14 +692,14 @@ describe('the borders of the form controls', () => {
     // A checked radio keeps its border in its own color.
     expect(rule?.selector ?? '').toMatch(/\.radio:not\(:checked/);
     // The rule sits in the utilities layer, where it beats the sublayers of daisyUI.
-    const block = css.slice(css.lastIndexOf('@layer utilities'));
+    const block = modernUtilities();
     expect(block).toContain(rule?.selector ?? '-');
   });
 });
 
 describe('the modern top bar and lock screen on a phone', () => {
   it('the_shown_tab_name_hides_and_the_logo_text_shortens_below_640_px', () => {
-    const phone = css.slice(css.lastIndexOf('@media (max-width: 639px)'));
+    const phone = modernCss.slice(modernCss.lastIndexOf('@media (max-width: 639px)'));
     expect(phone).toMatch(/\[data-layout='modern'\] \.m-shown \{\s*display: none;/);
     // Without a logo picture the title is the only content of the home link: it stays
     // visible and ends in an ellipsis instead of being hidden.
@@ -676,9 +750,9 @@ describe('the brand edges of the Homepage Order tiles', () => {
 describe('the brand themes of the modern layout', () => {
   /** The names of the variables that a daisyUI theme block sets. */
   function variablesOf(name: string): string[] {
-    const start = css.indexOf(`name: '${name}';`);
+    const start = appCss.indexOf(`name: '${name}';`);
     expect(start, name).toBeGreaterThan(-1);
-    const block = css.slice(start, css.indexOf('}', start));
+    const block = appCss.slice(start, appCss.indexOf('}', start));
     return [...block.matchAll(/(--[\w-]+):/g)].map((match) => match[1] as string);
   }
 
@@ -739,7 +813,7 @@ describe('the brand themes of the modern layout', () => {
       /border-image:\s*linear-gradient\([^;]*var\(--color-secondary\)[^;]*var\(--color-primary\)/,
     );
     // daisyUI's `.btn` sits in a sublayer of the utilities layer: the gradient must too.
-    const block = css.slice(css.lastIndexOf('@layer utilities'));
+    const block = modernUtilities();
     expect(block).toContain(button?.selector ?? '-');
   });
 
@@ -765,7 +839,7 @@ describe('the Silo theme of the modern layout', () => {
   const SILO = `${SCOPE}[data-theme^='m-silo-']`;
   const siloRules = () => rules().filter((rule) => rule.selector.startsWith(SILO));
   /** The rules of the last utilities layer, where they beat daisyUI and Tailwind. */
-  const lastBlock = () => css.slice(css.lastIndexOf('@layer utilities'));
+  const lastBlock = modernUtilities;
 
   it('silo_focus_rings_use_the_accent', () => {
     const focus = siloRules().find((rule) => rule.selector === `${SILO} :focus-visible`);
@@ -895,7 +969,7 @@ describe('the Silo theme of the modern layout', () => {
 });
 
 describe('the scenes of the modern layout', () => {
-  const lastBlock = () => css.slice(css.lastIndexOf('@layer utilities'));
+  const lastBlock = modernUtilities;
   const rule = (selector: string) => rules().find((one) => one.selector === selector);
 
   it('the_scene_is_fixed_behind_the_page_and_catches_no_clicks', () => {
@@ -1072,9 +1146,9 @@ describe('the Nocturne theme of the modern layout', () => {
 
   it('nocturne_has_sharp_corners', () => {
     for (const set of SETS) {
-      const start = css.indexOf(`name: 'm-nocturne-${set}';`);
+      const start = appCss.indexOf(`name: 'm-nocturne-${set}';`);
       expect(start, set).toBeGreaterThan(-1);
-      const block = css.slice(start, css.indexOf('}', start));
+      const block = appCss.slice(start, appCss.indexOf('}', start));
       for (const name of ['radius-selector', 'radius-field', 'radius-box']) {
         const value = Number(new RegExp(`--${name}: ([\\d.]+)rem;`).exec(block)?.[1] ?? 9);
         expect(value, `${set} ${name}`).toBeLessThanOrEqual(0.25);
@@ -1141,9 +1215,9 @@ describe('the Riot theme of the modern layout', () => {
 
   it('riot_has_square_corners_and_thick_borders', () => {
     for (const set of SETS) {
-      const start = css.indexOf(`name: 'm-riot-${set}';`);
+      const start = appCss.indexOf(`name: 'm-riot-${set}';`);
       expect(start, set).toBeGreaterThan(-1);
-      const block = css.slice(start, css.indexOf('}', start));
+      const block = appCss.slice(start, appCss.indexOf('}', start));
       for (const name of ['radius-selector', 'radius-field', 'radius-box']) {
         const value = Number(new RegExp(`--${name}: ([\\d.]+)rem;`).exec(block)?.[1] ?? 9);
         expect(value, `${set} ${name}`).toBe(0);
@@ -1212,9 +1286,9 @@ describe('the Tempest theme of the modern layout', () => {
 
   it('tempest_has_rounded_corners', () => {
     for (const set of SETS) {
-      const start = css.indexOf(`name: 'm-tempest-${set}';`);
+      const start = appCss.indexOf(`name: 'm-tempest-${set}';`);
       expect(start, set).toBeGreaterThan(-1);
-      const block = css.slice(start, css.indexOf('}', start));
+      const block = appCss.slice(start, appCss.indexOf('}', start));
       for (const name of ['radius-selector', 'radius-field', 'radius-box']) {
         const value = Number(new RegExp(`--${name}: ([\\d.]+)rem;`).exec(block)?.[1] ?? 0);
         expect(value, `${set} ${name}`).toBeGreaterThanOrEqual(0.5);
@@ -1336,9 +1410,9 @@ describe('the Circuit theme of the modern layout', () => {
 
   it('circuit_has_small_chamfered_corners', () => {
     for (const set of SETS) {
-      const start = css.indexOf(`name: 'm-circuit-${set}';`);
+      const start = appCss.indexOf(`name: 'm-circuit-${set}';`);
       expect(start, set).toBeGreaterThan(-1);
-      const block = css.slice(start, css.indexOf('}', start));
+      const block = appCss.slice(start, appCss.indexOf('}', start));
       for (const name of ['radius-selector', 'radius-field', 'radius-box']) {
         const value = Number(new RegExp(`--${name}: ([\\d.]+)rem;`).exec(block)?.[1] ?? -1);
         expect(value, `${set} ${name}`).toBeGreaterThan(0);
@@ -1369,9 +1443,9 @@ describe('the Prism theme of the modern layout', () => {
 
   /** The daisyUI block of a color set of Prism. */
   function block(set: string): string {
-    const start = css.indexOf(`name: 'm-prism-${set}';`);
+    const start = appCss.indexOf(`name: 'm-prism-${set}';`);
     expect(start, set).toBeGreaterThan(-1);
-    return css.slice(start, css.indexOf('}', start));
+    return appCss.slice(start, appCss.indexOf('}', start));
   }
 
   it('only_the_prism_rule_names_fredoka_and_the_scene_loads_its_face', () => {
@@ -1395,7 +1469,7 @@ describe('the Prism theme of the modern layout', () => {
     // The body of the modern layout is light (300); the rounded face reads better at 400.
     const body = rules().find((rule) => rule.selector === `${PRISM} body`);
     expect(Number(/font-weight:\s*(\d+)/.exec(body?.body ?? '')?.[1])).toBe(400);
-    expect(css.slice(css.lastIndexOf('@layer utilities'))).toContain(`${PRISM} body {`);
+    expect(modernUtilities()).toContain(`${PRISM} body {`);
   });
 
   it('the_prism_font_rule_stops_matching_after_a_switch_to_plex', () => {
@@ -1446,13 +1520,13 @@ describe('the Prism theme of the modern layout', () => {
 
 describe('the users table and the look popover', () => {
   /** The text of the block that starts at `start`, up to its matching closing brace. */
-  function blockAt(start: number): string {
-    const open = css.indexOf('{', start);
+  function blockAt(text: string, start: number): string {
+    const open = text.indexOf('{', start);
     let depth = 0;
-    for (let index = open; index < css.length; index += 1) {
-      if (css[index] === '{') depth += 1;
-      if (css[index] === '}') depth -= 1;
-      if (depth === 0) return css.slice(open + 1, index);
+    for (let index = open; index < text.length; index += 1) {
+      if (text[index] === '{') depth += 1;
+      if (text[index] === '}') depth -= 1;
+      if (depth === 0) return text.slice(open + 1, index);
     }
     return '';
   }
@@ -1461,9 +1535,9 @@ describe('the users table and the look popover', () => {
     // The card of the table is the container that the narrow rules ask about.
     const scroll = rules().find((rule) => rule.selector === `${SCOPE} .org-users-scroll`);
     expect(scroll?.body ?? '').toMatch(/container-type:\s*inline-size/);
-    const start = css.indexOf('@container (width < 40rem)');
+    const start = modernCss.indexOf('@container (width < 40rem)');
     expect(start).toBeGreaterThan(-1);
-    const narrow = blockAt(start);
+    const narrow = blockAt(modernCss, start);
     expect(narrow).toMatch(
       /\[data-layout='modern'\] \.org-users-avatar,\s*\[data-layout='modern'\] \.org-users-date \{\s*display: none;/,
     );
@@ -1471,7 +1545,9 @@ describe('the users table and the look popover', () => {
     // Elsewhere, and on OG at any width, the line under the name is hidden: the date shows once.
     const hidden = rules().find((rule) => rule.selector === '.org-users-date-line');
     expect(hidden?.body ?? '').toMatch(/display:\s*none/);
-    expect(css.slice(0, start)).not.toMatch(/\.org-users-date-line \{[^}]*display: block/);
+    expect(appCss + modernCss.slice(0, start)).not.toMatch(
+      /\.org-users-date-line \{[^}]*display: block/,
+    );
   });
 
   it('the_users_page_puts_the_date_under_the_name_and_in_its_own_column', () => {

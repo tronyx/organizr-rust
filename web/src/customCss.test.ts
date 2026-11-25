@@ -14,11 +14,13 @@ const SOURCES = import.meta.glob<string>('./**/*.{svelte,ts}', {
   eager: true,
 });
 
-// Vitest empties style sheets that a test imports, so the style sheet comes from the disk.
+// Vitest empties style sheets that a test imports, so the style sheets come from the disk:
+// the main one and the one of the modern layout.
 const code = Object.entries(SOURCES)
   .filter(([path]) => !path.endsWith('.test.ts'))
   .map(([, text]) => text)
   .concat(readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8'))
+  .concat(readFileSync(resolve(process.cwd(), 'src/modern.css'), 'utf8'))
   .join('\n');
 
 const homepage = SOURCES['./pages/homepage/Homepage.svelte'] ?? '';

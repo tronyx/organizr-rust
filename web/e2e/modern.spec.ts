@@ -920,3 +920,95 @@ test('the group label of the user menu reads well with the menu open, in dark an
     expect((await look({ layout: 'og' })).ok()).toBe(true);
   }
 });
+
+test('only the modern layout loads its style sheet, before it draws, and custom CSS still wins', async ({
+  page,
+}) => {
+  await logIn(page);
+  // The requests of the modern style sheet, a file of its own in the built interface.
+  const sheets: string[] = [];
+  page.on('request', (request) => {
+    if (/\/assets\/modern-[\w-]+\.css$/.test(new URL(request.url()).pathname)) {
+      sheets.push(request.url());
+    }
+  });
+  const html = page.locator('html');
+  const header = page.locator('header.org-header');
+  const look = (layout: 'og' | 'modern') =>
+    page.request.put('./api/v2/user/look', { data: { layout } });
+  // A height of the Admin's custom CSS: the modern rules make the bar 52px tall, OG 40px.
+  const css = '.org-header{height:61px}';
+  const borderOfBar = () => header.evaluate((bar) => getComputedStyle(bar).borderBottomWidth);
+
+  try {
+    expect((await page.request.put('./api/v2/config', { data: { customCss: css } })).ok()).toBe(
+      true,
+    );
+    expect((await look('og')).ok()).toBe(true);
+    await page.reload();
+    await expect(html).toHaveAttribute('data-layout', 'og');
+    await expect(page.locator('header.org-header.org-with-menu')).toBeVisible();
+    await expect(page.locator('link#org-custom-css')).toHaveCount(1);
+    await expect(header).toHaveCSS('height', '61px');
+    expect(await borderOfBar()).toBe('0px');
+    await expect(page.locator('link#org-modern-css')).toHaveCount(0);
+    expect(sheets).toEqual([]);
+
+    // OG to modern with the look picker of the user menu: the sheet loads once, after the
+    // main style sheet and before the custom CSS, whose rules still win.
+    await page.getByLabel('Menu of the user').click();
+    await page.getByRole('button', { name: 'Look', exact: true }).click();
+    await page.getByRole('radio', { name: 'Modern', exact: true }).check();
+    await expect(html).toHaveAttribute('data-layout', 'modern');
+    await expect(page.locator('header.org-header.org-with-menu')).toHaveCount(0);
+    await expect(header).toBeVisible();
+    expect(await borderOfBar()).toBe('1px');
+    await expect(header).toHaveCSS('height', '61px');
+    expect(sheets).toHaveLength(1);
+    const order = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].map((link) =>
+        link.id ? link.id : new URL(link.href).pathname.replace(/^.*\/assets\//, ''),
+      ),
+    );
+    expect(order).toHaveLength(3);
+    expect(order[0]).toMatch(/^index-[\w-]+\.css$/);
+    expect(order.slice(1)).toEqual(['org-modern-css', 'org-custom-css']);
+
+    // Modern to OG with the look popover: the OG look comes back, and the sheet, whose
+    // rules all need the modern layout, does nothing more.
+    await page.getByRole('button', { name: 'Look' }).click();
+    await page
+      .locator('[data-slot="popover-content"]')
+      .getByRole('radio', { name: 'OG Organizr', exact: true })
+      .check();
+    await expect(html).toHaveAttribute('data-layout', 'og');
+    await expect(page.locator('header.org-header.org-with-menu')).toBeVisible();
+    expect(await borderOfBar()).toBe('0px');
+    await expect(header).toHaveCSS('height', '61px');
+
+    // A page load right on modern: when the modern bar first enters the page, the rules of
+    // the sheet already apply (a mutation observer runs before the page paints).
+    await page.addInitScript(() => {
+      const observer = new MutationObserver(() => {
+        const bar = document.querySelector('header.org-header');
+        if (document.documentElement.dataset.layout === 'modern' && bar) {
+          observer.disconnect();
+          (window as unknown as { firstModernBar: string }).firstModernBar =
+            getComputedStyle(bar).borderBottomWidth;
+        }
+      });
+      observer.observe(document, { childList: true, subtree: true, attributes: true });
+    });
+    expect((await look('modern')).ok()).toBe(true);
+    await page.reload();
+    await expect(html).toHaveAttribute('data-layout', 'modern');
+    await expect(header).toBeVisible();
+    expect(
+      await page.evaluate(() => (window as unknown as { firstModernBar?: string }).firstModernBar),
+    ).toBe('1px');
+    await expect(page.locator('link#org-modern-css')).toHaveCount(1);
+  } finally {
+    await page.request.put('./api/v2/config', { data: { customCss: '' } });
+    expect((await look('og')).ok()).toBe(true);
+  }
+});
