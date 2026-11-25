@@ -1,10 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
-import { hidesValues, isTags, type PhpField } from '../lib/phpForm';
 import TagsField from './TagsField.svelte';
-
-const TAGS = '{tags: true, selectOnClose: true, closeOnSelect: true, allowClear: true}';
 
 describe('TagsField', () => {
   it('adds typed values with Enter and a comma, without repeats', async () => {
@@ -38,15 +35,5 @@ describe('TagsField', () => {
 
     expect(screen.getByRole('button', { name: 'Remove value 1' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /the-key/ })).toBeNull();
-  });
-
-  it('is used for the lists of PHP with tags, and hides the API keys', () => {
-    const field = (settings?: string): PhpField => ({ type: 'select2', name: 'x', settings });
-
-    expect(isTags(field(TAGS))).toBe(true);
-    expect(isTags(field('{}'))).toBe(false);
-    expect(isTags({ type: 'select', settings: TAGS })).toBe(false);
-    expect(hidesValues(field('{tags: true, selectionCssClass: "password-alt"}'))).toBe(true);
-    expect(hidesValues(field(TAGS))).toBe(false);
   });
 });

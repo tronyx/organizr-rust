@@ -23,6 +23,7 @@ use crate::caller::{Caller, now_stamp};
 use crate::client::Client;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
+use crate::handlers::choice::Choice;
 use crate::handlers::fields::Refusal;
 use crate::handlers::mail::{self, Letter};
 use crate::state::AppState;
@@ -597,15 +598,6 @@ pub async fn remove(
         return Err(Refusal::not_found("Code not found"));
     }
     Ok(Envelope::success(NoData).with_message("Code has been deleted"))
-}
-
-/// One choice of a list of the settings forms: what the list shows, and what is stored.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct Choice {
-    /// What the list shows.
-    pub label: String,
-    /// What the setting stores.
-    pub value: String,
 }
 
 /// The longest wait for the lists of Komga and Nextcloud.

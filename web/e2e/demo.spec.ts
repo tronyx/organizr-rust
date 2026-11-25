@@ -20,10 +20,9 @@ async function switchPluginOn(page: Page, name: string) {
 
 /**
  * Saves a form of the settings, and waits until the server stored it and the form loaded
- * `route` again: a form of PHP loads its own route, such as `plugins/php-mailer/settings`,
- * and a form of our own definitions loads `config`.
+ * `config` again.
  */
-async function saveSettings(page: Page, route: string) {
+async function saveSettings(page: Page) {
   // Only a load that answers after the save counts: an earlier one shows the old values.
   let saved = false;
   const stored = page.waitForResponse((answer) => {
@@ -33,7 +32,7 @@ async function saveSettings(page: Page, route: string) {
   const loaded = page.waitForResponse(
     (answer) =>
       saved &&
-      new URL(answer.url()).pathname.endsWith(`/api/v2/${route}`) &&
+      new URL(answer.url()).pathname.endsWith('/api/v2/config') &&
       answer.request().method() === 'GET',
   );
   await page.getByRole('button', { name: 'Save' }).click();
@@ -707,7 +706,7 @@ test('the Admin changes the name of the install and the registration password', 
   await expect(page).toHaveURL(/#\/settings\/login-security$/);
   await page.getByRole('tab', { name: 'Login page options', exact: true }).click();
   await page.getByLabel('Registration Password', { exact: true }).fill(NEW_REGISTRATION_PASSWORD);
-  await saveSettings(page, 'config');
+  await saveSettings(page);
   await expect(page.getByLabel('Registration Password', { exact: true })).toHaveValue('');
 
   // The server stored both. It shows the name, and for the password only that it has one.
@@ -1060,7 +1059,7 @@ test('a new password by e-mail is offered only when the install sends e-mails', 
   await mailer.getByRole('tab', { name: 'Authentication', exact: true }).click();
   await mailer.getByLabel('Authentication Type').selectOption('n/a');
   await mailer.getByLabel('Authentication', { exact: true }).uncheck();
-  await saveSettings(page, 'config');
+  await saveSettings(page);
   await mailer.getByRole('tab', { name: 'Test and options' }).click();
   await mailer.getByRole('button', { name: 'Send' }).click();
   await expect(mailer.getByRole('alert')).toBeVisible();
@@ -1138,7 +1137,7 @@ test('the homepage shows custom HTML of the Admin in a frame that keeps it apart
         '<script>var seen; try { seen = "cookies: " + document.cookie; } catch (e) { seen = "no cookies for this frame"; }' +
         ' document.getElementById("cookies").textContent = seen;</script>',
     );
-  await saveSettings(page, 'config');
+  await saveSettings(page);
 
   await page.goto('./#Homepage');
   await page.reload();
@@ -1409,10 +1408,10 @@ test('the Admin switches the button "Log in with Plex" on, and the login page sh
   await page.getByLabel('Authentication Type').selectOption('both');
   await page.getByLabel('Authentication Backend').selectOption('plex');
   await page.getByLabel('Enable Plex oAuth').check();
-  await saveSettings(page, 'config');
+  await saveSettings(page);
   // Organizr checks the passwords alone again; the button stays on.
   await page.getByLabel('Authentication Type').selectOption('internal');
-  await saveSettings(page, 'config');
+  await saveSettings(page);
 
   await context.clearCookies();
   await page.goto('./#/login');

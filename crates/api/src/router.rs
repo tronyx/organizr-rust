@@ -19,8 +19,8 @@ use crate::handlers::{
     connection_tests_more as more_tests, database, fields, forward_auth, groups,
     health_checks_plugin, help, homepage, icon, images, invites, ip, launch, lock, log, login,
     login_backends, logout, look, mail, media_register, news, oidc, pages, ping, plex,
-    plex_libraries, plugins, register, settings_forms, socks, speed_test, sponsors, tabs, themes,
-    token, two_factor, update, users, users_import, wizard,
+    plex_libraries, plugins, register, socks, speed_test, sponsors, tabs, themes, token,
+    two_factor, update, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -445,41 +445,6 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             "/plugins/manage/{plugin}",
             &post(plugins::manage).delete(plugins::manage),
         )?
-        .route("/settings/appearance", &get(settings_forms::appearance))?
-        .route("/settings/plugin", &get(settings_forms::plugin))?
-        .route("/settings/theme", &get(settings_forms::theme))?
-        .route("/settings/main", &get(settings_forms::main))?
-        .route("/settings/sso", &get(settings_forms::sso))?
-        .route("/settings/homepage", &get(settings_forms::homepage))?
-        .route(
-            "/settings/homepage/{item}",
-            &get(settings_forms::homepage_item_form),
-        )?
-        .route(
-            "/settings/homepage/{item}/debug",
-            &get(settings_forms::homepage_item_debug),
-        )?
-        .route(
-            "/plugins/bookmark/settings",
-            &get(settings_forms::bookmark_plugin),
-        )?
-        .route(
-            "/plugins/healthchecks/settings",
-            &get(settings_forms::health_checks_plugin),
-        )?
-        .route(
-            "/plugins/invites/settings",
-            &get(settings_forms::invites_plugin),
-        )?
-        .route(
-            "/plugins/php-mailer/settings",
-            &get(settings_forms::mailer_plugin),
-        )?
-        .route(
-            "/plugins/speedtest/settings",
-            &get(settings_forms::speed_test_plugin),
-        )?
-        .route("/plugins/chat/settings", &get(chat::settings))?
         .route(
             "/plugins/chat/message",
             &get(chat::messages).post(chat::send),
@@ -488,10 +453,6 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/plugins/chat/events", &get(chat::events))?
         .route("/plugins/bookmark/page", &get(bookmarks::page))?
         // The Plex Libraries plugin of this application (D-121).
-        .route(
-            "/plugins/plexlibraries/settings",
-            &get(settings_forms::plex_libraries_plugin),
-        )?
         .route(
             "/plugins/plexlibraries/libraries",
             &get(plex_libraries::libraries),
@@ -542,6 +503,9 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
             &get(invites::komga_library_list),
         )?
         .route("/plugins/invites", &get(invites::list).post(invites::create))?
+        // PHP's form route is not built (D-96). It answers as an unknown route, so that the
+        // request does not reach the next route as the invite code `settings`.
+        .route("/plugins/invites/settings", &get(not_found))?
         .route(
             "/plugins/invites/{code}",
             &get(invites::verify)

@@ -1,6 +1,9 @@
 # Every route the PHP application registers, grouped by source file.
 # Source: Organizr 2.1.5000 (causefx/Organizr, v2-develop at 2c1d4199), api/v2 and api/plugins.
 # Format: METHOD 'pattern'. ANY means every method. REDIRECT is a GET route that answers with a redirect.
+# This application leaves some of them out on purpose: the settings forms, `/settings/*` and
+# `/plugins/*/settings` (D-96), the HTML of the bookmark settings (D-68 (9)) and Shuck Stop
+# (D-116). A request for one of them gets the answer for an unknown route.
 GET '/plugins/bookmark/settings'
 GET '/plugins/bookmark/page'
 GET '/plugins/bookmark/setup/tab'

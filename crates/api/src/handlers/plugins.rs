@@ -37,7 +37,8 @@ struct BuiltIn {
     /// The folder of the plugin in PHP, for the path of its picture.
     folder: &'static str,
     bind: bool,
-    /// The route of its settings, after `api/v2/`, when it has one.
+    /// The route of its settings form in PHP, after `api/v2/`, when it has one. The list
+    /// names it as PHP does, though this application does not build it (D-96).
     settings_route: Option<&'static str>,
 }
 
@@ -136,7 +137,8 @@ const BUILT_IN: [BuiltIn; 7] = [
         version: "1.0.0",
         folder: "plexLibraries",
         bind: true,
-        settings_route: Some("plugins/plexlibraries/settings"),
+        // PHP has no form for it, and this application builds no form route (D-96).
+        settings_route: None,
     },
 ];
 

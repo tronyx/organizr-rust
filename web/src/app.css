@@ -2252,8 +2252,8 @@
     opacity: 0.2;
   }
 
-  /* A form of the settings of PHP: the groups as tabs down the left, the fields in two
-     columns with their labels above them. */
+  /* A settings form, drawn as PHP draws one: the sections as tabs down the left, the fields
+     in two columns with their labels above them. */
   .org-form-body {
     display: flex;
     min-height: 300px;

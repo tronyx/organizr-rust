@@ -1,6 +1,6 @@
 // What the settings pages share: the masked value of a secret, the tests of the value of a
 // field, the list of the sites of UniFi, the note about the scripts, and the levels of the
-// log. The forms themselves come from the server, as PHP builds them (D-106).
+// log. The forms themselves are the definitions in `src/settings/forms` (D-106).
 
 /** What the server sends for a secret that has a value. The value itself stays there. */
 export const SECURE = '***Secure***';

@@ -2,8 +2,8 @@
 //! cannot show.
 //!
 //! The recording covers what both applications answer alike. These tests cover secrets,
-//! callers of other levels, and the requests that this application refuses (D-06, D-07,
-//! D-53).
+//! callers of other levels, the requests that this application refuses (D-06, D-07,
+//! D-53), and PHP's form routes, which it does not build (D-96).
 
 #![allow(
     clippy::expect_used,
@@ -564,6 +564,50 @@ async fn two_changes_at_the_same_time_are_both_kept() {
         assert_eq!(setting(&app, "title").await, json!("Home"));
         assert_eq!(setting(&app, "description").await, json!("My server"));
         assert_eq!(rows(database).await.len(), 2);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn the_form_routes_of_php_are_unknown() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // The settings pages draw their forms from the definitions of the web application,
+        // so PHP's form routes are not built (D-96).
+        let app = installed_app(database);
+        for path in [
+            "/settings/appearance",
+            "/settings/plugin",
+            "/settings/theme",
+            "/settings/main",
+            "/settings/sso",
+            "/settings/homepage",
+            "/settings/homepage/plex",
+            "/settings/homepage/plex/debug",
+            "/plugins/bookmark/settings",
+            "/plugins/chat/settings",
+            "/plugins/healthchecks/settings",
+            "/plugins/invites/settings",
+            "/plugins/php-mailer/settings",
+            "/plugins/speedtest/settings",
+            "/plugins/plexlibraries/settings",
+            // The HTML of the bookmark settings of PHP is not built either (D-68 (9)).
+            "/plugins/bookmark/settings_tab_editor_bookmark_tabs",
+            "/plugins/bookmark/settings_tab_editor_bookmark_categories",
+        ] {
+            let answer = call(&app, As::Admin, "GET", path, None).await;
+            assert_eq!(
+                answer.status,
+                StatusCode::NOT_FOUND,
+                "{path}: {}",
+                answer.body
+            );
+            assert_eq!(
+                answer.message(),
+                json!("Endpoint Not Found or Defined"),
+                "{path}"
+            );
+        }
     })
     .await;
 }

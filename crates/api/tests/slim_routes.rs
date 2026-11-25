@@ -227,7 +227,8 @@ const ROUTING_CASES: &[(Method, &str, &str)] = &[
         "/api/v2/config/search/plex",
         "/config[/{item}[/{term}]] <search> <plex>",
     ),
-    // Fixed text wins over a parameter in the same place.
+    // Fixed text wins over a parameter in the same place. This application does not build
+    // the form route; it answers that path as an unknown route (D-96).
     (
         Method::GET,
         "/api/v2/plugins/invites/settings",

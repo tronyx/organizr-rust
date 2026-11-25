@@ -18,7 +18,6 @@ use futures_util::Stream;
 use organizr_domain::{ChatMessage, GroupLevel};
 use organizr_settings::Settings;
 use serde::Serialize;
-use serde_json::{Map, Value, json};
 use tokio::sync::{broadcast, watch};
 
 use crate::api_data::ApiData;
@@ -28,9 +27,6 @@ use crate::envelope::{Envelope, NoData};
 use crate::handlers::fields::{Refusal, is_nothing_in_php, php_text};
 use crate::handlers::invites::date_and_time;
 use crate::state::AppState;
-
-/// The level of the settings route: Admins and Co-Admins, as `qualifyRequest(1)`.
-const MANAGER: GroupLevel = GroupLevel::CO_ADMIN;
 
 /// The most characters of a message.
 pub const MESSAGE_LIMIT: usize = 1000;
@@ -274,48 +270,6 @@ pub async fn events(
         },
     );
     Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
-}
-
-/// `GET /plugins/chat/settings`: the form of the settings of the plugin, as PHP's
-/// `_chatPluginGetSettings()` gives it, without its HTML (D-22) and without the fields
-/// that have no effect here: the sound, the time between two loads and the settings of
-/// Pusher, which this application does not use (D-44, D-95).
-pub async fn settings(
-    State(state): State<AppState>,
-    Extension(caller): Extension<Caller>,
-) -> Result<Envelope<Map<String, Value>>, Refusal> {
-    caller.require(MANAGER)?;
-    let settings = state.settings();
-    let groups: Vec<Value> = state
-        .database()
-        .groups()
-        .list()
-        .await?
-        .into_iter()
-        .map(|group| json!({ "name": group.name, "value": group.level.get() }))
-        .collect();
-    let value = |key: &str| settings.get(key).unwrap_or(Value::Null);
-    let mut form = Map::new();
-    form.insert(
-        "Options".to_owned(),
-        json!([
-            {
-                "type": "select",
-                "name": "CHAT-Auth-include",
-                "label": "Minimum Authentication",
-                "value": value("CHAT-Auth-include"),
-                "options": groups,
-            },
-            {
-                "type": "number",
-                "name": "CHAT-messageLoadLimit",
-                "label": "# of Previous Messages",
-                "value": value("CHAT-messageLoadLimit"),
-                "placeholder": "",
-            },
-        ]),
-    );
-    Ok(Envelope::success(form))
 }
 
 #[cfg(test)]

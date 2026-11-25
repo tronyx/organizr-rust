@@ -70,6 +70,7 @@ async fn everybody_gets_the_built_in_plugins_with_the_fields_of_php() {
             })
         );
         assert_eq!(data["HealthChecks"]["api"], json!(false));
+        assert_eq!(data["Plex Libraries"]["api"], json!(false));
         assert_eq!(data["Bookmark"]["dbPrefix"], json!("BOOKMARK"));
 
         let enabled = call(&app, As::Guest, "GET", "/plugins/enabled", None).await;
