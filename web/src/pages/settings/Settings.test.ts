@@ -1549,6 +1549,15 @@ describe('Settings, Appearance', () => {
     expect(screen.queryByText(/The scripts do not run now/)).toBeNull();
   });
 
+  it('a_co_admin_sees_no_note_on_the_scripts_while_they_run', async () => {
+    await showAppearance(1, true);
+
+    await sectionTab('Custom code');
+    expect(screen.getByLabelText('Custom CSS')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Custom Javascript')).toBeNull();
+    expect(screen.queryByText(/The scripts run now/)).toBeNull();
+  });
+
   it('a_co_admin_sees_no_script_fields_and_sends_none', async () => {
     const sent = await showAppearance(1);
 

@@ -811,6 +811,7 @@ describe('SettingsForm, the lists', () => {
             key: 'INVITES-plexLibraries',
             kind: 'multi-select',
             label: 'Libraries',
+            help: 'The libraries to share.',
             source: 'plex-libraries',
           },
         ],
@@ -828,6 +829,10 @@ describe('SettingsForm, the lists', () => {
 
     expect(screen.getByLabelText('Libraries').tagName).toBe('INPUT');
     expect(screen.getByText(NO_CHOICES)).toBeInTheDocument();
+    // The note is part of the description of the field, after its help.
+    expect(screen.getByLabelText('Libraries')).toHaveAccessibleDescription(
+      `The libraries to share. ${NO_CHOICES}`,
+    );
     expect(screen.queryByText('The list could not be loaded.')).not.toBeInTheDocument();
   });
 
@@ -839,6 +844,9 @@ describe('SettingsForm, the lists', () => {
 
     expect(screen.getByText('The list could not be loaded.')).toBeInTheDocument();
     expect(screen.queryByText(NO_CHOICES)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Libraries')).toHaveAccessibleDescription(
+      'The libraries to share. The list could not be loaded.',
+    );
   });
 
   it('adds no note to a plugin list with choices', async () => {
@@ -879,6 +887,9 @@ describe('SettingsForm, the lists', () => {
     await section('Options');
 
     expect(options('Minimum Authentication')).toEqual(['1']);
+    expect(screen.getByLabelText('Minimum Authentication')).toHaveAccessibleDescription(
+      'The list could not be loaded.',
+    );
     const group = screen.getByLabelText('Minimum Authentication').closest('.org-form-group');
     expect(group).toHaveTextContent('The list could not be loaded.');
     expect(options('Theme')).toEqual(['Organizr', 'Dark']);
@@ -1199,6 +1210,49 @@ describe('SettingsForm, the parts and the boxes', () => {
     expect(titles).toEqual(['Reset Password']);
     expect(screen.getByText('Edit Template')).toBeInTheDocument();
     expect(screen.queryByText('Business Templates')).toBeNull();
+  });
+
+  it('keeps a box open when a box before it hides', async () => {
+    const page: FormPage = {
+      id: 'boxes',
+      title: 'Boxes',
+      sections: [
+        {
+          id: 'one',
+          title: 'One',
+          entries: [
+            {
+              key: 'authType',
+              kind: 'select',
+              label: 'Type',
+              choices: [{ label: 'Both', value: 'both' }],
+            },
+            {
+              key: 'authBackend',
+              kind: 'select',
+              label: 'Backend',
+              choices: [
+                { label: 'Plex', value: 'plex' },
+                { label: 'Ldap', value: 'ldap' },
+              ],
+            },
+            { key: 'plexAdmin', kind: 'text', label: 'Admin', fold: 'Plex', shownWhen: 'plex' },
+            { key: 'title', kind: 'text', label: 'Title', fold: 'Always' },
+          ],
+        },
+      ],
+    };
+    await show(page, { 'GET config': { data: { authType: 'both', authBackend: 'plex' } } });
+    const always = screen.getByText('Always').closest('details') as HTMLDetailsElement;
+    always.open = true;
+
+    await fireEvent.change(screen.getByLabelText('Backend'), { target: { value: 'ldap' } });
+
+    const boxes = [...document.querySelectorAll('details.org-accordion')];
+    expect(boxes.map((box) => box.querySelector('summary')?.textContent?.trim())).toEqual([
+      'Always',
+    ]);
+    expect((boxes[0] as HTMLDetailsElement).open).toBe(true);
   });
 
   it('gives the templates of the mails their heading', () => {

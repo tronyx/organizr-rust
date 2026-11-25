@@ -181,6 +181,51 @@ describe('LogViewer', () => {
     ).toHaveLength(2);
   });
 
+  it('loads the log once when the settings come again before the log is shown', async () => {
+    let stored: Record<string, unknown> = { ...CONFIG.data };
+    stubApi({
+      'GET config': () => ({ data: stored }),
+      'PUT config': (request) => {
+        stored = { ...stored, ...(request.body as Record<string, unknown>) };
+        return {};
+      },
+      'GET log/0': logPage([logRecord('a user logged in')]),
+      'GET launch': { data: { user: null } },
+    });
+    // The log answers only when the test lets it.
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const answer = globalThis.fetch;
+    const logs: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (address: string, init?: RequestInit) => {
+        if (address.includes('/api/v2/log/')) {
+          logs.push(address);
+          await gate;
+        }
+        return answer(address, init);
+      }),
+    );
+    const ondone = vi.fn();
+    render(LogViewer, { ondone });
+
+    // The form saves, and loads the settings again, while the first log is on its way.
+    await fireEvent.change(await screen.findByLabelText('Log Page Size'), {
+      target: { value: '50' },
+    });
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await vi.waitFor(() => expect(ondone).toHaveBeenCalledWith('The settings are saved.'));
+    release();
+
+    await screen.findByRole('table', { name: 'Log' });
+    // The first load, and the one after the save: no load for the second set of settings.
+    expect(logs.map((address) => new URL(address).searchParams.get('pageSize'))).toEqual([
+      '25',
+      '50',
+    ]);
+  });
+
   it('loads the settings once when it opens', async () => {
     const sent = stubApi({ 'GET config': CONFIG, 'GET log/0': logPage([logRecord('x')]) });
     render(LogViewer, { ondone: () => {} });

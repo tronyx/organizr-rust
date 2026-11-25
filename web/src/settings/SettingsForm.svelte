@@ -592,7 +592,7 @@
         {#if boxes.length > 0}
           <div class="org-form-group org-form-wide">
             {#if cell.heading}<span class="org-form-label">{cell.heading}</span>{/if}
-            {#each boxes as box, number (number)}
+            {#each boxes as box (`${box.fold}:${box.titleKey ?? ''}`)}
               <details class="org-accordion">
                 <summary>{boxTitle(box)}</summary>
                 <div class="org-accordion-body">

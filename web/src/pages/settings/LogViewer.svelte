@@ -35,6 +35,8 @@
   let error = $state<string | null>(null);
   let busy = $state(false);
   let ready = $state(false);
+  /** Whether the first log is loading or shown. */
+  let started = false;
   /** The trace id of the record whose details are open, and the details. */
   let open = $state<string | null>(null);
   let details = $state<LogRecord | null>(null);
@@ -55,7 +57,9 @@
       pageSize = Number(config.logPageSize) || 50;
       refresh = Number(config.logLiveUpdateRefresh) || 5000;
     }
-    if (!ready) {
+    if (!started) {
+      // Settings that come again while the first log is on its way load no second log.
+      started = true;
       await load();
       ready = true;
     }

@@ -125,15 +125,17 @@ describe('the definitions of the settings forms', () => {
     ]);
   });
 
-  it('keep the kind of every key', () => {
-    const kinds: Record<string, Set<string>> = {};
-    for (const field of allFields()) {
-      (kinds[field.key] ??= new Set()).add(field.kind);
-    }
+  it('keep the kind of every key on every page', () => {
     const found = Object.fromEntries(
-      Object.keys(kinds)
-        .sort()
-        .map((key) => [key, [...(kinds[key] ?? [])].sort()]),
+      allPages().map((page) => [
+        page.id,
+        Object.fromEntries(
+          page.sections
+            .flatMap((section) => section.entries)
+            .filter(isField)
+            .map((field) => [field.key, field.kind]),
+        ),
+      ]),
     );
     expect(found).toEqual(expectedKinds);
   });

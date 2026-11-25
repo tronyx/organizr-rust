@@ -34,7 +34,13 @@
   } = $props();
 
   const id = $derived(`setting-${field.key}`);
-  const hint = $derived(field.help ? `${id}-help` : undefined);
+  const help = $derived(field.help ? `${id}-help` : undefined);
+  /** The note under a list that failed to load or holds no choices. */
+  const note = $derived(
+    listFailed ? `${id}-list-failed` : listEmpty ? `${id}-list-empty` : undefined,
+  );
+  /** What describes the field: its help, then the note of its list. */
+  const hint = $derived([help, note].filter((part) => part !== undefined).join(' ') || undefined);
   const text = $derived(Array.isArray(value) ? value.join(',') : String(value));
   const list = $derived(Array.isArray(value) ? value : []);
   /**
@@ -252,12 +258,12 @@
   {/if}
 {/if}
 {#if listFailed}
-  <p class="text-error mt-1 text-sm">The list could not be loaded.</p>
+  <p id={note} class="text-error mt-1 text-sm">The list could not be loaded.</p>
 {:else if listEmpty}
-  <p class="mt-1 text-sm">
+  <p id={note} class="mt-1 text-sm">
     No choices were found. Set up the service and save, then open this form again.
   </p>
 {/if}
 {#if field.help}
-  <p id={hint} class="sr-only">{field.help}</p>
+  <p id={help} class="sr-only">{field.help}</p>
 {/if}
