@@ -228,12 +228,11 @@ server {
         set $upstream_proto http;
         proxy_pass $upstream_proto://$upstream_app:$upstream_port;
         proxy_buffering off;
-        proxy_read_timeout 1h;
     }
 }
 ```
 
-SWAG's `proxy.conf` sends the three headers. SWAG ships an `organizr.subdomain.conf.sample` for PHP Organizr, which listens on port 80; this version listens on `8080`, so the port is the line to change. `$upstream_app` is the name of the Organizr container on SWAG's Docker network.
+SWAG's `proxy.conf` sends the three headers. It also sets `proxy_read_timeout` to 240 seconds, which is enough for the chat's live stream: Organizr sends a keep-alive every 15 seconds. Don't add a `proxy_read_timeout` of your own after `include /config/nginx/proxy.conf;`, because nginx refuses to start with a second one. SWAG ships an `organizr.subdomain.conf.sample` for PHP Organizr, which listens on port 80; this version listens on `8080`, so the port is the line to change. `$upstream_app` is the name of the Organizr container on SWAG's Docker network.
 
 ## 🚦 Traefik
 
