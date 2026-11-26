@@ -269,7 +269,14 @@ pub async fn find_or_create(
             LinkState::OtherProvider => {
                 return Err(OidcAccountError::LinkedElsewhere(user.username));
             }
-            LinkState::ThisProviderWithoutSubject => {}
+            // An account that the import brought with a link to this provider, but no
+            // subject: the first login that matches it takes it. An Admin or a Co-Admin
+            // account is linked on purpose only, from its settings (D-148).
+            LinkState::ThisProviderWithoutSubject => {
+                if is_privileged(database, &user).await? {
+                    return Err(OidcAccountError::Protected(user.username));
+                }
+            }
             LinkState::Free => {
                 if !account.link_existing {
                     return Err(OidcAccountError::NotLinked(user.username));

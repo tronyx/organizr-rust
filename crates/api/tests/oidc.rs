@@ -958,9 +958,10 @@ async fn admin_account_that_this_provider_linked_logs_in() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let chief = store_user(database, "chief", "chief@example.com", 0).await;
+        // Linked on purpose: the account has the subject of the person (D-148).
         database
             .users()
-            .set_auth_service(chief.id, "oidc", Some("keycloak"), None)
+            .set_auth_service(chief.id, "oidc", Some("keycloak"), Some("subject-1"))
             .await
             .expect("the service can be stored");
         let provider = OidcProvider::start().await;
@@ -1412,7 +1413,7 @@ async fn right_subject_logs_in_after_the_name_changed_at_the_provider() {
 async fn imported_link_without_a_subject_gets_it_at_the_first_login() {
     on_each_engine(async |database| {
         seed::installed(database).await;
-        let imported = store_user(database, "imported", "imported@example.com", 0).await;
+        let imported = store_user(database, "imported", "imported@example.com", 4).await;
         // As the importer stores an account that PHP linked: `oidc::keycloak`, no subject.
         database
             .users()
@@ -1443,6 +1444,37 @@ async fn imported_link_without_a_subject_gets_it_at_the_first_login() {
             stored_subject(database, "imported").await.as_deref(),
             Some("subject-1")
         );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn imported_admin_link_without_a_subject_is_not_taken_at_a_login() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        for (name, level) in [("imported.admin", 0), ("imported.coadmin", 1)] {
+            let imported = store_user(database, name, &format!("{name}@example.com"), level).await;
+            database
+                .users()
+                .set_auth_service(imported.id, "oidc", Some("keycloak"), None)
+                .await
+                .expect("the service can be stored");
+        }
+        let provider = OidcProvider::start().await;
+        let app = app(
+            database,
+            &provider,
+            &[("oidcLinkExistingUsers", json!(true))],
+        );
+
+        // The first person at the provider with the name would get the account. An Admin
+        // or Co-Admin account is linked on purpose only, from its settings (D-148).
+        for name in ["imported.admin", "imported.coadmin"] {
+            person(&provider, name, &format!("{name}@example.com"));
+            let answer = log_in(&app, &provider).await;
+            assert_failed(&answer, "Failed to create or link user");
+            assert_eq!(stored_subject(database, name).await, None, "{name}");
+        }
     })
     .await;
 }

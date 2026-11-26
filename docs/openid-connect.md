@@ -170,7 +170,7 @@ What a link does:
 
 **To unlink:** enter the account's password in **Password of this account**, and select **Unlink from** next to the provider. The account then logs in with its password again. An account that a provider made has a random password that nobody knows: get a new one by e-mail first ([Forgot your password?](email.md#-a-new-password)).
 
-**Imported links:** an account that PHP Organizr had linked (`auth_service` `oidc::<provider>`) keeps its link after the import. PHP stored no subject, so the first login through the provider stores it, as above.
+**Imported links:** an account that PHP Organizr had linked (`auth_service` `oidc::<provider>`) keeps its link after the import. PHP stored no subject, so the first login through the provider stores it, as above. An imported Admin or Co-Admin account is the exception: no login through the provider opens it until you link it on purpose, while you're logged in (see below), because the first person at the provider with that name would otherwise get it (D-148).
 
 ### 🎫 Second factor and session length
 
