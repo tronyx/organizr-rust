@@ -3,6 +3,7 @@
 mod check;
 mod check_homepage;
 mod check_homepage_more;
+mod connections;
 mod healthcheck;
 mod import;
 mod log_file;

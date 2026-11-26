@@ -168,7 +168,8 @@ async fn cron_schedule_is_read_and_the_scheduler_is_seen() {
             assert_eq!(answer.status, StatusCode::OK, "{good}: {}", answer.body);
             assert_eq!(answer.message(), json!("Schedule was validated"));
         }
-        for bad in ["every day", "61 * * * *", "* * * *"] {
+        // A step that would count past the largest number is refused as well.
+        for bad in ["every day", "61 * * * *", "* * * *", "5/4294967295 * * * *"] {
             let answer = schedule(bad).await;
             assert_eq!(answer.status, StatusCode::INTERNAL_SERVER_ERROR, "{bad}");
             assert!(

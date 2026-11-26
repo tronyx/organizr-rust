@@ -42,7 +42,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Logins through Plex, LDAP, FTP, Emby and Jellyfin | D-60, D-85, D-86, D-99, D-107, D-124, D-127, D-137, D-154, D-165 |
 | OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156 |
 | Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150, D-165 |
-| Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157 |
+| Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157, D-170, D-171 |
 | The set-up wizard and the database | D-19, D-38, D-46, D-97, D-158 |
 | Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129, D-160, D-164 |
 | Tabs and categories | D-28, D-32, D-39, D-47, D-48 |
@@ -52,10 +52,10 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Updates | D-23 |
 | Log, errors and request ids | D-13, D-34, D-84 |
 | E-mail | D-09, D-58, D-82, D-138, D-160 |
-| Scheduled jobs | D-33, D-43, D-66, D-74 |
+| Scheduled jobs | D-33, D-43, D-66, D-74, D-172 |
 | Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154, D-165, D-166, D-167 |
 | Custom HTML items | D-61, D-76, D-111, D-131 |
-| Connection tests (`/test/*`) | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102, D-165 |
+| Connection tests (`/test/*`) | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102, D-165, D-172 |
 | Certificates and TLS | D-11, D-17, D-60, D-85, D-86, D-98, D-104 |
 | Outbound requests and SSRF | D-08, D-16, D-55, D-81, D-91, D-122, D-165, D-166, D-167 |
 | Built-in plugins | D-44, D-66, D-67, D-68, D-69, D-94, D-95, D-115, D-116, D-118 to D-121, D-130, D-134, D-144, D-149 |
@@ -63,11 +63,11 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Look, themes, custom CSS and JavaScript | D-42, D-92, D-93, D-110, D-125 |
 | Languages | D-109 |
 | Settings pages of the interface | D-22, D-96, D-106, D-107 |
-| Answer format | D-20, D-21, D-24, D-25, D-29, D-50 |
+| Answer format | D-20, D-21, D-24, D-25, D-29, D-50, D-173 |
 
 ## 🚦 Find an entry by API route
 
-Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origin check), D-13 (request id), D-20 (`204` without body), D-24 (plain text), D-25 (lower-case headers), D-27 (no `PHPSESSID`), D-34 (no crash pages).
+Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origin check), D-13 (request id), D-20 (`204` without body), D-24 (plain text), D-25 (lower-case headers), D-27 (no `PHPSESSID`), D-34 (no crash pages), D-173 (frames).
 
 | Route | Entries |
 |---|---|
@@ -97,7 +97,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/update/*`, `GET /update/check` | D-23 |
 | `/page/{page}`, `/organizr/{page}` | D-22, D-82, D-84 |
 | `/settings/*` and `/plugins/*/settings` (form routes of PHP) | D-22, D-96 |
-| `/auth/…`, `/auth-{group}` (forward auth) | D-01, D-59, D-136, D-141, D-157 |
+| `/auth/…`, `/auth-{group}` (forward auth) | D-01, D-59, D-136, D-141, D-157, D-170, D-171 |
 | `POST /plex/register`, `POST /emby/register` | D-83 |
 | `GET /plex/servers` | D-107 |
 | `/oidc/*` | D-87, D-88, D-89, D-90, D-105 |
@@ -118,7 +118,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/homepage/healthchecks` | D-165 |
 | `/homepage/kuma/data` | D-166 |
 | `/homepage/donate*`, `/homepage/youtube/{query}`, `POST /homepage/scrape` | D-16, D-81 |
-| `/test/{service}` | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102, D-165 |
+| `/test/{service}` | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102, D-165, D-172 |
 | `/socks/…`, `/multiple/socks/…` | D-91 |
 | `/plugins`, `/plugins/manage/{plugin}`, `/plugins/marketplace` | D-94, D-116 |
 | `/plugins/chat/*` | D-44, D-95 |
@@ -136,8 +136,6 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `GET /log` | D-84 |
 | `GET /ip/{ip}`, `GET /help/smtp`, `GET /icon`, `GET /sponsors/github` | D-82 |
 | `GET /sponsors/*` | D-167 |
-| D-168 | **A picture can't be named like a device of Windows.** `POST /image`, `GET /image` and `DELETE /image/{name}`, on top of D-54. A name whose part before the first dot is `CON`, `PRN`, `AUX`, `NUL`, `CONIN$`, `CONOUT$`, or `COM` or `LPT` with one digit, in any case and with any extension, such as `con.png` or `Com1.jpg`, gets `403 "File Name not approved"`. Windows reads such a name as a device, not as a file. `GET /image` leaves such a file out, as it does other names that are not safe. PHP stores every name. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
-| D-169 | **A backup leaves out the backup folder and the live database however their paths are written.** Backups, on top of D-74 and D-147. (1) The folder of `backupLocation` is left out of a backup by its real path. Before, a folder inside the data folder that the setting wrote another way, with `..`, a slash at the end, other letter case on Windows or a link, went into each new backup, with all the earlier backups in it. (2) The live database file that `ORGANIZR_DATABASE_URL` names, and its `-wal`, `-shm` and `-journal` files, stay out of a backup wherever they are in the data folder. Before, only `organizr.db` at the top stayed out, and a database in a folder such as `db/` went in next to the copy. The backup still holds its copy of the database as `organizr.db`. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 
 ## 🔒 Security fixes
 
@@ -329,6 +327,12 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-165 | **A request that carries a key in a header follows a redirect only on the same host.** The requests to Sonarr, Radarr, Lidarr, Prowlarr, Plex, Emby, Jellyfin, Ombi, Overseerr, Pi-hole, OctoPrint, UniFi, Komga, JellyStat, Healthchecks, Trakt and YouTube, the logins and single sign-on through Plex, Emby and Jellyfin, the pictures of the calendar, and the connection tests that send a header. Such a request sends the key in a header of its own, such as `X-Api-Key`, `X-Emby-Token` or `X-Plex-Token`. PHP follows every redirect and sends the header again, also to another host. Here such a request follows a redirect to the same host and port, and from `http` to `https` on the same host; a redirect to another host or port ends the request, and the item or the test gets the redirect as the answer. Enter the address that the service answers at, not one that redirects to another host. Requests without such a header follow redirects as before. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 | D-166 | **The address of an Uptime Kuma monitor shows no user name and no password.** `GET /homepage/kuma/data`. The `url` of a monitor comes from the metrics of Uptime Kuma, and an address such as `https://user:password@host/` holds the login of the monitored site. PHP hands it to the browser as it is. Here the user name and the password are left out: `https://host/`. The rest of the address stays as it is. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 | D-167 | **The lists of sponsors are kept for 10 minutes, and some answers of other services have a largest size.** `GET /sponsors/opencollective`, `/sponsors/github` and `/sponsors/all` need no login, and PHP fetches both lists at each request. Here a list is kept for 10 minutes, and a failure for one minute, so a caller can't make Organizr ask Open Collective and GitHub again and again. An answer of Open Collective or GitHub larger than 4 MiB, and an answer of SickRage or CouchPotato larger than 32 MiB, counts as a failure; PHP reads an answer of any size. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-168 | **A picture can't be named like a device of Windows.** `POST /image`, `GET /image` and `DELETE /image/{name}`, on top of D-54. A name whose part before the first dot is `CON`, `PRN`, `AUX`, `NUL`, `CONIN$`, `CONOUT$`, or `COM` or `LPT` with one digit, in any case and with any extension, such as `con.png` or `Com1.jpg`, gets `403 "File Name not approved"`. Windows reads such a name as a device, not as a file. `GET /image` leaves such a file out, as it does other names that are not safe. PHP stores every name. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-169 | **A backup leaves out the backup folder and the live database however their paths are written.** Backups, on top of D-74 and D-147. (1) The folder of `backupLocation` is left out of a backup by its real path. Before, a folder inside the data folder that the setting wrote another way, with `..`, a slash at the end, other letter case on Windows or a link, went into each new backup, with all the earlier backups in it. (2) The live database file that `ORGANIZR_DATABASE_URL` names, and its `-wal`, `-shm` and `-journal` files, stay out of a backup wherever they are in the data folder. Before, only `organizr.db` at the top stayed out, and a database in a folder such as `db/` went in next to the copy. The backup still holds its copy of the database as `organizr.db`. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-170 | **Behind a proxy that is not trusted, the address of the caller is on no allow list of forward auth.** Forward auth, on top of D-01 and D-59. A request that carries `X-Forwarded-For` but does not come from a trusted proxy (D-01, D-155) has the address of the connection, which is the proxy's, and every visitor behind that proxy shares it. Before this, that address on an allow list let every visitor through. (1) Such an address never passes an allow list, as it never counts as local. The check then goes on with the group, as for any address that is not on the list. (2) A deny list still counts for that address, since it can only make the check stricter. (3) A request without forwarding headers, and one from a trusted proxy, are compared as before. List the proxy in `ORGANIZR_TRUSTED_PROXIES` or in the setting `trustedProxies` to use allow lists behind it. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-171 | **The address to come back to after the login is encoded as one value of the query.** Forward auth, on top of D-59. When a refused check redirects to the login page, PHP writes the address of the visitor into `?return=` as it is, so an `&` or a space of that address is read as a part of the query of the login page. Here the address is percent-encoded: `?return=https%3A%2F%2Fsonarr.example.com%2Fseries`. The interface reads both forms, so a link with the old form still works. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-172 | **A cron schedule whose step counts past the largest number is refused.** `POST /test/cron` and the scheduler, on top of D-43. A step such as `5/4294967295` made the counting of the values run past the largest number that it holds: a server built for testing stopped the request, and a release build read wrong minutes. PHP takes such a step. Here the schedule is refused as any other wrong schedule: `POST /test/cron` answers `500` with the reason, and the scheduler logs the schedule and does not run the job. A step larger than its field, such as `*/60`, still names only the first value. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-173 | **Only Organizr itself may put an answer of the server in a frame.** Every route and every file of the interface. PHP sends no such header. The page already sent `frame-ancestors 'self'` in its policy, but the other answers did not. (1) Every answer has `X-Frame-Options: SAMEORIGIN`, unless it sends one of its own. (2) An answer whose `Content-Security-Policy` does not name `frame-ancestors` gets a second policy `frame-ancestors 'self'`, which adds that rule and takes nothing from the first. The page keeps its whole policy, and an answer that names its frames itself, such as the notice page, keeps its own rule. (3) Organizr still frames its own pages, such as custom HTML items and pages of plugins, and the applications in the tabs are not affected. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 
 ## ✅ Kept exactly as PHP has it
 

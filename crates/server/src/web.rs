@@ -259,6 +259,42 @@ pub async fn serve_files(request: Request, next: Next) -> Response {
     response
 }
 
+/// The part of a policy that lets only Organizr itself put an answer in a frame.
+const OWN_FRAMES_ONLY: &str = "frame-ancestors 'self'";
+
+/// Lets only pages of Organizr itself put an answer of the server in a frame: every
+/// answer, of the API and of the files, says so with `X-Frame-Options` and with
+/// `frame-ancestors` in its `Content-Security-Policy`. An answer that names its frames
+/// itself keeps its own rule. Use it as the outermost middleware.
+///
+/// The applications in the tabs are not affected: their answers do not pass here.
+pub async fn guard_frames(request: Request, next: Next) -> Response {
+    let mut response = next.run(request).await;
+    let headers = response.headers_mut();
+    if !headers.contains_key(header::X_FRAME_OPTIONS) {
+        headers.insert(
+            header::X_FRAME_OPTIONS,
+            HeaderValue::from_static("SAMEORIGIN"),
+        );
+    }
+    let names_frames = headers
+        .get_all(header::CONTENT_SECURITY_POLICY)
+        .iter()
+        .any(|policy| {
+            policy
+                .to_str()
+                .is_ok_and(|policy| policy.contains("frame-ancestors"))
+        });
+    if !names_frames {
+        // A second policy adds its rule to the first, and takes nothing from it.
+        headers.append(
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_static(OWN_FRAMES_ONLY),
+        );
+    }
+    response
+}
+
 #[cfg(test)]
 mod tests {
     use axum::Router;
@@ -271,7 +307,7 @@ mod tests {
 
     use super::{
         CONTENT_SECURITY_POLICY, Encoding, caching, content_type, encoded_copy, file_name,
-        is_compressible, serve_files,
+        guard_frames, is_compressible, serve_files,
     };
 
     #[test]
@@ -381,8 +417,77 @@ mod tests {
     fn app() -> Router {
         Router::new()
             .route("/api/v2/ping", get(|| async { "pong" }))
+            // Answers with a policy of their own, as the notice page and the custom HTML
+            // items have.
+            .route(
+                "/api/v2/notice",
+                get(|| async {
+                    (
+                        [(
+                            header::CONTENT_SECURITY_POLICY,
+                            "default-src 'none'; frame-ancestors 'none'",
+                        )],
+                        "notice",
+                    )
+                }),
+            )
+            .route(
+                "/api/v2/picture",
+                get(|| async {
+                    (
+                        [(
+                            header::CONTENT_SECURITY_POLICY,
+                            "default-src 'none'; sandbox",
+                        )],
+                        "picture",
+                    )
+                }),
+            )
             .fallback(|| async { (StatusCode::NOT_FOUND, "the API has no such route") })
             .layer(from_fn(serve_files))
+            .layer(from_fn(guard_frames))
+    }
+
+    /// Every `Content-Security-Policy` header of an answer.
+    fn policies(answer: &Answer) -> Vec<&str> {
+        answer
+            .headers
+            .get_all(header::CONTENT_SECURITY_POLICY)
+            .iter()
+            .filter_map(|value| value.to_str().ok())
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn every_answer_may_be_framed_by_organizr_only() {
+        // The page keeps its whole policy, which names the frames already.
+        let page = send(Method::GET, "/").await;
+        assert_eq!(policies(&page), [CONTENT_SECURITY_POLICY]);
+        assert_eq!(page.header(header::X_FRAME_OPTIONS), Some("SAMEORIGIN"));
+
+        // An answer of the API, and one that no route has.
+        for path in ["/api/v2/ping", "/assets/no-such-file.js"] {
+            let answer = send(Method::GET, path).await;
+            assert_eq!(policies(&answer), ["frame-ancestors 'self'"], "{path}");
+            assert_eq!(
+                answer.header(header::X_FRAME_OPTIONS),
+                Some("SAMEORIGIN"),
+                "{path}"
+            );
+        }
+
+        // A policy that names the frames itself stays as it is.
+        let notice = send(Method::GET, "/api/v2/notice").await;
+        assert_eq!(
+            policies(&notice),
+            ["default-src 'none'; frame-ancestors 'none'"]
+        );
+        // One that does not gets a second policy, for the frames only.
+        let picture = send(Method::GET, "/api/v2/picture").await;
+        assert_eq!(
+            policies(&picture),
+            ["default-src 'none'; sandbox", "frame-ancestors 'self'"]
+        );
     }
 
     struct Answer {
@@ -529,7 +634,8 @@ mod tests {
     async fn other_requests_go_to_the_api() {
         let ping = send(Method::GET, "/api/v2/ping").await;
         assert_eq!((ping.status, ping.body.as_str()), (StatusCode::OK, "pong"));
-        assert_eq!(ping.header(header::CONTENT_SECURITY_POLICY), None);
+        // The policy of the page is for the page only.
+        assert_eq!(policies(&ping), ["frame-ancestors 'self'"]);
 
         // A file that the interface does not have, and a request that does not read.
         for (method, path) in [
@@ -587,7 +693,7 @@ mod tests {
             answer.header(header::CACHE_CONTROL),
             Some("public, max-age=31536000, immutable")
         );
-        assert_eq!(answer.header(header::CONTENT_SECURITY_POLICY), None);
+        assert_eq!(policies(&answer), ["frame-ancestors 'self'"]);
 
         let icon = send(Method::GET, "/favicon.svg").await;
         assert_eq!(icon.header(header::CONTENT_TYPE), Some("image/svg+xml"));

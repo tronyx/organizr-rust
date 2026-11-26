@@ -79,7 +79,7 @@ async fn headers_of_a_proxy_are_believed_only_from_a_trusted_proxy() {
         assert_eq!(through_proxy.status, StatusCode::FOUND);
         assert_eq!(
             location(&through_proxy).as_deref(),
-            Some("https://organizr.example.com/?return=https://sonarr.example.com/series")
+            Some("https://organizr.example.com/?return=https%3A%2F%2Fsonarr.example.com%2Fseries")
         );
 
         // Anybody else who sends the same headers gets the plain refusal. Otherwise a
@@ -112,7 +112,7 @@ async fn settings_send_a_refused_caller_to_the_login_for_every_proxy() {
         assert_eq!(refused.status, StatusCode::FOUND);
         assert_eq!(
             location(&refused).as_deref(),
-            Some("https://organizr.example.com/?return=https://sonarr.example.com/series")
+            Some("https://organizr.example.com/?return=https%3A%2F%2Fsonarr.example.com%2Fseries")
         );
         assert_eq!(refused.body, "200");
         // Without a trusted proxy, the redirect has no address to come back to: the
@@ -139,7 +139,7 @@ async fn settings_send_a_refused_caller_to_the_login_for_every_proxy() {
         let refused = ask(&moved, PROXY, "/auth/4", &TRAEFIK).await;
         assert_eq!(
             location(&refused).as_deref(),
-            Some("https://login.example.org/organizr/?return=https://sonarr.example.com/series")
+            Some("https://login.example.org/organizr/?return=https%3A%2F%2Fsonarr.example.com%2Fseries")
         );
     })
     .await;
@@ -179,6 +179,60 @@ async fn address_lists_use_the_address_that_a_trusted_proxy_reports() {
         let other = [("x-forwarded-for", "10.0.0.1")];
         let denied = ask(&app, STRANGER, "/auth/999/deny/203.0.113.9", &other).await;
         assert_eq!(denied.message(), json!("User is blacklisted"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn address_behind_a_proxy_that_is_not_trusted_is_on_no_allow_list() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = app_behind_proxy(database, &[]);
+        // A proxy that is not trusted sends every visitor from its own address. That
+        // address on an allow list would let every visitor through.
+        let forwarded = [("x-forwarded-for", "198.51.100.7")];
+        let behind = ask(&app, STRANGER, "/auth/0/allow/203.0.113.9", &forwarded).await;
+        assert_eq!(behind.status, StatusCode::UNAUTHORIZED, "{}", behind.body);
+        assert_eq!(
+            behind.message(),
+            json!("User is not Authorized or User is locked")
+        );
+        // The same caller without the header is the caller of the connection.
+        let direct = ask(&app, STRANGER, "/auth/0/allow/203.0.113.9", &[]).await;
+        assert_eq!(
+            direct.message(),
+            json!("User is whitelisted"),
+            "{}",
+            direct.body
+        );
+        // A deny list still counts for that address, since it only makes the check
+        // stricter.
+        let denied = ask(&app, STRANGER, "/auth/999/deny/203.0.113.9", &forwarded).await;
+        assert_eq!(denied.message(), json!("User is blacklisted"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn address_to_come_back_to_is_encoded() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = app_behind_proxy(database, &[]);
+        let headers = [
+            ("x-forwarded-server", "traefik"),
+            ("x-forwarded-proto", "https"),
+            ("x-forwarded-host", "sonarr.example.com"),
+            ("x-forwarded-uri", "/series?a=1&b=2 3"),
+        ];
+        let refused = ask(&app, PROXY, "/auth/4", &headers).await;
+        assert_eq!(refused.status, StatusCode::FOUND);
+        assert_eq!(
+            location(&refused).as_deref(),
+            Some(
+                "https://organizr.example.com/?return=\
+                 https%3A%2F%2Fsonarr.example.com%2Fseries%3Fa%3D1%26b%3D2%203"
+            )
+        );
     })
     .await;
 }

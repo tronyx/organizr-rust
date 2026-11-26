@@ -3099,6 +3099,8 @@ dependencies = [
  "axum",
  "clap",
  "http-body-util",
+ "hyper",
+ "hyper-util",
  "jiff 1.0.1",
  "organizr-api",
  "organizr-auth",

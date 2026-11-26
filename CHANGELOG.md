@@ -75,6 +75,10 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - The lists of sponsors are kept for 10 minutes, and the answers of Open Collective, GitHub, SickRage and CouchPotato have a largest size (D-167).
 - A picture can't get the name of a Windows device, such as `con.png` (D-168).
 - A backup leaves out the backup folder and the live database file however their paths are written, so it never holds earlier backups or the live database (D-169).
+- Behind a proxy that is not trusted, a forward auth allow list lets nobody through by the proxy's address, which every visitor shares (D-170).
+- The address to come back to after a forward auth login is encoded as one value of the query (D-171).
+- A cron schedule whose step counts past the largest number, such as `5/4294967295`, is refused (D-172).
+- Only Organizr itself may put an answer of the server in a frame: every answer sends `X-Frame-Options` and `frame-ancestors` (D-173).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

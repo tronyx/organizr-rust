@@ -981,6 +981,11 @@ async fn forward_auth_routes_answer_like_php() {
         .fold(Replay::group("forward_auth"), |replay, case| {
             replay.deviation_case("D-136", case)
         });
+        // The address to come back to is encoded in the redirect to the login (D-171);
+        // tests/forward_auth.rs of the API holds the new address.
+        let replay = ["traefik_guest_refused", "traefik_user_refused"]
+            .into_iter()
+            .fold(replay, |replay, case| replay.deviation_case("D-171", case));
         let replay = without_php_session(replay);
         // Some cases carry the headers of a reverse proxy. PHP believes every sender of
         // such headers. This application believes a proxy that is listed as trusted

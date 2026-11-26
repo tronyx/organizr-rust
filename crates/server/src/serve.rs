@@ -148,9 +148,6 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .trusted_proxies
         .parse()
         .context("the list of trusted proxies is not valid")?;
-    if trusted_proxies == TrustedProxies::default() {
-        tracing::info!("no reverse proxy is trusted; forwarding headers are ignored");
-    }
     let allowed_hosts: AllowedHosts = args
         .allowed_hosts
         .parse()
@@ -165,6 +162,11 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .with_data_folder(args.storage.data_dir.clone())
         .with_key_file(args.storage.key_file())
         .with_custom_js(args.custom_js);
+    // The setting `trustedProxies` counts when the variable names no proxy (D-155).
+    let ignore_tfa_local = state.settings().ignore_tfa_local;
+    for warning in warnings_without_a_proxy(state.trusted_proxies().is_empty(), ignore_tfa_local) {
+        tracing::warn!("{warning}");
+    }
     if args.custom_js {
         tracing::warn!(
             "ORGANIZR_CUSTOM_JS is on: every page runs the custom JavaScript of the Admin"
@@ -203,7 +205,9 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .context("the route table is not valid")?
         .layer(axum::middleware::from_fn(crate::web::serve_files))
         // The files of the web interface get a request id too. The router keeps this one.
-        .layer(axum::middleware::from_fn(organizr_api::request_id::assign));
+        .layer(axum::middleware::from_fn(organizr_api::request_id::assign))
+        // Only Organizr itself may put an answer of the server in a frame.
+        .layer(axum::middleware::from_fn(crate::web::guard_frames));
 
     let listener = TcpListener::bind(args.listen)
         .await
@@ -212,11 +216,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     // The address of each connection goes to the application, which needs it to decide
     // whether a forwarding header can be believed.
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .with_graceful_shutdown(async move {
+    crate::connections::serve(listener, app, crate::connections::HEADER_TIME, async move {
         stop_requested().await;
         chat_hub.close();
     })
@@ -231,6 +231,32 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .context("the database did not close cleanly");
     log_file.flush(LAST_LINES);
     closed
+}
+
+/// What the log tells at the start when no reverse proxy is trusted, neither by
+/// `ORGANIZR_TRUSTED_PROXIES` nor by the setting `trustedProxies`. Then the forwarding
+/// headers are ignored, so the server cannot know that a browser came over HTTPS, nor
+/// who the caller behind a proxy is.
+fn warnings_without_a_proxy(
+    no_proxy_is_trusted: bool,
+    ignore_tfa_local: bool,
+) -> Vec<&'static str> {
+    if !no_proxy_is_trusted {
+        return Vec::new();
+    }
+    let mut warnings = vec![
+        "no reverse proxy is trusted, so forwarding headers are ignored: behind a proxy \
+         over HTTPS, the login cookies are not marked Secure. If a proxy is in front, add \
+         it to ORGANIZR_TRUSTED_PROXIES or to the trusted proxies of the settings.",
+    ];
+    if ignore_tfa_local {
+        warnings.push(
+            "ignoreTFALocal is on and no reverse proxy is trusted: behind a proxy that \
+             sends no X-Forwarded-For header, every caller has the local address of the \
+             proxy and logs in without the second factor.",
+        );
+    }
+    warnings
 }
 
 /// How long the server waits at the end for the last lines of the log file.
@@ -372,7 +398,7 @@ mod tests {
 
     use clap::Parser;
 
-    use super::{Args, default_database_url, prepare_data_dir};
+    use super::{Args, default_database_url, prepare_data_dir, warnings_without_a_proxy};
 
     /// The options of `organizr serve`, as a command of their own.
     #[derive(Debug, Parser)]
@@ -417,6 +443,26 @@ mod tests {
             reminder(&["serve", "--secret-key", &"0".repeat(64)])
                 .starts_with("Keep a copy of the key in ORGANIZR_SECRET_KEY ")
         );
+    }
+
+    #[test]
+    fn missing_trusted_proxy_is_told_once_with_what_it_costs() {
+        // With a trusted proxy, nothing is told.
+        assert_eq!(warnings_without_a_proxy(false, false), Vec::<&str>::new());
+        assert_eq!(warnings_without_a_proxy(false, true), Vec::<&str>::new());
+        // Without one, the cookies lose the Secure flag behind a proxy over HTTPS.
+        let cookies = warnings_without_a_proxy(true, false);
+        assert_eq!(cookies.len(), 1);
+        assert!(cookies[0].contains("Secure"), "{}", cookies[0]);
+        assert!(
+            cookies[0].contains("ORGANIZR_TRUSTED_PROXIES"),
+            "{}",
+            cookies[0]
+        );
+        // With `ignoreTFALocal` on, every caller may also skip the second factor.
+        let both = warnings_without_a_proxy(true, true);
+        assert_eq!(both.len(), 2);
+        assert!(both[1].contains("ignoreTFALocal"), "{}", both[1]);
     }
 
     #[test]

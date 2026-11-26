@@ -26,7 +26,7 @@ use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
 use crate::caller::Caller;
-use crate::client::Client;
+use crate::client::{AddressSource, Client};
 use crate::cookies::cookie_value;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
@@ -269,6 +269,14 @@ fn remembered(name: &str) -> Option<Vec<IpAddr>> {
         .map(|(_, addresses)| addresses.clone())
 }
 
+/// A text as one value of a query: every byte that is not a letter, a digit or one of
+/// `-._*` as `%XX`, also a space. So an `&` or a `#` of the address stays in the value.
+fn query_part(text: &str) -> String {
+    form_urlencoded::byte_serialize(text.as_bytes())
+        .collect::<String>()
+        .replace('+', "%20")
+}
+
 /// The answer that sends the browser to the login page of Organizr, for a proxy that
 /// hands such an answer on to the browser. Traefik does.
 fn to_the_login(state: &AppState, headers: &HeaderMap, client: &Client) -> Option<Response> {
@@ -291,7 +299,10 @@ fn to_the_login(state: &AppState, headers: &HeaderMap, client: &Client) -> Optio
         text("x-forwarded-uri"),
     ) {
         (Some(scheme), Some(host), Some(path)) if client.via_trusted_proxy => {
-            format!("?return={scheme}://{host}{path}")
+            format!(
+                "?return={}",
+                query_part(&format!("{scheme}://{host}{path}"))
+            )
         }
         _ => String::new(),
     };
@@ -415,7 +426,12 @@ pub async fn answer(
             .to_owned(),
     };
 
+    // Behind a proxy that is not trusted, the address is that of the proxy, which every
+    // visitor shares. It never passes an allow list, as it never counts as local. A deny
+    // list still counts for it, since that can only make the check stricter.
+    let known = client.source != AddressSource::UnverifiedForwarding;
     if let Some(list) = &question.allowed
+        && known
         && lists(list, client.address).await
     {
         tracing::debug!(user = %name, client = %client.address, "forward auth: the address is on the allow list");

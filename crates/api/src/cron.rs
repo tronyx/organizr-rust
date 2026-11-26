@@ -73,7 +73,9 @@ fn field(text: &str, least: u32, most: u32, names: &[&str]) -> Result<Field, Str
         let mut value = from;
         while value <= to {
             values |= 1 << value;
-            value += step;
+            // A step so large that the count runs past the largest number is refused,
+            // so that the count can not wrap around to the start.
+            value = value.checked_add(step).ok_or_else(wrong)?;
         }
     }
     Ok(Field {
@@ -174,6 +176,9 @@ mod tests {
         assert!(!names("3/10 * * * *", "2026-11-20T12:02:00+00:00"));
         assert!(names("0,30 8-18 * * *", "2026-11-20T18:30:00+00:00"));
         assert!(!names("0,30 8-18 * * *", "2026-11-20T19:30:00+00:00"));
+        // A step larger than the field names only the first value.
+        assert!(names("*/60 * * * *", "2026-11-20T12:00:00+00:00"));
+        assert!(!names("*/60 * * * *", "2026-11-20T12:01:00+00:00"));
     }
 
     #[test]
@@ -245,6 +250,9 @@ mod tests {
             "5-1 * * * *",
             "a * * * *",
             "* * * * funday",
+            // A step past the largest number that the counting can reach.
+            "5/4294967295 * * * *",
+            "* 1-23/4294967295 * * *",
         ] {
             assert!(wrong.parse::<Schedule>().is_err(), "{wrong}");
         }

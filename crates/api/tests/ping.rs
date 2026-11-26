@@ -133,6 +133,35 @@ async fn only_the_address_to_check_of_a_tab_is_probed() {
 }
 
 #[tokio::test]
+async fn entry_named_many_times_is_probed_once() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let (app, probed) = app_with_stand_in(database, &[]);
+        add_tab(&app, "Plex", "plex.example.com:32400", 1, 1).await;
+
+        let mut list = vec![json!("plex.example.com:32400"); 5_000];
+        list.push(json!(" plex.example.com:32400 "));
+        list.extend(vec![json!("other.example.com:80"); 5_000]);
+        let answer = ping_list(&app, As::Admin, Value::Array(list)).await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(
+            answer.data(),
+            json!({
+                "plex.example.com:32400": 12.5,
+                " plex.example.com:32400 ": 12.5,
+                "other.example.com:80": false,
+            })
+        );
+        assert_eq!(
+            targets(&probed),
+            [("plex.example.com".to_owned(), Some(32400))]
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn one_address_gets_its_time_or_nothing() {
     on_each_engine(async |database| {
         seed::installed(database).await;

@@ -5,6 +5,8 @@
 //! to check, with the check switched on. Every other entry counts as not answering, and
 //! nothing is sent to it (D-08).
 
+use std::collections::{HashMap, HashSet};
+
 use axum::Extension;
 use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Response};
@@ -61,25 +63,38 @@ async fn latency_of(state: &AppState, allowed: &[String], entry: &str) -> Latenc
 
 /// Probes every entry, all at the same time, so that one host that does not answer does
 /// not hold the others up. The results come in the order of the entries.
+///
+/// Each address that a tab allows is probed once, however often the entries name it.
+/// So one request starts no more probes than the tabs of the caller name, whatever the
+/// length of its list.
 async fn all_latencies(state: &AppState, allowed: Vec<String>, entries: &[&str]) -> Vec<Latency> {
-    let allowed: std::sync::Arc<[String]> = allowed.into();
+    let named: HashSet<&str> = entries.iter().map(|entry| entry.trim()).collect();
+    let wanted: HashSet<String> = allowed
+        .into_iter()
+        .filter(|address| named.contains(address.as_str()))
+        .collect();
     let mut probes = JoinSet::new();
-    for (index, entry) in entries.iter().enumerate() {
+    for address in wanted {
         let state = state.clone();
-        let allowed = std::sync::Arc::clone(&allowed);
-        let entry = (*entry).to_owned();
-        probes.spawn(async move { (index, latency_of(&state, &allowed, &entry).await) });
+        probes.spawn(async move {
+            let latency = match PingTarget::of(&address) {
+                Some(target) => state.probe(target).await,
+                None => None,
+            };
+            (address, latency)
+        });
     }
-    let mut results: Vec<Latency> = vec![None; entries.len()];
+    let mut results: HashMap<String, Latency> = HashMap::new();
     while let Some(joined) = probes.join_next().await {
         // A probe that broke counts as no answer.
-        if let Ok((index, latency)) = joined
-            && let Some(result) = results.get_mut(index)
-        {
-            *result = latency;
+        if let Ok((address, latency)) = joined {
+            results.insert(address, latency);
         }
     }
-    results
+    entries
+        .iter()
+        .map(|entry| results.get(entry.trim()).copied().flatten())
+        .collect()
 }
 
 /// `POST /ping`: probes the addresses in the field `list`.

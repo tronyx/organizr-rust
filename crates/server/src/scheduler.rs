@@ -119,6 +119,23 @@ fn until_next_minute(now: &ZonedDateTime) -> Duration {
         .max(Duration::from_millis(1))
 }
 
+/// The mark that a job runs. Dropping it frees the job again, also when the job
+/// panics, so that a failed run does not keep the job from starting until a restart.
+struct Busy(Arc<AtomicBool>);
+
+impl Busy {
+    /// Marks the job as running, or gives nothing when it runs already.
+    fn take(flag: &Arc<AtomicBool>) -> Option<Self> {
+        (!flag.swap(true, Ordering::SeqCst)).then(|| Self(Arc::clone(flag)))
+    }
+}
+
+impl Drop for Busy {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::SeqCst);
+    }
+}
+
 /// Runs the scheduler until the task is dropped.
 pub async fn run(state: AppState) {
     let running: Vec<Arc<AtomicBool>> = Job::ALL.iter().map(|_| Arc::default()).collect();
@@ -137,15 +154,17 @@ pub async fn run(state: AppState) {
             else {
                 continue;
             };
-            if busy.swap(true, Ordering::SeqCst) {
+            let Some(busy) = Busy::take(&busy) else {
                 tracing::warn!(
                     job = job.name(),
                     "the job still runs; this start is left out"
                 );
                 continue;
-            }
+            };
             let state = state.clone();
             tokio::spawn(async move {
+                // Frees the job when the task ends, in any way.
+                let _busy = busy;
                 tracing::debug!(job = job.name(), "a scheduled job starts");
                 if tokio::time::timeout(JOB_TIME_LIMIT, job.run(&state))
                     .await
@@ -153,7 +172,6 @@ pub async fn run(state: AppState) {
                 {
                     tracing::warn!(job = job.name(), "the job ran too long and was stopped");
                 }
-                busy.store(false, Ordering::SeqCst);
             });
         }
     }
@@ -167,7 +185,10 @@ mod tests {
     use organizr_testkit::installed_settings;
     use serde_json::json;
 
-    use super::{Job, due_jobs, is_due, until_next_minute};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    use super::{Busy, Job, due_jobs, is_due, until_next_minute};
 
     fn at(time: &str) -> ZonedDateTime {
         format!("{time}[UTC]").parse().expect("the time is valid")
@@ -313,6 +334,21 @@ mod tests {
             ),
             [Job::UpdateCheck]
         );
+    }
+
+    #[tokio::test]
+    async fn job_that_panics_still_frees_its_place() {
+        let flag = Arc::new(AtomicBool::new(false));
+        let busy = Busy::take(&flag).expect("the job is free");
+        // A second start finds the job busy.
+        assert!(Busy::take(&flag).is_none());
+        let task = tokio::spawn(async move {
+            let _busy = busy;
+            panic!("the job fails");
+        });
+        assert!(task.await.is_err());
+        assert!(!flag.load(Ordering::SeqCst));
+        assert!(Busy::take(&flag).is_some());
     }
 
     #[test]
