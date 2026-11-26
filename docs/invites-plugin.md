@@ -25,7 +25,7 @@ The Plex token is the key of the Plex server's **owner**. The Plex Machine ID na
 
 | Label | Key | Default | What it does |
 |---|---|---|---|
-| Media Server | `INVITES-type-include` | Plex | **Plex** shares your Plex server when a code is used. With **Emby** or **N/A**, "I have a Plex account" only marks the code as used and shares nothing |
+| Media Server | `INVITES-type-include` | Plex | **Plex** shares your Plex server when a code is used. With **Emby** or **N/A**, "I have a Plex account" only marks the code as used and shares nothing. **Make an Emby user** works only with **Emby** (D-149) |
 | Minimum Authentication | `INVITES-Auth-include` | Co-Admin | The group with the least access that can make invites |
 | Allow users to delete invites | `INVITES-allow-delete-include` | Off | Lets users delete their own invites. Admins and Co-Admins can always delete. Keep it off to enforce the limit below |
 | Maximum number of invites permitted for users. | `INVITES-maximum-invites` | `0` | The most invites one user can have. `0` means no limit. Admins and Co-Admins have no limit |

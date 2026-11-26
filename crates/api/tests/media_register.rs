@@ -318,6 +318,33 @@ async fn wrong_and_used_codes_are_counted() {
 }
 
 #[tokio::test]
+async fn emby_registration_needs_invites_for_emby() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let server = emby().await;
+        // The invites are for Plex, and the Emby item of the homepage has its key (D-149).
+        let app = app_with(
+            database,
+            "http://127.0.0.1:1",
+            &[
+                ("INVITES-type-include", json!("plex")),
+                ("embyURL", json!(server.url())),
+                ("embyToken", json!(EMBY_KEY)),
+            ],
+        );
+        make_invite(&app, "PLEX01").await;
+
+        let answer = register(&app, "/emby/register", "sam", Some("PLEX01")).await;
+        assert_eq!(answer.status, StatusCode::CONFLICT, "{}", answer.body);
+        assert_eq!(answer.message(), json!("Invites are not set up for Emby"));
+        assert_eq!(server.seen().len(), 0);
+        // The code is still there for its Plex account.
+        assert_eq!(valid(&app, "PLEX01").await, "Yes");
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn emby_user_gets_the_password_and_the_policy_of_the_template() {
     on_each_engine(async |database| {
         seed::installed(database).await;
@@ -423,6 +450,7 @@ async fn failed_emby_user_keeps_the_code_and_leaves_no_user_behind() {
             database,
             "http://127.0.0.1:1",
             &[
+                ("INVITES-type-include", json!("emby")),
                 ("embyURL", json!("http://127.0.0.1:1")),
                 ("embyToken", json!(EMBY_KEY)),
             ],
@@ -432,7 +460,11 @@ async fn failed_emby_user_keeps_the_code_and_leaves_no_user_behind() {
         has_no_secret(&answer);
         assert_eq!(valid(&app, "EMBY02").await, "Yes");
 
-        let unset = app_with(database, "http://127.0.0.1:1", &[]);
+        let unset = app_with(
+            database,
+            "http://127.0.0.1:1",
+            &[("INVITES-type-include", json!("emby"))],
+        );
         let answer = register(&unset, "/emby/register", "sam", Some("EMBY02")).await;
         assert_eq!(answer.status, StatusCode::CONFLICT);
         assert_eq!(answer.message(), json!("Emby URL/Token not set"));

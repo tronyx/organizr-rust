@@ -54,6 +54,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - A new password ends the other sessions of the account; a login with a recovery password ends all from before (D-146).
 - A backup leaves out the key file that the server uses, also when `ORGANIZR_SECRET_KEY_FILE` puts it elsewhere in the data folder (D-147).
 - An imported Admin or Co-Admin account linked to an OpenID Connect provider must be linked again on purpose; no first login through the provider takes it (D-148).
+- **Make an Emby user** works only while the invites are set to Emby; a Plex invite can't make an Emby user (D-149).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

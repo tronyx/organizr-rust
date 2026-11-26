@@ -129,6 +129,12 @@ pub async fn emby(
     let new = fields(&data, StatusCode::UNPROCESSABLE_ENTITY)?;
     let code = check_code(&state, &client, &data).await?;
     let settings = state.settings();
+    // An invite for Plex must not make a user on the Emby server, whose key the Emby
+    // item of the homepage may have (D-149).
+    if settings.invites_type_include != "emby" {
+        tracing::warn!("an Emby user was not made: the invites are not for Emby");
+        return Err(Refusal::conflict("Invites are not set up for Emby"));
+    }
     if settings.emby_url.is_empty() || settings.emby_token.is_empty() {
         tracing::warn!("an Emby user cannot be made: the Emby address or token is not set");
         return Err(Refusal::conflict("Emby URL/Token not set"));
