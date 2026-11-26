@@ -98,7 +98,7 @@ impl Install<'_> {
             }
             Kind::Prowlarr => {
                 let url = format!("{}/api/v1/search", self.base());
-                http.client(&url, self.never_check_certificate)
+                http.keyed_client(&url, self.never_check_certificate)
                     .get(&url)
                     .header("X-Api-Key", self.key)
                     .query(&[("query", query)])
@@ -121,7 +121,7 @@ impl Install<'_> {
     pub async fn grab(&self, http: &Outbound, guid: &str, indexer: i64) -> Result<Reply, String> {
         let url = format!("{}/api/v1/search", self.base());
         let request = http
-            .client(&url, self.never_check_certificate)
+            .keyed_client(&url, self.never_check_certificate)
             .post(&url)
             .header("X-Api-Key", self.key)
             .json(&json!({ "guid": guid, "indexerId": indexer }));

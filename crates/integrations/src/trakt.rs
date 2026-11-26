@@ -80,7 +80,7 @@ impl Account<'_> {
             self.api.trim_end_matches('/')
         );
         let response = http
-            .client(&url, false)
+            .keyed_client(&url, false)
             .get(&url)
             .query(&[("extended", "full")])
             .header("Content-Type", "application/json")
@@ -366,7 +366,7 @@ pub async fn tokens(
         "grant_type": kind,
     });
     let response = http
-        .client(&url, false)
+        .keyed_client(&url, false)
         .post(&url)
         .json(&body)
         .timeout(TIME_LIMIT)

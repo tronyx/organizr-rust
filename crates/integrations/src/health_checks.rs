@@ -7,15 +7,20 @@ use std::time::Duration;
 
 use serde_json::Value;
 
-use crate::http::{Outbound, without_address};
+use crate::http::{Outbound, escaped, without_address};
 
 /// The query that asks for checks with the given tags: `?tag=a&tag=b`. Tags come with
-/// commas between them. No tags, or `*`, ask for every check.
+/// commas between them, and each is written as one value of the query. No tags, or
+/// `*`, ask for every check.
 pub fn tags_query(tags: &str) -> String {
     if tags.is_empty() || tags == "0" || tags == "*" {
         String::new()
     } else {
-        format!("?tag={}", tags.replace(',', "&tag="))
+        let fields: Vec<String> = tags
+            .split(',')
+            .map(|tag| format!("tag={}", escaped(tag)))
+            .collect();
+        format!("?{}", fields.join("&"))
     }
 }
 
@@ -35,7 +40,7 @@ pub async fn checks(
     let mut all = Vec::new();
     for key in keys.split(',') {
         let mut request = http
-            .client(&url, never_check_certificate)
+            .keyed_client(&url, never_check_certificate)
             .get(&url)
             .header("X-Api-Key", key);
         if let Some(timeout) = timeout {
@@ -85,6 +90,11 @@ mod tests {
     fn tags_become_one_query_field_each() {
         assert_eq!(tags_query("prod"), "?tag=prod");
         assert_eq!(tags_query("prod,web"), "?tag=prod&tag=web");
+        // A tag is one value of the query, whatever it holds.
+        assert_eq!(
+            tags_query("a b&key=x,web#top"),
+            "?tag=a%20b%26key%3Dx&tag=web%23top"
+        );
         for all in ["", "*", "0"] {
             assert_eq!(tags_query(all), "", "{all}");
         }

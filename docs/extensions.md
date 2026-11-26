@@ -191,6 +191,8 @@ The list is a JSON file:
 
 `id`, `name`, `version`, `download` and `sha256` are required. The other fields mean what they mean in `plugin.json`, and an install writes them into the extension's `plugin.json`.
 
+When the list's address uses `https`, every `download` must use `https` too. A `download` on another host than the list must be on the internet: an install from this computer or a private network address is refused, unless the list is on that same host.
+
 ### 🔗 The routes
 
 | Route | For | What it does |

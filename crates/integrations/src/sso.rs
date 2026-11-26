@@ -111,7 +111,7 @@ async fn ombi_request(
     };
     let target = format!("{url}{path}");
     let response = http
-        .client_for(&target)
+        .keyed_client_for(&target)
         .post(&target)
         .timeout(timeout)
         .header("Accept", "application/json")
@@ -162,7 +162,7 @@ async fn komga_request(
 ) -> Option<String> {
     let target = format!("{url}/api/v2/users/me");
     let response = http
-        .client_for(&target)
+        .keyed_client_for(&target)
         .get(&target)
         .timeout(timeout)
         .basic_auth(account.user, Some(account.password))
@@ -188,7 +188,7 @@ async fn komga_request(
 pub async fn komga_logout(http: &Outbound, url: &str, token: &str, timeout: Duration) {
     let target = format!("{url}/api/logout");
     let sent = http
-        .client_for(&target)
+        .keyed_client_for(&target)
         .post(&target)
         .timeout(timeout)
         .header("X-Auth-Token", token)
@@ -268,7 +268,7 @@ async fn petio_request(
     });
     let target = format!("{url}{path}");
     let response = http
-        .client_for(&target)
+        .keyed_client_for(&target)
         .post(&target)
         .timeout(timeout)
         .header("X-Forwarded-For", login.client_ip)
@@ -322,7 +322,7 @@ pub async fn jellyfin_session(
 ) -> Option<JellyfinSession> {
     let target = format!("{url}/Users/authenticatebyname");
     let response = http
-        .client_for(&target)
+        .keyed_client_for(&target)
         .post(&target)
         .timeout(timeout)
         .header("Authorization", JELLYFIN_SSO_DEVICE)
@@ -412,7 +412,7 @@ async fn overseerr_request(
     };
     let target = format!("{url}{path}");
     let response = http
-        .client_for(&target)
+        .keyed_client_for(&target)
         .post(&target)
         .timeout(timeout)
         .header("X-Forwarded-For", login.client_ip)
@@ -495,7 +495,7 @@ pub async fn tautulli_sessions(
             ],
         };
         let mut request = http
-            .client_for(&target)
+            .keyed_client_for(&target)
             .post(&target)
             .timeout(timeout)
             .header("Accept", "application/json")

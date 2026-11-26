@@ -30,7 +30,7 @@ impl Install<'_> {
     pub async fn read(&self, http: &Outbound, endpoint: &str) -> Result<Option<Value>, String> {
         let url = format!("{}/api/{endpoint}", self.url.trim_end_matches('/'));
         let response = http
-            .client(&url, self.never_check_certificate)
+            .keyed_client(&url, self.never_check_certificate)
             .get(&url)
             .header("X-Api-Key", self.key)
             .timeout(self.timeout.unwrap_or(TIME_LIMIT))

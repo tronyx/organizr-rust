@@ -42,7 +42,7 @@ pub async fn libraries(
 ) -> Result<Vec<Library>, KomgaError> {
     let target = format!("{url}/api/v1/libraries");
     let response = http
-        .client_for(&target)
+        .keyed_client_for(&target)
         .get(&target)
         .timeout(timeout)
         .header("Accept", "application/json")
@@ -79,7 +79,7 @@ pub async fn create_account(
 ) -> Result<(), KomgaError> {
     let target = format!("{url}/api/v2/users");
     let response = http
-        .client_for(&target)
+        .keyed_client_for(&target)
         .post(&target)
         .timeout(timeout)
         .header("Accept", "application/json")

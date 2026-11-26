@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use crate::http::{Outbound, without_address};
+use crate::http::{Outbound, body_within, without_address};
 
 /// The list of the members at Open Collective, as the PHP application asks for it.
 pub const OPEN_COLLECTIVE: &str =
@@ -29,7 +29,13 @@ pub enum SponsorError {
     /// The service answered with a status that is no success.
     #[error("the service refused the request")]
     Refused,
+    /// The answer is larger than [`ANSWER_LIMIT`].
+    #[error("the answer of the service is larger than {ANSWER_LIMIT} bytes")]
+    TooLarge,
 }
+
+/// The largest answer of a service, in bytes.
+pub const ANSWER_LIMIT: usize = 4 * 1024 * 1024;
 
 async fn text_at(http: &Outbound, url: &str) -> Result<String, SponsorError> {
     let response = http
@@ -42,10 +48,11 @@ async fn text_at(http: &Outbound, url: &str) -> Result<String, SponsorError> {
     if !response.status().is_success() {
         return Err(SponsorError::Refused);
     }
-    response
-        .text()
+    let body = body_within(response, ANSWER_LIMIT)
         .await
-        .map_err(|error| SponsorError::Unreachable(without_address(error)))
+        .map_err(|error| SponsorError::Unreachable(without_address(error)))?
+        .ok_or(SponsorError::TooLarge)?;
+    Ok(String::from_utf8_lossy(&body).into_owned())
 }
 
 /// The members at Open Collective, as the service sends them, each with the field
@@ -213,7 +220,22 @@ fn address_in(text: &str) -> Option<&str> {
 mod tests {
     use serde_json::json;
 
-    use super::{github_sponsors_in, with_sort_names};
+    use super::{ANSWER_LIMIT, SponsorError, github, github_sponsors_in, with_sort_names};
+
+    #[tokio::test]
+    async fn answer_larger_than_the_limit_is_refused() {
+        use axum::Router;
+        use axum::routing::get;
+        use organizr_testkit::services::StandIn;
+
+        let service = StandIn::start(
+            Router::new().route("/sponsors", get(|| async { "a".repeat(ANSWER_LIMIT + 1) })),
+        )
+        .await;
+        let http = crate::http::Outbound::new().expect("the client can be built");
+        let answer = github(&http, &format!("{}/sponsors", service.url())).await;
+        assert!(matches!(answer, Err(SponsorError::TooLarge)), "{answer:?}");
+    }
 
     #[test]
     fn members_get_their_name_in_small_letters() {

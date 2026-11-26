@@ -410,6 +410,15 @@ async fn marketplace() -> StandIn {
             .and_then(|value| value.to_str().ok())
             .unwrap_or_default();
         let entry = |id: &str, file: &str, sha256: String, permissions: Value| {
+            let download = match file.strip_prefix("local/") {
+                // The same server by another name: a host on this computer that is not
+                // the host of the list.
+                Some(file) => format!(
+                    "http://localhost:{}/files/{file}",
+                    host.rsplit(':').next().unwrap_or_default()
+                ),
+                None => format!("http://{host}/files/{file}"),
+            };
             json!({
                 "id": id,
                 "name": format!("The {id} extension"),
@@ -418,7 +427,7 @@ async fn marketplace() -> StandIn {
                 "author": "Sam",
                 "permissions": permissions,
                 "least_access": 4,
-                "download": format!("http://{host}/files/{file}"),
+                "download": download,
                 "sha256": sha256,
             })
         };
@@ -429,6 +438,7 @@ async fn marketplace() -> StandIn {
             entry("swapped", "hostile.wasm", good.clone(), json!([])),
             entry("greedy", "hello.wasm", good.clone(), json!(["network"])),
             entry("missing", "nothing.wasm", good.clone(), json!([])),
+            entry("local", "local/hello.wasm", good.clone(), json!([])),
             entry("Bad Id", "hello.wasm", good, json!([])),
         ]}))
     }
@@ -480,7 +490,7 @@ async fn extension_of_the_marketplace_is_installed_when_its_file_is_the_named_on
             .iter()
             .filter_map(|row| row["id"].as_str())
             .collect();
-        assert_eq!(ids, ["hello", "swapped", "greedy", "missing"]);
+        assert_eq!(ids, ["hello", "swapped", "greedy", "missing", "local"]);
         assert_eq!(offered[0]["installed"], json!(false));
         assert_eq!(offered[0]["problem"], Value::Null);
         assert!(
@@ -571,6 +581,13 @@ async fn nothing_is_installed_when_the_file_or_the_entry_is_wrong() {
         let greedy = install("greedy").await;
         assert_eq!(greedy.status, StatusCode::CONFLICT);
         assert!(greedy.body.contains("network"), "{}", greedy.body);
+        // A download from another host on this computer is refused.
+        let local = install("local").await;
+        assert_eq!(local.status, StatusCode::CONFLICT);
+        assert_eq!(
+            local.message(),
+            json!("The extension could not be downloaded")
+        );
         let missing = install("missing").await;
         assert_eq!(missing.status, StatusCode::CONFLICT);
         assert_eq!(

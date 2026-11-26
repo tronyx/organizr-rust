@@ -53,6 +53,22 @@ fn quoted(text: &str) -> &str {
         .unwrap_or("")
 }
 
+/// An address without the user name and the password that it may hold, as in
+/// `https://user:password@host/`. The rest of the address stays as it is.
+pub fn without_user_info(url: &str) -> String {
+    let Some((scheme, rest)) = url.split_once("://") else {
+        return url.to_owned();
+    };
+    // The host ends where the path, the query or the fragment starts. A backslash ends
+    // it too, as for the browser.
+    let end = rest.find(['/', '?', '#', '\\']).unwrap_or(rest.len());
+    let (authority, after) = rest.split_at(end);
+    match authority.rsplit_once('@') {
+        Some((_, host)) => format!("{scheme}://{host}{after}"),
+        None => url.to_owned(),
+    }
+}
+
 /// The monitors of a metrics page: `name`, `url`, `type`, `status` (whether the
 /// monitor is up) and `latency` in milliseconds, or `null` when the page has none.
 ///
@@ -103,7 +119,15 @@ pub fn monitors(page: &str) -> Vec<Value> {
                 } else {
                     continue;
                 };
-                monitor.insert(field.to_owned(), Value::from(quoted(label)));
+                let value = quoted(label);
+                // The address of a monitor can hold a user name and a password, which
+                // the homepage must not show.
+                let value = if field == "url" {
+                    without_user_info(value)
+                } else {
+                    value.to_owned()
+                };
+                monitor.insert(field.to_owned(), Value::from(value));
             }
             monitor.insert("status".to_owned(), Value::Bool(!line.ends_with('0')));
             let name = monitor.get("name").and_then(Value::as_str).unwrap_or("");
@@ -120,8 +144,40 @@ pub fn monitors(page: &str) -> Vec<Value> {
 mod tests {
     use serde_json::json;
 
-    use super::{metrics, monitors};
+    use super::{metrics, monitors, without_user_info};
     use crate::http::Outbound;
+
+    #[test]
+    fn url_of_a_monitor_names_no_user_and_no_password() {
+        let page = "monitor_status{monitor_name=\"Blog\",monitor_type=\"http\",monitor_url=\"https://pat:secret@blog.example.com/health\"} 1\n";
+        assert_eq!(
+            monitors(page),
+            [
+                json!({"name": "Blog", "type": "http", "url": "https://blog.example.com/health", "status": true, "latency": null})
+            ]
+        );
+        for (url, shown) in [
+            (
+                "http://token@nas.example.com:8080?x=1",
+                "http://nas.example.com:8080?x=1",
+            ),
+            ("https://a:b@c@host.example/", "https://host.example/"),
+            // A backslash ends the host, as for the browser.
+            (
+                "https://name.example\\x@other/",
+                "https://name.example\\x@other/",
+            ),
+            (
+                "https://blog.example.com/a@b",
+                "https://blog.example.com/a@b",
+            ),
+            ("https://blog.example.com", "https://blog.example.com"),
+            ("null", "null"),
+            ("", ""),
+        ] {
+            assert_eq!(without_user_info(url), shown, "{url}");
+        }
+    }
 
     const PAGE: &str = "# HELP monitor_status Monitor Status (1 = UP, 0= DOWN, 2= PENDING, 3= MAINTENANCE)\n\
 # TYPE monitor_status gauge\n\

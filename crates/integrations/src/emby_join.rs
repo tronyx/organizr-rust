@@ -94,7 +94,7 @@ fn user_header(device: &str, token: Option<&str>) -> String {
 impl Join<'_> {
     fn request(&self, http: &Outbound, method: Method, path: &str) -> reqwest::RequestBuilder {
         let url = format!("{}/emby{path}", self.url);
-        http.client(&url, self.never_check_certificate)
+        http.keyed_client(&url, self.never_check_certificate)
             .request(method, &url)
             .timeout(TIME_LIMIT)
             .header("Accept", "application/json")

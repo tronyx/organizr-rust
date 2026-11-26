@@ -55,7 +55,7 @@ impl Install<'_> {
     ) -> Result<Answer, String> {
         let url = format!("{}{path}", self.url.trim_end_matches('/'));
         let mut request = http
-            .client(&url, self.never_check_certificate)
+            .keyed_client(&url, self.never_check_certificate)
             .get(&url)
             .timeout(TIME_LIMIT);
         if !query.is_empty() {

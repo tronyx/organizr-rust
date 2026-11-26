@@ -214,10 +214,13 @@ impl PictureCache {
     }
 
     async fn fetch(&self, http: &Outbound, name: &str, source: &Source) -> Result<(), String> {
-        let mut request = http
-            .client(&source.url, source.never_check_certificate)
-            .get(&source.url)
-            .timeout(TIME_LIMIT);
+        // A redirect must not take the key to another place.
+        let client = if source.key.is_some() {
+            http.keyed_client(&source.url, source.never_check_certificate)
+        } else {
+            http.client(&source.url, source.never_check_certificate)
+        };
+        let mut request = client.get(&source.url).timeout(TIME_LIMIT);
         if let Some(key) = &source.key {
             request = request.header("X-Api-Key", key);
         }

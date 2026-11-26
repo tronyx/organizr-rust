@@ -39,9 +39,9 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Topic | Entries |
 |---|---|
 | Sign-in, sessions and lockouts | D-02, D-03, D-04, D-09, D-18, D-27, D-30, D-33, D-34, D-35, D-57, D-58, D-73, D-127, D-129, D-139, D-140, D-145, D-146, D-159, D-160, D-161, D-163 |
-| Logins through Plex, LDAP, FTP, Emby and Jellyfin | D-60, D-85, D-86, D-99, D-107, D-124, D-127, D-137, D-154 |
+| Logins through Plex, LDAP, FTP, Emby and Jellyfin | D-60, D-85, D-86, D-99, D-107, D-124, D-127, D-137, D-154, D-165 |
 | OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156 |
-| Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150 |
+| Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150, D-165 |
 | Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157 |
 | The set-up wizard and the database | D-19, D-38, D-46, D-97, D-158 |
 | Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129, D-160, D-164 |
@@ -53,11 +53,11 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Log, errors and request ids | D-13, D-34, D-84 |
 | E-mail | D-09, D-58, D-82, D-138, D-160 |
 | Scheduled jobs | D-33, D-43, D-66, D-74 |
-| Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154 |
+| Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154, D-165, D-166, D-167 |
 | Custom HTML items | D-61, D-76, D-111, D-131 |
-| Connection tests (`/test/*`) | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102 |
+| Connection tests (`/test/*`) | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102, D-165 |
 | Certificates and TLS | D-11, D-17, D-60, D-85, D-86, D-98, D-104 |
-| Outbound requests and SSRF | D-08, D-16, D-55, D-81, D-91, D-122 |
+| Outbound requests and SSRF | D-08, D-16, D-55, D-81, D-91, D-122, D-165, D-166, D-167 |
 | Built-in plugins | D-44, D-66, D-67, D-68, D-69, D-94, D-95, D-115, D-116, D-118 to D-121, D-130, D-134, D-144, D-149 |
 | Extensions and the marketplaces | D-17, D-40, D-41, D-75, D-94, D-122, D-143 |
 | Look, themes, custom CSS and JavaScript | D-42, D-92, D-93, D-110, D-125 |
@@ -104,19 +104,21 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `GET /oauth/trakt` | D-81 |
 | `GET /homepage/items`, `/homepage/html/{number}` | D-61, D-76 |
 | `GET /homepage/image` | D-64, D-77, D-81 |
-| `/homepage/calendar` and the calendars | D-62, D-79, D-81 |
-| `/homepage/plex/*` | D-64 |
-| `/homepage/emby/*`, `/homepage/jellyfin/*` | D-77, D-81 |
-| `/homepage/overseerr/*` | D-65, D-108 |
-| `/homepage/ombi/*` | D-79, D-108 |
-| `/homepage/jackett/*`, `/homepage/prowlarr/*` | D-80, D-112 |
+| `/homepage/calendar` and the calendars | D-62, D-79, D-81, D-165, D-167 |
+| `/homepage/plex/*` | D-64, D-165 |
+| `/homepage/emby/*`, `/homepage/jellyfin/*` | D-77, D-81, D-165 |
+| `/homepage/overseerr/*` | D-65, D-108, D-165 |
+| `/homepage/ombi/*` | D-79, D-108, D-165 |
+| `/homepage/jackett/*`, `/homepage/prowlarr/*` | D-80, D-112, D-165 |
 | `/homepage/<download client>/queue` | D-63, D-70, D-78, D-100, D-103, D-113 |
 | `/homepage/tautulli/*`, `/homepage/weather/*` | D-63, D-81 |
-| `/homepage/pihole/stats`, `/homepage/adguard/stats` | D-71, D-80, D-101, D-102 |
-| `/homepage/netdata`, `monitorr`, `octoprint`, `unifi`, `prompage`, `jellystat` | D-80, D-81 |
+| `/homepage/pihole/stats`, `/homepage/adguard/stats` | D-71, D-80, D-101, D-102, D-165 |
+| `/homepage/netdata`, `monitorr`, `octoprint`, `unifi`, `prompage`, `jellystat` | D-80, D-81, D-165 |
 | `/homepage/netronome/data` | D-128 |
+| `/homepage/healthchecks` | D-165 |
+| `/homepage/kuma/data` | D-166 |
 | `/homepage/donate*`, `/homepage/youtube/{query}`, `POST /homepage/scrape` | D-16, D-81 |
-| `/test/{service}` | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102 |
+| `/test/{service}` | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102, D-165 |
 | `/socks/…`, `/multiple/socks/…` | D-91 |
 | `/plugins`, `/plugins/manage/{plugin}`, `/plugins/marketplace` | D-94, D-116 |
 | `/plugins/chat/*` | D-44, D-95 |
@@ -133,6 +135,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/database/journal` | D-97 |
 | `GET /log` | D-84 |
 | `GET /ip/{ip}`, `GET /help/smtp`, `GET /icon`, `GET /sponsors/github` | D-82 |
+| `GET /sponsors/*` | D-167 |
 
 ## 🔒 Security fixes
 
@@ -321,6 +324,9 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-162 | **The API key must have 20 ASCII characters.** `PUT /config` with `organizrAPI`, on top of D-53 (5). The key is compared byte by byte (D-35), so a key of 20 characters with one outside ASCII never worked. Such a key now gets `422 "Config item: organizrAPI must have 20 characters"`, as a key of another length does. PHP stores every value. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 | D-163 | **A login ends the session that the browser had.** `POST /login`. When the login succeeds and the request carries a session cookie of the install, that session is deleted; the new session takes its place. PHP leaves the old session valid until it expires, so a token that leaked kept working after the browser logged in again. Sessions of other browsers stay. A login that fails ends nothing. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 | D-164 | **The group of the Co-Admin can't become the default group.** `PUT /groups/{id}`, on top of D-51. A group at level 1 or below gets `409 "Setting <name> as default group is not allowed"` for `default` `1` or `true`, as the groups of the Admin and of guests do, for every caller. In PHP a Co-Admin can make the Co-Admin group the default, and an open registration or a login that makes an account then gives out Co-Admin accounts. An import keeps the default group that the install had. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-165 | **A request that carries a key in a header follows a redirect only on the same host.** The requests to Sonarr, Radarr, Lidarr, Prowlarr, Plex, Emby, Jellyfin, Ombi, Overseerr, Pi-hole, OctoPrint, UniFi, Komga, JellyStat, Healthchecks, Trakt and YouTube, the logins and single sign-on through Plex, Emby and Jellyfin, the pictures of the calendar, and the connection tests that send a header. Such a request sends the key in a header of its own, such as `X-Api-Key`, `X-Emby-Token` or `X-Plex-Token`. PHP follows every redirect and sends the header again, also to another host. Here such a request follows a redirect to the same host and port, and from `http` to `https` on the same host; a redirect to another host or port ends the request, and the item or the test gets the redirect as the answer. Enter the address that the service answers at, not one that redirects to another host. Requests without such a header follow redirects as before. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-166 | **The address of an Uptime Kuma monitor shows no user name and no password.** `GET /homepage/kuma/data`. The `url` of a monitor comes from the metrics of Uptime Kuma, and an address such as `https://user:password@host/` holds the login of the monitored site. PHP hands it to the browser as it is. Here the user name and the password are left out: `https://host/`. The rest of the address stays as it is. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-167 | **The lists of sponsors are kept for 10 minutes, and some answers of other services have a largest size.** `GET /sponsors/opencollective`, `/sponsors/github` and `/sponsors/all` need no login, and PHP fetches both lists at each request. Here a list is kept for 10 minutes, and a failure for one minute, so a caller can't make Organizr ask Open Collective and GitHub again and again. An answer of Open Collective or GitHub larger than 4 MiB, and an answer of SickRage or CouchPotato larger than 32 MiB, counts as a failure; PHP reads an answer of any size. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 
 ## ✅ Kept exactly as PHP has it
 

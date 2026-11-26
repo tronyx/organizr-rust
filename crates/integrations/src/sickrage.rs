@@ -12,7 +12,7 @@ use jiff::tz::TimeZone;
 use serde_json::{Value, json};
 
 use crate::arr::NO_PICTURE;
-use crate::http::{Outbound, without_address};
+use crate::http::{Outbound, body_within, without_address};
 use crate::probe::Answer;
 
 /// How long an install has to answer.
@@ -31,7 +31,13 @@ pub enum SickRageError {
     /// The answer is not JSON.
     #[error("the answer is not JSON")]
     Unreadable,
+    /// The answer is larger than [`ANSWER_LIMIT`].
+    #[error("the answer is larger than {ANSWER_LIMIT} bytes")]
+    TooLarge,
 }
+
+/// The largest answer of an install, in bytes.
+pub const ANSWER_LIMIT: usize = 32 * 1024 * 1024;
 
 /// One install, and how it is asked.
 #[derive(Debug, Clone, Copy)]
@@ -63,7 +69,11 @@ impl Install<'_> {
             .await
             .map_err(|error| SickRageError::Unreachable(without_address(error)))?;
         let status = response.status().as_u16();
-        let body = response.text().await.unwrap_or_default();
+        let body = match body_within(response, ANSWER_LIMIT).await {
+            Ok(Some(bytes)) => String::from_utf8_lossy(&bytes).into_owned(),
+            Ok(None) => return Err(SickRageError::TooLarge),
+            Err(_) => String::new(),
+        };
         Ok(Answer { status, body })
     }
 
@@ -308,7 +318,32 @@ mod tests {
     use jiff::tz::TimeZone;
     use serde_json::json;
 
-    use super::{Answer, air_time, fault, future_events, history_events};
+    use super::{
+        ANSWER_LIMIT, Answer, Install, SickRageError, air_time, fault, future_events,
+        history_events,
+    };
+
+    #[tokio::test]
+    async fn answer_larger_than_the_limit_is_refused() {
+        use axum::Router;
+        use axum::routing::get;
+        use organizr_testkit::services::StandIn;
+
+        let install = StandIn::start(
+            Router::new().route("/api/key/", get(|| async { "a".repeat(ANSWER_LIMIT + 1) })),
+        )
+        .await;
+        let url = install.url();
+        let http = crate::http::Outbound::new().expect("the client can be built");
+        let answer = Install {
+            url: &url,
+            key: "key",
+            never_check_certificate: false,
+        }
+        .future(&http)
+        .await;
+        assert!(matches!(answer, Err(SickRageError::TooLarge)), "{answer:?}");
+    }
 
     #[test]
     fn time_of_day_is_read_from_the_text_of_sickrage() {

@@ -57,7 +57,7 @@ async fn send(request: RequestBuilder) -> Result<Option<Value>, String> {
 pub async fn log_in(http: &Outbound, base: &str, password: &str) -> Result<Option<String>, String> {
     let url = format!("{base}/api/auth");
     let request = http
-        .client_for(&url)
+        .keyed_client_for(&url)
         .post(&url)
         .json(&json!({ "password": password }));
     let answer = send(request).await?;
@@ -78,7 +78,7 @@ pub async fn log_in(http: &Outbound, base: &str, password: &str) -> Result<Optio
 /// sessions, and Organizr logs in each time it loads the item.
 async fn remove_older_sessions(http: &Outbound, base: &str, sid: &str) -> Result<(), String> {
     let url = format!("{base}/api/auth/sessions");
-    let Some(answer) = send(http.client_for(&url).get(&url).header("sid", sid)).await? else {
+    let Some(answer) = send(http.keyed_client_for(&url).get(&url).header("sid", sid)).await? else {
         return Ok(());
     };
     let sessions = answer
@@ -96,7 +96,7 @@ async fn remove_older_sessions(http: &Outbound, base: &str, sid: &str) -> Result
             continue;
         };
         let url = format!("{base}/api/auth/session/{id}");
-        send(http.client_for(&url).delete(&url).header("sid", sid)).await?;
+        send(http.keyed_client_for(&url).delete(&url).header("sid", sid)).await?;
     }
     Ok(())
 }
@@ -129,7 +129,7 @@ pub async fn statistics(
         };
         let range = format!("from={}&until={now}", now - DAY);
         let url = format!("{base}/api/stats/database/summary?{range}");
-        let summary = send(http.client_for(&url).get(&url).header("sid", &sid)).await?;
+        let summary = send(http.keyed_client_for(&url).get(&url).header("sid", &sid)).await?;
         let mut stats = match summary {
             Some(Value::Object(stats)) => stats,
             _ => Map::new(),
@@ -137,7 +137,7 @@ pub async fn statistics(
         let url = format!(
             "{base}/api/stats/database/top_domains?{range}&blocked=true&count={DOMAIN_COUNT}"
         );
-        let domains: Vec<Value> = send(http.client_for(&url).get(&url).header("sid", &sid))
+        let domains: Vec<Value> = send(http.keyed_client_for(&url).get(&url).header("sid", &sid))
             .await?
             .as_ref()
             .and_then(|answer| answer.get("domains"))

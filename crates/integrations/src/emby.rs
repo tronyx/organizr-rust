@@ -103,7 +103,7 @@ impl Server<'_> {
         query: &[(&str, &str)],
     ) -> reqwest::RequestBuilder {
         let url = format!("{}{path}", self.url.trim_end_matches('/'));
-        http.client(&url, self.never_check_certificate)
+        http.keyed_client(&url, self.never_check_certificate)
             .get(&url)
             .query(query)
             .timeout(self.timeout.unwrap_or(TIME_LIMIT))

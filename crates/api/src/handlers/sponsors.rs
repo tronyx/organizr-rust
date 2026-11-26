@@ -3,6 +3,13 @@
 //!
 //! The lists come from Open Collective and from the GitHub page of the author of PHP
 //! Organizr, at the addresses that the PHP application uses.
+//!
+//! The routes need no login, so each list is kept for a while: a caller cannot make
+//! Organizr ask the two services again and again.
+
+use std::collections::HashMap;
+use std::sync::{LazyLock, Mutex, PoisonError};
+use std::time::{Duration, Instant};
 
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -25,22 +32,70 @@ fn failure(error: &SponsorError, refused: &str) -> (StatusCode, String) {
             tracing::warn!(reason, "a list of sponsors could not be fetched");
             (StatusCode::INTERNAL_SERVER_ERROR, reason.clone())
         }
+        SponsorError::TooLarge => {
+            let reason = error.to_string();
+            tracing::warn!(reason, "a list of sponsors could not be fetched");
+            (StatusCode::INTERNAL_SERVER_ERROR, reason)
+        }
         SponsorError::Refused => (StatusCode::CONFLICT, refused.to_owned()),
     }
 }
 
-async fn open_collective(state: &AppState, http: &Outbound) -> Listed {
-    match sponsors::open_collective(http, state.open_collective()).await {
-        Ok(Value::Array(list)) => Ok(list),
-        Ok(_) => Ok(Vec::new()),
-        Err(error) => Err(failure(&error, "Error connecting to Open Collective")),
+/// How long a list is kept.
+const LIST_KEPT_FOR: Duration = Duration::from_mins(10);
+
+/// How long a failure is kept, so that a service that is down is not asked at once
+/// again.
+const FAILURE_KEPT_FOR: Duration = Duration::from_mins(1);
+
+/// The lists that were fetched, by their address, with the time of the fetch.
+static KEPT: LazyLock<Mutex<HashMap<String, (Instant, Listed)>>> = LazyLock::new(Mutex::default);
+
+/// The list at an address: the kept one while it is fresh, or else a new one.
+async fn kept_or(url: &str, fetch: impl Future<Output = Listed>) -> Listed {
+    let is_fresh = |(since, listed): &(Instant, Listed)| {
+        let kept_for = if listed.is_ok() {
+            LIST_KEPT_FOR
+        } else {
+            FAILURE_KEPT_FOR
+        };
+        since.elapsed() < kept_for
+    };
+    if let Some((_, listed)) = KEPT
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .get(url)
+        .filter(|kept| is_fresh(kept))
+    {
+        return listed.clone();
     }
+    let listed = fetch.await;
+    let mut kept = KEPT.lock().unwrap_or_else(PoisonError::into_inner);
+    kept.retain(|_, entry| is_fresh(entry));
+    kept.insert(url.to_owned(), (Instant::now(), listed.clone()));
+    listed
+}
+
+async fn open_collective(state: &AppState, http: &Outbound) -> Listed {
+    let url = state.open_collective();
+    kept_or(url, async {
+        match sponsors::open_collective(http, url).await {
+            Ok(Value::Array(list)) => Ok(list),
+            Ok(_) => Ok(Vec::new()),
+            Err(error) => Err(failure(&error, "Error connecting to Open Collective")),
+        }
+    })
+    .await
 }
 
 async fn github(state: &AppState, http: &Outbound) -> Listed {
-    sponsors::github(http, state.github_sponsors())
-        .await
-        .map_err(|error| failure(&error, "Error connecting to Github"))
+    let url = state.github_sponsors();
+    kept_or(url, async {
+        sponsors::github(http, url)
+            .await
+            .map_err(|error| failure(&error, "Error connecting to Github"))
+    })
+    .await
 }
 
 /// The `data` of a list: `null` for an empty one, as the PHP application sends it.

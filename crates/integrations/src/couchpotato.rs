@@ -9,7 +9,7 @@ use jiff::civil::{Date, Time};
 use serde_json::{Value, json};
 
 use crate::arr::{Events, NO_PICTURE, Picture};
-use crate::http::{Outbound, without_address};
+use crate::http::{Outbound, body_within, without_address};
 use crate::ical::Window;
 
 /// How long an install has to answer.
@@ -28,7 +28,13 @@ pub enum CouchPotatoError {
     /// The answer is not JSON.
     #[error("the answer is not JSON")]
     Unreadable,
+    /// The answer is larger than [`ANSWER_LIMIT`].
+    #[error("the answer is larger than {ANSWER_LIMIT} bytes")]
+    TooLarge,
 }
+
+/// The largest answer of an install, in bytes.
+pub const ANSWER_LIMIT: usize = 32 * 1024 * 1024;
 
 /// One install, and how it is asked.
 #[derive(Debug, Clone, Copy)]
@@ -61,10 +67,11 @@ impl Install<'_> {
         if !response.status().is_success() {
             return Err(CouchPotatoError::Status(response.status().as_u16()));
         }
-        response
-            .json()
+        let body = body_within(response, ANSWER_LIMIT)
             .await
-            .map_err(|_| CouchPotatoError::Unreadable)
+            .map_err(|_| CouchPotatoError::Unreadable)?
+            .ok_or(CouchPotatoError::TooLarge)?;
+        serde_json::from_slice(&body).map_err(|_| CouchPotatoError::Unreadable)
     }
 }
 
@@ -191,7 +198,33 @@ mod tests {
     use jiff::tz::TimeZone;
     use serde_json::json;
 
-    use super::{Picture, Window, film_events};
+    use super::{ANSWER_LIMIT, CouchPotatoError, Install, Picture, Window, film_events};
+
+    #[tokio::test]
+    async fn answer_larger_than_the_limit_is_refused() {
+        use axum::Router;
+        use axum::routing::get;
+        use organizr_testkit::services::StandIn;
+
+        let install = StandIn::start(Router::new().route(
+            "/api/key/media.list",
+            get(|| async { "a".repeat(ANSWER_LIMIT + 1) }),
+        ))
+        .await;
+        let url = install.url();
+        let http = crate::http::Outbound::new().expect("the client can be built");
+        let answer = Install {
+            url: &url,
+            key: "key",
+            never_check_certificate: false,
+        }
+        .films(&http)
+        .await;
+        assert!(
+            matches!(answer, Err(CouchPotatoError::TooLarge)),
+            "{answer:?}"
+        );
+    }
 
     fn window() -> Window {
         Window {

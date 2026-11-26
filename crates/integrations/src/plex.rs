@@ -206,7 +206,7 @@ impl PlexTv {
         let url = self.clients_url("/api/invites/requested");
         let response = self
             .http
-            .client_for(&url)
+            .keyed_client_for(&url)
             .get(&url)
             .timeout(TIMEOUT)
             .header("X-Plex-Token", owner_token)
@@ -297,7 +297,7 @@ impl PlexTv {
         });
         let response = self
             .http
-            .client_for(&url)
+            .keyed_client_for(&url)
             .put(&url)
             .timeout(TIMEOUT)
             .header("X-Plex-Token", owner_token)
@@ -320,7 +320,7 @@ impl PlexTv {
         let url = self.clients_url("/api/home/users");
         let response = self
             .http
-            .client_for(&url)
+            .keyed_client_for(&url)
             .post(&url)
             .timeout(TIMEOUT)
             .query(&[("invitedEmail", email), ("skipFriendship", "1")])
@@ -348,7 +348,7 @@ impl PlexTv {
         let url = self.url("/users/sign_in.json");
         let response = self
             .http
-            .client_for(&url)
+            .keyed_client_for(&url)
             .post(&url)
             .timeout(LOGIN_TIMEOUT)
             .header("Accept", "application/json")
@@ -378,7 +378,7 @@ impl PlexTv {
         let url = self.url("/users/account.json");
         let response = self
             .http
-            .client_for(&url)
+            .keyed_client_for(&url)
             .get(&url)
             .timeout(TIMEOUT)
             .header("Accept", "application/json")
@@ -398,7 +398,7 @@ impl PlexTv {
 
     async fn xml(&self, path: &str, headers: &[(&str, &str)]) -> Result<String, PlexError> {
         let url = self.url(path);
-        let mut request = self.http.client_for(&url).get(&url).timeout(TIMEOUT);
+        let mut request = self.http.keyed_client_for(&url).get(&url).timeout(TIMEOUT);
         for (name, value) in headers {
             request = request.header(*name, *value);
         }
@@ -468,7 +468,7 @@ impl PlexTv {
         });
         let response = self
             .http
-            .client_for(&url)
+            .keyed_client_for(&url)
             .post(&url)
             .timeout(TIMEOUT)
             .header("Accept", "application/json")
@@ -500,7 +500,7 @@ impl PlexTv {
         let url = self.url("/api/v2/users");
         let response = self
             .http
-            .client_for(&url)
+            .keyed_client_for(&url)
             .post(&url)
             .timeout(LOGIN_TIMEOUT)
             .header("Accept", "application/json")

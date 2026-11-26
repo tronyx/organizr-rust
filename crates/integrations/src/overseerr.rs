@@ -66,7 +66,7 @@ impl Install {
     ) -> Result<Reply, OverseerrError> {
         let url = format!("{}/api/v1/{path}", self.url.trim_end_matches('/'));
         let mut request = http
-            .client(&url, self.never_check_certificate)
+            .keyed_client(&url, self.never_check_certificate)
             .request(method, &url)
             .header(header::ACCEPT, "application/json")
             .timeout(self.timeout.unwrap_or(TIME_LIMIT));

@@ -27,7 +27,7 @@ pub async fn trailer(
     let url = format!("{}/youtube/v3/search", api.trim_end_matches('/'));
     let wanted = format!("{title} official trailer");
     let response = http
-        .client(&url, false)
+        .keyed_client(&url, false)
         .get(&url)
         .query(&[
             ("part", "snippet"),

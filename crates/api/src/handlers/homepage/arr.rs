@@ -233,12 +233,18 @@ async fn events_of(
                         key: None,
                         never_check_certificate: false,
                     }
-                } else {
+                } else if let Some(address) = keyed_picture_url(url, &picture.source) {
                     Source {
-                        url: format!("{}{}", url.trim_end_matches('/'), picture.source),
+                        url: address,
                         key: Some(key.clone()),
                         never_check_certificate: app.never_check_certificate,
                     }
+                } else {
+                    tracing::warn!(
+                        application = app.name,
+                        "a picture has no path of the install"
+                    );
+                    continue;
                 };
                 cache.fetch_later(http, &picture.name, source);
             }
@@ -246,6 +252,15 @@ async fn events_of(
         all.extend(events);
     }
     Ok(all)
+}
+
+/// The address of a picture of an install, which is fetched with the key of the
+/// install. The path comes from the answer of the install, so it must start with a
+/// slash: another text, such as `@other.example/x.jpg`, could name another host, which
+/// would get the key.
+fn keyed_picture_url(base: &str, path: &str) -> Option<String> {
+    path.starts_with('/')
+        .then(|| format!("{}{path}", base.trim_end_matches('/')))
 }
 
 async fn calendar_of(
@@ -386,4 +401,38 @@ pub async fn radarr_queue(
     Extension(caller): Extension<Caller>,
 ) -> Result<Envelope<Value>, Refusal> {
     queue_of(&state, &caller, Kind::Radarr).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::keyed_picture_url;
+
+    #[test]
+    fn picture_with_the_key_stays_on_the_install() {
+        assert_eq!(
+            keyed_picture_url(
+                "http://sonarr:8989/",
+                "/MediaCover/1/poster.jpg?lastWrite=2"
+            ),
+            Some("http://sonarr:8989/MediaCover/1/poster.jpg?lastWrite=2".to_owned())
+        );
+        assert_eq!(
+            keyed_picture_url("https://example.com/sonarr", "//other.example/x.jpg"),
+            Some("https://example.com/sonarr//other.example/x.jpg".to_owned())
+        );
+        // A path that does not start with a slash could change the host.
+        for path in [
+            "@other.example/x.jpg",
+            ".other.example/x.jpg",
+            ":81/x.jpg",
+            "x.jpg",
+            "",
+        ] {
+            assert_eq!(
+                keyed_picture_url("http://sonarr:8989", path),
+                None,
+                "{path}"
+            );
+        }
+    }
 }

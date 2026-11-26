@@ -14,7 +14,7 @@ use axum::http::{HeaderMap, HeaderName, HeaderValue, Method, StatusCode, header}
 use axum::response::{IntoResponse, Response};
 use organizr_db::ApprovedExtension;
 use organizr_domain::GroupLevel;
-use organizr_integrations::probe;
+use organizr_integrations::{probe, scrape};
 use organizr_plugins::extension::{Call, Caller as ExtensionCaller, ExtensionError, Request};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -494,6 +494,43 @@ async fn market_entries(state: &AppState) -> Result<Vec<MarketEntry>, Refusal> {
         .collect())
 }
 
+/// Whether an address starts with `https://`.
+fn is_https(url: &str) -> bool {
+    url.trim_start()
+        .get(..8)
+        .is_some_and(|scheme| scheme.eq_ignore_ascii_case("https://"))
+}
+
+/// Checks the download address of an entry of the list at `list`. The download is over
+/// HTTPS, unless the list itself is over HTTP: then the Admin chose plain HTTP, and the
+/// SHA-256 of the list still checks the file. A download from another host than the
+/// host of the list goes to the wide web only, not to this computer or to a private
+/// network.
+async fn check_download(list: &str, download: &str) -> Result<(), String> {
+    let (host, port) = scrape::target(download)
+        .ok_or_else(|| "the download is no http or https address with a host".to_owned())?;
+    if is_https(list) && !is_https(download) {
+        return Err("the download is not over HTTPS".to_owned());
+    }
+    if scrape::target(list).is_some_and(|(list_host, _)| list_host.eq_ignore_ascii_case(&host)) {
+        return Ok(());
+    }
+    let addresses: Vec<std::net::SocketAddr> = match host.parse::<std::net::IpAddr>() {
+        Ok(address) => vec![std::net::SocketAddr::new(address, port)],
+        Err(_) => tokio::net::lookup_host((host.as_str(), port))
+            .await
+            .map_err(|_| "the host of the download does not resolve".to_owned())?
+            .collect(),
+    };
+    if addresses
+        .iter()
+        .any(|address| !scrape::is_public(address.ip()))
+    {
+        return Err("the download is on a local network".to_owned());
+    }
+    Ok(())
+}
+
 /// `GET /extensions/marketplace`: the extensions that the marketplace offers.
 pub async fn marketplace(
     State(state): State<AppState>,
@@ -553,6 +590,13 @@ pub async fn install(
         .outbound()
         .ok_or_else(|| Refusal::conflict("No requests can be sent"))?;
     let limit = usize::try_from(COMPONENT_LIMIT).unwrap_or(usize::MAX);
+    let list = state.extension_marketplace().unwrap_or_default();
+    check_download(list, &entry.download)
+        .await
+        .map_err(|error| {
+            tracing::warn!(extension = id, error, "an extension was not downloaded");
+            Refusal::conflict("The extension could not be downloaded")
+        })?;
     let bytes = probe::download(http, &entry.download, limit)
         .await
         .map_err(|error| {
@@ -790,6 +834,33 @@ fn answer_of(answer: organizr_plugins::extension::Response) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn download_is_over_https_and_on_a_public_or_the_same_host() {
+        let secure = "https://market.example/extensions.json";
+        let plain = "http://192.168.1.5/extensions.json";
+        for (list, download) in [
+            (secure, "https://market.example/files/a.wasm"),
+            (secure, "HTTPS://market.example:443/files/a.wasm"),
+            (secure, "https://93.184.216.34/a.wasm"),
+            // The Admin chose a list over HTTP, on the local network.
+            (plain, "http://192.168.1.5/files/a.wasm"),
+            (plain, "https://192.168.1.5/files/a.wasm"),
+        ] {
+            assert_eq!(check_download(list, download).await, Ok(()), "{download}");
+        }
+        for (list, download) in [
+            (secure, "http://market.example/files/a.wasm"),
+            (secure, "https://10.0.0.5/a.wasm"),
+            (secure, "https://[::1]/a.wasm"),
+            (secure, "ftp://market.example/a.wasm"),
+            (secure, "no address"),
+            (plain, "http://192.168.1.6/a.wasm"),
+            (plain, "https://127.0.0.1/a.wasm"),
+        ] {
+            assert!(check_download(list, download).await.is_err(), "{download}");
+        }
+    }
 
     #[test]
     fn id_is_a_folder_name_of_small_letters_digits_and_hyphens() {

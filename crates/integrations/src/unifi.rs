@@ -93,7 +93,7 @@ impl Controller<'_> {
     /// for a controller that refuses the request for its start page.
     async fn token(&self, http: &Outbound) -> Result<Option<String>, UnifiError> {
         let response = http
-            .client(self.url, self.never_check_certificate)
+            .keyed_client(self.url, self.never_check_certificate)
             .get(self.url)
             .timeout(self.limit())
             .send()
@@ -112,7 +112,7 @@ impl Controller<'_> {
 
     async fn login(&self, http: &Outbound) -> Result<Session, UnifiError> {
         let token = self.token(http).await?;
-        let client = http.client(self.url, self.never_check_certificate);
+        let client = http.keyed_client(self.url, self.never_check_certificate);
         let request = match &token {
             Some(token) => client
                 .post(format!("{}/api/auth/login", self.base()))
@@ -154,7 +154,7 @@ impl Controller<'_> {
         url: Url,
     ) -> Result<Value, UnifiError> {
         let mut request = http
-            .client(self.url, self.never_check_certificate)
+            .keyed_client(self.url, self.never_check_certificate)
             .get(url)
             .header(header::COOKIE, &session.cookies)
             .timeout(self.limit());

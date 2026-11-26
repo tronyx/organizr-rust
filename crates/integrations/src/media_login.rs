@@ -124,7 +124,7 @@ pub async fn emby_local(
         "PasswordMd5": hex(&Md5::digest(password.as_bytes())),
     });
     let answer = send(
-        http.client_for(&address)
+        http.keyed_client_for(&address)
             .post(&address)
             .header("Authorization", EMBY_DEVICE)
             .json(&body),
@@ -135,7 +135,7 @@ pub async fn emby_local(
     };
     let address = format!("{url}/Sessions/Logout");
     succeeds(
-        http.client_for(&address)
+        http.keyed_client_for(&address)
             .post(&address)
             .header("X-Emby-Token", &token)
             .header("X-Mediabrowser-Token", &token)
@@ -157,7 +157,7 @@ pub async fn jellyfin(
 ) -> Result<bool, EmbyError> {
     let address = format!("{url}/Users/authenticatebyname");
     let answer = send(
-        http.client_for(&address)
+        http.keyed_client_for(&address)
             .post(&address)
             .header("Authorization", JELLYFIN_DEVICE)
             .json(&json!({"Username": username, "Pw": password})),
@@ -170,7 +170,7 @@ pub async fn jellyfin(
     let address = format!("{url}/Sessions/Logout");
     let header = format!("{JELLYFIN_DEVICE}, Token=\"{}\"", token.replace('"', ""));
     succeeds(
-        http.client_for(&address)
+        http.keyed_client_for(&address)
             .post(&address)
             .header("Authorization", header)
             .header("Content-Type", "application/json"),
@@ -190,7 +190,7 @@ pub async fn emby_connect(
     tracing::info!(user = %username, "a login is tried with Emby Connect");
     let address = format!("{connect}/service/user/authenticate");
     let answer = send(
-        http.client_for(&address)
+        http.keyed_client_for(&address)
             .post(&address)
             .header("Accept", "application/json")
             .header("X-Application", "Organizr/2.0")
@@ -221,7 +221,7 @@ pub async fn emby_connect(
 
     let address = format!("{url}/Users");
     let Some(users) = send(
-        http.client_for(&address)
+        http.keyed_client_for(&address)
             .get(&address)
             .header("X-Emby-Token", token),
     )

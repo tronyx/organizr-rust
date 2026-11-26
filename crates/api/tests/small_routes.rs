@@ -163,6 +163,12 @@ async fn sponsors_are_listed_for_everybody() {
             .map(|sponsor| sponsor["sortName"].clone())
             .collect();
         assert_eq!(names, vec![json!("amy"), json!("bob"), json!("mia"), json!("zed")]);
+
+        // The lists are kept for a while: each service was asked once.
+        let answer = call(&app, As::Guest, "GET", "/sponsors/opencollective", None).await;
+        assert_eq!(answer.data()[0]["sortName"], "mia");
+        let paths: Vec<String> = services.seen().into_iter().map(|seen| seen.path).collect();
+        assert_eq!(paths, ["/members.json?limit=100&offset=0", "/sponsors"]);
     })
     .await;
 }

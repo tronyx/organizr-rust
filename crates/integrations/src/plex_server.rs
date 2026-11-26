@@ -45,7 +45,7 @@ impl Server<'_> {
         query: &[(&str, &str)],
     ) -> reqwest::RequestBuilder {
         let url = format!("{}{path}", self.url.trim_end_matches('/'));
-        http.client(&url, self.never_check_certificate)
+        http.keyed_client(&url, self.never_check_certificate)
             .get(&url)
             .query(query)
             // The token goes in a header, so it is in no address and in no log.

@@ -40,10 +40,13 @@ impl Answer {
 /// Sends the request. Fails when the service cannot be reached. The text of the error
 /// names no address, because the address of some services holds a key.
 pub async fn get(http: &Outbound, probe: Probe<'_>) -> Result<Answer, String> {
-    let mut request = http
-        .client(probe.url, probe.never_check_certificate)
-        .get(probe.url)
-        .timeout(TIME_LIMIT);
+    // A header of the probe can hold a key, which a redirect must not take elsewhere.
+    let client = if probe.headers.is_empty() {
+        http.client(probe.url, probe.never_check_certificate)
+    } else {
+        http.keyed_client(probe.url, probe.never_check_certificate)
+    };
+    let mut request = client.get(probe.url).timeout(TIME_LIMIT);
     if !probe.query.is_empty() {
         request = request.query(probe.query);
     }

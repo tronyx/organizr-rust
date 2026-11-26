@@ -49,7 +49,7 @@ pub fn target(url: &str) -> Option<(String, u16)> {
 }
 
 fn is_public_v4(address: Ipv4Addr) -> bool {
-    let [first, second, ..] = address.octets();
+    let [first, second, third, _] = address.octets();
     !(address.is_private()
         || address.is_loopback()
         || address.is_link_local()
@@ -58,20 +58,49 @@ fn is_public_v4(address: Ipv4Addr) -> bool {
         || address.is_multicast()
         // The addresses that an internet provider shares between its customers.
         || (first == 100 && (64..128).contains(&second))
-        || first == 0)
+        || first == 0
+        // The addresses of the protocols of the IETF, 192.0.0.0/24.
+        || (first == 192 && second == 0 && third == 0)
+        // The addresses for tests of network devices, 198.18.0.0/15.
+        || (first == 198 && (18..20).contains(&second))
+        // The reserved addresses, 240.0.0.0/4.
+        || first >= 240)
+}
+
+/// The IPv4 address in an IPv6 address that carries one: an IPv4-mapped or an
+/// IPv4-compatible address, an address of a NAT64 gateway (`64:ff9b::/96`), or a 6to4
+/// address (`2002::/16`). A request to such an address can reach the IPv4 address.
+fn embedded_v4(address: Ipv6Addr) -> Option<Ipv4Addr> {
+    let segments = address.segments();
+    let from = |high: u16, low: u16| {
+        let [one, two] = high.to_be_bytes();
+        let [three, four] = low.to_be_bytes();
+        Ipv4Addr::new(one, two, three, four)
+    };
+    match segments {
+        // `to_ipv4` reads both the mapped and the compatible form.
+        [0, 0, 0, 0, 0, 0 | 0xffff, ..] => address.to_ipv4(),
+        // NAT64 keeps the IPv4 address at the end, 6to4 right after the prefix.
+        [0x64, 0xff9b, 0, 0, 0, 0, high, low] | [0x2002, high, low, ..] => Some(from(high, low)),
+        _ => None,
+    }
 }
 
 fn is_public_v6(address: Ipv6Addr) -> bool {
-    if let Some(inner) = address.to_ipv4_mapped() {
+    if let Some(inner) = embedded_v4(address) {
         return is_public_v4(inner);
     }
-    let first = address.segments()[0];
+    let [first, second, ..] = address.segments();
     !(address.is_loopback()
         || address.is_unspecified()
         || address.is_multicast()
-        // Unique local addresses, and link-local addresses.
+        // Unique local addresses, link-local addresses, and the old site-local ones.
         || first & 0xfe00 == 0xfc00
-        || first & 0xffc0 == 0xfe80)
+        || first & 0xffc0 == 0xfe80
+        || first & 0xffc0 == 0xfec0
+        // The other NAT64 addresses, such as the prefix for a local network,
+        // 64:ff9b:1::/48.
+        || (first == 0x64 && second == 0xff9b))
 }
 
 /// Whether an address is one of the wide web: not of this computer, and not of a
@@ -259,6 +288,22 @@ mod tests {
             "::ffff:127.0.0.1",
             "::ffff:192.168.1.10",
             "ff02::1",
+            // An IPv4 address in an IPv6 address counts as the IPv4 address.
+            "::127.0.0.1",
+            "::10.0.0.5",
+            "64:ff9b::127.0.0.1",
+            "64:ff9b::a9fe:a9fe",
+            "64:ff9b:1::10.0.0.5",
+            "2002:7f00:1::1",
+            "2002:c0a8:010a::",
+            // Site-local addresses, and reserved IPv4 ranges.
+            "fec0::1",
+            "feff::1",
+            "198.18.0.1",
+            "198.19.255.254",
+            "192.0.0.8",
+            "240.0.0.1",
+            "254.1.2.3",
         ] {
             let parsed: IpAddr = address.parse().expect("an address");
             assert!(!is_public(parsed), "{address}");
@@ -269,6 +314,10 @@ mod tests {
             "100.128.0.1",
             "2606:2800:220:1::1",
             "::ffff:93.184.216.34",
+            "64:ff9b::93.184.216.34",
+            "2002:5db8:d822::1",
+            "198.20.0.1",
+            "192.0.1.1",
         ] {
             let parsed: IpAddr = address.parse().expect("an address");
             assert!(is_public(parsed), "{address}");

@@ -77,7 +77,7 @@ impl Install<'_> {
             self.kind.api()
         );
         let response = http
-            .client(&url, self.never_check_certificate)
+            .keyed_client(&url, self.never_check_certificate)
             .get(&url)
             .query(query)
             .header("X-Api-Key", self.key)
