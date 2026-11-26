@@ -33,38 +33,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Look for commits that no run built
-    runs-on: ubuntu-26.04
-    permissions:
-      actions: read
-    outputs:
-      build: ${{ steps.look.outputs.build }}
-    steps:
-      - name: Compare the commit with the last run that built the branch
-        id: look
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          build=true
-          if [[ "${GITHUB_EVENT_NAME}" == schedule ]]; then
-            # A run for a pull request has the same branch name and publishes nothing.
-            built=$(gh run list --repo "${GITHUB_REPOSITORY}" --workflow build.yml \
-              --branch "${GITHUB_REF_NAME}" --status success --limit 30 \
-              --json headSha,event \
-              --jq '[.[] | select(.event != "pull_request")][0].headSha // ""') || built=""
-            echo "This commit:      ${GITHUB_SHA}"
-            echo "Last one built:   ${built:-none}"
-            if [[ "${built}" == "${GITHUB_SHA}" ]]; then
-              build=false
-            fi
-          fi
-          echo "build=${build}" >> "$GITHUB_OUTPUT"
-
   build:
     name: Build and test the image (${{ matrix.architecture }})
-    needs: changes
-    if: needs.changes.outputs.build == 'true'
     permissions:
       contents: read
       packages: write
@@ -84,7 +54,7 @@ jobs:
       version: ${{ steps.prep.outputs.version }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -100,15 +70,17 @@ jobs:
           fi
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4.4.1
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           version: v0.39.0
-          driver-opts: image=moby/buildkit:v0.35.0
+          driver-opts: image=moby/buildkit:v0.35.0@sha256:aa632b921ef07411d2cb77292cd34213d4f7b384001d6fceef1e1f25bf9752bb
 
       - name: Prepare
         id: prep
         run: |
-          # GITHUB_REF_NAME is N/merge on pull requests, which has no cache of its own
+          # GITHUB_REF_NAME is N/merge on pull requests. A pull request reads the cache of
+          # the branch that it goes into, and never writes a cache, so a pull request
+          # can't change what a later build of a branch reuses.
           if [[ "${GITHUB_EVENT_NAME}" == pull_request ]]; then
             CACHE_REF_NAME="${GITHUB_BASE_REF}"
           else
@@ -131,18 +103,23 @@ jobs:
             echo "registry_image=ghcr.io/${GITHUB_REPOSITORY,,}"
             echo "platform=${ARCHITECTURE//-/\/}"
             echo "cache=type=gha,scope=${CACHE_REF_NAME}-${ARCHITECTURE}"
+            if [[ "${GITHUB_EVENT_NAME}" == pull_request ]]; then
+              echo "cache_to="
+            else
+              echo "cache_to=type=gha,scope=${CACHE_REF_NAME}-${ARCHITECTURE},mode=max"
+            fi
             echo "version=$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)"
           } >> "$GITHUB_OUTPUT"
 
       - name: Build for testing
-        uses: docker/build-push-action@v7.4.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: ./docker/Dockerfile
           load: true
           platforms: ${{ steps.prep.outputs.platform }}
           cache-from: ${{ steps.prep.outputs.cache }}
-          cache-to: ${{ steps.prep.outputs.cache }},mode=max
+          cache-to: ${{ steps.prep.outputs.cache_to }}
           tags: ${{ env.IMAGE }}
 
       - name: Smoke test
@@ -194,16 +171,19 @@ jobs:
 
       # A finding without a correction does not stop the run: nothing can be done about
       # it here. The weekly scan of the published image reports each finding.
+      # The scanner reads a saved copy of the image, so it gets no access to Docker.
       - name: Scan the image for vulnerabilities that have a correction
         run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-            ghcr.io/aquasecurity/trivy:0.76.2 image \
+          docker save "${IMAGE}" --output "${RUNNER_TEMP}/image.tar"
+          docker run --rm -v "${RUNNER_TEMP}/image.tar:/image.tar:ro" \
+            ghcr.io/aquasecurity/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb image \
             --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
-            --exit-code 1 --no-progress "${IMAGE}"
+            --exit-code 1 --no-progress --input /image.tar
+          rm "${RUNNER_TEMP}/image.tar"
 
       - name: Log in to the registry
         if: steps.prep.outputs.publish == 'true'
-        uses: docker/login-action@v4.8.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -213,8 +193,9 @@ jobs:
       # tested. The image carries its software list (SBOM) and the record of its build
       # (provenance), which `docker buildx imagetools inspect` shows.
       - name: Push the tested image
+        id: push
         if: steps.prep.outputs.publish == 'true'
-        uses: docker/build-push-action@v7.4.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: ./docker/Dockerfile
@@ -230,6 +211,27 @@ jobs:
             org.opencontainers.image.version=${{ steps.prep.outputs.version }}
             org.opencontainers.image.licenses=GPL-3.0-only
 
+      # The publish job joins the images by the digests that were pushed here, not by the
+      # tags, which another push could move in between.
+      - name: Note the digest of the pushed image
+        if: steps.prep.outputs.publish == 'true'
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+          ARCHITECTURE: ${{ matrix.architecture }}
+        run: |
+          [[ "${DIGEST}" == sha256:* ]]
+          mkdir -p "${RUNNER_TEMP}/digest"
+          echo "${DIGEST}" > "${RUNNER_TEMP}/digest/${ARCHITECTURE}"
+
+      - name: Keep the digest for the publish job
+        if: steps.prep.outputs.publish == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/digest/${{ matrix.architecture }}
+          retention-days: 1
+          if-no-files-found: error
+
   publish:
     name: Publish the image for both architectures
     needs: build
@@ -238,14 +240,21 @@ jobs:
     permissions:
       packages: write
     steps:
+      - name: Fetch the digests of the pushed images
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digest-*
+          path: ${{ runner.temp }}/digests
+          merge-multiple: true
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4.4.1
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           version: v0.39.0
-          driver-opts: image=moby/buildkit:v0.35.0
+          driver-opts: image=moby/buildkit:v0.35.0@sha256:aa632b921ef07411d2cb77292cd34213d4f7b384001d6fceef1e1f25bf9752bb
 
       - name: Log in to the registry
-        uses: docker/login-action@v4.8.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -258,13 +267,20 @@ jobs:
         run: |
           set -euo pipefail
           image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          amd64=$(cat "${RUNNER_TEMP}/digests/linux-amd64")
+          arm64=$(cat "${RUNNER_TEMP}/digests/linux-arm64")
+          [[ "${amd64}" == sha256:* && "${arm64}" == sha256:* ]]
           tags=(--tag "${image}:${CHANNEL}")
-          # A release also has the name of its version, which stays as it is.
+          # A release also has the name of its version. That tag never moves: when it
+          # exists already, this run publishes :latest only.
           if [[ "${CHANNEL}" == latest ]]; then
-            tags+=(--tag "${image}:${VERSION}")
+            if docker buildx imagetools inspect "${image}:${VERSION}" > /dev/null 2>&1; then
+              echo "::warning::${image}:${VERSION} exists and stays as it is. Raise the version for a new release."
+            else
+              tags+=(--tag "${image}:${VERSION}")
+            fi
           fi
-          docker buildx imagetools create "${tags[@]}" \
-            "${image}:${CHANNEL}-linux-amd64" "${image}:${CHANNEL}-linux-arm64"
+          docker buildx imagetools create "${tags[@]}" "${image}@${amd64}" "${image}@${arm64}"
 
           platforms=$(docker buildx imagetools inspect "${image}:${CHANNEL}" \
             --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')

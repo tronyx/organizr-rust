@@ -35,10 +35,10 @@ jobs:
           - amd64
           - arm64
     env:
-      TRIVY: ghcr.io/aquasecurity/trivy:0.76.2
+      TRIVY: ghcr.io/aquasecurity/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
     steps:
       - name: Log in to the registry
-        uses: docker/login-action@v4.8.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -108,7 +108,7 @@ jobs:
       # architecture, so a finding that a new image removed is closed there.
       - name: File the findings in the Security tab
         if: steps.pull.outputs.found == 'true' && steps.visibility.outputs.private == 'false'
-        uses: github/codeql-action/upload-sarif@v4.38.2
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         with:
           sarif_file: ${{ runner.temp }}/trivy.sarif
           category: trivy-${{ matrix.architecture }}

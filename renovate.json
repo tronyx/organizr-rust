@@ -1,6 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":disableDependencyDashboard"],
+  "extends": [
+    "config:recommended",
+    ":disableDependencyDashboard",
+    "helpers:pinGitHubActionDigests"
+  ],
   "baseBranchPatterns": ["develop"],
   "schedule": ["before 6am on monday"],
   "minimumReleaseAge": "7 days",
@@ -11,6 +15,13 @@
     "schedule": ["before 6am on the first day of the month"]
   },
   "packageRules": [
+    {
+      "description": "The base image of the runtime. A new digest of the same tag carries the security fixes of Debian, so it comes at once.",
+      "matchDepNames": ["gcr.io/distroless/cc-debian13"],
+      "matchUpdateTypes": ["digest"],
+      "minimumReleaseAge": "0 days",
+      "groupName": "Runtime image"
+    },
     {
       "description": "The Rust version is in rust-toolchain.toml and in the image of the build. The build fails when they differ, so both change in one pull request.",
       "matchDepNames": ["rust", "rust-lang/rust"],
@@ -51,18 +62,20 @@
     },
     {
       "customType": "regex",
-      "description": "The images of the tools that a workflow runs with docker run.",
+      "description": "The images of the tools that a workflow runs with docker run, with their digests.",
       "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
       "matchStrings": [
-        "\\s(?<depName>hadolint/hadolint|rhysd/actionlint|ghcr\\.io/aquasecurity/trivy):(?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
+        "\\s(?<depName>hadolint/hadolint|rhysd/actionlint|ghcr\\.io/aquasecurity/trivy):(?<currentValue>v?\\d+\\.\\d+\\.\\d+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?"
       ],
       "datasourceTemplate": "docker"
     },
     {
       "customType": "regex",
-      "description": "The BuildKit image of the image build.",
+      "description": "The BuildKit image of the image build, with its digest.",
       "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
-      "matchStrings": ["image=(?<depName>moby/buildkit):(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "matchStrings": [
+        "image=(?<depName>moby/buildkit):(?<currentValue>v\\d+\\.\\d+\\.\\d+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?"
+      ],
       "datasourceTemplate": "docker"
     },
     {

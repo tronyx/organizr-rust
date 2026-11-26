@@ -37,7 +37,7 @@ The answer is `organizr <version>`, for example `organizr 0.1.0`. The image also
 The update check of the server (**Settings › System Settings › Updates**) compares this version with the newest release on GitHub. It reads release tags written as `v1.2.0` or `1.2.0`, and skips drafts and pre-releases (D-23 in [the deviations](deviations.md)).
 
 > [!NOTE]
-> A push to `main` with an unchanged workspace version would move the `<version>` tag to the new build. So each release raises the version in `Cargo.toml` first.
+> The `<version>` tag never moves. A push to `main` with an unchanged workspace version publishes `latest` only, and the run warns about it. So each release raises the version in `Cargo.toml` first.
 
 ## 📌 Pin one exact build
 
@@ -116,7 +116,7 @@ You don't need this part to run Organizr. [CONTRIBUTING](../CONTRIBUTING.md) has
 
 ### 📌 Pinned versions
 
-`docker/Dockerfile` names each base image with its version and its digest. `Cargo.lock` and `web/package-lock.json` name the exact version of each library. So two builds of one commit use the same software.
+`docker/Dockerfile` names each base image with its version and its digest, and its first line pins the Dockerfile frontend by digest. `Cargo.lock` and `web/package-lock.json` name the exact version of each library. The workflows name each action by its commit, with the version in a comment, and each tool image and the BuildKit image by version and digest. So two builds of one commit use the same software.
 
 ### 🤖 Updates with Renovate
 
@@ -134,10 +134,11 @@ You don't need this part to run Organizr. [CONTRIBUTING](../CONTRIBUTING.md) has
 What it updates, and how it groups the pull requests:
 
 - The base images of `docker/Dockerfile` with their digests, the Rust and web libraries, the GitHub actions and the tools that the workflows run.
+- **Runtime image**: a new digest of the distroless base image comes at once, without the waiting time, because it carries the security fixes of Debian.
 - **Rust toolchain**: one pull request for `rust-toolchain.toml` and `docker/Dockerfile` together. The `build` workflow fails when the two versions differ.
 - **Rust libraries**: minor and patch updates in one pull request.
 - **Web libraries**: minor and patch updates in one pull request.
-- **Workflow tools**: the actions and tools in `.github/workflows/` in one pull request.
+- **Workflow tools**: the actions and tools in `.github/workflows/` in one pull request. Renovate keeps the commits and digests of the pins up to date with the versions.
 - It leaves the folder `parity` alone. The PHP image there is the reference for the parity tests, and its version stays.
 
 The workflows `ci` and `lint` run for each Renovate pull request, as for every other pull request.
