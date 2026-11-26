@@ -7,6 +7,13 @@
 //! PHP Organizr takes the code of the current 30 seconds and of the five steps before
 //! and after it, so a clock that is two minutes off still works. This check does the
 //! same.
+//!
+//! PHP takes a code again and again while it is in that window. Here a login remembers
+//! the step of the code it took, and the next login of the account needs the code of a
+//! later step. So a code that somebody saw does not work a second time.
+
+use std::collections::HashMap;
+use std::sync::{Mutex, PoisonError};
 
 use thiserror::Error;
 use totp_rs::{Algorithm, Builder, Secret, Totp};
@@ -68,8 +75,38 @@ pub fn is_secret(secret: &str) -> bool {
 /// Whether `code` is the code of the secret at the time `now`, in seconds since 1970,
 /// or of one of the steps around it. Space around the code does not count.
 pub fn verify(secret: &str, code: &str, now: u64) -> Result<bool, TwoFactorError> {
+    Ok(step_of(secret, code, now)?.is_some())
+}
+
+/// The step of 30 seconds whose code `code` is, when it is one of the steps that
+/// [`verify`] takes at the time `now`.
+pub fn step_of(secret: &str, code: &str, now: u64) -> Result<Option<u64>, TwoFactorError> {
     let generator = generator(secret, "", "")?;
-    Ok(generator.check(code.trim(), now).is_some())
+    Ok(generator.check(code.trim(), now))
+}
+
+/// The last step that a login took, for each second factor.
+static LAST_STEPS: Mutex<Option<HashMap<String, u64>>> = Mutex::new(None);
+
+/// Takes the code of `step` for the second factor that `factor` names, once. Returns
+/// `false` when a login already took the code of this step or of a later one.
+///
+/// `factor` must name the account and its secret, so a new secret starts again. The
+/// steps live in memory, so a restart forgets them. A restart takes longer than the
+/// window of a code, so that does not matter much.
+pub(crate) fn take_step(factor: &str, step: u64, now: u64) -> bool {
+    let mut guard = LAST_STEPS.lock().unwrap_or_else(PoisonError::into_inner);
+    let steps = guard.get_or_insert_with(HashMap::new);
+    // A step before the window blocks no code that the window takes.
+    let oldest = (now / STEP_SECONDS).saturating_sub(u64::from(STEPS_AROUND));
+    steps.retain(|_, last| *last >= oldest);
+    match steps.get(factor) {
+        Some(last) if step <= *last => false,
+        _ => {
+            steps.insert(factor.to_owned(), step);
+            true
+        }
+    }
 }
 
 /// The code of the secret at a time, in seconds since 1970.
@@ -88,7 +125,10 @@ pub fn picture(secret: &str, issuer: &str, account: &str) -> Result<String, TwoF
 
 #[cfg(test)]
 mod tests {
-    use super::{TwoFactorError, code_at, is_secret, new_secret, picture, verify};
+    use super::{
+        STEP_SECONDS, TwoFactorError, code_at, is_secret, new_secret, picture, step_of, take_step,
+        verify,
+    };
 
     /// The secret of the test vectors of RFC 6238, "12345678901234567890", in Base32.
     const RFC_SECRET: &str = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
@@ -131,6 +171,30 @@ mod tests {
                 "{steps}"
             );
         }
+    }
+
+    #[test]
+    fn step_of_a_code_is_the_step_it_was_made_for() {
+        let now = 1_234_567_890;
+        let step = now / STEP_SECONDS;
+        let code = code_at(RFC_SECRET, now - 2 * STEP_SECONDS).expect("the secret is valid");
+
+        assert_eq!(step_of(RFC_SECRET, &code, now), Ok(Some(step - 2)));
+        assert_eq!(step_of(RFC_SECRET, "abcdef", now), Ok(None));
+    }
+
+    #[test]
+    fn step_is_taken_once_and_only_after_the_last_one() {
+        let now = 1_234_567_890;
+        let step = now / STEP_SECONDS;
+        let factor = "step_is_taken_once 1";
+
+        assert!(take_step(factor, step, now));
+        assert!(!take_step(factor, step, now));
+        assert!(!take_step(factor, step - 1, now));
+        assert!(take_step(factor, step + 1, now));
+        // Another factor has steps of its own.
+        assert!(take_step("step_is_taken_once 2", step, now));
     }
 
     #[test]

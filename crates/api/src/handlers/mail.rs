@@ -294,10 +294,10 @@ pub async fn recover(
         };
         let (subject, html) = compose(&settings, &site, letter);
         let message = Message {
-            // The address as the person wrote it, which is the address of the account
-            // in some letter case.
+            // The stored address of the account. The text of the request matched it
+            // in lower case only, and another text can reach another mailbox.
             to: Some(Recipient {
-                address: email,
+                address: started.user.email.clone().unwrap_or(email),
                 name: Some(started.user.username.clone()),
             }),
             bcc: Vec::new(),

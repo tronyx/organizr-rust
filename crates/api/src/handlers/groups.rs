@@ -260,6 +260,14 @@ pub async fn change(
                 group.name
             )));
         }
+        // New users would be Co-Admins, from an open registration or from a login
+        // that makes an account. An import keeps the default group it brings.
+        Change::Set(true) if group.level <= GroupLevel::CO_ADMIN && !group.is_default => {
+            return Err(Refusal::conflict(format!(
+                "Setting {} as default group is not allowed",
+                group.name
+            )));
+        }
         Change::Set(false) if group.is_default => {
             return Err(Refusal::conflict(format!(
                 "Cannot remove default from group: {} as a default group is needed",

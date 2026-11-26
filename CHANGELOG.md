@@ -64,6 +64,12 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - With **Limit to User** for Overseerr, the details of a title name nobody who asked for it, for users (D-151).
 - A user's donation history shows the payments Organizr marked with the account at Stripe, not every payment with the account's e-mail (D-152).
 - The cache names a Plex picture after the picture itself, and only pictures of the Plex library are fetched (D-153).
+- A code of the second factor works for one login; the same code or an older one is refused (D-159).
+- The recovery e-mail goes to the stored address of the account, and a login with the old password or a new password ends the recovery password (D-160).
+- The name and the e-mail address of an account share one count of failed logins (D-161).
+- `PUT /config` refuses an API key with characters outside ASCII, which never worked (D-162).
+- A login ends the session that the browser had before (D-163).
+- Nobody can make the Co-Admin group the default group, so new accounts never get Co-Admin access (D-164).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

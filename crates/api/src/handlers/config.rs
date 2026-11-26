@@ -274,7 +274,8 @@ async fn accepted(
                 .map_err(Refusal::from)?;
             Value::String(hash.expose().to_owned())
         }
-        (API_KEY, Value::String(key)) if key.chars().count() != API_KEY_LENGTH => {
+        // The key is compared byte by byte, so it must have 20 ASCII characters.
+        (API_KEY, Value::String(key)) if key.len() != API_KEY_LENGTH || !key.is_ascii() => {
             return Err(Refusal::unprocessable(&format!(
                 "Config item: {API_KEY} must have {API_KEY_LENGTH} characters"
             )));

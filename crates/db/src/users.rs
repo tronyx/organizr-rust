@@ -134,6 +134,9 @@ impl<'a> Users<'a> {
         }
         if let Change::Set(password_hash) = changes.password_hash {
             row.password_hash = ActiveValue::Set(password_hash.expose().to_owned());
+            // A new password ends the recovery password.
+            row.recovery_hash = ActiveValue::Set(None);
+            row.recovery_expires_at = ActiveValue::Set(None);
         }
         if let Change::Set(group) = changes.group {
             row.group_id = ActiveValue::Set(group.get());
@@ -152,7 +155,8 @@ impl<'a> Users<'a> {
         Ok(Some(user.into()))
     }
 
-    /// Replaces the stored password hash of a user. Returns whether the user existed.
+    /// Replaces the stored password hash of a user, and ends the recovery password of
+    /// the user. Returns whether the user existed.
     pub async fn set_password_hash(
         &self,
         id: UserId,
@@ -163,6 +167,8 @@ impl<'a> Users<'a> {
                 user::Column::PasswordHash,
                 Expr::value(password_hash.expose()),
             )
+            .col_expr(user::Column::RecoveryHash, Expr::value(None::<String>))
+            .col_expr(user::Column::RecoveryExpiresAt, Expr::value(None::<i64>))
             .filter(user::Column::Id.eq(id.get()))
             .exec(self.connection)
             .await?;
@@ -233,6 +239,19 @@ impl<'a> Users<'a> {
                 user::Column::PasswordHash,
                 Expr::col(user::Column::RecoveryHash),
             )
+            .col_expr(user::Column::RecoveryHash, Expr::value(None::<String>))
+            .col_expr(user::Column::RecoveryExpiresAt, Expr::value(None::<i64>))
+            .filter(user::Column::Id.eq(id.get()))
+            .filter(user::Column::RecoveryHash.is_not_null())
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected > 0)
+    }
+
+    /// Removes the recovery password of a user, after a login with the password of the
+    /// account. Returns whether the user had a recovery password.
+    pub async fn clear_recovery(&self, id: UserId) -> Result<bool, DbError> {
+        let result = user::Entity::update_many()
             .col_expr(user::Column::RecoveryHash, Expr::value(None::<String>))
             .col_expr(user::Column::RecoveryExpiresAt, Expr::value(None::<i64>))
             .filter(user::Column::Id.eq(id.get()))

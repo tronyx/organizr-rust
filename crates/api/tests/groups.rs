@@ -487,3 +487,36 @@ async fn list_with_users_shows_no_secret_of_a_user() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn group_of_the_co_admin_never_becomes_the_default() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let co_admin = seed::logged_in(database, &app, "casey", 1).await;
+        let co_admins = database
+            .groups()
+            .find_by_level(GroupLevel::CO_ADMIN)
+            .await
+            .expect("the lookup works")
+            .expect("the seed has the group of the Co-Admin");
+        let path = format!("/groups/{}", co_admins.id.get());
+
+        // New users would be Co-Admins then, so nobody can make it the default.
+        for who in [As::Admin, As::User(&co_admin)] {
+            let body = json!({"default": true});
+            let answer = call(&app, who, "PUT", &path, Some(body)).await;
+            assert_refused(
+                &answer,
+                StatusCode::CONFLICT,
+                &format!("Setting {} as default group is not allowed", co_admins.name),
+            );
+        }
+        assert_eq!(group(&app, USER).await["default"], json!(1));
+        // Other changes of the group still work.
+        let body = json!({"default": false, "image": "other.png"});
+        let answer = call(&app, As::Admin, "PUT", &path, Some(body)).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+    })
+    .await;
+}

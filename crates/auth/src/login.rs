@@ -136,19 +136,26 @@ pub(crate) async fn check_second_factor(
     }
 
     let now = u64::try_from(now.unix_seconds()).unwrap_or_default();
-    let valid = stored.kind == two_factor::KIND
-        && second_factor
+    let step = if stored.kind == two_factor::KIND {
+        second_factor
             .secrets
             .open(&two_factor_name(user.id), &stored.sealed_secret)
             .ok()
-            .and_then(|secret| two_factor::verify(&secret, second_factor.code, now).ok())
+            .and_then(|secret| two_factor::step_of(&secret, second_factor.code, now).ok())
             .unwrap_or_else(|| {
                 tracing::error!(
                     user = %user.username,
                     "the stored secret of the second factor of the user cannot be used"
                 );
-                false
-            });
+                None
+            })
+    } else {
+        None
+    };
+    // A code works for one login. The sealed secret is new for each secret, so the
+    // steps of an old secret do not count for a new one.
+    let factor = format!("{} {}", user.id, stored.sealed_secret);
+    let valid = step.is_some_and(|step| two_factor::take_step(&factor, step, now));
     if valid {
         Ok(true)
     } else {
@@ -185,10 +192,12 @@ pub async fn with_password(
     let candidate = password.to_owned();
     let check = password::verify_in_turn(candidate, stored_hash).await?;
 
-    let (user, outdated) = match (user, check) {
-        (Some(user), PasswordCheck::Correct { outdated }) => (user, outdated),
+    let (user, outdated, with_account_password) = match (user, check) {
+        (Some(user), PasswordCheck::Correct { outdated }) => (user, outdated, true),
         // A person who forgot the password logs in with the password from the e-mail.
-        (Some(user), _) if recovery::accept(database, &user, password, now).await? => (user, false),
+        (Some(user), _) if recovery::accept(database, &user, password, now).await? => {
+            (user, false, false)
+        }
         (Some(user), PasswordCheck::Unusable) => {
             tracing::warn!(
                 user = %user.username,
@@ -199,6 +208,15 @@ pub async fn with_password(
         _ => return Err(LoginError::WrongCredentials),
     };
     let second_factor_checked = check_second_factor(database, &user, second_factor, now).await?;
+
+    // The person knew the password after all, so the password from an e-mail is not
+    // needed any more, and nobody else can use it.
+    if with_account_password && database.users().clear_recovery(user.id).await? {
+        tracing::info!(
+            user = %user.username,
+            "the user logged in with the password of the account; the recovery password ended"
+        );
+    }
 
     if outdated {
         let candidate = password.to_owned();

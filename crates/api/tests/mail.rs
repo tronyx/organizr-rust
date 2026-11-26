@@ -92,31 +92,6 @@ async fn old_password_works_until_the_new_one_is_used() {
         )
         .await;
         let (app, outbox) = installed_app_with_outbox(database, &mail_on(&[]));
-
-        let answer = recover(&app, "robin@example.COM").await;
-
-        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
-        let mails = outbox.wait_for(1).await;
-        let to = mails[0].to.clone().expect("the e-mail has a recipient");
-        assert_eq!(
-            (to.address.as_str(), to.name.as_deref()),
-            ("robin@example.COM", Some("robin"))
-        );
-        assert_eq!(mails[0].subject, "Password Reset");
-        let new_password = password_in(&mails[0]);
-        assert_eq!(new_password.len(), 12);
-
-        // A stranger who asked for the e-mail did not lock the account.
-        assert_eq!(
-            log_in(&app, "robin", "the old password").await.status,
-            StatusCode::OK
-        );
-        assert_eq!(
-            log_in(&app, "robin", "a wrong one").await.status,
-            StatusCode::UNAUTHORIZED
-        );
-        // The password from the e-mail works, and is the password of the account then.
-        // The sessions from before end, as somebody else may have one (D-146).
         let before = log_in(&app, "robin", "the old password").await;
         let before = before
             .cookies
@@ -125,6 +100,30 @@ async fn old_password_works_until_the_new_one_is_used() {
             .and_then(|cookie| cookie.split(';').next())
             .expect("the login sets the session cookie")
             .to_owned();
+
+        let answer = recover(&app, "robin@example.COM").await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let mails = outbox.wait_for(1).await;
+        let to = mails[0].to.clone().expect("the e-mail has a recipient");
+        // The e-mail goes to the stored address, not to the text of the request.
+        assert_eq!(
+            (to.address.as_str(), to.name.as_deref()),
+            ("Robin@Example.com", Some("robin"))
+        );
+        assert_eq!(mails[0].subject, "Password Reset");
+        let new_password = password_in(&mails[0]);
+        assert_eq!(new_password.len(), 12);
+
+        // A stranger who asked for the e-mail did not lock the account.
+        let me = call(&app, As::User(&before), "GET", "/token/me", None).await;
+        assert_eq!(me.data()["loggedin"], json!(true), "{}", me.body);
+        assert_eq!(
+            log_in(&app, "robin", "a wrong one").await.status,
+            StatusCode::UNAUTHORIZED
+        );
+        // The password from the e-mail works, and is the password of the account then.
+        // The sessions from before end, as somebody else may have one (D-146).
         assert_eq!(
             log_in(&app, "robin", &new_password).await.status,
             StatusCode::OK
@@ -683,6 +682,65 @@ async fn list_names_each_user_with_the_address() {
         let helper = seed::logged_in(database, &app, "helper", 2).await;
         let refused = call(&app, As::User(&helper), "GET", path, None).await;
         assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn recovery_e_mail_goes_to_the_stored_address_only() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        add_user(
+            database,
+            "kim",
+            Some("kim@example.com"),
+            &hash("a password"),
+        )
+        .await;
+        let (app, outbox) = installed_app_with_outbox(database, &mail_on(&[]));
+
+        // The Kelvin sign is another character, but its lower case is the letter k, so
+        // the request finds the account of kim. The e-mail must not go to the text of
+        // the request, which another mail server can deliver elsewhere.
+        let answer = recover(&app, "\u{212a}im@example.com").await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let mails = outbox.wait_for(1).await;
+        let to = mails[0].to.clone().expect("the e-mail has a recipient");
+        assert_eq!(to.address, "kim@example.com");
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn login_with_the_old_password_ends_the_password_of_the_e_mail() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        add_user(
+            database,
+            "robin",
+            Some("robin@example.com"),
+            &hash("the old password"),
+        )
+        .await;
+        let (app, outbox) = installed_app_with_outbox(database, &mail_on(&[]));
+        recover(&app, "robin@example.com").await;
+        let new_password = password_in(&outbox.wait_for(1).await[0]);
+
+        // The old password still works, and the password from the e-mail is not needed
+        // any more, so it ends.
+        assert_eq!(
+            log_in(&app, "robin", "the old password").await.status,
+            StatusCode::OK
+        );
+        assert_eq!(
+            log_in(&app, "robin", &new_password).await.status,
+            StatusCode::UNAUTHORIZED
+        );
+        assert_eq!(
+            log_in(&app, "robin", "the old password").await.status,
+            StatusCode::OK
+        );
     })
     .await;
 }

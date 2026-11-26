@@ -38,20 +38,20 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 
 | Topic | Entries |
 |---|---|
-| Sign-in, sessions and lockouts | D-02, D-03, D-04, D-09, D-18, D-27, D-30, D-33, D-34, D-35, D-57, D-58, D-73, D-127, D-129, D-139, D-140, D-145, D-146 |
+| Sign-in, sessions and lockouts | D-02, D-03, D-04, D-09, D-18, D-27, D-30, D-33, D-34, D-35, D-57, D-58, D-73, D-127, D-129, D-139, D-140, D-145, D-146, D-159, D-160, D-161, D-163 |
 | Logins through Plex, LDAP, FTP, Emby and Jellyfin | D-60, D-85, D-86, D-99, D-107, D-124, D-127, D-137, D-154 |
 | OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156 |
 | Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150 |
 | Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157 |
 | The set-up wizard and the database | D-19, D-38, D-46, D-97, D-158 |
-| Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129 |
+| Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129, D-160, D-164 |
 | Tabs and categories | D-28, D-32, D-39, D-47, D-48 |
-| Settings and configuration | D-06, D-07, D-14, D-29, D-45, D-53, D-96, D-106, D-112, D-116 |
+| Settings and configuration | D-06, D-07, D-14, D-29, D-45, D-53, D-96, D-106, D-112, D-116, D-162 |
 | Pictures, icons and favicons | D-10, D-54, D-56, D-93, D-123, D-126 |
 | Backups and restore | D-10, D-26, D-74, D-147 |
 | Updates | D-23 |
 | Log, errors and request ids | D-13, D-34, D-84 |
-| E-mail | D-09, D-58, D-82, D-138 |
+| E-mail | D-09, D-58, D-82, D-138, D-160 |
 | Scheduled jobs | D-33, D-43, D-66, D-74 |
 | Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154 |
 | Custom HTML items | D-61, D-76, D-111, D-131 |
@@ -71,22 +71,22 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 
 | Route | Entries |
 |---|---|
-| `POST /login`, `/logout` | D-02, D-04, D-34, D-60, D-127 |
+| `POST /login`, `/logout` | D-02, D-04, D-34, D-60, D-127, D-159, D-161, D-163 |
 | `/token/*` | D-18, D-34 |
-| `/2fa`, `/2fa/{type}` | D-57 |
+| `/2fa`, `/2fa/{type}` | D-57, D-159 |
 | `/wizard` | D-19, D-38, D-46, D-138 |
 | `GET /status` | D-21, D-46 |
 | `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125, D-128, D-158 |
-| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135, D-158 |
+| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135, D-158, D-162 |
 | `DELETE /import-notice` | D-158 |
 | `/users`, `/users/{id}` | D-05, D-15, D-52, D-57 |
 | `POST /users/register` | D-36, D-37, D-38 |
-| `POST /users/recover` | D-09, D-58, D-138 |
-| `/users/lock`, `/users/unlock` | D-73 |
+| `POST /users/recover` | D-09, D-58, D-138, D-160 |
+| `/users/lock`, `/users/unlock` | D-73, D-161 |
 | `/users/2fa/{id}` | D-129 |
 | `POST /users/import/{type}` | D-82 |
 | `PUT /user/look` | D-125 |
-| `/groups` | D-31, D-51 |
+| `/groups` | D-31, D-51, D-164 |
 | `/tabs` | D-28, D-32, D-39, D-47 |
 | `/categories` | D-32, D-48 |
 | `/image`, `/image/select`, `data/userTabs/` | D-10, D-54, D-56 |
@@ -315,6 +315,12 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-156 | **An imported Admin or Co-Admin OpenID Connect link is taken by its checked e-mail address.** On top of D-148. D-148 refused every login to an imported Admin or Co-Admin account that is linked to the provider without a subject, so every such Admin had to link again after a move from PHP. (1) Such an account is taken, and the subject of the login stored, when the provider says that it checked the e-mail address (`email_verified` is `true`) and that address is the address of the account, in any letter case. (2) A match of the user name alone, an address that the provider did not check, and another address still get "Failed to create or link user". Accounts of other levels keep the first-login link of D-89 (4). Decided by the owner of the project on 2026-11-26. |
 | D-157 | **An allow list in the query counts when a trusted proxy wrote that query itself, and a list has up to 100 entries.** Forward auth, on top of D-136 and D-141. D-136 ignored every allow list in the query when the path names a group, which broke checks such as `/api/v2/auth-1?whitelist=…` that nginx sends with a fixed address. (1) Such an allow list counts when the request comes from a proxy in the trusted proxies (D-01, D-155), it carries `X-Forwarded-Uri`, and the query of that address is not the query of the check. Caddy and Traefik send the address of the visitor there, so when they hand on the visitor's query it is the same, and it does not count. A header from any other sender does not count. (2) The group in the query still never changes the group of the path. (3) Up to 100 entries of a list count, not 20. Decided by the owner of the project on 2026-11-26. |
 | D-158 | **New: after an import, an Admin sees the breaking changes that the import found, until an Admin hides them.** An install that `organizr import` moves from PHP. Some things that worked in PHP Organizr work differently here, for safety, and the import names the ones that the data of the install shows (see [Moving from PHP Organizr](moving-from-php.md)). (1) The import stores that list in the new setting `importNotice`, as a JSON list of texts. Nothing is stored when the list is empty. (2) `GET /launch` adds `importNotice`, the list, for an Admin while the setting holds one; for other callers, and once the notice is hidden, the field is left out. (3) The new route `DELETE /import-notice`, for an Admin, empties the setting, so the notice is gone for every Admin. (4) Only an Admin changes `importNotice` through `PUT /config`. The page shows the list at the top, with a button that hides it. PHP has no import, so it has no such notice. Decided by the owner of the project on 2026-11-26. |
+| D-159 | **A code of the second factor works for one login.** On top of D-57. PHP takes the code of the current 30 seconds and of the five steps before and after it, and takes the same code again and again in that time, so somebody who saw a code can log in with it for about five minutes. Here a login remembers the step of the code it took, and the next login of the account needs the code of a later step. A code of the same step or of an earlier one gets `422 "Wrong 2FA"`, as a wrong code does, and counts for the login limit. The window of five steps on each side stays. The server keeps the steps in memory, so a restart forgets them. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-160 | **The recovery e-mail goes to the stored address, and the recovery password ends when the account no longer needs it.** `POST /users/recover`, on top of D-58. (1) The e-mail goes to the address that the account has stored. PHP sends it to the address as the request wrote it, which matches the stored one only in lower case; with characters such as the Kelvin sign, whose lower case is the letter k, that text can reach another mailbox. (2) A login with the password of the account, or a new password for the account, ends the recovery password at once. Before, it worked for the rest of its 24 hours. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-161 | **The name and the e-mail address of an account share one count of failed logins.** On top of D-04 and D-73. A name or an address that belongs to an account counts for that account, whichever of the two a login names, so `robin` and `robin@example.com` together get the `loginAttempts` of one account, and so does a name that is the address of another account. The lock screen counts for the same account. A name of no account keeps a count of its own. Which account a login reaches does not change. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-162 | **The API key must have 20 ASCII characters.** `PUT /config` with `organizrAPI`, on top of D-53 (5). The key is compared byte by byte (D-35), so a key of 20 characters with one outside ASCII never worked. Such a key now gets `422 "Config item: organizrAPI must have 20 characters"`, as a key of another length does. PHP stores every value. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-163 | **A login ends the session that the browser had.** `POST /login`. When the login succeeds and the request carries a session cookie of the install, that session is deleted; the new session takes its place. PHP leaves the old session valid until it expires, so a token that leaked kept working after the browser logged in again. Sessions of other browsers stay. A login that fails ends nothing. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-164 | **The group of the Co-Admin can't become the default group.** `PUT /groups/{id}`, on top of D-51. A group at level 1 or below gets `409 "Setting <name> as default group is not allowed"` for `default` `1` or `true`, as the groups of the Admin and of guests do, for every caller. In PHP a Co-Admin can make the Co-Admin group the default, and an open registration or a login that makes an account then gives out Co-Admin accounts. An import keeps the default group that the install had. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 
 ## ✅ Kept exactly as PHP has it
 

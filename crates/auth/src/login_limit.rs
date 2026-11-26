@@ -5,7 +5,9 @@
 //! at once:
 //!
 //! - by the address of the client, which stops one client from trying many names;
-//! - by the name that was tried, which stops many clients from trying one name.
+//! - by the name that was tried, which stops many clients from trying one name. A name
+//!   or an e-mail address that belongs to an account counts for that account, so the
+//!   name and the address of one account share one count.
 //!
 //! When either count reaches the limit, that address or that name is locked for the
 //! lock-out time, and every login from it or for it is refused, whatever the password.
@@ -22,6 +24,8 @@ use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
+
+use organizr_domain::UserId;
 
 /// How long a failed login counts when no lock follows. A lock-out time longer than
 /// this is used instead, so a failure never ends before the lock it can cause.
@@ -49,8 +53,21 @@ pub struct LimitPolicy {
 enum Key {
     /// An IPv4 address, or the network of an IPv6 address.
     Client(IpAddr),
-    /// A name in lower case.
+    /// A name in lower case, which belongs to no account.
     Name(String),
+    /// An account, whichever name or address it was tried with.
+    Account(UserId),
+}
+
+/// The key of a client: an IPv4 address, or the network of an IPv6 address.
+fn client_key(client: IpAddr) -> Key {
+    match client {
+        IpAddr::V4(_) => Key::Client(client),
+        IpAddr::V6(address) => {
+            let network = u128::from(address) & (u128::MAX << 64);
+            Key::Client(IpAddr::V6(network.into()))
+        }
+    }
 }
 
 /// The failed logins of one key.
@@ -94,17 +111,20 @@ impl Attempt {
     /// (the first 64 bits) count as one client, because one client usually has the
     /// whole network to choose from.
     pub fn new(client: IpAddr, name: &str) -> Self {
-        let client = match client {
-            IpAddr::V4(_) => client,
-            IpAddr::V6(address) => {
-                let network = u128::from(address) & (u128::MAX << 64);
-                IpAddr::V6(network.into())
-            }
-        };
         let name = name.to_lowercase().chars().take(NAME_KEY_LENGTH).collect();
         Self {
-            client: Key::Client(client),
+            client: client_key(client),
             name: Key::Name(name),
+        }
+    }
+
+    /// An attempt from the given address to log in to the given account. Use it when
+    /// the name or the address belongs to an account, so that every way to name the
+    /// account shares one count.
+    pub fn for_account(client: IpAddr, account: UserId) -> Self {
+        Self {
+            client: client_key(client),
+            name: Key::Account(account),
         }
     }
 

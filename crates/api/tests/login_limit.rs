@@ -252,3 +252,68 @@ async fn lock_out_does_not_stop_other_routes_or_a_session_that_exists() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn name_and_e_mail_address_of_an_account_share_one_count() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+
+        for (address, name) in [
+            ("192.0.2.1", seed::ADMIN_NAME),
+            ("192.0.2.2", seed::ADMIN_EMAIL),
+            ("192.0.2.3", "ADMIN"),
+            ("192.0.2.4", "Admin@Example.com"),
+        ] {
+            let answer = fail(&app, address, name, 1).await;
+            assert_eq!(answer.status, 401, "{name}: {}", answer.body);
+        }
+        // The fifth failure locks the account, whichever way it was named.
+        assert!(is_lock_out(
+            &fail(&app, "192.0.2.5", seed::ADMIN_EMAIL, 1).await
+        ));
+        let by_name = login(&app, ELSEWHERE, seed::ADMIN_NAME, seed::ADMIN_PASSWORD).await;
+        assert!(is_lock_out(&by_name), "{}", by_name.body);
+        // A name of no account keeps a count of its own.
+        let unknown = fail(&app, "192.0.2.6", "nobody", 1).await;
+        assert_eq!(unknown.status, 401, "{}", unknown.body);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn name_that_is_the_e_mail_address_of_another_account_counts_for_that_account() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        // An import can bring an account named like the address of the Admin. A login
+        // with that text is a login of the Admin, who has the lower id.
+        seed::logged_in(database, &app, "someone", 4).await;
+        let someone = database
+            .users()
+            .find_by_username("someone")
+            .await
+            .expect("the lookup works")
+            .expect("the user is there");
+        let changes = organizr_domain::UserChanges {
+            username: organizr_domain::Change::Set(seed::ADMIN_EMAIL.to_owned()),
+            ..organizr_domain::UserChanges::none()
+        };
+        database
+            .users()
+            .update(someone.id, changes)
+            .await
+            .expect("the change works");
+
+        for address in ["192.0.2.1", "192.0.2.2"] {
+            assert_eq!(fail(&app, address, seed::ADMIN_EMAIL, 1).await.status, 401);
+        }
+        for address in ["192.0.2.3", "192.0.2.4"] {
+            assert_eq!(fail(&app, address, seed::ADMIN_NAME, 1).await.status, 401);
+        }
+        assert!(is_lock_out(
+            &fail(&app, "192.0.2.5", seed::ADMIN_NAME, 1).await
+        ));
+    })
+    .await;
+}

@@ -6,6 +6,7 @@ use axum::Extension;
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, header};
 use axum::response::{IntoResponse, Response};
+use organizr_auth::SessionToken;
 use organizr_auth::external::{self, ExternalAccount};
 use organizr_auth::login::{self, Device, LoggedIn, LoginError, SecondFactor};
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
@@ -14,7 +15,7 @@ use organizr_integrations::plex::PlexAccount;
 use organizr_settings::{AuthType, Settings};
 
 use crate::api_data::ApiData;
-use crate::caller::{now_stamp, session_cookie_name};
+use crate::caller::{MOST_SESSION_COOKIES, now_stamp, session_cookie_name};
 use crate::client::{Client, LocalNetworks};
 use crate::cookies::{self, CookieScope};
 use crate::envelope::{Envelope, NoData};
@@ -58,7 +59,12 @@ pub async fn login(
     };
 
     let limiter = state.login_limiter();
-    let attempt = Attempt::new(client.address, &name);
+    // The name and the e-mail address of an account share one count. The account is
+    // the one that the login with a password finds.
+    let attempt = match state.database().users().find_by_login(&name).await? {
+        Some(account) => Attempt::for_account(client.address, account.id),
+        None => Attempt::new(client.address, &name),
+    };
     let policy = LimitPolicy {
         failures: settings.login_attempts,
         lockout: Duration::from_millis(settings.login_lockout),
@@ -128,6 +134,7 @@ pub async fn login(
     }
 
     tell_about_a_new_device(&state, &client, logged_in, now_stamp(now)).await?;
+    end_earlier_session(&state, &settings, &headers).await?;
 
     let session_cookie = CookieScope::of(&headers, client.https).set_session(
         &session_cookie_name(&settings),
@@ -157,6 +164,31 @@ pub async fn login(
     .await?;
     cookies::append(&mut response, sessions);
     Ok(response)
+}
+
+/// Ends the session of the cookie that the browser sent with its login. The new session
+/// takes its place, so the old token cannot be used any more, for example by somebody
+/// who saw it.
+///
+/// This runs after the check for a new device, which counts the sessions of the
+/// browser.
+async fn end_earlier_session(
+    state: &AppState,
+    settings: &Settings,
+    headers: &HeaderMap,
+) -> Result<(), ApiError> {
+    let cookie_name = session_cookie_name(settings);
+    let tokens = cookies::cookie_values(headers, &cookie_name)
+        .take(MOST_SESSION_COOKIES)
+        .filter_map(SessionToken::parse);
+    for token in tokens {
+        state
+            .database()
+            .sessions()
+            .delete_by_token(&token.hash())
+            .await?;
+    }
+    Ok(())
 }
 
 /// The level of the user who logged in. The login of an Admin stores the address of the

@@ -515,14 +515,19 @@ async fn second_factor_of_organizr_is_asked_after_plex_unless_the_setting_says_n
             .duration_since(std::time::UNIX_EPOCH)
             .expect("the clock is after 1970")
             .as_secs();
-        let code = code_at(secret, now).expect("the secret is valid");
-
-        for body in [
+        // A code works for one login, so the second login takes the code of the next
+        // step.
+        for (step, body) in [
             json!({"oAuth": ROBIN.token, "oAuthType": "plex"}),
             json!({"username": "robin", "password": ROBIN.password}),
-        ] {
+        ]
+        .into_iter()
+        .enumerate()
+        {
             let needed = log_in(&app, body.clone()).await;
             assert_eq!(needed.message(), json!("2FA Code Needed"), "{body}");
+            let step = u64::try_from(step).expect("the step fits");
+            let code = code_at(secret, now + step * 30).expect("the secret is valid");
             let mut with_code = body;
             with_code["tfaCode"] = json!(code);
             assert_eq!(log_in(&app, with_code).await.status, StatusCode::OK);

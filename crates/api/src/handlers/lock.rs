@@ -92,7 +92,8 @@ pub async fn unlock_own(
         return Err(Refusal::unprocessable("Password Not Set"));
     };
     let limiter = state.login_limiter();
-    let attempt = Attempt::new(client.address, &user.username);
+    // The count of the account, which its logins share.
+    let attempt = Attempt::for_account(client.address, user.id);
     let settings = state.settings();
     let policy = LimitPolicy {
         failures: settings.login_attempts,

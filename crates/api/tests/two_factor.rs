@@ -416,3 +416,47 @@ async fn manager_removes_the_second_factor_of_another_user() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn code_works_for_one_login_only() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let robin = seed::logged_in(database, &app, "robin", 4).await;
+        let secret = add_second_factor(&app, &robin).await;
+        let now = now();
+        let code_of_step = |steps: i64| {
+            let time = now.saturating_add_signed(steps * 30);
+            code_at(&secret, time).expect("the secret is valid")
+        };
+
+        let current = code_of_step(0);
+        assert_eq!(
+            log_in(&app, "robin", Some(&current)).await.status,
+            StatusCode::OK
+        );
+
+        // Somebody who saw the code cannot log in with it, nor with an older one.
+        for replayed in [current, code_of_step(-1), code_of_step(-5)] {
+            let refused = log_in(&app, "robin", Some(&replayed)).await;
+            assert_eq!(
+                refused.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "{}",
+                refused.body
+            );
+            assert_eq!(refused.message(), json!("Wrong 2FA"));
+        }
+        // The code of a later step still works, as the window has five steps on each side.
+        let later = code_of_step(1);
+        assert_eq!(
+            log_in(&app, "robin", Some(&later)).await.status,
+            StatusCode::OK
+        );
+        assert_eq!(
+            log_in(&app, "robin", Some(&later)).await.status,
+            StatusCode::UNPROCESSABLE_ENTITY
+        );
+    })
+    .await;
+}

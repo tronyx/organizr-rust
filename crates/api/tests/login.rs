@@ -417,3 +417,41 @@ async fn login_from_another_site_is_refused_before_the_password_is_checked() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn login_ends_the_session_that_the_browser_had() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let peer = "198.51.100.7:50000";
+        let first = post_login(&app, &admin(), &[], peer).await.token();
+        let other_browser = post_login(&app, &admin(), &[], peer).await.token();
+        assert_eq!(admin_sessions(database).await.len(), 2);
+
+        // The browser logs in again and sends the cookie of its session.
+        let cookie = format!("{SESSION_COOKIE}={}", first.expose());
+        let again = post_login(&app, &admin(), &[("cookie", &cookie)], peer).await;
+
+        assert_eq!(again.status, StatusCode::OK, "{}", again.body);
+        let hashes: Vec<String> = admin_sessions(database)
+            .await
+            .into_iter()
+            .map(|session| session.token_hash.as_str().to_owned())
+            .collect();
+        assert!(
+            !hashes.contains(&first.hash().as_str().to_owned()),
+            "{hashes:?}"
+        );
+        assert!(hashes.contains(&other_browser.hash().as_str().to_owned()));
+        assert!(hashes.contains(&again.token().hash().as_str().to_owned()));
+        assert_eq!(hashes.len(), 2);
+
+        // A login that fails ends nothing.
+        let cookie = format!("{SESSION_COOKIE}={}", other_browser.expose());
+        let wrong = json!({"username": seed::ADMIN_NAME, "password": "not-it"});
+        let refused = post_login(&app, &wrong, &[("cookie", &cookie)], peer).await;
+        assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
+        assert_eq!(admin_sessions(database).await.len(), 2);
+    })
+    .await;
+}

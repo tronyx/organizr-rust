@@ -6,8 +6,9 @@
 //!
 //! Here the password from the e-mail works next to the password of the account, for one
 //! day. The first login with it makes it the password of the account. Until then the old
-//! password works. And an account gets a new recovery password only once in five
-//! minutes, so nobody can fill the mailbox of another person.
+//! password works. A login with the old password, or a new password of the account, ends
+//! the password from the e-mail. And an account gets a new recovery password only once
+//! in five minutes, so nobody can fill the mailbox of another person.
 
 use std::time::Duration;
 

@@ -655,7 +655,14 @@ async fn new_api_key_works_at_once_and_the_old_one_does_not() {
         let app = installed_app(database);
         let new_key = "abcdefghij0123456789";
 
-        for wrong in ["short", "abcdefghij01234567890", ""] {
+        // A key is compared byte by byte, so a key of 20 characters that are not all
+        // ASCII would never work.
+        for wrong in [
+            "short",
+            "abcdefghij01234567890",
+            "",
+            "\u{e4}bcdefghij0123456789",
+        ] {
             let answer = call(
                 &app,
                 As::Admin,

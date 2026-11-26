@@ -89,12 +89,23 @@ async fn recovery_password_works_for_one_day() {
         // After the day, the password from the e-mail is no password.
         assert!(!logs_in(database, &password, at(LIFETIME.as_secs())).await);
         assert!(!logs_in(database, &password, at(LIFETIME.as_secs() + 3600)).await);
-        assert!(logs_in(database, "the old password", at(LIFETIME.as_secs())).await);
         // In its last second, it still is.
         assert!(logs_in(database, &password, at(last_second)).await);
         // From then on it is the password of the account, with no end.
         assert!(logs_in(database, &password, at(LIFETIME.as_secs() * 30)).await);
         assert!(!logs_in(database, "the old password", at(last_second)).await);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn old_password_works_after_the_day() {
+    on_each_engine(async |database| {
+        add_robin(database).await;
+        let password = new_password(database, at(0)).await.expect("a password");
+
+        assert!(!logs_in(database, &password, at(LIFETIME.as_secs())).await);
+        assert!(logs_in(database, "the old password", at(LIFETIME.as_secs())).await);
     })
     .await;
 }
@@ -167,6 +178,61 @@ async fn account_without_a_recovery_password_keeps_its_password() {
 
         assert!(!used);
         assert!(logs_in(database, "the old password", at(0)).await);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn login_with_the_old_password_ends_the_recovery_password() {
+    on_each_engine(async |database| {
+        add_robin(database).await;
+        let password = new_password(database, at(0)).await.expect("a password");
+
+        // The owner of the account still knew the password, so the e-mail is not needed.
+        assert!(logs_in(database, "the old password", at(60)).await);
+
+        assert!(!logs_in(database, &password, at(120)).await);
+        assert!(logs_in(database, "the old password", at(180)).await);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn new_password_of_the_account_ends_the_recovery_password() {
+    on_each_engine(async |database| {
+        add_robin(database).await;
+        let robin = database
+            .users()
+            .find_by_username("robin")
+            .await
+            .expect("the lookup works")
+            .expect("the user is there");
+
+        let first = new_password(database, at(0)).await.expect("a password");
+        let changes = organizr_domain::UserChanges {
+            password_hash: organizr_domain::Change::Set(
+                password::hash("a new password").expect("it can be hashed"),
+            ),
+            ..organizr_domain::UserChanges::none()
+        };
+        database
+            .users()
+            .update(robin.id, changes)
+            .await
+            .expect("the change works");
+        assert!(!logs_in(database, &first, at(60)).await);
+
+        let second = new_password(database, at(PAUSE.as_secs()))
+            .await
+            .expect("a password");
+        let hash = password::hash("a third password").expect("it can be hashed");
+        database
+            .users()
+            .set_password_hash(robin.id, &hash)
+            .await
+            .expect("the change works");
+        assert!(!logs_in(database, &second, at(PAUSE.as_secs() + 60)).await);
+        assert!(logs_in(database, "a third password", at(PAUSE.as_secs() + 60)).await);
     })
     .await;
 }
