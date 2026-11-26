@@ -139,6 +139,15 @@ async fn admin_login_stores_its_host_once_when_no_host_is_named() {
         seed::installed(database).await;
         let app = app_with(database, "", "");
 
+        // A Host header that names several hosts names none: no request has such a host.
+        assert_eq!(
+            log_in_at(&app, "organizr.example.com,evil.example.net")
+                .await
+                .status,
+            StatusCode::OK
+        );
+        assert_eq!(lists(&app).await["allowedHosts"]["value"], json!(""));
+
         // As after an import: the first Admin login names the host of Organizr, so a
         // service address like /sonarr works there at once (D-155).
         assert_eq!(

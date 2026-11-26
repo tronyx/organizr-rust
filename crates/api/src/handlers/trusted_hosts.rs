@@ -65,9 +65,13 @@ pub async fn remember_host(state: &AppState, headers: &HeaderMap) {
     let host = headers
         .get(header::HOST)
         .and_then(|value| value.to_str().ok())
+        // A request has one host. A header with commas would read as a list of several,
+        // which would allow hosts that no Admin used.
         .filter(|host| {
-            host.parse::<crate::allowed_hosts::AllowedHosts>()
-                .is_ok_and(|list| !list.is_empty())
+            !host.contains(',')
+                && host
+                    .parse::<crate::allowed_hosts::AllowedHosts>()
+                    .is_ok_and(|list| !list.is_empty())
         });
     let Some(host) = host else {
         return;
