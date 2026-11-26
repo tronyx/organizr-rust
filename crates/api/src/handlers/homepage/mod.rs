@@ -234,15 +234,20 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
 ///
 /// PHP puts the host of the request in front of an address that starts with a slash.
 /// The caller chooses that host, and the request carries the key of the service, so
-/// here such an address names no service: the answer is empty (D-137).
+/// here such an address is completed only with a host of `ORGANIZR_ALLOWED_HOSTS`, the
+/// one that the request runs on; otherwise it names no service and the answer is empty
+/// (D-137, D-154).
 pub fn service_url(address: &str) -> String {
-    let address: String = address.chars().filter(|c| !c.is_whitespace()).collect();
+    let mut address: String = address.chars().filter(|c| !c.is_whitespace()).collect();
     if address.starts_with('/') {
-        tracing::warn!(
-            address,
-            "a service address is only a path; enter the full address of the service, such as http://sonarr:8989"
-        );
-        return String::new();
+        let Some(site) = crate::allowed_hosts::current_site() else {
+            tracing::warn!(
+                address,
+                "a service address is only a path, and the host of the request is not in ORGANIZR_ALLOWED_HOSTS"
+            );
+            return String::new();
+        };
+        address = format!("{site}{address}");
     }
     php_url::qualify(address.trim_end_matches('/'), false, "")
 }
@@ -259,14 +264,14 @@ pub fn tab_address(address: &str, headers: &HeaderMap, client: &Client) -> Strin
     php_url::qualify(address.trim_end_matches('/'), client.https, host)
 }
 
-/// Whether a service address is only a path, such as `/sonarr`, which names no service
-/// for a request of Organizr (D-137).
+/// Whether a service address is only a path, such as `/sonarr`, that names no service
+/// for this request: no host of `ORGANIZR_ALLOWED_HOSTS` can complete it (D-137, D-154).
 pub fn is_path_only(address: &str) -> bool {
-    address.trim_start().starts_with('/')
+    address.trim_start().starts_with('/') && crate::allowed_hosts::current_site().is_none()
 }
 
 /// The text of a refusal for an address that is only a path.
-pub const PATH_ONLY: &str = "Use the full address of the service, such as http://sonarr:8989. Organizr doesn't send requests to an address that is only a path";
+pub const PATH_ONLY: &str = "Use the full address of the service, such as http://sonarr:8989, or add the host that you use for Organizr to ORGANIZR_ALLOWED_HOSTS. Organizr completes an address that is only a path with an allowed host only";
 
 /// The answer when this server cannot send requests to other services.
 pub fn no_requests() -> Refusal {

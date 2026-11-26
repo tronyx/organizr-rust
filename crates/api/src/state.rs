@@ -26,6 +26,7 @@ use serde_json::Value;
 use thiserror::Error;
 use tokio::sync::Mutex;
 
+use crate::allowed_hosts::AllowedHosts;
 use crate::client::TrustedProxies;
 use crate::handlers::chat::ChatHub;
 use crate::picture_cache::PictureCache;
@@ -39,6 +40,8 @@ pub struct AppState {
     database: Database,
     settings: Arc<ArcSwap<Settings>>,
     trusted_proxies: Arc<TrustedProxies>,
+    /// The hosts that a path of a service address may be completed with (D-154).
+    allowed_hosts: Arc<AllowedHosts>,
     login_limiter: Arc<LoginLimiter>,
     setup_code: Option<Arc<SetupCode>>,
     secrets: Arc<SecretBox>,
@@ -141,6 +144,7 @@ impl AppState {
             database,
             settings: Arc::new(ArcSwap::from_pointee(settings)),
             trusted_proxies: Arc::new(TrustedProxies::default()),
+            allowed_hosts: Arc::new(AllowedHosts::default()),
             login_limiter: Arc::new(LoginLimiter::new()),
             setup_code: None,
             secrets: Arc::new(secrets),
@@ -183,6 +187,19 @@ impl AppState {
             releases_api: Arc::from(latest_release_api()),
             update_status: Arc::new(ArcSwap::from_pointee(UpdateStatus::unchecked())),
         }
+    }
+
+    /// Sets the hosts of `ORGANIZR_ALLOWED_HOSTS` (D-154).
+    #[must_use]
+    pub fn with_allowed_hosts(mut self, allowed_hosts: AllowedHosts) -> Self {
+        self.allowed_hosts = Arc::new(allowed_hosts);
+        self
+    }
+
+    /// The hosts of `ORGANIZR_ALLOWED_HOSTS`, which a path of a service address may be
+    /// completed with (D-154).
+    pub fn allowed_hosts(&self) -> &AllowedHosts {
+        &self.allowed_hosts
     }
 
     /// Sets the reverse proxies whose forwarding headers are believed.

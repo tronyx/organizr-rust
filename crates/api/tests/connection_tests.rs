@@ -14,7 +14,7 @@ use organizr_testkit::homepage_services::{
     self, ARR_KEY, NZBGET_LOGIN, OVERSEERR_KEY, PIHOLE_TOKEN, PLEX_SERVER_TOKEN, QBITTORRENT_LOGIN,
     SABNZBD_KEY, TAUTULLI_KEY, TRANSMISSION_LOGIN,
 };
-use organizr_testkit::http::{Answer, As, call};
+use organizr_testkit::http::{Answer, As, call, request, send};
 use organizr_testkit::{installed_app_with, seed};
 use serde_json::{Value, json};
 
@@ -125,6 +125,61 @@ async fn test_of_an_address_that_is_only_a_path_asks_for_the_full_address() {
                 answer.body
             );
         }
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn path_on_an_allowed_host_is_completed_with_that_host() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let sonarr = homepage_services::sonarr().await;
+        let host = sonarr.url().trim_start_matches("http://").to_owned();
+        // The path `/` stands for the stand-in, on the host of the request (D-154).
+        let settings = organizr_testkit::installed_settings(&[
+            ("sonarrURL", json!("/")),
+            ("sonarrToken", json!(ARR_KEY)),
+        ]);
+        let allowed = format!("organizr.example.com,{host}")
+            .parse()
+            .expect("the hosts are valid");
+        let state = organizr_testkit::state_with(database, settings).with_allowed_hosts(allowed);
+        let app = organizr_api::router(state).expect("the route table is valid");
+        let test_from = async |from: &str| {
+            let mut request = request(
+                "POST",
+                "/api/v2/test/sonarr",
+                &[("token", seed::API_KEY)],
+                "",
+            );
+            request
+                .headers_mut()
+                .insert("host", from.parse().expect("the host is a header value"));
+            send(&app, request).await
+        };
+
+        let passed = test_from(&host).await;
+        assert_eq!(passed.status, StatusCode::OK, "{}", passed.body);
+        assert_eq!(passed.message(), Value::Null);
+        assert_eq!(sonarr.seen().len(), 1);
+
+        // A host that is not on the list completes no path, so nothing is asked.
+        let refused = test_from("evil.example.com").await;
+        assert_eq!(
+            refused.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            refused.body
+        );
+        assert!(
+            refused
+                .message()
+                .as_str()
+                .is_some_and(|text| text.contains("ORGANIZR_ALLOWED_HOSTS")),
+            "{}",
+            refused.body
+        );
+        assert_eq!(sonarr.seen().len(), 1);
     })
     .await;
 }

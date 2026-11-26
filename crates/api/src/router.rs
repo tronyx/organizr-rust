@@ -697,6 +697,12 @@ fn finish(routes: Router<AppState>, open: Router<AppState>, state: AppState) -> 
         // Added before the layer that identifies the client, so it runs after it: the
         // cookie it may drop needs to know whether the browser used HTTPS.
         .layer(from_fn_with_state(state.clone(), identify_caller))
+        // Added before the layer that identifies the client, so it runs after it: the
+        // site of the request needs to know whether the browser used HTTPS (D-154).
+        .layer(from_fn_with_state(
+            state.clone(),
+            crate::allowed_hosts::remember_site,
+        ))
         // Added after the device cookie, so it runs before it: the device cookie reads
         // the client that this layer works out.
         .layer(from_fn_with_state(state.clone(), identify_client))

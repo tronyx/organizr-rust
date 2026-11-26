@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use anyhow::Context;
+use organizr_api::allowed_hosts::AllowedHosts;
 use organizr_api::client::TrustedProxies;
 use organizr_api::log_files;
 use organizr_api::{AppState, router};
@@ -35,6 +36,13 @@ pub struct Args {
     /// `X-Forwarded-Proto` are believed only from these. Without it, no proxy is trusted.
     #[arg(long, env = "ORGANIZR_TRUSTED_PROXIES", default_value = "")]
     trusted_proxies: String,
+
+    /// The host names of Organizr, separated by commas, with a port where it matters,
+    /// for example `organizr.example.com,192.168.1.10:8080`. A service address that is
+    /// only a path, such as `/sonarr`, is completed with the host of a request that
+    /// names one of them. Without it, such an address names no service (D-154).
+    #[arg(long, env = "ORGANIZR_ALLOWED_HOSTS", default_value = "")]
+    allowed_hosts: String,
 
     /// The address of the list of a marketplace for extensions: a JSON file. Without
     /// it, extensions are installed by hand only.
@@ -143,8 +151,13 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     if trusted_proxies == TrustedProxies::default() {
         tracing::info!("no reverse proxy is trusted; forwarding headers are ignored");
     }
+    let allowed_hosts: AllowedHosts = args
+        .allowed_hosts
+        .parse()
+        .context("the list of allowed hosts is not valid")?;
     let mut state = AppState::new(database.clone(), settings, secrets)
         .with_trusted_proxies(trusted_proxies)
+        .with_allowed_hosts(allowed_hosts)
         // The pictures that people upload, at the place of the PHP application.
         .with_picture_folder(args.storage.data_dir.join("userTabs"))
         // The pictures of other applications that the server fetches and keeps.

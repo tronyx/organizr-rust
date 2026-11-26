@@ -186,6 +186,7 @@ Most settings live in the web interface. A few are environment variables, becaus
 | --- | --- |
 | `ORGANIZR_TRUSTED_PROXIES` | Behind a reverse proxy. See [Reverse proxy](reverse-proxy.md#-organizr_trusted_proxies) |
 | `ORGANIZR_DATABASE_URL` | With PostgreSQL. See [Choosing a database](choosing-a-database.md) |
+| `ORGANIZR_ALLOWED_HOSTS` | When service addresses are paths, such as `/sonarr`. See [Configuration](configuration.md) |
 | `TZ` | When your schedules should follow your time zone, for example `America/New_York` |
 
 [Configuration](configuration.md#-environment-variables) lists every variable, with its default and its security notes.

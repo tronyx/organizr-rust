@@ -33,6 +33,7 @@ services:
     # See docs/reverse-proxy.md for a fixed address that survives restarts.
     # environment:
     #   ORGANIZR_TRUSTED_PROXIES: "172.20.0.2"   # the address of your proxy
+    #   ORGANIZR_ALLOWED_HOSTS: "organizr.example.com,192.168.1.10:8080"   # for service addresses like /sonarr
     #   TZ: "America/New_York"                   # your time zone, for the schedules
 
 volumes:

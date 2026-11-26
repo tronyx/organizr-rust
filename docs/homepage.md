@@ -91,7 +91,7 @@ Organizr asks each service from the server, not from your browser.
 Enter the full address of the service, with its host. Spaces are removed and slashes at the end are cut off.
 
 > [!IMPORTANT]
-> **An address that is only a path, such as `/sonarr`, doesn't work here.** PHP Organizr put the host of the incoming request in front of it, but the caller chooses that host, so anyone could have Organizr send the service's key to a server of theirs. Organizr Rust sends no request to such an address: the **Test** button answers "Use the full address of the service", and the item stays empty. This is only for the addresses that Organizr asks; a tab can still have a path (D-137).
+> **An address that is only a path, such as `/sonarr`, works only on the hosts you list.** PHP Organizr puts the host of the incoming request in front of it, but the caller chooses that host, so anyone could have Organizr send the service's key to a server of theirs. Organizr Rust completes such an address only with a host you name in [`ORGANIZR_ALLOWED_HOSTS`](configuration.md), for example `organizr.example.com,192.168.1.10:8080`, and only for a request that came to that host. Without the variable, or from another host, the **Test** button answers "Use the full address of the service, … or add the host … to ORGANIZR_ALLOWED_HOSTS", and the item stays empty. A tab can always have a path (D-137, D-154).
 
 ### 🔒 HTTPS and certificates
 

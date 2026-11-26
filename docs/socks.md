@@ -29,7 +29,7 @@ The name comes from PHP Organizr. It has nothing to do with the SOCKS proxy prot
 5. Select **Save**.
 
 > [!IMPORTANT]
-> **Use a full address.** PHP Organizr puts the scheme and host of the incoming request in front of an address that is only a path, such as `/sonarr`. That host comes from the caller's `Host` header, so anybody could make Organizr send requests to any host they like. Organizr Rust refuses such an address with "Use the full address of the service" (D-137). And pick a level above guest unless the application checks a key itself.
+> **Use a full address.** PHP Organizr puts the scheme and host of the incoming request in front of an address that is only a path, such as `/sonarr`. That host comes from the caller's `Host` header, so anybody could make Organizr send requests to any host they like. Organizr Rust completes such an address only with a host you list in [`ORGANIZR_ALLOWED_HOSTS`](configuration.md), and refuses it otherwise with "Use the full address of the service" (D-137, D-154). And pick a level above guest unless the application checks a key itself.
 
 ## 🚨 Watch out
 

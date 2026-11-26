@@ -43,6 +43,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - Only an Admin switches single sign-on on, and only an Admin changes the address of an application while its single sign-on is on (D-135).
 - With a group in the path, the query of a forward auth check can't lower the group or add an allow list. Caddy sends the visitor's query along, so before this anyone could pass with `?group=999` (D-136).
 - Organizr sends no request to a service address that is only a path, such as `/sonarr`, since its host came from the caller. Enter the full address of each service (D-137).
+- `ORGANIZR_ALLOWED_HOSTS` brings back service addresses that are only a path, such as `/sonarr`, for the host names you list (D-154).
 - E-mails name the site from **Domain Link Override** only, never from the request. The set-up and an Admin login fill it in (D-138).
 - A login, registration password, invite code or lock-screen password counts toward the lock-out before it's checked, so many attempts at once get no more tries than the limit (D-139).
 - Only a few password checks run at once, as many as the server has processors; the others wait their turn, and after 10 seconds get `503` (D-140).

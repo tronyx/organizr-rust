@@ -16,6 +16,7 @@ Each variable is also an option of `organizr serve`. The option wins when you gi
 | `ORGANIZR_DATABASE_URL` | `--database-url` | The SQLite file `organizr.db` in the data folder | The database: `sqlite:<file>` or `postgres://<user>:<password>@<host>:<port>/<database>` (`postgresql://` works too). See [Choosing a database](choosing-a-database.md) |
 | `ORGANIZR_LISTEN` | `--listen` | `0.0.0.0:8080` | The address and port the server listens on. The health check reads it too |
 | `ORGANIZR_TRUSTED_PROXIES` | `--trusted-proxies` | Empty: no proxy is trusted | Your reverse proxies, separated by commas. See [Reverse proxy](reverse-proxy.md) |
+| `ORGANIZR_ALLOWED_HOSTS` | `--allowed-hosts` | Empty: no host | The host names you reach Organizr at, separated by commas, with a port where it matters, for example `organizr.example.com,192.168.1.10:8080`. A service address that is only a path, such as `/sonarr`, then works on those hosts. See [Homepage](homepage.md#-use-an-address-organizr-can-reach) |
 | `ORGANIZR_EXTENSION_MARKETPLACE` | `--extension-marketplace` | The project's list in the image, empty outside it | The address of a marketplace list for extensions (a JSON file). An empty value switches the marketplace off; you can still install extensions by hand. See [Extensions](extensions.md) |
 | `ORGANIZR_SECRET_KEY` | `--secret-key` | Not set | The key for the stored secrets, as 64 hex digits. When set, Organizr doesn't read or write a key file. See [Secrets](secrets.md) |
 | `ORGANIZR_SECRET_KEY_FILE` | `--secret-key-file` | `secret.key` in the data folder | The file that holds the key. Organizr makes it on the first start when it's missing |
@@ -32,6 +33,7 @@ Some of these variables are sensitive. Keep these in mind:
 | Variable | Watch out for |
 | --- | --- |
 | `ORGANIZR_TRUSTED_PROXIES` | Every address in the list can claim to be any client. Trust only your proxy, as narrowly as you can. Never a whole Docker range (`172.16.0.0/12`) or your home network while port 8080 is published |
+| `ORGANIZR_ALLOWED_HOSTS` | Organizr sends the keys of your services to a path-only address on the host of the request when that host is listed. List only names that lead to your own Organizr, never a wildcard you don't control |
 | `ORGANIZR_SECRET_KEY` | Anyone who can run `docker inspect` can read it, and it ends up in compose files and shell history. Prefer `ORGANIZR_SECRET_KEY_FILE` with a Docker secret (see [Secrets](secrets.md)) |
 | `ORGANIZR_DATABASE_URL` | Holds the database password. Keep the compose file (or the `.env` file that holds it) readable only by you: `chmod 600 .env` |
 | `ORGANIZR_EXTENSION_MARKETPLACE` | Decides whose list of extensions your Admins are offered. Point it only at a list you trust |
