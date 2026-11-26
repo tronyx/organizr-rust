@@ -48,7 +48,8 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - E-mails name the site from **Domain Link Override** only, never from the request. The set-up and an Admin login fill it in (D-138).
 - A login, registration password, invite code or lock-screen password counts toward the lock-out before it's checked, so many attempts at once get no more tries than the limit (D-139).
 - Only a few password checks run at once, as many as the server has processors; the others wait their turn, and after 10 seconds get `503` (D-140).
-- The lists of forward auth take host names only in the path, count their first 20 entries, and remember a lookup for a minute (D-141).
+- The lists of forward auth take host names only in the path, count their first 100 entries, and remember a lookup for a minute (D-141, D-157).
+- An allow list in the query of a forward auth check counts again when a trusted proxy wrote that query itself (D-157).
 - iCal calendars are read with limits on their repeats and events, away from the request threads, and kept for 5 minutes (D-142).
 - One call of an extension has 64 MiB of memory for all its memories and tables together (D-143).
 - The GET routes that set up the Bookmarks and Plex Libraries tabs, and the one that sends the test e-mail, refuse requests from other sites (D-144).

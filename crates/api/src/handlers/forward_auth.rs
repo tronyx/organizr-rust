@@ -45,7 +45,7 @@ const DEFAULT_ADDRESSES: &str = "192.0.0.0";
 const LOOKUP_TIME: Duration = Duration::from_secs(2);
 
 /// How many entries of a list count (D-141).
-const MOST_ENTRIES: usize = 20;
+const MOST_ENTRIES: usize = 100;
 
 /// How long the addresses of a host name are remembered, and for how many names.
 const REMEMBERED_FOR: Duration = Duration::from_mins(1);
@@ -127,7 +127,20 @@ fn addresses_only(list: &str) -> String {
 /// A proxy such as Caddy sends the query of the visitor with the address of the check. So
 /// when the path names a group, the query cannot change the group or add an allow list;
 /// it can only add a deny list, which makes the question stricter (D-136).
+#[cfg(test)]
 fn question(long_form: bool, parts: &[String], query: &str) -> Result<Question, UnknownKind> {
+    ask(long_form, parts, query, false)
+}
+
+/// As [`question`]. `query_is_the_proxys` says that a trusted proxy wrote the query of
+/// the check itself, so that its allow list counts also when the path names a group
+/// (D-157).
+fn ask(
+    long_form: bool,
+    parts: &[String],
+    query: &str,
+    query_is_the_proxys: bool,
+) -> Result<Question, UnknownKind> {
     let mut group = parts.first().cloned();
     let path_names_group = group.as_deref().is_some_and(|group| !group.is_empty());
     // A list from the query is the visitor's to write, so only its addresses count: a
@@ -159,7 +172,7 @@ fn question(long_form: bool, parts: &[String], query: &str) -> Result<Question, 
 
     // Whether the allow list of the query counts: the kind and addresses of the long
     // form come from the path, those of the short form from the query.
-    let query_allows = !path_names_group;
+    let query_allows = !path_names_group || query_is_the_proxys;
     let kind_from_query = !long_form || !path_names_group;
     let mut allowed = query_allows.then(|| from_query("whitelist")).flatten();
     let mut denied = from_query("blacklist");
@@ -328,6 +341,19 @@ pub async fn check(
     .await
 }
 
+/// Whether a trusted proxy wrote the query of the check itself: it sends the address
+/// that the visitor asked for (`X-Forwarded-Uri`, as Caddy and Traefik do), and that
+/// address has another query, so the query of the check is not the visitor's (D-157).
+fn is_the_proxys(client: &Client, headers: &HeaderMap, query: &str) -> bool {
+    if !client.via_trusted_proxy || query.is_empty() {
+        return false;
+    }
+    headers
+        .get("x-forwarded-uri")
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|asked| asked.split_once('?').map_or("", |(_, rest)| rest) != query)
+}
+
 /// Answers the question of a request.
 pub async fn answer(
     state: &AppState,
@@ -344,7 +370,13 @@ pub async fn answer(
             refused("Organizr is not setup or an error occurred".to_owned()).into_response(),
         );
     }
-    let question = match question(long_form, parts, query.unwrap_or_default()) {
+    let query = query.unwrap_or_default();
+    let question = match ask(
+        long_form,
+        parts,
+        query,
+        is_the_proxys(client, headers, query),
+    ) {
         Ok(question) => question,
         Err(UnknownKind(kind)) => {
             return Ok(refused(format!("{kind} is not a valid type")).into_response());
@@ -434,7 +466,7 @@ mod tests {
     use std::net::IpAddr;
 
     use super::{
-        Question, UnknownKind, level_of_number, lists, percent_decoded, question, remembered,
+        Question, UnknownKind, ask, level_of_number, lists, percent_decoded, question, remembered,
     };
 
     fn parts(parts: &[&str]) -> Vec<String> {
@@ -567,6 +599,21 @@ mod tests {
     }
 
     #[test]
+    fn allow_list_of_the_proxys_own_query_counts() {
+        // A proxy that sends the address the visitor asked for, with another query,
+        // wrote this query itself, so its allow list counts (D-157).
+        for (long_form, path) in [(false, &["1"][..]), (true, &["1"][..])] {
+            let own = ask(long_form, &parts(path), "whitelist=10.0.0.1", true).expect("known");
+            assert_eq!(own.allowed.as_deref(), Some("10.0.0.1"), "{path:?}");
+            // The group of the path still wins over the query.
+            let group = ask(long_form, &parts(path), "group=999", true).expect("known");
+            assert_eq!(group.group, "1", "{path:?}");
+        }
+        let by_kind = ask(false, &parts(&["1"]), "type=allow&ips=10.0.0.2", true).expect("known");
+        assert_eq!(by_kind.allowed.as_deref(), Some("10.0.0.2"));
+    }
+
+    #[test]
     fn list_in_the_query_holds_addresses_only() {
         // A visitor can add a list to the query; its host names would make Organizr look
         // them up, so only addresses count there (D-141).
@@ -584,9 +631,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_looks_at_its_first_twenty_entries_and_remembers_names() {
+    async fn list_looks_at_its_first_hundred_entries_and_remembers_names() {
         let address: IpAddr = "127.0.0.1".parse().expect("the address is valid");
-        let mut long: Vec<String> = (1..=20).map(|n| format!("10.9.9.{n}")).collect();
+        let mut long: Vec<String> = (1..=100)
+            .map(|n| format!("10.9.{}.{}", n / 200, n % 200 + 1))
+            .collect();
         long.push("127.0.0.1".to_owned());
         assert!(!lists(&long.join(","), address).await);
         assert!(lists("10.9.9.1,127.0.0.1", address).await);

@@ -299,6 +299,53 @@ async fn group_in_the_query_asks_at_the_auth_routes_and_the_root_only() {
 }
 
 #[tokio::test]
+async fn allow_list_that_the_proxy_wrote_itself_counts() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = app_behind_proxy(database, &[]);
+        let path = "/auth-1?whitelist=172.18.0.2";
+
+        // nginx with a fixed address of the check: the visitor asked for /app, so the
+        // query is the proxy's, and its allow list counts (D-157).
+        let own = ask(&app, PROXY, path, &[("x-forwarded-uri", "/app")]).await;
+        assert_eq!(own.status, StatusCode::OK, "{}", own.body);
+        assert_eq!(own.message(), json!("User is whitelisted"));
+
+        // Caddy hands on the query of the visitor: the same query, so it does not count.
+        let visitors = ask(
+            &app,
+            PROXY,
+            path,
+            &[("x-forwarded-uri", "/app?whitelist=172.18.0.2")],
+        )
+        .await;
+        assert_eq!(
+            visitors.status,
+            StatusCode::UNAUTHORIZED,
+            "{}",
+            visitors.body
+        );
+        // Without the header, or from a sender that is no trusted proxy, nothing counts.
+        let bare = ask(&app, PROXY, path, &[]).await;
+        assert_eq!(bare.status, StatusCode::UNAUTHORIZED, "{}", bare.body);
+        let stranger = ask(
+            &app,
+            STRANGER,
+            "/auth-1?whitelist=203.0.113.9",
+            &[("x-forwarded-uri", "/app")],
+        )
+        .await;
+        assert_eq!(
+            stranger.status,
+            StatusCode::UNAUTHORIZED,
+            "{}",
+            stranger.body
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn name_of_a_tab_is_compared_as_text() {
     on_each_engine(async |database| {
         seed::installed(database).await;
