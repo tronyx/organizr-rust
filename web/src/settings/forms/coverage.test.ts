@@ -213,9 +213,9 @@ describe('the definitions of the settings forms', () => {
   });
 
   it('leave to the Admin, on every page, the settings that only the Admin changes', () => {
-    // The settings that the server takes from an Admin only (D-125, D-131 to D-135).
+    // The settings that the server takes from an Admin only (D-125, D-131 to D-135, D-183).
     const always =
-      /^(oidc|sso|authType$|authBackend|authBaseDN$|ldap(Bind|Type|SSL|TLS)|plexAdmin$|ignoreTFA)/;
+      /^(oidc|sso|authType$|authBackend|authBaseDN$|ldap(Bind|Type|SSL|TLS)|plexAdmin$|ignoreTFA|backupLocation$)/;
     const sometimes = [
       'embyURL',
       'jellyfinURL',

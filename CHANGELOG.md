@@ -88,6 +88,10 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - An invite counts as "already has access" only when plex.tv says so; another refusal leaves the code for another try (D-180).
 - An invite never makes a Komga account with the `ADMIN` role (D-181).
 - Guests never make, list or delete invites, whatever level the invites plugin names (D-182).
+- Only an Admin changes the backup folder, whose zip files the backup routes list, send and delete (D-183).
+- An OpenID Connect login links an existing account by its user name only through `preferred_username`, never by the display name (D-184).
+- An OpenID Connect login comes back to Organizr once: a copy of its login cookie is refused until the cookie expires.
+- The approval of an extension also names the level of callers that the dialog showed, and a call of an extension ends after 30 seconds, also while it waits.
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

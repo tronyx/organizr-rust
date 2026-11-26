@@ -128,6 +128,7 @@
         api('POST', `extensions/${row.id}/enable`, {
           sha256: row.sha256,
           permissions: row.permissions,
+          least_access: row.least_access,
         }),
       `The extension ${row.name} is approved and switched on.`,
     );

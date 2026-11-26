@@ -282,8 +282,9 @@ async fn on_disk(state: &AppState, id: &str) -> Result<OnDisk, Refusal> {
 /// `POST /extensions/{id}/enable`: approves the file of an extension with its
 /// permissions, and switches the extension on.
 ///
-/// The body names what the Admin saw: `sha256`, and `permissions` as a list. When the
-/// file or its permissions are not the same any more, nothing is approved.
+/// The body names what the Admin saw: `sha256`, `permissions` as a list, and
+/// `least_access`. When the file, its permissions or its level are not the same any more,
+/// nothing is approved.
 pub async fn enable(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
@@ -317,6 +318,13 @@ pub async fn enable(
     if permission_text(&seen_permissions) != permissions {
         return Err(Refusal::conflict(
             "The permissions of the extension changed. Load the list again.",
+        ));
+    }
+    // The level decides who can call the extension, so it is part of what was approved.
+    let seen_level = data.text("least_access").unwrap_or_default();
+    if seen_level != manifest.least_access.to_string() {
+        return Err(Refusal::conflict(
+            "The level of the extension changed. Load the list again.",
         ));
     }
 

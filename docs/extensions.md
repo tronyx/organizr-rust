@@ -129,6 +129,7 @@ Each call of an extension has limits. A call that passes one is stopped, and the
 |---|---|
 | Memory of one call | 64 MiB, for all its memories and tables together (D-143) |
 | Work of one call | About two billion WebAssembly steps, a few seconds |
+| Time of one call | 30 seconds, also while the extension waits or sends requests to other sites. A request to another site that runs at the deadline ends first |
 | Body of a request | 1 MiB |
 | Body of an answer | 8 MiB |
 | Stored values, keys and values together | 1 MiB |
@@ -198,7 +199,7 @@ When the list's address uses `https`, every `download` must use `https` too. A `
 | Route | For | What it does |
 |---|---|---|
 | `GET /api/v2/extensions` | Admin, Co-Admin | The extensions in the folder, with their state |
-| `POST /api/v2/extensions/{id}/enable` | Admin | Approves the file with the fields `sha256` and `permissions`, and switches the extension on |
+| `POST /api/v2/extensions/{id}/enable` | Admin | Approves the file with the fields `sha256`, `permissions` and `least_access`, and switches the extension on. When one of them is not what the folder holds now, nothing is approved |
 | `POST /api/v2/extensions/{id}/disable` | Admin | Switches the extension off. Its stored values stay |
 | `DELETE /api/v2/extensions/{id}` | Admin | Deletes the folder, the approval and the stored values |
 | `GET /api/v2/extensions/marketplace` | Admin, Co-Admin | The extensions of the list, with what's installed |

@@ -352,6 +352,16 @@ impl Person {
         .map(str::trim)
         .find(|name| !name.is_empty())
     }
+
+    /// The preferred user name, when it is not empty. Only this name finds an existing
+    /// account by its name: the display name `name` is often one that the person can
+    /// change at the provider.
+    pub fn login_name(&self) -> Option<&str> {
+        self.preferred_username
+            .as_deref()
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+    }
 }
 
 /// Finishes a login: trades the code for the tokens, checks the ID token and reads the
@@ -647,5 +657,19 @@ mod tests {
         assert_eq!(person.username(), Some("sub-1"));
         person.preferred_username = Some("robin".to_owned());
         assert_eq!(person.username(), Some("robin"));
+    }
+
+    #[test]
+    fn login_name_is_only_the_preferred_user_name() {
+        let mut person = Person {
+            subject: "sub-1".to_owned(),
+            preferred_username: Some(" ".to_owned()),
+            name: Some("Robin".to_owned()),
+            ..Person::default()
+        };
+        assert_eq!(person.login_name(), None);
+        person.preferred_username = Some(" robin ".to_owned());
+        assert_eq!(person.login_name(), Some("robin"));
+        assert_eq!(person.login_name(), person.username());
     }
 }

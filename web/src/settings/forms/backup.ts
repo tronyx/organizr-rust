@@ -37,6 +37,7 @@ export const BACKUP: FormPage = {
           label: 'Backup Save Path',
           help: 'Folder path to save Organizr Backups - Please test before saving',
           placeholder: '/path/to/folder',
+          adminChanges: true,
         },
       ],
     },

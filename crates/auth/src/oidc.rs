@@ -25,6 +25,10 @@ pub struct OidcAccount<'a> {
     pub subject: &'a str,
     /// The user name. It is not empty.
     pub username: &'a str,
+    /// The preferred user name of the provider, when it gave one. Only this name finds
+    /// an existing account by its name, because a display name is often one that the
+    /// person can change at the provider.
+    pub login_name: Option<&'a str>,
     /// The e-mail address. Empty when the provider gives none.
     pub email: &'a str,
     /// Whether the provider has checked the address, when it says so.
@@ -224,8 +228,9 @@ enum LinkState {
 /// Finds, links or makes the account of a person:
 ///
 /// 1. The account that is linked to the subject of the ID token at this provider.
-/// 2. Else the account with the user name, whatever the letter case, or else, unless
-///    the provider says that it has not checked it, the account with the e-mail address.
+/// 2. Else the account with the user name, whatever the letter case, when the name is the
+///    preferred user name of the provider, or else, unless the provider says that it has
+///    not checked it, the account with the e-mail address.
 ///    Such an account is used only when it is linked to no provider yet (and then only
 ///    with `link_existing`, and never an Admin or a Co-Admin account), or when it is
 ///    linked to this provider without a stored subject, as an imported account is. The
@@ -253,7 +258,11 @@ pub async fn find_or_create(
         });
     }
 
-    let candidate = match users.find_by_username(account.username).await? {
+    let by_name = match account.login_name {
+        Some(name) => users.find_by_username(name).await?,
+        None => None,
+    };
+    let candidate = match by_name {
         Some(user) => Some(user),
         None if !account.email.is_empty() && account.email_verified != Some(false) => {
             users.find_by_email(account.email).await?

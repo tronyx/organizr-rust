@@ -15,10 +15,11 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 use organizr_plugins::extension::{
-    Call, Caller, ExtensionError, Extensions, HttpGate, HttpRequest, HttpResponse, Outcome,
-    REQUEST_COUNT_LIMIT, RESPONSE_LIMIT, Request, STORAGE_LIMIT,
+    CALL_DEADLINE, Call, Caller, ExtensionError, Extensions, HttpGate, HttpRequest, HttpResponse,
+    Outcome, REQUEST_COUNT_LIMIT, RESPONSE_LIMIT, Request, STORAGE_LIMIT,
 };
 
 /// The folder of this crate.
@@ -267,6 +268,37 @@ fn call_that_works_without_an_end_is_stopped() {
     // The next call works: each call has a sandbox of its own.
     let after = ask_hostile("/environment", false).expect("the extension answers");
     assert_eq!(after.response.status, 200);
+}
+
+#[test]
+fn call_that_waits_without_an_end_is_stopped_at_its_deadline() {
+    // A wait uses no fuel, so only the time of the call stops it.
+    let host = Extensions::new()
+        .expect("the runtime starts")
+        .with_call_deadline(Duration::from_millis(500));
+    let started = Instant::now();
+    let stopped = host.handle(
+        hostile(),
+        "hostile",
+        call(false, BTreeMap::new()),
+        request("GET", "/sleep"),
+    );
+    assert!(
+        matches!(&stopped, Err(ExtensionError::Stopped(text)) if text.contains("longer than")),
+        "{stopped:?}"
+    );
+    assert!(started.elapsed() < Duration::from_secs(10));
+    // The next call works.
+    let after = host
+        .handle(
+            hostile(),
+            "hostile",
+            call(false, BTreeMap::new()),
+            request("GET", "/environment"),
+        )
+        .expect("the extension answers");
+    assert_eq!(after.response.status, 200);
+    const { assert!(CALL_DEADLINE.as_secs() == 30) };
 }
 
 #[test]

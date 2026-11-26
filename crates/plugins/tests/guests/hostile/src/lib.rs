@@ -33,6 +33,11 @@ impl Guest for Hostile {
                 }
                 text("the loop ended".to_owned())
             }
+            // A wait for an hour, which uses no fuel.
+            "/sleep" => {
+                std::thread::sleep(std::time::Duration::from_secs(3600));
+                text("woke up".to_owned())
+            }
             // More memory than a call can have.
             "/grow" => {
                 let mut blocks: Vec<Vec<u8>> = Vec::new();

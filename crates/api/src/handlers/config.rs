@@ -70,6 +70,9 @@ const ALLOWED_HOSTS: &str = "allowedHosts";
 const TRUSTED_PROXIES: &str = "trustedProxies";
 /// The notice of an import for the Admin (D-158).
 const IMPORT_NOTICE: &str = "importNotice";
+/// The folder of the backups, whose *.zip files the backup routes list, send and delete
+/// (D-183).
+const BACKUP_LOCATION: &str = "backupLocation";
 
 /// The services of the health checks plugin: the addresses that a run asks, and whether
 /// each gets the API key.
@@ -82,7 +85,8 @@ const HEALTH_CHECK_SERVICES: &str = "HEALTHCHECKS-all-items";
 /// which picks the providers and the group that a login gives (D-133), and the services of
 /// the health checks plugin, which get the API key (D-134). Single sign-on sends the
 /// password of every login onward, so its switches are for Admins only, and so are its
-/// addresses while it is on (D-135).
+/// addresses while it is on (D-135). The folder of the backups is for Admins only too
+/// (D-183).
 ///
 /// `settings` decides the settings that are for Admins only some of the time. Such a rule
 /// reads only settings that are always for Admins only, so for a Co-Admin the copy that
@@ -97,6 +101,7 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
         || key == ALLOWED_HOSTS
         || key == TRUSTED_PROXIES
         || key == IMPORT_NOTICE
+        || key == BACKUP_LOCATION
         || is_trusted_by_a_login(key, settings)
         || key == "customJava"
         || key == "customThemeJava"
@@ -383,6 +388,7 @@ mod tests {
             "HEALTHCHECKS-all-items",
             "ssoOmbi",
             "ssoTautulliAuth",
+            "backupLocation",
         ] {
             assert!(is_for_admins_only(key, &settings), "{key}");
         }

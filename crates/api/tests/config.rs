@@ -390,6 +390,36 @@ async fn health_check_services_are_changed_by_the_admin_only() {
 }
 
 #[tokio::test]
+async fn backup_folder_is_changed_by_the_admin_only() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+        let folder = tempfile::tempdir().expect("a folder for the test");
+        let path = folder.path().display().to_string();
+
+        // The backup routes list, send and delete the *.zip files of that folder (D-183).
+        let body = json!({"backupLocation": path.clone()});
+        let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+        assert_refused(
+            &answer,
+            StatusCode::UNAUTHORIZED,
+            "Config item: backupLocation can only be changed by an admin",
+        );
+        assert_eq!(setting(&app, "backupLocation").await, json!(""));
+
+        // A Co-Admin still sees it.
+        let answer = call(&app, As::User(&co_admin), "GET", "/config", None).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(answer.data()["backupLocation"], json!(""));
+
+        change(&app, json!({"backupLocation": path.clone()})).await;
+        assert_eq!(setting(&app, "backupLocation").await, json!(path));
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn single_sign_on_settings_are_changed_by_the_admin_only() {
     on_each_engine(async |database| {
         seed::installed(database).await;

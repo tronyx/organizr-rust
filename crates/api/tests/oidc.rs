@@ -429,6 +429,35 @@ async fn callback_refuses_a_missing_a_forged_or_an_expired_login_cookie() {
 }
 
 #[tokio::test]
+async fn callback_refuses_a_login_that_comes_back_a_second_time() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        let app = app(database, &provider, &[]);
+        let started = authorize(&app).await;
+        let cookie = started
+            .cookie(LOGIN_COOKIE)
+            .expect("the login cookie is set");
+        let back = provider.approve(&location(&started)).await;
+
+        let first = send(&app, request("GET", &back, &[("cookie", &cookie)], "")).await;
+        assert_eq!(first.status, StatusCode::FOUND, "{}", first.body);
+
+        // The browser deletes the cookie, but a copy of it and of the address must not
+        // work again: the server remembers the state that was used.
+        let again = send(&app, request("GET", &back, &[("cookie", &cookie)], "")).await;
+        assert_failed(&again, "Invalid or expired state parameter");
+        assert_eq!(
+            provider.token_requests().len(),
+            1,
+            "the code was traded twice"
+        );
+        assert_eq!(sessions(database).await, 1);
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn callback_refuses_a_cookie_of_another_provider() {
     on_each_engine(async |database| {
         seed::installed(database).await;
@@ -1001,6 +1030,43 @@ async fn account_of_a_normal_level_is_still_linked_by_its_name() {
         assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
         assert!(session_cookie(&answer).is_some());
         assert_eq!(auth_service(&app, "sam").await, json!("oidc::keycloak"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn display_name_links_no_account_but_names_a_new_one() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        store_user(database, "sam", "sam@example.com", 3).await;
+        let provider = OidcProvider::start().await;
+        // No preferred user name: the display name, which the person may change at the
+        // provider, is the same as the name of an account.
+        provider.set(|behavior| {
+            behavior.person.remove("preferred_username");
+            behavior.person.insert("name".to_owned(), json!("sam"));
+            behavior
+                .person
+                .insert("email".to_owned(), json!("someone@example.com"));
+        });
+        let app = app(database, &provider, &[]);
+
+        let answer = log_in(&app, &provider).await;
+
+        assert_failed(&answer, "Failed to create or link user");
+        assert_eq!(sessions(database).await, 0);
+        assert_eq!(auth_service(&app, "sam").await, json!("internal"));
+
+        // A display name that no account has still names the new account.
+        provider.set(|behavior| {
+            behavior.person.insert("name".to_owned(), json!("newcomer"));
+        });
+        let answer = log_in(&app, &provider).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        assert_eq!(
+            auth_service(&app, "newcomer").await,
+            json!("oidc::keycloak")
+        );
     })
     .await;
 }

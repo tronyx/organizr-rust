@@ -3,11 +3,15 @@
 //! An extension runs in a sandbox. It gets no files, no environment and no arguments.
 //! It can call only the functions of the interface `host` of `wit/extension.wit`, and it
 //! reaches the network only through `send-request`, which the server checks with an
-//! [`HttpGate`] for the sites that an Admin approved. Each call has a limit for its memory and for its work, so an
-//! extension that is broken or hostile cannot stop the server.
+//! [`HttpGate`] for the sites that an Admin approved. Each call has a limit for its memory,
+//! for its work and for its time, so an extension that is broken or hostile cannot stop
+//! the server.
 
 use std::collections::{BTreeMap, HashMap};
+use std::future::Future;
 use std::sync::{Arc, Mutex};
+use std::task::{Context, Poll, Wake, Waker};
+use std::time::{Duration, Instant};
 
 use wasmtime::component::{Component, HasSelf, Linker, ResourceTable};
 use wasmtime::{Config, Engine, ResourceLimiter, Store};
@@ -17,6 +21,9 @@ mod bindings {
     wasmtime::component::bindgen!({
         path: "wit",
         world: "extension",
+        // A call runs as a future, so that the deadline of the call can end it also
+        // while the extension waits.
+        exports: { default: async },
     });
 }
 
@@ -30,6 +37,14 @@ const MEMORY_LIMIT: usize = 64 * 1024 * 1024;
 /// The work that one call of an extension can do. A unit is about one instruction of
 /// WebAssembly, so this is a few seconds on one processor core.
 const FUEL: u64 = 2_000_000_000;
+
+/// The work after which a call lets the deadline be checked, in units of fuel.
+const FUEL_BETWEEN_CHECKS: u64 = 10_000_000;
+
+/// The most time of one call of an extension, from the start of the instance to the
+/// answer. A wait, as for a clock of the system interface, uses no fuel, so only this
+/// stops it. The requests of a call to other sites count too.
+pub const CALL_DEADLINE: Duration = Duration::from_secs(30);
 
 /// The most bytes of the values that an extension stores, keys and values together.
 pub const STORAGE_LIMIT: usize = 1024 * 1024;
@@ -349,6 +364,8 @@ pub struct Extensions {
     linker: Arc<Linker<State>>,
     /// The components that were compiled, by the SHA-256 of their file.
     compiled: Arc<Mutex<HashMap<String, Component>>>,
+    /// The most time of one call.
+    deadline: Duration,
 }
 
 impl std::fmt::Debug for Extensions {
@@ -366,14 +383,38 @@ impl Extensions {
         let mut linker = Linker::new(&engine);
         // The system interface that a component built from Rust asks for. The context
         // of each call gives it nothing: no folder, no network, no variable.
-        wasmtime_wasi::p2::add_to_linker_sync(&mut linker).map_err(runtime_failed)?;
+        wasmtime_wasi::p2::add_to_linker_async(&mut linker).map_err(runtime_failed)?;
         bindings::Extension::add_to_linker::<_, HasSelf<_>>(&mut linker, |state| state)
             .map_err(runtime_failed)?;
         Ok(Self {
             engine,
             linker: Arc::new(linker),
             compiled: Arc::new(Mutex::new(HashMap::new())),
+            deadline: CALL_DEADLINE,
         })
+    }
+
+    /// The runtime with another most time of one call than [`CALL_DEADLINE`].
+    #[must_use]
+    pub fn with_call_deadline(mut self, deadline: Duration) -> Self {
+        self.deadline = deadline;
+        self
+    }
+
+    /// Runs the work of one call, and ends it when it takes longer than the deadline.
+    fn run<T>(
+        &self,
+        work: impl Future<Output = Result<T, ExtensionError>>,
+    ) -> Result<T, ExtensionError> {
+        let deadline = Instant::now() + self.deadline;
+        // The system interface waits with the timers of Tokio.
+        wasmtime_wasi::runtime::with_ambient_tokio_runtime(|| wait_until(deadline, work))
+            .unwrap_or_else(|| {
+                Err(ExtensionError::Stopped(format!(
+                    "the call took longer than {} seconds",
+                    self.deadline.as_secs_f64()
+                )))
+            })
     }
 
     /// The compiled component of a file. `sha256` names the content of the file, so a
@@ -396,9 +437,12 @@ impl Extensions {
     pub fn check(&self, wasm: &[u8], sha256: &str) -> Result<(), ExtensionError> {
         let component = self.component(wasm, sha256)?;
         let mut store = self.store(Call::default())?;
-        bindings::Extension::instantiate(&mut store, &component, &self.linker)
-            .map(|_| ())
-            .map_err(|error| ExtensionError::NotAnExtension(format!("{error:#}")))
+        self.run(async {
+            bindings::Extension::instantiate_async(&mut store, &component, &self.linker)
+                .await
+                .map(|_| ())
+                .map_err(|error| ExtensionError::NotAnExtension(format!("{error:#}")))
+        })
     }
 
     /// Forgets the compiled component of a file, for a file that is gone.
@@ -421,13 +465,16 @@ impl Extensions {
         let mut store = Store::new(&self.engine, state);
         store.limiter(|state| &mut state.limits);
         store.set_fuel(FUEL).map_err(runtime_failed)?;
+        store
+            .fuel_async_yield_interval(Some(FUEL_BETWEEN_CHECKS))
+            .map_err(runtime_failed)?;
         Ok(store)
     }
 
     /// Sends a request to an extension and waits for its answer.
     ///
     /// This blocks while the extension works, so a server calls it on a thread for
-    /// blocking work.
+    /// blocking work. A call that takes longer than its deadline is stopped.
     pub fn handle(
         &self,
         wasm: &[u8],
@@ -437,8 +484,6 @@ impl Extensions {
     ) -> Result<Outcome, ExtensionError> {
         let component = self.component(wasm, sha256)?;
         let mut store = self.store(call)?;
-        let instance = bindings::Extension::instantiate(&mut store, &component, &self.linker)
-            .map_err(|error| ExtensionError::NotAnExtension(format!("{error:#}")))?;
         let request = bindings::Request {
             method: request.method,
             path: request.path,
@@ -450,9 +495,16 @@ impl Extensions {
                 level: request.caller.level,
             },
         };
-        let response = instance
-            .call_handle(&mut store, &request)
-            .map_err(|error| ExtensionError::Stopped(format!("{:#}", error.root_cause())))?;
+        let response = self.run(async {
+            let instance =
+                bindings::Extension::instantiate_async(&mut store, &component, &self.linker)
+                    .await
+                    .map_err(|error| ExtensionError::NotAnExtension(format!("{error:#}")))?;
+            instance
+                .call_handle(&mut store, &request)
+                .await
+                .map_err(|error| ExtensionError::Stopped(format!("{:#}", error.root_cause())))
+        })?;
         if response.body.len() > RESPONSE_LIMIT {
             return Err(ExtensionError::AnswerTooLarge);
         }
@@ -465,6 +517,37 @@ impl Extensions {
             },
             values: state.changed.then_some(state.call.values),
         })
+    }
+}
+
+/// Wakes the thread that waits for a future.
+struct WakeThread(std::thread::Thread);
+
+impl Wake for WakeThread {
+    fn wake(self: Arc<Self>) {
+        self.0.unpark();
+    }
+
+    fn wake_by_ref(self: &Arc<Self>) {
+        self.0.unpark();
+    }
+}
+
+/// Waits on this thread for a future, until the deadline. `None` when the deadline came
+/// first: the future is then dropped, which ends the call in it.
+fn wait_until<F: Future>(deadline: Instant, future: F) -> Option<F::Output> {
+    let waker = Waker::from(Arc::new(WakeThread(std::thread::current())));
+    let mut context = Context::from_waker(&waker);
+    let mut future = std::pin::pin!(future);
+    loop {
+        if let Poll::Ready(output) = future.as_mut().poll(&mut context) {
+            return Some(output);
+        }
+        let left = deadline.saturating_duration_since(Instant::now());
+        if left.is_zero() {
+            return None;
+        }
+        std::thread::park_timeout(left);
     }
 }
 

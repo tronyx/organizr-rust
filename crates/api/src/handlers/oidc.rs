@@ -6,11 +6,14 @@
 //! three values wait in a cookie of their own until the browser comes back: the login
 //! cookie, sealed with the key of the install, so nobody can read or forge it. It lasts
 //! ten minutes, as the session of PHP did, and only for the routes of this login. The
-//! callback takes it away again, whatever the outcome.
+//! callback takes it away again, whatever the outcome, and the server remembers its
+//! `state` until it expires, so that a copy of the cookie does not work a second time.
 //!
 //! No log line or answer holds a token, a code, the client secret or the values of the
 //! login cookie.
 
+use std::collections::HashMap;
+use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, SystemTime};
 
 use axum::Extension;
@@ -65,6 +68,37 @@ const ONE_DAY: Duration = Duration::from_hours(24);
 
 /// The providers, in the order of the PHP application.
 const PROVIDERS: [&str; 4] = ["authentik", "keycloak", "pocketid", "zitadel"];
+
+/// The most logins that [`UsedLogins`] remembers at a time.
+const MOST_USED_LOGINS: usize = 10_000;
+
+/// The logins that came back to the callback: the `state` of each, with the second at
+/// which its login cookie expires. The browser deletes the cookie after the callback, but
+/// a copy of it could come back; the server refuses it until it expires anyway.
+#[derive(Debug, Default)]
+pub struct UsedLogins(Mutex<HashMap<String, i64>>);
+
+impl UsedLogins {
+    /// Notes that the login with the state came back. `false` when it came back before.
+    fn first_use(&self, state: &str, expires: i64, now: i64) -> bool {
+        let mut used = self.0.lock().unwrap_or_else(PoisonError::into_inner);
+        used.retain(|_, until| *until > now);
+        if used.contains_key(state) {
+            return false;
+        }
+        // When too many logins wait, the one that expires first is forgotten.
+        if used.len() >= MOST_USED_LOGINS
+            && let Some(first) = used
+                .iter()
+                .min_by_key(|(_, until)| **until)
+                .map(|(state, _)| state.clone())
+        {
+            used.remove(&first);
+        }
+        used.insert(state.to_owned(), expires);
+        true
+    }
+}
 
 /// A provider with its settings.
 #[derive(Debug, Clone, Copy)]
@@ -441,6 +475,14 @@ async fn finish(
         tracing::warn!(provider = key, "the state of the login does not match");
         return Err(invalid_state());
     }
+    // Each login comes back once, whatever the outcome.
+    if !state
+        .used_logins()
+        .first_use(&kept.state, kept.expires, now_seconds())
+    {
+        tracing::warn!(provider = key, "a login came back a second time");
+        return Err(invalid_state());
+    }
     // A link is finished by the session that started it, and by no other.
     if let Some(owner) = kept.link_user {
         let session_user = caller.user().map(|user| user.authenticated.user.id);
@@ -626,6 +668,7 @@ async fn account_of(
         provider: provider.key,
         subject: &person.subject,
         username,
+        login_name: person.login_name(),
         email: person.email.as_deref().unwrap_or_default(),
         email_verified: person.email_verified,
         picture: person.picture.as_deref(),
@@ -792,6 +835,28 @@ fn now_seconds() -> i64 {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn used_login_is_refused_until_it_expires() {
+        let used = super::UsedLogins::default();
+        assert!(used.first_use("state-1", 100, 0));
+        assert!(!used.first_use("state-1", 100, 50));
+        assert!(used.first_use("state-2", 100, 50));
+        // After its expiry, the login cookie no longer opens, so the state is forgotten.
+        assert!(used.first_use("state-1", 200, 100));
+    }
+
+    #[test]
+    fn used_logins_forget_the_first_to_expire_when_too_many_wait() {
+        let used = super::UsedLogins::default();
+        for number in 0..super::MOST_USED_LOGINS {
+            let expires = 1_000 + i64::try_from(number).expect("a small number");
+            assert!(used.first_use(&format!("state-{number}"), expires, 0));
+        }
+        assert!(used.first_use("one more", 5_000, 0));
+        assert!(!used.first_use("state-1", 5_000, 0));
+        assert!(used.first_use("state-0", 5_000, 0));
+    }
+
     use organizr_settings::Settings;
 
     use super::{LoginCookie, Provider, login_cookie, safe_place};

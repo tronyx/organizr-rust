@@ -29,6 +29,7 @@ use tokio::sync::Mutex;
 use crate::allowed_hosts::AllowedHosts;
 use crate::client::TrustedProxies;
 use crate::handlers::chat::ChatHub;
+use crate::handlers::oidc::UsedLogins;
 use crate::picture_cache::PictureCache;
 use crate::ping::{Latency, PingTarget, Prober};
 use crate::update_check::UpdateStatus;
@@ -43,6 +44,8 @@ pub struct AppState {
     /// The hosts that a path of a service address may be completed with (D-154).
     allowed_hosts: Arc<AllowedHosts>,
     login_limiter: Arc<LoginLimiter>,
+    /// The OpenID Connect logins that came back, so that each comes back once.
+    used_logins: Arc<UsedLogins>,
     setup_code: Option<Arc<SetupCode>>,
     secrets: Arc<SecretBox>,
     /// The folder of the uploaded pictures. Without it, no picture can be uploaded.
@@ -146,6 +149,7 @@ impl AppState {
             trusted_proxies: Arc::new(TrustedProxies::default()),
             allowed_hosts: Arc::new(AllowedHosts::default()),
             login_limiter: Arc::new(LoginLimiter::new()),
+            used_logins: Arc::default(),
             setup_code: None,
             secrets: Arc::new(secrets),
             picture_folder: None,
@@ -424,6 +428,11 @@ impl AppState {
 
     pub fn login_limiter(&self) -> &LoginLimiter {
         &self.login_limiter
+    }
+
+    /// The OpenID Connect logins that came back to the callback.
+    pub fn used_logins(&self) -> &UsedLogins {
+        &self.used_logins
     }
 
     /// Changes settings: each key gets the value in its stored form. The new values are

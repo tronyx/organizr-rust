@@ -47,6 +47,7 @@ The backups are in the folder `backups` of the data folder (`/config/backups` in
 
 - The folder must exist, and the user that runs the server must be able to write to it. In the container image that's user `65532`.
 - Select **Test Backup Save Path** to check that the folder exists. The test makes no folder.
+- Only an Admin changes the folder. A Co-Admin sees it, and still makes, downloads and deletes backups (D-183).
 
 ## ⏰ Automatic backups
 

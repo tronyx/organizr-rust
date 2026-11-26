@@ -90,10 +90,11 @@ describe('ExtensionsEditor', () => {
     await waitFor(() =>
       expect(ondone).toHaveBeenCalledWith('The extension Hello is approved and switched on.'),
     );
-    // The approval names the file and the permissions that the dialog showed.
+    // The approval names the file, the permissions and the level that the dialog showed.
     expect(sent.find((request) => request.method === 'POST')?.body).toEqual({
       sha256: 'ab'.repeat(32),
       permissions: ['storage'],
+      least_access: 4,
     });
     expect((await screen.findByRole('table')).textContent).toContain('Switched on');
     expect(screen.getByRole('link', { name: 'Open' }).getAttribute('href')).toContain(

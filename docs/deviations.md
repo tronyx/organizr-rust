@@ -40,7 +40,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 |---|---|
 | Sign-in, sessions and lockouts | D-02, D-03, D-04, D-09, D-18, D-27, D-30, D-33, D-34, D-35, D-57, D-58, D-73, D-127, D-129, D-139, D-140, D-145, D-146, D-159, D-160, D-161, D-163 |
 | Logins through Plex, LDAP, FTP, Emby and Jellyfin | D-60, D-85, D-86, D-99, D-107, D-124, D-127, D-137, D-154, D-165 |
-| OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156 |
+| OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156, D-184 |
 | Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150, D-165, D-178 |
 | Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157, D-170, D-171 |
 | The set-up wizard and the database | D-19, D-38, D-46, D-97, D-158 |
@@ -48,7 +48,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Tabs and categories | D-28, D-32, D-39, D-47, D-48, D-174 |
 | Settings and configuration | D-06, D-07, D-14, D-29, D-45, D-53, D-96, D-106, D-112, D-116, D-162 |
 | Pictures, icons and favicons | D-10, D-54, D-56, D-93, D-123, D-126, D-168 |
-| Backups and restore | D-10, D-26, D-74, D-147, D-169 |
+| Backups and restore | D-10, D-26, D-74, D-147, D-169, D-183 |
 | Updates | D-23 |
 | Log, errors and request ids | D-13, D-34, D-84 |
 | E-mail | D-09, D-58, D-82, D-138, D-160, D-179 |
@@ -77,7 +77,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/wizard` | D-19, D-38, D-46, D-138 |
 | `GET /status` | D-21, D-46 |
 | `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125, D-128, D-158 |
-| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135, D-158, D-162 |
+| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135, D-158, D-162, D-183 |
 | `DELETE /import-notice` | D-158 |
 | `/users`, `/users/{id}` | D-05, D-15, D-52, D-57 |
 | `POST /users/register` | D-36, D-37, D-38 |
@@ -100,7 +100,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/auth/…`, `/auth-{group}` (forward auth) | D-01, D-59, D-136, D-141, D-157, D-170, D-171 |
 | `POST /plex/register`, `POST /emby/register` | D-83, D-180 |
 | `GET /plex/servers` | D-107 |
-| `/oidc/*` | D-87, D-88, D-89, D-90, D-105 |
+| `/oidc/*` | D-87, D-88, D-89, D-90, D-105, D-184 |
 | `GET /oauth/trakt` | D-81 |
 | `GET /homepage/items`, `/homepage/html/{number}` | D-61, D-76 |
 | `GET /homepage/image` | D-64, D-77, D-81 |
@@ -342,6 +342,8 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-180 | **Only a refused share that says so counts as "already has access".** `POST /plugins/invites/{code}`, and the registration of a Plex account through an invite. plex.tv answers `400` both for an account that has the server and for other faults. Now only an answer whose text says "already" counts as access: the code is used, and the accounts of the other services are made. Another `400` gets `409` with "An Error Occurred", and the code stays good for another try. PHP takes every `400` for "Plex User already has access". Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 | D-181 | **An invite never makes a Komga administrator.** The Komga account that an invite makes. The role `ADMIN`, in any case, is left out of `INVITES-komga-roles` before the roles go to Komga, because a Co-Admin can write that setting. When no other role is left, no account is made. PHP sends the roles as they are. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 | D-182 | **A guest never makes, lists or deletes invites.** `GET /plugins/invites`, `POST /plugins/invites` and `DELETE /plugins/invites/{code}`. When `INVITES-Auth-include` names the level of guests (999), a caller without a session and without the API key still gets `401`. Guests have no name, so they would share their invites and could see and delete the invites of each other. Using a code (`GET` and `POST /plugins/invites/{code}`) is still for everybody. PHP lets guests in. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-183 | **Only an Admin changes the backup folder.** `PUT /config` with `backupLocation`. A Co-Admin gets `401` with "Config item: backupLocation can only be changed by an admin", and the setting stays. The backup routes list, send and delete the `*.zip` files of that folder, and the rotation of the backups deletes the oldest of them (D-74 (6)), so a Co-Admin who could name any folder could read and delete any zip file that the server can reach. A Co-Admin still sees the setting, and still makes, lists, downloads and deletes backups. The settings page shows the field to a Co-Admin as one that only an Admin changes. PHP lets a Co-Admin change it. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-184 | **The display name of an OpenID Connect login never finds an existing account.** The accounts of the OpenID Connect login, on top of D-88 (6) and D-89. An existing account is found by its user name only when the name is the claim `preferred_username`. The claim `name`, a display name that people can often change at the provider, and `sub` find no account by name; the account is then found by its checked e-mail address as before, or made. A new account still takes `preferred_username`, or else `name`, or else `sub` as its user name, so a login without `preferred_username` whose display name is the name of an account gets "Failed to create or link user". Before, with `oidcLinkExistingUsers` on, such a display name linked the account of a normal level. PHP fails every login without `preferred_username`. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 
 ## ✅ Kept exactly as PHP has it
 

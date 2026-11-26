@@ -129,12 +129,12 @@ A value that isn't a level from 0 to 999 doesn't count. When no Organizr group h
 | Field | Setting | What it does |
 |---|---|---|
 | **Auto-Create Users** | `oidcAutoCreateUsers` | A person with no account gets one, with a random password |
-| **Link Existing Users** | `oidcLinkExistingUsers` | An Organizr account with the same user name, or e-mail address, becomes the person's account (never an Admin or Co-Admin account; see below). The user name is the claim `preferred_username`, or else `name`, or else `sub` |
+| **Link Existing Users** | `oidcLinkExistingUsers` | An Organizr account with the same user name, or e-mail address, becomes the person's account (never an Admin or Co-Admin account; see below). Only the claim `preferred_username` finds an account by its user name (D-184). A new account takes `preferred_username`, or else `name`, or else `sub` as its user name |
 
 For each linked account, Organizr stores the person's **subject** (`sub`) at the provider: the provider's permanent ID for that account, taken from the checked ID token. At each login, Organizr looks for the account in this order:
 
 1. **The account linked to this subject at this provider.** A new user name or e-mail address at the provider doesn't matter.
-2. **Else, an account with the same user name** (any letter case), **or else the same e-mail address**. The e-mail address is skipped when the provider says it hasn't checked it (`email_verified` is `false`). Such an account is used only:
+2. **Else, an account with the same user name** (any letter case) as `preferred_username`, **or else the same e-mail address**. The display name (`name`) never finds an account, because people can often change it at the provider (D-184). The e-mail address is skipped when the provider says it hasn't checked it (`email_verified` is `false`). Such an account is used only:
    - when it's linked to no provider yet, **Link Existing Users** is on, and it is **not** an Admin or Co-Admin account; or
    - when it's linked to this provider but has no subject yet: an account that PHP Organizr linked, or that an older version of this application linked.
 
@@ -211,7 +211,7 @@ A failed login shows a **Login Failed** page with the reason and a link back to 
 4. Organizr checks the ID token: the signature (against the provider's keys), the issuer, the audience (the client ID), the expiry time and the nonce (a random value for this login). A token that fails any check gives no session.
 5. Organizr finds, links or makes the account (see [Accounts and linking](#-accounts-and-linking)), and starts a session as after any other login. The browser goes to the start page.
 
-The login uses PKCE, a check that only the browser that started a login can finish it. While the person is at the provider, Organizr keeps the login's values in its own cookie, `organizr_oidc_login`. The cookie is encrypted with the key of the install, so nobody can read or change it. It lasts 10 minutes, and Organizr deletes it when the browser comes back. A login that takes longer than 10 minutes has to start again.
+The login uses PKCE, a check that only the browser that started a login can finish it. While the person is at the provider, Organizr keeps the login's values in its own cookie, `organizr_oidc_login`. The cookie is encrypted with the key of the install, so nobody can read or change it. It lasts 10 minutes, and Organizr deletes it when the browser comes back. Organizr also remembers each login that came back until its cookie expires, so a copy of the cookie doesn't work a second time. A login that takes longer than 10 minutes has to start again.
 
 ## 🐘 Differences from PHP Organizr
 

@@ -120,7 +120,11 @@ async fn approve(app: &Router, id: &str) -> Answer {
         .iter()
         .find(|row| row["id"] == id)
         .expect("the extension is listed");
-    let body = json!({"sha256": row["sha256"], "permissions": row["permissions"]});
+    let body = json!({
+        "sha256": row["sha256"],
+        "permissions": row["permissions"],
+        "least_access": row["least_access"],
+    });
     call(
         app,
         As::Admin,
@@ -221,14 +225,16 @@ async fn extension_answers_only_after_an_admin_approved_it() {
         // Nothing answers before the approval, and only an Admin approves.
         let (status, ..) = raw(&app, None, "GET", "/extension/hello/hello", "").await;
         assert_eq!(status, StatusCode::NOT_FOUND);
-        let body = json!({"sha256": hello["sha256"], "permissions": ["storage"]});
+        let body =
+            json!({"sha256": hello["sha256"], "permissions": ["storage"], "least_access": 4});
         let path = "/extensions/hello/enable";
         for who in [As::Guest, As::User(&robin), As::User(&boss)] {
             let refused = call(&app, who, "POST", path, Some(body.clone())).await;
             assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
         }
         // The approval is for the file and the permissions that the Admin saw.
-        let other_file = json!({"sha256": "0".repeat(64), "permissions": ["storage"]});
+        let other_file =
+            json!({"sha256": "0".repeat(64), "permissions": ["storage"], "least_access": 4});
         let refused = call(&app, As::Admin, "POST", path, Some(other_file)).await;
         assert_eq!(refused.status, StatusCode::CONFLICT);
         assert!(
@@ -236,7 +242,7 @@ async fn extension_answers_only_after_an_admin_approved_it() {
             "{}",
             refused.body
         );
-        let fewer = json!({"sha256": hello["sha256"], "permissions": []});
+        let fewer = json!({"sha256": hello["sha256"], "permissions": [], "least_access": 4});
         let refused = call(&app, As::Admin, "POST", path, Some(fewer)).await;
         assert_eq!(refused.status, StatusCode::CONFLICT);
         assert!(
@@ -246,6 +252,20 @@ async fn extension_answers_only_after_an_admin_approved_it() {
             "{}",
             refused.body
         );
+        // And for the level that the Admin saw, also when the request names none.
+        for level in [json!(999), json!("1"), Value::Null] {
+            let mut other_level = json!({"sha256": hello["sha256"], "permissions": ["storage"]});
+            if !level.is_null() {
+                other_level["least_access"] = level.clone();
+            }
+            let refused = call(&app, As::Admin, "POST", path, Some(other_level)).await;
+            assert_eq!(refused.status, StatusCode::CONFLICT, "{level}");
+            assert!(
+                refused.body.contains("level of the extension changed"),
+                "{}",
+                refused.body
+            );
+        }
         for id in ["broken", "greedy"] {
             let refused = approve(&app, id).await;
             assert_eq!(refused.status, StatusCode::CONFLICT, "{id}");
