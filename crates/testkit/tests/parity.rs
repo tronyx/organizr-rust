@@ -628,7 +628,15 @@ async fn user_routes_answer_like_php() {
         seed::installed(database).await;
         // The recorder runs this group after the group `register`.
         seed::registered_users(database).await;
-        let mut replay = without_php_session(Replay::group("users"));
+        // A new password set with the API key ends the sessions of the user (D-146). In
+        // PHP the session of the jar went on, so the replay logs that browser in again.
+        let replay = Replay::group("users").deviation_logs_in_after(
+            "D-146",
+            "change_password",
+            "abe",
+            json!({"username": "abel", "password": "a new password of abe"}),
+        );
+        let mut replay = without_php_session(replay);
         for case in CASES_WITH_USERS {
             // The answer for a user that does not exist has no user in it.
             if case == "user_deleted" {

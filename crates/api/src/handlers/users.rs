@@ -352,6 +352,28 @@ pub async fn change(
     change_by_text(&state, &caller, &id, &data).await
 }
 
+/// Ends the sessions of a user whose password was changed, so that a stolen session
+/// stops working (D-146). A change of the own password keeps the session of the change;
+/// a change by somebody else ends every session of the user.
+async fn end_sessions_after_new_password(
+    database: &Database,
+    caller: &Caller,
+    user: &User,
+    own: bool,
+) -> Result<(), Refusal> {
+    let sessions = database.sessions();
+    let kept = caller
+        .user()
+        .filter(|_| own)
+        .map(|caller| caller.authenticated.session.id);
+    let ended = match kept {
+        Some(kept) => sessions.delete_all_of_user_except(user.id, kept).await?,
+        None => sessions.delete_all_of_user(user.id).await?,
+    };
+    tracing::info!(user = %user.username, ended, "the sessions of a user with a new password were ended");
+    Ok(())
+}
+
 /// [`change`] for the id as the path has it.
 pub async fn change_by_text(
     state: &AppState,
@@ -407,6 +429,7 @@ pub async fn change_by_text(
     }
 
     let name = username.clone();
+    let new_password = matches!(password_hash, Change::Set(_));
     let changes = UserChanges {
         username,
         email,
@@ -418,6 +441,9 @@ pub async fn change_by_text(
     match database.users().update(user.id, changes).await {
         Ok(Some(_)) => {
             tracing::info!(user = %user.username, id = %user.id, "a user was changed");
+            if new_password {
+                end_sessions_after_new_password(database, caller, &user, actor.is_target).await?;
+            }
             Ok(Envelope::success(NoData)
                 .with_message("User info updated")
                 .into_response())

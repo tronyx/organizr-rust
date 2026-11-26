@@ -249,6 +249,53 @@ async fn name_with_markup_is_stored_as_it_was_sent() {
     .await;
 }
 
+/// Whether the session cookie still names a session.
+async fn is_logged_in(app: &Router, cookie: &str) -> bool {
+    let me = call(app, As::User(cookie), "GET", "/token/me", None).await;
+    me.data()["loggedin"] == json!(true)
+}
+
+#[tokio::test]
+async fn password_change_ends_the_other_sessions() {
+    on_each_engine(async |database| {
+        let app = install(database).await;
+        let here = log_in(&app, "zoe", seed::ZOE_PASSWORD).await;
+        let elsewhere = log_in(&app, "zoe", seed::ZOE_PASSWORD).await;
+
+        // A change of the own password keeps the session of the change and ends the
+        // others, such as one that somebody stole (D-146).
+        let body = json!({"password": "a new password of zoe"});
+        let answer = call(
+            &app,
+            As::User(&here),
+            "PUT",
+            &format!("/users/{ZOE}"),
+            Some(body),
+        )
+        .await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert!(is_logged_in(&app, &here).await);
+        assert!(!is_logged_in(&app, &elsewhere).await);
+
+        // A change by an Admin ends every session of the user.
+        let again = log_in(&app, "zoe", "a new password of zoe").await;
+        change(
+            &app,
+            ZOE,
+            json!({"password": "the password the admin chose"}),
+        )
+        .await;
+        assert!(!is_logged_in(&app, &here).await);
+        assert!(!is_logged_in(&app, &again).await);
+
+        // A change of another field ends nothing.
+        let kept = log_in(&app, "zoe", "the password the admin chose").await;
+        change(&app, ZOE, json!({"email": "zoe@example.org"})).await;
+        assert!(is_logged_in(&app, &kept).await);
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn password_is_stored_as_a_new_hash_and_has_a_limit() {
     on_each_engine(async |database| {

@@ -103,6 +103,21 @@ impl<'a> Sessions<'a> {
         Ok(result.rows_affected)
     }
 
+    /// Deletes all sessions of a user but one, such as the session of a request that
+    /// changed the password. Returns how many there were.
+    pub async fn delete_all_of_user_except(
+        &self,
+        user: UserId,
+        kept: SessionId,
+    ) -> Result<u64, DbError> {
+        let result = session::Entity::delete_many()
+            .filter(session::Column::UserId.eq(user.get()))
+            .filter(session::Column::Id.ne(kept.get()))
+            .exec(self.connection)
+            .await?;
+        Ok(result.rows_affected)
+    }
+
     /// Deletes the sessions that are no longer valid at `now`. Returns how many there were.
     pub async fn delete_expired(&self, now: Timestamp) -> Result<u64, DbError> {
         let result = session::Entity::delete_many()

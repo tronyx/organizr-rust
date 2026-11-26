@@ -116,10 +116,21 @@ async fn old_password_works_until_the_new_one_is_used() {
             StatusCode::UNAUTHORIZED
         );
         // The password from the e-mail works, and is the password of the account then.
+        // The sessions from before end, as somebody else may have one (D-146).
+        let before = log_in(&app, "robin", "the old password").await;
+        let before = before
+            .cookies
+            .iter()
+            .find(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
+            .and_then(|cookie| cookie.split(';').next())
+            .expect("the login sets the session cookie")
+            .to_owned();
         assert_eq!(
             log_in(&app, "robin", &new_password).await.status,
             StatusCode::OK
         );
+        let me = call(&app, As::User(&before), "GET", "/token/me", None).await;
+        assert_ne!(me.data()["loggedin"], json!(true), "{}", me.body);
         assert_eq!(
             log_in(&app, "robin", &new_password).await.status,
             StatusCode::OK

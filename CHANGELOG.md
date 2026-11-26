@@ -51,6 +51,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - One call of an extension has 64 MiB of memory for all its memories and tables together (D-143).
 - The GET routes that set up the Bookmarks and Plex Libraries tabs, and the one that sends the test e-mail, refuse requests from other sites (D-144).
 - A session cookie that another host of the cookie domain plants hides no session and is dropped (D-145).
+- A new password ends the other sessions of the account; a login with a recovery password ends all from before (D-146).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

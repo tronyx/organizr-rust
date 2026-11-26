@@ -145,8 +145,12 @@ pub(crate) async fn accept(
         return Ok(false);
     }
     database.users().use_recovery(user.id).await?;
+    // The person may have asked because somebody else has the account, so the sessions
+    // from before end; the login makes a new one (D-146).
+    let ended = database.sessions().delete_all_of_user(user.id).await?;
     tracing::info!(
         user = %user.username,
+        ended,
         "the user logged in with a recovery password, which is the password of the account now"
     );
     Ok(true)

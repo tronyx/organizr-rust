@@ -74,7 +74,7 @@ Someone who forgot their password selects **Forgot your password?** on the login
 
 1. Organizr e-mails a new password to that address.
 2. The new password works for 24 hours.
-3. The old password keeps working until the person logs in with the new one. From that login on, the new password is the account's password.
+3. The old password keeps working until the person logs in with the new one. From that login on, the new password is the account's password, and every session from before ends, in case somebody else had one (D-146).
 
 > [!TIP]
 > The e-mail contains the new password in plain text. Change it in Organizr after you log in.

@@ -85,6 +85,9 @@ pub struct Replay {
     pending_cases: Vec<String>,
     /// Cases whose whole answer differs, because of an approved deviation.
     deviating_cases: Vec<String>,
+    /// Logins that the replay sends after a case, for a jar whose session the case
+    /// ended: the case, the jar, and the body of the login.
+    logins_after: Vec<(String, String, serde_json::Value)>,
     /// Parts of a JSON body that are not implemented yet: case and JSON pointer.
     pending_parts: Vec<(String, String)>,
     absent_cookies: Vec<String>,
@@ -125,6 +128,7 @@ impl Replay {
             pending_aspects: Vec::new(),
             pending_cases: Vec::new(),
             deviating_cases: Vec::new(),
+            logins_after: Vec::new(),
             pending_parts: Vec::new(),
             absent_cookies: Vec::new(),
         }
@@ -297,6 +301,25 @@ impl Replay {
         self
     }
 
+    /// Logs the browser of a jar in again after a case, because of an approved deviation
+    /// that ends its session there, such as a new password (D-146). The cases after it
+    /// then ask with a session, as they did in PHP. `login` is the body of the login.
+    ///
+    /// `id` must be an entry of `docs/deviations.md`.
+    #[must_use]
+    pub fn deviation_logs_in_after(
+        mut self,
+        id: &str,
+        case: &str,
+        jar: &str,
+        login: serde_json::Value,
+    ) -> Self {
+        assert_approved(id);
+        self.logins_after
+            .push((case.to_owned(), jar.to_owned(), login));
+        self
+    }
+
     /// Marks a whole case as not implemented yet.
     #[must_use]
     pub fn pending_case(mut self, case: &str, reason: &str) -> Self {
@@ -328,6 +351,13 @@ impl Replay {
             let mut expected = self.expected(case);
             let mut actual = Answer::of(app, &recording, case, &mut browsers).await;
             without_dropped_shadows(&mut actual.cookies);
+            for (_, jar, login) in self
+                .logins_after
+                .iter()
+                .filter(|(after, ..)| *after == case.name)
+            {
+                log_in_again(app, &mut browsers, jar, login).await;
+            }
             self.take_out_pending_parts(case, &mut expected, &mut actual, &mut problems);
             let differing: Vec<Aspect> = ASPECTS
                 .into_iter()
@@ -557,7 +587,8 @@ impl Replay {
             .chain(self.pending_aspects.iter().map(|(case, _)| case))
             .chain(self.pending_parts.iter().map(|(case, _)| case))
             .chain(&self.pending_cases)
-            .chain(&self.deviating_cases);
+            .chain(&self.deviating_cases)
+            .chain(self.logins_after.iter().map(|(case, ..)| case));
         for name in named {
             assert!(
                 name == EVERY_CASE || recording.cases.iter().any(|case| &case.name == name),
@@ -967,6 +998,48 @@ struct RecordedResponse {
     headers: BTreeMap<String, String>,
     cookies_set: Vec<RecordedCookie>,
     body: String,
+}
+
+/// Logs the browser of a jar in with the body, and keeps the new session cookie in the
+/// jar.
+async fn log_in_again(app: &Router, browsers: &mut Browsers, jar: &str, login: &serde_json::Value) {
+    let request = Request::builder()
+        .method("POST")
+        .uri("/api/v2/login")
+        .header(header::HOST, "organizr.test")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(login.to_string()))
+        .expect("the login is a valid request");
+    let mut request = request;
+    request
+        .extensions_mut()
+        .insert(ConnectInfo(SocketAddr::from(RECORDER_ADDRESS)));
+    let response = app
+        .clone()
+        .oneshot(request)
+        .await
+        .expect("the router answers");
+    assert_eq!(
+        response.status(),
+        200,
+        "the login of the jar {jar} again failed"
+    );
+    let name = browsers.session_cookie().to_owned();
+    let token = response
+        .headers()
+        .get_all(header::SET_COOKIE)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .filter_map(|cookie| cookie.split(';').next())
+        .filter_map(|pair| pair.split_once('='))
+        .find(|(cookie, value)| *cookie == name && !value.is_empty())
+        .map(|(_, value)| value.to_owned())
+        .expect("the login sets the session cookie");
+    browsers
+        .jars
+        .entry(jar.to_owned())
+        .or_default()
+        .insert(name, token);
 }
 
 /// Takes out of an answer the deletions of the session cookie at the paths of the API,
