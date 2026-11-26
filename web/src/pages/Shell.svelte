@@ -22,6 +22,7 @@
   } from '../lib/shellState.svelte';
   import Dialog from '../components/Dialog.svelte';
   import LookPicker from '../components/LookPicker.svelte';
+  import ImportNotice from '../components/ImportNotice.svelte';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import MediaSearch from './homepage/MediaSearch.svelte';
   import LanguageMenu from './LanguageMenu.svelte';
@@ -267,6 +268,7 @@
 {/if}
 
 <div class={['flex flex-col', 'org-content', (hasMenu || !session.loggedIn) && 'org-with-menu']}>
+  <ImportNotice notice={session.launch?.importNotice} />
   {#if session.canManage && session.launch?.settings.misc.checkForUpdate !== false}
     <UpdateNotice update={session.launch?.update} />
   {/if}

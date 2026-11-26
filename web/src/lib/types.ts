@@ -145,6 +145,8 @@ export interface Launch {
   theme?: string;
   /** The layout and theme that apply to the caller. Absent on an older server (then OG). */
   look?: Look;
+  /** The breaking changes that the import found, for an Admin until an Admin hides them (D-158). */
+  importNotice?: string[];
   appearance: Appearance;
   /** The switch of each plugin, for example `PHPMAILER-enabled`, and what plugins add. */
   plugins: Record<string, unknown>;

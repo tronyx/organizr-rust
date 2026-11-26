@@ -729,6 +729,8 @@ async fn config_routes_answer_like_php() {
         for key in ["allowedHosts", "trustedProxies"] {
             replay = replay.deviation_adds_in_order("D-155", all, data, key, json!(""));
         }
+        // The notice of an import of this application (D-158).
+        replay = replay.deviation_adds_in_order("D-158", all, data, "importNotice", json!(""));
         // The settings of the Netronome item of this application (D-128).
         for (key, value) in [
             ("homepageNetronomeAuth", json!("1")),

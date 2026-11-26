@@ -73,6 +73,10 @@ pub struct LaunchData {
     update: Option<UpdateStatus>,
     /// Not in PHP: the layout, theme and color set that apply to the caller (D-125).
     look: Look,
+    /// Not in PHP: the breaking changes that the import found, for an Admin, until an
+    /// Admin hides them (D-158). Left out otherwise.
+    #[serde(rename = "importNotice", skip_serializing_if = "Option::is_none")]
+    import_notice: Option<Vec<String>>,
 }
 
 /// A list, or `false` on an install that is not set up, as PHP sends it.
@@ -344,6 +348,9 @@ pub async fn launch(
         warnings: None,
         update: (caller.level() <= GroupLevel::CO_ADMIN).then(|| (*state.update_status()).clone()),
         look: effective_look(&settings, stored_look.as_ref()),
+        import_notice: (caller.level() == GroupLevel::ADMIN)
+            .then(|| crate::handlers::import_notice::lines(&settings))
+            .flatten(),
     }))
 }
 

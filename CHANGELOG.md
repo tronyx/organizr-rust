@@ -13,6 +13,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - Everything of PHP Organizr 2.1.5000: tabs and categories, users and groups, the homepage items, the settings pages, single sign-on, the login services (Plex, LDAP, FTP, Emby, Jellyfin), OpenID Connect, the second factor, and the plugins (invites, e-mail, speed test, health checks, bookmarks and chat).
 - `organizr import` moves a PHP install: the settings, users, groups, tabs, categories, homepage, pictures and custom certificate. See [Moving from PHP Organizr](docs/moving-from-php.md).
 - The import report lists the breaking changes that apply to the imported install, and [Moving from PHP Organizr](docs/moving-from-php.md) lists every one in a caution box.
+- After an import, an Admin sees the breaking changes that the import found at the top of the page, until an Admin hides them (D-158).
 - SQLite or PostgreSQL, chosen with `ORGANIZR_DATABASE_URL`, and `organizr move-to-postgres` to move an install from SQLite to PostgreSQL. See [Choosing a database](docs/choosing-a-database.md).
 - The modern layout, with brand themes (Plex, Jellyfin, Emby, Silo) and scene themes. Each person picks a layout, theme and color set. See [Appearance](docs/appearance.md).
 - The Plex Libraries plugin shares and unshares the libraries of your Plex server (D-121).

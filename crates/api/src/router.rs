@@ -17,8 +17,8 @@ use crate::error::ApiError;
 use crate::handlers::{
     backups, basics, bookmarks, categories, certificate, chat, config, connection_tests,
     connection_tests_more as more_tests, database, fields, forward_auth, groups,
-    health_checks_plugin, help, homepage, icon, images, invites, ip, launch, lock, log, login,
-    login_backends, logout, look, mail, media_register, news, oidc, pages, ping, plex,
+    health_checks_plugin, help, homepage, icon, images, import_notice, invites, ip, launch, lock,
+    log, login, login_backends, logout, look, mail, media_register, news, oidc, pages, ping, plex,
     plex_libraries, plugins, register, socks, speed_test, sponsors, tabs, themes, token,
     trusted_hosts, two_factor, update, users, users_import, wizard,
 };
@@ -149,6 +149,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         )?
         .route("/config", &get(config::all).put(config::change))?
         .route("/trusted-hosts", &get(trusted_hosts::lists))?
+        .route("/import-notice", &delete(import_notice::hide))?
         .route("/config/{item}", &get(config::item))?
         .route("/config/{item}/{term}", &get(config::item_with_term))?
         // An upload can be larger than the bodies that the other routes take.

@@ -38,6 +38,7 @@
   } from '../lib/shellState.svelte';
   import LookPicker from '../components/LookPicker.svelte';
   import SceneLayer from '../components/SceneLayer.svelte';
+  import ImportNotice from '../components/ImportNotice.svelte';
   import UpdateNotice from '../components/UpdateNotice.svelte';
   import LanguageMenu from './LanguageMenu.svelte';
   import MediaSearch from './homepage/MediaSearch.svelte';
@@ -494,6 +495,7 @@
           showMenu && wide.current && !pinned && 'm-with-icons',
         ]}
       >
+        <ImportNotice notice={session.launch?.importNotice} />
         {#if session.canManage && session.launch?.settings.misc.checkForUpdate !== false}
           <UpdateNotice update={session.launch?.update} />
         {/if}

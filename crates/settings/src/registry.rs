@@ -203,6 +203,9 @@ settings! {
     /// The reverse proxies whose forwarding headers are believed, when
     /// `ORGANIZR_TRUSTED_PROXIES` names none (D-155).
     trusted_proxies: Text = "trustedProxies", String::new();
+    /// The breaking changes that the import found, as a JSON list of texts, which the
+    /// Admin sees after the login until they hide them. Empty otherwise (D-158).
+    import_notice: Text = "importNotice", String::new();
 
     /// The random id of the install. It is part of the name of the session cookie. It is
     /// empty until the install is set up.
@@ -1234,8 +1237,8 @@ mod tests {
 
     /// The settings of this application that PHP Organizr does not have, each with its
     /// default: those of the Plex Libraries plugin (D-121), the look settings of the
-    /// Admin (D-125), those of the Netronome item (D-128), and the allowed hosts and the
-    /// trusted proxies (D-155).
+    /// Admin (D-125), those of the Netronome item (D-128), the allowed hosts and the
+    /// trusted proxies (D-155), and the notice of an import (D-158).
     fn own_plugin_settings() -> Vec<(&'static str, Value)> {
         vec![
             ("PLEXLIBRARIES-enabled", json!(false)),
@@ -1256,6 +1259,7 @@ mod tests {
             ("homepageNetronomeTimeRange", json!("week")),
             ("allowedHosts", json!("")),
             ("trustedProxies", json!("")),
+            ("importNotice", json!("")),
         ]
     }
 

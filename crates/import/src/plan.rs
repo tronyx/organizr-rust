@@ -120,6 +120,16 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
     report.invites = invites.len();
     report.chat_messages = chat_messages.len();
     report.settings = settings.len();
+    let mut settings = settings;
+    if !report.breaking.is_empty() {
+        // The Admin sees the breaking changes after the login, until they hide them
+        // (D-158). The notice is no setting of the old install, so it isn't counted.
+        let notice = serde_json::to_string(&report.breaking).unwrap_or_default();
+        settings.push(StoredSetting {
+            key: "importNotice".to_owned(),
+            value: Value::String(notice).to_string(),
+        });
+    }
 
     Ok(Plan {
         data: ImportData {
@@ -1151,6 +1161,39 @@ mod tests {
         assert_eq!(plan.report.tables_not_imported, [("options".to_owned(), 3)]);
         assert_eq!(plan.report.retired_settings, ["driver"]);
         assert_eq!(plan.report.repairs.len(), 5, "{:#?}", plan.report.repairs);
+    }
+
+    #[test]
+    fn breaking_changes_are_kept_as_the_notice_for_the_admin() {
+        let secrets = SecretBox::with_random_key().expect("a key can be made");
+        let notice = |install: &LegacyInstall| {
+            let plan = plan(install, &secrets).expect("the plan can be made");
+            let stored = plan
+                .data
+                .settings
+                .iter()
+                .find(|setting| setting.key == "importNotice")
+                .map(|setting| setting.value.clone());
+            (plan.report, stored)
+        };
+
+        let (report, stored) = notice(&LegacyInstall::default());
+        assert_eq!(report.breaking, [] as [String; 0]);
+        assert_eq!(stored, None);
+
+        let install = LegacyInstall {
+            config: vec![("sonarrURL".to_owned(), json!("/sonarr"))],
+            ..LegacyInstall::default()
+        };
+        let (report, stored) = notice(&install);
+        assert_eq!(report.breaking.len(), 1, "{:#?}", report.breaking);
+        // Only the setting of the old install counts as a setting that differs.
+        assert_eq!(report.settings, 1);
+        let stored: serde_json::Value =
+            serde_json::from_str(&stored.expect("the notice is stored")).expect("JSON");
+        let lines: Vec<String> =
+            serde_json::from_str(stored.as_str().expect("a text")).expect("a list");
+        assert_eq!(lines, report.breaking);
     }
 
     #[test]

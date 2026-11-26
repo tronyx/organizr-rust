@@ -68,6 +68,8 @@ const LOGIN_SETTINGS: [&str; 15] = [
 /// `ORGANIZR_ALLOWED_HOSTS` and `ORGANIZR_TRUSTED_PROXIES` win over (D-155).
 const ALLOWED_HOSTS: &str = "allowedHosts";
 const TRUSTED_PROXIES: &str = "trustedProxies";
+/// The notice of an import for the Admin (D-158).
+const IMPORT_NOTICE: &str = "importNotice";
 
 /// The services of the health checks plugin: the addresses that a run asks, and whether
 /// each gets the API key.
@@ -94,6 +96,7 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
         || key.starts_with("sso")
         || key == ALLOWED_HOSTS
         || key == TRUSTED_PROXIES
+        || key == IMPORT_NOTICE
         || is_trusted_by_a_login(key, settings)
         || key == "customJava"
         || key == "customThemeJava"

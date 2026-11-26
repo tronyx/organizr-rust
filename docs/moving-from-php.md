@@ -10,7 +10,7 @@ The move never changes your old install. You can run both side by side, and swit
 > Run the import **before** you open the new install in a browser. Don't complete the set-up wizard: the import builds the install for you, and it refuses a database that already holds records.
 
 > [!CAUTION]
-> **Breaking changes.** Some things that worked in PHP Organizr work differently here, for safety. Check each one that your install uses. The import ends with the list of the ones it finds in your data, under **Breaking changes for this install**.
+> **Breaking changes.** Some things that worked in PHP Organizr work differently here, for safety. Check each one that your install uses. The import ends with the list of the ones it finds in your data, under **Breaking changes for this install**, and an Admin sees the same list at the top of the page after the login, until an Admin hides it (D-158).
 >
 > - **Service addresses that are only a path**, such as `/sonarr`, work only on the hosts in **Allowed Hosts** (or `ORGANIZR_ALLOWED_HOSTS`). The first Admin login stores the host it used while the list is empty. Add any other host that you reach Organizr at. See [step 5](#-5-homepage) (D-154, D-155).
 > - **Forward auth**: when the path names a group, such as `/api/v2/auth-1`, a `group=` in the query never changes it. An allow list in the query counts only when your proxy writes it into the address itself, as nginx does. See [Forward auth](forward-auth.md) (D-136, D-157).

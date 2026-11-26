@@ -24,6 +24,7 @@ pub mod help;
 pub mod homepage;
 pub mod icon;
 pub mod images;
+pub mod import_notice;
 pub mod invites;
 pub mod ip;
 pub mod launch;

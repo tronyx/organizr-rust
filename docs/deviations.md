@@ -43,7 +43,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156 |
 | Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150 |
 | Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157 |
-| The set-up wizard and the database | D-19, D-38, D-46, D-97 |
+| The set-up wizard and the database | D-19, D-38, D-46, D-97, D-158 |
 | Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129 |
 | Tabs and categories | D-28, D-32, D-39, D-47, D-48 |
 | Settings and configuration | D-06, D-07, D-14, D-29, D-45, D-53, D-96, D-106, D-112, D-116 |
@@ -76,8 +76,9 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/2fa`, `/2fa/{type}` | D-57 |
 | `/wizard` | D-19, D-38, D-46, D-138 |
 | `GET /status` | D-21, D-46 |
-| `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125, D-128 |
-| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135 |
+| `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125, D-128, D-158 |
+| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135, D-158 |
+| `DELETE /import-notice` | D-158 |
 | `/users`, `/users/{id}` | D-05, D-15, D-52, D-57 |
 | `POST /users/register` | D-36, D-37, D-38 |
 | `POST /users/recover` | D-09, D-58, D-138 |
@@ -313,6 +314,7 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-155 | **New: the allowed hosts and the trusted proxies are also settings, which the variables win over.** On top of D-01 and D-154. (1) The new settings `allowedHosts` and `trustedProxies` hold the lists of `ORGANIZR_ALLOWED_HOSTS` and `ORGANIZR_TRUSTED_PROXIES`, in the same form. A variable that names any entry wins, and its setting does not count. (2) Only an Admin changes them, and `PUT /config` refuses a list that the variable would not take (`422`) and a change while the variable is set (`409`, `… is set by ORGANIZR_… in the environment of the container`). A change counts at once, without a restart. (3) `GET /trusted-hosts`, for an Admin or a Co-Admin, gives each list that counts, the name of its variable, and whether the variable sets it. **Settings › System Settings › Login & Security** shows both, read-only while a variable sets them. (4) While neither the variable nor the setting names a host, the set-up wizard and the login of an Admin store the host of the request in `allowedHosts`, so a service address like `/sonarr` works on that host at once after an import. Decided by the owner of the project on 2026-11-26. |
 | D-156 | **An imported Admin or Co-Admin OpenID Connect link is taken by its checked e-mail address.** On top of D-148. D-148 refused every login to an imported Admin or Co-Admin account that is linked to the provider without a subject, so every such Admin had to link again after a move from PHP. (1) Such an account is taken, and the subject of the login stored, when the provider says that it checked the e-mail address (`email_verified` is `true`) and that address is the address of the account, in any letter case. (2) A match of the user name alone, an address that the provider did not check, and another address still get "Failed to create or link user". Accounts of other levels keep the first-login link of D-89 (4). Decided by the owner of the project on 2026-11-26. |
 | D-157 | **An allow list in the query counts when a trusted proxy wrote that query itself, and a list has up to 100 entries.** Forward auth, on top of D-136 and D-141. D-136 ignored every allow list in the query when the path names a group, which broke checks such as `/api/v2/auth-1?whitelist=…` that nginx sends with a fixed address. (1) Such an allow list counts when the request comes from a proxy in the trusted proxies (D-01, D-155), it carries `X-Forwarded-Uri`, and the query of that address is not the query of the check. Caddy and Traefik send the address of the visitor there, so when they hand on the visitor's query it is the same, and it does not count. A header from any other sender does not count. (2) The group in the query still never changes the group of the path. (3) Up to 100 entries of a list count, not 20. Decided by the owner of the project on 2026-11-26. |
+| D-158 | **New: after an import, an Admin sees the breaking changes that the import found, until an Admin hides them.** An install that `organizr import` moves from PHP. Some things that worked in PHP Organizr work differently here, for safety, and the import names the ones that the data of the install shows (see [Moving from PHP Organizr](moving-from-php.md)). (1) The import stores that list in the new setting `importNotice`, as a JSON list of texts. Nothing is stored when the list is empty. (2) `GET /launch` adds `importNotice`, the list, for an Admin while the setting holds one; for other callers, and once the notice is hidden, the field is left out. (3) The new route `DELETE /import-notice`, for an Admin, empties the setting, so the notice is gone for every Admin. (4) Only an Admin changes `importNotice` through `PUT /config`. The page shows the list at the top, with a button that hides it. PHP has no import, so it has no such notice. Decided by the owner of the project on 2026-11-26. |
 
 ## ✅ Kept exactly as PHP has it
 
