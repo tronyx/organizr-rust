@@ -46,6 +46,9 @@ pub struct Report {
     pub php_files: Vec<String>,
     /// Other things to look at after the import.
     pub notes: Vec<String>,
+    /// The changes of this version that apply to this install: what worked in PHP
+    /// Organizr and works differently now.
+    pub breaking: Vec<String>,
 }
 
 impl fmt::Display for Report {
@@ -80,6 +83,7 @@ impl fmt::Display for Report {
             self.sessions
         )?;
 
+        breaking(formatter, &self.breaking)?;
         list(formatter, "Repairs", &self.repairs)?;
         list(formatter, "Left out", &self.skipped)?;
         list(formatter, "To look at", &self.notes)?;
@@ -121,4 +125,29 @@ fn list(formatter: &mut fmt::Formatter<'_>, title: &str, lines: &[String]) -> fm
         writeln!(formatter, "  - {line}")?;
     }
     Ok(())
+}
+
+/// The breaking changes that apply to the install, set apart from the other lists, with
+/// where to read about the ones that the data of an install doesn't show.
+fn breaking(formatter: &mut fmt::Formatter<'_>, changes: &[String]) -> fmt::Result {
+    writeln!(formatter)?;
+    if changes.is_empty() {
+        writeln!(
+            formatter,
+            "Breaking changes for this install: none found in its data."
+        )?;
+    } else {
+        writeln!(formatter, "!!! Breaking changes for this install !!!")?;
+        writeln!(
+            formatter,
+            "These worked in PHP Organizr and work differently now:"
+        )?;
+        for change in changes {
+            writeln!(formatter, "  - {change}")?;
+        }
+    }
+    writeln!(
+        formatter,
+        "Check your reverse proxy too: the forward auth checks changed (D-136, D-157). \"Moving from PHP Organizr\" in the docs lists every breaking change."
+    )
 }

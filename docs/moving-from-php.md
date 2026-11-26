@@ -9,6 +9,22 @@ The move never changes your old install. You can run both side by side, and swit
 > [!IMPORTANT]
 > Run the import **before** you open the new install in a browser. Don't complete the set-up wizard: the import builds the install for you, and it refuses a database that already holds records.
 
+> [!CAUTION]
+> **Breaking changes.** Some things that worked in PHP Organizr work differently here, for safety. Check each one that your install uses. The import ends with the list of the ones it finds in your data, under **Breaking changes for this install**.
+>
+> - **Service addresses that are only a path**, such as `/sonarr`, work only on the hosts in **Allowed Hosts** (or `ORGANIZR_ALLOWED_HOSTS`). The first Admin login stores the host it used while the list is empty. Add any other host that you reach Organizr at. See [step 5](#-5-homepage) (D-154, D-155).
+> - **Forward auth**: when the path names a group, such as `/api/v2/auth-1`, a `group=` in the query never changes it. An allow list in the query counts only when your proxy writes it into the address itself, as nginx does. See [Forward auth](forward-auth.md) (D-136, D-157).
+> - **Admin and Co-Admin accounts linked to OpenID Connect** keep their link only when the provider sends the account's own e-mail address, marked as checked. Otherwise, log in with the password once and link the account again (D-148, D-156).
+> - **Co-Admins** no longer change trusted custom HTML items, the sign-in settings, OpenID Connect, the services of the health checks, single sign-on, or the allowed hosts and trusted proxies. Only an Admin does (D-131 to D-135, D-155).
+> - **E-mail links** name the site from the setting **Domain** of the e-mail settings, never from the request. The first Admin login fills it in when it's empty (D-138).
+> - **Komga single sign-on with a master password** asks Komga with the e-mail address of the Plex account after a Plex login (D-150).
+> - **The donation history** of the Donate item shows only the payments that this version marked, not the ones from before the move (D-152).
+> - **Invites for Emby** make an Emby user only while the invites plugin is set to Emby (D-149).
+> - **A new password ends the account's other sessions** (D-146).
+> - **Scripts** that call `GET /plugins/bookmark/setup/…`, `GET /plugins/plexlibraries/setup/tab` or the test e-mail route from another site are refused (D-144).
+>
+> [Deviations](deviations.md) has the reason for each.
+
 ## 📋 1. Before the move
 
 - 🗄 **Check the old database.** The import reads SQLite only. An old install on MySQL or PostgreSQL can't be imported.
@@ -64,6 +80,11 @@ These steps use Docker Compose with SQLite. For PostgreSQL, see [With PostgreSQL
 
    Sessions are not imported (31 found). Every user logs in again, with the same password.
 
+   !!! Breaking changes for this install !!!
+   These worked in PHP Organizr and work differently now:
+     - Service addresses that are only a path work only on the hosts in Allowed Hosts (...). These settings hold such an address: `sonarrURL` (/sonarr).
+   Check your reverse proxy too: the forward auth checks changed (D-136, D-157). "Moving from PHP Organizr" in the docs lists every breaking change.
+
    Repairs:
      - The tab "plex" is now called "plex (2)", because another tab has the same name.
 
@@ -71,7 +92,7 @@ These steps use Docker Compose with SQLite. For PostgreSQL, see [With PostgreSQL
      - options: 3 rows
    ```
 
-   Check that the counts match your install, and read every line under **Repairs**, **Left out** and **To look at**. A few repairs are normal: PHP checked less than this version. [The report](importing.md#-the-report) explains each part.
+   Check that the counts match your install, and read every line under **Breaking changes for this install**, **Repairs**, **Left out** and **To look at**. A few repairs are normal: PHP checked less than this version. [The report](importing.md#-the-report) explains each part.
 
 5. Run the import for real: the same command without `--dry-run`.
 

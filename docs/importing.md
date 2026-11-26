@@ -161,6 +161,7 @@ The report starts with `Dry run: nothing was written.` or `The import is complet
 | Part | What it holds |
 |---|---|
 | Records | The number of records of each kind, and the number of copied files. Then the number of sessions found, which aren't imported |
+| Breaking changes for this install | What worked in PHP Organizr and works differently now, as far as the data of the install shows it: service addresses that are only a path, Admins and Co-Admins linked to OpenID Connect, Co-Admins, Komga single sign-on with a master password, the donation history, and e-mail without a site address. Always printed, with a line about forward auth. [Moving from PHP Organizr](moving-from-php.md) lists every breaking change |
 | Repairs | Records that the import changed. [Repairs](#-repairs) tells you why |
 | Left out | Records that the import didn't store |
 | To look at | Pictures that moved or are missing, and folders that the import didn't copy |

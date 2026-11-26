@@ -6,6 +6,7 @@
 //! [`files::plan_files`] decides which files to copy. [`run`] does all of it and stores
 //! the records in one step, so the new database holds the whole install or nothing.
 
+pub mod breaking;
 pub mod files;
 pub mod legacy_aes;
 pub mod legacy_db;

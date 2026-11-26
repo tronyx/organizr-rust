@@ -101,7 +101,8 @@ pub fn plan(install: &LegacyInstall, secrets: &SecretBox) -> Result<Plan, PlanEr
     let bookmarks = plan_bookmarks(&install.bookmarks, &mut report);
     let invites = plan_invites(&install.invites, &mut report);
     let chat_messages = plan_chat_messages(&install.chat_messages, &mut report);
-    let (settings, legacy_settings) = plan_settings(&install.config, secrets, &mut report)?;
+    let (settings, legacy_settings, typed) = plan_settings(&install.config, secrets, &mut report)?;
+    report.breaking = crate::breaking::breaking_changes(&groups, &users, &typed);
 
     for (table, rows) in &install.other_tables {
         if table == "tokens" {
@@ -843,12 +844,13 @@ fn plan_tabs(rows: &[LegacyRow], categories: &[Category], report: &mut Report) -
     tabs
 }
 
-/// The settings to store, and the settings that this application does not know.
+/// The settings to store, the settings that this application does not know, and the
+/// settings as this application reads them.
 fn plan_settings(
     config: &[(String, Value)],
     secrets: &SecretBox,
     report: &mut Report,
-) -> Result<(Vec<StoredSetting>, Vec<StoredSetting>), PlanError> {
+) -> Result<(Vec<StoredSetting>, Vec<StoredSetting>, Settings), PlanError> {
     let hash = config
         .iter()
         .find(|(key, _)| key == "organizrHash")
@@ -910,7 +912,7 @@ fn plan_settings(
             .map(|(key, value)| StoredSetting { key, value })
             .collect()
     };
-    Ok((list(stored), list(legacy)))
+    Ok((list(stored), list(legacy), settings))
 }
 
 /// The settings of the old install, each default of PHP that PHP reads under another name

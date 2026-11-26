@@ -24,6 +24,9 @@ This is a rewrite of Organizr 2.1 in Rust. It aims to keep the API, the settings
 - The API keeps the routes, the envelope and the answers of PHP, so scripts and apps that call Organizr keep working, apart from the differences in [the deviations](deviations.md).
 - Everybody logs in once after the move: the sessions of PHP don't carry over.
 
+> [!CAUTION]
+> **Breaking changes for a move.** Service addresses that are only a path, forward auth query lists, Admin and Co-Admin accounts linked to OpenID Connect, what a Co-Admin may change, and a few more work differently, for safety. [Moving from PHP Organizr](moving-from-php.md) lists each one, and the import names the ones it finds in your data.
+
 ## ✅ What works as in PHP
 
 - Tabs, categories, groups and users, the sidebar, the top bar, the lock screen and the login page.

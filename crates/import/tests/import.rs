@@ -702,6 +702,12 @@ async fn dry_run_reports_and_writes_nothing() {
         shown.contains("Sessions are not imported (1 found)"),
         "{shown}"
     );
+    // The breaking changes come with a pointer to the docs, also when the data shows none.
+    assert!(
+        shown.contains("Breaking changes for this install"),
+        "{shown}"
+    );
+    assert!(shown.contains("\"Moving from PHP Organizr\""), "{shown}");
     // The report names records and settings, and holds no secret.
     for secret in [
         "made-up",
