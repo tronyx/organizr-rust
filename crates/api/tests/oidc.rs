@@ -1449,7 +1449,7 @@ async fn imported_link_without_a_subject_gets_it_at_the_first_login() {
 }
 
 #[tokio::test]
-async fn imported_admin_link_without_a_subject_is_not_taken_at_a_login() {
+async fn imported_admin_link_without_a_subject_needs_a_checked_matching_address() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         for (name, level) in [("imported.admin", 0), ("imported.coadmin", 1)] {
@@ -1467,13 +1467,40 @@ async fn imported_admin_link_without_a_subject_is_not_taken_at_a_login() {
             &[("oidcLinkExistingUsers", json!(true))],
         );
 
-        // The first person at the provider with the name would get the account. An Admin
-        // or Co-Admin account is linked on purpose only, from its settings (D-148).
-        for name in ["imported.admin", "imported.coadmin"] {
+        for (name, sub) in [
+            ("imported.admin", "subject-1"),
+            ("imported.coadmin", "subject-2"),
+        ] {
+            subject(&provider, sub);
+            // The name alone, with another address, takes no Admin or Co-Admin account
+            // (D-148).
+            person(&provider, name, "somebody.else@example.com");
+            assert_failed(
+                &log_in(&app, &provider).await,
+                "Failed to create or link user",
+            );
+            // An address that the provider did not check takes none either.
             person(&provider, name, &format!("{name}@example.com"));
-            let answer = log_in(&app, &provider).await;
-            assert_failed(&answer, "Failed to create or link user");
+            provider.set(|behavior| {
+                behavior
+                    .person
+                    .insert("email_verified".to_owned(), json!(false));
+            });
+            assert_failed(
+                &log_in(&app, &provider).await,
+                "Failed to create or link user",
+            );
             assert_eq!(stored_subject(database, name).await, None, "{name}");
+
+            // The checked address of the account takes it, as after an import (D-156).
+            person(
+                &provider,
+                name,
+                &format!("{}@Example.com", name.to_uppercase()),
+            );
+            let answer = log_in(&app, &provider).await;
+            assert_eq!(answer.status, StatusCode::FOUND, "{name}: {}", answer.body);
+            assert_eq!(stored_subject(database, name).await.as_deref(), Some(sub));
         }
     })
     .await;

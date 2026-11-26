@@ -271,9 +271,14 @@ pub async fn find_or_create(
             }
             // An account that the import brought with a link to this provider, but no
             // subject: the first login that matches it takes it. An Admin or a Co-Admin
-            // account is linked on purpose only, from its settings (D-148).
+            // account only by an address that the provider checked and that is the
+            // address of the account, never by its name (D-148, D-156).
             LinkState::ThisProviderWithoutSubject => {
-                if is_privileged(database, &user).await? {
+                let has_the_address = account.email_verified == Some(true)
+                    && user.email.as_deref().is_some_and(|email| {
+                        !email.is_empty() && email.eq_ignore_ascii_case(account.email)
+                    });
+                if !has_the_address && is_privileged(database, &user).await? {
                     return Err(OidcAccountError::Protected(user.username));
                 }
             }

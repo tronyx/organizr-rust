@@ -164,7 +164,7 @@ The forward auth routes of PHP Organizr work as before, also the old forms such 
 - ✉ **Password recovery** sends a new password that works for 24 hours, next to the old one. The old password keeps working until somebody logs in with the new one. See [E-mail](email.md).
 - 🧩 **Plugins of other authors** are WebAssembly extensions, not PHP files. See [Extensions](extensions.md).
 - 📜 **The log** goes to the container output and to the folder `logs` in the data folder. See [The log](log.md).
-- 🔐 **Admin and Co-Admin accounts linked to OpenID Connect** must be linked again: log in with the password once, then link the account in your settings. Other accounts keep their link. See [OpenID Connect](openid-connect.md) (D-148).
+- 🔐 **Admin and Co-Admin accounts linked to OpenID Connect** keep their link only when the provider sends the account's own e-mail address, marked as checked. Otherwise, log in with the password once, then link the account in your settings. Other accounts keep their link. See [OpenID Connect](openid-connect.md) (D-148, D-156).
 
 [Release notes](release-notes.md) lists the differences you're most likely to notice, and [Deviations](deviations.md) lists every one, with its reason.
 
