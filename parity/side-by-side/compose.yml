@@ -1,0 +1,82 @@
+# Runs PHP Organizr and this version side by side on a copy of a live install, and
+# compares their answers. Everything runs on a network without access to the outside,
+# and nothing listens on this machine. README.md in this folder has the steps.
+#
+#   OLD_COPY    a throwaway copy of the /config folder of the PHP install (the folder
+#               that holds www/organizr and www/db). PHP writes to it while it runs.
+#   PG_PASSWORD any password for the throwaway PostgreSQL database.
+name: organizr-side-by-side
+
+networks:
+  inside:
+    internal: true
+
+volumes:
+  rust-data:
+  pg-data:
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: organizr
+      POSTGRES_PASSWORD: ${PG_PASSWORD:?set PG_PASSWORD}
+      POSTGRES_DB: organizr
+    volumes:
+      - pg-data:/var/lib/postgresql
+    networks: [inside]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username organizr --dbname organizr"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # Moves the copy into this version. Run it once, before PHP starts on the copy.
+  import:
+    image: ${ORGANIZR_IMAGE:-ghcr.io/tronyx/organizr-rust:develop}
+    profiles: [import]
+    command: ["import", "--from", "/old"]
+    environment:
+      ORGANIZR_DATABASE_URL: postgres://organizr:${PG_PASSWORD}@postgres:5432/organizr
+    volumes:
+      - rust-data:/config
+      - ${OLD_COPY:?set OLD_COPY}:/old:ro
+    networks: [inside]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  rust:
+    image: ${ORGANIZR_IMAGE:-ghcr.io/tronyx/organizr-rust:develop}
+    environment:
+      ORGANIZR_DATABASE_URL: postgres://organizr:${PG_PASSWORD}@postgres:5432/organizr
+      ORGANIZR_EXTENSION_MARKETPLACE: ""
+    volumes:
+      - rust-data:/config
+    networks: [inside]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # PHP Organizr 2.1.5000, the image of the parity tests, on the copy.
+  php:
+    build: ../oracle
+    volumes:
+      - ${OLD_COPY}/www/organizr/data:/var/www/html/data
+      - ${OLD_COPY}/www/db:/config/www/db
+    networks: [inside]
+
+  # Asks both the same GET routes and prints what differs: statuses and the paths of the
+  # JSON answers, never their values.
+  compare:
+    image: python:3.13-slim
+    profiles: [compare]
+    command: ["python", "-I", "/compare.py"]
+    environment:
+      PHP_ADDRESS: php:80
+      RUST_ADDRESS: rust:8080
+    volumes:
+      - ./compare.py:/compare.py:ro
+      - ${OLD_COPY}/www/organizr/data/config:/oldcfg:ro
+    networks: [inside]
+    depends_on: [php, rust]

@@ -6,6 +6,9 @@ This is your checklist for moving from PHP Organizr 2.1 to this version, from th
 
 The move never changes your old install. You can run both side by side, and switch your reverse proxy to the new one when it's ready.
 
+> [!TIP]
+> **Testing both side by side?** Use a private window, or another browser, for one of them. Both installs use the same name for the session cookie, because the import keeps the id of the install, so a login on one logs you out of the other in that browser.
+
 > [!IMPORTANT]
 > Run the import **before** you open the new install in a browser. Don't complete the set-up wizard: the import builds the install for you, and it refuses a database that already holds records.
 

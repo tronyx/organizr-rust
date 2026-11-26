@@ -333,7 +333,7 @@ See [the deviations](deviations.md). It lists every approved difference from Org
 8. Repair records that the new schema cannot hold (orphan tabs, duplicate names by case, more than one default) and list each repair.
 9. Write all records in one transaction and print a report: counts per table, repaired rows, skipped items, tables not imported yet, PHP files found.
 
-Dry-run mode prints the report and writes nothing. Testing uses a synthetic legacy install that the real PHP application wrote (`parity/legacy-install/generate.py`), values that real PHP encrypted (`parity/php-legacy-aes/generate.php`), plus a local run against a copy of a live install, which never enters the repository.
+Dry-run mode prints the report and writes nothing. Testing uses a synthetic legacy install that the real PHP application wrote (`parity/legacy-install/generate.py`), values that real PHP encrypted (`parity/php-legacy-aes/generate.php`), plus a local run against a copy of a live install, which never enters the repository. `parity/side-by-side` runs that check: it imports the copy, starts PHP and this version on it in a closed Docker network, and compares their GET answers by path, without printing values.
 
 The tables of the plugins (`invites`, `BOOKMARK-*`, `chatroom`) are imported with the features that use them. The table `options` is not imported. A legacy install on MySQL or PostgreSQL is refused with a clear message until that reader exists.
 
