@@ -220,7 +220,8 @@ You can add a list of addresses to the question:
 | `allow` | `whitelist`, `white`, `wl`, `w` | A caller from one of the addresses passes, whatever their level |
 | `deny` | `blacklist`, `black`, `bl`, `b` | A caller from one of the addresses doesn't pass |
 
-- Separate entries with commas. Each entry is **one** address or a host name. A network such as `192.168.1.0/24` is not an entry.
+- Separate entries with commas. Each entry is **one** address or a host name. A network such as `192.168.1.0/24` is not an entry. Only the first 20 entries count.
+- **Host names count only in the path.** A list in the query takes addresses only, because a visitor can add one, and its host names would make Organizr look them up. Organizr remembers what a host name stands for for one minute (D-141).
 - The short form reads a deny list from the query: `blacklist`, or `type=deny` with `ips`. **An allow list in the query doesn't count when the path names a group**, because some proxies (Caddy among them) send the visitor's query along with the check, and a visitor could then name their own address. Put an allow list in the path, in the long form (D-136).
 - Prefer addresses. A host name lets in every address its DNS answers with (IPv4 and IPv6), so whoever controls that DNS name (a dynamic-DNS name, for example) controls who passes.
 - The caller's address is only as reliable as [`ORGANIZR_TRUSTED_PROXIES`](reverse-proxy.md#-organizr_trusted_proxies). List only your proxy there.

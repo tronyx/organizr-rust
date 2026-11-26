@@ -14,8 +14,10 @@
 //! Every method asks the same question. A query that holds `group=` always asks in the
 //! short form, with everything after `group=` as the group, as in the PHP application.
 
+use std::collections::HashMap;
 use std::net::IpAddr;
-use std::time::Duration;
+use std::sync::{LazyLock, Mutex, PoisonError};
+use std::time::{Duration, Instant};
 
 use axum::Extension;
 use axum::extract::{RawPathParams, RawQuery, State};
@@ -41,6 +43,19 @@ const DEFAULT_ADDRESSES: &str = "192.0.0.0";
 
 /// How long the name of a host in a list may take to look up.
 const LOOKUP_TIME: Duration = Duration::from_secs(2);
+
+/// How many entries of a list count (D-141).
+const MOST_ENTRIES: usize = 20;
+
+/// How long the addresses of a host name are remembered, and for how many names.
+const REMEMBERED_FOR: Duration = Duration::from_mins(1);
+const MOST_REMEMBERED: usize = 256;
+
+/// The host names of the lists, each with when it was looked up and what was found.
+type LookedUp = HashMap<String, (Instant, Vec<IpAddr>)>;
+
+/// The host names that lookups found a moment ago.
+static NAMES: LazyLock<Mutex<LookedUp>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 /// What every answer tells about the caller.
 #[derive(Debug, Clone, Serialize)]
@@ -96,6 +111,15 @@ fn percent_decoded(text: &str) -> String {
     String::from_utf8_lossy(&decoded).into_owned()
 }
 
+/// The entries of a list that are addresses, in their order, with commas between them.
+fn addresses_only(list: &str) -> String {
+    list.split(',')
+        .map(str::trim)
+        .filter(|entry| entry.parse::<IpAddr>().is_ok())
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
 /// Reads the question from the path and the query. `long_form` says whether the path is
 /// one of the long forms, and `parts` are the pieces of the path after the name of the
 /// route.
@@ -106,8 +130,12 @@ fn percent_decoded(text: &str) -> String {
 fn question(long_form: bool, parts: &[String], query: &str) -> Result<Question, UnknownKind> {
     let mut group = parts.first().cloned();
     let path_names_group = group.as_deref().is_some_and(|group| !group.is_empty());
+    // A list from the query is the visitor's to write, so only its addresses count: a
+    // host name there would make Organizr look it up (D-141). A list in the path is the
+    // operator's, and its host names count.
+    let from_query = |key: &str| query_value(query, key).map(|list| addresses_only(&list));
     let mut kind = query_value(query, "type");
-    let mut addresses = query_value(query, "ips");
+    let mut addresses = from_query("ips");
 
     // The PHP application turns every request whose query holds `group=` into the short
     // form, with the rest of the query as the group.
@@ -133,10 +161,8 @@ fn question(long_form: bool, parts: &[String], query: &str) -> Result<Question, 
     // form come from the path, those of the short form from the query.
     let query_allows = !path_names_group;
     let kind_from_query = !long_form || !path_names_group;
-    let mut allowed = query_allows
-        .then(|| query_value(query, "whitelist"))
-        .flatten();
-    let mut denied = query_value(query, "blacklist");
+    let mut allowed = query_allows.then(|| from_query("whitelist")).flatten();
+    let mut denied = from_query("blacklist");
     if let Some(kind) = kind {
         match kind.to_lowercase().as_str() {
             "whitelist" | "white" | "w" | "wl" | "allow" => {
@@ -181,24 +207,53 @@ fn level_of_number(text: &str) -> Option<i64> {
 /// Whether the address of the caller is in a list of addresses and host names, which
 /// commas separate.
 async fn lists(list: &str, address: IpAddr) -> bool {
-    for entry in list.split(',').map(str::trim) {
+    // Only the first entries count, so one list costs a few lookups at most (D-141).
+    for entry in list.split(',').map(str::trim).take(MOST_ENTRIES) {
         if let Ok(listed) = entry.parse::<IpAddr>() {
             if listed.to_canonical() == address {
                 return true;
             }
         } else if !entry.is_empty() && !entry.starts_with(|first: char| first.is_ascii_digit()) {
-            // A host name stands for the addresses that it has at this moment.
-            let lookup = tokio::time::timeout(LOOKUP_TIME, tokio::net::lookup_host((entry, 0)));
-            if let Ok(Ok(found)) = lookup.await
-                && found
-                    .into_iter()
-                    .any(|found| found.ip().to_canonical() == address)
-            {
+            // A host name stands for the addresses that it had a moment ago.
+            if addresses_of(entry).await.contains(&address) {
                 return true;
             }
         }
     }
     false
+}
+
+/// The addresses of a host name, as a lookup found them less than
+/// [`REMEMBERED_FOR`] ago, or as a new lookup finds them. A lookup that fails or takes
+/// too long finds none, and that is remembered too.
+async fn addresses_of(name: &str) -> Vec<IpAddr> {
+    if let Some(addresses) = remembered(name) {
+        return addresses;
+    }
+    let lookup = tokio::time::timeout(LOOKUP_TIME, tokio::net::lookup_host((name, 0)));
+    let addresses: Vec<IpAddr> = match lookup.await {
+        Ok(Ok(found)) => found.map(|found| found.ip().to_canonical()).collect(),
+        _ => Vec::new(),
+    };
+    let mut names = NAMES.lock().unwrap_or_else(PoisonError::into_inner);
+    let now = Instant::now();
+    if names.len() >= MOST_REMEMBERED {
+        names.retain(|_, (since, _)| now.duration_since(*since) < REMEMBERED_FOR);
+        if names.len() >= MOST_REMEMBERED {
+            names.clear();
+        }
+    }
+    names.insert(name.to_ascii_lowercase(), (now, addresses.clone()));
+    addresses
+}
+
+/// The addresses that a lookup of a host name found less than [`REMEMBERED_FOR`] ago.
+fn remembered(name: &str) -> Option<Vec<IpAddr>> {
+    let names = NAMES.lock().unwrap_or_else(PoisonError::into_inner);
+    names
+        .get(&name.to_ascii_lowercase())
+        .filter(|(since, _)| since.elapsed() < REMEMBERED_FOR)
+        .map(|(_, addresses)| addresses.clone())
 }
 
 /// The answer that sends the browser to the login page of Organizr, for a proxy that
@@ -376,7 +431,11 @@ pub async fn answer(
 
 #[cfg(test)]
 mod tests {
-    use super::{Question, UnknownKind, level_of_number, percent_decoded, question};
+    use std::net::IpAddr;
+
+    use super::{
+        Question, UnknownKind, level_of_number, lists, percent_decoded, question, remembered,
+    };
 
     fn parts(parts: &[&str]) -> Vec<String> {
         parts.iter().map(|part| (*part).to_owned()).collect()
@@ -505,6 +564,36 @@ mod tests {
             asked(false, &[], "whitelist=10.0.0.1").allowed.as_deref(),
             Some("10.0.0.1")
         );
+    }
+
+    #[test]
+    fn list_in_the_query_holds_addresses_only() {
+        // A visitor can add a list to the query; its host names would make Organizr look
+        // them up, so only addresses count there (D-141).
+        let allowed = asked(
+            false,
+            &[],
+            "whitelist=10.0.0.1,example.com,%20localhost,10.0.0.2",
+        );
+        assert_eq!(allowed.allowed.as_deref(), Some("10.0.0.1,10.0.0.2"));
+        let denied = asked(false, &["1"], "type=deny&ips=nas.example.com");
+        assert_eq!(denied.denied, None);
+        // The path is the operator's, and its host names count.
+        let path = asked(true, &["1", "allow", "nas.example.com,10.0.0.3"], "");
+        assert_eq!(path.allowed.as_deref(), Some("nas.example.com,10.0.0.3"));
+    }
+
+    #[tokio::test]
+    async fn list_looks_at_its_first_twenty_entries_and_remembers_names() {
+        let address: IpAddr = "127.0.0.1".parse().expect("the address is valid");
+        let mut long: Vec<String> = (1..=20).map(|n| format!("10.9.9.{n}")).collect();
+        long.push("127.0.0.1".to_owned());
+        assert!(!lists(&long.join(","), address).await);
+        assert!(lists("10.9.9.1,127.0.0.1", address).await);
+
+        // A name is looked up once, and its addresses are remembered for a while.
+        assert!(lists("localhost", address).await);
+        assert!(remembered("LOCALHOST").is_some());
     }
 
     #[test]
