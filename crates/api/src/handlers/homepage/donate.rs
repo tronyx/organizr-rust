@@ -82,6 +82,15 @@ fn failed(error: &StripeError) -> Refusal {
 }
 
 /// The e-mail address of the caller, when the caller has an account with one.
+/// The mark of the account of the caller that a donation carries: the id of the install
+/// and the id of the account, so that a new install with the same ids sees nothing of an
+/// old one (D-152).
+fn mark_of(settings: &Settings, caller: &Caller) -> Option<String> {
+    caller
+        .user()
+        .map(|user| format!("{}:{}", settings.install_id, user.authenticated.user.id))
+}
+
 fn email_of(caller: &Caller) -> Option<&str> {
     caller
         .user()
@@ -97,11 +106,12 @@ pub async fn history(
     Extension(caller): Extension<Caller>,
 ) -> Result<Envelope<Vec<Value>>, Refusal> {
     let settings = state.settings();
-    // An Admin sees every donation. Every other caller sees the donations that name
-    // the e-mail address of the account.
+    // An Admin sees every donation. Every other caller sees the donations that carry the
+    // mark of the account, which Organizr set when it started the payment. The e-mail
+    // address of the account is the user's to change, so it says nothing (D-152).
     let sees_all = caller.level() <= GroupLevel::ADMIN;
-    let email = email_of(&caller).map(str::to_lowercase);
-    if !history_permissions().allow(&settings, &caller) || (!sees_all && email.is_none()) {
+    let mark = mark_of(&settings, &caller);
+    if !history_permissions().allow(&settings, &caller) || (!sees_all && mark.is_none()) {
         return Ok(Envelope::success(Vec::new()));
     }
     let http = state.outbound().ok_or_else(no_requests)?;
@@ -111,7 +121,7 @@ pub async fn history(
         .map_err(|error| failed(&error))?;
     let donations = charges
         .iter()
-        .filter(|charge| sees_all || Some(stripe::payer(charge)) == email)
+        .filter(|charge| sees_all || stripe::account_of(charge) == mark.as_deref())
         .filter_map(stripe::donation)
         .collect();
     Ok(Envelope::success(donations))
@@ -167,6 +177,7 @@ async fn checkout(
         )
     };
     let (success, cancel) = (address("success"), address("cancel"));
+    let mark = mark_of(&settings, caller);
     let checkout = Checkout {
         product: &settings.homepage_donate_product_id,
         cents: cents_of(named, settings.homepage_donate_minimum),
@@ -175,6 +186,7 @@ async fn checkout(
         // An account that was made for a login of another service has an address
         // that is no address.
         email: email_of(caller).filter(|email| !email.to_lowercase().contains("placeholder")),
+        account: mark.as_deref(),
     };
     let page = account(state, &settings)
         .checkout(http, checkout)

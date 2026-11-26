@@ -52,7 +52,12 @@ pub struct Checkout<'a> {
     pub cancel: &'a str,
     /// The e-mail address of the person, when Organizr knows one.
     pub email: Option<&'a str>,
+    /// The mark of the Organizr account that pays, for its history (D-152).
+    pub account: Option<&'a str>,
 }
+
+/// The key of the metadata of a payment intent that names the Organizr account.
+pub const ACCOUNT_KEY: &str = "organizr_account";
 
 /// The text of the error of an answer of Stripe.
 fn refusal(status: u16, answer: &Value) -> StripeError {
@@ -89,7 +94,8 @@ impl Account<'_> {
         let request = http
             .client(&url, false)
             .get(&url)
-            .query(&[("limit", "100")]);
+            // The payment intent of each charge carries the mark of the account (D-152).
+            .query(&[("limit", "100"), ("expand[]", "data.payment_intent")]);
         match self.answer(request).await?.get_mut("data").map(Value::take) {
             Some(Value::Array(charges)) => Ok(charges),
             _ => Err(StripeError::Unreadable),
@@ -117,6 +123,9 @@ impl Account<'_> {
         ];
         if let Some(email) = checkout.email {
             form.push(("customer_email", email));
+        }
+        if let Some(account) = checkout.account {
+            form.push(("payment_intent_data[metadata][organizr_account]", account));
         }
         let request = http.client(&url, false).post(&url).form(&form);
         let answer = self.answer(request).await?;
@@ -160,20 +169,19 @@ pub fn donation(charge: &Value) -> Option<Value> {
     }))
 }
 
-/// The e-mail address of the payer of a charge, in small letters.
-pub fn payer(charge: &Value) -> String {
+/// The mark of the Organizr account that a charge carries in the metadata of its payment
+/// intent, when Organizr started the payment.
+pub fn account_of(charge: &Value) -> Option<&str> {
     charge
-        .pointer("/billing_details/email")
+        .pointer(&format!("/payment_intent/metadata/{ACCOUNT_KEY}"))
         .and_then(Value::as_str)
-        .unwrap_or_default()
-        .to_lowercase()
 }
 
 #[cfg(test)]
 mod tests {
     use serde_json::json;
 
-    use super::{StripeError, donation, payer, refusal};
+    use super::{StripeError, account_of, donation, refusal};
 
     #[test]
     fn charge_reads_as_a_donation() {
@@ -187,14 +195,15 @@ mod tests {
                 json!({"date": "2026-11-20T10:00:00Z", "email": "Robin@Example.com", "amount": 12.5})
             )
         );
-        assert_eq!(payer(&charge), "robin@example.com");
+        assert_eq!(account_of(&charge), None);
+        let marked = json!({"payment_intent": {"metadata": {"organizr_account": "install:3"}}});
+        assert_eq!(account_of(&marked), Some("install:3"));
         assert_eq!(
             donation(&json!({"amount_captured": 500, "created": 0})),
             Some(json!({"date": "1970-01-01T00:00:00Z", "email": null, "amount": 5}))
         );
         assert_eq!(donation(&json!({"amount_captured": 0})), None);
         assert_eq!(donation(&json!({})), None);
-        assert_eq!(payer(&json!({})), "");
     }
 
     #[test]

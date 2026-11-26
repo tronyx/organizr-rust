@@ -57,6 +57,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - **Make an Emby user** works only while the invites are set to Emby; a Plex invite can't make an Emby user (D-149).
 - The Komga master password goes with the e-mail address of the Plex account, not the address users can edit (D-150).
 - With **Limit to User** for Overseerr, the details of a title name nobody who asked for it, for users (D-151).
+- A user's donation history shows the payments Organizr marked with the account at Stripe, not every payment with the account's e-mail (D-152).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

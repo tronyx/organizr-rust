@@ -2787,22 +2787,33 @@ fn stripe_refusal(headers: &HeaderMap) -> Option<Response> {
     })
 }
 
+/// The mark that a donation of zoe, the user with the id 3 of the seed, carries in the
+/// metadata of its payment intent (D-152).
+pub fn stripe_mark_of_zoe() -> String {
+    format!("{}:3", crate::seed::INSTALL_ID)
+}
+
 async fn stripe_charges(headers: HeaderMap) -> Response {
     if let Some(refusal) = stripe_refusal(&headers) {
         return refusal;
     }
-    let charge = |id: &str, cents: u32, email: &str| {
+    let charge = |id: &str, cents: u32, email: &str, mark: Option<String>| {
+        let metadata = mark.map_or_else(|| json!({}), |mark| json!({"organizr_account": mark}));
         json!({
             "id": id, "object": "charge", "amount": cents, "amount_captured": cents,
             // 20 November 2026, 10:00 UTC.
             "created": 1_795_168_800, "currency": "usd",
             "billing_details": {"email": email, "name": "A Name"},
+            // As Stripe answers with `expand[]=data.payment_intent`.
+            "payment_intent": {"id": format!("pi_{id}"), "object": "payment_intent", "metadata": metadata},
         })
     };
     axum::Json(json!({"object": "list", "has_more": false, "data": [
-        charge("ch_1", 1250, "Admin@Example.com"),
-        charge("ch_2", 500, "Zoe@Example.com"),
-        charge("ch_3", 0, "zoe@example.com"),
+        charge("ch_1", 1250, "Admin@Example.com", None),
+        charge("ch_2", 500, "Zoe@Example.com", Some(stripe_mark_of_zoe())),
+        charge("ch_3", 0, "zoe@example.com", Some(stripe_mark_of_zoe())),
+        // The address of zoe, but made outside Organizr: not hers to see.
+        charge("ch_4", 700, "zoe@example.com", None),
     ]}))
     .into_response()
 }

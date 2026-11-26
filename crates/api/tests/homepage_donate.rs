@@ -81,16 +81,21 @@ async fn history_has_the_donations_of_the_caller_and_all_of_them_for_an_admin() 
             json!([
                 {"date": "2026-11-20T10:00:00Z", "email": "Admin@Example.com", "amount": 12.5},
                 {"date": "2026-11-20T10:00:00Z", "email": "Zoe@Example.com", "amount": 5},
+                {"date": "2026-11-20T10:00:00Z", "email": "zoe@example.com", "amount": 7},
             ])
         );
         let seen = stripe.seen();
-        assert_eq!(seen[0].path, "/v1/charges?limit=100");
+        assert_eq!(
+            seen[0].path,
+            "/v1/charges?limit=100&expand%5B%5D=data.payment_intent"
+        );
         assert_eq!(
             seen[0].header("authorization"),
             Some(format!("Bearer {STRIPE_SECRET}").as_str())
         );
 
-        // A user gets the donations with the e-mail address of the account.
+        // A user gets the donations that carry the mark of the account, not every one
+        // with its e-mail address, which the user can change (D-152).
         let zoe = cookie_of(&app, "zoe", seed::ZOE_PASSWORD).await;
         let answer = call(&app, As::User(&zoe), "GET", DONATE, None).await;
         assert_eq!(
@@ -99,15 +104,17 @@ async fn history_has_the_donations_of_the_caller_and_all_of_them_for_an_admin() 
         );
         // A script with the API key counts as the Admin.
         let answer = call(&app, As::Admin, "GET", DONATE, None).await;
-        assert_eq!(answer.data().as_array().map(Vec::len), Some(2));
+        assert_eq!(answer.data().as_array().map(Vec::len), Some(3));
 
-        // A caller without an e-mail address, a guest, and an item without the list
-        // get an empty list, and Stripe is not asked.
-        let before = stripe.seen().len();
+        // An account without a donation gets an empty list.
         let nameless = seed::logged_in(database, &app, "uma", 4).await;
         let answer = call(&app, As::User(&nameless), "GET", DONATE, None).await;
         assert_eq!(answer.status, StatusCode::OK);
         assert_eq!(answer.data(), json!([]));
+
+        // A guest and an item without the list get an empty list, and Stripe is not
+        // asked.
+        let before = stripe.seen().len();
         assert_eq!(
             call(&app, As::Guest, "GET", DONATE, None).await.data(),
             json!([])
@@ -165,6 +172,11 @@ async fn payment_starts_at_stripe_with_the_amount_and_sends_the_browser_there() 
             Some("http://organizr.example.com/api/v2/homepage/donate/cancel")
         );
         assert_eq!(field("customer_email"), Some("zoe@example.com"));
+        // The payment carries the mark of the account, for the history (D-152).
+        assert_eq!(
+            field("payment_intent_data[metadata][organizr_account]"),
+            Some(homepage_services::stripe_mark_of_zoe().as_str())
+        );
 
         // The amounts of the other forms of the route, in cents.
         let amount = async |method: &str, path: &str, who: As<'_>| {

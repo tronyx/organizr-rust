@@ -1288,7 +1288,7 @@ An import brings your items' HTML as it is. Check each item afterwards:
 
 - A user enters an amount in whole US dollars (at least the **Minimum**) and selects **Donate**. A new window opens Stripe; after the payment, Stripe sends the window back to Organizr.
 - Only users with the item's level can start a payment. In PHP Organizr, anyone can, even when the item is off.
-- With **Show User Donate History**, users see the payments made with their account's email address. An Admin sees everyone's payments, with their email addresses.
+- With **Show User Donate History**, users see the payments they started in Organizr while logged in. Organizr marks each payment at Stripe with the account (D-152). Payments from before this version, or made outside Organizr, show to the Admin only. An Admin sees everyone's payments, with their email addresses.
 
 > [!TIP]
 > Start with Stripe's test keys. Stripe then takes no money, and you can pay with a test card.
