@@ -3686,10 +3686,13 @@
     font-weight: 500;
   }
 
+  /* A thin, faint scroll bar shows that a long list goes on below, as the scroll bar of
+     the browser does in PHP. The card is dark in every theme. */
   .org-stat ol {
     height: 122px;
     overflow-y: auto;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(150 162 180 / 0.55) transparent;
     padding-right: 6px;
     font-size: 12px;
   }
