@@ -83,11 +83,11 @@ Komga knows its users by their e-mail address. Organizr asks Komga for a session
 | Setting | What it does |
 |---|---|
 | **Minimum Authentication** (`ssoKomgaAuth`) | A level. Only users of that level, or with more access, get a Komga session |
-| **Komga Master Password** (`komgaSSOMasterPassword`) | The password Organizr uses for a login that brings none (through Plex or OpenID Connect) |
+| **Komga Master Password** (`komgaSSOMasterPassword`) | The password Organizr uses for a Plex login, which brings none. It goes with the e-mail address of the Plex account, which plex.tv vouches for, not with the address of the Organizr account, which the user can change (D-150) |
 | **Komga Fallback Email**, **Komga Fallback Password** (`komgaFallbackUser`, `komgaFallbackPassword`) | The fallback account: an e-mail address and its password |
 
 > [!WARNING]
-> With **Komga Master Password** set, every Plex or OpenID Connect login gets a Komga session through it. Like the fallback user, give it as few rights as you can.
+> With **Komga Master Password** set, every Plex login gets a session of the Komga account with the e-mail address of the Plex account. Like the fallback user, give it as few rights as you can. A Plex account without an e-mail address gets no Komga session.
 
 A logout of Organizr also ends the session at Komga. PHP Organizr calls an address that current Komga versions no longer have, so there the session lives on (D-117).
 

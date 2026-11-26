@@ -196,6 +196,7 @@ async fn single_sign_on(
         level,
         password,
         plex_token: outcome.plex_token.as_deref(),
+        plex_email: outcome.plex_email.as_deref(),
         expires,
     };
     Ok(external_login::hand_off(state, headers, client, hand_off).await)
@@ -222,6 +223,9 @@ struct Outcome {
     created: bool,
     /// The Plex token of the user, when Plex checked the login.
     plex_token: Option<String>,
+    /// The e-mail address of the Plex account, which plex.tv vouches for, when Plex
+    /// checked the login (D-150).
+    plex_email: Option<String>,
     /// Whether the login came with a Plex token and no password.
     with_plex_token: bool,
 }
@@ -288,6 +292,7 @@ async fn check_login(
             logged_in,
             created: false,
             plex_token: None,
+            plex_email: None,
             with_plex_token: false,
         });
     };
@@ -327,6 +332,10 @@ async fn check_login(
     Ok(Outcome {
         logged_in: done.logged_in,
         created: done.created,
+        plex_email: match &vouched {
+            Vouched::Plex(account) => Some(account.email.clone()).filter(|email| !email.is_empty()),
+            Vouched::Server(_) => None,
+        },
         plex_token: match vouched {
             Vouched::Plex(account) => Some(account.token),
             Vouched::Server(_) => None,

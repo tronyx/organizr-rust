@@ -390,6 +390,64 @@ async fn plex_friend_does_not_get_a_co_admin_account_of_the_same_address() {
 }
 
 #[tokio::test]
+async fn komga_master_password_goes_with_the_e_mail_of_the_plex_account() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let komga = services::komga().await;
+        let settings = plex_settings(&[
+            ("authType", json!("internal")),
+            ("plexoAuth", json!(true)),
+            ("plexAdmin", json!("Owner")),
+            ("ssoKomga", json!(true)),
+            ("ssoKomgaAuth", json!("999")),
+            ("komgaURL", json!(komga.url())),
+            (
+                "komgaSSOMasterPassword",
+                json!(services::KOMGA_MASTER_PASSWORD),
+            ),
+        ]);
+        let app = app_with(database, &plex, &settings);
+        let first = log_in_with_token(&app, OWNER_TOKEN).await;
+        assert_eq!(first.status, StatusCode::OK, "{}", first.body);
+        let session = cookie(
+            &first,
+            "organizr_token_5d0c6f0e-2b7a-4a36-8e55-9c1f4d3a7b21",
+        )
+        .and_then(|cookie| cookie.split(';').next())
+        .expect("the login sets the session cookie")
+        .to_owned();
+
+        // The owner takes the e-mail of the Komga account of robin, who has no account
+        // in Organizr. The master password goes with the e-mail that plex.tv vouches
+        // for, so Komga is not asked for robin's account (D-150).
+        let owner = user(database, "Owner")
+            .await
+            .expect("the login made the account");
+        let id = owner.id;
+        let body = json!({"email": services::KOMGA_ROBIN.0});
+        let changed = call(
+            &app,
+            As::User(&session),
+            "PUT",
+            &format!("/users/{id}"),
+            Some(body),
+        )
+        .await;
+        assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
+
+        let again = log_in_with_token(&app, OWNER_TOKEN).await;
+        assert_eq!(again.status, StatusCode::OK, "{}", again.body);
+        assert!(
+            cookie(&again, "komga_token").is_none(),
+            "{:?}",
+            again.cookies
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn plex_token_logs_in_without_a_password() {
     on_each_engine(async |database| {
         seed::installed(database).await;

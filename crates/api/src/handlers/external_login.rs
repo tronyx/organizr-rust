@@ -108,6 +108,8 @@ pub struct HandOff<'a> {
     pub password: &'a str,
     /// The Plex token of the login, when Plex checked it.
     pub plex_token: Option<&'a str>,
+    /// The e-mail address of the Plex account, when Plex checked the login (D-150).
+    pub plex_email: Option<&'a str>,
     /// Until when the cookies last.
     pub expires: SystemTime,
 }
@@ -200,7 +202,8 @@ pub async fn hand_off(
     let for_browser = tab_address(&settings.jellyfin_ssourl, headers, client);
     let jellyfin = jellyfin_session(http, &settings, &qualified, &for_browser, who, timeout);
     let petio = petio_token(http, &settings, &qualified, who, timeout);
-    let komga = komga_token(http, &settings, &qualified, who, login.level, timeout);
+    let komga_who = (who, login.plex_email);
+    let komga = komga_token(http, &settings, &qualified, komga_who, login.level, timeout);
     let (ombi, overseerr, tautulli, jellyfin, petio, komga) =
         tokio::join!(ombi, overseerr, tautulli, jellyfin, petio, komga);
 
@@ -295,13 +298,17 @@ async fn petio_token(
 }
 
 /// Asks Komga for a session, when its single sign-on is on and the user has the level of
-/// `ssoKomgaAuth`. Komga knows its users by their e-mail address. A login without a
-/// password, through Plex or OpenID Connect, uses the master password of the settings.
+/// `ssoKomgaAuth`. Komga knows its users by their e-mail address.
+///
+/// A login with a password asks for the account of the e-mail of the user, with that
+/// password. A login through Plex, which brings no password, uses the master password of
+/// the settings with the e-mail of the Plex account, which plex.tv vouches for: the
+/// e-mail of the Organizr account is the user's to change (D-150).
 async fn komga_token(
     http: &Outbound,
     settings: &Settings,
     qualified: &impl Fn(&str) -> String,
-    who: Login<'_>,
+    (who, plex_email): (Login<'_>, Option<&str>),
     level: GroupLevel,
     timeout: Duration,
 ) -> Option<String> {
@@ -311,15 +318,12 @@ async fn komga_token(
     {
         return None;
     }
-    let password = if who.password.is_empty() {
-        settings.komga_sso_master_password.as_str()
+    let (user, password) = if who.password.is_empty() {
+        (plex_email?, settings.komga_sso_master_password.as_str())
     } else {
-        who.password
+        (who.email, who.password)
     };
-    let account = Fallback {
-        user: who.email,
-        password,
-    };
+    let account = Fallback { user, password };
     let fallback = (!settings.komga_fallback_user.is_empty()
         && !settings.komga_fallback_password.is_empty())
     .then(|| Fallback {
