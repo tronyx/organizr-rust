@@ -48,6 +48,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - Only a few password checks run at once, as many as the server has processors; the others wait their turn, and after 10 seconds get `503` (D-140).
 - The lists of forward auth take host names only in the path, count their first 20 entries, and remember a lookup for a minute (D-141).
 - iCal calendars are read with limits on their repeats and events, away from the request threads, and kept for 5 minutes (D-142).
+- One call of an extension has 64 MiB of memory for all its memories and tables together (D-143).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

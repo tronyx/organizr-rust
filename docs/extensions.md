@@ -127,7 +127,7 @@ Each call of an extension has limits. A call that passes one is stopped, and the
 
 | Limit | Value |
 |---|---|
-| Memory of one call | 64 MiB |
+| Memory of one call | 64 MiB, for all its memories and tables together (D-143) |
 | Work of one call | About two billion WebAssembly steps, a few seconds |
 | Body of a request | 1 MiB |
 | Body of an answer | 8 MiB |

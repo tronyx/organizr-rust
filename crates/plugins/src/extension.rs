@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
 
 use wasmtime::component::{Component, HasSelf, Linker, ResourceTable};
-use wasmtime::{Config, Engine, Store, StoreLimits, StoreLimitsBuilder};
+use wasmtime::{Config, Engine, ResourceLimiter, Store};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 mod bindings {
@@ -170,11 +170,71 @@ pub struct Outcome {
     pub values: Option<BTreeMap<String, String>>,
 }
 
+/// The most instances, tables and linear memories of one call.
+const MOST_PARTS: usize = 20;
+
+/// The memory of one call: the linear memories and the tables of all its instances
+/// together stay within [`MEMORY_LIMIT`] (D-143). A limit for each memory alone would
+/// let a call with many memories, or with a large table, take far more.
+#[derive(Debug, Default)]
+struct CallLimits {
+    /// The bytes that the memories and the tables of the call take.
+    used: usize,
+}
+
+impl CallLimits {
+    fn grow(&mut self, more: usize) -> bool {
+        match self.used.checked_add(more) {
+            Some(used) if used <= MEMORY_LIMIT => {
+                self.used = used;
+                true
+            }
+            _ => false,
+        }
+    }
+}
+
+impl ResourceLimiter for CallLimits {
+    fn memory_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        _maximum: Option<usize>,
+    ) -> wasmtime::Result<bool> {
+        Ok(self.grow(desired.saturating_sub(current)))
+    }
+
+    fn table_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        _maximum: Option<usize>,
+    ) -> wasmtime::Result<bool> {
+        // Each element of a table takes a pointer's worth of memory.
+        let more = desired
+            .saturating_sub(current)
+            .saturating_mul(std::mem::size_of::<usize>());
+        Ok(self.grow(more))
+    }
+
+    fn instances(&self) -> usize {
+        MOST_PARTS
+    }
+
+    fn tables(&self) -> usize {
+        MOST_PARTS
+    }
+
+    fn memories(&self) -> usize {
+        MOST_PARTS
+    }
+}
+
 /// What the store of one call holds.
 struct State {
     wasi: WasiCtx,
     table: ResourceTable,
-    limits: StoreLimits,
+    limits: CallLimits,
     call: Call,
     changed: bool,
     log_lines: u32,
@@ -352,12 +412,7 @@ impl Extensions {
         let state = State {
             wasi: WasiCtxBuilder::new().build(),
             table: ResourceTable::new(),
-            limits: StoreLimitsBuilder::new()
-                .memory_size(MEMORY_LIMIT)
-                .instances(20)
-                .tables(20)
-                .memories(20)
-                .build(),
+            limits: CallLimits::default(),
             call,
             changed: false,
             log_lines: 0,
@@ -410,5 +465,39 @@ impl Extensions {
             },
             values: state.changed.then_some(state.call.values),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use wasmtime::ResourceLimiter;
+
+    use super::{CallLimits, MEMORY_LIMIT};
+
+    const MIB: usize = 1024 * 1024;
+
+    #[test]
+    fn memories_and_tables_of_a_call_share_one_limit() {
+        // Two memories of 40 MiB are more than one call may have together (D-143).
+        let mut limits = CallLimits::default();
+        assert!(limits.memory_growing(0, 40 * MIB, None).expect("no trap"));
+        assert!(!limits.memory_growing(0, 40 * MIB, None).expect("no trap"));
+        assert!(limits.memory_growing(0, 20 * MIB, None).expect("no trap"));
+
+        // A table counts its elements as pointers, in the same limit.
+        let mut limits = CallLimits::default();
+        let elements = MEMORY_LIMIT / std::mem::size_of::<usize>();
+        assert!(
+            !limits
+                .table_growing(0, elements + 1, None)
+                .expect("no trap")
+        );
+        assert!(limits.table_growing(0, 1000, None).expect("no trap"));
+        assert!(limits.memory_growing(0, 60 * MIB, None).expect("no trap"));
+        assert!(
+            !limits
+                .table_growing(1000, 1_000_000, None)
+                .expect("no trap")
+        );
     }
 }
