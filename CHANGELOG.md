@@ -52,6 +52,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - The GET routes that set up the Bookmarks and Plex Libraries tabs, and the one that sends the test e-mail, refuse requests from other sites (D-144).
 - A session cookie that another host of the cookie domain plants hides no session and is dropped (D-145).
 - A new password ends the other sessions of the account; a login with a recovery password ends all from before (D-146).
+- A backup leaves out the key file that the server uses, also when `ORGANIZR_SECRET_KEY_FILE` puts it elsewhere in the data folder (D-147).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

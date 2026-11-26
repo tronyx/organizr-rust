@@ -140,6 +140,9 @@ pub struct Source<'a> {
     pub database_copy: Option<&'a Path>,
     /// Folders that are left out, next to the cache and the backups.
     pub left_out: &'a [PathBuf],
+    /// The file of the master key that the server uses. It never goes into an archive,
+    /// wherever in the data folder it is (D-147).
+    pub key_file: Option<&'a Path>,
 }
 
 fn other(error: impl std::fmt::Display) -> io::Error {
@@ -197,8 +200,12 @@ pub fn write_archive(target: &Path, source: Source<'_>, manifest: &Manifest) -> 
     if source.data_dir.is_dir() {
         files_below(source.data_dir, source.left_out, &mut files)?;
     }
+    let key_file = source.key_file.and_then(|file| file.canonicalize().ok());
     let mut count = 0;
     for file in files {
+        if key_file.is_some() && file.canonicalize().ok() == key_file {
+            continue;
+        }
         let Ok(below) = file.strip_prefix(source.data_dir) else {
             continue;
         };
@@ -366,6 +373,7 @@ mod tests {
         write(&data.join("cache/tv-1.jpg"), "a cached picture");
         write(&data.join("backups/old.zip"), "an old backup");
         write(&data.join("secret.key"), "the key");
+        write(&data.join("keys/organizr.key"), "the key, moved");
         write(&data.join("organizr.db"), "the live database");
         write(
             &data.join("organizr.db-wal"),
@@ -381,6 +389,7 @@ mod tests {
             data_dir: &data,
             database_copy: Some(&copy),
             left_out: std::slice::from_ref(&other_folder),
+            key_file: Some(&data.join("keys/./organizr.key")),
         };
         let manifest = Manifest::new("1.2.3", "2026-11-20T03:15:00Z".to_owned(), true, true);
         let count = write_archive(&target, source, &manifest).expect("the archive is written");
@@ -413,6 +422,8 @@ mod tests {
         assert_eq!(read(&database).as_deref(), Some("the database copy"));
         for left_out in [
             "secret.key",
+            // The key file that the server uses, wherever it is (D-147).
+            "keys/organizr.key",
             "cache/tv-1.jpg",
             "backups/old.zip",
             "elsewhere/more.zip",

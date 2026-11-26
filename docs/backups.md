@@ -11,7 +11,7 @@ Organizr can back up your install to one zip file, on demand or on a schedule, a
 | The files of the data folder: uploaded pictures, favicon files, the log files (`logs`), your extensions (`plugins`) and other files | ✅ Yes |
 | The SQLite database | ✅ Yes, as a copy that is whole even while the server runs |
 | A PostgreSQL database | ❌ No. Save it with `pg_dump` (see [With PostgreSQL](#-with-postgresql)) |
-| The key for stored secrets, the file `secret.key` | ❌ No, never |
+| The key for stored secrets, the file `secret.key`, or the file that `ORGANIZR_SECRET_KEY_FILE` names when it's in the data folder | ❌ No, never (D-147) |
 | The picture cache and older backups | ❌ No |
 
 The passwords and tokens of your other services are sealed in the database with `secret.key`. Because the backup never holds the key, someone who gets a backup can't read them. But neither can a restored install without the key: those secrets are lost, and users with a [second factor](second-factor.md) can't log in. [Secrets](secrets.md#-if-the-key-is-lost-or-wrong) explains what to do then.

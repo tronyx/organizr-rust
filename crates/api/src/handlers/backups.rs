@@ -94,6 +94,7 @@ pub async fn create_backup(state: &AppState) -> Result<String, String> {
         database.engine() == Engine::Sqlite,
         has_database,
     );
+    let key_file = state.key_file();
     let written = {
         let (partial, snapshot, folder) = (partial.clone(), snapshot.clone(), folder.clone());
         tokio::task::spawn_blocking(move || {
@@ -101,6 +102,7 @@ pub async fn create_backup(state: &AppState) -> Result<String, String> {
                 data_dir: &data_dir,
                 database_copy: has_database.then_some(snapshot.as_path()),
                 left_out: std::slice::from_ref(&folder),
+                key_file: key_file.as_deref(),
             };
             backup::write_archive(&partial, source, &manifest)
         })

@@ -150,6 +150,7 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         // The pictures of other applications that the server fetches and keeps.
         .with_picture_cache(args.storage.data_dir.join("cache"))
         .with_data_folder(args.storage.data_dir.clone())
+        .with_key_file(args.storage.key_file())
         .with_custom_js(args.custom_js);
     if args.custom_js {
         tracing::warn!(

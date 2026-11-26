@@ -49,6 +49,8 @@ pub struct AppState {
     picture_cache: Option<PictureCache>,
     /// The data folder, for the backups.
     data_folder: Option<Arc<PathBuf>>,
+    /// The file of the master key, which a backup leaves out (D-147).
+    key_file: Option<Arc<PathBuf>>,
     /// What lets one backup be made at a time.
     backup_lock: Arc<Mutex<()>>,
     /// The runtime for extensions. `None` when it could not start.
@@ -145,6 +147,7 @@ impl AppState {
             picture_folder: None,
             picture_cache: None,
             data_folder: None,
+            key_file: None,
             backup_lock: Arc::new(Mutex::new(())),
             #[cfg(feature = "wasm-plugins")]
             extension_runtime: organizr_plugins::extension::Extensions::new()
@@ -331,6 +334,19 @@ impl AppState {
     /// The data folder of the install, when the server named one.
     pub fn data_folder(&self) -> Option<&Path> {
         self.data_folder.as_deref().map(PathBuf::as_path)
+    }
+
+    /// The same state, with the file of the master key that the server uses. A backup
+    /// leaves that file out, wherever it is (D-147).
+    #[must_use]
+    pub fn with_key_file(mut self, file: PathBuf) -> Self {
+        self.key_file = Some(Arc::new(file));
+        self
+    }
+
+    /// The file of the master key, when the server reads the key from a file.
+    pub fn key_file(&self) -> Option<PathBuf> {
+        self.key_file.as_deref().cloned()
     }
 
     /// The same state, with the address of the list of a marketplace for extensions.
