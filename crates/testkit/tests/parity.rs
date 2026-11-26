@@ -630,12 +630,21 @@ async fn user_routes_answer_like_php() {
         seed::registered_users(database).await;
         // A new password set with the API key ends the sessions of the user (D-146). In
         // PHP the session of the jar went on, so the replay logs that browser in again.
-        let replay = Replay::group("users").deviation_logs_in_after(
-            "D-146",
-            "change_password",
-            "abe",
-            json!({"username": "abel", "password": "a new password of abe"}),
-        );
+        let replay = Replay::group("users")
+            // A new password of the own account needs the current one (D-185);
+            // tests/users.rs of the API holds the refusals.
+            .deviation_sends(
+                "D-185",
+                "change_own_password",
+                "currentPassword",
+                json!(seed::ZOE_PASSWORD),
+            )
+            .deviation_logs_in_after(
+                "D-146",
+                "change_password",
+                "abe",
+                json!({"username": "abel", "password": "a new password of abe"}),
+            );
         let mut replay = without_php_session(replay);
         for case in CASES_WITH_USERS {
             // The answer for a user that does not exist has no user in it.
@@ -816,6 +825,10 @@ async fn second_factor_routes_answer_like_php() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let replay = without_php_session(Replay::group("two_factor"))
+            // A change of the own second factor needs the password of the account
+            // (D-186); tests/two_factor.rs of the API holds the refusals.
+            .deviation_sends("D-186", "save", "password", json!(seed::ADMIN_PASSWORD))
+            .deviation_sends("D-186", "remove", "password", json!(seed::ADMIN_PASSWORD))
             // The QR code is a picture inside the answer. PHP sends the address of a
             // service of Google that draws it, and that address holds the secret.
             .deviation(

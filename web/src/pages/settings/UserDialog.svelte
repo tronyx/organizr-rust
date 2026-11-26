@@ -9,6 +9,7 @@
     user,
     groups,
     focusPassword = false,
+    own = false,
     onsave,
     onremoveSecondFactor,
     onclose,
@@ -16,12 +17,20 @@
     /** The user to change. `null` for a new user. */
     user: Account | null;
     groups: Group[];
-    /** Whether the dialog starts in the field of the new password. */
+    /** Whether the dialog first gets the field of the new password. */
     focusPassword?: boolean;
+    /**
+     * Whether the user is the person who looks at the page. A new password, a new address
+     * and the removal of the second factor of the own account need its current password.
+     */
+    own?: boolean;
     /** Stores the fields. Returns why the server refused them, or `null`. */
     onsave: (fields: Record<string, unknown>) => Promise<string | null>;
-    /** Removes the second factor of the user. Returns why the server refused, or `null`. */
-    onremoveSecondFactor: () => Promise<string | null>;
+    /**
+     * Removes the second factor of the user, with the proof of the owner for the own
+     * account. Returns why the server refused, or `null`.
+     */
+    onremoveSecondFactor: (proof?: Record<string, string>) => Promise<string | null>;
     onclose: () => void;
   } = $props();
 
@@ -38,14 +47,25 @@
   // svelte-ignore state_referenced_locally
   let image = $state(user?.image ?? '');
   let password = $state('');
+  // The current password of the own account.
+  let current = $state('');
   let error = $state<string | null>(null);
   let busy = $state(false);
 
   // svelte-ignore state_referenced_locally
   const hasSecondFactor = user?.auth_service === SECOND_FACTOR_KIND;
 
+  // svelte-ignore state_referenced_locally
+  const storedEmail = user?.email ?? '';
+  /** Whether the save needs the current password: a new password or address of the own account. */
+  const needsCurrent = $derived(own && (password !== '' || email !== storedEmail));
+
   async function removeSecondFactor() {
     const name = user?.username ?? '';
+    if (own && current === '') {
+      error = 'Enter your current password first.';
+      return;
+    }
     if (
       !confirm(
         `Remove the second factor of ${name}? ${name} then logs in with the password alone, until a new second factor is set up.`,
@@ -54,7 +74,7 @@
       return;
     }
     busy = true;
-    error = await onremoveSecondFactor();
+    error = await onremoveSecondFactor(own ? { password: current } : undefined);
     busy = false;
   }
 
@@ -74,6 +94,9 @@
       );
       if (password !== '') {
         fields.password = password;
+      }
+      if (needsCurrent) {
+        fields.currentPassword = current;
       }
       if (Object.keys(fields).length === 0) {
         onclose();
@@ -129,6 +152,22 @@
         <p id="user-password-hint" class="label whitespace-normal">
           Leave it empty to keep the password.
         </p>
+
+        {#if own}
+          <label class="label" for="user-current">Your current password</label>
+          <input
+            id="user-current"
+            class="input w-full"
+            type="password"
+            bind:value={current}
+            required={needsCurrent}
+            autocomplete="current-password"
+            aria-describedby="user-current-hint"
+          />
+          <p id="user-current-hint" class="label whitespace-normal">
+            Needed for a new password, a new e-mail address or the removal of your second factor.
+          </p>
+        {/if}
 
         <label class="label" for="user-group">Group</label>
         <select id="user-group" class="select w-full" bind:value={level}>

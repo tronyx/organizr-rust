@@ -1040,6 +1040,7 @@ test('a user sets a second factor up, and the login asks for its code', async ({
   const secret = (await page.locator('code').innerText()).trim();
   expect(secret).toMatch(/^[A-Z2-7]{32}$/);
 
+  await page.getByLabel('Enter the password of this account.').fill(ADMIN.password);
   await page.getByLabel('Enter the code that the app shows.').fill(authenticatorCode(secret));
   await page.getByRole('button', { name: 'Switch the second factor on' }).click();
   await expect(page.getByRole('status')).toHaveText(/The second factor is on\./);
@@ -1064,6 +1065,7 @@ test('a user sets a second factor up, and the login asks for its code', async ({
   // Off again, so that the tests after this one log in with the password alone.
   await page.goto('./#/account');
   page.once('dialog', (dialog) => void dialog.accept());
+  await page.getByLabel('Password of this account').fill(ADMIN.password);
   await page.getByRole('button', { name: 'Switch the second factor off' }).click();
   await expect(page.getByRole('status')).toHaveText('The second factor is off.');
   await expect(page.getByText('Your account has no second factor.')).toBeVisible();

@@ -264,7 +264,10 @@ async fn password_change_ends_the_other_sessions() {
 
         // A change of the own password keeps the session of the change and ends the
         // others, such as one that somebody stole (D-146).
-        let body = json!({"password": "a new password of zoe"});
+        let body = json!({
+            "password": "a new password of zoe",
+            "currentPassword": seed::ZOE_PASSWORD,
+        });
         let answer = call(
             &app,
             As::User(&here),
@@ -468,7 +471,11 @@ async fn user_changes_some_fields_of_the_own_account_only() {
         let zoe = log_in(&app, "zoe", seed::ZOE_PASSWORD).await;
         let path = format!("/users/{ZOE}");
 
-        let body = Some(json!({"username": "Zoe Z", "email": "zoe.z@example.com"}));
+        let body = Some(json!({
+            "username": "Zoe Z",
+            "email": "zoe.z@example.com",
+            "currentPassword": seed::ZOE_PASSWORD,
+        }));
         let answer = call(&app, As::User(&zoe), "PUT", &path, body).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
         let stored = user(&app, ZOE).await;
@@ -501,6 +508,71 @@ async fn user_changes_some_fields_of_the_own_account_only() {
         let stored = user(&app, ZOE).await;
         assert_eq!(stored["locked"], json!(0));
         assert_eq!(stored["group_id"], json!(4));
+    })
+    .await;
+}
+
+/// A change of the own password or e-mail address needs the current password, so that
+/// a stolen session alone cannot take the account over (D-185).
+#[tokio::test]
+async fn own_password_and_address_need_the_current_password() {
+    on_each_engine(async |database| {
+        let app = install(database).await;
+        let zoe = log_in(&app, "zoe", seed::ZOE_PASSWORD).await;
+        let path = format!("/users/{ZOE}");
+        let address = user(&app, ZOE).await["email"].clone();
+        let put = async |body: Value| call(&app, As::User(&zoe), "PUT", &path, Some(body)).await;
+
+        for mut body in [
+            json!({"password": "a password of the thief"}),
+            json!({"email": "thief@example.com"}),
+        ] {
+            let answer = put(body.clone()).await;
+            assert_refused(
+                &answer,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Enter the password of the account",
+            );
+            body["currentPassword"] = json!("not the password");
+            let answer = put(body).await;
+            assert_refused(
+                &answer,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "The password is not the password of the account",
+            );
+        }
+        assert_eq!(user(&app, ZOE).await["email"], address);
+        log_in(&app, "zoe", seed::ZOE_PASSWORD).await;
+
+        // Other fields need no password, and the address the account has is no change.
+        let body = json!({"username": "Zoe Z", "email": address, "image": "zoe.png"});
+        let answer = put(body).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+
+        let body = json!({"email": "zoe.new@example.com", "currentPassword": seed::ZOE_PASSWORD});
+        let answer = put(body).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(user(&app, ZOE).await["email"], json!("zoe.new@example.com"));
+        let body =
+            json!({"password": "a new password of zoe", "currentPassword": seed::ZOE_PASSWORD});
+        let answer = put(body).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        log_in(&app, "Zoe Z", "a new password of zoe").await;
+
+        // The Admin needs it for the own account too, and not for another account.
+        let admin = log_in(&app, seed::ADMIN_NAME, seed::ADMIN_PASSWORD).await;
+        let own = format!("/users/{ADMIN}");
+        let body = Some(json!({"password": "a password of the thief"}));
+        let answer = call(&app, As::User(&admin), "PUT", &own, body).await;
+        assert_refused(
+            &answer,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Enter the password of the account",
+        );
+        let body = Some(json!({"password": "the password the admin chose"}));
+        let answer = call(&app, As::User(&admin), "PUT", &path, body).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        log_in(&app, "Zoe Z", "the password the admin chose").await;
     })
     .await;
 }

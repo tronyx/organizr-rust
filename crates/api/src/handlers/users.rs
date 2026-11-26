@@ -15,17 +15,17 @@ use organizr_auth::registration::{
 };
 use organizr_db::{Database, DbError, UserLogin};
 use organizr_domain::email::{self, php_trim};
-use organizr_domain::{
-    Change, Group, GroupId, GroupLevel, PasswordHash, User, UserChanges, UserId,
-};
+use organizr_domain::{Change, Group, GroupId, GroupLevel, User, UserChanges, UserId};
 use serde::Serialize;
 use serde_json::Value;
 
 use crate::api_data::ApiData;
 use crate::caller::{Caller, now_stamp};
+use crate::client::Client;
 use crate::envelope::{Envelope, NoContent, NoData};
 use crate::handlers::fields::{Fields, Refusal, has_key, php_text, record_id};
 use crate::handlers::groups::GroupRow;
+use crate::handlers::proof;
 use crate::handlers::token::date_and_time;
 use crate::state::AppState;
 
@@ -325,8 +325,8 @@ async fn group_of(
     Ok(Change::Set(group.id))
 }
 
-/// The hash for a new password from the field `password`.
-async fn password_of(value: &Value) -> Result<PasswordHash, Refusal> {
+/// The new password from the field `password`.
+fn password_of(value: &Value) -> Result<String, Refusal> {
     let password = php_text(value).ok_or_else(|| Refusal::not_valid(RECORD, "password"))?;
     if password.is_empty() {
         return Err(Refusal::conflict("Password was set but empty"));
@@ -334,22 +334,24 @@ async fn password_of(value: &Value) -> Result<PasswordHash, Refusal> {
     if password.len() > LONGEST_PASSWORD {
         return Err(Refusal::over_limit(LONGEST_PASSWORD));
     }
-    Ok(hash_password(password).await?)
+    Ok(password)
 }
 
 /// `PUT /users/{id}`: changes the fields of a user that the body names.
 ///
 /// A logged-in user can change the name, the address, the password and the picture of
-/// the own account. An Admin or a Co-Admin can change every user and also the group and
-/// the lock, but only an Admin can change an Admin. A field that the application does
-/// not know is ignored, and so is `id`.
+/// the own account. A new password or a new address of the own account needs the
+/// current password in the field `currentPassword` (D-185). An Admin or a Co-Admin can
+/// change every user and also the group and the lock, but only an Admin can change an
+/// Admin. A field that the application does not know is ignored, and so is `id`.
 pub async fn change(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
+    Extension(client): Extension<Client>,
     Path(id): Path<String>,
     data: ApiData,
 ) -> Result<Response, Refusal> {
-    change_by_text(&state, &caller, &id, &data).await
+    change_by_text(&state, &caller, &client, &id, &data).await
 }
 
 /// Ends the sessions of a user whose password was changed, so that a stolen session
@@ -378,6 +380,7 @@ async fn end_sessions_after_new_password(
 pub async fn change_by_text(
     state: &AppState,
     caller: &Caller,
+    client: &Client,
     id: &str,
     data: &ApiData,
 ) -> Result<Response, Refusal> {
@@ -419,8 +422,16 @@ pub async fn change_by_text(
     if locked != Change::Keep && actor.level > MANAGER {
         return Err(Refusal::not_authorized("Cannot change your own locked"));
     }
-    let password_hash = match data.field("password") {
-        Some(value) => Change::Set(password_of(value).await?),
+    let password = data.field("password").map(password_of).transpose()?;
+    // A new password or a new address of the own account needs the current password, so
+    // that a session alone cannot take the account over (D-185).
+    let new_address =
+        matches!(&email, Change::Set(address) if user.email.as_deref() != Some(address.as_str()));
+    if actor.is_target && (new_address || password.is_some()) {
+        proof::password(state, client, &user, data.text("currentPassword")).await?;
+    }
+    let password_hash = match password {
+        Some(password) => Change::Set(hash_password(password).await?),
         None => Change::Keep,
     };
     let image = fields.image()?;

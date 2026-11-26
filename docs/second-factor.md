@@ -16,7 +16,7 @@ Each user does this for their own account.
    ![Account Settings, card "Second factor", with the QR code and the code field](images/second-factor-qr.png)
 4. Scan the QR code with your authenticator app. Can't scan it? Type the key shown below the picture into the app instead.
 5. **Save that key in your password manager**, or somewhere else safe. With it, you can add the code to a new phone later. Without it, a lost phone means an Admin has to help (see [Lost your phone?](#-lost-your-phone)).
-6. Type the code that the app shows, and select **Switch the second factor on**. The page says: "The second factor is on. Your next login asks for a code."
+6. Type the code that the app shows, and the password of your account. Select **Switch the second factor on**. The page says: "The second factor is on. Your next login asks for a code."
 
 Nothing is saved until Organizr has seen one correct code, so a set-up you abandon halfway changes nothing.
 
@@ -26,7 +26,10 @@ From now on, the login page asks for your password first, and then for the code.
 
 1. Log in.
 2. Open the menu with your name, and select **Account Settings**.
-3. Select **Switch the second factor off**, and confirm. A login then needs only the password.
+3. Enter the password of your account, or a code that the app shows now.
+4. Select **Switch the second factor off**, and confirm. A login then needs only the password.
+
+The password or the code proves that it's you, so somebody who got hold of your session in a browser can't switch the second factor off or replace it (D-186).
 
 ## 🆘 Lost your phone?
 

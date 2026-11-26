@@ -20,15 +20,38 @@ describe('the panel User Information of the account page', () => {
     expect(screen.getByLabelText('Email')).toHaveValue('robin@example.com');
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
+    // A new name needs no password.
+    expect(screen.queryByLabelText('Current Password')).toBeNull();
     await fireEvent.input(screen.getByLabelText('Email'), {
       target: { value: 'new@example.com' },
+    });
+    // A new address does.
+    await fireEvent.input(screen.getByLabelText('Current Password'), {
+      target: { value: 'my password' },
     });
     await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await screen.findByText('Your account is saved.');
     expect(sent.filter((request) => request.method === 'PUT')).toEqual([
-      { method: 'PUT', path: 'users/7', body: { email: 'new@example.com' } },
+      {
+        method: 'PUT',
+        path: 'users/7',
+        body: { email: 'new@example.com', currentPassword: 'my password' },
+      },
     ]);
+  });
+
+  it('sends a new name without the current password', async () => {
+    const sent = await show({ 'PUT users/7': {}, 'GET launch': { status: 401 } });
+
+    await fireEvent.input(screen.getByLabelText('Username'), { target: { value: 'robin2' } });
+    expect(screen.queryByLabelText('Current Password')).toBeNull();
+    await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await screen.findByText('Your account is saved.');
+    expect(sent.filter((request) => request.method === 'PUT')[0]?.body).toEqual({
+      username: 'robin2',
+    });
   });
 
   it('sends a new password only when both fields hold the same text', async () => {
@@ -36,6 +59,9 @@ describe('the panel User Information of the account page', () => {
 
     await fireEvent.input(screen.getByLabelText('Password'), { target: { value: 'one' } });
     await fireEvent.input(screen.getByLabelText('Verify Password'), { target: { value: 'two' } });
+    await fireEvent.input(screen.getByLabelText('Current Password'), {
+      target: { value: 'old' },
+    });
     await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'The two passwords are not the same.',
@@ -47,6 +73,7 @@ describe('the panel User Information of the account page', () => {
     await screen.findByText('Your account is saved.');
     expect(sent.filter((request) => request.method === 'PUT')[0]?.body).toEqual({
       password: 'one',
+      currentPassword: 'old',
     });
   });
 

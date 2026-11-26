@@ -91,6 +91,8 @@ pub struct Replay {
     /// Parts of a JSON body that are not implemented yet: case and JSON pointer.
     pending_parts: Vec<(String, String)>,
     absent_cookies: Vec<String>,
+    /// Fields that the replay adds to the JSON body of a request: case, key and value.
+    sent_fields: Vec<(String, String, Value)>,
 }
 
 #[derive(Debug)]
@@ -131,7 +133,21 @@ impl Replay {
             logins_after: Vec::new(),
             pending_parts: Vec::new(),
             absent_cookies: Vec::new(),
+            sent_fields: Vec::new(),
         }
+    }
+
+    /// Sends one more field in the JSON body of the request of a case, because of an
+    /// approved deviation that asks for it, such as the current password of a change of
+    /// the own account. The answer must then be the recorded one.
+    ///
+    /// `id` must be an entry of `docs/deviations.md`.
+    #[must_use]
+    pub fn deviation_sends(mut self, id: &str, case: &str, key: &str, value: Value) -> Self {
+        assert_approved(id);
+        self.sent_fields
+            .push((case.to_owned(), key.to_owned(), value));
+        self
     }
 
     /// Expects another value in the body of a case, because of an approved deviation.
@@ -349,7 +365,13 @@ impl Replay {
         let mut browsers = Browsers::default();
         for case in &recording.cases {
             let mut expected = self.expected(case);
-            let mut actual = Answer::of(app, &recording, case, &mut browsers).await;
+            let more: Vec<(&str, &Value)> = self
+                .sent_fields
+                .iter()
+                .filter(|(name, ..)| *name == case.name)
+                .map(|(_, key, value)| (key.as_str(), value))
+                .collect();
+            let mut actual = Answer::of(app, &recording, case, &more, &mut browsers).await;
             without_dropped_shadows(&mut actual.cookies);
             for (_, jar, login) in self
                 .logins_after
@@ -810,22 +832,47 @@ fn redact(body: &str, key: &str, placeholder: &str) -> String {
     redacted
 }
 
+/// The body of the request of a case, with `more` fields in a JSON body, and whether
+/// the body is JSON.
+fn request_body(case: &Case, more: &[(&str, &Value)], browsers: &Browsers) -> (bool, Body) {
+    let mut json = case.request.json.clone();
+    if !more.is_empty() {
+        let object = json
+            .get_or_insert_with(|| Value::Object(serde_json::Map::new()))
+            .as_object_mut()
+            .expect("a case that is sent with more fields has an object as its body");
+        for (key, value) in more {
+            object.insert((*key).to_owned(), (*value).clone());
+        }
+    }
+    match (json, &case.request.body) {
+        (Some(json), _) => {
+            let text = serde_json::to_string(&json).expect("the request body can be written");
+            (true, Body::from(browsers.fill_in(&text)))
+        }
+        (None, Some(text)) => (false, Body::from(browsers.fill_in(text))),
+        (None, None) => (false, Body::empty()),
+    }
+}
+
 impl Answer {
     /// Sends the request of a case to the application and takes the answer apart.
-    async fn of(app: &Router, recording: &Recording, case: &Case, browsers: &mut Browsers) -> Self {
+    /// `more` are fields that the JSON body gets in addition to the recorded ones.
+    async fn of(
+        app: &Router,
+        recording: &Recording,
+        case: &Case,
+        more: &[(&str, &Value)],
+        browsers: &mut Browsers,
+    ) -> Self {
         let mut request = Request::builder()
             .method(case.request.method.as_str())
             .uri(browsers.fill_in(&case.request.path))
             .header(header::HOST, &recording.source.host);
-        let body = match (&case.request.json, &case.request.body) {
-            (Some(json), _) => {
-                request = request.header(header::CONTENT_TYPE, "application/json");
-                let text = serde_json::to_string(json).expect("the request body can be written");
-                Body::from(browsers.fill_in(&text))
-            }
-            (None, Some(text)) => Body::from(browsers.fill_in(text)),
-            (None, None) => Body::empty(),
-        };
+        let (is_json, body) = request_body(case, more, browsers);
+        if is_json {
+            request = request.header(header::CONTENT_TYPE, "application/json");
+        }
         for (name, value) in &case.request.headers {
             request = request.header(name.as_str(), browsers.fill_in(value));
         }

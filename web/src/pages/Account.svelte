@@ -25,6 +25,10 @@
   let hasFactor = $state<boolean | null>(null);
   let setup = $state<NewFactor | null>(null);
   let code = $state('');
+  // The proof of the owner: the password of the account, or a code of the second factor
+  // that the account has. Turning one on takes the password, as there is no code yet.
+  let proofPassword = $state('');
+  let proofCode = $state('');
   let error = $state<string | null>(null);
   let done = $state<string | null>(null);
   let busy = $state(false);
@@ -57,6 +61,7 @@
     run(async () => {
       setup = (await api<NewFactor>('POST', `2fa/${KIND}`)).data;
       code = '';
+      proofPassword = '';
     });
 
   function confirm(event: SubmitEvent) {
@@ -78,23 +83,34 @@
         }
         throw failure;
       }
-      await api('PUT', '2fa', { secret: pending.secret, type: KIND });
+      await api('PUT', '2fa', { secret: pending.secret, type: KIND, password: proofPassword });
       setup = null;
       code = '';
+      proofPassword = '';
       done = 'The second factor is on. Your next login asks for a code.';
       await load();
     });
   }
 
-  const remove = () =>
-    run(async () => {
+  function remove(event: SubmitEvent) {
+    event.preventDefault();
+    const proof = proofPassword !== '' ? { password: proofPassword } : { code: proofCode.trim() };
+    if (proofPassword === '' && proofCode.trim() === '') {
+      error = 'Enter the password of this account or a code that the app shows.';
+      done = null;
+      return;
+    }
+    void run(async () => {
       if (!window.confirm('Switch the second factor off? A login then needs only the password.')) {
         return;
       }
-      await api('DELETE', '2fa');
+      await api('DELETE', '2fa', proof);
+      proofPassword = '';
+      proofCode = '';
       done = 'The second factor is off.';
       await load();
     });
+  }
 
   onMount(load);
 </script>
@@ -166,6 +182,17 @@
                 title="Six digits"
               />
             </li>
+            <li>
+              <label for="second-factor-password">Enter the password of this account.</label>
+              <input
+                id="second-factor-password"
+                class="input mt-2 w-full max-w-xs"
+                type="password"
+                bind:value={proofPassword}
+                required
+                autocomplete="current-password"
+              />
+            </li>
           </ol>
           <div class="card-actions mt-4">
             <button class="btn btn-primary" disabled={busy}>
@@ -179,11 +206,31 @@
         </form>
       {:else if hasFactor === true}
         <p>Your account has a second factor.</p>
-        <div class="card-actions">
-          <button class="btn btn-error btn-outline" disabled={busy} onclick={remove}>
+        <form class="flex flex-wrap items-end gap-2" onsubmit={remove}>
+          <label class="form-control">
+            <span class="label-text">Password of this account</span>
+            <input
+              class="input input-bordered input-sm"
+              type="password"
+              autocomplete="current-password"
+              bind:value={proofPassword}
+            />
+          </label>
+          <label class="form-control">
+            <span class="label-text">Or a code that the app shows</span>
+            <input
+              class="input input-bordered input-sm max-w-40"
+              bind:value={proofCode}
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="\s*[0-9]{'{6}'}\s*"
+              title="Six digits"
+            />
+          </label>
+          <button class="btn btn-error btn-outline" disabled={busy}>
             Switch the second factor off
           </button>
-        </div>
+        </form>
       {:else if hasFactor === false}
         <p>Your account has no second factor.</p>
         <div class="card-actions">

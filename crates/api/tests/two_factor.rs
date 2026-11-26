@@ -54,10 +54,15 @@ async fn add_second_factor(app: &Router, cookie: &str) -> String {
         .as_str()
         .expect("the answer holds a secret")
         .to_owned();
-    let body = json!({"secret": secret, "type": "google"});
+    let body = json!({"secret": secret, "type": "google", "password": seed::USER_PASSWORD});
     let saved = call(app, As::User(cookie), "PUT", "/2fa", Some(body)).await;
     assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
     secret
+}
+
+/// The proof of the owner for a change of the second factor: the password.
+fn with_password() -> Value {
+    json!({"password": seed::USER_PASSWORD})
 }
 
 async fn log_in(app: &Router, name: &str, code: Option<&str>) -> Answer {
@@ -135,7 +140,14 @@ async fn second_factor_is_shown_by_its_kind_and_its_secret_is_sealed() {
             StatusCode::OK
         );
 
-        let removed = call(&app, As::User(&robin), "DELETE", "/2fa", None).await;
+        let removed = call(
+            &app,
+            As::User(&robin),
+            "DELETE",
+            "/2fa",
+            Some(with_password()),
+        )
+        .await;
         assert_eq!(removed.status, StatusCode::NO_CONTENT);
         assert_eq!(stored_factor(database, user.id).await, None);
         assert_eq!(log_in(&app, "robin", None).await.status, StatusCode::OK);
@@ -195,7 +207,7 @@ async fn values_that_would_lock_the_account_are_refused() {
         assert_eq!(checked.data(), json!(false));
 
         // A secret of 16 characters, as the PHP application makes them, is taken.
-        let body = json!({"secret": secret, "type": "google"});
+        let body = json!({"secret": secret, "type": "google", "password": seed::USER_PASSWORD});
         let saved = call(&app, As::User(&robin), "PUT", "/2fa", Some(body)).await;
         assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
         assert_eq!(
@@ -407,7 +419,18 @@ async fn manager_removes_the_second_factor_of_another_user() {
             json!("Only admins can remove the second factor of admins")
         );
         assert!(stored_factor(database, admin_id).await.is_some());
-        let done = delete(&app, As::User(&admin), &path).await;
+        // The own second factor needs the proof of the owner on this route too (D-186).
+        let refused = delete(&app, As::User(&admin), &path).await;
+        assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
+        assert!(stored_factor(database, admin_id).await.is_some());
+        let done = call(
+            &app,
+            As::User(&admin),
+            "DELETE",
+            &path,
+            Some(with_password()),
+        )
+        .await;
         assert_eq!(done.status, StatusCode::OK, "{}", done.body);
         assert_eq!(stored_factor(database, admin_id).await, None);
         // A script with the API key acts as an Admin.
@@ -457,6 +480,95 @@ async fn code_works_for_one_login_only() {
             log_in(&app, "robin", Some(&later)).await.status,
             StatusCode::UNPROCESSABLE_ENTITY
         );
+    })
+    .await;
+}
+
+/// Turning the second factor on needs the password of the account. Replacing it and
+/// turning it off need the password or a code of the second factor, so that a stolen
+/// session alone cannot change it (D-186).
+#[tokio::test]
+async fn second_factor_changes_need_the_password_or_a_code() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let robin = seed::logged_in(database, &app, "robin", 4).await;
+        let user = database
+            .users()
+            .find_by_username("robin")
+            .await
+            .expect("the lookup works")
+            .expect("the user is there");
+        let send = async |method: &str, body: Value| {
+            call(&app, As::User(&robin), method, "/2fa", Some(body)).await
+        };
+        let refused = |answer: &Answer, message: &str| {
+            assert_eq!(
+                answer.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "{}",
+                answer.body
+            );
+            assert_eq!(answer.message(), json!(message));
+        };
+        let first = "JBSWY3DPEHPK3PXP";
+        let second = "KRSXG5CTMVRXEZLU";
+
+        // Without a second factor there is no code: only the password counts.
+        let on = json!({"secret": first, "type": "google"});
+        refused(
+            &send("PUT", on.clone()).await,
+            "Enter the password of the account",
+        );
+        let mut body = on.clone();
+        body["code"] = json!(code(first));
+        refused(
+            &send("PUT", body).await,
+            "Enter the password of the account",
+        );
+        let mut body = on.clone();
+        body["password"] = json!("not the password");
+        refused(
+            &send("PUT", body).await,
+            "The password is not the password of the account",
+        );
+        assert_eq!(stored_factor(database, user.id).await, None);
+        let mut body = on;
+        body["password"] = json!(seed::USER_PASSWORD);
+        let saved = send("PUT", body).await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
+
+        // A replacement takes a code of the second factor the account has.
+        let replace = json!({"secret": second, "type": "google"});
+        let no_proof = "Enter the password of the account or a code of its second factor";
+        refused(&send("PUT", replace.clone()).await, no_proof);
+        let mut body = replace.clone();
+        body["code"] = json!(wrong_code(first));
+        refused(
+            &send("PUT", body).await,
+            "The code is not a code of the second factor of the account",
+        );
+        let mut body = replace;
+        body["code"] = json!(code(first));
+        let saved = send("PUT", body).await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
+        assert_eq!(
+            log_in(&app, "robin", Some(&code(second))).await.status,
+            StatusCode::OK
+        );
+
+        // Turning it off takes the password or a code too.
+        let removed = call(&app, As::User(&robin), "DELETE", "/2fa", None).await;
+        refused(&removed, no_proof);
+        refused(
+            &send("DELETE", json!({"password": "not the password"})).await,
+            "The password is not the password of the account",
+        );
+        assert!(stored_factor(database, user.id).await.is_some());
+        let later = code_at(second, now() + 30).expect("the secret is valid");
+        let removed = send("DELETE", json!({"code": later})).await;
+        assert_eq!(removed.status, StatusCode::NO_CONTENT, "{}", removed.body);
+        assert_eq!(stored_factor(database, user.id).await, None);
     })
     .await;
 }

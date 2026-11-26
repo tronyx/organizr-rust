@@ -61,6 +61,19 @@ pub struct Args {
     )]
     custom_js: bool,
 
+    /// Whether the session cookie is for the host of Organizr alone, without a domain,
+    /// so that the other hosts of the domain never receive it. Forward auth for an
+    /// application on another host then sees no session. Off unless set to `1`: the
+    /// cookie is then set for the wider domain too, as in PHP. The variable takes the
+    /// same words as `ORGANIZR_CUSTOM_JS`.
+    #[arg(
+        long,
+        env = "ORGANIZR_SESSION_COOKIE_HOST_ONLY",
+        action = clap::ArgAction::SetTrue,
+        value_parser = clap::builder::BoolishValueParser::new()
+    )]
+    session_cookie_host_only: bool,
+
     #[command(flatten)]
     storage: StorageArgs,
 }
@@ -161,7 +174,8 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
         .with_picture_cache(args.storage.data_dir.join("cache"))
         .with_data_folder(args.storage.data_dir.clone())
         .with_key_file(args.storage.key_file())
-        .with_custom_js(args.custom_js);
+        .with_custom_js(args.custom_js)
+        .with_session_cookie_host_only(args.session_cookie_host_only);
     // The setting `trustedProxies` counts when the variable names no proxy (D-155).
     let ignore_tfa_local = state.settings().ignore_tfa_local;
     for warning in warnings_without_a_proxy(state.trusted_proxies().is_empty(), ignore_tfa_local) {
@@ -170,6 +184,11 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
     if args.custom_js {
         tracing::warn!(
             "ORGANIZR_CUSTOM_JS is on: every page runs the custom JavaScript of the Admin"
+        );
+    }
+    if args.session_cookie_host_only {
+        tracing::info!(
+            "ORGANIZR_SESSION_COOKIE_HOST_ONLY is on: the session cookie is for this host alone, so forward auth for other hosts sees no session"
         );
     }
     // The log file follows the `logLevel` and `maxLogFiles` settings from now on.
@@ -418,6 +437,19 @@ mod tests {
         // The test does not read the environment: no `ORGANIZR_CUSTOM_JS` is set there.
         assert!(!parsed(&["serve"]));
         assert!(parsed(&["serve", "--custom-js"]));
+    }
+
+    #[test]
+    fn session_cookie_is_for_the_wider_domain_unless_the_operator_says_otherwise() {
+        let parsed = |words: &[&str]| {
+            Serve::try_parse_from(words)
+                .unwrap_or_else(|error| panic!("{error}"))
+                .args
+                .session_cookie_host_only
+        };
+        // The test does not read the environment: no such variable is set there.
+        assert!(!parsed(&["serve"]));
+        assert!(parsed(&["serve", "--session-cookie-host-only"]));
     }
 
     #[test]

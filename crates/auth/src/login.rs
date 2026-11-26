@@ -163,6 +163,35 @@ pub(crate) async fn check_second_factor(
     }
 }
 
+/// Whether a code is a code of the stored second factor of a user at `now`. A change of
+/// the own account takes it as proof that the person is the owner (D-186). As for a
+/// login, a code works once. An account without a second factor has no code.
+///
+/// # Errors
+///
+/// The error of the database.
+pub async fn is_second_factor_code(
+    database: &Database,
+    user: &User,
+    code: &str,
+    secrets: &SecretBox,
+    now: Timestamp,
+) -> Result<bool, DbError> {
+    if code.is_empty() {
+        return Ok(false);
+    }
+    let second_factor = SecondFactor {
+        code,
+        secrets,
+        skip: false,
+    };
+    match check_second_factor(database, user, second_factor, now).await {
+        Ok(checked) => Ok(checked),
+        Err(LoginError::Database(error)) => Err(error),
+        Err(_) => Ok(false),
+    }
+}
+
 /// Logs a user in with a name, or an e-mail address, and a password.
 ///
 /// The letter case of the name and of the address does not matter. When the password is

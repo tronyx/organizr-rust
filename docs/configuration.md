@@ -21,6 +21,7 @@ Each variable is also an option of `organizr serve`. The option wins when you gi
 | `ORGANIZR_SECRET_KEY` | `--secret-key` | Not set | The key for the stored secrets, as 64 hex digits. When set, Organizr doesn't read or write a key file. See [Secrets](secrets.md) |
 | `ORGANIZR_SECRET_KEY_FILE` | `--secret-key-file` | `secret.key` in the data folder | The file that holds the key. Organizr makes it on the first start when it's missing |
 | `ORGANIZR_CUSTOM_JS` | `--custom-js` | Off | Runs the Admin's **Custom Javascript** and **Theme Javascript** on every page. Takes `1`, `true`, `yes` or `on` (and `0`, `false`, `no`, `off`). See [Appearance](appearance.md) |
+| `ORGANIZR_SESSION_COOKIE_HOST_ONLY` | `--session-cookie-host-only` | Off | Sets the login cookie for the host of Organizr alone, so the other hosts of your domain never get it. Takes the same values as `ORGANIZR_CUSTOM_JS`. It can't work with [Forward auth](forward-auth.md) for applications on other hosts, such as `sonarr.example.com`: they no longer see the login. Off, the cookie is set for the whole domain too (`.example.com`), as in PHP |
 | `ORGANIZR_LOG` | None | `info` | The level of the log on the standard output (`docker compose logs`), for example `debug` or `organizr_api=debug,info`. The log file follows the **Logs** settings instead. See [The log](log.md) |
 | `TZ` | None | UTC | The time zone for the schedules, for example `America/New_York`. See [Scheduled jobs](scheduled-jobs.md) |
 
@@ -40,6 +41,7 @@ Some of these variables are sensitive. Keep these in mind:
 | `ORGANIZR_DATABASE_URL` | Holds the database password. Keep the compose file (or the `.env` file that holds it) readable only by you: `chmod 600 .env` |
 | `ORGANIZR_EXTENSION_MARKETPLACE` | Decides whose list of extensions your Admins are offered. Point it only at a list you trust |
 | `ORGANIZR_CUSTOM_JS` | The script runs in the session of every person who opens Organizr, guests on the login page too. A script that the Admin stores can read what every user sees |
+| `ORGANIZR_SESSION_COOKIE_HOST_ONLY` | Off, every host of your domain gets the login cookie, so an application there can read it. Turn it on when you use no forward auth for other hosts |
 
 ### 🧪 For contributors
 
@@ -75,7 +77,7 @@ The image runs `organizr serve` by default. The other commands run in a one-off 
 
 | Command | Option | What it does |
 | --- | --- | --- |
-| `serve` | `--listen`, `--trusted-proxies`, `--extension-marketplace`, `--custom-js` | The same as the variables above |
+| `serve` | `--listen`, `--trusted-proxies`, `--extension-marketplace`, `--custom-js`, `--session-cookie-host-only` | The same as the variables above |
 | `healthcheck` | `--listen` | Where the server listens. Reads `ORGANIZR_LISTEN`, so it needs nothing of its own |
 | `import` | `--from <folder>` | The folder of the PHP install, or the `/config` volume of the container that held it. Only read |
 | `import` | `--database <file>` | The SQLite file of the PHP install, when the import doesn't find it by itself |

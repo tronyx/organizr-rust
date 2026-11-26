@@ -49,6 +49,9 @@ describe('Account', () => {
     await fireEvent.input(screen.getByLabelText('Enter the code that the app shows.'), {
       target: { value: '123456' },
     });
+    await fireEvent.input(screen.getByLabelText('Enter the password of this account.'), {
+      target: { value: 'my password' },
+    });
     await fireEvent.click(screen.getByRole('button', { name: 'Switch the second factor on' }));
 
     expect(await screen.findByText('Your account has a second factor.')).toBeInTheDocument();
@@ -62,7 +65,11 @@ describe('Account', () => {
         path: '2fa',
         body: { secret: NEW_FACTOR.secret, code: '123456', type: 'google' },
       },
-      { method: 'PUT', path: '2fa', body: { secret: NEW_FACTOR.secret, type: 'google' } },
+      {
+        method: 'PUT',
+        path: '2fa',
+        body: { secret: NEW_FACTOR.secret, type: 'google', password: 'my password' },
+      },
     ]);
   });
 
@@ -81,6 +88,9 @@ describe('Account', () => {
     await fireEvent.click(await screen.findByRole('button', { name: 'Set a second factor up' }));
     await fireEvent.input(await screen.findByLabelText('Enter the code that the app shows.'), {
       target: { value: '000000' },
+    });
+    await fireEvent.input(screen.getByLabelText('Enter the password of this account.'), {
+      target: { value: 'my password' },
     });
 
     await fireEvent.click(screen.getByRole('button', { name: 'Switch the second factor on' }));
@@ -109,6 +119,16 @@ describe('Account', () => {
     render(Account);
     const off = await screen.findByRole('button', { name: 'Switch the second factor off' });
 
+    // Without the password or a code, nothing is asked or sent.
+    await fireEvent.click(off);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Enter the password of this account or a code that the app shows.',
+    );
+    expect(confirm).not.toHaveBeenCalled();
+
+    await fireEvent.input(screen.getByLabelText('Or a code that the app shows'), {
+      target: { value: ' 654321 ' },
+    });
     await fireEvent.click(off);
     expect(confirm).toHaveBeenCalledOnce();
     expect(sent.some((request) => request.method === 'DELETE')).toBe(false);
@@ -120,7 +140,26 @@ describe('Account', () => {
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('The second factor is off.'),
     );
-    expect(sent.filter((request) => request.method === 'DELETE')).toHaveLength(1);
+    expect(sent.filter((request) => request.method === 'DELETE')).toEqual([
+      { method: 'DELETE', path: '2fa', body: { code: '654321' } },
+    ]);
+  });
+
+  it('switches the second factor off with the password', async () => {
+    const sent = show(true);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(Account);
+    const off = await screen.findByRole('button', { name: 'Switch the second factor off' });
+
+    await fireEvent.input(screen.getByLabelText('Password of this account'), {
+      target: { value: 'my password' },
+    });
+    await fireEvent.click(off);
+
+    expect(await screen.findByText('Your account has no second factor.')).toBeInTheDocument();
+    expect(sent.filter((request) => request.method === 'DELETE')).toEqual([
+      { method: 'DELETE', path: '2fa', body: { password: 'my password' } },
+    ]);
   });
 
   it('says so when the account cannot be loaded', async () => {

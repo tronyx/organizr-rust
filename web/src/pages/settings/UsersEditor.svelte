@@ -94,9 +94,12 @@
     return failure;
   }
 
-  async function removeSecondFactor(user: Account): Promise<string | null> {
+  async function removeSecondFactor(
+    user: Account,
+    proof?: Record<string, string>,
+  ): Promise<string | null> {
     const failure = await change(
-      () => api('DELETE', `users/2fa/${user.id}`),
+      () => api('DELETE', `users/2fa/${user.id}`, proof),
       'The second factor is removed.',
     );
     if (failure === null) {
@@ -312,9 +315,10 @@
       user={dialog.user}
       groups={data.groups}
       focusPassword={dialog.password ?? false}
+      own={dialog.user ? isOwn(dialog.user) : false}
       onsave={save}
-      onremoveSecondFactor={() =>
-        dialog?.user ? removeSecondFactor(dialog.user) : Promise.resolve(null)}
+      onremoveSecondFactor={(proof) =>
+        dialog?.user ? removeSecondFactor(dialog.user, proof) : Promise.resolve(null)}
       onclose={() => (dialog = null)}
     />
   {/key}

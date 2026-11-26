@@ -8,6 +8,9 @@
 //!
 //! `DELETE /users/2fa/{id}` removes the second factor of another user, for an Admin or a
 //! Co-Admin. PHP has no such route (D-129).
+//!
+//! A change of the own second factor needs the password of the account in the field
+//! `password`, or a code of the second factor it has in the field `code` (D-186).
 
 use axum::Extension;
 use axum::extract::{Path, State};
@@ -16,15 +19,17 @@ use axum::response::{IntoResponse, Response};
 use organizr_auth::secrets::two_factor_name;
 use organizr_auth::two_factor::{self, KIND};
 use organizr_db::SealedTwoFactor;
-use organizr_domain::GroupLevel;
+use organizr_domain::{GroupLevel, User};
 use serde::Serialize;
 use serde_json::Value;
 
 use crate::api_data::ApiData;
 use crate::caller::{Caller, now_stamp};
+use crate::client::Client;
 use crate::envelope::{Envelope, NoContent, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
+use crate::handlers::proof::{self, Proof};
 use crate::handlers::users::{is_admin, user_at};
 use crate::state::AppState;
 
@@ -127,10 +132,38 @@ pub async fn verify(
     })
 }
 
+/// Checks that a change of the own second factor comes from the owner: the password of
+/// the account, or a code of the second factor it has (D-186). An account without a
+/// second factor has no code, so only the password counts for it.
+async fn owner_proof(
+    state: &AppState,
+    client: &Client,
+    user: &User,
+    data: &ApiData,
+) -> Result<(), Refusal> {
+    let proof = Proof::new(data.text("password"), data.text("code"));
+    if has_second_factor(state, user).await? {
+        proof::password_or_code(state, client, user, proof).await
+    } else {
+        proof::password(state, client, user, proof.password).await
+    }
+}
+
+/// Whether the account has a second factor.
+async fn has_second_factor(state: &AppState, user: &User) -> Result<bool, Refusal> {
+    Ok(state
+        .database()
+        .users()
+        .login_of(user.id)
+        .await?
+        .is_some_and(|login| login.two_factor.is_some()))
+}
+
 /// `PUT /2fa`: saves a secret as the second factor of the account of the caller.
 pub async fn save(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
+    Extension(client): Extension<Client>,
     data: ApiData,
 ) -> Result<Envelope<NoData>, Refusal> {
     caller.require(GroupLevel::LOGGED_IN)?;
@@ -150,6 +183,7 @@ pub async fn save(
         .ok_or(ApiError::NotAuthorized)?
         .authenticated
         .user;
+    owner_proof(&state, &client, user, &data).await?;
 
     let sealed_secret = state
         .secrets()
@@ -177,13 +211,19 @@ pub async fn save(
     Ok(Envelope::success(NoData).with_message("2FA Added"))
 }
 
-/// `DELETE /2fa`: removes the second factor of the account of the caller.
+/// `DELETE /2fa`: removes the second factor of the account of the caller. An account
+/// without a second factor has nothing to remove, and needs no proof.
 pub async fn remove(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-) -> Result<Response, ApiError> {
+    Extension(client): Extension<Client>,
+    data: ApiData,
+) -> Result<Response, Refusal> {
     caller.require(GroupLevel::LOGGED_IN)?;
-    if let Some(user) = caller.user().map(|caller| &caller.authenticated.user) {
+    if let Some(user) = caller.user().map(|caller| &caller.authenticated.user)
+        && has_second_factor(&state, user).await?
+    {
+        owner_proof(&state, &client, user, &data).await?;
         state
             .database()
             .users()
@@ -199,11 +239,14 @@ const MANAGER: GroupLevel = GroupLevel::CO_ADMIN;
 
 /// `DELETE /users/2fa/{id}`: removes the second factor of a user, for a person who has
 /// lost the authenticator app. Only an Admin removes the second factor of an Admin. A
-/// user without a second factor is no error. PHP has no such route (D-129).
+/// user without a second factor is no error. The own second factor needs the proof of
+/// `DELETE /2fa` here too (D-186). PHP has no such route (D-129).
 pub async fn remove_for_user(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
+    Extension(client): Extension<Client>,
     Path(id): Path<String>,
+    data: ApiData,
 ) -> Result<Envelope<NoData>, Refusal> {
     caller.require(MANAGER)?;
     let database = state.database();
@@ -214,6 +257,12 @@ pub async fn remove_for_user(
         return Err(Refusal::not_authorized(
             "Only admins can remove the second factor of admins",
         ));
+    }
+    let own = caller
+        .user()
+        .is_some_and(|caller| caller.authenticated.user.id == user.id);
+    if own && has_second_factor(&state, &user).await? {
+        owner_proof(&state, &client, &user, &data).await?;
     }
     if !database.users().set_two_factor(user.id, None).await? {
         // Another request deleted the user after the lookup above.

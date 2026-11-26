@@ -90,6 +90,10 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - Guests never make, list or delete invites, whatever level the invites plugin names (D-182).
 - Only an Admin changes the backup folder, whose zip files the backup routes list, send and delete (D-183).
 - An OpenID Connect login links an existing account by its user name only through `preferred_username`, never by the display name (D-184).
+- A new password or a new e-mail address of the own account needs the current password (D-185).
+- Turning the own second factor on needs the password; replacing it or turning it off needs the password or a code of the second factor (D-186).
+- A link of the own account to an OpenID Connect provider needs the password of the account (D-187).
+- `ORGANIZR_SESSION_COOKIE_HOST_ONLY=1` makes the session cookie one for the host of Organizr alone, for installs without forward auth on other hosts.
 - An OpenID Connect login comes back to Organizr once: a copy of its login cookie is refused until the cookie expires.
 - The approval of an extension also names the level of callers that the dialog showed, and a call of an extension ends after 30 seconds, also while it waits.
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).

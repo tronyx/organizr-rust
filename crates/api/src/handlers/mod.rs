@@ -45,6 +45,7 @@ pub mod ping;
 pub mod plex;
 pub mod plex_libraries;
 pub mod plugins;
+pub mod proof;
 pub mod register;
 pub mod socks;
 pub mod speed_test;

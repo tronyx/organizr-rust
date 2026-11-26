@@ -10,7 +10,7 @@ use organizr_auth::SessionToken;
 
 use crate::caller::{MOST_SESSION_COOKIES, session_cookie_name};
 use crate::client::Client;
-use crate::cookies::{self, CookieScope};
+use crate::cookies;
 use crate::device_cookie::{DEVICE_COOKIE, new_device_cookie};
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
@@ -83,7 +83,7 @@ pub async fn logout(
     dropped.push(DEVICE_COOKIE);
 
     let now = SystemTime::now();
-    let scope = CookieScope::of(&headers, client.https);
+    let scope = state.cookie_scope(&headers, client.https);
     let mut response = Envelope::success(NoData).into_response();
     cookies::append(&mut response, scope.delete_session(&session_cookie, now)?);
     for name in dropped {

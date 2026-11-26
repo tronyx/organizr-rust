@@ -29,6 +29,9 @@ pub struct CookieScope {
     pub host: String,
     /// Whether the browser used HTTPS. See [`Client`](crate::client::Client).
     pub secure: bool,
+    /// Whether the session cookie is for the host alone, without a domain. See
+    /// [`with_host_only`](Self::with_host_only).
+    pub host_only: bool,
 }
 
 impl CookieScope {
@@ -39,7 +42,21 @@ impl CookieScope {
             .and_then(|value| value.to_str().ok())
             .unwrap_or_default()
             .to_owned();
-        Self { host, secure }
+        Self {
+            host,
+            secure,
+            host_only: false,
+        }
+    }
+
+    /// The same scope, with the session cookie for the host alone when `host_only` is
+    /// set: the switch `ORGANIZR_SESSION_COOKIE_HOST_ONLY`. Such a cookie has no domain,
+    /// so the browser sends it to no other host of the domain, and forward auth for
+    /// those hosts no longer sees the session. Other cookies keep their two domains.
+    #[must_use]
+    pub const fn with_host_only(mut self, host_only: bool) -> Self {
+        self.host_only = host_only;
+        self
     }
 
     /// The two `Set-Cookie` values that give the browser a cookie until `expires`.
@@ -159,9 +176,33 @@ impl CookieScope {
     ) -> Result<Vec<HeaderValue>, CookieError> {
         // The deletions come first, so a client that keeps one cookie per name, whatever
         // its path, ends up with the session.
-        let mut values = self.drop_shadows(name, SystemTime::now())?;
-        values.extend(self.set_hidden(name, value, expires)?);
+        let now = SystemTime::now();
+        let mut values = self.drop_shadows(name, now)?;
+        if self.host_only {
+            // The cookies with a domain from before the switch go first, so that no
+            // other host keeps receiving a session.
+            values.extend(self.delete_hidden(name, now)?);
+            values.push(self.render_for_host(name, value, expires)?);
+        } else {
+            values.extend(self.set_hidden(name, value, expires)?);
+        }
         Ok(values)
+    }
+
+    /// The `Set-Cookie` value of a hidden cookie at `/` without a domain: the browser
+    /// sends it to the host alone.
+    fn render_for_host(
+        &self,
+        name: &str,
+        value: &str,
+        expires: SystemTime,
+    ) -> Result<HeaderValue, CookieError> {
+        let [_, for_host] = Self {
+            host: String::new(),
+            ..self.clone()
+        }
+        .render_at(name, value, expires, true, "/")?;
+        Ok(for_host)
     }
 
     /// The `Set-Cookie` values that make the browser drop the session cookie, at `/` and
@@ -173,6 +214,10 @@ impl CookieScope {
     ) -> Result<Vec<HeaderValue>, CookieError> {
         let mut values = self.drop_shadows(name, now)?;
         values.extend(self.delete_hidden(name, now)?);
+        if self.host_only {
+            let expired = now.checked_sub(DELETED_SINCE).ok_or(CookieError::Expiry)?;
+            values.push(self.render_for_host(name, "", expired)?);
+        }
         Ok(values)
     }
 
@@ -272,6 +317,7 @@ mod tests {
         CookieScope {
             host: host.to_owned(),
             secure,
+            host_only: false,
         }
     }
 

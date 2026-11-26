@@ -410,13 +410,6 @@ async fn komga_master_password_goes_with_the_e_mail_of_the_plex_account() {
         let app = app_with(database, &plex, &settings);
         let first = log_in_with_token(&app, OWNER_TOKEN).await;
         assert_eq!(first.status, StatusCode::OK, "{}", first.body);
-        let session = cookie(
-            &first,
-            "organizr_token_5d0c6f0e-2b7a-4a36-8e55-9c1f4d3a7b21",
-        )
-        .and_then(|cookie| cookie.split(';').next())
-        .expect("the login sets the session cookie")
-        .to_owned();
 
         // The owner takes the e-mail of the Komga account of robin, who has no account
         // in Organizr. The master password goes with the e-mail that plex.tv vouches
@@ -425,15 +418,10 @@ async fn komga_master_password_goes_with_the_e_mail_of_the_plex_account() {
             .await
             .expect("the login made the account");
         let id = owner.id;
+        // A login with a token gave the account a random password, so the change of
+        // the address goes through the API key (D-185).
         let body = json!({"email": services::KOMGA_ROBIN.0});
-        let changed = call(
-            &app,
-            As::User(&session),
-            "PUT",
-            &format!("/users/{id}"),
-            Some(body),
-        )
-        .await;
+        let changed = call(&app, As::Admin, "PUT", &format!("/users/{id}"), Some(body)).await;
         assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
 
         let again = log_in_with_token(&app, OWNER_TOKEN).await;
@@ -507,8 +495,12 @@ async fn second_factor_of_organizr_is_asked_after_plex_unless_the_setting_says_n
         .and_then(|cookie| cookie.split(';').next())
         .expect("the login sets the session cookie")
         .to_owned();
+        // A login with the Plex password makes it the password of the account, which
+        // the second factor asks for (D-186).
+        let mirrored = log_in_with_password(&app, "robin", ROBIN.password).await;
+        assert_eq!(mirrored.status, StatusCode::OK, "{}", mirrored.body);
         let secret = "JBSWY3DPEHPK3PXP";
-        let body = json!({"secret": secret, "type": "google"});
+        let body = json!({"secret": secret, "type": "google", "password": ROBIN.password});
         let saved = call(&app, As::User(&session), "PUT", "/2fa", Some(body)).await;
         assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
         let now = std::time::SystemTime::now()

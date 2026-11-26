@@ -154,7 +154,7 @@ To log in to your Admin (or any) account through a provider, link it yourself wh
 
 1. Log in to Organizr with the account's password. (If **Auto-Redirect to OIDC** is on, open `https://organizr.example.com/#noredirect` to get the password form.)
 2. Open the menu with your name, and select **Account Settings**.
-3. Under **Log in through a provider**, select **Link to** next to the provider.
+3. Under **Log in through a provider**, enter the account's password in **Password of this account**, and select **Link to** next to the provider. The password proves that it's you, so a stolen session can't add a login through a provider (D-187).
    ![Account Settings with the second factor card and the "Log in through a provider" card](images/account-link-provider.png)
 4. Log in at the provider **with the provider account that should own this Organizr account**. The browser comes back to the account page, which says the account is linked.
 5. Log out, and log in with the provider button to check it.

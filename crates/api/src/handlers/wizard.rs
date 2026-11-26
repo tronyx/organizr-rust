@@ -13,7 +13,7 @@ use organizr_db::Engine;
 use crate::api_data::ApiData;
 use crate::caller::{now_stamp, session_cookie_name};
 use crate::client::Client;
-use crate::cookies::{self, CookieScope};
+use crate::cookies;
 use crate::envelope::Envelope;
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -163,7 +163,7 @@ pub async fn wizard(
             .map(str::to_owned),
     };
     let logged_in = login::start_session(database, admin, device, now_stamp(now), ONE_DAY).await?;
-    let session_cookie = CookieScope::of(&headers, client.https).set_session(
+    let session_cookie = state.cookie_scope(&headers, client.https).set_session(
         &session_cookie_name(&state.settings()),
         logged_in.token.expose(),
         now + ONE_DAY,

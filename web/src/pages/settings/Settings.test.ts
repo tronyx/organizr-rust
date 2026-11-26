@@ -719,6 +719,49 @@ describe('Settings, users', () => {
     expect(changes(sent)).toEqual([['DELETE users/2fa/4', undefined]]);
   });
 
+  it('asks for the current password of the own account', async () => {
+    const own = USERS.map((user) => (user.id === 1 ? { ...user, auth_service: 'google' } : user));
+    stubApi({ 'GET launch': AS_ADMIN });
+    await session.load();
+    const sent = await show('users', {
+      'GET launch': AS_ADMIN,
+      'GET users': { data: own },
+      'PUT users/1': {},
+      'DELETE users/2fa/1': { message: 'Second factor removed' },
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    await fireEvent.click(within(rowOf('admin')).getByRole('button', { name: 'Edit admin' }));
+    let dialog = await screen.findByRole('dialog', { name: 'Change the user admin' });
+    const current = within(dialog).getByLabelText('Your current password');
+    // The removal of the own second factor needs it.
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Remove second factor' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'Enter your current password first.',
+    );
+    expect(changes(sent)).toEqual([]);
+    await fireEvent.input(current, { target: { value: 'my password' } });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Remove second factor' }));
+    await statusSays('The second factor is removed.');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    // A new password of the own account sends it too.
+    await fireEvent.click(within(rowOf('admin')).getByRole('button', { name: 'Edit admin' }));
+    dialog = await screen.findByRole('dialog', { name: 'Change the user admin' });
+    await fireEvent.input(within(dialog).getByLabelText('New password'), {
+      target: { value: 'a new password' },
+    });
+    await fireEvent.input(within(dialog).getByLabelText('Your current password'), {
+      target: { value: 'my password' },
+    });
+    await fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await statusSays('The user is changed.');
+    expect(changes(sent)).toEqual([
+      ['DELETE users/2fa/1', { password: 'my password' }],
+      ['PUT users/1', { password: 'a new password', currentPassword: 'my password' }],
+    ]);
+  });
+
   it('shows why the second factor was not removed', async () => {
     await show('users', {
       'DELETE users/2fa/4': {

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { linkAddress, linkedNotice } from '../lib/oidc';
+import { browser, linkedNotice, linkPath } from '../lib/oidc';
 import { session } from '../lib/session.svelte';
 import { stubApi } from '../test-helpers';
 import OidcLinks from './OidcLinks.svelte';
@@ -42,17 +42,55 @@ describe('the links to providers on the account page', () => {
     history.replaceState(null, '', '/');
   });
 
-  it('offers a button that starts the link at each provider', async () => {
-    await logIn(true, {
+  it('starts the link at a provider with the password of the account', async () => {
+    const go = vi.spyOn(browser, 'go').mockImplementation(() => undefined);
+    const sent = await logIn(true, {
       'GET oidc/providers': PROVIDERS,
       'GET oidc/link': { data: { provider: null, name: null } },
+      'POST oidc/keycloak/link': { data: { address: 'https://login.example.com/authorize' } },
     });
     render(OidcLinks);
 
     expect(await screen.findByText('Your account is not linked to a provider.')).toBeVisible();
-    const button = screen.getByRole('link', { name: 'Link to Company login' });
-    expect(button.getAttribute('href')).toMatch(/\/api\/v2\/oidc\/keycloak\/link$/);
-    expect(screen.getByRole('link', { name: 'Link to PocketID' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Link to PocketID' })).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: 'Link to Company login' });
+
+    // Without the password nothing is sent.
+    await fireEvent.click(button);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Enter the password of this account first.',
+    );
+    expect(sent.some((request) => request.method === 'POST')).toBe(false);
+
+    const field = screen.getByLabelText('Password of this account');
+    await fireEvent.input(field, { target: { value: 'my password' } });
+    await fireEvent.click(button);
+
+    await waitFor(() => expect(go).toHaveBeenCalledWith('https://login.example.com/authorize'));
+    expect(sent.find((request) => request.method === 'POST')?.body).toEqual({
+      password: 'my password',
+    });
+    go.mockRestore();
+  });
+
+  it('shows why the server refused a link', async () => {
+    await logIn(true, {
+      'GET oidc/providers': PROVIDERS,
+      'GET oidc/link': { data: { provider: null, name: null } },
+      'POST oidc/pocketid/link': {
+        status: 422,
+        message: 'The password is not the password of the account',
+      },
+    });
+    render(OidcLinks);
+
+    const field = await screen.findByLabelText('Password of this account');
+    await fireEvent.input(field, { target: { value: 'not it' } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Link to PocketID' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The password is not the password of the account',
+    );
   });
 
   it('unlinks the account with its password', async () => {
@@ -102,8 +140,8 @@ describe('the links to providers on the account page', () => {
       screen.getByText('Your account is linked to Company login.', { selector: 'p:not([role])' }),
     ).toBeVisible();
     // The linked provider has no button; the other has one.
-    expect(screen.queryByRole('link', { name: 'Link to Company login' })).toBeNull();
-    expect(screen.getByRole('link', { name: 'Link to PocketID' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Link to Company login' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Link to PocketID' })).toBeInTheDocument();
     // The notice is used once.
     expect(window.location.search).toBe('');
     expect(window.location.hash).toBe('#/account');
@@ -116,10 +154,8 @@ describe('the links to providers on the account page', () => {
     expect(sent.map((request) => request.path)).toEqual(['launch']);
   });
 
-  it('builds the address of the link and reads the notice', () => {
-    expect(linkAddress('keycloak', 'https://organizr.example.com/')).toBe(
-      'https://organizr.example.com/api/v2/oidc/keycloak/link',
-    );
+  it('builds the path of the link and reads the notice', () => {
+    expect(linkPath('keycloak')).toBe('oidc/keycloak/link');
     expect(linkedNotice('?oidcLinked=pocketid')).toBe('pocketid');
     expect(linkedNotice('?other=1')).toBeNull();
     expect(linkedNotice('')).toBeNull();

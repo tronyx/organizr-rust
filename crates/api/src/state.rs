@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
 use arc_swap::ArcSwap;
+use axum::http::HeaderMap;
 use organizr_auth::login_limit::LoginLimiter;
 use organizr_auth::secrets::{SecretBox, SecretError};
 use organizr_auth::setup_code::SetupCode;
@@ -28,6 +29,7 @@ use tokio::sync::Mutex;
 
 use crate::allowed_hosts::AllowedHosts;
 use crate::client::TrustedProxies;
+use crate::cookies::CookieScope;
 use crate::handlers::chat::ChatHub;
 use crate::handlers::oidc::UsedLogins;
 use crate::picture_cache::PictureCache;
@@ -103,6 +105,10 @@ pub struct AppState {
     /// Whether the page runs the scripts of the Admin (`customJava`): the switch
     /// `ORGANIZR_CUSTOM_JS` of the operator. Off unless the operator turns it on.
     custom_js: bool,
+    /// Whether the session cookie is for the host of the request alone, without a
+    /// domain: the switch `ORGANIZR_SESSION_COOKIE_HOST_ONLY` of the operator. Off unless
+    /// the operator turns it on.
+    session_cookie_host_only: bool,
     /// The new messages of the chat plugin, and how many each sender sent lately.
     chat_hub: Arc<ChatHub>,
     /// The address of the newest release in the releases API of GitHub.
@@ -187,6 +193,7 @@ impl AppState {
             scheduler_beat: Arc::default(),
             settings_change: Arc::new(Mutex::new(())),
             custom_js: false,
+            session_cookie_host_only: false,
             chat_hub: Arc::default(),
             releases_api: Arc::from(latest_release_api()),
             update_status: Arc::new(ArcSwap::from_pointee(UpdateStatus::unchecked())),
@@ -247,6 +254,25 @@ impl AppState {
     pub const fn with_custom_js(mut self, enabled: bool) -> Self {
         self.custom_js = enabled;
         self
+    }
+
+    /// The same state, with the session cookie for the host alone or, as in PHP, for
+    /// the wider domain too.
+    #[must_use]
+    pub const fn with_session_cookie_host_only(mut self, enabled: bool) -> Self {
+        self.session_cookie_host_only = enabled;
+        self
+    }
+
+    /// Whether the session cookie is for the host alone.
+    pub const fn session_cookie_host_only(&self) -> bool {
+        self.session_cookie_host_only
+    }
+
+    /// Where the cookies of the answer to a request go, with the switch for the session
+    /// cookie of the operator.
+    pub fn cookie_scope(&self, headers: &HeaderMap, secure: bool) -> CookieScope {
+        CookieScope::of(headers, secure).with_host_only(self.session_cookie_host_only)
     }
 
     /// What the routes of the chat plugin share.

@@ -1071,15 +1071,31 @@ async fn display_name_links_no_account_but_names_a_new_one() {
     .await;
 }
 
+/// Asks to link the account of `session` to the provider, with a password.
+async fn ask_to_link(app: &Router, session: &str, provider: &str, password: &str) -> Answer {
+    call(
+        app,
+        As::User(session),
+        "POST",
+        &format!("/oidc/{provider}/link"),
+        Some(json!({ "password": password })),
+    )
+    .await
+}
+
 /// Starts a link of the account of `session` to the stand-in, lets the stand-in approve
 /// it, and returns the callback path and the login cookie.
 async fn start_link(app: &Router, provider: &OidcProvider, session: &str) -> (String, String) {
-    let started = call(app, As::User(session), "GET", "/oidc/keycloak/link", None).await;
-    assert_eq!(started.status, StatusCode::FOUND, "{}", started.body);
+    let started = ask_to_link(app, session, "keycloak", seed::USER_PASSWORD).await;
+    assert_eq!(started.status, StatusCode::OK, "{}", started.body);
     let cookie = started
         .cookie(LOGIN_COOKIE)
         .expect("the login cookie is set");
-    let back = provider.approve(&location(&started)).await;
+    let address = started.data()["address"]
+        .as_str()
+        .expect("the answer holds the address of the provider")
+        .to_owned();
+    let back = provider.approve(&address).await;
     (back, cookie)
 }
 
@@ -1370,8 +1386,9 @@ async fn link_route_needs_a_session_of_this_site() {
         let app = app(database, &provider, &[]);
         let chief = seed::logged_in(database, &app, "chief", 0).await;
 
+        let body = Some(json!({"password": seed::USER_PASSWORD}));
         for who in [As::Guest, As::Admin] {
-            let answer = call(&app, who, "GET", "/oidc/keycloak/link", None).await;
+            let answer = call(&app, who, "POST", "/oidc/keycloak/link", body.clone()).await;
             assert_eq!(answer.status, StatusCode::UNAUTHORIZED, "{who:?}");
             assert_eq!(answer.cookies_named(LOGIN_COOKIE), Vec::<&str>::new());
         }
@@ -1381,22 +1398,69 @@ async fn link_route_needs_a_session_of_this_site() {
         let cross_site = send(
             &app,
             request(
-                "GET",
+                "POST",
                 "/api/v2/oidc/keycloak/link",
-                &[("cookie", &chief), ("sec-fetch-site", "cross-site")],
-                "",
+                &[
+                    ("cookie", &chief),
+                    ("sec-fetch-site", "cross-site"),
+                    ("content-type", "application/json"),
+                ],
+                &json!({"password": seed::USER_PASSWORD}).to_string(),
             ),
         )
         .await;
-        assert_ne!(cross_site.status, StatusCode::FOUND);
+        assert_ne!(cross_site.status, StatusCode::OK);
         assert_eq!(cross_site.cookies_named(LOGIN_COOKIE), Vec::<&str>::new());
 
-        let answer = call(&app, As::User(&chief), "GET", "/oidc/zitadel/link", None).await;
+        let answer = ask_to_link(&app, &chief, "zitadel", seed::USER_PASSWORD).await;
         assert_eq!(answer.status, StatusCode::NOT_FOUND);
         assert_eq!(answer.message(), json!("Provider not enabled: zitadel"));
 
         let linked = call(&app, As::User(&chief), "GET", "/oidc/link", None).await;
         assert_eq!(linked.data(), json!({"provider": null, "name": null}));
+    })
+    .await;
+}
+
+/// A link needs the password of the account, as the unlink does, so that a stolen
+/// session alone cannot add a login through a provider (D-187). The check comes before
+/// the login cookie, which then carries the account in its sealed value.
+#[tokio::test]
+async fn link_needs_the_password_of_the_account() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        person(&provider, "chief", "chief@provider.example.com");
+        let app = app(database, &provider, &[]);
+        let chief = seed::logged_in(database, &app, "chief", 0).await;
+
+        for (password, message) in [
+            ("", "Enter the password of the account"),
+            (
+                "not the password",
+                "The password is not the password of the account",
+            ),
+        ] {
+            let answer = ask_to_link(&app, &chief, "keycloak", password).await;
+            assert_eq!(
+                answer.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "{}",
+                answer.body
+            );
+            assert_eq!(answer.message(), json!(message));
+            assert_eq!(answer.cookies_named(LOGIN_COOKIE), Vec::<&str>::new());
+        }
+        // The link is no longer started by a plain visit of an address.
+        let visit = call(&app, As::User(&chief), "GET", "/oidc/keycloak/link", None).await;
+        assert_eq!(visit.status, StatusCode::NOT_FOUND, "{}", visit.body);
+        assert_eq!(visit.cookies_named(LOGIN_COOKIE), Vec::<&str>::new());
+        assert_eq!(auth_service(&app, "chief").await, json!("internal"));
+
+        let (back, cookie) = start_link(&app, &provider, &chief).await;
+        let answer = finish_link(&app, &back, &[&cookie, &chief]).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        assert_eq!(auth_service(&app, "chief").await, json!("oidc::keycloak"));
     })
     .await;
 }

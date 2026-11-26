@@ -15,7 +15,7 @@ use serde::Serialize;
 use crate::api_data::ApiData;
 use crate::caller::{now_stamp, session_cookie_name};
 use crate::client::Client;
-use crate::cookies::{self, CookieScope};
+use crate::cookies;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::mail;
@@ -148,7 +148,7 @@ pub async fn register(
     let device = super::login::device_of(&client, &headers);
     let logged_in =
         login::start_session(state.database(), user, device, now_stamp(now), lifetime).await?;
-    let session_cookie = CookieScope::of(&headers, client.https).set_session(
+    let session_cookie = state.cookie_scope(&headers, client.https).set_session(
         &session_cookie_name(&settings),
         logged_in.token.expose(),
         now + lifetime,

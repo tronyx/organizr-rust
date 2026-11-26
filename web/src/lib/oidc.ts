@@ -50,11 +50,12 @@ export function authorizeAddress(key: string, page?: string): string {
 }
 
 /**
- * The address that links the account of the session to a provider. Only a page of this
- * site can start the link.
+ * The API path that starts the link of the account of the session to a provider. Only a
+ * page of this site can start it, with the password of the account. The answer holds the
+ * address of the login page of the provider, which the browser then goes to.
  */
-export function linkAddress(key: string, page?: string): string {
-  return apiUrl(`oidc/${encodeURIComponent(key)}/link`, page);
+export function linkPath(key: string): string {
+  return `oidc/${encodeURIComponent(key)}/link`;
 }
 
 /** The provider of a link that just finished, from the query of the page, or `null`. */

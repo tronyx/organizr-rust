@@ -36,13 +36,14 @@ use serde_json::{Map, Value, json};
 use crate::api_data::ApiData;
 use crate::caller::{Caller, now_stamp, session_cookie_name};
 use crate::client::Client;
-use crate::cookies::{self, CookieScope, cookie_value};
+use crate::cookies::{self, cookie_value};
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
 use crate::handlers::login::device_of;
 use crate::handlers::mail::request_site;
 use crate::handlers::notice_page;
+use crate::handlers::proof;
 use crate::router::API_BASE;
 use crate::same_origin::FromThisSite;
 use crate::state::AppState;
@@ -270,7 +271,7 @@ pub async fn authorize(
     let Some(provider) = Provider::enabled(&settings, &key) else {
         return Err(Refusal::not_found(&format!("Provider not enabled: {key}")));
     };
-    start(
+    let started = start(
         &state,
         &client,
         &headers,
@@ -278,7 +279,20 @@ pub async fn authorize(
         None,
         START_PAGE.to_owned(),
     )
-    .await
+    .await?;
+    let mut response = (StatusCode::FOUND, [(header::LOCATION, started.address)]).into_response();
+    response
+        .headers_mut()
+        .append(header::SET_COOKIE, started.cookie);
+    Ok(response)
+}
+
+/// A login that started at a provider.
+struct Started {
+    /// The address of the login page of the provider.
+    address: String,
+    /// The `Set-Cookie` value of the login cookie.
+    cookie: HeaderValue,
 }
 
 /// Starts a login at a provider: the address of its login page, and the login cookie.
@@ -290,7 +304,7 @@ async fn start(
     provider: &Provider<'_>,
     link_user: Option<i64>,
     back: String,
-) -> Result<Response, Refusal> {
+) -> Result<Started, Refusal> {
     let failed = || {
         Refusal::Request(
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -314,17 +328,20 @@ async fn start(
         expires: now_seconds().saturating_add(LOGIN_TIME),
     };
     let cookie = login.seal(state.secrets()).ok_or_else(failed)?;
-    let mut response = (StatusCode::FOUND, [(header::LOCATION, started.address)]).into_response();
-    response.headers_mut().append(
-        header::SET_COOKIE,
-        login_cookie(&cookie, LOGIN_TIME, client.https).ok_or_else(failed)?,
-    );
-    Ok(response)
+    Ok(Started {
+        address: started.address,
+        cookie: login_cookie(&cookie, LOGIN_TIME, client.https).ok_or_else(failed)?,
+    })
 }
 
-/// `GET /oidc/{provider}/link`: starts a login at the provider that links the account of
-/// the session to it. Only for a person who is logged in, and only from a page of this
-/// site, so that another site cannot start a link.
+/// `POST /oidc/{provider}/link`: starts a login at the provider that links the account
+/// of the session to it, with the password of the account in the field `password`, as
+/// for the unlink (D-187). Only for a person who is logged in, and only from a page of
+/// this site, so that another site cannot start a link.
+///
+/// The answer holds the address of the login page of the provider as `address`, and
+/// sets the login cookie. The password is checked before the cookie is made, so only a
+/// sealed cookie of a checked request carries the account.
 pub async fn link(
     State(state): State<AppState>,
     Extension(client): Extension<Client>,
@@ -332,11 +349,13 @@ pub async fn link(
     _: FromThisSite,
     headers: HeaderMap,
     Path(key): Path<String>,
+    data: ApiData,
 ) -> Result<Response, Refusal> {
     let Some(user) = caller.user() else {
         return Err(ApiError::NotAuthorized.into());
     };
-    let user = user.authenticated.user.id;
+    let account = &user.authenticated.user;
+    let user = account.id;
     let settings = state.settings();
     if !settings.oidc_enabled {
         return Err(Refusal::Request(
@@ -347,8 +366,14 @@ pub async fn link(
     let Some(provider) = Provider::enabled(&settings, &key) else {
         return Err(Refusal::not_found(&format!("Provider not enabled: {key}")));
     };
+    proof::password(&state, &client, account, data.text("password")).await?;
     let back = format!("/?oidcLinked={}#/account", provider.key);
-    start(&state, &client, &headers, &provider, Some(user.get()), back).await
+    let started = start(&state, &client, &headers, &provider, Some(user.get()), back).await?;
+    let mut response = Envelope::success(json!({ "address": started.address })).into_response();
+    response
+        .headers_mut()
+        .append(header::SET_COOKIE, started.cookie);
+    Ok(response)
 }
 
 /// `GET /oidc/link`: the provider that the account of the session is linked to, as
@@ -565,7 +590,8 @@ async fn new_session(
         tracing::error!(%error, "the session of a login at a provider could not be started");
         authentication_failed()
     })?;
-    let session_cookie = CookieScope::of(headers, client.https)
+    let session_cookie = state
+        .cookie_scope(headers, client.https)
         .set_session(
             &session_cookie_name(&settings),
             logged_in.token.expose(),

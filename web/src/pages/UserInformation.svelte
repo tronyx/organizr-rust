@@ -2,7 +2,8 @@
   // The panel "User Information" of the account page of PHP Organizr: the person changes
   // the user name, the e-mail address and the password of the own account, with
   // `PUT /users/<id>`. Only the fields that changed are sent; a new password only when
-  // both fields hold the same text.
+  // both fields hold the same text. A new password or a new address needs the current
+  // password, so the form asks for it then.
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../lib/api';
@@ -21,6 +22,7 @@
   let email = $state('');
   let password = $state('');
   let verify = $state('');
+  let current = $state('');
   let error = $state<string | null>(null);
   let done = $state<string | null>(null);
   let busy = $state(false);
@@ -39,6 +41,9 @@
     }
     return fields;
   });
+
+  /** Whether the change needs the current password: a new password or a new address. */
+  const needsCurrent = $derived('password' in changes || 'email' in changes);
 
   async function load() {
     try {
@@ -64,9 +69,11 @@
     }
     busy = true;
     try {
-      await api('PUT', `users/${me.userID}`, changes);
+      const body = needsCurrent ? { ...changes, currentPassword: current } : changes;
+      await api('PUT', `users/${me.userID}`, body);
       password = '';
       verify = '';
+      current = '';
       await Promise.all([load(), session.load()]);
       error = null;
       done = 'Your account is saved.';
@@ -141,6 +148,23 @@
             autocomplete="new-password"
           />
         </div>
+        {#if needsCurrent}
+          <div class="org-form-group">
+            <label class="org-form-label" for="account-current">Current Password</label>
+            <input
+              id="account-current"
+              class="org-form-control"
+              type="password"
+              bind:value={current}
+              required
+              autocomplete="current-password"
+              aria-describedby="account-current-hint"
+            />
+            <p id="account-current-hint" class="text-xs opacity-70">
+              A new password or e-mail address needs your current password.
+            </p>
+          </div>
+        {/if}
         <div class="org-form-wide">
           <button class="btn btn-info btn-sm" disabled={busy || Object.keys(changes).length === 0}>
             {#if busy}<span class="loading loading-spinner loading-xs"></span>{/if}

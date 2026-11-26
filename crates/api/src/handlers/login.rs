@@ -17,7 +17,7 @@ use organizr_settings::{AuthType, Settings};
 use crate::api_data::ApiData;
 use crate::caller::{MOST_SESSION_COOKIES, now_stamp, session_cookie_name};
 use crate::client::{Client, LocalNetworks};
-use crate::cookies::{self, CookieScope};
+use crate::cookies;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::external_login::{self, HandOff};
@@ -136,7 +136,8 @@ pub async fn login(
     tell_about_a_new_device(&state, &client, logged_in, now_stamp(now)).await?;
     end_earlier_session(&state, &settings, &headers).await?;
 
-    let session_cookie = CookieScope::of(&headers, client.https).set_session(
+    let scope = state.cookie_scope(&headers, client.https);
+    let session_cookie = scope.set_session(
         &session_cookie_name(&settings),
         logged_in.token.expose(),
         now + lifetime,
@@ -149,7 +150,6 @@ pub async fn login(
     };
     let mut response = answer.into_response();
     cookies::append(&mut response, session_cookie);
-    let scope = CookieScope::of(&headers, client.https);
     if outcome.with_plex_token {
         // The PHP application marks a login with a Plex token for its interface.
         cookies::append(&mut response, scope.set("oAuth", "true", now + lifetime)?);

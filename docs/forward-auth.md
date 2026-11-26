@@ -37,6 +37,8 @@ After the login, Organizr sends the browser back to the address it wanted (see [
 
   > [!CAUTION]
   > Every site under that domain gets the Organizr login cookie. Put only applications you trust under the same domain.
+  >
+  > With `ORGANIZR_SESSION_COOKIE_HOST_ONLY=1` the cookie is for the Organizr host alone, and forward auth for applications on other hosts can't work. See [Configuration](configuration.md).
 
 - **A trusted proxy.** The proxy is listed in [`ORGANIZR_TRUSTED_PROXIES`](reverse-proxy.md#-organizr_trusted_proxies). Organizr believes the forwarding headers (`X-Forwarded-For`, `X-Forwarded-Proto`) only from a listed proxy. Without the entry, every caller seems to come from the proxy's address. List only your proxy there, not a whole range: allow lists and local-network rules are only as safe as this setting.
 

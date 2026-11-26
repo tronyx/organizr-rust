@@ -5,7 +5,7 @@
   import { onMount } from 'svelte';
 
   import { api, failureText } from '../lib/api';
-  import { linkAddress, linkedNotice, providerList, type OidcProvider } from '../lib/oidc';
+  import { browser, linkedNotice, linkPath, providerList, type OidcProvider } from '../lib/oidc';
   import { session } from '../lib/session.svelte';
 
   /** What `GET oidc/link` answers. */
@@ -22,9 +22,15 @@
   let password = $state('');
   let busy = $state(false);
 
+  /** The providers that the account can be linked to: those it is not linked to. */
+  const others = $derived(providers.filter((provider) => provider.key !== linked?.provider));
+
   /** Unlinks the account, with its password, so that it logs in with the password again. */
   async function unlink(event: SubmitEvent) {
     event.preventDefault();
+    if (!linked?.provider) {
+      return;
+    }
     busy = true;
     try {
       const answer = await api('DELETE', 'oidc/link', { password });
@@ -34,6 +40,26 @@
     } catch (failure) {
       error = failureText(failure);
     } finally {
+      busy = false;
+    }
+  }
+
+  /**
+   * Starts the link to a provider, with the password of the account: the server answers
+   * with the address of the login page of the provider, and the browser goes there.
+   */
+  async function link(provider: OidcProvider) {
+    done = null;
+    if (password === '') {
+      error = 'Enter the password of this account first.';
+      return;
+    }
+    busy = true;
+    try {
+      const answer = await api<{ address: string }>('POST', linkPath(provider.key), { password });
+      browser.go(answer.data.address);
+    } catch (failure) {
+      error = failureText(failure);
       busy = false;
     }
   }
@@ -91,7 +117,8 @@
             Your account is not linked to a provider.
           {/if}
         </p>
-        {#if linked.provider}
+        {#if linked.provider || others.length > 0}
+          <!-- A link and an unlink both need the password of the account. -->
           <form class="flex flex-wrap items-end gap-2" onsubmit={unlink}>
             <label class="form-control">
               <span class="label-text">Password of this account</span>
@@ -103,20 +130,27 @@
                 bind:value={password}
               />
             </label>
-            <button class="btn btn-outline btn-error btn-sm" type="submit" disabled={busy}>
-              Unlink from {linked.name ?? linked.provider}
-            </button>
+            {#if linked.provider}
+              <button class="btn btn-outline btn-error btn-sm" type="submit" disabled={busy}>
+                Unlink from {linked.name ?? linked.provider}
+              </button>
+            {/if}
           </form>
           <p class="text-xs opacity-70">
-            After the unlink you log in with this password. An account that the provider made has a
-            random password: reset it by e-mail first.
+            A link and an unlink need this password. After an unlink you log in with it. An account
+            that the provider made has a random password: reset it by e-mail first.
           </p>
         {/if}
         <div class="card-actions">
-          {#each providers.filter((provider) => provider.key !== linked?.provider) as provider (provider.key)}
-            <a class="btn btn-secondary" href={linkAddress(provider.key)}>
+          {#each others as provider (provider.key)}
+            <button
+              class="btn btn-secondary"
+              type="button"
+              disabled={busy}
+              onclick={() => link(provider)}
+            >
               Link to {provider.name}
-            </a>
+            </button>
           {/each}
         </div>
       {/if}

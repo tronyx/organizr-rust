@@ -21,7 +21,7 @@ use organizr_domain::{GroupLevel, Timestamp};
 use organizr_settings::Settings;
 
 use crate::client::Client;
-use crate::cookies::{self, CookieScope};
+use crate::cookies;
 use crate::error::ApiError;
 use crate::state::AppState;
 
@@ -187,7 +187,7 @@ pub async fn identify_caller(
             .extensions()
             .get::<Client>()
             .is_some_and(|client| client.https);
-        CookieScope::of(headers, secure)
+        state.cookie_scope(headers, secure)
     });
     request.extensions_mut().insert(Caller {
         identity,

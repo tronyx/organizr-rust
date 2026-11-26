@@ -11,7 +11,7 @@ use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::api_data::ApiData;
 use crate::caller::{Caller, identify_caller};
-use crate::client::identify_client;
+use crate::client::{Client, identify_client};
 use crate::device_cookie::ensure_device_cookie;
 use crate::error::ApiError;
 use crate::handlers::{
@@ -65,7 +65,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
         .route("/logout", &get(logout::logout))?
         .route("/oidc/providers", &get(oidc::providers))?
         .route("/oidc/link", &get(oidc::linked).delete(oidc::unlink))?
-        .route("/oidc/{provider}/link", &get(oidc::link))?
+        .route("/oidc/{provider}/link", &post(oidc::link))?
         .route("/oidc/{provider}/authorize", &get(oidc::authorize))?
         .route("/oidc/{provider}/callback", &get(oidc::callback))?
         .route("/oidc/{provider}/test", &get(oidc::test))?
@@ -79,8 +79,9 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
                 .put(
                     |State(state): State<AppState>,
                      Extension(caller): Extension<Caller>,
+                     Extension(client): Extension<Client>,
                      data: ApiData| async move {
-                        users::change_by_text(&state, &caller, "register", &data).await
+                        users::change_by_text(&state, &caller, &client, "register", &data).await
                     },
                 )
                 .delete(
@@ -100,8 +101,9 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
                 .put(
                     |State(state): State<AppState>,
                      Extension(caller): Extension<Caller>,
+                     Extension(client): Extension<Client>,
                      data: ApiData| async move {
-                        users::change_by_text(&state, &caller, "recover", &data).await
+                        users::change_by_text(&state, &caller, &client, "recover", &data).await
                     },
                 )
                 .delete(
