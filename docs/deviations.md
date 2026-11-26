@@ -51,7 +51,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Backups and restore | D-10, D-26, D-74 |
 | Updates | D-23 |
 | Log, errors and request ids | D-13, D-34, D-84 |
-| E-mail | D-09, D-58, D-82 |
+| E-mail | D-09, D-58, D-82, D-138 |
 | Scheduled jobs | D-33, D-43, D-66, D-74 |
 | Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137 |
 | Custom HTML items | D-61, D-76, D-111, D-131 |
@@ -74,13 +74,13 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `POST /login`, `/logout` | D-02, D-04, D-34, D-60, D-127 |
 | `/token/*` | D-18, D-34 |
 | `/2fa`, `/2fa/{type}` | D-57 |
-| `/wizard` | D-19, D-38, D-46 |
+| `/wizard` | D-19, D-38, D-46, D-138 |
 | `GET /status` | D-21, D-46 |
 | `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125, D-128 |
 | `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135 |
 | `/users`, `/users/{id}` | D-05, D-15, D-52, D-57 |
 | `POST /users/register` | D-36, D-37, D-38 |
-| `POST /users/recover` | D-09, D-58 |
+| `POST /users/recover` | D-09, D-58, D-138 |
 | `/users/lock`, `/users/unlock` | D-73 |
 | `/users/2fa/{id}` | D-129 |
 | `POST /users/import/{type}` | D-82 |
@@ -293,6 +293,7 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-135 | **Only an Admin switches single sign-on on, and only an Admin changes where it sends passwords.** Who changes the single sign-on settings, on top of D-114. After a login with a password, single sign-on sends the user name and that password to each application that is switched on, for every user, the Admin included. A Co-Admin who could switch it on, or change the address of an application, could collect the Admin's password at a server of their own. (1) `PUT /config` takes every setting whose key starts with `sso` only from an Admin: the switches of Plex, Tautulli, Overseerr, Petio, Ombi, Jellyfin and Komga, and the levels `ssoTautulliAuth` and `ssoKomgaAuth`. (2) While the single sign-on of an application is on, `PUT /config` takes its address only from an Admin: `ombiURL`, `overseerrURL`, `tautulliURL`, `petioURL`, `komgaURL`, and `jellyfinURL` with `jellyfinSSOURL`. Otherwise a Co-Admin still changes these addresses, as for the homepage. A refusal answers `401` with `Config item: {key} can only be changed by an admin`, and the request changes nothing. (3) The settings pages show these fields to a Co-Admin without letting them change them. Found by the security audit of 2026-11-25; decided by the owner of the project on 2026-11-25. |
 | D-136 | **With a group in the path, the query of a forward auth check cannot lower the group or add an allow list.** Forward auth, on top of D-59. PHP reads the group and the allow list from the query of every check, and a query that holds `group=` replaces the group of the path. Caddy's `forward_auth` sends the query of the visitor with the address of the check (tested with Caddy 2.10.2: a visit to `/anything?group=999` asks `/api/v2/auth/1?group=999`), so a visitor could pass as a guest, or name their own address in an allow list. (1) When the path names a group (`/auth/{group}`, `/auth-{group}`, `/organizr-auth/{group}` and the long forms), a `group=` in the query does not count, and neither does an allow list in the query (`whitelist`, or `type=allow` with `ips`). (2) A deny list in the query still counts, since it can only make the check stricter. The allow list of the long form, in the path, still counts. (3) Without a group in the path (`/auth?group=1`, `/?group=1`), the query asks as in PHP; the docs warn not to use that form with Caddy. Found by the security audit of 2026-11-25; decided by the owner of the project on 2026-11-25. |
 | D-137 | **Organizr sends no request to a service address that is only a path.** The addresses that Organizr itself asks: the homepage items, their Test buttons, the API SOCKS, the login services, the single sign-on hand-off and the Komga logout. PHP puts the scheme and the host of the incoming request in front of an address that starts with `/`, such as `/sonarr`. That host comes from the caller's `Host` header, so a caller could have Organizr send the key of the service, or the password of a login, to a server of their own, or have it vouch for a login at that server. (1) Such an address names no service: Organizr sends nothing, and logs a warning that asks for the full address. (2) A Test button and the API SOCKS answer `422` with `Use the full address of the service, such as http://sonarr:8989. Organizr doesn't send requests to an address that is only a path`. (3) The addresses for the browser keep the host of the request, as in PHP: the addresses of tabs, the address of Jellyfin that single sign-on hands to the browser, the pages Stripe sends the browser back to, the redirect address of Trakt, and the address of a tab that the iframe test and the page scrape check. Found by the security audit of 2026-11-25; decided by the owner of the project on 2026-11-25. |
+| D-138 | **E-mails name the site from the setting `PHPMAILER-domain` only, and the set-up and an Admin login fill it in.** The address of the site in e-mails: the recovery, the welcome, the new-device and invite e-mails, and the e-mails an Admin sends. PHP uses the host of the request when **Domain Link Override** is empty, its default. For a recovery, the caller chooses that host and somebody else gets the e-mail, so a forged host could put a link to another site into a real e-mail. (1) An e-mail takes the address from the setting only. While it is empty, `{domain}` and `{fullDomain}` are empty, the buttons and the logo of the layouts are no links, and the log says so for each recovery e-mail. (2) The set-up wizard stores the address of its request, since only the Admin who knows the set-up code gets there. A login of an Admin stores the address of its request when the setting is empty, as after an import; a login of any other user does not. A stored address is never replaced by a login. Found by the security audit of 2026-11-25; decided by the owner of the project on 2026-11-25. |
 
 ## ✅ Kept exactly as PHP has it
 

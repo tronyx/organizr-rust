@@ -8,7 +8,6 @@ use std::time::{Duration, Instant, SystemTime};
 
 use axum::Extension;
 use axum::extract::{Path, State};
-use axum::http::HeaderMap;
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
 use organizr_db::DbError;
 use organizr_domain::email::{self, php_trim};
@@ -143,7 +142,6 @@ pub async fn create(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
     Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<NoData>, Refusal> {
     check_member(&state, &caller)?;
@@ -195,7 +193,7 @@ pub async fn create(
     tracing::info!(client = %client.address, "an invite was added");
 
     if settings.mailer_enabled {
-        let site = mail::site_address(&settings, &headers, &client);
+        let site = mail::site_address(&settings);
         let letter = Letter {
             kind: MailKind::Invite,
             subject: &settings.mailer_email_template_invite_user_subject,

@@ -151,6 +151,8 @@ pub async fn wizard(
     for problem in state.reload_settings().await? {
         tracing::warn!(%problem, "a stored setting is ignored");
     }
+    // The Admin who knows the set-up code names the address of the site for e-mails.
+    crate::handlers::mail::remember_site(&state, &headers, &client).await;
 
     let device = Device {
         ip: client.address,

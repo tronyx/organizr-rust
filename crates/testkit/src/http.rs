@@ -93,12 +93,16 @@ pub async fn send(app: &Router, request: Request<Body>) -> Answer {
     }
 }
 
-/// A request to the host `organizr.example.com` with the given headers and body.
+/// A request to the host `organizr.example.com` with the given headers and body. A `host`
+/// among the headers takes the place of that host.
 pub fn request(method: &str, path: &str, headers: &[(&str, &str)], body: &str) -> Request<Body> {
-    let mut request = Request::builder()
-        .method(method)
-        .uri(path)
-        .header(header::HOST, "organizr.example.com");
+    let names_host = headers
+        .iter()
+        .any(|(name, _)| name.eq_ignore_ascii_case("host"));
+    let mut request = Request::builder().method(method).uri(path);
+    if !names_host {
+        request = request.header(header::HOST, "organizr.example.com");
+    }
     for (name, value) in headers {
         request = request.header(*name, *value);
     }

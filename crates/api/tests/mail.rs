@@ -283,6 +283,87 @@ async fn account_without_a_usable_password_gets_one_through_the_recovery() {
 }
 
 #[tokio::test]
+async fn recovery_e_mail_never_links_to_the_host_that_the_request_names() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        add_user(
+            database,
+            "robin",
+            Some("robin@example.com"),
+            &hash("a password"),
+        )
+        .await;
+        // No address of the site is stored, and the caller names a host of their own.
+        let (app, outbox) = installed_app_with_outbox(database, &mail_on(&[]));
+        let body = json!({"email": "robin@example.com"}).to_string();
+        let headers = [
+            ("host", "evil.example.com"),
+            ("content-type", "application/json"),
+        ];
+
+        let answer = send(
+            &app,
+            request("POST", "/api/v2/users/recover", &headers, &body),
+        )
+        .await;
+
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let mail = &outbox.wait_for(1).await[0];
+        // The e-mail still holds the new password, with no link to any site (D-138).
+        assert_eq!(password_in(mail).len(), 12);
+        assert!(!mail.html.contains("evil.example.com"), "{}", mail.html);
+        assert!(!mail.html.contains("href=\"\""), "{}", mail.html);
+        assert!(!mail.html.contains("href=\"?"), "{}", mail.html);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn admin_login_stores_the_address_of_the_site_once() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        add_user(
+            database,
+            "robin",
+            Some("robin@example.com"),
+            &hash("a password"),
+        )
+        .await;
+        let (app, _outbox) = installed_app_with_outbox(database, &mail_on(&[]));
+        let log_in_at = async |host: &str, name: &str, password: &str| {
+            let body = json!({"username": name, "password": password}).to_string();
+            let headers = [("host", host), ("content-type", "application/json")];
+            send(&app, request("POST", "/api/v2/login", &headers, &body)).await
+        };
+        let domain = async || {
+            call(&app, As::Admin, "GET", "/config/PHPMAILER-domain", None)
+                .await
+                .data()
+                .clone()
+        };
+
+        // A user who is no Admin names no address for the e-mails (D-138).
+        let user = log_in_at("evil.example.com", "robin", "a password").await;
+        assert_eq!(user.status, StatusCode::OK, "{}", user.body);
+        assert_eq!(domain().await, Value::Null);
+
+        let admin = log_in_at(
+            "organizr.example.com",
+            seed::ADMIN_NAME,
+            seed::ADMIN_PASSWORD,
+        )
+        .await;
+        assert_eq!(admin.status, StatusCode::OK, "{}", admin.body);
+        assert_eq!(domain().await, json!("http://organizr.example.com/"));
+
+        // The stored address stays, whatever host a later login names.
+        log_in_at("other.example.com", seed::ADMIN_NAME, seed::ADMIN_PASSWORD).await;
+        assert_eq!(domain().await, json!("http://organizr.example.com/"));
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn name_of_a_user_cannot_put_markup_into_an_e_mail() {
     on_each_engine(async |database| {
         seed::installed(database).await;
@@ -399,7 +480,9 @@ async fn test_e_mail_goes_to_the_caller_and_reports_a_failure() {
 async fn e_mail_of_an_admin_goes_to_hidden_recipients() {
     on_each_engine(async |database| {
         seed::installed(database).await;
-        let (app, outbox) = installed_app_with_outbox(database, &mail_on(&[]));
+        // The address of the site comes from the setting only (D-138).
+        let settings = mail_on(&[("PHPMAILER-domain", json!("http://organizr.example.com/"))]);
+        let (app, outbox) = installed_app_with_outbox(database, &settings);
         let path = "/plugins/php-mailer/email/send";
         let helper = seed::logged_in(database, &app, "helper", 2).await;
         let letter = json!({

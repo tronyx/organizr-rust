@@ -9,7 +9,7 @@ use axum::response::{IntoResponse, Response};
 use organizr_auth::external::{self, ExternalAccount};
 use organizr_auth::login::{self, Device, LoggedIn, LoginError, SecondFactor};
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
-use organizr_domain::{GroupLevel, Timestamp};
+use organizr_domain::{GroupLevel, Timestamp, User};
 use organizr_integrations::plex::PlexAccount;
 use organizr_settings::{AuthType, Settings};
 
@@ -118,13 +118,13 @@ pub async fn login(
     let logged_in = &outcome.logged_in;
     tracing::info!(user = %logged_in.user.username, client = %client.address, "a user logged in");
     if outcome.created {
-        let site = mail::site_address(&settings, &headers, &client);
+        let site = mail::site_address(&settings);
         let user = &logged_in.user;
         mail::welcome(&state, &site, &user.username, user.email.as_deref());
         crate::handlers::homepage::ombi::import_users_later(&state, &settings);
     }
 
-    tell_about_a_new_device(&state, &headers, &client, logged_in, now_stamp(now)).await?;
+    tell_about_a_new_device(&state, &client, logged_in, now_stamp(now)).await?;
 
     let session_cookie = CookieScope::of(&headers, client.https).set_hidden(
         &session_cookie_name(&settings),
@@ -145,10 +145,35 @@ pub async fn login(
         cookies::append(&mut response, scope.set("oAuth", "true", now + lifetime)?);
     }
 
+    let level = level_after_login(&state, &headers, &client, &outcome.logged_in.user).await?;
+
     let expires = now + ONE_DAY * settings.remember_me_days.min(MOST_DAYS);
-    let sessions = single_sign_on(&state, &headers, &client, &outcome, &password, expires).await?;
+    let sessions = single_sign_on(
+        &state, &headers, &client, &outcome, &password, level, expires,
+    )
+    .await?;
     cookies::append(&mut response, sessions);
     Ok(response)
+}
+
+/// The level of the user who logged in. The login of an Admin stores the address of the
+/// site for e-mails, when none is stored yet (D-138).
+async fn level_after_login(
+    state: &AppState,
+    headers: &HeaderMap,
+    client: &Client,
+    user: &User,
+) -> Result<GroupLevel, ApiError> {
+    let level = state
+        .database()
+        .groups()
+        .find(user.group)
+        .await?
+        .map_or(GroupLevel::GUEST, |group| group.level);
+    if level == GroupLevel::ADMIN {
+        mail::remember_site(state, headers, client).await;
+    }
+    Ok(level)
 }
 
 /// Gets the user a session of each application of single sign-on, and returns the
@@ -159,15 +184,10 @@ async fn single_sign_on(
     client: &Client,
     outcome: &Outcome,
     password: &str,
+    level: GroupLevel,
     expires: SystemTime,
 ) -> Result<Vec<HeaderValue>, ApiError> {
     let user = &outcome.logged_in.user;
-    let level = state
-        .database()
-        .groups()
-        .find(user.group)
-        .await?
-        .map_or(GroupLevel::GUEST, |group| group.level);
     let hand_off = HandOff {
         user,
         level,
@@ -328,7 +348,6 @@ pub fn device_of(client: &Client, headers: &HeaderMap) -> Device {
 /// this browser. The mail plugin must be on, and the account must have an address.
 async fn tell_about_a_new_device(
     state: &AppState,
-    headers: &HeaderMap,
     client: &Client,
     logged_in: &LoggedIn,
     now: Timestamp,
@@ -353,7 +372,7 @@ async fn tell_about_a_new_device(
         .filter(|session| session.user_agent.as_deref() == Some(browser))
         .count();
     if from_this_browser <= 1 {
-        let site = mail::site_address(&settings, headers, client);
+        let site = mail::site_address(&settings);
         let device = mail::NewDevice {
             username: &logged_in.user.username,
             address,

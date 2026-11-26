@@ -872,9 +872,12 @@ async fn mail_routes_answer_like_php() {
                 json!("the e-mail has no recipient"),
             );
         }
-        // The address of the site in an e-mail comes from the request, as in PHP. The
-        // second request for a new password comes too soon after the first one (D-58).
-        let (app, outbox) = organizr_testkit::installed_app_with_outbox(database, &[]);
+        // PHP takes the address of the site in an e-mail from the request. Here it comes
+        // from the setting only (D-138), so the setting holds the host of the recording,
+        // and the e-mails are compared byte for byte. The second request for a new
+        // password comes too soon after the first one (D-58).
+        let site = [("PHPMAILER-domain", json!("http://organizr.test/"))];
+        let (app, outbox) = organizr_testkit::installed_app_with_outbox(database, &site);
 
         replay.run(&app).await;
 

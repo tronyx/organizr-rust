@@ -352,6 +352,32 @@ async fn new_install_starts_on_the_modern_layout() {
 }
 
 #[tokio::test]
+async fn set_up_stores_the_address_of_the_site_for_e_mails() {
+    // The Admin who knows the set-up code names the site that e-mails link to (D-138).
+    on_each_engine(async |database| {
+        let app = app(database);
+        let answer = post_wizard(
+            &app,
+            &set_up(seed::SETUP_CODE),
+            &[("host", "organizr.example.test")],
+        )
+        .await;
+        assert_eq!(answer.status, 200, "{}", answer.body);
+
+        let domain = database
+            .settings()
+            .all()
+            .await
+            .expect("the settings can be read")
+            .into_iter()
+            .find(|setting| setting.key == "PHPMAILER-domain")
+            .map(|setting| setting.value);
+        assert_eq!(domain.as_deref(), Some("\"http://organizr.example.test/\""));
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn install_that_is_set_up_cannot_be_set_up_again() {
     on_each_engine(async |database| {
         let app = app(database);

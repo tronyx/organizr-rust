@@ -173,6 +173,15 @@ pub fn lay_out(frame: Frame<'_>, subject: &str, body: &str) -> String {
         MailKind::Reset => &layout.reset,
         MailKind::Plain => &layout.plain,
     };
+    // Without an address of the site, a link to it would lead nowhere, or to the page the
+    // e-mail program opens for an empty address (D-138).
+    let without_links;
+    let html = if frame.site.is_empty() {
+        without_links = without_site_links(html);
+        &without_links
+    } else {
+        html
+    };
     let markers = [
         // The subject is plain text. Inside the layout it is shown as text.
         ("[[subject]]", escaped(subject)),
@@ -186,6 +195,24 @@ pub fn lay_out(frame: Frame<'_>, subject: &str, body: &str) -> String {
     ];
 
     replace_each(html, "[[", &markers)
+}
+
+/// The layout without the `href` of each link to the site, so that such a link is plain
+/// text.
+fn without_site_links(html: &str) -> String {
+    const LINK: &str = " href=\"[[site]]";
+    let mut kept = String::with_capacity(html.len());
+    let mut rest = html;
+    while let Some(start) = rest.find(LINK) {
+        kept.push_str(rest.get(..start).unwrap_or_default());
+        let after = rest.get(start + LINK.len()..).unwrap_or_default();
+        rest = after
+            .find('"')
+            .and_then(|end| after.get(end + 1..))
+            .unwrap_or_default();
+    }
+    kept.push_str(rest);
+    kept
 }
 
 /// The SMTP server of the settings, or `None` when the settings name no host.
@@ -318,6 +345,25 @@ mod tests {
             layout_names(),
             ["dark", "default", "gray", "light", "plehex"]
         );
+    }
+
+    #[test]
+    fn layout_without_a_site_has_no_link_to_one() {
+        // Without an address of the site, the buttons and the logo are no links (D-138).
+        for layout in layout_names() {
+            for kind in [MailKind::Invite, MailKind::Reset, MailKind::Plain] {
+                let frame = Frame {
+                    site: "",
+                    ..frame(layout, kind)
+                };
+                let html = lay_out(frame, "The subject", "<p>The body</p>");
+
+                assert!(!html.contains("href=\"\""), "{layout} {kind:?}");
+                assert!(!html.contains("href=\"?invite"), "{layout} {kind:?}");
+                assert!(!html.contains("[["), "{layout} {kind:?}");
+                assert!(html.contains("<p>The body</p>"), "{layout} {kind:?}");
+            }
+        }
     }
 
     #[test]

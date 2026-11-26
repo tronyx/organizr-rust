@@ -92,9 +92,13 @@ A new password doesn't remove a [second factor](second-factor.md). For a lost ph
 
 ## 🔗 The address in e-mails
 
-An e-mail contains the address of your Organizr, as a link and in `{domain}`. If **Domain Link Override** is empty, Organizr uses the address of the request that caused the e-mail.
+An e-mail contains the address of your Organizr, as a link and in `{domain}`. It comes from **Domain Link Override** only.
 
-Set it. The address of a request comes from the browser of whoever sent the request, and that isn't always the person who gets the e-mail. Without the setting, a request with a forged address could put a wrong link into someone else's e-mail.
+- The set-up wizard fills it in with the address you used for the set-up.
+- After an import from PHP Organizr, the first login of an Admin fills it in, when it's empty. Logins of other users never do.
+- While it's empty, e-mails name no site: `{domain}` is empty, and the buttons are no links. The log says so for each recovery e-mail.
+
+Check the address after the set-up, and change it if people reach Organizr by another address. PHP Organizr uses the address of the request that caused the e-mail. That address comes from whoever sent the request, and for a recovery that's not the person who gets the e-mail, so a forged address could put a wrong link into someone else's e-mail (D-138).
 
 ## 🔌 The API
 

@@ -139,7 +139,7 @@ pub async fn register(
         Err(error) => return Err(error.into()),
     };
     tracing::info!(user = %user.username, client = %client.address, "a user registered");
-    let site = mail::site_address(&settings, &headers, &client);
+    let site = mail::site_address(&settings);
     mail::welcome(&state, &site, &user.username, user.email.as_deref());
 
     // A new account stays logged in as a login with "remember me" does.

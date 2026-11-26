@@ -34,13 +34,36 @@ const RECOVERY_ANSWER: &str =
     "If the email exists in our system, a password reset has been sent to the user";
 
 /// The address of the site for the links and the texts of an e-mail: the
-/// `PHPMAILER-domain` setting, or else the address that the browser of this request
-/// used.
-pub fn site_address(settings: &Settings, headers: &HeaderMap, client: &Client) -> String {
-    if settings.mailer_domain.is_empty() {
-        request_site(headers, client)
-    } else {
-        settings.mailer_domain.clone()
+/// `PHPMAILER-domain` setting.
+///
+/// PHP takes the host of the request when the setting is empty. The caller chooses that
+/// host, and an e-mail such as the recovery goes to somebody else, so here the e-mail
+/// then names no site and has no link to one (D-138). The set-up and the login of an
+/// Admin store the address that the Admin used.
+pub fn site_address(settings: &Settings) -> String {
+    settings.mailer_domain.clone()
+}
+
+/// Stores the address that the browser of this request used as the address of the site
+/// for e-mails, when no address is stored yet. Only the set-up and the login of an Admin
+/// call it, so the address is one that the Admin chose (D-138).
+pub async fn remember_site(state: &AppState, headers: &HeaderMap, client: &Client) {
+    if !state.settings().mailer_domain.is_empty() {
+        return;
+    }
+    let site = request_site(headers, client);
+    if site.is_empty() {
+        return;
+    }
+    let change = vec![(
+        "PHPMAILER-domain".to_owned(),
+        serde_json::Value::String(site.clone()),
+    )];
+    match state.change_settings(change).await {
+        Ok(()) => tracing::info!(%site, "the address of the site for e-mails was stored"),
+        Err(error) => {
+            tracing::warn!(%error, "the address of the site for e-mails could not be stored");
+        }
     }
 }
 
@@ -219,7 +242,6 @@ fn given(data: &ApiData, name: &str) -> Option<String> {
 pub async fn recover(
     State(state): State<AppState>,
     Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<NoData>, Refusal> {
     let settings = state.settings();
@@ -255,7 +277,12 @@ pub async fn recover(
             )
         })?;
     if let Some(started) = started {
-        let site = site_address(&settings, &headers, &client);
+        let site = site_address(&settings);
+        if site.is_empty() {
+            tracing::warn!(
+                "the recovery e-mail has no link to the site, because PHPMAILER-domain is empty;                  an Admin login stores it, or set it in the settings of the mail plugin"
+            );
+        }
         let letter = Letter {
             kind: MailKind::Reset,
             subject: &settings.mailer_email_template_reset_subject,
@@ -292,8 +319,6 @@ fn server(settings: &Settings, status: StatusCode) -> Result<SmtpServer, Refusal
 pub async fn test(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<NoData>, Refusal> {
     caller.require(GroupLevel::CO_ADMIN)?;
     let settings = state.settings();
@@ -304,7 +329,7 @@ pub async fn test(
     };
     let server = server(&settings, StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let site = site_address(&settings, &headers, &client);
+    let site = site_address(&settings);
     let letter = Letter {
         kind: MailKind::Plain,
         subject: "Test E-Mail",
@@ -342,8 +367,6 @@ pub async fn test(
 pub async fn send(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<NoData>, Refusal> {
     caller.require(GroupLevel::CO_ADMIN)?;
@@ -360,7 +383,7 @@ pub async fn send(
         .collect();
     let server = server(&settings, StatusCode::CONFLICT)?;
 
-    let site = site_address(&settings, &headers, &client);
+    let site = site_address(&settings);
     let letter = Letter {
         kind: MailKind::Plain,
         subject: &data.text("subject").unwrap_or_default(),
@@ -431,7 +454,7 @@ mod tests {
     use organizr_settings::Settings;
     use serde_json::json;
 
-    use super::site_address;
+    use super::{request_site, site_address};
     use crate::client::{AddressSource, Client};
 
     fn client(https: bool) -> Client {
@@ -451,8 +474,6 @@ mod tests {
 
     #[test]
     fn site_is_the_address_that_the_browser_used() {
-        let settings = Settings::defaults();
-
         for (name, https, site) in [
             (
                 "organizr.example.com",
@@ -487,30 +508,21 @@ mod tests {
             ),
             ("[2001:db8::1]:8080", false, "http://[2001:db8::1]:8080/"),
         ] {
-            assert_eq!(site_address(&settings, &host(name), &client(https)), site);
+            assert_eq!(request_site(&host(name), &client(https)), site);
         }
     }
 
     #[test]
     fn host_that_is_no_host_name_gives_no_address() {
-        let settings = Settings::defaults();
-
         for name in ["evil.example/\"><script>", "a b", "host?x=1", "user@host"] {
             let mut headers = HeaderMap::new();
             headers.insert(
                 header::HOST,
                 HeaderValue::from_str(name).expect("the value can be a header"),
             );
-            assert_eq!(
-                site_address(&settings, &headers, &client(true)),
-                "",
-                "{name}"
-            );
+            assert_eq!(request_site(&headers, &client(true)), "", "{name}");
         }
-        assert_eq!(
-            site_address(&settings, &HeaderMap::new(), &client(true)),
-            ""
-        );
+        assert_eq!(request_site(&HeaderMap::new(), &client(true)), "");
     }
 
     #[test]
@@ -523,9 +535,8 @@ mod tests {
             )
             .expect("the setting can be set");
 
-        assert_eq!(
-            site_address(&settings, &host("evil.example.com"), &client(false)),
-            "https://my.example.org/organizr"
-        );
+        assert_eq!(site_address(&settings), "https://my.example.org/organizr");
+        // Without the setting, an e-mail names no site, whatever the request says (D-138).
+        assert_eq!(site_address(&Settings::defaults()), "");
     }
 }
