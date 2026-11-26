@@ -1178,6 +1178,8 @@ describe('Settings, General, Sign-in, and Login & Security', () => {
       'Login page options',
       'Lockout and sessions',
       'Access',
+      // The allowed hosts and the trusted proxies (D-155).
+      'Hosts and proxies',
     ]);
     expect(screen.getByLabelText('Registration Password')).toHaveValue('');
     expect(screen.getByLabelText('Registration Password')).toHaveAttribute(

@@ -15,14 +15,16 @@ Each variable is also an option of `organizr serve`. The option wins when you gi
 | `ORGANIZR_DATA_DIR` | `--data-dir` | `/config` in the image, `data` outside it | The data folder. See [The data folder](#-the-data-folder) |
 | `ORGANIZR_DATABASE_URL` | `--database-url` | The SQLite file `organizr.db` in the data folder | The database: `sqlite:<file>` or `postgres://<user>:<password>@<host>:<port>/<database>` (`postgresql://` works too). See [Choosing a database](choosing-a-database.md) |
 | `ORGANIZR_LISTEN` | `--listen` | `0.0.0.0:8080` | The address and port the server listens on. The health check reads it too |
-| `ORGANIZR_TRUSTED_PROXIES` | `--trusted-proxies` | Empty: no proxy is trusted | Your reverse proxies, separated by commas. See [Reverse proxy](reverse-proxy.md) |
-| `ORGANIZR_ALLOWED_HOSTS` | `--allowed-hosts` | Empty: no host | The host names you reach Organizr at, separated by commas, with a port where it matters, for example `organizr.example.com,192.168.1.10:8080`. A service address that is only a path, such as `/sonarr`, then works on those hosts. See [Homepage](homepage.md#-use-an-address-organizr-can-reach) |
+| `ORGANIZR_TRUSTED_PROXIES` | `--trusted-proxies` | Empty: the setting **Trusted Proxies** counts | Your reverse proxies, separated by commas. See [Reverse proxy](reverse-proxy.md) |
+| `ORGANIZR_ALLOWED_HOSTS` | `--allowed-hosts` | Empty: the setting **Allowed Hosts** counts | The host names you reach Organizr at, separated by commas, with a port where it matters, for example `organizr.example.com,192.168.1.10:8080`. A service address that is only a path, such as `/sonarr`, then works on those hosts. See [Homepage](homepage.md#-use-an-address-organizr-can-reach) |
 | `ORGANIZR_EXTENSION_MARKETPLACE` | `--extension-marketplace` | The project's list in the image, empty outside it | The address of a marketplace list for extensions (a JSON file). An empty value switches the marketplace off; you can still install extensions by hand. See [Extensions](extensions.md) |
 | `ORGANIZR_SECRET_KEY` | `--secret-key` | Not set | The key for the stored secrets, as 64 hex digits. When set, Organizr doesn't read or write a key file. See [Secrets](secrets.md) |
 | `ORGANIZR_SECRET_KEY_FILE` | `--secret-key-file` | `secret.key` in the data folder | The file that holds the key. Organizr makes it on the first start when it's missing |
 | `ORGANIZR_CUSTOM_JS` | `--custom-js` | Off | Runs the Admin's **Custom Javascript** and **Theme Javascript** on every page. Takes `1`, `true`, `yes` or `on` (and `0`, `false`, `no`, `off`). See [Appearance](appearance.md) |
 | `ORGANIZR_LOG` | None | `info` | The level of the log on the standard output (`docker compose logs`), for example `debug` or `organizr_api=debug,info`. The log file follows the **Logs** settings instead. See [The log](log.md) |
 | `TZ` | None | UTC | The time zone for the schedules, for example `America/New_York`. See [Scheduled jobs](scheduled-jobs.md) |
+
+These two lists are also settings in **Settings › System Settings › Login & Security**, which only an Admin changes. A variable that names any entry wins: the page then shows its value read-only. Without a variable, the first Admin login stores the host it used in **Allowed Hosts**, if the setting is empty (D-155).
 
 A wrong value stops the server at start with a clear message, for example `the list of trusted proxies is not valid` or `ORGANIZR_SECRET_KEY is not a key`.
 

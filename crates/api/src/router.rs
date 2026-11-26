@@ -20,7 +20,7 @@ use crate::handlers::{
     health_checks_plugin, help, homepage, icon, images, invites, ip, launch, lock, log, login,
     login_backends, logout, look, mail, media_register, news, oidc, pages, ping, plex,
     plex_libraries, plugins, register, socks, speed_test, sponsors, tabs, themes, token,
-    two_factor, update, users, users_import, wizard,
+    trusted_hosts, two_factor, update, users, users_import, wizard,
 };
 use crate::picture_cache;
 use crate::same_origin;
@@ -148,6 +148,7 @@ pub fn router(state: AppState) -> Result<Router, RoutePatternError> {
                 .delete(categories::remove.layer(map_response(fields::as_plain_json))),
         )?
         .route("/config", &get(config::all).put(config::change))?
+        .route("/trusted-hosts", &get(trusted_hosts::lists))?
         .route("/config/{item}", &get(config::item))?
         .route("/config/{item}/{term}", &get(config::item_with_term))?
         // An upload can be larger than the bodies that the other routes take.

@@ -170,5 +170,10 @@ export const LOGIN_SECURITY: FormPage = {
         },
       ],
     },
+    {
+      id: 'hosts-and-proxies',
+      title: 'Hosts and proxies',
+      entries: [{ kind: 'part', id: 'trusted-hosts' }],
+    },
   ],
 };

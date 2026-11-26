@@ -55,6 +55,20 @@ impl FromStr for TrustedProxies {
 }
 
 impl TrustedProxies {
+    /// The list as text, with commas between the entries.
+    pub fn text(&self) -> String {
+        self.0
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(",")
+    }
+
+    /// Whether the list names no proxy.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// Whether an address belongs to a trusted proxy.
     pub fn contains(&self, address: IpAddr) -> bool {
         self.0.iter().any(|network| network.contains(&address))
@@ -218,7 +232,7 @@ pub async fn identify_client(
         .get::<ConnectInfo<SocketAddr>>()
         .map_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED), |info| info.0.ip());
 
-    let client = resolve(peer, request.headers(), state.trusted_proxies());
+    let client = resolve(peer, request.headers(), &state.trusted_proxies());
     if client.source == AddressSource::UnverifiedForwarding {
         warn_once_about_unlisted_proxy(client.address);
     }

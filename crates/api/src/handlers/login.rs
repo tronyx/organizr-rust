@@ -175,6 +175,7 @@ async fn level_after_login(
         .map_or(GroupLevel::GUEST, |group| group.level);
     if level == GroupLevel::ADMIN {
         mail::remember_site(state, headers, client).await;
+        super::trusted_hosts::remember_host(state, headers).await;
     }
     Ok(level)
 }

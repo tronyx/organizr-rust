@@ -172,7 +172,8 @@ export type PartId =
   | 'layout-defaults'
   | 'scripts-note'
   | 'health-check-services'
-  | 'plex-libraries-tab';
+  | 'plex-libraries-tab'
+  | 'trusted-hosts';
 
 /** The place of a part of a page that its own component draws. */
 export interface PartEntry {

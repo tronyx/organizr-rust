@@ -78,6 +78,23 @@ impl FromStr for AllowedHosts {
 }
 
 impl AllowedHosts {
+    /// The list as text, with commas between the entries.
+    pub fn text(&self) -> String {
+        self.0
+            .iter()
+            .map(|allowed| match allowed.port {
+                Some(port) => format!("{}:{port}", allowed.name),
+                None => allowed.name.clone(),
+            })
+            .collect::<Vec<_>>()
+            .join(",")
+    }
+
+    /// Whether the list names no host.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// Whether the host that a `Host` header names is on the list. An entry without a
     /// port allows the host with any port; an entry with a port allows that port only.
     pub fn allows(&self, host: &str) -> bool {

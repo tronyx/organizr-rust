@@ -16,8 +16,10 @@ use organizr_domain::GroupLevel;
 use organizr_settings::Settings;
 use serde_json::{Map, Value};
 
+use crate::allowed_hosts::AllowedHosts;
 use crate::api_data::ApiData;
 use crate::caller::Caller;
+use crate::client::TrustedProxies;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::{Refusal, is_nothing_in_php};
@@ -62,6 +64,11 @@ const LOGIN_SETTINGS: [&str; 15] = [
     "ignoreTFAIfPlexOAuth",
 ];
 
+/// The settings of the hosts of Organizr and of the trusted proxies, which the variables
+/// `ORGANIZR_ALLOWED_HOSTS` and `ORGANIZR_TRUSTED_PROXIES` win over (D-155).
+const ALLOWED_HOSTS: &str = "allowedHosts";
+const TRUSTED_PROXIES: &str = "trustedProxies";
+
 /// The services of the health checks plugin: the addresses that a run asks, and whether
 /// each gets the API key.
 const HEALTH_CHECK_SERVICES: &str = "HEALTHCHECKS-all-items";
@@ -85,6 +92,8 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
         || key.starts_with("oidc")
         || key == HEALTH_CHECK_SERVICES
         || key.starts_with("sso")
+        || key == ALLOWED_HOSTS
+        || key == TRUSTED_PROXIES
         || is_trusted_by_a_login(key, settings)
         || key == "customJava"
         || key == "customThemeJava"
@@ -245,6 +254,14 @@ async fn accepted(
     let value = match (key, sent) {
         // PHP stores the empty text for "nothing".
         (_, Value::Null) => Value::String(String::new()),
+        // The lists are read as the variables are, so a value that would stop the server
+        // at start is refused here too (D-155).
+        (ALLOWED_HOSTS, Value::String(list)) if list.parse::<AllowedHosts>().is_err() => {
+            return Err(not_valid(key));
+        }
+        (TRUSTED_PROXIES, Value::String(list)) if list.parse::<TrustedProxies>().is_err() => {
+            return Err(not_valid(key));
+        }
         (REGISTRATION_PASSWORD, Value::String(password)) if !password.is_empty() => {
             if password.len() > LONGEST_PASSWORD {
                 return Err(Refusal::over_limit(LONGEST_PASSWORD));
@@ -296,6 +313,22 @@ pub async fn change(
     for (key, sent) in data.fields() {
         if key.eq_ignore_ascii_case("formkey") {
             continue;
+        }
+        // A variable of the container wins over its setting (D-155).
+        let variable = match key {
+            ALLOWED_HOSTS if !state.allowed_hosts_of_the_variable().is_empty() => {
+                Some("ORGANIZR_ALLOWED_HOSTS")
+            }
+            TRUSTED_PROXIES if !state.trusted_proxies_of_the_variable().is_empty() => {
+                Some("ORGANIZR_TRUSTED_PROXIES")
+            }
+            _ => None,
+        };
+        if let Some(variable) = variable {
+            let message = format!(
+                "Config item: {key} is set by {variable} in the environment of the container"
+            );
+            return Err(Refusal::conflict(&message));
         }
         if let Some(value) = accepted(&mut settings, caller.level(), key, sent).await? {
             changes.push((key.to_owned(), value));

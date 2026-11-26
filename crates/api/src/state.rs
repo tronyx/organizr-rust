@@ -196,9 +196,19 @@ impl AppState {
         self
     }
 
-    /// The hosts of `ORGANIZR_ALLOWED_HOSTS`, which a path of a service address may be
-    /// completed with (D-154).
-    pub fn allowed_hosts(&self) -> &AllowedHosts {
+    /// The hosts that a path of a service address may be completed with (D-154):
+    /// those of `ORGANIZR_ALLOWED_HOSTS` when the variable names some, and else those of
+    /// the setting `allowedHosts` (D-155).
+    pub fn allowed_hosts(&self) -> AllowedHosts {
+        if self.allowed_hosts.is_empty() {
+            self.settings().allowed_hosts.parse().unwrap_or_default()
+        } else {
+            (*self.allowed_hosts).clone()
+        }
+    }
+
+    /// The hosts of `ORGANIZR_ALLOWED_HOSTS`; empty when the variable names none.
+    pub fn allowed_hosts_of_the_variable(&self) -> &AllowedHosts {
         &self.allowed_hosts
     }
 
@@ -338,7 +348,16 @@ impl AppState {
     }
 
     /// The reverse proxies whose forwarding headers are believed.
-    pub fn trusted_proxies(&self) -> &TrustedProxies {
+    pub fn trusted_proxies(&self) -> TrustedProxies {
+        if self.trusted_proxies.is_empty() {
+            self.settings().trusted_proxies.parse().unwrap_or_default()
+        } else {
+            (*self.trusted_proxies).clone()
+        }
+    }
+
+    /// The proxies of `ORGANIZR_TRUSTED_PROXIES`; empty when the variable names none.
+    pub fn trusted_proxies_of_the_variable(&self) -> &TrustedProxies {
         &self.trusted_proxies
     }
 

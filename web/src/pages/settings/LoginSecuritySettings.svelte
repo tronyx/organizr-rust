@@ -3,6 +3,7 @@
   // sessions, and who may reach the install.
   import { LOGIN_SECURITY } from '../../settings/forms';
   import SettingsForm from '../../settings/SettingsForm.svelte';
+  import TrustedHosts from './TrustedHosts.svelte';
 
   let {
     ondone,
@@ -12,4 +13,8 @@
   } = $props();
 </script>
 
-<SettingsForm page={LOGIN_SECURITY} {ondone} />
+{#snippet trustedHosts()}
+  <TrustedHosts {ondone} />
+{/snippet}
+
+<SettingsForm page={LOGIN_SECURITY} extra={{ 'trusted-hosts': trustedHosts }} {ondone} />

@@ -51,6 +51,7 @@ pub mod sponsors;
 pub mod tabs;
 pub mod themes;
 pub mod token;
+pub mod trusted_hosts;
 pub mod two_factor;
 pub mod update;
 pub mod users;

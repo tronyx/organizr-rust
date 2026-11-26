@@ -153,6 +153,7 @@ pub async fn wizard(
     }
     // The Admin who knows the set-up code names the address of the site for e-mails.
     crate::handlers::mail::remember_site(&state, &headers, &client).await;
+    crate::handlers::trusted_hosts::remember_host(&state, &headers).await;
 
     let device = Device {
         ip: client.address,

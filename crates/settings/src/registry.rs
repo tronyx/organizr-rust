@@ -197,6 +197,12 @@ settings! {
     hide_registration: Flag = "hideRegistration", false;
     /// Addresses and ranges, separated by commas, that count as the local network.
     local_ip_list: Text = "localIPList", String::new();
+    /// The host names of Organizr that a service address which is only a path is
+    /// completed with, when `ORGANIZR_ALLOWED_HOSTS` names none (D-155).
+    allowed_hosts: Text = "allowedHosts", String::new();
+    /// The reverse proxies whose forwarding headers are believed, when
+    /// `ORGANIZR_TRUSTED_PROXIES` names none (D-155).
+    trusted_proxies: Text = "trustedProxies", String::new();
 
     /// The random id of the install. It is part of the name of the session cookie. It is
     /// empty until the install is set up.
@@ -1228,7 +1234,8 @@ mod tests {
 
     /// The settings of this application that PHP Organizr does not have, each with its
     /// default: those of the Plex Libraries plugin (D-121), the look settings of the
-    /// Admin (D-125) and those of the Netronome item (D-128).
+    /// Admin (D-125), those of the Netronome item (D-128), and the allowed hosts and the
+    /// trusted proxies (D-155).
     fn own_plugin_settings() -> Vec<(&'static str, Value)> {
         vec![
             ("PLEXLIBRARIES-enabled", json!(false)),
@@ -1247,6 +1254,8 @@ mod tests {
             ("homepageNetronomeHeaderToggle", json!(true)),
             ("homepageNetronomeHeader", json!("Netronome")),
             ("homepageNetronomeTimeRange", json!("week")),
+            ("allowedHosts", json!("")),
+            ("trustedProxies", json!("")),
         ]
     }
 
