@@ -178,7 +178,7 @@ pub async fn unlink(
         return Err(OidcUnlinkError::NotLinked);
     }
     let (candidate, stored) = (given.to_owned(), account.password_hash.clone());
-    let check = tokio::task::spawn_blocking(move || password::verify(&candidate, &stored))
+    let check = password::verify_in_turn(candidate, stored)
         .await
         .map_err(|_| OidcUnlinkError::Task)?;
     if !matches!(check, PasswordCheck::Correct { .. }) {

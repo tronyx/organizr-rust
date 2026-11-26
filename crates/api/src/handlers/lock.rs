@@ -8,8 +8,9 @@ use std::time::{Duration, Instant};
 
 use axum::Extension;
 use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
-use organizr_auth::password::{self, PasswordCheck};
+use organizr_auth::password::{self, InTurnError, PasswordCheck};
 use organizr_domain::{Change, GroupLevel, User, UserChanges};
 
 use crate::api_data::ApiData;
@@ -101,10 +102,18 @@ pub async fn unlock_own(
     let pending = limiter
         .begin(&attempt, policy, Instant::now())
         .map_err(|retry_after| Refusal::from(ApiError::LockedOut { retry_after }))?;
-    if !matches!(
-        password::verify(&given, &user.password_hash),
-        PasswordCheck::Correct { .. }
-    ) {
+    let check = match password::verify_in_turn(given, user.password_hash.clone()).await {
+        Ok(check) => check,
+        Err(InTurnError::Busy) => return Err(ApiError::Busy.into()),
+        Err(InTurnError::Task(error)) => {
+            tracing::error!(%error, "a password check of the lock screen stopped");
+            return Err(Refusal::Request(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "the request could not be completed".to_owned(),
+            ));
+        }
+    };
+    if !matches!(check, PasswordCheck::Correct { .. }) {
         tracing::warn!(user = %user.username, client = %client.address, "a wrong password for the lock screen");
         return Err(match pending.failed() {
             Some(retry_after) => ApiError::LockedOut { retry_after }.into(),

@@ -6,6 +6,7 @@ use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use organizr_auth::install::InstallError;
 use organizr_auth::login::LoginError;
+use organizr_auth::password::InTurnError;
 use organizr_auth::registration::RegistrationError;
 use organizr_db::DbError;
 use serde::Serialize;
@@ -18,6 +19,9 @@ use crate::state::ChangeError;
 /// Why a request failed.
 #[derive(Debug, Error)]
 pub enum ApiError {
+    /// Every place for a password check stayed taken (D-140).
+    #[error("the server is busy with other password checks")]
+    Busy,
     /// No route matches the method and the path.
     #[error("no route for {method} {endpoint}")]
     NotFound {
@@ -163,6 +167,10 @@ impl IntoResponse for ApiError {
                 NoData,
             )
             .into_response(),
+            // Every place for a password check stayed taken (D-140).
+            Self::Busy
+            | Self::Login(LoginError::Task(InTurnError::Busy))
+            | Self::Registration(RegistrationError::Task(InTurnError::Busy)) => busy(),
             Self::Login(error) => internal_error(&error, "a login could not be completed"),
             Self::Install(error) => internal_error(&error, "the set-up could not be completed"),
             Self::Registration(error) => {
@@ -176,4 +184,19 @@ impl IntoResponse for ApiError {
             }
         }
     }
+}
+
+/// The answer while the server is busy with other password checks: `503`, with a hint
+/// to try again in a few seconds (D-140).
+fn busy() -> Response {
+    tracing::warn!("a password check waited too long for its turn");
+    (
+        [(header::RETRY_AFTER, "5")],
+        Envelope::error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "The server is busy, try again",
+            NoData,
+        ),
+    )
+        .into_response()
 }

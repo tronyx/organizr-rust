@@ -8,7 +8,7 @@ use organizr_db::{Database, DbError};
 use organizr_domain::{NewSession, PasswordHash, Session, Timestamp, User};
 use thiserror::Error;
 
-use crate::password::{self, HashError, PasswordCheck};
+use crate::password::{self, HashError, InTurnError, PasswordCheck};
 use crate::recovery::{self, RecoveryError};
 use crate::registration::RegistrationError;
 use crate::secrets::{SecretBox, SecretError, two_factor_name};
@@ -86,9 +86,10 @@ pub enum LoginError {
     #[error(transparent)]
     Token(#[from] TokenError),
 
-    /// The task that checks or hashes the password did not finish.
-    #[error("the password task did not finish: {0}")]
-    Task(#[source] tokio::task::JoinError),
+    /// The check or the hash of the password did not run: the server was busy with
+    /// other password checks, or the work stopped (D-140).
+    #[error(transparent)]
+    Task(#[from] InTurnError),
 }
 
 /// What a login brings for the second factor of an account.
@@ -182,9 +183,7 @@ pub async fn with_password(
         .as_ref()
         .map_or_else(placeholder_hash, |user| user.password_hash.clone());
     let candidate = password.to_owned();
-    let check = tokio::task::spawn_blocking(move || password::verify(&candidate, &stored_hash))
-        .await
-        .map_err(LoginError::Task)?;
+    let check = password::verify_in_turn(candidate, stored_hash).await?;
 
     let (user, outdated) = match (user, check) {
         (Some(user), PasswordCheck::Correct { outdated }) => (user, outdated),
@@ -203,9 +202,7 @@ pub async fn with_password(
 
     if outdated {
         let candidate = password.to_owned();
-        let new_hash = tokio::task::spawn_blocking(move || password::hash(&candidate))
-            .await
-            .map_err(LoginError::Task)??;
+        let new_hash = password::hash_in_turn(candidate).await??;
         database
             .users()
             .set_password_hash(user.id, &new_hash)

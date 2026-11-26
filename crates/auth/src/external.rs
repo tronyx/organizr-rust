@@ -129,14 +129,10 @@ async fn mirror_password(
     password: &str,
 ) -> Result<(), LoginError> {
     let (candidate, stored) = (password.to_owned(), user.password_hash.clone());
-    let check = tokio::task::spawn_blocking(move || password::verify(&candidate, &stored))
-        .await
-        .map_err(LoginError::Task)?;
+    let check = password::verify_in_turn(candidate, stored).await?;
     if !matches!(check, PasswordCheck::Correct { .. }) {
         let candidate = password.to_owned();
-        let hash = tokio::task::spawn_blocking(move || password::hash(&candidate))
-            .await
-            .map_err(LoginError::Task)??;
+        let hash = password::hash_in_turn(candidate).await??;
         database.users().set_password_hash(user.id, &hash).await?;
         tracing::info!(user = %user.username, "the password of the user was updated from the service");
     }

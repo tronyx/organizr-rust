@@ -15,7 +15,7 @@ use organizr_db::{Database, DbError, Recovery};
 use organizr_domain::{Timestamp, User};
 use thiserror::Error;
 
-use crate::password::{self, HashError, PasswordCheck};
+use crate::password::{self, HashError, InTurnError, PasswordCheck};
 
 /// How long a recovery password works.
 pub const LIFETIME: Duration = Duration::from_hours(24);
@@ -42,9 +42,10 @@ pub enum RecoveryError {
     /// The system gave no random bytes.
     #[error("cannot get random bytes for a new password: {0}")]
     Random(#[source] getrandom::Error),
-    /// The task that hashes the password did not finish.
-    #[error("the password task did not finish: {0}")]
-    Task(#[source] tokio::task::JoinError),
+    /// The check or the hash of the password did not run: the server was busy with
+    /// other password checks, or the work stopped (D-140).
+    #[error(transparent)]
+    Task(#[from] InTurnError),
 }
 
 /// A recovery that was started: the account, and the password for the e-mail.
@@ -111,9 +112,7 @@ pub async fn start(
 
     let password = new_password()?;
     let candidate = password.clone();
-    let password_hash = tokio::task::spawn_blocking(move || password::hash(&candidate))
-        .await
-        .map_err(RecoveryError::Task)??;
+    let password_hash = password::hash_in_turn(candidate).await??;
     let recovery = Recovery {
         password_hash,
         expires_at: Timestamp::from_unix_seconds(now.unix_seconds() + seconds(LIFETIME)),
@@ -138,10 +137,10 @@ pub(crate) async fn accept(
         return Ok(false);
     }
     let candidate = password.to_owned();
-    let check =
-        tokio::task::spawn_blocking(move || password::verify(&candidate, &recovery.password_hash))
-            .await
-            .unwrap_or(PasswordCheck::Wrong);
+    // A check that could not run counts as a wrong password.
+    let check = password::verify_in_turn(candidate, recovery.password_hash)
+        .await
+        .unwrap_or(PasswordCheck::Wrong);
     if !matches!(check, PasswordCheck::Correct { .. }) {
         return Ok(false);
     }

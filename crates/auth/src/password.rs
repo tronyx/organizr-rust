@@ -5,13 +5,18 @@
 //! Argon2id. When a correct password was checked against an older hash, the caller
 //! stores a new hash, so old hashes go away as users log in.
 //!
-//! Both functions take tens of milliseconds on purpose. Call them from
-//! `tokio::task::spawn_blocking`, not directly from a request handler.
+//! Both functions take tens of milliseconds and 19 MiB of memory on purpose. Call them
+//! through [`verify_in_turn`] and [`hash_in_turn`], which run them away from the tasks
+//! that serve requests and only a few at a time (D-140).
 
 use argon2::password_hash::phc;
 use argon2::{ARGON2ID_IDENT, Argon2, Params, PasswordHasher, PasswordVerifier, Version};
 use organizr_domain::PasswordHash;
+use std::sync::LazyLock;
+use std::time::Duration;
+
 use thiserror::Error;
+use tokio::sync::Semaphore;
 
 /// The result of checking a password against a stored hash.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,6 +37,82 @@ pub enum PasswordCheck {
 #[derive(Debug, Error)]
 #[error("the password could not be hashed: {0}")]
 pub struct HashError(#[source] argon2::password_hash::Error);
+
+/// How long a password check waits for its turn before the answer is "busy".
+const LONGEST_WAIT: Duration = Duration::from_secs(10);
+
+/// The fewest and the most password checks that run at the same time.
+const FEWEST_AT_ONCE: usize = 2;
+const MOST_AT_ONCE: usize = 16;
+
+/// A password check or hash that did not run.
+#[derive(Debug, Error)]
+pub enum InTurnError {
+    /// Every place for a check stayed taken for [`LONGEST_WAIT`].
+    #[error("the server is busy with other password checks")]
+    Busy,
+    /// The work stopped before it ended.
+    #[error("a password check stopped: {0}")]
+    Task(#[source] tokio::task::JoinError),
+}
+
+/// The places for password checks: as many as the server has processors, between
+/// [`FEWEST_AT_ONCE`] and [`MOST_AT_ONCE`]. With all taken, a check waits for its turn,
+/// so many logins at once use at most that many times 19 MiB (D-140).
+struct Turns {
+    places: Semaphore,
+    longest_wait: Duration,
+}
+
+impl Turns {
+    fn new(places: usize, longest_wait: Duration) -> Self {
+        Self {
+            places: Semaphore::new(places),
+            longest_wait,
+        }
+    }
+
+    async fn run<T: Send + 'static>(
+        &self,
+        work: impl FnOnce() -> T + Send + 'static,
+    ) -> Result<T, InTurnError> {
+        let place = tokio::time::timeout(self.longest_wait, self.places.acquire())
+            .await
+            .map_err(|_| InTurnError::Busy)?
+            .map_err(|_| InTurnError::Busy)?;
+        let done = tokio::task::spawn_blocking(work).await;
+        drop(place);
+        done.map_err(InTurnError::Task)
+    }
+}
+
+static TURNS: LazyLock<Turns> = LazyLock::new(|| {
+    let processors = std::thread::available_parallelism().map_or(FEWEST_AT_ONCE, usize::from);
+    Turns::new(processors.clamp(FEWEST_AT_ONCE, MOST_AT_ONCE), LONGEST_WAIT)
+});
+
+/// [`verify`], in its turn among the other password checks.
+///
+/// # Errors
+///
+/// [`InTurnError::Busy`] when no place was free for [`LONGEST_WAIT`].
+pub async fn verify_in_turn(
+    password: String,
+    hash: PasswordHash,
+) -> Result<PasswordCheck, InTurnError> {
+    TURNS.run(move || verify(&password, &hash)).await
+}
+
+/// [`hash`], in its turn among the password checks.
+///
+/// # Errors
+///
+/// [`InTurnError::Busy`] when no place was free for [`LONGEST_WAIT`].
+pub async fn hash_in_turn(
+    password: String,
+) -> Result<Result<PasswordHash, HashError>, InTurnError> {
+    TURNS.run(move || hash(&password)).await
+}
 
 /// Checks a password against a stored hash.
 ///
@@ -106,7 +187,57 @@ mod tests {
     use argon2::{Algorithm, Argon2, Params, PasswordHasher, Version};
     use organizr_domain::PasswordHash;
 
-    use super::{PasswordCheck, hash, verify};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
+
+    use super::{InTurnError, PasswordCheck, Turns, hash, verify};
+
+    #[tokio::test]
+    async fn checks_run_no_more_than_the_places_at_once() {
+        // Many logins at once run their checks a few at a time (D-140).
+        let turns = Arc::new(Turns::new(2, Duration::from_secs(10)));
+        let (running, most) = (Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0)));
+        let checks = (0..8).map(|_| {
+            let (turns, running, most) = (turns.clone(), running.clone(), most.clone());
+            tokio::spawn(async move {
+                turns
+                    .run(move || {
+                        let now = running.fetch_add(1, Ordering::SeqCst) + 1;
+                        most.fetch_max(now, Ordering::SeqCst);
+                        std::thread::sleep(Duration::from_millis(30));
+                        running.fetch_sub(1, Ordering::SeqCst);
+                    })
+                    .await
+            })
+        });
+        for check in checks.collect::<Vec<_>>() {
+            check
+                .await
+                .expect("the task ends")
+                .expect("each check gets its turn");
+        }
+        assert_eq!(most.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test]
+    async fn check_that_waits_too_long_is_busy() {
+        let turns = Arc::new(Turns::new(1, Duration::from_millis(50)));
+        let slow = {
+            let turns = turns.clone();
+            tokio::spawn(async move {
+                turns
+                    .run(|| std::thread::sleep(Duration::from_millis(500)))
+                    .await
+            })
+        };
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        let waited = turns.run(|| ()).await;
+        assert!(matches!(waited, Err(InTurnError::Busy)), "{waited:?}");
+        slow.await
+            .expect("the task ends")
+            .expect("the first check ran");
+    }
 
     /// A hash of `password` with Argon2 settings that the caller chooses.
     fn argon2_hash(algorithm: Algorithm, version: Version, params: Params) -> PasswordHash {

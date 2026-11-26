@@ -8,7 +8,7 @@ use organizr_domain::{NewUser, PasswordHash, Timestamp, User, email};
 use thiserror::Error;
 
 use crate::install::gravatar;
-use crate::password::{self, HashError, PasswordCheck};
+use crate::password::{self, HashError, InTurnError, PasswordCheck};
 
 /// The longest name and the longest e-mail address of an account, in bytes.
 pub const LONGEST_NAME: usize = 50;
@@ -84,9 +84,10 @@ pub enum RegistrationError {
     #[error(transparent)]
     Hash(#[from] HashError),
 
-    /// The task that checks or hashes a password did not finish.
-    #[error("the password task did not finish: {0}")]
-    Task(#[source] tokio::task::JoinError),
+    /// The check or the hash of the password did not run: the server was busy with
+    /// other password checks, or the work stopped (D-140).
+    #[error(transparent)]
+    Task(#[from] InTurnError),
 }
 
 /// Creates an account for a person who knows the registration password.
@@ -109,10 +110,7 @@ pub async fn register(
     } = request;
 
     let stored = registration_hash.clone();
-    let check =
-        tokio::task::spawn_blocking(move || password::verify(&registration_password, &stored))
-            .await
-            .map_err(RegistrationError::Task)?;
+    let check = password::verify_in_turn(registration_password, stored).await?;
     if !matches!(check, PasswordCheck::Correct { .. }) {
         return Err(RegistrationError::WrongRegistrationPassword);
     }
@@ -221,8 +219,6 @@ pub async fn create_account(
 /// Hashes a password for storing. The work runs away from the tasks that serve requests,
 /// because it takes long on purpose.
 pub async fn hash_password(password: String) -> Result<PasswordHash, RegistrationError> {
-    let hash = tokio::task::spawn_blocking(move || password::hash(&password))
-        .await
-        .map_err(RegistrationError::Task)??;
+    let hash = password::hash_in_turn(password).await??;
     Ok(hash)
 }
