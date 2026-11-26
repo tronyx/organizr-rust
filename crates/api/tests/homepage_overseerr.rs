@@ -321,6 +321,37 @@ async fn new_request_is_made_as_the_user_with_the_default_service() {
 }
 
 #[tokio::test]
+async fn details_name_no_requester_for_a_user_whose_requests_are_limited() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let service = homepage_services::overseerr_requests().await;
+        let path = "/homepage/overseerr/metadata/movie/815";
+        for (limited, level, sees) in [(true, 4, false), (true, 1, true), (false, 4, true)] {
+            let app = installed_app_with(
+                database,
+                &settings(&service, &[("overseerrLimitUser", json!(limited))]),
+            );
+            let caller =
+                seed::logged_in(database, &app, &format!("u{level}{limited}"), level).await;
+            let details = call(&app, As::User(&caller), "GET", path, None).await;
+            assert_eq!(details.status, StatusCode::OK, "{}", details.body);
+            assert_eq!(details.data()["title"], "The Film");
+            // With the limit, a user sees only their own requests, so the details name
+            // nobody who asked for the film (D-151).
+            let requests = &details.data()["mediaInfo"]["requests"];
+            assert_eq!(
+                requests.is_array(),
+                sees,
+                "{limited} {level}: {}",
+                details.body
+            );
+            assert_eq!(details.data()["mediaInfo"]["status"], 5);
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn details_come_as_overseerr_gives_them_for_callers_who_may_request() {
     on_each_engine(async |database| {
         seed::installed(database).await;

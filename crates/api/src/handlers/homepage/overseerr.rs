@@ -360,11 +360,19 @@ pub async fn metadata(
         .get(http, &format!("{kind}/{id}"))
         .await
         .map_err(|error| unreachable(&error))?;
-    if reply.is_success {
-        Ok(Envelope::success(reply.body))
-    } else {
-        Err(failed("Error getting series information"))
+    if !reply.is_success {
+        return Err(failed("Error getting series information"));
     }
+    let mut body = reply.body;
+    // With `overseerrLimitUser`, a user sees only their own requests in the list, so the
+    // details name nobody who asked for the title either (D-151).
+    if settings.overseerr_limit_user
+        && caller.level() > GroupLevel::CO_ADMIN
+        && let Some(info) = body.get_mut("mediaInfo").and_then(Value::as_object_mut)
+    {
+        info.remove("requests");
+    }
+    Ok(Envelope::success(body))
 }
 
 /// What an Admin or a Co-Admin can do with a request.

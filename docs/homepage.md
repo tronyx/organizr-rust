@@ -626,7 +626,7 @@ Organizr talks to rTorrent with XML-RPC. It adds `/RPC2` to the address, unless 
 
 **Good to know:**
 
-- With **Limit to User**, users see their own requests plus those of the single sign-on fallback user. Organizr matches your Organizr user name with the Overseerr user name. Admins and Co-Admins see all requests.
+- With **Limit to User**, users see their own requests plus those of the single sign-on fallback user. Organizr matches your Organizr user name with the Overseerr user name. Admins and Co-Admins see all requests. The details of a title then name nobody who asked for it, for users (D-151).
 - New requests are made *as you*, with the Overseerr session that single sign-on gave your browser.
 - With **Let User Select**, a series request from the search fails with "Seasons requested was not supplied", because the search has no season picker. Pick another choice if your users request series from Organizr.
 

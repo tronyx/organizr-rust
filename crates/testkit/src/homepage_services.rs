@@ -1020,7 +1020,11 @@ fn overseerr_reply(
         ),
         ("GET", "/api/v1/movie/815") if by_key => (
             StatusCode::OK,
-            json!({"id": 815, "title": "The Film", "releaseDate": "2019-05-01", "overview": "A film.", "posterPath": "/poster815.jpg", "backdropPath": "/back815.jpg"}),
+            json!({
+                "id": 815, "title": "The Film", "releaseDate": "2019-05-01", "overview": "A film.", "posterPath": "/poster815.jpg", "backdropPath": "/back815.jpg",
+                // As Overseerr answers: who asked for the film.
+                "mediaInfo": {"status": 5, "requests": [{"id": 31, "requestedBy": {"username": "robin", "email": "robin@example.test"}}]},
+            }),
         ),
         ("GET", "/api/v1/tv/4711") if by_key => (
             StatusCode::OK,
