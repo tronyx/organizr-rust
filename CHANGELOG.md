@@ -73,6 +73,8 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - A request that carries a key in a header, such as `X-Api-Key`, follows a redirect only on the same host, so the key goes to no other host (D-165).
 - The address of an Uptime Kuma monitor shows no user name or password (D-166).
 - The lists of sponsors are kept for 10 minutes, and the answers of Open Collective, GitHub, SickRage and CouchPotato have a largest size (D-167).
+- A picture can't get the name of a Windows device, such as `con.png` (D-168).
+- A backup leaves out the backup folder and the live database file however their paths are written, so it never holds earlier backups or the live database (D-169).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

@@ -94,6 +94,31 @@ fn is_safe_name(name: &str) -> bool {
         && !name
             .chars()
             .any(|character| character.is_control() || "/\\:*?\"<>|".contains(character))
+        && !is_device_name(name)
+}
+
+/// Whether Windows reads a name as a device, such as `CON` or `com1.png`: the part before
+/// the first dot names the device, in any case, and spaces after it do not count.
+fn is_device_name(name: &str) -> bool {
+    let stem = name
+        .split('.')
+        .next()
+        .unwrap_or_default()
+        .trim_end_matches(' ')
+        .to_ascii_uppercase();
+    if ["CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"].contains(&stem.as_str()) {
+        return true;
+    }
+    let numbered = stem
+        .strip_prefix("COM")
+        .or_else(|| stem.strip_prefix("LPT"));
+    numbered.is_some_and(|number| {
+        let mut digits = number.chars();
+        matches!(
+            (digits.next(), digits.next()),
+            (Some('0'..='9' | '\u{b9}' | '\u{b2}' | '\u{b3}'), None)
+        )
+    })
 }
 
 /// The pictures that were uploaded: the names of the files in the folder that the
@@ -580,8 +605,30 @@ mod tests {
             "zero\0.png",
             "ends with a space.png ",
             "ends with a dot.",
+            // The names of devices on Windows, in any case and with any extension.
+            "CON",
+            "con.png",
+            "Prn.jpg",
+            "aux.tar.gz",
+            "NUL.png",
+            "com1.png",
+            "COM9.gif",
+            "lpt1.png",
+            "LPT9",
+            "com\u{b9}.png",
+            "conin$.png",
+            "con .png",
         ] {
             assert!(!is_safe_name(name), "{name:?}");
+        }
+        for name in [
+            "console.png",
+            "com10.png",
+            "lpt.png",
+            "icon.png",
+            "nul-x.png",
+        ] {
+            assert!(is_safe_name(name), "{name}");
         }
         assert!(is_safe_name(&format!("{}.png", "x".repeat(251))));
         assert!(!is_safe_name(&format!("{}.png", "x".repeat(252))));

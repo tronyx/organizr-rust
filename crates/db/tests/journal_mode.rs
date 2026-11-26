@@ -115,3 +115,24 @@ async fn postgres_has_no_journal_mode() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn database_on_sqlite_names_its_file() {
+    let folder = tempfile::tempdir().expect("a temporary folder can be made");
+    let file = folder.path().join("named.db");
+    let database = Database::connect(&url_of(&file))
+        .await
+        .expect("the database opens");
+    let named = database.file().await.expect("the file can be read");
+    assert_eq!(
+        named.and_then(|named| named.canonicalize().ok()),
+        file.canonicalize().ok()
+    );
+    database.close().await.expect("the database closes");
+
+    on_each_engine(async |database| {
+        let named = database.file().await.expect("the file can be read");
+        assert_eq!(named.is_some(), database.engine() == Engine::Sqlite);
+    })
+    .await;
+}

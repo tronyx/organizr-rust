@@ -47,8 +47,8 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129, D-160, D-164 |
 | Tabs and categories | D-28, D-32, D-39, D-47, D-48 |
 | Settings and configuration | D-06, D-07, D-14, D-29, D-45, D-53, D-96, D-106, D-112, D-116, D-162 |
-| Pictures, icons and favicons | D-10, D-54, D-56, D-93, D-123, D-126 |
-| Backups and restore | D-10, D-26, D-74, D-147 |
+| Pictures, icons and favicons | D-10, D-54, D-56, D-93, D-123, D-126, D-168 |
+| Backups and restore | D-10, D-26, D-74, D-147, D-169 |
 | Updates | D-23 |
 | Log, errors and request ids | D-13, D-34, D-84 |
 | E-mail | D-09, D-58, D-82, D-138, D-160 |
@@ -89,11 +89,11 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/groups` | D-31, D-51, D-164 |
 | `/tabs` | D-28, D-32, D-39, D-47 |
 | `/categories` | D-32, D-48 |
-| `/image`, `/image/select`, `data/userTabs/` | D-10, D-54, D-56 |
+| `/image`, `/image/select`, `data/userTabs/` | D-10, D-54, D-56, D-168 |
 | `data/favicon/{name}` | D-93 |
 | `data/cache/{name}` | D-62, D-63, D-64, D-77, D-123 |
 | `/ping` | D-08, D-55 |
-| `/backup` | D-10, D-26, D-74 |
+| `/backup` | D-10, D-26, D-74, D-147, D-169 |
 | `/update/*`, `GET /update/check` | D-23 |
 | `/page/{page}`, `/organizr/{page}` | D-22, D-82, D-84 |
 | `/settings/*` and `/plugins/*/settings` (form routes of PHP) | D-22, D-96 |
@@ -136,6 +136,8 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `GET /log` | D-84 |
 | `GET /ip/{ip}`, `GET /help/smtp`, `GET /icon`, `GET /sponsors/github` | D-82 |
 | `GET /sponsors/*` | D-167 |
+| D-168 | **A picture can't be named like a device of Windows.** `POST /image`, `GET /image` and `DELETE /image/{name}`, on top of D-54. A name whose part before the first dot is `CON`, `PRN`, `AUX`, `NUL`, `CONIN$`, `CONOUT$`, or `COM` or `LPT` with one digit, in any case and with any extension, such as `con.png` or `Com1.jpg`, gets `403 "File Name not approved"`. Windows reads such a name as a device, not as a file. `GET /image` leaves such a file out, as it does other names that are not safe. PHP stores every name. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-169 | **A backup leaves out the backup folder and the live database however their paths are written.** Backups, on top of D-74 and D-147. (1) The folder of `backupLocation` is left out of a backup by its real path. Before, a folder inside the data folder that the setting wrote another way, with `..`, a slash at the end, other letter case on Windows or a link, went into each new backup, with all the earlier backups in it. (2) The live database file that `ORGANIZR_DATABASE_URL` names, and its `-wal`, `-shm` and `-journal` files, stay out of a backup wherever they are in the data folder. Before, only `organizr.db` at the top stayed out, and a database in a folder such as `db/` went in next to the copy. The backup still holds its copy of the database as `organizr.db`. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 
 ## 🔒 Security fixes
 

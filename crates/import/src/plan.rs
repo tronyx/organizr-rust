@@ -712,11 +712,17 @@ fn plan_bookmarks(rows: &[LegacyRow], report: &mut Report) -> Vec<Bookmark> {
         };
         let background_color = color("background_color", "#000000");
         let text_color = color("text_color", "#ffffff");
+        // A level that cannot be leaves the bookmark to the Admin, as for a tab.
         let least_access = row
             .number("group_id")
             .and_then(|level| i32::try_from(level).ok())
             .filter(|level| (0..=999).contains(level))
-            .unwrap_or(999);
+            .unwrap_or_else(|| {
+                report.repairs.push(format!(
+                    "The bookmark \"{name}\" had no level from 0 to 999. Now only the Admin sees it."
+                ));
+                0
+            });
         bookmarks.push(Bookmark {
             id: row.number("id").unwrap_or(place),
             position: row.number("order").unwrap_or(place),
@@ -1540,20 +1546,27 @@ mod tests {
         assert_eq!(bookmarks[1].name, "WIKI (2)");
         assert_eq!(bookmarks[1].background_color, "#000000");
         assert_eq!(bookmarks[1].text_color, "#ffffff");
-        assert_eq!(bookmarks[1].least_access, 999);
+        // A level that is none leaves the bookmark to the Admin, as for a tab.
+        assert_eq!(bookmarks[1].least_access, 0);
         assert_eq!(bookmarks[1].url, "");
         assert!(!bookmarks[1].enabled);
         assert_eq!(
             (plan.report.bookmark_categories, plan.report.bookmarks),
             (2, 2)
         );
-        // One line for each repair: a name twice, a number, and two colors.
+        // One line for each repair: a name twice, a number, two colors, and a level.
         let about_bookmarks: Vec<&String> = plan
             .report
             .repairs
             .iter()
             .filter(|repair| repair.contains("bookmark"))
             .collect();
-        assert_eq!(about_bookmarks.len(), 5, "{about_bookmarks:?}");
+        assert_eq!(about_bookmarks.len(), 6, "{about_bookmarks:?}");
+        assert!(
+            about_bookmarks
+                .iter()
+                .any(|repair| repair.contains("\"WIKI (2)\" had no level")),
+            "{about_bookmarks:?}"
+        );
     }
 }

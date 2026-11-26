@@ -170,6 +170,27 @@ impl Database {
         Ok(Some(now))
     }
 
+    /// The file of a database on `SQLite`, as `SQLite` names it. `None` on `PostgreSQL`
+    /// and for a database in memory.
+    pub async fn file(&self) -> Result<Option<std::path::PathBuf>, DbError> {
+        if self.engine != Engine::Sqlite {
+            return Ok(None);
+        }
+        let rows = self
+            .connection
+            .query_all_raw(sea_orm::Statement::from_string(
+                self.connection.get_database_backend(),
+                "PRAGMA database_list",
+            ))
+            .await?;
+        Ok(rows
+            .into_iter()
+            .find(|row| row.try_get_by_index::<String>(1).ok().as_deref() == Some("main"))
+            .and_then(|row| row.try_get_by_index::<String>(2).ok())
+            .filter(|file| !file.is_empty())
+            .map(std::path::PathBuf::from))
+    }
+
     /// The engine behind this database.
     pub const fn engine(&self) -> Engine {
         self.engine

@@ -4,6 +4,8 @@
 //! of every user, so it is for the person with the most access only.
 
 use std::path::{Path as FilePath, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use axum::Extension;
 use axum::body::{Body, Bytes};
@@ -55,10 +57,55 @@ fn failed(error: impl std::fmt::Display) -> String {
     error.to_string()
 }
 
+/// The name that the temporary files of a backup start with. No list shows them.
+const PART: &str = ".snapshot-";
+
+/// The temporary files of a backup that is being made. When the backup stops before it
+/// is complete, also when the task that makes it is dropped, they are deleted, and the
+/// work that runs on after a drop deletes what it writes later.
+struct Parts {
+    files: [PathBuf; 2],
+    stopped: Arc<AtomicBool>,
+    complete: bool,
+}
+
+impl Parts {
+    /// Deletes the files, when they are there.
+    fn delete(files: &[PathBuf]) {
+        for file in files {
+            let _ = std::fs::remove_file(file);
+        }
+    }
+}
+
+impl Drop for Parts {
+    fn drop(&mut self) {
+        if !self.complete {
+            self.stopped.store(true, Ordering::SeqCst);
+            Self::delete(&self.files);
+        }
+    }
+}
+
+/// Deletes the temporary files of earlier backups that stopped before they were
+/// complete.
+async fn delete_old_parts(folder: &FilePath) {
+    let Ok(mut entries) = tokio::fs::read_dir(folder).await else {
+        return;
+    };
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        if entry.file_name().to_string_lossy().starts_with(PART) {
+            let _ = tokio::fs::remove_file(entry.path()).await;
+        }
+    }
+}
+
 /// Makes a backup, and deletes the oldest backups over the number of the
 /// `keepBackupsCountCron` setting. Returns the name of the new backup.
 ///
-/// Two backups are never made at the same time.
+/// Two backups are never made at the same time. The backup is written under a name that
+/// no list shows, and gets its name when it is complete. A backup that stops, also one
+/// that runs too long and is dropped, leaves nothing in the folder.
 pub async fn create_backup(state: &AppState) -> Result<String, String> {
     let data_dir = state
         .data_folder()
@@ -68,6 +115,7 @@ pub async fn create_backup(state: &AppState) -> Result<String, String> {
     let settings = state.settings();
     let folder = folder_of(&settings, &data_dir);
     tokio::fs::create_dir_all(&folder).await.map_err(failed)?;
+    delete_old_parts(&folder).await;
 
     let now = jiff::Timestamp::now();
     let minute = now.strftime("%Y-%m-%d_%H-%M").to_string();
@@ -82,45 +130,39 @@ pub async fn create_backup(state: &AppState) -> Result<String, String> {
             break (id, name, target);
         }
     };
-    // The parts of a backup have names that no list shows until the backup is complete.
-    let snapshot = folder.join(format!(".snapshot-{id}.db"));
-    let partial = folder.join(format!(".snapshot-{id}.zip"));
+    let snapshot = folder.join(format!("{PART}{id}.db"));
+    let partial = folder.join(format!("{PART}{id}.zip"));
+    let mut parts = Parts {
+        files: [snapshot.clone(), partial.clone()],
+        stopped: Arc::default(),
+        complete: false,
+    };
 
-    let database = state.database();
-    let has_database = database.snapshot(&snapshot).await.map_err(failed)?;
-    let manifest = Manifest::new(
-        VERSION,
-        now.strftime("%Y-%m-%dT%H:%M:%SZ").to_string(),
-        database.engine() == Engine::Sqlite,
-        has_database,
-    );
+    // The work runs as a task of its own, so that it ends cleanly also when this future
+    // is dropped: then it deletes what it wrote.
+    let database = state.database().clone();
+    let manifest_time = now.strftime("%Y-%m-%dT%H:%M:%SZ").to_string();
     let key_file = state.key_file();
-    let written = {
-        let (partial, snapshot, folder) = (partial.clone(), snapshot.clone(), folder.clone());
-        tokio::task::spawn_blocking(move || {
-            let source = Source {
-                data_dir: &data_dir,
-                database_copy: has_database.then_some(snapshot.as_path()),
-                left_out: std::slice::from_ref(&folder),
-                key_file: key_file.as_deref(),
-            };
-            backup::write_archive(&partial, source, &manifest)
-        })
-        .await
-        .map_err(failed)
-        .and_then(|result| result.map_err(failed))
-    };
-    if has_database {
-        let _ = tokio::fs::remove_file(&snapshot).await;
-    }
-    let files = match written {
-        Ok(files) => files,
-        Err(error) => {
-            let _ = tokio::fs::remove_file(&partial).await;
-            return Err(error);
+    let stopped = Arc::clone(&parts.stopped);
+    let files = parts.files.clone();
+    let work = tokio::spawn(async move {
+        let result = write_parts(
+            &database,
+            &data_dir,
+            &folder,
+            &files,
+            manifest_time,
+            key_file,
+        )
+        .await;
+        if stopped.load(Ordering::SeqCst) {
+            Parts::delete(&files);
         }
-    };
+        result.map(|(count, has_database)| (count, has_database, folder))
+    });
+    let (files, has_database, folder) = work.await.map_err(failed)??;
     tokio::fs::rename(&partial, &target).await.map_err(failed)?;
+    parts.complete = true;
     tracing::info!(name, files, has_database, "a backup was made");
 
     // The number 0 keeps every backup.
@@ -141,6 +183,48 @@ pub async fn create_backup(state: &AppState) -> Result<String, String> {
         }
     }
     Ok(name)
+}
+
+/// Writes the parts of a backup: the copy of the database, and the archive, which holds
+/// it. The copy is deleted when the archive is written. Returns the number of files of
+/// the data folder in the archive, and whether it holds a database.
+async fn write_parts(
+    database: &organizr_db::Database,
+    data_dir: &FilePath,
+    folder: &FilePath,
+    [snapshot, partial]: &[PathBuf; 2],
+    created: String,
+    key_file: Option<PathBuf>,
+) -> Result<(usize, bool), String> {
+    let has_database = database.snapshot(snapshot).await.map_err(failed)?;
+    let live = database.file().await.map_err(failed)?;
+    let manifest = Manifest::new(
+        VERSION,
+        created,
+        database.engine() == Engine::Sqlite,
+        has_database,
+    );
+    let written = {
+        let (data_dir, folder) = (data_dir.to_owned(), folder.to_owned());
+        let (partial, snapshot) = (partial.clone(), snapshot.clone());
+        tokio::task::spawn_blocking(move || {
+            let source = Source {
+                data_dir: &data_dir,
+                database_copy: has_database.then_some(snapshot.as_path()),
+                left_out: std::slice::from_ref(&folder),
+                key_file: key_file.as_deref(),
+                database_file: live.as_deref(),
+            };
+            backup::write_archive(&partial, source, &manifest)
+        })
+        .await
+        .map_err(failed)
+        .and_then(|result| result.map_err(failed))
+    };
+    if has_database {
+        let _ = tokio::fs::remove_file(snapshot).await;
+    }
+    written.map(|count| (count, has_database))
 }
 
 /// A backup in the list.

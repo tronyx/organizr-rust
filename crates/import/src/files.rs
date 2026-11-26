@@ -73,16 +73,47 @@ fn is_picture(name: &str) -> bool {
     })
 }
 
-/// The regular files of a folder, sorted by name. A folder that is missing has none.
-fn files_in(folder: &Path) -> Vec<(String, PathBuf)> {
-    let mut files: Vec<(String, PathBuf)> = std::fs::read_dir(folder)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .filter(|entry| entry.path().is_file())
-        .filter_map(|entry| Some((entry.file_name().to_str()?.to_owned(), entry.path())))
-        .collect();
+/// Whether a path names a regular file itself, not a link to one. A link is never
+/// copied: it could point to a file outside the PHP install, such as a key.
+fn is_regular_file(path: &Path) -> bool {
+    std::fs::symlink_metadata(path).is_ok_and(|data| data.file_type().is_file())
+}
+
+/// Whether a path names a link.
+fn is_link(path: &Path) -> bool {
+    std::fs::symlink_metadata(path).is_ok_and(|data| data.file_type().is_symlink())
+}
+
+/// The note of the report for a link that is not copied. `path` is its path from the
+/// folder of the PHP application.
+fn link_note(path: &str) -> String {
+    format!(
+        "The file {path} of the PHP install is a link, so it is not copied. Copy the file \
+         that it points to by hand if it is needed."
+    )
+}
+
+/// The regular files of a folder, sorted by name. A folder that is missing has none. A
+/// link is left out, and named in the report by its path from the folder of the PHP
+/// application, which is `shown`.
+fn files_in(folder: &Path, shown: &str, report: &mut Report) -> Vec<(String, PathBuf)> {
+    let mut files = Vec::new();
+    let mut links = Vec::new();
+    for entry in std::fs::read_dir(folder).into_iter().flatten().flatten() {
+        let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
+            continue;
+        };
+        match entry.file_type() {
+            Ok(kind) if kind.is_file() => files.push((name, entry.path())),
+            Ok(kind) if kind.is_symlink() => links.push(name),
+            _ => {}
+        }
+    }
     files.sort();
+    links.sort();
+    for name in links {
+        report.notes.push(link_note(&format!("{shown}/{name}")));
+    }
     files
 }
 
@@ -98,6 +129,8 @@ struct Relocator<'a> {
     missing: BTreeSet<String>,
     /// Pictures of a kind that the application cannot show.
     not_shown: BTreeSet<String>,
+    /// Pictures that are links.
+    links: BTreeSet<String>,
 }
 
 impl Relocator<'_> {
@@ -120,7 +153,11 @@ impl Relocator<'_> {
         }
         let name = relative.file_name()?.to_str()?;
         let from = self.web_root.join(relative);
-        if !from.is_file() {
+        if is_link(&from) {
+            self.links.insert(path.to_owned());
+            return None;
+        }
+        if !is_regular_file(&from) {
             self.missing.insert(path.to_owned());
             return None;
         }
@@ -170,7 +207,8 @@ pub fn plan_files(
 ) -> Vec<FileCopy> {
     let mut copies = Vec::new();
     let mut taken = BTreeSet::new();
-    for (name, from) in files_in(&web_root.join("data").join(UPLOADED)) {
+    let uploaded_folder = format!("data/{UPLOADED}");
+    for (name, from) in files_in(&web_root.join(&uploaded_folder), &uploaded_folder, report) {
         taken.insert(name.to_lowercase());
         copies.push(FileCopy {
             from,
@@ -186,6 +224,7 @@ pub fn plan_files(
         copies: Vec::new(),
         missing: BTreeSet::new(),
         not_shown: BTreeSet::new(),
+        links: BTreeSet::new(),
     };
     for group in &mut data.groups {
         relocator.relocate_field(&mut group.image);
@@ -209,7 +248,12 @@ pub fn plan_files(
     }
     let used = relocator.copies.len();
     // The other pictures for tabs, so that the picture chooser still offers them.
-    for (name, _) in files_in(&web_root.join(TAB_PICTURES)) {
+    let mut tab_pictures = Report::default();
+    for (name, _) in files_in(
+        &web_root.join(TAB_PICTURES),
+        TAB_PICTURES,
+        &mut tab_pictures,
+    ) {
         if is_picture(&name) {
             relocator.relocate(&format!("{TAB_PICTURES}/{name}"));
         }
@@ -229,6 +273,16 @@ pub fn plan_files(
              Choose another picture for it."
         ));
     }
+    // The links of the folder of tab pictures are named once, with the links that a
+    // record uses.
+    for note in tab_pictures.notes {
+        if !relocator.links.iter().any(|path| note == link_note(path)) {
+            report.notes.push(note);
+        }
+    }
+    for path in &relocator.links {
+        report.notes.push(link_note(path));
+    }
     for path in &relocator.not_shown {
         report.notes.push(format!(
             "A record uses the picture {path}. The application shows only GIF, PNG, JPEG \
@@ -238,7 +292,8 @@ pub fn plan_files(
     copies.append(&mut relocator.copies);
     report.pictures = uploaded + moved;
 
-    let favicons = files_in(&web_root.join("data").join(FAVICON));
+    let favicon_folder = format!("data/{FAVICON}");
+    let favicons = files_in(&web_root.join(&favicon_folder), &favicon_folder, report);
     report.other_files = favicons.len();
     copies.extend(favicons.into_iter().map(|(name, from)| FileCopy {
         from,
@@ -267,10 +322,14 @@ fn custom_certificate(web_root: &Path, report: &mut Report) -> Option<FileCopy> 
         .join("data")
         .join(CERTIFICATE_FOLDER)
         .join(CERTIFICATE_FILE);
-    if !from.is_file() {
+    let name = format!("data/{CERTIFICATE_FOLDER}/{CERTIFICATE_FILE}");
+    if is_link(&from) {
+        report.notes.push(link_note(&name));
         return None;
     }
-    let name = format!("data/{CERTIFICATE_FOLDER}/{CERTIFICATE_FILE}");
+    if !is_regular_file(&from) {
+        return None;
+    }
     let Ok(text) = std::fs::read(&from) else {
         report.notes.push(format!(
             "The custom certificate {name} of the PHP install cannot be read, so it is not copied."
@@ -343,7 +402,9 @@ pub struct CopyError {
 }
 
 /// Copies the files into the data folder of the new install. A file that is there
-/// already is written over, so an import that failed later can run again.
+/// already is written over, so an import that failed later can run again. A file that
+/// is no longer a regular file, such as one that became a link after the plan, is not
+/// copied.
 pub fn copy_files(copies: &[FileCopy], data_dir: &Path) -> Result<(), CopyError> {
     for copy in copies {
         let to = data_dir.join(&copy.to);
@@ -352,6 +413,12 @@ pub fn copy_files(copies: &[FileCopy], data_dir: &Path) -> Result<(), CopyError>
             to: to.display().to_string(),
             source,
         };
+        if !is_regular_file(&copy.from) {
+            return Err(failed(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "it is not a regular file",
+            )));
+        }
         if let Some(folder) = to.parent() {
             std::fs::create_dir_all(folder).map_err(failed)?;
         }
@@ -362,9 +429,75 @@ pub fn copy_files(copies: &[FileCopy], data_dir: &Path) -> Result<(), CopyError>
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
-    use super::{BUNDLED, is_picture};
+    use organizr_db::ImportData;
+
+    use super::{BUNDLED, FileCopy, copy_files, is_picture, plan_files};
+    use crate::report::Report;
+
+    fn write(path: &Path, text: &str) {
+        std::fs::create_dir_all(path.parent().expect("the file is in a folder"))
+            .expect("the folder can be made");
+        std::fs::write(path, text).expect("the file can be written");
+    }
+
+    /// Makes `link` a link to the file `to`. `false` when this system does not let the
+    /// tests make links, as Windows without the developer mode.
+    fn link(to: &Path, link: &Path) -> bool {
+        std::fs::create_dir_all(link.parent().expect("the link is in a folder"))
+            .expect("the folder can be made");
+        #[cfg(unix)]
+        let made = std::os::unix::fs::symlink(to, link);
+        #[cfg(windows)]
+        let made = std::os::windows::fs::symlink_file(to, link);
+        made.is_ok()
+    }
+
+    #[test]
+    fn links_in_the_php_install_are_not_copied_and_are_named_in_the_report() {
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let secret = folder.path().join("secret.key");
+        write(&secret, "the key");
+        let web_root = folder.path().join("organizr");
+        write(&web_root.join("data/userTabs/real.png"), "a picture");
+        let links = [
+            "data/userTabs/link.png",
+            "data/favicon/link.ico",
+            "plugins/images/tabs/link.png",
+        ];
+        for path in links {
+            if !link(&secret, &web_root.join(path)) {
+                eprintln!("this system does not let the tests make links");
+                return;
+            }
+        }
+        let database = web_root.join("data/organizr.db");
+        let mut data = ImportData::default();
+        let mut report = Report::default();
+        let copies = plan_files(&web_root, &database, &mut data, &mut report);
+        let to: Vec<PathBuf> = copies.into_iter().map(|copy| copy.to).collect();
+        assert_eq!(to, [Path::new("userTabs").join("real.png")]);
+        for path in links {
+            assert!(
+                report
+                    .notes
+                    .iter()
+                    .any(|note| note.contains(path) && note.contains("link")),
+                "{path}: {:#?}",
+                report.notes
+            );
+        }
+
+        // A file that became a link after the plan is not copied either.
+        let data_dir = folder.path().join("new");
+        let copy = FileCopy {
+            from: web_root.join("data/userTabs/link.png"),
+            to: Path::new("userTabs").join("link.png"),
+        };
+        assert!(copy_files(&[copy], &data_dir).is_err());
+        assert!(!data_dir.join("userTabs/link.png").exists());
+    }
 
     fn pictures_below(folder: &Path, from: &Path, found: &mut Vec<String>) {
         for entry in std::fs::read_dir(folder)

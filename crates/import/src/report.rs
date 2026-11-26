@@ -1,6 +1,22 @@
 //! What an import tells the person who runs it.
 
 use std::fmt;
+use std::fmt::Write as _;
+
+/// A text with its control characters written as `\u{1b}`, so that a name from the PHP
+/// install cannot move the cursor or change the colors of a terminal. Other letters,
+/// also of other languages, stay as they are.
+pub fn escape_controls(text: &str) -> String {
+    let mut escaped = String::with_capacity(text.len());
+    for letter in text.chars() {
+        if letter.is_control() {
+            let _ = write!(escaped, "\\u{{{:x}}}", u32::from(letter));
+        } else {
+            escaped.push(letter);
+        }
+    }
+    escaped
+}
 
 /// The result of an import, or of a dry run: counts, repairs, and what was left out.
 /// It holds names of records and settings, and never a secret value.
@@ -122,7 +138,7 @@ fn list(formatter: &mut fmt::Formatter<'_>, title: &str, lines: &[String]) -> fm
     writeln!(formatter)?;
     writeln!(formatter, "{title}:")?;
     for line in lines {
-        writeln!(formatter, "  - {line}")?;
+        writeln!(formatter, "  - {}", escape_controls(line))?;
     }
     Ok(())
 }
@@ -143,11 +159,44 @@ fn breaking(formatter: &mut fmt::Formatter<'_>, changes: &[String]) -> fmt::Resu
             "These worked in PHP Organizr and work differently now:"
         )?;
         for change in changes {
-            writeln!(formatter, "  - {change}")?;
+            writeln!(formatter, "  - {}", escape_controls(change))?;
         }
     }
     writeln!(
         formatter,
         "Check your reverse proxy too: the forward auth checks changed (D-136, D-157). \"Moving from PHP Organizr\" in the docs lists every breaking change."
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Report;
+
+    #[test]
+    fn control_characters_in_the_lines_are_escaped_and_other_letters_kept() {
+        let report = Report {
+            repairs: vec!["The tab \"\u{1b}]0;evil\u{7}\" was renamed.".to_owned()],
+            skipped: vec!["The user \"caf\u{e9}\u{85}\u{7f}\" is left out.".to_owned()],
+            notes: vec!["A line\nthat was two.".to_owned()],
+            php_files: vec!["data/pages/\u{9b}31m.php".to_owned()],
+            breaking: vec!["The account \u{1b}[2J is a Co-Admin.".to_owned()],
+            ..Report::default()
+        };
+        let text = report.to_string();
+        assert!(
+            !text
+                .chars()
+                .any(|letter| letter.is_control() && letter != '\n'),
+            "{text:?}"
+        );
+        for part in [
+            r#"The tab "\u{1b}]0;evil\u{7}" was renamed."#,
+            r#"The user "café\u{85}\u{7f}" is left out."#,
+            r"A line\u{a}that was two.",
+            r"data/pages/\u{9b}31m.php",
+            r"The account \u{1b}[2J is a Co-Admin.",
+        ] {
+            assert!(text.contains(part), "{part:?} in {text}");
+        }
+    }
 }

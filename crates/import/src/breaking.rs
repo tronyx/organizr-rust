@@ -10,6 +10,8 @@ use organizr_domain::Group;
 use organizr_settings::Settings;
 use serde_json::Value;
 
+use crate::report::escape_controls;
+
 /// The settings that end like a service address but hold an address for the browser,
 /// which may stay a path (D-137).
 const BROWSER_ADDRESSES: [&str; 5] = [
@@ -36,7 +38,7 @@ fn path_only_addresses(settings: &Settings) -> Vec<String> {
         .filter(|key| is_service_address(key))
         .filter_map(|key| match settings.get(key) {
             Some(Value::String(address)) if address.trim_start().starts_with('/') => {
-                Some(format!("`{key}` ({})", address.trim()))
+                Some(format!("`{key}` ({})", escape_controls(address.trim())))
             }
             _ => None,
         })
@@ -52,7 +54,7 @@ fn users_of_level(groups: &[Group], users: &[ImportedUser], level: u16) -> Vec<S
                 .iter()
                 .any(|group| group.id == imported.user.group && group.level.get() == level)
         })
-        .map(|imported| imported.user.username.clone())
+        .map(|imported| escape_controls(&imported.user.username))
         .collect()
 }
 
@@ -84,7 +86,7 @@ pub fn breaking_changes(
                 .iter()
                 .any(|group| group.id == imported.user.group && group.level.get() <= 1)
         })
-        .map(|imported| imported.user.username.clone())
+        .map(|imported| escape_controls(&imported.user.username))
         .collect();
     if !privileged.is_empty() {
         changes.push(format!(
@@ -224,6 +226,32 @@ mod tests {
         assert!(changes[3].contains("(D-150)"), "{}", changes[3]);
         assert!(changes[4].contains("(D-152)"), "{}", changes[4]);
         assert!(changes[5].contains("(D-138)"), "{}", changes[5]);
+    }
+
+    #[test]
+    fn control_characters_of_names_and_values_are_escaped() {
+        let groups = [group(1, 0), group(2, 1)];
+        let users = [
+            user(1, "ad\u{1b}[2Jmin", 2, "internal"),
+            user(2, "zoë", 2, "internal"),
+        ];
+        let mut settings = Settings::defaults();
+        set(&mut settings, "sonarrURL", &json!("/son\u{9b}arr\u{7}"));
+
+        let changes = breaking_changes(&groups, &users, &settings);
+        for change in &changes {
+            assert!(!change.chars().any(char::is_control), "{change:?}");
+        }
+        assert!(
+            changes[0].contains(r"`sonarrURL` (/son\u{9b}arr\u{7})."),
+            "{}",
+            changes[0]
+        );
+        assert!(
+            changes[1].contains(r": ad\u{1b}[2Jmin, zoë."),
+            "{}",
+            changes[1]
+        );
     }
 
     #[test]

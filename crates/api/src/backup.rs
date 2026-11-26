@@ -143,6 +143,10 @@ pub struct Source<'a> {
     /// The file of the master key that the server uses. It never goes into an archive,
     /// wherever in the data folder it is (D-147).
     pub key_file: Option<&'a Path>,
+    /// The live database file of the install, when it keeps one. It and the files that
+    /// `SQLite` keeps next to it never go into an archive, wherever in the data folder
+    /// they are: the archive holds the copy instead.
+    pub database_file: Option<&'a Path>,
 }
 
 fn other(error: impl std::fmt::Display) -> io::Error {
@@ -162,15 +166,33 @@ fn stays_out(relative: &str) -> bool {
         || last.starts_with(".snapshot-")
 }
 
-/// The files of a folder and of the folders in it, sorted. Links are not followed.
-fn files_below(folder: &Path, left_out: &[PathBuf], found: &mut Vec<PathBuf>) -> io::Result<()> {
+/// A path in one spelling for each file or folder, to compare two paths: with the links,
+/// `.` and `..` resolved, and in lower case on Windows, which does not tell the case of
+/// names apart. A file that does not exist is named in the resolved folder it would be
+/// in. `None` when its folder does not exist either.
+fn path_key(path: &Path) -> Option<String> {
+    let resolved = path.canonicalize().ok().or_else(|| {
+        let folder = path.parent()?.canonicalize().ok()?;
+        Some(folder.join(path.file_name()?))
+    })?;
+    let text = resolved.to_string_lossy().into_owned();
+    Some(if cfg!(windows) {
+        text.to_lowercase()
+    } else {
+        text
+    })
+}
+
+/// The files of a folder and of the folders in it, sorted. Links are not followed. A
+/// folder whose [`path_key`] is in `left_out` is left out.
+fn files_below(folder: &Path, left_out: &[String], found: &mut Vec<PathBuf>) -> io::Result<()> {
     let mut entries: Vec<_> = std::fs::read_dir(folder)?.collect::<Result<_, _>>()?;
     entries.sort_by_key(std::fs::DirEntry::file_name);
     for entry in entries {
         let path = entry.path();
         let kind = entry.file_type()?;
         if kind.is_dir() {
-            if !left_out.contains(&path) {
+            if !path_key(&path).is_some_and(|key| left_out.contains(&key)) {
                 files_below(&path, left_out, found)?;
             }
         } else if kind.is_file() {
@@ -238,12 +260,24 @@ pub fn write_archive(target: &Path, source: Source<'_>, manifest: &Manifest) -> 
 
     let mut files = Vec::new();
     if source.data_dir.is_dir() {
-        files_below(source.data_dir, source.left_out, &mut files)?;
+        let left_out: Vec<String> = source
+            .left_out
+            .iter()
+            .filter_map(|folder| path_key(folder))
+            .collect();
+        files_below(source.data_dir, &left_out, &mut files)?;
     }
-    let key_file = source.key_file.and_then(|file| file.canonicalize().ok());
+    // The key file, and the live database with the files that SQLite keeps next to it.
+    let mut never: Vec<String> = source.key_file.and_then(path_key).into_iter().collect();
+    if let Some(live) = source.database_file.and_then(path_key) {
+        for suffix in ["-wal", "-shm", "-journal"] {
+            never.push(format!("{live}{suffix}"));
+        }
+        never.push(live);
+    }
     let mut count = 0;
     for file in files {
-        if key_file.is_some() && file.canonicalize().ok() == key_file {
+        if !never.is_empty() && path_key(&file).is_some_and(|key| never.contains(&key)) {
             continue;
         }
         let Ok(below) = file.strip_prefix(source.data_dir) else {
@@ -292,6 +326,60 @@ pub enum RestoreError {
          again with the option --overwrite"
     )]
     WouldReplaceDatabase(String),
+    /// A part of the archive is larger than a backup of this application can be.
+    #[error("the backup is not restored: {0}")]
+    NotSafe(String),
+}
+
+/// The largest size of the manifest of an archive. The manifest of the application is a
+/// few hundred bytes.
+const MANIFEST_LIMIT: u64 = 1 << 20;
+
+/// The largest sizes of the entries of an archive that a restore writes. An archive with
+/// a larger entry is refused, so that a damaged or crafted archive cannot fill the disk.
+#[derive(Debug, Clone, Copy)]
+struct Limits {
+    /// The largest database.
+    database: u64,
+    /// The largest other file.
+    file: u64,
+}
+
+/// The limits of a restore: far above what an install holds.
+const LIMITS: Limits = Limits {
+    database: 64 << 30,
+    file: 4 << 30,
+};
+
+/// Writes an entry to `target`, and refuses an entry that holds more than its size says.
+/// The entry goes to a file next to the target first, so a refused entry leaves the
+/// target as it was.
+fn write_entry(
+    entry: &mut impl Read,
+    size: u64,
+    name: &str,
+    target: &Path,
+) -> Result<(), RestoreError> {
+    let mut partial = target.as_os_str().to_owned();
+    partial.push(".restoring");
+    let partial = PathBuf::from(partial);
+    let written = File::create(&partial)
+        .and_then(|mut file| io::copy(&mut entry.take(size.saturating_add(1)), &mut file));
+    let result = match written {
+        Ok(written) if written > size => Err(RestoreError::NotSafe(format!(
+            "{name} holds more than the size that the archive gives for it"
+        ))),
+        Ok(_) => std::fs::rename(&partial, target).map_err(RestoreError::from),
+        // The zip reader also finds an entry that is larger than it says, or damaged.
+        Err(error) if error.kind() == io::ErrorKind::InvalidData => Err(RestoreError::NotSafe(
+            format!("{name} cannot be read: {error}"),
+        )),
+        Err(error) => Err(error.into()),
+    };
+    if result.is_err() {
+        let _ = std::fs::remove_file(&partial);
+    }
+    result
 }
 
 /// How an archive is restored.
@@ -327,13 +415,31 @@ fn not_a_backup(error: impl std::fmt::Display) -> RestoreError {
 ///
 /// The server must not run while a database is restored.
 pub fn restore(archive: &Path, options: RestoreOptions<'_>) -> Result<Restored, RestoreError> {
+    restore_with(archive, options, LIMITS)
+}
+
+fn restore_with(
+    archive: &Path,
+    options: RestoreOptions<'_>,
+    limits: Limits,
+) -> Result<Restored, RestoreError> {
     let mut archive = ZipArchive::new(File::open(archive)?).map_err(not_a_backup)?;
     let manifest: Manifest = {
         let mut file = archive
             .by_name(MANIFEST_FILE)
             .map_err(|_| not_a_backup(format!("it holds no file {MANIFEST_FILE}")))?;
+        let too_large =
+            || RestoreError::NotSafe(format!("{MANIFEST_FILE} is larger than a manifest can be"));
+        if file.size() > MANIFEST_LIMIT {
+            return Err(too_large());
+        }
         let mut text = String::new();
-        file.read_to_string(&mut text)?;
+        (&mut file)
+            .take(MANIFEST_LIMIT + 1)
+            .read_to_string(&mut text)?;
+        if text.len() as u64 > MANIFEST_LIMIT {
+            return Err(too_large());
+        }
         serde_json::from_str(&text).map_err(not_a_backup)?
     };
     if manifest.format > FORMAT {
@@ -347,6 +453,22 @@ pub fn restore(archive: &Path, options: RestoreOptions<'_>) -> Result<Restored, 
         return Err(RestoreError::WouldReplaceDatabase(
             file.display().to_string(),
         ));
+    }
+
+    // Every size is checked before anything is written.
+    for index in 0..archive.len() {
+        let entry = archive.by_index(index).map_err(not_a_backup)?;
+        let limit = if entry.name().ok().as_deref() == Some(DATABASE_FILE) {
+            limits.database
+        } else {
+            limits.file
+        };
+        if entry.size() > limit {
+            return Err(RestoreError::NotSafe(format!(
+                "{} is larger than a file of a backup can be",
+                entry.name().unwrap_or_default()
+            )));
+        }
     }
 
     let mut restored = Restored {
@@ -390,7 +512,8 @@ pub fn restore(archive: &Path, options: RestoreOptions<'_>) -> Result<Restored, 
         if let Some(folder) = target.parent() {
             std::fs::create_dir_all(folder)?;
         }
-        io::copy(&mut entry, &mut File::create(&target)?)?;
+        let size = entry.size();
+        write_entry(&mut entry, size, &name, &target)?;
     }
     Ok(restored)
 }
@@ -435,6 +558,7 @@ mod tests {
             database_copy: Some(&copy),
             left_out: std::slice::from_ref(&other_folder),
             key_file: Some(&data.join("keys/./organizr.key")),
+            database_file: None,
         };
         let manifest = Manifest::new("1.2.3", "2026-11-20T03:15:00Z".to_owned(), true, true);
         let count = write_archive(&target, source, &manifest).expect("the archive is written");
@@ -499,6 +623,198 @@ mod tests {
         ] {
             assert!(!new.join(left_out).exists(), "{left_out}");
         }
+    }
+
+    /// The names of the entries of an archive.
+    fn entries_of(target: &Path) -> Vec<String> {
+        let mut archive = ZipArchive::new(File::open(target).expect("the archive opens"))
+            .expect("the archive is a zip file");
+        (0..archive.len())
+            .map(|index| {
+                let entry = archive.by_index(index).expect("the entry can be read");
+                entry.name().expect("the entry has a name").into_owned()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn folder_left_out_is_found_also_when_its_path_is_written_another_way() {
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let data = folder.path().join("data");
+        write(&data.join("userTabs/logo.png"), "a picture");
+        write(&data.join("saved/old.zip"), "an old backup");
+        write(&data.join("Kept/old.zip"), "another old backup");
+        let mut left_out = vec![
+            // A way back up, and a slash at the end.
+            data.join("userTabs").join("..").join("saved").join(""),
+        ];
+        if cfg!(windows) {
+            // Windows does not tell the case of names apart.
+            left_out.push(data.join("KEPT"));
+        } else {
+            left_out.push(data.join("Kept"));
+        }
+        let target = folder.path().join("backup.zip");
+        let source = Source {
+            data_dir: &data.join("."),
+            database_copy: None,
+            left_out: &left_out,
+            key_file: None,
+            database_file: None,
+        };
+        let manifest = Manifest::new("1.2.3", String::new(), true, false);
+        let count = write_archive(&target, source, &manifest).expect("the archive is written");
+        assert_eq!(count, 1);
+        assert_eq!(entries_of(&target), [MANIFEST_FILE, "userTabs/logo.png"]);
+    }
+
+    #[test]
+    fn live_database_of_the_url_stays_out_wherever_it_is() {
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let data = folder.path().join("data");
+        write(&data.join("userTabs/logo.png"), "a picture");
+        for suffix in ["", "-wal", "-shm", "-journal"] {
+            write(
+                &data.join(format!("db/live.db{suffix}")),
+                "the live database",
+            );
+        }
+        write(&data.join("db/live.db.txt"), "notes");
+        let target = folder.path().join("backup.zip");
+        let source = Source {
+            data_dir: &data,
+            database_copy: None,
+            left_out: &[],
+            key_file: None,
+            database_file: Some(&data.join("userTabs/../db/live.db")),
+        };
+        let manifest = Manifest::new("1.2.3", String::new(), true, false);
+        write_archive(&target, source, &manifest).expect("the archive is written");
+        assert_eq!(
+            entries_of(&target),
+            [MANIFEST_FILE, "db/live.db.txt", "userTabs/logo.png"]
+        );
+    }
+
+    /// An archive with a manifest and the entries `files`, stored without compression.
+    fn archive_with(target: &Path, files: &[(&str, &[u8])]) {
+        let mut archive = ZipWriter::new(File::create(target).expect("the file can be made"));
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+        archive
+            .start_file(MANIFEST_FILE, options)
+            .expect("the entry starts");
+        let manifest = Manifest::new("1.0.0", String::new(), true, true);
+        archive
+            .write_all(&serde_json::to_vec(&manifest).expect("the manifest is JSON"))
+            .expect("the entry is written");
+        for (name, bytes) in files {
+            archive
+                .start_file(*name, options)
+                .expect("the entry starts");
+            archive.write_all(bytes).expect("the entry is written");
+        }
+        archive.finish().expect("the archive is complete");
+    }
+
+    #[test]
+    fn manifest_that_is_too_large_is_refused() {
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let file = folder.path().join("large.zip");
+        let mut archive = ZipWriter::new(File::create(&file).expect("the file can be made"));
+        archive
+            .start_file(MANIFEST_FILE, SimpleFileOptions::default())
+            .expect("the entry starts");
+        let padding = " ".repeat(2 << 20);
+        let text = format!(
+            "{{\"format\":1,\"version\":\"1\",\"created\":\"\",\"engine\":\"sqlite\",\
+             \"has_database\":false{padding}}}"
+        );
+        archive.write_all(text.as_bytes()).expect("it is written");
+        archive.finish().expect("the archive is complete");
+        let options = RestoreOptions {
+            data_dir: &folder.path().join("new"),
+            database_file: None,
+            overwrite: true,
+        };
+        let refused = restore(&file, options);
+        assert!(
+            matches!(refused, Err(RestoreError::NotSafe(_))),
+            "{refused:?}"
+        );
+    }
+
+    #[test]
+    fn entry_that_is_larger_than_the_limit_is_refused_before_anything_is_written() {
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let file = folder.path().join("large.zip");
+        archive_with(
+            &file,
+            &[
+                ("userTabs/a.png", b"small"),
+                ("userTabs/b.png", b"too large"),
+            ],
+        );
+        let new = folder.path().join("new");
+        let options = RestoreOptions {
+            data_dir: &new,
+            database_file: None,
+            overwrite: true,
+        };
+        let limits = Limits {
+            database: 100,
+            file: 8,
+        };
+        let refused = restore_with(&file, options, limits);
+        assert!(
+            matches!(refused, Err(RestoreError::NotSafe(_))),
+            "{refused:?}"
+        );
+        assert!(!new.join("userTabs").exists());
+    }
+
+    #[test]
+    fn entry_that_holds_more_than_its_size_says_is_refused() {
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let file = folder.path().join("lying.zip");
+        archive_with(&file, &[("userTabs/a.png", b"0123456789")]);
+        // Both headers of the entry say that it holds 2 bytes.
+        let mut bytes = std::fs::read(&file).expect("the archive can be read");
+        let name = b"userTabs/a.png";
+        let mut patched = 0;
+        for at in 0..bytes.len() - 4 {
+            let header = &bytes[at..at + 4];
+            let size_at = if header == b"PK\x03\x04" {
+                at + 22
+            } else if header == b"PK\x01\x02" {
+                at + 24
+            } else {
+                continue;
+            };
+            let name_at = if header == b"PK\x03\x04" {
+                at + 30
+            } else {
+                at + 46
+            };
+            if bytes.get(name_at..name_at + name.len()) == Some(name.as_slice()) {
+                bytes[size_at..size_at + 4].copy_from_slice(&2_u32.to_le_bytes());
+                patched += 1;
+            }
+        }
+        assert_eq!(patched, 2);
+        std::fs::write(&file, bytes).expect("the archive can be written");
+
+        let new = folder.path().join("new");
+        let options = RestoreOptions {
+            data_dir: &new,
+            database_file: None,
+            overwrite: true,
+        };
+        let refused = restore(&file, options);
+        assert!(
+            matches!(refused, Err(RestoreError::NotSafe(_))),
+            "{refused:?}"
+        );
+        assert!(!new.join("userTabs/a.png").exists());
     }
 
     #[test]

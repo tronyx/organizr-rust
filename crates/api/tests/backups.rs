@@ -342,3 +342,114 @@ async fn admins_and_co_admins_use_the_backup_routes() {
     })
     .await;
 }
+
+/// The names of the entries of a backup.
+fn entries_of(file: &Path) -> Vec<String> {
+    let mut archive = zip::ZipArchive::new(std::fs::File::open(file).expect("the backup opens"))
+        .expect("the backup is a zip file");
+    (0..archive.len())
+        .map(|index| {
+            let entry = archive.by_index(index).expect("the entry can be read");
+            entry.name().expect("the entry has a name").into_owned()
+        })
+        .collect()
+}
+
+/// The names in a folder that start with a dot: the parts of a backup that is not
+/// complete.
+fn hidden_in(folder: &Path) -> Vec<String> {
+    std::fs::read_dir(folder)
+        .into_iter()
+        .flatten()
+        .filter_map(Result::ok)
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| name.starts_with('.'))
+        .collect()
+}
+
+#[tokio::test]
+async fn live_database_in_a_folder_of_the_data_folder_stays_out_of_a_backup() {
+    let folder = tempfile::tempdir().expect("a temporary folder can be made");
+    let data = folder.path().join("data");
+    let file = data.join("db").join("live.db");
+    std::fs::create_dir_all(file.parent().expect("the file is in a folder"))
+        .expect("the folder can be made");
+    let url = format!("sqlite:{}", file.display().to_string().replace('\\', "/"));
+    let database = Database::connect(&url).await.expect("the database opens");
+    database.migrate().await.expect("the migrations apply");
+    seed::installed(&database).await;
+    write(&data.join("userTabs/logo.png"), "a picture");
+    let app = app_in(&database, &data, &[]);
+
+    let made = call(&app, As::Admin, "POST", "/backup", None).await;
+    assert_eq!(made.status, StatusCode::OK, "{}", made.body);
+    let name = names(&list(&app).await).remove(0);
+    let entries = entries_of(&data.join("backups").join(name));
+    assert_eq!(
+        entries,
+        ["backup.json", "organizr.db", "userTabs/logo.png"],
+        "the snapshot is in the backup, the live file is not"
+    );
+    database.close().await.expect("the database closes");
+}
+
+#[tokio::test]
+async fn parts_of_an_earlier_backup_that_stopped_are_deleted() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        write(&folder.path().join("backups/.snapshot-old.zip"), "PK half");
+        write(&folder.path().join("backups/.snapshot-old.db"), "half");
+        let app = app_in(database, folder.path(), &[]);
+        let made = call(&app, As::Admin, "POST", "/backup", None).await;
+        assert_eq!(made.status, StatusCode::OK, "{}", made.body);
+        assert_eq!(
+            hidden_in(&folder.path().join("backups")),
+            Vec::<String>::new()
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn backup_that_is_stopped_leaves_nothing_behind() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let folder = tempfile::tempdir().expect("a temporary folder can be made");
+        let data = folder.path().join("data");
+        // Enough files that the archive takes a moment to write.
+        let piece = "a picture ".repeat(100_000);
+        for number in 0..20 {
+            write(&data.join(format!("userTabs/{number}.png")), &piece);
+        }
+        let state = state_with(database, installed_settings(&[])).with_data_folder(data.clone());
+        let backups = data.join("backups");
+        for wait in [0, 1, 2, 5, 10, 20, 50, 100] {
+            let stopped = tokio::time::timeout(
+                std::time::Duration::from_millis(wait),
+                organizr_api::create_backup(&state),
+            )
+            .await
+            .is_err();
+            // Work that runs on after the stop ends soon; nothing of it may stay.
+            let mut left = hidden_in(&backups);
+            for _ in 0..100 {
+                if left.is_empty() {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                left = hidden_in(&backups);
+            }
+            assert_eq!(
+                left,
+                Vec::<String>::new(),
+                "stopped after {wait} ms: {stopped}"
+            );
+            // Each listed backup is complete.
+            for file in backup::list(&backups).expect("the folder can be read") {
+                entries_of(&backups.join(&file.name));
+            }
+        }
+    })
+    .await;
+}
