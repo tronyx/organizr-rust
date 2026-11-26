@@ -99,7 +99,7 @@ Custom CSS applies on both layouts. The `<html>` element has attributes that tel
 | Attribute | Value |
 |---|---|
 | `data-layout` | `og` for the OG Organizr layout, `modern` for the modern layout |
-| `data-theme` | The theme. On the modern layout it's `m-` followed by the theme and its color set, for example `m-organizr-dark`, `m-plex-light` or `m-silo-ember` |
+| `data-theme` | The theme. On the modern layout it's `m-` followed by the theme and its color set, for example `m-organizr-dark`, `m-plex-light` or `m-silo-ember`. On the OG Organizr layout it's the theme's id, for example `organizr`, `org-blue` or `org-nord` |
 | `data-color-set` | `light` when the modern theme's colors are light, else `dark`. For example Silo is always `dark`, and Prism Daydream is `light`. The OG Organizr layout doesn't have it |
 
 A rule for the modern layout only starts with `[data-layout='modern']`:
@@ -126,7 +126,7 @@ The **Layout** column says where a class exists: **Both** for both layouts, **Mo
 | `.org-sidebar` | Both | The menu on the left |
 | `.org-sidebar-head` | Both | The title of the menu |
 | `.org-menu` | Both | The list of tabs in the menu |
-| `.org-menu-extras` | Modern | The links at the end of the menu |
+| `.org-menu-extras` | Both | The links at the end of the menu |
 | `.org-swatch` | Both | A color sample of a theme in the look picker |
 | `.org-swatch-dot` | Both | One color of that sample: the text, primary and accent colors of the theme |
 | `.m-shown` | Modern | The name of the open tab in the bar at the top |

@@ -82,7 +82,7 @@ The scene also stands still:
 - behind the picture of the login page,
 - when your computer or phone asks for reduced motion (for example **Reduce motion** in the system settings). The scene then stays as a still picture.
 
-Text always sits on the theme's cards, never straight on the scene. The scene and the theme's font load only when you pick the theme.
+Text always sits on the theme's cards, never straight on the scene. The scene and the font of a scene theme load only when you pick that theme.
 
 ## 👤 Who picks the look
 
@@ -185,7 +185,7 @@ The scripts do **not** run until the person who runs the server turns them on:
 
 | Variable | Meaning | Default |
 | --- | --- | --- |
-| `ORGANIZR_CUSTOM_JS` | `1` runs the custom scripts on every page | Off |
+| `ORGANIZR_CUSTOM_JS` | `1` (also `true`, `yes` or `on`) runs the custom scripts on every page | Off |
 
 > [!WARNING]
 > A script runs in the session of every person who opens Organizr, guests on the login page and locked accounts too. It can do all that person can do: read the pages, call the API as them, and change their account. Turn the scripts on only when you trust every person who can log in as Admin.
