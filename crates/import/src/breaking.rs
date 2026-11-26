@@ -178,8 +178,8 @@ mod tests {
         }
     }
 
-    fn set(settings: &mut Settings, key: &str, value: serde_json::Value) {
-        settings.set(key, &value).expect("the value fits");
+    fn set(settings: &mut Settings, key: &str, value: &serde_json::Value) {
+        settings.set(key, value).expect("the value fits");
     }
 
     #[test]
@@ -202,13 +202,13 @@ mod tests {
             user(4, "user", 3, "oidc"),
         ];
         let mut settings = Settings::defaults();
-        set(&mut settings, "sonarrURL", json!(" /sonarr"));
-        set(&mut settings, "plexTabURL", json!("/plex"));
-        set(&mut settings, "radarrURL", json!("http://radarr:7878"));
-        set(&mut settings, "ssoKomga", json!(true));
-        set(&mut settings, "komgaSSOMasterPassword", json!("master"));
-        set(&mut settings, "homepageDonateShowUserHistory", json!(true));
-        set(&mut settings, "PHPMAILER-enabled", json!(true));
+        set(&mut settings, "sonarrURL", &json!(" /sonarr"));
+        set(&mut settings, "plexTabURL", &json!("/plex"));
+        set(&mut settings, "radarrURL", &json!("http://radarr:7878"));
+        set(&mut settings, "ssoKomga", &json!(true));
+        set(&mut settings, "komgaSSOMasterPassword", &json!("master"));
+        set(&mut settings, "homepageDonateShowUserHistory", &json!(true));
+        set(&mut settings, "PHPMAILER-enabled", &json!(true));
 
         let changes = breaking_changes(&groups, &users, &settings);
         assert_eq!(changes.len(), 6, "{changes:#?}");
