@@ -213,7 +213,7 @@ You can add a list of addresses to the question:
 | Form | Example |
 |---|---|
 | Long form, in the path | `/api/v2/auth/1/allow/192.168.1.10,192.168.1.11` |
-| Short form, in the query | `/api/v2/auth-1?whitelist=192.168.1.10` |
+| Short form, in the query (deny lists only) | `/api/v2/auth-1?blacklist=192.168.1.10` |
 
 | Kind | Also spelled | What it does |
 |---|---|---|
@@ -221,7 +221,7 @@ You can add a list of addresses to the question:
 | `deny` | `blacklist`, `black`, `bl`, `b` | A caller from one of the addresses doesn't pass |
 
 - Separate entries with commas. Each entry is **one** address or a host name. A network such as `192.168.1.0/24` is not an entry.
-- The short form reads `whitelist` and `blacklist`, or `type` and `ips`, from the query.
+- The short form reads a deny list from the query: `blacklist`, or `type=deny` with `ips`. **An allow list in the query doesn't count when the path names a group**, because some proxies (Caddy among them) send the visitor's query along with the check, and a visitor could then name their own address. Put an allow list in the path, in the long form (D-136).
 - Prefer addresses. A host name lets in every address its DNS answers with (IPv4 and IPv6), so whoever controls that DNS name (a dynamic-DNS name, for example) controls who passes.
 - The caller's address is only as reliable as [`ORGANIZR_TRUSTED_PROXIES`](reverse-proxy.md#-organizr_trusted_proxies). List only your proxy there.
 
@@ -255,6 +255,11 @@ Every HTTP method asks the same question.
 ### 🧾 The group in the query
 
 A query that holds `group=` asks in the short form, and everything after `group=` is the group. So `/api/v2/auth?group=1` and `/api/v2/?group=1` ask the same as `/api/v2/auth-1`. Old proxy configurations use this form.
+
+When the path names a group, as in `/api/v2/auth/1` or `/api/v2/auth-1`, a `group=` in the query doesn't count (D-136).
+
+> [!WARNING]
+> **Don't use the query form with Caddy.** Caddy's `forward_auth` sends the visitor's query along with the check, so a visitor could add `?group=999` and pass as a guest. With a group in the path, as in the Caddy example above, the visitor's query can't change the group.
 
 ### 🚦 The answer
 

@@ -83,6 +83,8 @@ pub struct Replay {
     sorted_objects: Vec<(String, String)>,
     pending_aspects: Vec<(String, Aspect)>,
     pending_cases: Vec<String>,
+    /// Cases whose whole answer differs, because of an approved deviation.
+    deviating_cases: Vec<String>,
     /// Parts of a JSON body that are not implemented yet: case and JSON pointer.
     pending_parts: Vec<(String, String)>,
     absent_cookies: Vec<String>,
@@ -122,6 +124,7 @@ impl Replay {
             sorted_objects: Vec::new(),
             pending_aspects: Vec::new(),
             pending_cases: Vec::new(),
+            deviating_cases: Vec::new(),
             pending_parts: Vec::new(),
             absent_cookies: Vec::new(),
         }
@@ -282,6 +285,18 @@ impl Replay {
         self
     }
 
+    /// Expects another answer to a whole case, because of an approved deviation that
+    /// changes what the case asks for, such as a check that now refuses. The answer must
+    /// differ from the recording; a test of its own says what the answer is.
+    ///
+    /// `id` must be an entry of `docs/deviations.md`.
+    #[must_use]
+    pub fn deviation_case(mut self, id: &str, case: &str) -> Self {
+        assert_approved(id);
+        self.deviating_cases.push(case.to_owned());
+        self
+    }
+
     /// Marks a whole case as not implemented yet.
     #[must_use]
     pub fn pending_case(mut self, case: &str, reason: &str) -> Self {
@@ -318,6 +333,16 @@ impl Replay {
                 .filter(|aspect| !expected.matches(&actual, *aspect))
                 .collect();
 
+            if self.deviating_cases.contains(&case.name) {
+                if differing.is_empty() {
+                    let _ = writeln!(
+                        problems,
+                        "case `{}` is marked as a deviation but matches the recording",
+                        case.name
+                    );
+                }
+                continue;
+            }
             if self.pending_cases.contains(&case.name) {
                 let implemented = ASPECTS
                     .into_iter()
@@ -530,7 +555,8 @@ impl Replay {
             .chain(self.removals.iter().map(|(case, _)| case))
             .chain(self.pending_aspects.iter().map(|(case, _)| case))
             .chain(self.pending_parts.iter().map(|(case, _)| case))
-            .chain(&self.pending_cases);
+            .chain(&self.pending_cases)
+            .chain(&self.deviating_cases);
         for name in named {
             assert!(
                 name == EVERY_CASE || recording.cases.iter().any(|case| &case.name == name),

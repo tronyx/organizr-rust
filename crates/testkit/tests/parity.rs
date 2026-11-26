@@ -952,7 +952,19 @@ async fn forward_auth_routes_answer_like_php() {
         seed::installed(database).await;
         // The recorder runs this group after the group that registers users.
         seed::registered_users(database).await;
-        let replay = without_php_session(Replay::group("forward_auth"));
+        // With a group in the path, the query can no longer lower the group or add an
+        // allow list (D-136); tests/forward_auth.rs of the API holds the new answers.
+        let replay = [
+            "guest_short_form_group_in_the_query",
+            "short_form_allow_in_the_query",
+            "short_form_kind_in_the_query",
+            "long_form_allow_in_the_query",
+        ]
+        .into_iter()
+        .fold(Replay::group("forward_auth"), |replay, case| {
+            replay.deviation_case("D-136", case)
+        });
+        let replay = without_php_session(replay);
         // Some cases carry the headers of a reverse proxy. PHP believes every sender of
         // such headers. This application believes a proxy that is listed as trusted
         // (D-01), so for the replay the address of the recorder is one.

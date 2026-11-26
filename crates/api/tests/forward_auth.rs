@@ -252,15 +252,33 @@ async fn group_in_the_query_asks_at_the_auth_routes_and_the_root_only() {
         seed::installed(database).await;
         let app = app_behind_proxy(database, &[]);
 
-        for path in [
-            "/?group=999",
-            "/auth?group=999",
-            "/organizr-auth/0/deny/1.2.3.4?group=999",
-        ] {
+        for path in ["/?group=999", "/auth?group=999"] {
             let answer = ask(&app, PROXY, path, &[]).await;
             assert_eq!(answer.status, StatusCode::OK, "{path}: {}", answer.body);
             assert_eq!(answer.data()["requested_group"], json!(999), "{path}");
         }
+        // A proxy such as Caddy sends the query of the visitor with the address of the
+        // check. With a group in the path, the query cannot lower the group or add an
+        // allow list (D-136).
+        for path in [
+            "/organizr-auth/0/deny/1.2.3.4?group=999",
+            "/auth/1?group=999",
+            "/auth-1?group=999",
+            "/auth/1?whitelist=172.18.0.2",
+            "/auth-1?type=allow&ips=172.18.0.2",
+        ] {
+            let answer = ask(&app, PROXY, path, &[]).await;
+            assert_eq!(
+                answer.status,
+                StatusCode::UNAUTHORIZED,
+                "{path}: {}",
+                answer.body
+            );
+            assert_ne!(answer.data()["requested_group"], json!(999), "{path}");
+        }
+        // The same allow list in the path lets the caller in, as the operator chose it.
+        let allowed = ask(&app, PROXY, "/auth/1/allow/172.18.0.2", &[]).await;
+        assert_eq!(allowed.status, StatusCode::OK, "{}", allowed.body);
         let refused = ask(&app, PROXY, "/?group=4", &[]).await;
         assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
         // The root without a group is the redirect that it always was.

@@ -99,14 +99,19 @@ fn percent_decoded(text: &str) -> String {
 /// Reads the question from the path and the query. `long_form` says whether the path is
 /// one of the long forms, and `parts` are the pieces of the path after the name of the
 /// route.
+///
+/// A proxy such as Caddy sends the query of the visitor with the address of the check. So
+/// when the path names a group, the query cannot change the group or add an allow list;
+/// it can only add a deny list, which makes the question stricter (D-136).
 fn question(long_form: bool, parts: &[String], query: &str) -> Result<Question, UnknownKind> {
     let mut group = parts.first().cloned();
+    let path_names_group = group.as_deref().is_some_and(|group| !group.is_empty());
     let mut kind = query_value(query, "type");
     let mut addresses = query_value(query, "ips");
 
     // The PHP application turns every request whose query holds `group=` into the short
     // form, with the rest of the query as the group.
-    if query.to_ascii_lowercase().contains("group=") {
+    if !path_names_group && query.to_ascii_lowercase().contains("group=") {
         let rest = query.split_once("group=").map_or("", |(_, rest)| rest);
         group = Some(percent_decoded(rest.trim_end_matches('/')));
     } else if long_form {
@@ -124,11 +129,21 @@ fn question(long_form: bool, parts: &[String], query: &str) -> Result<Question, 
         );
     }
 
-    let mut allowed = query_value(query, "whitelist");
+    // Whether the allow list of the query counts: the kind and addresses of the long
+    // form come from the path, those of the short form from the query.
+    let query_allows = !path_names_group;
+    let kind_from_query = !long_form || !path_names_group;
+    let mut allowed = query_allows
+        .then(|| query_value(query, "whitelist"))
+        .flatten();
     let mut denied = query_value(query, "blacklist");
     if let Some(kind) = kind {
         match kind.to_lowercase().as_str() {
-            "whitelist" | "white" | "w" | "wl" | "allow" => allowed = addresses,
+            "whitelist" | "white" | "w" | "wl" | "allow" => {
+                if query_allows || !kind_from_query {
+                    allowed = addresses;
+                }
+            }
             "blacklist" | "black" | "b" | "bl" | "deny" => denied = addresses,
             _ => return Err(UnknownKind(kind)),
         }
@@ -415,7 +430,8 @@ mod tests {
             &["4", "DENY", "10.0.0.1,10.0.0.2"],
             "whitelist=10.0.0.9&blacklist=x",
         );
-        assert_eq!(both.allowed.as_deref(), Some("10.0.0.9"));
+        // With a group in the path, an allow list of the query does not count (D-136).
+        assert_eq!(both.allowed, None);
         assert_eq!(both.denied.as_deref(), Some("10.0.0.1,10.0.0.2"));
     }
 
@@ -428,19 +444,67 @@ mod tests {
                 ..Question::default()
             }
         );
+        // A deny list counts; an allow list does not, with a group in the path (D-136).
         let listed = asked(false, &["4"], "whitelist=10.0.0.1&blacklist=10.0.0.2");
+        assert_eq!(listed.allowed, None);
+        assert_eq!(listed.denied.as_deref(), Some("10.0.0.2"));
+        // Without a group in the path, the query names both lists, as in PHP.
+        let listed = asked(false, &[], "whitelist=10.0.0.1&blacklist=10.0.0.2");
         assert_eq!(listed.allowed.as_deref(), Some("10.0.0.1"));
         assert_eq!(listed.denied.as_deref(), Some("10.0.0.2"));
         // `type` and `ips` take the place of the list of their kind.
-        let by_kind = asked(false, &["4"], "type=wl&ips=10.0.0.3&whitelist=10.0.0.1");
+        let by_kind = asked(false, &[], "type=wl&ips=10.0.0.3&whitelist=10.0.0.1");
         assert_eq!(by_kind.allowed.as_deref(), Some("10.0.0.3"));
         // A kind without addresses, and the text `0`, are no list.
         assert_eq!(
-            asked(false, &["4"], "type=allow&whitelist=10.0.0.1").allowed,
+            asked(false, &[], "type=allow&whitelist=10.0.0.1").allowed,
             None
         );
-        assert_eq!(asked(false, &["4"], "whitelist=0&blacklist=").allowed, None);
+        assert_eq!(asked(false, &[], "whitelist=0&blacklist=").allowed, None);
         assert_eq!(asked(false, &["4"], "whitelist=0&blacklist=").denied, None);
+    }
+
+    #[test]
+    fn query_cannot_loosen_the_question_of_a_path_with_a_group() {
+        // A proxy such as Caddy sends the query of the visitor with the address of the
+        // check, so with a group in the path the query may only add deny lists (D-136).
+        for (long_form, path) in [
+            (true, &["1"][..]),
+            (false, &["1"][..]),
+            (true, &["1", "deny", "10.0.0.5"][..]),
+        ] {
+            let asked = asked(
+                long_form,
+                path,
+                "group=999&whitelist=10.0.0.1&type=allow&ips=10.0.0.2",
+            );
+            assert_eq!(asked.group, "1", "{path:?}");
+            assert_eq!(asked.allowed, None, "{path:?}");
+        }
+        assert_eq!(
+            asked(false, &["1"], "blacklist=10.0.0.3").denied.as_deref(),
+            Some("10.0.0.3")
+        );
+        assert_eq!(
+            asked(false, &["1"], "type=deny&ips=10.0.0.4")
+                .denied
+                .as_deref(),
+            Some("10.0.0.4")
+        );
+        // The allow list of the path still counts.
+        assert_eq!(
+            asked(true, &["1", "allow", "10.0.0.6"], "whitelist=10.0.0.1")
+                .allowed
+                .as_deref(),
+            Some("10.0.0.6")
+        );
+        // Without a group in the path, the query asks, as in PHP.
+        let bare = asked(true, &[], "group=1&x");
+        assert_eq!(bare.group, "1&x");
+        assert_eq!(
+            asked(false, &[], "whitelist=10.0.0.1").allowed.as_deref(),
+            Some("10.0.0.1")
+        );
     }
 
     #[test]
@@ -470,24 +534,20 @@ mod tests {
     #[test]
     fn group_in_the_query_asks_in_the_short_form_with_the_rest_of_the_query() {
         assert_eq!(asked(true, &[], "group=999").group, "999");
-        // The group of the path does not count then, and neither does its list.
-        let rewritten = asked(true, &["0", "allow", "10.0.0.1"], "group=4");
-        assert_eq!(
-            rewritten,
-            Question {
-                group: "4".to_owned(),
-                ..Question::default()
-            }
-        );
-        assert_eq!(asked(false, &["4"], "group=My%20Tab").group, "My Tab");
+        assert_eq!(asked(false, &[], "group=My%20Tab").group, "My Tab");
         // Everything after `group=` is the group, so it is the name of no tab.
         assert_eq!(
-            asked(false, &["4"], "group=4&whitelist=10.0.0.1").group,
+            asked(false, &[], "group=4&whitelist=10.0.0.1").group,
             "4&whitelist=10.0.0.1"
         );
-        assert_eq!(asked(false, &["4"], "x=1&group=7/").group, "7");
+        assert_eq!(asked(false, &[], "x=1&group=7/").group, "7");
         // PHP looks for `group=` in any letter case, and cuts at small letters only.
-        assert_eq!(asked(false, &["4"], "GROUP=7").group, "");
+        assert_eq!(asked(false, &[], "GROUP=7").group, "");
+        // A group in the path wins, and keeps its own list (D-136).
+        let kept = asked(true, &["0", "allow", "10.0.0.1"], "group=4");
+        assert_eq!(kept.group, "0");
+        assert_eq!(kept.allowed.as_deref(), Some("10.0.0.1"));
+        assert_eq!(asked(false, &["4"], "group=999").group, "4");
     }
 
     #[test]
