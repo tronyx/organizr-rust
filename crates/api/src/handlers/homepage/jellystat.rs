@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use jiff::ZonedDateTime;
 use organizr_integrations::emby::{self, Kind, Server};
 use organizr_integrations::http::Outbound;
@@ -17,7 +17,6 @@ use super::emby as media;
 use super::{Permissions, no_requests, service_url};
 use crate::api_data::ApiData;
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::php_url;
@@ -85,13 +84,13 @@ pub fn options(settings: &Settings) -> Value {
 }
 
 /// The address that the server asks: the internal one when the settings have one.
-pub fn api_address(settings: &Settings, headers: &HeaderMap, client: &Client) -> String {
+pub fn api_address(settings: &Settings) -> String {
     let address = if settings.jelly_stat_internal_url.is_empty() {
         &settings.jelly_stat_url
     } else {
         &settings.jelly_stat_internal_url
     };
-    service_url(address, headers, client)
+    service_url(address)
 }
 
 fn failed(message: impl Into<String>) -> Refusal {
@@ -103,8 +102,6 @@ fn failed(message: impl Into<String>) -> Refusal {
 pub async fn data(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     if !permissions(&settings).allow(&settings, &caller) {
@@ -118,7 +115,7 @@ pub async fn data(
     let http = &state
         .outbound_for(settings.jelly_stat_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let url = api_address(&settings, &headers, &client);
+    let url = api_address(&settings);
     let install = Install {
         url: &url,
         key: &settings.jelly_stat_apikey,
@@ -206,8 +203,6 @@ async fn details_of_server(
 pub async fn metadata(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
@@ -232,8 +227,7 @@ pub async fn metadata(
         .ok_or_else(no_requests)?;
 
     let kind = media_server(&settings);
-    let media_url =
-        kind.map(|kind| service_url(media::install(&settings, kind).address, &headers, &client));
+    let media_url = kind.map(|kind| service_url(media::install(&settings, kind).address));
     let mut details = None;
     if let (Some(kind), Some(url)) = (kind, media_url.as_deref()) {
         let install = media::install(&settings, kind);
@@ -252,7 +246,7 @@ pub async fn metadata(
             details_of_server(&media_http, &server, &key, settings.homepage_recent_limit).await;
     }
     if details.is_none() {
-        let url = api_address(&settings, &headers, &client);
+        let url = api_address(&settings);
         let install = Install {
             url: &url,
             key: &settings.jelly_stat_apikey,

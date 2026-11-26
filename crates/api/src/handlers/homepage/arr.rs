@@ -122,14 +122,14 @@ pub fn queue_permissions(kind: Kind) -> Permissions {
 
 /// The installs of an application: the addresses and the keys of the settings come
 /// with commas between them, and each address goes with the key at the same place.
-fn installs(app: &App<'_>, headers: &HeaderMap, client: &Client) -> Vec<(String, String)> {
+fn installs(app: &App<'_>) -> Vec<(String, String)> {
     let keys: Vec<&str> = app.keys.split(',').collect();
     app.urls
         .split(',')
         .enumerate()
         .filter_map(|(index, url)| {
             let key = keys.get(index)?;
-            Some((service_url(url, headers, client), (*key).to_owned()))
+            Some((service_url(url), (*key).to_owned()))
         })
         .collect()
 }
@@ -176,8 +176,6 @@ fn range(
 async fn events_of(
     state: &AppState,
     kind: Kind,
-    headers: &HeaderMap,
-    client: &Client,
     (start, end): (&str, &str),
 ) -> Result<Vec<Value>, Refusal> {
     let settings = state.settings();
@@ -199,7 +197,7 @@ async fn events_of(
     };
 
     let mut all = Vec::new();
-    for (number, (url, key)) in installs(&app, headers, client).iter().enumerate() {
+    for (number, (url, key)) in installs(&app).iter().enumerate() {
         let install = Install {
             kind,
             url,
@@ -253,8 +251,6 @@ async fn events_of(
 async fn calendar_of(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     query: Option<&str>,
     kind: Kind,
 ) -> Result<Envelope<Vec<Value>>, Refusal> {
@@ -262,7 +258,7 @@ async fn calendar_of(
     calendar_permissions(kind).check(&settings, caller)?;
     let now = Timestamp::try_from(SystemTime::now()).unwrap_or(Timestamp::UNIX_EPOCH);
     let (start, end) = range(&settings, query, now, &TimeZone::system());
-    let events = events_of(state, kind, headers, client, (&start, &end)).await?;
+    let events = events_of(state, kind, (&start, &end)).await?;
     Ok(Envelope::success(events))
 }
 
@@ -270,57 +266,27 @@ async fn calendar_of(
 pub async fn sonarr_calendar(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     RawQuery(query): RawQuery,
 ) -> Result<Envelope<Vec<Value>>, Refusal> {
-    calendar_of(
-        &state,
-        &caller,
-        &client,
-        &headers,
-        query.as_deref(),
-        Kind::Sonarr,
-    )
-    .await
+    calendar_of(&state, &caller, query.as_deref(), Kind::Sonarr).await
 }
 
 /// `GET /homepage/radarr/calendar`: the films of the calendar of Radarr.
 pub async fn radarr_calendar(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     RawQuery(query): RawQuery,
 ) -> Result<Envelope<Vec<Value>>, Refusal> {
-    calendar_of(
-        &state,
-        &caller,
-        &client,
-        &headers,
-        query.as_deref(),
-        Kind::Radarr,
-    )
-    .await
+    calendar_of(&state, &caller, query.as_deref(), Kind::Radarr).await
 }
 
 /// `GET /homepage/lidarr/calendar`: the albums of the calendar of Lidarr.
 pub async fn lidarr_calendar(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     RawQuery(query): RawQuery,
 ) -> Result<Envelope<Vec<Value>>, Refusal> {
-    calendar_of(
-        &state,
-        &caller,
-        &client,
-        &headers,
-        query.as_deref(),
-        Kind::Lidarr,
-    )
-    .await
+    calendar_of(&state, &caller, query.as_deref(), Kind::Lidarr).await
 }
 
 /// Whether the caller gets the calendar of at least one source: an application, the
@@ -354,14 +320,14 @@ pub async fn calendar(
     let mut events = Vec::new();
     for kind in [Kind::Sonarr, Kind::Lidarr, Kind::Radarr] {
         if calendar_permissions(kind).allow(&settings, &caller) {
-            events.extend(events_of(&state, kind, &headers, &client, (&start, &end)).await?);
+            events.extend(events_of(&state, kind, (&start, &end)).await?);
         }
     }
     if calendar_more::sickrage_permissions().allow(&settings, &caller) {
-        events.extend(calendar_more::sickrage_events(&state, &headers, &client).await?);
+        events.extend(calendar_more::sickrage_events(&state).await?);
     }
     if calendar_more::couchpotato_permissions().allow(&settings, &caller) {
-        events.extend(calendar_more::couchpotato_events(&state, &headers, &client).await?);
+        events.extend(calendar_more::couchpotato_events(&state).await?);
     }
     if trakt::permissions().allow(&settings, &caller) {
         // A calendar of Trakt that cannot be read is left out, as in the PHP
@@ -377,8 +343,6 @@ pub async fn calendar(
 async fn queue_of(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     kind: Kind,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
@@ -388,7 +352,7 @@ async fn queue_of(
         .outbound_for(app.custom_certificate)
         .ok_or_else(no_requests)?;
     let mut items = Vec::new();
-    for (url, key) in &installs(&app, headers, client) {
+    for (url, key) in &installs(&app) {
         let install = Install {
             kind,
             url,
@@ -412,18 +376,14 @@ async fn queue_of(
 pub async fn sonarr_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
-    queue_of(&state, &caller, &client, &headers, Kind::Sonarr).await
+    queue_of(&state, &caller, Kind::Sonarr).await
 }
 
 /// `GET /homepage/radarr/queue`: the downloads in the queue of Radarr.
 pub async fn radarr_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
-    queue_of(&state, &caller, &client, &headers, Kind::Radarr).await
+    queue_of(&state, &caller, Kind::Radarr).await
 }

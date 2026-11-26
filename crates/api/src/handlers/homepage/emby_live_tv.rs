@@ -5,7 +5,7 @@ use std::time::SystemTime;
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
 use organizr_integrations::emby::{Kind, Server};
@@ -15,7 +15,6 @@ use serde_json::{Value, json};
 
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::state::AppState;
@@ -44,8 +43,8 @@ pub fn options(settings: &Settings) -> Value {
 }
 
 /// The address of the Emby server, complete.
-pub fn address(settings: &Settings, headers: &HeaderMap, client: &Client) -> String {
-    service_url(&settings.emby_url, headers, client)
+pub fn address(settings: &Settings) -> String {
+    service_url(&settings.emby_url)
 }
 
 /// The Emby server of the settings, at its complete address.
@@ -68,15 +67,13 @@ fn now() -> Timestamp {
 pub async fn stats(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
     let http = &state
         .outbound_for(settings.emby_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let url = address(&settings, &headers, &client);
+    let url = address(&settings);
     let numbers =
         emby_live_tv::stats(http, &server(&settings, &url), &TimeZone::system(), now()).await;
     Ok(Envelope::success(numbers).with_message("LiveTV stats retrieved successfully"))
@@ -87,8 +84,6 @@ pub async fn stats(
 pub async fn activity(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     // The PHP application has one answer for every reason of a refusal here.
@@ -101,7 +96,7 @@ pub async fn activity(
     let http = &state
         .outbound_for(settings.emby_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let url = address(&settings, &headers, &client);
+    let url = address(&settings);
     let most = |number: u32| usize::try_from(number).unwrap_or(usize::MAX);
     let shown = Shown {
         timers: most(settings.homepage_emby_live_tv_tracker_max_items),

@@ -17,7 +17,7 @@ use organizr_auth::password::{self, PasswordCheck};
 use organizr_db::Database;
 use organizr_domain::User;
 use organizr_testkit::engines::on_each_engine;
-use organizr_testkit::http::{Answer, As, call};
+use organizr_testkit::http::{Answer, As, call, request, send};
 use organizr_testkit::login_servers::{
     self, FTP_USERS, LDAP_BASE, LDAP_PEOPLE, LDAP_PREFIX, LDAP_SERVICE, LDAP_SUFFIX, Listening,
     closed_port, ldap_server,
@@ -390,6 +390,43 @@ async fn emby_and_jellyfin_logins_make_an_account_with_the_typed_name() {
         let robin = user(database, "robin").await.expect("the account was made");
         assert!(has_password(&robin, "robin-media-password"));
         assert_eq!(database.users().list().await.expect("it loads").len(), 2);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn media_login_never_asks_the_host_that_the_request_names() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // PHP puts the host of the request in front of an address that is only a path.
+        // The caller chooses that host, so here such an address asks nobody (D-137).
+        let stand_in = media_stand_in("/Users/authenticatebyname").await;
+        let host = stand_in.url().trim_start_matches("http://").to_owned();
+        for backend in ["jellyfin", "emby_local"] {
+            let settings = installed_settings(&[
+                ("authType", json!("external")),
+                ("authBackend", json!(backend)),
+                ("embyURL", json!("/")),
+                ("jellyfinURL", json!("/")),
+                ("loginAttempts", json!(NO_LOGIN_LIMIT)),
+            ]);
+            let app = router(state_with(database, settings)).expect("the route table is valid");
+            let body = json!({"username": "robin", "password": "robin-media-password"});
+            let headers = [
+                ("host", host.as_str()),
+                ("content-type", "application/json"),
+            ];
+            let login = request("POST", "/api/v2/login", &headers, &body.to_string());
+
+            let answer = send(&app, login).await;
+            assert_eq!(
+                answer.status,
+                StatusCode::UNAUTHORIZED,
+                "{backend}: {}",
+                answer.body
+            );
+        }
+        assert!(stand_in.seen().is_empty(), "{:?}", stand_in.seen());
     })
     .await;
 }

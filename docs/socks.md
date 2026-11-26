@@ -28,8 +28,8 @@ The name comes from PHP Organizr. It has nothing to do with the SOCKS proxy prot
 4. Set **Minimum Authentication** to the group with the least access that may use it. It starts at the guest level, which means **everybody, also people who aren't logged in**. Pick a level with more access unless the application checks a key itself.
 5. Select **Save**.
 
-> [!CAUTION]
-> **An address that is only a path, together with the guest level, makes Organizr an open relay.** An address such as `/sonarr` works as in PHP Organizr: Organizr puts the scheme and host of the incoming request in front of it. That host comes from the caller's `Host` header, so anybody on the internet could make Organizr send requests to any host they like. Use a full address, and a level above guest.
+> [!IMPORTANT]
+> **Use a full address.** PHP Organizr puts the scheme and host of the incoming request in front of an address that is only a path, such as `/sonarr`. That host comes from the caller's `Host` header, so anybody could make Organizr send requests to any host they like. Organizr Rust refuses such an address with "Use the full address of the service" (D-137). And pick a level above guest unless the application checks a key itself.
 
 ## 🚨 Watch out
 

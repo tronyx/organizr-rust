@@ -9,7 +9,6 @@ use std::time::SystemTime;
 
 use axum::Extension;
 use axum::extract::{Path, State};
-use axum::http::HeaderMap;
 use organizr_auth::registration::{NewAccount, RegistrationError, create_account};
 use organizr_domain::GroupLevel;
 use organizr_integrations::emby::{Kind, Server};
@@ -17,7 +16,6 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::caller::{Caller, now_stamp};
-use crate::client::Client;
 use crate::envelope::{Envelope, NoData};
 use crate::handlers::fields::Refusal;
 use crate::handlers::homepage::service_url;
@@ -60,12 +58,7 @@ async fn plex_users(state: &AppState) -> Vec<Found> {
 }
 
 /// The users of the Jellyfin or the Emby server of the settings.
-async fn media_server_users(
-    state: &AppState,
-    kind: Kind,
-    headers: &HeaderMap,
-    client: &Client,
-) -> Vec<Found> {
+async fn media_server_users(state: &AppState, kind: Kind) -> Vec<Found> {
     let settings = state.settings();
     let (address, token, never_check) = match kind {
         Kind::Emby => (
@@ -85,7 +78,7 @@ async fn media_server_users(
     let Some(http) = state.outbound() else {
         return Vec::new();
     };
-    let url = service_url(address, headers, client);
+    let url = service_url(address);
     let server = Server {
         kind,
         url: &url,
@@ -112,15 +105,13 @@ async fn media_server_users(
 pub async fn import(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path(kind): Path<String>,
 ) -> Result<Envelope<NoData>, Refusal> {
     caller.require(GroupLevel::CO_ADMIN)?;
     let found = match kind.as_str() {
         "plex" => plex_users(&state).await,
-        "jellyfin" => media_server_users(&state, Kind::Jellyfin, &headers, &client).await,
-        "emby" => media_server_users(&state, Kind::Emby, &headers, &client).await,
+        "jellyfin" => media_server_users(&state, Kind::Jellyfin).await,
+        "emby" => media_server_users(&state, Kind::Emby).await,
         _ => return Ok(Envelope::success(NoData)),
     };
     let mut imported = 0_usize;

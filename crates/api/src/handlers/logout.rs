@@ -25,7 +25,7 @@ const SINGLE_SIGN_ON_COOKIES: [&str; 5] = ["mpt", "Auth", "oAuth", "connect.sid"
 const KOMGA_LOGOUT_TIME: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// Asks Komga to end the session of `token`, as PHP's `clearKomgaToken` does.
-async fn end_komga_session(state: &AppState, client: &Client, headers: &HeaderMap, token: &str) {
+async fn end_komga_session(state: &AppState, token: &str) {
     let settings = state.settings();
     let Some(http) = state.outbound() else {
         return;
@@ -33,11 +33,7 @@ async fn end_komga_session(state: &AppState, client: &Client, headers: &HeaderMa
     if settings.komga_url.is_empty() {
         return;
     }
-    let host = headers
-        .get(axum::http::header::HOST)
-        .and_then(|value| value.to_str().ok())
-        .unwrap_or_default();
-    let url = crate::php_url::qualify(settings.komga_url.trim(), client.https, host);
+    let url = crate::handlers::homepage::service_url(&settings.komga_url);
     organizr_integrations::sso::komga_logout(http, &url, token, KOMGA_LOGOUT_TIME).await;
 }
 
@@ -77,7 +73,7 @@ pub async fn logout(
     // A session of Komga ends at Komga too, and its cookie is dropped only when the
     // browser sent it, as in PHP.
     if let Some(token) = cookies::cookie_value(&headers, "komga_token") {
-        end_komga_session(&state, &client, &headers, token).await;
+        end_komga_session(&state, token).await;
         dropped.push("komga_token");
     }
     dropped.push(DEVICE_COOKIE);

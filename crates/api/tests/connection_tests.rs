@@ -85,6 +85,51 @@ async fn plex_tautulli_and_overseerr_answer_for_the_right_key_only() {
 }
 
 #[tokio::test]
+async fn test_of_an_address_that_is_only_a_path_asks_for_the_full_address() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        // Organizr sends no request to an address that is only a path (D-137).
+        for (service, settings) in [
+            (
+                "sonarr",
+                [
+                    ("sonarrURL", json!("/sonarr")),
+                    ("sonarrToken", json!(ARR_KEY)),
+                ],
+            ),
+            (
+                "plex",
+                [
+                    ("plexURL", json!("/plex")),
+                    ("plexToken", json!(PLEX_SERVER_TOKEN)),
+                ],
+            ),
+            (
+                "ombi",
+                [("ombiURL", json!(" /ombi/")), ("ombiToken", json!("a-key"))],
+            ),
+        ] {
+            let answer = test(database, service, &settings).await;
+            assert_eq!(
+                answer.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "{service}: {}",
+                answer.body
+            );
+            assert!(
+                answer
+                    .message()
+                    .as_str()
+                    .is_some_and(|text| text.starts_with("Use the full address of the service")),
+                "{service}: {}",
+                answer.body
+            );
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn sonarr_radarr_and_lidarr_name_the_install_that_failed() {
     on_each_engine(async |database| {
         seed::installed(database).await;

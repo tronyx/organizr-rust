@@ -17,7 +17,6 @@ use serde_json::{Value, json};
 use super::request_search::{self, LONGEST_QUERY, encoded};
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::cookies::cookie_value;
 use crate::envelope::{Envelope, NoData};
 use crate::handlers::fields::Refusal;
@@ -56,14 +55,9 @@ pub fn options(settings: &Settings) -> Value {
     })
 }
 
-fn install(
-    settings: &Settings,
-    headers: &HeaderMap,
-    client: &Client,
-    timeout: Option<Duration>,
-) -> Install {
+fn install(settings: &Settings, timeout: Option<Duration>) -> Install {
     Install {
-        url: service_url(&settings.ombi_url, headers, client),
+        url: service_url(&settings.ombi_url),
         key: settings.ombi_token.clone(),
         timeout,
         never_check_certificate: settings.ombi_disable_cert_check,
@@ -83,12 +77,7 @@ pub fn import_job(backend: &str) -> Option<&'static str> {
 /// Has Ombi import the users of the media server of the login backend, in the
 /// background, as PHP does before it makes the account of a first login. Nothing
 /// happens without the address and the API key of Ombi, or for another backend.
-pub fn import_users_later(
-    state: &AppState,
-    settings: &Settings,
-    headers: &HeaderMap,
-    client: &Client,
-) {
+pub fn import_users_later(state: &AppState, settings: &Settings) {
     let Some(job) = import_job(&settings.auth_backend) else {
         return;
     };
@@ -98,7 +87,7 @@ pub fn import_users_later(
     let Some(http) = state.outbound().cloned() else {
         return;
     };
-    let install = install(settings, headers, client, None);
+    let install = install(settings, None);
     tokio::spawn(async move {
         match install
             .send(&http, Method::POST, job, None, As::Application)
@@ -152,8 +141,6 @@ fn whole(text: &str) -> usize {
 async fn list(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     (kind, limit, offset): (&str, Option<&str>, Option<&str>),
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
@@ -162,7 +149,7 @@ async fn list(
         .outbound_for(settings.ombi_use_custom_certificate)
         .ok_or_else(no_requests)?;
     let limit_of_settings = time_limit(&settings.ombi_refresh.to_string());
-    let install = install(&settings, headers, client, limit_of_settings);
+    let install = install(&settings, limit_of_settings);
     let limit = limit.map_or_else(
         || usize::try_from(settings.ombi_limit).unwrap_or(usize::MAX),
         whole,
@@ -218,10 +205,8 @@ async fn list(
 pub async fn requests(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(&state, &caller, &client, &headers, ("both", None, None)).await
+    list(&state, &caller, ("both", None, None)).await
 }
 
 /// `GET /homepage/ombi/requests/{type}`: the requests for films with `movie`, the
@@ -229,47 +214,27 @@ pub async fn requests(
 pub async fn requests_of_type(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path(kind): Path<String>,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(&state, &caller, &client, &headers, (&kind, None, None)).await
+    list(&state, &caller, (&kind, None, None)).await
 }
 
 /// `GET /homepage/ombi/requests/{type}/{limit}`.
 pub async fn requests_limited(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path((kind, limit)): Path<(String, String)>,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(
-        &state,
-        &caller,
-        &client,
-        &headers,
-        (&kind, Some(&limit), None),
-    )
-    .await
+    list(&state, &caller, (&kind, Some(&limit), None)).await
 }
 
 /// `GET /homepage/ombi/requests/{type}/{limit}/{offset}`.
 pub async fn requests_paged(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path((kind, limit, offset)): Path<(String, String, String)>,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(
-        &state,
-        &caller,
-        &client,
-        &headers,
-        (&kind, Some(&limit), Some(&offset)),
-    )
-    .await
+    list(&state, &caller, (&kind, Some(&limit), Some(&offset))).await
 }
 
 /// What an Admin or a Co-Admin can do with a request.
@@ -285,8 +250,6 @@ enum Action {
 async fn act(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     (kind_text, id): (&str, &str),
     action: Action,
 ) -> Result<Envelope<NoData>, Refusal> {
@@ -301,7 +264,7 @@ async fn act(
     let http = &state
         .outbound_for(settings.ombi_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let install = install(&settings, headers, client, Some(CHANGE_LIMIT));
+    let install = install(&settings, Some(CHANGE_LIMIT));
     let body = json!({ "id": id });
     let (method, path, body, message) = match action {
         Action::Approve => (
@@ -352,11 +315,9 @@ macro_rules! action_route {
         pub async fn $name(
             State(state): State<AppState>,
             Extension(caller): Extension<Caller>,
-            Extension(client): Extension<Client>,
-            headers: HeaderMap,
             Path((kind, id)): Path<(String, String)>,
         ) -> Result<Envelope<NoData>, Refusal> {
-            act(&state, &caller, &client, &headers, (&kind, &id), $action).await
+            act(&state, &caller, (&kind, &id), $action).await
         }
     };
 }
@@ -418,7 +379,6 @@ fn series_request(tvdb_id: u64, default: &str) -> Value {
 pub async fn add_request(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
     headers: HeaderMap,
     Path((kind_text, id)): Path<(String, String)>,
 ) -> Result<Envelope<NoData>, Refusal> {
@@ -435,7 +395,7 @@ pub async fn add_request(
     let http = &state
         .outbound_for(settings.ombi_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let install = install(&settings, &headers, &client, None);
+    let install = install(&settings, None);
     let send = async |method: Method, path: &str, body: Option<&Value>| {
         let reply = install
             .send(http, method, path, body, As::User(token))
@@ -567,8 +527,6 @@ fn search_results(answer: &Value) -> Value {
 pub async fn search(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path(query): Path<String>,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
@@ -581,7 +539,7 @@ pub async fn search(
         .outbound_for(settings.ombi_use_custom_certificate)
         .ok_or_else(no_requests)?;
     let wanted = json!({"movies": true, "tvShows": true, "music": false, "people": false});
-    let reply = install(&settings, &headers, &client, None)
+    let reply = install(&settings, None)
         .send(
             http,
             Method::POST,

@@ -42,6 +42,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - Only an Admin changes the services of the health checks plugin, which can get the API key (D-134).
 - Only an Admin switches single sign-on on, and only an Admin changes the address of an application while its single sign-on is on (D-135).
 - With a group in the path, the query of a forward auth check can't lower the group or add an allow list. Caddy sends the visitor's query along, so before this anyone could pass with `?group=999` (D-136).
+- Organizr sends no request to a service address that is only a path, such as `/sonarr`, since its host came from the caller. Enter the full address of each service (D-137).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

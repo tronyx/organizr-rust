@@ -14,7 +14,7 @@ use std::time::Duration;
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_domain::GroupLevel;
 use organizr_integrations::emby::EmbyError;
 use organizr_integrations::ftp::{self, FtpServer};
@@ -26,7 +26,6 @@ use serde_json::Value;
 
 use crate::api_data::ApiData;
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::handlers::homepage::service_url;
@@ -138,7 +137,6 @@ fn account_name(settings: &Settings, name: &str) -> String {
 pub async fn check(
     state: &AppState,
     settings: &Settings,
-    (headers, client): (&HeaderMap, &Client),
     name: &str,
     password: &str,
 ) -> Option<Vouched> {
@@ -159,7 +157,7 @@ pub async fn check(
             .await
             .then(|| plain(String::new())),
         JELLYFIN => {
-            let url = service_url(&settings.jellyfin_url, headers, client);
+            let url = service_url(&settings.jellyfin_url);
             let http = state.outbound()?;
             answer(
                 "Jellyfin",
@@ -167,15 +165,15 @@ pub async fn check(
             )
             .then(|| plain(String::new()))
         }
-        EMBY_LOCAL => by_emby(state, settings, (headers, client), &typed, password)
+        EMBY_LOCAL => by_emby(state, settings, &typed, password)
             .await
             .then(|| plain(String::new())),
-        EMBY_CONNECT => by_emby_connect(state, settings, (headers, client), &typed, password).await,
+        EMBY_CONNECT => by_emby_connect(state, settings, &typed, password).await,
         EMBY_ALL => {
-            if by_emby(state, settings, (headers, client), &typed, password).await {
+            if by_emby(state, settings, &typed, password).await {
                 Some(plain(String::new()))
             } else {
-                by_emby_connect(state, settings, (headers, client), &typed, password).await
+                by_emby_connect(state, settings, &typed, password).await
             }
         }
         _ => None,
@@ -190,17 +188,11 @@ fn answer(service: &str, result: Result<bool, EmbyError>) -> bool {
     })
 }
 
-async fn by_emby(
-    state: &AppState,
-    settings: &Settings,
-    (headers, client): (&HeaderMap, &Client),
-    name: &str,
-    password: &str,
-) -> bool {
+async fn by_emby(state: &AppState, settings: &Settings, name: &str, password: &str) -> bool {
     let Some(http) = state.outbound() else {
         return false;
     };
-    let url = service_url(&settings.emby_url, headers, client);
+    let url = service_url(&settings.emby_url);
     answer(
         "Emby",
         media_login::emby_local(http, &url, name, password).await,
@@ -210,12 +202,11 @@ async fn by_emby(
 async fn by_emby_connect(
     state: &AppState,
     settings: &Settings,
-    (headers, client): (&HeaderMap, &Client),
     name: &str,
     password: &str,
 ) -> Option<Vouched> {
     let http = state.outbound()?;
-    let url = service_url(&settings.emby_url, headers, client);
+    let url = service_url(&settings.emby_url);
     let servers = (
         state.emby_connect(),
         url.as_str(),

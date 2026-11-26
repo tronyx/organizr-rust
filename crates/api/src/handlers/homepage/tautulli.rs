@@ -2,14 +2,13 @@
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_integrations::http::time_limit;
 use organizr_integrations::tautulli::Install;
 use serde_json::{Value, json};
 
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::picture_cache::Source;
@@ -128,8 +127,6 @@ fn use_cached_pictures(state: &AppState, install: &Install<'_>, response: &mut V
 pub async fn data(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
@@ -139,7 +136,7 @@ pub async fn data(
     // The setting can hold more than one address, for single sign-on. The homepage
     // shows the first install.
     let address = settings.tautulli_url.split(',').next().unwrap_or_default();
-    let url = service_url(address, &headers, &client);
+    let url = service_url(address);
     let install = Install {
         url: &url,
         key: &settings.tautulli_apikey,

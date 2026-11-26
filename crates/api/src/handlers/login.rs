@@ -77,8 +77,6 @@ pub async fn login(
             && LocalNetworks::from_setting(&settings.local_ip_list).contains(&client),
     };
     let request = Attempted {
-        headers: &headers,
-        client: &client,
         name: &name,
         password: &password,
         plex_token: data.text("oAuth").filter(|token| !token.is_empty()),
@@ -123,7 +121,7 @@ pub async fn login(
         let site = mail::site_address(&settings, &headers, &client);
         let user = &logged_in.user;
         mail::welcome(&state, &site, &user.username, user.email.as_deref());
-        crate::handlers::homepage::ombi::import_users_later(&state, &settings, &headers, &client);
+        crate::handlers::homepage::ombi::import_users_later(&state, &settings);
     }
 
     tell_about_a_new_device(&state, &headers, &client, logged_in, now_stamp(now)).await?;
@@ -182,9 +180,6 @@ async fn single_sign_on(
 
 /// What a login brings.
 struct Attempted<'a> {
-    /// The request, for the addresses of services that are paths on this host.
-    headers: &'a HeaderMap,
-    client: &'a Client,
     name: &'a str,
     password: &'a str,
     /// The token of the field `oAuth`.
@@ -243,8 +238,7 @@ async fn check_login(
             .await
             .map(Vouched::Plex)
     } else if login_backends::is_password_backend(&settings.auth_backend) {
-        let site = (request.headers, request.client);
-        login_backends::check(state, settings, site, request.name, request.password)
+        login_backends::check(state, settings, request.name, request.password)
             .await
             .map(Vouched::Server)
     } else {

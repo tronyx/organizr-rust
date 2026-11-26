@@ -6,7 +6,7 @@
 
 use axum::Extension;
 use axum::extract::{Path, State};
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_integrations::indexers::{self, Install, Kind};
 use organizr_settings::Settings;
 use serde_json::{Value, json};
@@ -14,7 +14,6 @@ use serde_json::{Value, json};
 use super::{Permissions, no_requests, service_url};
 use crate::api_data::ApiData;
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::{Refusal, php_text};
 use crate::state::AppState;
@@ -83,12 +82,12 @@ pub fn check(
 }
 
 /// The address of the install, complete.
-pub fn address(kind: Kind, settings: &Settings, headers: &HeaderMap, client: &Client) -> String {
+pub fn address(kind: Kind, settings: &Settings) -> String {
     let stored = match kind {
         Kind::Jackett => &settings.jackett_url,
         Kind::Prowlarr => &settings.prowlarr_url,
     };
-    service_url(stored, headers, client)
+    service_url(stored)
 }
 
 /// Whether the requests to a service also trust the authority that an Admin uploaded.
@@ -129,8 +128,6 @@ fn content(found: Option<Value>) -> Value {
 async fn search(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     kind: Kind,
     query: &str,
 ) -> Result<Envelope<Value>, Refusal> {
@@ -142,7 +139,7 @@ async fn search(
     let http = &state
         .outbound_for(uses_custom_certificate(kind, &settings))
         .ok_or_else(no_requests)?;
-    let url = address(kind, &settings, headers, client);
+    let url = address(kind, &settings);
     let install = install(kind, &settings, &url);
     let reply = install
         .search(http, kind, query)
@@ -158,11 +155,9 @@ async fn search(
 pub async fn jackett_search(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path(query): Path<String>,
 ) -> Result<Envelope<Value>, Refusal> {
-    search(&state, &caller, &client, &headers, Kind::Jackett, &query).await
+    search(&state, &caller, Kind::Jackett, &query).await
 }
 
 /// `GET /homepage/prowlarr/{query}`: the releases that the indexers of Prowlarr have
@@ -170,11 +165,9 @@ pub async fn jackett_search(
 pub async fn prowlarr_search(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path(query): Path<String>,
 ) -> Result<Envelope<Value>, Refusal> {
-    search(&state, &caller, &client, &headers, Kind::Prowlarr, &query).await
+    search(&state, &caller, Kind::Prowlarr, &query).await
 }
 
 /// A field of the body as text, or nothing when PHP takes the field for empty.
@@ -194,8 +187,6 @@ fn failed(message: &str, found: Option<Value>) -> Refusal {
 pub async fn jackett_download(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<Value>, Refusal> {
     let kind = Kind::Jackett;
@@ -207,7 +198,7 @@ pub async fn jackett_download(
     let http = &state
         .outbound_for(uses_custom_certificate(kind, &settings))
         .ok_or_else(no_requests)?;
-    let url = address(kind, &settings, &headers, &client);
+    let url = address(kind, &settings);
     let install = install(kind, &settings, &url);
     // Only a black hole link of this install is asked for, with the key of the
     // settings.
@@ -238,8 +229,6 @@ pub async fn jackett_download(
 pub async fn prowlarr_download(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<Value>, Refusal> {
     let kind = Kind::Prowlarr;
@@ -255,7 +244,7 @@ pub async fn prowlarr_download(
     let http = &state
         .outbound_for(uses_custom_certificate(kind, &settings))
         .ok_or_else(no_requests)?;
-    let url = address(kind, &settings, &headers, &client);
+    let url = address(kind, &settings);
     let install = install(kind, &settings, &url);
     let reply = install
         .grab(http, &guid, indexer)

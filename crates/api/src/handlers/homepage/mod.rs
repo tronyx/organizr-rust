@@ -227,28 +227,46 @@ fn item_of(key: &'static str) -> Option<(Item, Permissions)> {
     Some((item, permissions))
 }
 
-/// The address of a service as the settings hold it, completed as the PHP application
-/// completes it. An address that starts with a slash is a path on the host of
-/// Organizr.
-pub fn service_url(address: &str, headers: &HeaderMap, client: &Client) -> String {
+/// The address of a service that Organizr sends a request to, as `qualifyURL` of PHP
+/// gives it without its option `includeTrailing`: white space is taken out, and slashes
+/// at the end are cut off. So a path that is put after the address starts with exactly
+/// one slash.
+///
+/// PHP puts the host of the request in front of an address that starts with a slash.
+/// The caller chooses that host, and the request carries the key of the service, so
+/// here such an address names no service: the answer is empty (D-137).
+pub fn service_url(address: &str) -> String {
+    let address: String = address.chars().filter(|c| !c.is_whitespace()).collect();
+    if address.starts_with('/') {
+        tracing::warn!(
+            address,
+            "a service address is only a path; enter the full address of the service, such as http://sonarr:8989"
+        );
+        return String::new();
+    }
+    php_url::qualify(address.trim_end_matches('/'), false, "")
+}
+
+/// The address of a tab, or of a page of this site, for the browser: an address that
+/// starts with a slash is a path on the host that the browser used, as in PHP. Organizr
+/// never sends a key or a login there; [`service_url`] is for those requests.
+pub fn tab_address(address: &str, headers: &HeaderMap, client: &Client) -> String {
     let host = headers
         .get(header::HOST)
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
-    service_address(address, client.https, host)
+    let address: String = address.chars().filter(|c| !c.is_whitespace()).collect();
+    php_url::qualify(address.trim_end_matches('/'), client.https, host)
 }
 
-/// The address of a service, as `qualifyURL` of PHP gives it without its option
-/// `includeTrailing`: white space is taken out, and slashes at the end are cut off.
-/// So a path that is put after the address starts with exactly one slash.
-fn service_address(address: &str, https: bool, host: &str) -> String {
-    let mut address: String = address.chars().filter(|c| !c.is_whitespace()).collect();
-    if address.starts_with('/') {
-        let scheme = if https { "https" } else { "http" };
-        address = format!("{scheme}://{host}{address}");
-    }
-    php_url::qualify(address.trim_end_matches('/'), https, host)
+/// Whether a service address is only a path, such as `/sonarr`, which names no service
+/// for a request of Organizr (D-137).
+pub fn is_path_only(address: &str) -> bool {
+    address.trim_start().starts_with('/')
 }
+
+/// The text of a refusal for an address that is only a path.
+pub const PATH_ONLY: &str = "Use the full address of the service, such as http://sonarr:8989. Organizr doesn't send requests to an address that is only a path";
 
 /// The answer when this server cannot send requests to other services.
 pub fn no_requests() -> Refusal {
@@ -386,23 +404,32 @@ pub async fn items(
 mod tests {
     use serde_json::json;
 
-    use super::{is_empty, level_of, service_address};
+    use super::{is_empty, is_path_only, level_of, service_url};
 
     #[test]
     fn slashes_at_the_end_of_a_service_address_are_cut_off() {
-        let address = |text| service_address(text, true, "organizr.example.com");
-
         assert_eq!(
-            address("https://checks.example.com/api/v1/checks/"),
+            service_url("https://checks.example.com/api/v1/checks/"),
             "https://checks.example.com/api/v1/checks"
         );
         assert_eq!(
-            address(" https://sonarr.example.com:8989// "),
+            service_url(" https://sonarr.example.com:8989// "),
             "https://sonarr.example.com:8989"
         );
-        assert_eq!(address("sonarr:8989/"), "http://sonarr:8989");
-        assert_eq!(address("/sonarr/"), "https://organizr.example.com/sonarr");
-        assert_eq!(address("/"), "https://organizr.example.com");
+        assert_eq!(service_url("sonarr:8989/"), "http://sonarr:8989");
+    }
+
+    #[test]
+    fn path_only_address_names_no_service() {
+        // The host of the request is the caller's to choose, so a path never becomes an
+        // address on it (D-137).
+        for path in ["/sonarr/", "/", " /sonarr"] {
+            assert!(is_path_only(path), "{path:?}");
+            assert_eq!(service_url(path), "", "{path:?}");
+        }
+        for address in ["sonarr:8989", "http://sonarr:8989/x", ""] {
+            assert!(!is_path_only(address), "{address:?}");
+        }
     }
 
     #[test]

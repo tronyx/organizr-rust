@@ -2,14 +2,13 @@
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_integrations::http::time_limit;
 use organizr_integrations::octoprint::{Install, webcam_of};
 use serde_json::{Value, json};
 
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::state::AppState;
@@ -28,8 +27,6 @@ pub fn permissions() -> Permissions {
 pub async fn data(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
@@ -37,7 +34,7 @@ pub async fn data(
         .outbound_for(settings.octoprint_use_custom_certificate)
         .ok_or_else(no_requests)?;
 
-    let url = service_url(&settings.octoprint_url, &headers, &client);
+    let url = service_url(&settings.octoprint_url);
     let install = Install {
         url: &url,
         key: &settings.octoprint_token,

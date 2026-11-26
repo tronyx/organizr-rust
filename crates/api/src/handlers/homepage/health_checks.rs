@@ -2,14 +2,12 @@
 
 use axum::Extension;
 use axum::extract::{Path, State};
-use axum::http::HeaderMap;
 use organizr_integrations::health_checks;
 use organizr_integrations::http::time_limit;
 use serde_json::{Value, json};
 
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::state::AppState;
@@ -27,10 +25,8 @@ pub fn permissions() -> Permissions {
 pub async fn all(
     state: State<AppState>,
     caller: Extension<Caller>,
-    client: Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(state, caller, client, headers, None).await
+    list(state, caller, None).await
 }
 
 /// `GET /homepage/healthchecks/{tags}`: the checks with the given tags, which come
@@ -38,18 +34,14 @@ pub async fn all(
 pub async fn tagged(
     state: State<AppState>,
     caller: Extension<Caller>,
-    client: Extension<Client>,
-    headers: HeaderMap,
     Path(tags): Path<String>,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(state, caller, client, headers, Some(tags)).await
+    list(state, caller, Some(tags)).await
 }
 
 async fn list(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     tags: Option<String>,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
@@ -58,7 +50,7 @@ async fn list(
         .outbound_for(settings.health_checks_use_custom_certificate)
         .ok_or_else(no_requests)?;
 
-    let url = service_url(&settings.health_checks_url, &headers, &client);
+    let url = service_url(&settings.health_checks_url);
     let checks = health_checks::checks(
         http,
         &url,

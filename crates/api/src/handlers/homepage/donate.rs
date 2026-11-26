@@ -13,7 +13,7 @@ use organizr_integrations::stripe::{self, Account, Checkout, StripeError};
 use organizr_settings::Settings;
 use serde_json::{Value, json};
 
-use super::{Permissions, no_requests, service_url};
+use super::{Permissions, no_requests, tab_address};
 use crate::caller::Caller;
 use crate::client::Client;
 use crate::envelope::Envelope;
@@ -158,8 +158,9 @@ async fn checkout(
         return Err(Refusal::conflict("Donation Tokens are not setup"));
     }
     let http = state.outbound().ok_or_else(no_requests)?;
+    // Stripe sends the browser back to these pages of this site.
     let address = |page: &str| {
-        service_url(
+        tab_address(
             &format!("{API_BASE}/homepage/donate/{page}"),
             headers,
             client,

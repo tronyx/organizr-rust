@@ -2,13 +2,12 @@
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_integrations::pihole;
 use serde_json::{Map, Value, json};
 
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::state::AppState;
@@ -26,8 +25,6 @@ pub fn permissions() -> Permissions {
 pub async fn stats(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
@@ -36,7 +33,7 @@ pub async fn stats(
     let installs: Vec<(String, &str)> =
         pihole::installs(&settings.pihole_url, &settings.pihole_token)
             .into_iter()
-            .map(|(address, token)| (service_url(address, &headers, &client), token))
+            .map(|(address, token)| (service_url(address), token))
             .collect();
     let now = jiff::Timestamp::now().as_second();
     let summaries = pihole::statistics(http, &installs, now)

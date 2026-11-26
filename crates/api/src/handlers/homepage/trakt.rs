@@ -15,7 +15,7 @@ use organizr_integrations::trakt::{self, Account, Application, Calendar, Grant, 
 use organizr_settings::Settings;
 use serde_json::{Value, json};
 
-use super::{Permissions, no_requests, service_url};
+use super::{Permissions, no_requests, tab_address};
 use crate::caller::Caller;
 use crate::client::Client;
 use crate::cookies::cookie_value;
@@ -47,9 +47,11 @@ fn now() -> Timestamp {
     Timestamp::try_from(SystemTime::now()).unwrap_or(Timestamp::UNIX_EPOCH)
 }
 
-/// The address of this application that the API application at Trakt names.
+/// The address of this application that the API application at Trakt names. The
+/// browser follows it, so it is on the host that the browser used. Organizr sends no
+/// request there itself.
 fn redirect_address(headers: &HeaderMap, client: &Client) -> String {
-    service_url(&format!("{API_BASE}/oauth/trakt"), headers, client)
+    tab_address(&format!("{API_BASE}/oauth/trakt"), headers, client)
 }
 
 /// Stores the tokens of the account. They are secrets of the settings.

@@ -12,7 +12,7 @@
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_integrations::emby_join::{Join, JoinError};
 use organizr_integrations::plex::PlexError;
 
@@ -124,7 +124,6 @@ pub async fn plex(
 pub async fn emby(
     State(state): State<AppState>,
     Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<NoData>, Refusal> {
     let new = fields(&data, StatusCode::UNPROCESSABLE_ENTITY)?;
@@ -135,7 +134,7 @@ pub async fn emby(
         return Err(Refusal::conflict("Emby URL/Token not set"));
     }
     let http = state.outbound().ok_or_else(no_requests)?;
-    let url = service_url(&settings.emby_url, &headers, &client);
+    let url = service_url(&settings.emby_url);
 
     invites::reserve(&state, &client, &code, Some(&new.username)).await?;
     let join = Join {

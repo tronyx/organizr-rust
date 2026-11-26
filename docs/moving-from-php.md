@@ -156,6 +156,7 @@ The forward auth routes of PHP Organizr work as before, also the old forms such 
 - **Custom HTML items** run in a closed frame. A script in an item can't reach Organizr's page or its cookies. If an item needs that, switch on **Trust custom HTML 01** (with the number of the item) in its settings. Trust only HTML you wrote: a trusted item runs with the session of everyone who opens the homepage. See [Homepage](homepage.md).
 - Links in custom HTML to the pop-ups of PHP, such as `#new-request`, open the matching search or page.
 - Test each item with its **Test Connection** button, in **Settings › Tab Editor › Homepage Items**. See [Homepage](homepage.md).
+- **Service addresses that are only a path**, such as `/sonarr`, don't work anymore: enter the full address, such as `http://sonarr:8989`. The **Test Connection** button says so for such an address. This is for the addresses of items, login services and single sign-on, not for tabs (D-137).
 
 ## 🔀 6. Things that work differently
 

@@ -22,7 +22,7 @@ use crate::client::Client;
 use crate::cron::Schedule;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
-use crate::handlers::homepage::{no_requests, service_url};
+use crate::handlers::homepage::{no_requests, tab_address};
 use crate::state::AppState;
 
 /// What a test answers.
@@ -54,7 +54,8 @@ pub async fn test_iframe(
     if named.is_empty() {
         return Err(Refusal::not_found("URL not supplied"));
     }
-    let url = service_url(&named, &headers, &client);
+    // A tab address that is a path is on this site, as for the browser.
+    let url = tab_address(&named, &headers, &client);
     // The host of Organizr, as the browser named it, without the port.
     let organizr = headers
         .get(header::HOST)

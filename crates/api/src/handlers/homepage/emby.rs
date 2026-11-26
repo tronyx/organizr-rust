@@ -9,7 +9,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use axum::response::Response;
 use organizr_integrations::emby::{self, EmbyError, ItemContext, Kind, Server};
 use organizr_integrations::http::{Outbound, time_limit};
@@ -20,7 +20,6 @@ use super::plex::{LARGEST_SIDE, PICTURE_LIMIT};
 use super::{Permissions, no_requests, service_url};
 use crate::api_data::ApiData;
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::picture_cache::{self, PictureCache};
@@ -136,13 +135,7 @@ struct Asked {
 }
 
 impl Asked {
-    fn new(
-        state: &AppState,
-        caller: &Caller,
-        client: &Client,
-        headers: &HeaderMap,
-        (kind, part): (Kind, Part),
-    ) -> Result<Self, Refusal> {
+    fn new(state: &AppState, caller: &Caller, (kind, part): (Kind, Part)) -> Result<Self, Refusal> {
         let settings = state.settings();
         permissions(kind, part).check(&settings, caller)?;
         let show_names = settings.homepage_show_stream_names
@@ -156,7 +149,7 @@ impl Asked {
             .to_owned();
         Ok(Self {
             kind,
-            url: service_url(install(&settings, kind).address, headers, client),
+            url: service_url(install(&settings, kind).address),
             show_names,
             name,
             // The time makes the address of a picture new, so it is fetched again.
@@ -244,21 +237,11 @@ pub struct Request<'a> {
     pub state: &'a AppState,
     /// Who asks.
     pub caller: &'a Caller,
-    /// From where.
-    pub client: &'a Client,
-    /// The headers.
-    pub headers: &'a HeaderMap,
 }
 
 impl Request<'_> {
     fn asked(&self, kind: Kind, part: Part) -> Result<Asked, Refusal> {
-        Asked::new(
-            self.state,
-            self.caller,
-            self.client,
-            self.headers,
-            (kind, part),
-        )
+        Asked::new(self.state, self.caller, (kind, part))
     }
 }
 
@@ -404,14 +387,10 @@ macro_rules! list_route {
         pub async fn $name(
             State(state): State<AppState>,
             Extension(caller): Extension<Caller>,
-            Extension(client): Extension<Client>,
-            headers: HeaderMap,
         ) -> Result<Envelope<Value>, Refusal> {
             let request = Request {
                 state: &state,
                 caller: &caller,
-                client: &client,
-                headers: &headers,
             };
             $part(request, $kind).await
         }
@@ -425,15 +404,11 @@ macro_rules! details_route {
         pub async fn $name(
             State(state): State<AppState>,
             Extension(caller): Extension<Caller>,
-            Extension(client): Extension<Client>,
-            headers: HeaderMap,
             data: ApiData,
         ) -> Result<Envelope<Value>, Refusal> {
             let request = Request {
                 state: &state,
                 caller: &caller,
-                client: &client,
-                headers: &headers,
             };
             metadata(request, $kind, &data).await
         }

@@ -3,7 +3,7 @@
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_domain::GroupLevel;
 use organizr_integrations::downloaders::{
     self, Client as Downloader, DownloaderError, Login, TorrentQuery,
@@ -14,7 +14,6 @@ use serde_json::{Map, Value, json};
 use super::{Permissions, no_requests, service_url};
 use crate::api_data::ApiData;
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::state::AppState;
@@ -72,8 +71,6 @@ fn failed(error: &DownloaderError) -> Refusal {
 async fn ask_sabnzbd(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     fields: &[(&str, &str)],
 ) -> Result<Option<Value>, Refusal> {
     let settings = state.settings();
@@ -81,7 +78,7 @@ async fn ask_sabnzbd(
     let http = &state
         .outbound_for(settings.sabnzbd_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let url = service_url(&settings.sabnzbd_url, headers, client);
+    let url = service_url(&settings.sabnzbd_url);
     let install = Downloader {
         url: &url,
         timeout: time_limit(&settings.sabnzbd_refresh.to_string()),
@@ -97,18 +94,9 @@ async fn ask_sabnzbd(
 pub async fn sabnzbd_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
-    let queue = ask_sabnzbd(&state, &caller, &client, &headers, &[("mode", "queue")]).await?;
-    let history = ask_sabnzbd(
-        &state,
-        &caller,
-        &client,
-        &headers,
-        &[("mode", "history"), ("limit", "100")],
-    )
-    .await?;
+    let queue = ask_sabnzbd(&state, &caller, &[("mode", "queue")]).await?;
+    let history = ask_sabnzbd(&state, &caller, &[("mode", "history"), ("limit", "100")]).await?;
     // A part that SABnzbd did not give is left out, as in the PHP application.
     let mut content = Map::new();
     if let Some(queue) = queue {
@@ -130,8 +118,6 @@ pub async fn sabnzbd_queue(
 async fn switch_sabnzbd(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     data: &ApiData,
     action: &'static str,
 ) -> Result<Envelope<Value>, Refusal> {
@@ -147,7 +133,7 @@ async fn switch_sabnzbd(
     } else {
         vec![("mode", "queue"), ("name", action), ("value", &target)]
     };
-    let answer = ask_sabnzbd(state, caller, client, headers, &fields).await?;
+    let answer = ask_sabnzbd(state, caller, &fields).await?;
     Ok(Envelope::success(
         json!({ "content": answer.unwrap_or(Value::Bool(false)) }),
     ))
@@ -157,22 +143,18 @@ async fn switch_sabnzbd(
 pub async fn sabnzbd_pause(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<Value>, Refusal> {
-    switch_sabnzbd(&state, &caller, &client, &headers, &data, "pause").await
+    switch_sabnzbd(&state, &caller, &data, "pause").await
 }
 
 /// `POST /homepage/sabnzbd/queue/resume`.
 pub async fn sabnzbd_resume(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<Value>, Refusal> {
-    switch_sabnzbd(&state, &caller, &client, &headers, &data, "resume").await
+    switch_sabnzbd(&state, &caller, &data, "resume").await
 }
 
 /// `GET /homepage/qbittorrent/queue`: the torrents of qBittorrent, without the ones
@@ -180,15 +162,13 @@ pub async fn sabnzbd_resume(
 pub async fn qbittorrent_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     qbittorrent_permissions().check(&settings, &caller)?;
     let http = &state
         .outbound_for(settings.qbittorrent_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let url = service_url(&settings.qbittorrent_url, &headers, &client);
+    let url = service_url(&settings.qbittorrent_url);
     let install = Downloader {
         url: &url,
         timeout: time_limit(&settings.qbittorrent_refresh.to_string()),
@@ -218,15 +198,13 @@ pub async fn qbittorrent_queue(
 pub async fn nzbget_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     nzbget_permissions().check(&settings, &caller)?;
     let http = &state
         .outbound_for(settings.nzbget_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let url = service_url(&settings.nzbget_url, &headers, &client);
+    let url = service_url(&settings.nzbget_url);
     let install = Downloader {
         url: &url,
         timeout: time_limit(&settings.nzbget_refresh.to_string()),
@@ -260,15 +238,13 @@ pub async fn nzbget_queue(
 pub async fn transmission_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     transmission_permissions().check(&settings, &caller)?;
     let http = &state
         .outbound_for(settings.transmission_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let url = service_url(&settings.transmission_url, &headers, &client);
+    let url = service_url(&settings.transmission_url);
     let install = Downloader {
         url: &url,
         timeout: time_limit(&settings.transmission_refresh.to_string()),

@@ -11,7 +11,7 @@ use organizr_integrations::scrape::{self, ScrapeError};
 use organizr_integrations::youtube;
 use serde_json::{Value, json};
 
-use super::{no_requests, service_url};
+use super::{no_requests, tab_address};
 use crate::api_data::ApiData;
 use crate::caller::Caller;
 use crate::client::Client;
@@ -117,7 +117,8 @@ pub async fn scrape(
     if named.is_empty() || named == "0" {
         return Err(Refusal::unprocessable("URL was not supplied"));
     }
-    let url = service_url(&named, &headers, &client);
+    // A tab address that is a path is on this site, as for the browser.
+    let url = tab_address(&named, &headers, &client);
     let (host, port) = scrape::target(&url).ok_or_else(not_allowed)?;
     let address = checked_address(&host, port, state.scrapes_local_pages())
         .await

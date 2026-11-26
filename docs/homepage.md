@@ -88,7 +88,10 @@ Organizr asks each service from the server, not from your browser.
 > [!TIP]
 > In Docker, `localhost` is the Organizr container itself, not your server. Use the service's container name (`http://sonarr:8989`, when both containers share a network) or your server's LAN address (`http://192.168.1.10:8989`). This is the most common reason for a failed test.
 
-An address that starts with `/` is a path on Organizr's own host. Spaces are removed and slashes at the end are cut off.
+Enter the full address of the service, with its host. Spaces are removed and slashes at the end are cut off.
+
+> [!IMPORTANT]
+> **An address that is only a path, such as `/sonarr`, doesn't work here.** PHP Organizr put the host of the incoming request in front of it, but the caller chooses that host, so anyone could have Organizr send the service's key to a server of theirs. Organizr Rust sends no request to such an address: the **Test** button answers "Use the full address of the service", and the item stays empty. This is only for the addresses that Organizr asks; a tab can still have a path (D-137).
 
 ### 🔒 HTTPS and certificates
 

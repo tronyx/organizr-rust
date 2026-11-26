@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_domain::GroupLevel;
 use organizr_integrations::adguard;
 use organizr_integrations::downloaders::{
@@ -26,13 +26,12 @@ use organizr_settings::Settings;
 use serde_json::Value;
 
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::handlers::homepage::downloaders_more::{self as more, Asked};
 use crate::handlers::homepage::{
-    Permissions, emby, emby_live_tv as live_tv, indexers, jellystat, no_requests, service_url,
-    unifi,
+    PATH_ONLY, Permissions, emby, emby_live_tv as live_tv, indexers, is_path_only, jellystat,
+    no_requests, service_url, unifi,
 };
 use crate::state::AppState;
 
@@ -67,19 +66,19 @@ fn downloader_failed(error: &DownloaderError) -> Refusal {
 /// What every test needs from the request.
 struct Test<'a> {
     state: &'a AppState,
-    headers: &'a HeaderMap,
-    client: &'a Client,
     http: &'a Outbound,
 }
 
-impl Test<'_> {
-    /// The address of a setting, complete.
-    fn url(&self, address: &str) -> String {
-        service_url(address, self.headers, self.client)
-            .trim_end_matches('/')
-            .to_owned()
+/// The address of a setting, complete. An address that is only a path is refused, with
+/// a text that asks for the full address (D-137).
+fn full_address(address: &str) -> Result<String, Refusal> {
+    if is_path_only(address) {
+        return Err(refused(StatusCode::UNPROCESSABLE_ENTITY, PATH_ONLY));
     }
+    Ok(service_url(address).trim_end_matches('/').to_owned())
+}
 
+impl Test<'_> {
     async fn get(&self, probe: Probe<'_>) -> Result<probe::Answer, String> {
         probe::get(self.http, probe).await
     }
@@ -95,7 +94,7 @@ async fn plex(test: &Test<'_>) -> Outcome {
     if settings.plex_url.is_empty() || settings.plex_token.is_empty() {
         return Err(Refusal::unprocessable("URL and/or Token not setup"));
     }
-    let url = format!("{}/servers", test.url(&settings.plex_url));
+    let url = format!("{}/servers", full_address(&settings.plex_url)?);
     let probe = Probe {
         url: &url,
         query: &[("X-Plex-Token", &settings.plex_token)],
@@ -158,7 +157,7 @@ async fn arr(test: &Test<'_>, app: Arr<'_>) -> Outcome {
     }
     let mut errors = String::new();
     for (address, token) in pihole::installs(app.urls, app.tokens) {
-        let base = test.url(address);
+        let base = full_address(address)?;
         let url = format!("{base}/api/{}/rootfolder", app.api);
         let probe = Probe {
             url: &url,
@@ -188,7 +187,7 @@ async fn sabnzbd(test: &Test<'_>) -> Outcome {
     if settings.sabnzbd_url.is_empty() || settings.sabnzbd_token.is_empty() {
         return Err(Refusal::unprocessable("URL and/or Token not setup"));
     }
-    let url = format!("{}/api", test.url(&settings.sabnzbd_url));
+    let url = format!("{}/api", full_address(&settings.sabnzbd_url)?);
     let probe = Probe {
         url: &url,
         query: &[
@@ -229,7 +228,7 @@ async fn tautulli(test: &Test<'_>) -> Outcome {
     if settings.tautulli_apikey.is_empty() {
         return Err(Refusal::unprocessable("Tautulli Token is not defined"));
     }
-    let url = format!("{}/api/v2", test.url(&settings.tautulli_url));
+    let url = format!("{}/api/v2", full_address(&settings.tautulli_url)?);
     let probe = Probe {
         url: &url,
         query: &[
@@ -257,7 +256,10 @@ async fn overseerr(test: &Test<'_>, caller: &Caller) -> Outcome {
         not_empty: vec!["overseerrURL".to_owned(), "overseerrToken".to_owned()],
     }
     .check(&settings, caller)?;
-    let url = format!("{}/api/v1/settings/main", test.url(&settings.overseerr_url));
+    let url = format!(
+        "{}/api/v1/settings/main",
+        full_address(&settings.overseerr_url)?
+    );
     let probe = Probe {
         url: &url,
         headers: &[
@@ -282,7 +284,10 @@ async fn ombi(test: &Test<'_>) -> Outcome {
     if settings.ombi_token.is_empty() {
         return Err(Refusal::unprocessable("Ombi Token is not defined"));
     }
-    let url = format!("{}/api/v1/Settings/about", test.url(&settings.ombi_url));
+    let url = format!(
+        "{}/api/v1/Settings/about",
+        full_address(&settings.ombi_url)?
+    );
     let probe = Probe {
         url: &url,
         headers: &[
@@ -313,7 +318,7 @@ async fn sick_rage(test: &Test<'_>) -> Outcome {
     }
     let mut errors = String::new();
     for (address, token) in pihole::installs(&settings.sickrage_url, &settings.sickrage_token) {
-        let base = test.url(address);
+        let base = full_address(address)?;
         let install = sickrage::Install {
             url: &base,
             key: token,
@@ -341,7 +346,7 @@ async fn nzbget(test: &Test<'_>) -> Outcome {
     if settings.nzbget_url.is_empty() {
         return Err(Refusal::unprocessable("NZBGet URL is not defined"));
     }
-    let url = test.url(&settings.nzbget_url);
+    let url = full_address(&settings.nzbget_url)?;
     let install = Downloader {
         url: &url,
         timeout: Some(TIME_LIMIT),
@@ -369,7 +374,7 @@ async fn transmission(test: &Test<'_>) -> Outcome {
     if settings.transmission_url.is_empty() {
         return Err(Refusal::unprocessable("Transmission URL is not defined"));
     }
-    let url = test.url(&settings.transmission_url);
+    let url = full_address(&settings.transmission_url)?;
     let install = Downloader {
         url: &url,
         timeout: Some(TIME_LIMIT),
@@ -396,7 +401,7 @@ async fn qbittorrent(test: &Test<'_>) -> Outcome {
     if settings.qbittorrent_url.is_empty() {
         return Err(Refusal::unprocessable("qBittorrent URL is not defined"));
     }
-    let url = test.url(&settings.qbittorrent_url);
+    let url = full_address(&settings.qbittorrent_url)?;
     let install = Downloader {
         url: &url,
         timeout: Some(TIME_LIMIT),
@@ -428,8 +433,6 @@ impl Test<'_> {
         Asked {
             settings,
             http: self.http,
-            headers: self.headers,
-            client: self.client,
             timeout: Some(TIME_LIMIT),
         }
     }
@@ -512,7 +515,7 @@ async fn pi_hole(test: &Test<'_>) -> Outcome {
     let mut errors = String::new();
     let http = test.state.outbound().ok_or_else(no_requests)?;
     for (address, password) in pihole::installs(&settings.pihole_url, &settings.pihole_token) {
-        let base = test.url(address);
+        let base = full_address(address)?;
         let base = base.trim_end_matches('/');
         // PHP checks only that a password is there and that the install answers. A
         // password that Pi-hole refuses fails the test here too (D-101).
@@ -565,7 +568,7 @@ async fn adguard(test: &Test<'_>) -> Outcome {
         .into_iter()
         .collect();
     for address in settings.adguard_url.split(',') {
-        let base = test.url(address);
+        let base = full_address(address)?;
         let url = format!("{base}/control/stats");
         let probe = Probe {
             url: &url,
@@ -594,7 +597,7 @@ async fn adguard(test: &Test<'_>) -> Outcome {
 async fn indexer(test: &Test<'_>, caller: &Caller, kind: Indexer) -> Outcome {
     let settings = test.state.settings();
     indexers::check(kind, &settings, caller, true)?;
-    let url = indexers::address(kind, &settings, test.headers, test.client);
+    let url = indexers::address(kind, &settings);
     let install = indexers::install(kind, &settings, &url);
     let reply = install
         .search(test.http, kind, "this-is-just-a-test-for-organizr")
@@ -614,7 +617,7 @@ async fn indexer(test: &Test<'_>, caller: &Caller, kind: Indexer) -> Outcome {
 async fn unifi_health(test: &Test<'_>, caller: &Caller) -> Outcome {
     let settings = test.state.settings();
     unifi::test_permissions().check(&settings, caller)?;
-    unifi::health(&settings, test.http, test.headers, test.client)
+    unifi::health(&settings, test.http)
         .await
         .map_err(|error| unifi::refusal(&error))?;
     Ok(succeeded())
@@ -624,7 +627,7 @@ async fn unifi_health(test: &Test<'_>, caller: &Caller) -> Outcome {
 async fn unifi_sites(test: &Test<'_>, caller: &Caller) -> Outcome {
     let settings = test.state.settings();
     unifi::test_permissions().check(&settings, caller)?;
-    let url = test.url(&settings.unifi_url);
+    let url = full_address(&settings.unifi_url)?;
     let sites = unifi::controller(&settings, &url)
         .sites(test.http)
         .await
@@ -660,7 +663,7 @@ async fn media_server(test: &Test<'_>, caller: &Caller, kind: MediaServer) -> Ou
             )
         }
     };
-    let url = format!("{}/Users", test.url(address));
+    let url = format!("{}/Users", full_address(address)?);
     let (header, key) = kind.key_header(token);
     let probe = Probe {
         url: &url,
@@ -691,7 +694,7 @@ async fn media_server(test: &Test<'_>, caller: &Caller, kind: MediaServer) -> Ou
 async fn emby_live_television(test: &Test<'_>, caller: &Caller) -> Outcome {
     let settings = test.state.settings();
     live_tv::permissions().check(&settings, caller)?;
-    let url = live_tv::address(&settings, test.headers, test.client);
+    let url = live_tv::address(&settings);
     match emby_live_tv::test(test.http, &live_tv::server(&settings, &url)).await {
         Ok(message) => Ok(Envelope::success(Value::Null).with_message(message)),
         Err(error) => Err(refused(
@@ -714,7 +717,7 @@ async fn jelly_stat(test: &Test<'_>, caller: &Caller) -> Outcome {
     };
     let never_check = settings.jelly_stat_disable_cert_check;
     if settings.homepage_jelly_stat_display_mode == "iframe" {
-        let url = test.url(&settings.jelly_stat_url);
+        let url = full_address(&settings.jelly_stat_url)?;
         let probe = Probe {
             url: &url,
             never_check_certificate: never_check,
@@ -729,7 +732,7 @@ async fn jelly_stat(test: &Test<'_>, caller: &Caller) -> Outcome {
             ))
         };
     }
-    let url = jellystat::api_address(&settings, test.headers, test.client);
+    let url = jellystat::api_address(&settings);
     let install = JellyStat {
         url: &url,
         key: &settings.jelly_stat_apikey,
@@ -830,24 +833,13 @@ const fn uses_custom_certificate(service: Service, settings: &Settings) -> bool 
     }
 }
 
-async fn run(
-    state: &AppState,
-    caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
-    service: Service,
-) -> Outcome {
+async fn run(state: &AppState, caller: &Caller, service: Service) -> Outcome {
     caller.require(GroupLevel::CO_ADMIN)?;
     let settings = state.settings();
     let http = &state
         .outbound_for(uses_custom_certificate(service, &settings))
         .ok_or_else(no_requests)?;
-    let test = Test {
-        state,
-        headers,
-        client,
-        http,
-    };
+    let test = Test { state, http };
     match service {
         Service::Plex => plex(&test).await,
         Service::Sonarr => {
@@ -912,10 +904,8 @@ macro_rules! test_route {
         pub async fn $name(
             State(state): State<AppState>,
             Extension(caller): Extension<Caller>,
-            Extension(client): Extension<Client>,
-            headers: HeaderMap,
         ) -> Result<Envelope<Value>, Refusal> {
-            run(&state, &caller, &client, &headers, $service).await
+            run(&state, &caller, $service).await
         }
     };
 }

@@ -12,7 +12,7 @@ use organizr_settings::Settings;
 
 use crate::client::Client;
 use crate::cookies::CookieScope;
-use crate::php_url;
+use crate::handlers::homepage::{service_url, tab_address};
 use crate::state::AppState;
 
 /// The backend of the `authBackend` setting that this module knows.
@@ -144,11 +144,9 @@ pub async fn hand_off(
     };
     let timeout = time_for_each(&settings);
 
-    let host = headers
-        .get(header::HOST)
-        .and_then(|value| value.to_str().ok())
-        .unwrap_or_default();
-    let qualified = |address: &str| php_url::qualify(address.trim(), client.https, host);
+    // Organizr sends the password of the login to these addresses, so an address that is
+    // only a path names no application, whatever host the request names (D-137).
+    let qualified = |address: &str| service_url(address);
     let client_ip = client.address.to_string();
     let who = Login {
         username: &login.user.username,
@@ -198,7 +196,9 @@ pub async fn hand_off(
         .await
     };
     let tautulli = tautulli_sessions(http, &settings, &qualified, who, login.level, timeout);
-    let jellyfin = jellyfin_session(http, &settings, &qualified, who, timeout);
+    // The address of Jellyfin for the browser goes into a cookie of this answer.
+    let for_browser = tab_address(&settings.jellyfin_ssourl, headers, client);
+    let jellyfin = jellyfin_session(http, &settings, &qualified, &for_browser, who, timeout);
     let petio = petio_token(http, &settings, &qualified, who, timeout);
     let komga = komga_token(http, &settings, &qualified, who, login.level, timeout);
     let (ombi, overseerr, tautulli, jellyfin, petio, komga) =
@@ -342,6 +342,7 @@ async fn jellyfin_session(
     http: &Outbound,
     settings: &Settings,
     qualified: &impl Fn(&str) -> String,
+    for_browser: &str,
     who: Login<'_>,
     timeout: Duration,
 ) -> Option<sso::JellyfinSession> {
@@ -351,7 +352,7 @@ async fn jellyfin_session(
     sso::jellyfin_session(
         http,
         &qualified(&settings.jellyfin_url),
-        &qualified(&settings.jellyfin_ssourl),
+        for_browser,
         who,
         timeout,
     )

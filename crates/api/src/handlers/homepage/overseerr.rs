@@ -13,7 +13,6 @@ use serde_json::{Map, Value, json};
 use super::request_search::{self, LONGEST_QUERY, encoded};
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::cookies::cookie_value;
 use crate::envelope::{Envelope, NoData};
 use crate::handlers::fields::Refusal;
@@ -40,9 +39,9 @@ pub fn request_permissions() -> Permissions {
     permissions
 }
 
-fn install(settings: &Settings, headers: &HeaderMap, client: &Client, with_limit: bool) -> Install {
+fn install(settings: &Settings, with_limit: bool) -> Install {
     Install {
-        url: service_url(&settings.overseerr_url, headers, client),
+        url: service_url(&settings.overseerr_url),
         key: settings.overseerr_token.clone(),
         timeout: with_limit
             .then(|| time_limit(&settings.overseerr_refresh.to_string()))
@@ -241,15 +240,13 @@ fn paging(settings: &Settings, limit: Option<&str>, offset: Option<&str>) -> (i6
 async fn list(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     limit: Option<&str>,
     offset: Option<&str>,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, caller)?;
     let http = &outbound(state, &settings)?;
-    let install = install(&settings, headers, client, true);
+    let install = install(&settings, true);
     let (limit, offset) = paging(&settings, limit, offset);
     let (mut films, mut series) = (0_u32, 0_u32);
     let mut rows: Vec<(i64, &'static str, Map<String, Value>)> = Vec::new();
@@ -315,51 +312,35 @@ async fn list(
 pub async fn requests(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(&state, &caller, &client, &headers, None, None).await
+    list(&state, &caller, None, None).await
 }
 
 /// `GET /homepage/overseerr/requests/{type}`: as without the type, which says nothing.
 pub async fn requests_of_type(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path(_kind): Path<String>,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(&state, &caller, &client, &headers, None, None).await
+    list(&state, &caller, None, None).await
 }
 
 /// `GET /homepage/overseerr/requests/{type}/{limit}`.
 pub async fn requests_limited(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path((_kind, limit)): Path<(String, String)>,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(&state, &caller, &client, &headers, Some(&limit), None).await
+    list(&state, &caller, Some(&limit), None).await
 }
 
 /// `GET /homepage/overseerr/requests/{type}/{limit}/{offset}`.
 pub async fn requests_paged(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path((_kind, limit, offset)): Path<(String, String, String)>,
 ) -> Result<Envelope<Value>, Refusal> {
-    list(
-        &state,
-        &caller,
-        &client,
-        &headers,
-        Some(&limit),
-        Some(&offset),
-    )
-    .await
+    list(&state, &caller, Some(&limit), Some(&offset)).await
 }
 
 /// `GET /homepage/overseerr/metadata/{type}/{id}`: what Overseerr knows about a film
@@ -367,8 +348,6 @@ pub async fn requests_paged(
 pub async fn metadata(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path((kind_text, id)): Path<(String, String)>,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
@@ -377,7 +356,7 @@ pub async fn metadata(
         return Err(Refusal::unprocessable("Type was not supplied"));
     };
     let http = &outbound(&state, &settings)?;
-    let reply = install(&settings, &headers, &client, false)
+    let reply = install(&settings, false)
         .get(http, &format!("{kind}/{id}"))
         .await
         .map_err(|error| unreachable(&error))?;
@@ -402,8 +381,6 @@ enum Action {
 async fn act(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     id: &str,
     action: Action,
 ) -> Result<Envelope<NoData>, Refusal> {
@@ -415,7 +392,7 @@ async fn act(
         return Err(Refusal::unprocessable("Id was not supplied"));
     };
     let http = &outbound(state, &settings)?;
-    let install = install(&settings, headers, client, false);
+    let install = install(&settings, false);
     let send = async |method: Method, path: String| {
         install
             .send(http, method, &path, None, As::Application)
@@ -469,11 +446,9 @@ macro_rules! action_route {
         pub async fn $name(
             State(state): State<AppState>,
             Extension(caller): Extension<Caller>,
-            Extension(client): Extension<Client>,
-            headers: HeaderMap,
             Path((_kind, id)): Path<(String, String)>,
         ) -> Result<Envelope<NoData>, Refusal> {
-            act(&state, &caller, &client, &headers, &id, $action).await
+            act(&state, &caller, &id, $action).await
         }
     };
 }
@@ -542,7 +517,6 @@ fn seasons_for(setting: &str, asked: Option<&str>, series: &Value) -> Result<Val
 async fn add(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
     headers: &HeaderMap,
     (kind_text, id, seasons): (&str, &str, Option<&str>),
 ) -> Result<Envelope<NoData>, Refusal> {
@@ -562,7 +536,7 @@ async fn add(
         return Err(failed("User does not have Auth Cookie"));
     };
     let http = &outbound(state, &settings)?;
-    let install = install(&settings, headers, client, false);
+    let install = install(&settings, false);
     let read = async |path: &str, problem: &'static str| {
         let reply = install
             .get(http, path)
@@ -654,11 +628,10 @@ async fn add(
 pub async fn add_request(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
     headers: HeaderMap,
     Path((kind, id)): Path<(String, String)>,
 ) -> Result<Envelope<NoData>, Refusal> {
-    add(&state, &caller, &client, &headers, (&kind, &id, None)).await
+    add(&state, &caller, &headers, (&kind, &id, None)).await
 }
 
 /// `POST /homepage/overseerr/requests/{type}/{id}/{seasons}`: a new request for a
@@ -666,18 +639,10 @@ pub async fn add_request(
 pub async fn add_request_for_seasons(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
     headers: HeaderMap,
     Path((kind, id, seasons)): Path<(String, String, String)>,
 ) -> Result<Envelope<NoData>, Refusal> {
-    add(
-        &state,
-        &caller,
-        &client,
-        &headers,
-        (&kind, &id, Some(&seasons)),
-    )
-    .await
+    add(&state, &caller, &headers, (&kind, &id, Some(&seasons))).await
 }
 
 #[cfg(test)]
@@ -799,8 +764,6 @@ fn search_results(answer: &Value) -> Value {
 async fn search_at(
     state: &AppState,
     caller: &Caller,
-    client: &Client,
-    headers: &HeaderMap,
     (query, page): (&str, &str),
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
@@ -813,7 +776,7 @@ async fn search_at(
         return Err(Refusal::unprocessable("Page was not supplied"));
     };
     let http = &outbound(state, &settings)?;
-    let reply = install(&settings, headers, client, false)
+    let reply = install(&settings, false)
         .get(
             http,
             &format!("search?query={}&page={page}&language=en", encoded(query)),
@@ -832,22 +795,18 @@ async fn search_at(
 pub async fn search(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path(query): Path<String>,
 ) -> Result<Envelope<Value>, Refusal> {
-    search_at(&state, &caller, &client, &headers, (&query, "1")).await
+    search_at(&state, &caller, (&query, "1")).await
 }
 
 /// `GET /homepage/overseerr/search/{query}/{page}`: a later page of the search.
 pub async fn search_page(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path((query, page)): Path<(String, String)>,
 ) -> Result<Envelope<Value>, Refusal> {
-    search_at(&state, &caller, &client, &headers, (&query, &page)).await
+    search_at(&state, &caller, (&query, &page)).await
 }
 
 #[cfg(test)]

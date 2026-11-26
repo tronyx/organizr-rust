@@ -2,7 +2,6 @@
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::HeaderMap;
 use organizr_integrations::http::{Outbound, time_limit};
 use organizr_integrations::netdata::{self, Install, Source};
 use organizr_settings::Settings;
@@ -10,7 +9,6 @@ use serde_json::{Map, Value, json};
 
 use super::{Permissions, is_empty, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::state::AppState;
@@ -37,8 +35,6 @@ fn of_chart(settings: &Settings, chart: usize, name: &str) -> Value {
 /// What a request for the charts needs.
 struct Asked<'a> {
     settings: &'a Settings,
-    headers: &'a HeaderMap,
-    client: &'a Client,
     http: &'a Outbound,
 }
 
@@ -58,10 +54,10 @@ impl Asked<'_> {
                     }
                 };
                 // An entry can name another install.
-                let base = custom.netdata.as_deref().map_or_else(
-                    || install.url.to_owned(),
-                    |address| service_url(address, self.headers, self.client),
-                );
+                let base = custom
+                    .netdata
+                    .as_deref()
+                    .map_or_else(|| install.url.to_owned(), service_url);
                 install.custom(self.http, &base, &custom).await
             }
             Some(source) => install.chart(self.http, source).await,
@@ -81,8 +77,6 @@ impl Asked<'_> {
 pub async fn data(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
@@ -90,7 +84,7 @@ pub async fn data(
         .outbound_for(settings.netdata_use_custom_certificate)
         .ok_or_else(no_requests)?;
 
-    let url = service_url(&settings.netdata_url, &headers, &client);
+    let url = service_url(&settings.netdata_url);
     let install = Install {
         url: &url,
         timeout: time_limit(&settings.homepage_netdata_refresh.to_string()),
@@ -98,8 +92,6 @@ pub async fn data(
     };
     let asked = Asked {
         settings: &settings,
-        headers: &headers,
-        client: &client,
         http,
     };
     let mut charts = Vec::new();

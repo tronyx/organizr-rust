@@ -5,7 +5,7 @@ use std::time::SystemTime;
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
 use organizr_integrations::http::Outbound;
@@ -16,7 +16,6 @@ use serde_json::Value;
 
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::picture_cache::Source;
@@ -60,33 +59,24 @@ fn window(settings: &Settings) -> Window {
 }
 
 /// The installs of an application, each one with its complete address and its key.
-fn installs(urls: &str, keys: &str, headers: &HeaderMap, client: &Client) -> Vec<(String, String)> {
+fn installs(urls: &str, keys: &str) -> Vec<(String, String)> {
     pihole::installs(urls, keys)
         .into_iter()
-        .map(|(url, key)| (service_url(url, headers, client), key.to_owned()))
+        .map(|(url, key)| (service_url(url), key.to_owned()))
         .collect()
 }
 
 /// The episodes of every install of SickRage: the ones that were missed, the ones to
 /// come, and the ones that were downloaded. An install that gives no usable answer
 /// is left out.
-pub async fn sickrage_events(
-    state: &AppState,
-    headers: &HeaderMap,
-    client: &Client,
-) -> Result<Vec<Value>, Refusal> {
+pub async fn sickrage_events(state: &AppState) -> Result<Vec<Value>, Refusal> {
     let settings = state.settings();
     let http = &state
         .outbound_for(settings.sickrage_use_custom_certificate)
         .ok_or_else(no_requests)?;
     let (now, zone) = (window(&settings).now, TimeZone::system());
     let mut all = Vec::new();
-    let installs = installs(
-        &settings.sickrage_url,
-        &settings.sickrage_token,
-        headers,
-        client,
-    );
+    let installs = installs(&settings.sickrage_url, &settings.sickrage_token);
     for (number, (url, key)) in installs.iter().enumerate() {
         let install = sickrage::Install {
             url,
@@ -114,23 +104,14 @@ pub async fn sickrage_events(
 
 /// The films of every install of CouchPotato whose release is in the days of the
 /// settings. An install that gives no usable answer is left out.
-pub async fn couchpotato_events(
-    state: &AppState,
-    headers: &HeaderMap,
-    client: &Client,
-) -> Result<Vec<Value>, Refusal> {
+pub async fn couchpotato_events(state: &AppState) -> Result<Vec<Value>, Refusal> {
     let settings = state.settings();
     let http = &state
         .outbound_for(settings.couchpotato_use_custom_certificate)
         .ok_or_else(no_requests)?;
     let window = window(&settings);
     let mut all = Vec::new();
-    let installs = installs(
-        &settings.couchpotato_url,
-        &settings.couchpotato_token,
-        headers,
-        client,
-    );
+    let installs = installs(&settings.couchpotato_url, &settings.couchpotato_token);
     for (number, (url, key)) in installs.iter().enumerate() {
         let install = couchpotato::Install {
             url,
@@ -224,11 +205,9 @@ pub async fn ical_part(state: &AppState, caller: &Caller) -> Value {
 pub async fn sickrage_calendar(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Vec<Value>>, Refusal> {
     sickrage_permissions().check(&state.settings(), &caller)?;
-    let events = sickrage_events(&state, &headers, &client).await?;
+    let events = sickrage_events(&state).await?;
     Ok(Envelope::success(events))
 }
 
@@ -236,11 +215,9 @@ pub async fn sickrage_calendar(
 pub async fn couchpotato_calendar(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Vec<Value>>, Refusal> {
     couchpotato_permissions().check(&state.settings(), &caller)?;
-    let events = couchpotato_events(&state, &headers, &client).await?;
+    let events = couchpotato_events(&state).await?;
     Ok(Envelope::success(events))
 }
 

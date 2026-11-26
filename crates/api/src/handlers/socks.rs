@@ -26,9 +26,10 @@ use organizr_settings::Settings;
 use serde_json::Value;
 
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::handlers::fields::Refusal;
-use crate::handlers::homepage::{is_empty, level_of, no_requests, service_url};
+use crate::handlers::homepage::{
+    PATH_ONLY, is_empty, is_path_only, level_of, no_requests, service_url,
+};
 use crate::router::API_BASE;
 use crate::state::AppState;
 
@@ -249,8 +250,6 @@ fn url_for_app(
     settings: &Settings,
     parts: &Parts<'_>,
     uri: &Uri,
-    headers: &HeaderMap,
-    client: &Client,
 ) -> Result<String, Refusal> {
     let addresses = text_of(settings, app.url);
     // The multiple form with the instance `0` gets here only without commas.
@@ -268,9 +267,15 @@ fn url_for_app(
         addresses
     };
     let address: String = address.chars().filter(|c| !c.is_whitespace()).collect();
-    // A path such as `/sonarr` gets the scheme and the host of the request in front, as
-    // in the PHP application and on the rest of the homepage.
-    let base = service_url(&address, headers, client);
+    // PHP puts the host of the request in front of a path such as `/sonarr`. The caller
+    // chooses that host, so such an address is refused (D-137).
+    if is_path_only(&address) {
+        return Err(Refusal::Request(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            PATH_ONLY.to_owned(),
+        ));
+    }
+    let base = service_url(&address);
     let climbs = || {
         Refusal::Request(
             StatusCode::BAD_REQUEST,
@@ -292,7 +297,6 @@ fn url_for_app(
 pub async fn socks(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
     method: Method,
     uri: Uri,
     headers: HeaderMap,
@@ -308,7 +312,7 @@ pub async fn socks(
     if let Some(refusal) = refusal(&app, &settings, &caller, multiple) {
         return Err(refusal);
     }
-    let url = url_for_app(&app, &settings, &parts, &uri, &headers, &client)?;
+    let url = url_for_app(&app, &settings, &parts, &uri)?;
 
     let content_type = headers
         .get(header::CONTENT_TYPE)

@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::Extension;
 use axum::extract::{Path, Query, State};
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use axum::response::Response;
 use organizr_domain::GroupLevel;
 use organizr_integrations::http::time_limit;
@@ -18,7 +18,6 @@ use serde_json::{Map, Value, json};
 use super::{Permissions, emby, no_requests, service_url};
 use crate::api_data::ApiData;
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
@@ -95,13 +94,7 @@ struct Asked {
 }
 
 impl Asked {
-    fn new(
-        state: &AppState,
-        caller: &Caller,
-        client: &Client,
-        headers: &HeaderMap,
-        part: Part,
-    ) -> Result<Self, Refusal> {
+    fn new(state: &AppState, caller: &Caller, part: Part) -> Result<Self, Refusal> {
         let settings = state.settings();
         permissions(part).check(&settings, caller)?;
         let may = |level: u32| u32::from(caller.level().get()) <= level;
@@ -111,7 +104,7 @@ impl Asked {
             && may(settings.homepage_show_stream_names_without_ip_auth);
         let now = now();
         Ok(Self {
-            url: service_url(&settings.plex_url, headers, client),
+            url: service_url(&settings.plex_url),
             show_names: with_address || without_address,
             show_addresses: with_address,
             now,
@@ -185,19 +178,14 @@ fn excluded(setting: &str) -> Vec<&str> {
 }
 
 /// The names that Tautulli has for the users of the Plex server, by their user name.
-async fn tautulli_names(
-    state: &AppState,
-    settings: &Settings,
-    headers: &HeaderMap,
-    client: &Client,
-) -> Map<String, Value> {
+async fn tautulli_names(state: &AppState, settings: &Settings) -> Map<String, Value> {
     let mut names = Map::new();
     let Some(http) = state.outbound_for(settings.tautulli_use_custom_certificate) else {
         return names;
     };
     let http = &http;
     let address = settings.tautulli_url.split(',').next().unwrap_or_default();
-    let url = service_url(address, headers, client);
+    let url = service_url(address);
     let install = Tautulli {
         url: &url,
         key: &settings.tautulli_apikey,
@@ -229,17 +217,12 @@ async fn tautulli_names(
 
 /// The other names of the users, when the settings ask for them: from Tautulli, or
 /// else from the setting that holds them.
-async fn custom_names(
-    state: &AppState,
-    settings: &Settings,
-    headers: &HeaderMap,
-    client: &Client,
-) -> Option<Map<String, Value>> {
+async fn custom_names(state: &AppState, settings: &Settings) -> Option<Map<String, Value>> {
     if !settings.homepage_use_custom_stream_names {
         return None;
     }
     if !settings.tautulli_url.is_empty() && !settings.tautulli_apikey.is_empty() {
-        return Some(tautulli_names(state, settings, headers, client).await);
+        return Some(tautulli_names(state, settings).await);
     }
     serde_json::from_str(&settings.homepage_custom_stream_names).ok()
 }
@@ -248,14 +231,12 @@ async fn custom_names(
 pub async fn streams(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
-    let asked = Asked::new(&state, &caller, &client, &headers, Part::Streams)?;
+    let asked = Asked::new(&state, &caller, Part::Streams)?;
     let http = &state
         .outbound_for(asked.settings.plex_use_custom_certificate)
         .ok_or_else(no_requests)?;
-    let names = custom_names(&state, &asked.settings, &headers, &client).await;
+    let names = custom_names(&state, &asked.settings).await;
     let xml = asked
         .server(Some(asked.settings.homepage_stream_refresh))
         .xml(http, "/status/sessions", &[])
@@ -284,10 +265,8 @@ pub async fn streams(
 pub async fn recent(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
-    let asked = Asked::new(&state, &caller, &client, &headers, Part::Recent)?;
+    let asked = Asked::new(&state, &caller, Part::Recent)?;
     let http = &state
         .outbound_for(asked.settings.plex_use_custom_certificate)
         .ok_or_else(no_requests)?;
@@ -327,10 +306,8 @@ pub async fn recent(
 pub async fn playlists(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
-    let asked = Asked::new(&state, &caller, &client, &headers, Part::Playlists)?;
+    let asked = Asked::new(&state, &caller, Part::Playlists)?;
     let http = &state
         .outbound_for(asked.settings.plex_use_custom_certificate)
         .ok_or_else(no_requests)?;
@@ -410,11 +387,9 @@ async fn items_at(
 pub async fn metadata(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     data: ApiData,
 ) -> Result<Envelope<Value>, Refusal> {
-    let asked = Asked::new(&state, &caller, &client, &headers, Part::Metadata)?;
+    let asked = Asked::new(&state, &caller, Part::Metadata)?;
     let key = match data.field("key") {
         Some(Value::String(key)) => key.clone(),
         Some(Value::Number(key)) => key.to_string(),
@@ -440,11 +415,9 @@ pub async fn metadata(
 pub async fn search(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     Path(query): Path<String>,
 ) -> Result<Envelope<Value>, Refusal> {
-    let asked = Asked::new(&state, &caller, &client, &headers, Part::Search)?;
+    let asked = Asked::new(&state, &caller, Part::Search)?;
     if query.is_empty() {
         return Err(Refusal::unprocessable("Plex Metadata key is not defined"));
     }
@@ -465,12 +438,10 @@ pub async fn search(
 pub async fn names(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     caller.require(GroupLevel::CO_ADMIN)?;
     let settings = state.settings();
-    let names = tautulli_names(&state, &settings, &headers, &client).await;
+    let names = tautulli_names(&state, &settings).await;
     Ok(Envelope::success(Value::Object(names)))
 }
 
@@ -484,8 +455,6 @@ pub async fn names(
 pub async fn image(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
     uri: axum::http::Uri,
     Query(query): Query<HashMap<String, String>>,
 ) -> Result<Response, Refusal> {
@@ -500,12 +469,10 @@ pub async fn image(
         let request = emby::Request {
             state: &state,
             caller: &caller,
-            client: &client,
-            headers: &headers,
         };
         return emby::image(request, kind, &query, &not_found).await;
     }
-    let asked = Asked::new(&state, &caller, &client, &headers, Part::Metadata)?;
+    let asked = Asked::new(&state, &caller, Part::Metadata)?;
     if field("source") != "plex" {
         return Err(not_found());
     }

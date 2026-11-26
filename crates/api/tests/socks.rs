@@ -518,8 +518,10 @@ async fn application_that_cannot_be_reached_gets_500_without_the_address() {
 }
 
 #[tokio::test]
-async fn address_that_is_only_a_path_gets_the_host_of_the_request() {
+async fn address_that_is_only_a_path_is_refused_whatever_the_host() {
     on_each_engine(async |database| {
+        // PHP puts the host of the request in front of the path. The caller chooses that
+        // host, so here such an address reaches nothing (D-137).
         let service = homepage_services::socks_app().await;
         let host = service.url().trim_start_matches("http://").to_owned();
         let app = app_for(database, &sonarr("999", "/sonarr/")).await;
@@ -530,10 +532,18 @@ async fn address_that_is_only_a_path_gets_the_host_of_the_request() {
         );
 
         let answer = send(&app, request).await;
-        assert_passed_on(&answer);
-        let seen = only(&service);
-        assert_eq!(seen.path, "/sonarr/api/v3/queue?page=2");
-        assert_eq!(seen.header("host"), Some(host.as_str()));
+        assert_eq!(
+            answer.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{}",
+            answer.body
+        );
+        assert!(
+            answer.body.contains("Use the full address of the service"),
+            "{}",
+            answer.body
+        );
+        assert!(service.seen().is_empty(), "{:?}", service.seen());
     })
     .await;
 }

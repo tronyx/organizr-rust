@@ -2,13 +2,12 @@
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_integrations::adguard;
 use serde_json::{Map, Value, json};
 
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::state::AppState;
@@ -30,18 +29,12 @@ pub fn permissions() -> Permissions {
 pub async fn stats(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     permissions().check(&settings, &caller)?;
     let http = state.outbound().ok_or_else(no_requests)?;
 
-    let addresses: Vec<String> = settings
-        .adguard_url
-        .split(',')
-        .map(|address| service_url(address, &headers, &client))
-        .collect();
+    let addresses: Vec<String> = settings.adguard_url.split(',').map(service_url).collect();
     let login = adguard::authorization(&settings.adguard_username, &settings.adguard_password);
     let statistics = adguard::statistics(http, &addresses, login.as_deref())
         .await

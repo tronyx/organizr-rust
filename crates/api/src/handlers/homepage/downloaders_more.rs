@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use axum::Extension;
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use organizr_integrations::downloaders::{Client as Downloader, Login};
 use organizr_integrations::downloaders_more::{
     self as clients, ClientError, DELUGE_TIME_LIMIT, DelugeView, RtorrentView,
@@ -16,7 +16,6 @@ use serde_json::{Value, json};
 
 use super::{Permissions, no_requests, service_url};
 use crate::caller::Caller;
-use crate::client::Client;
 use crate::envelope::Envelope;
 use crate::handlers::fields::Refusal;
 use crate::state::AppState;
@@ -89,10 +88,6 @@ pub struct Asked<'a> {
     pub settings: &'a Settings,
     /// The client for requests to other services.
     pub http: &'a Outbound,
-    /// The headers of the request of the caller.
-    pub headers: &'a HeaderMap,
-    /// How the caller reached Organizr.
-    pub client: &'a Client,
     /// How long the download client has to answer. Without it, the time between two
     /// loads of the item is the limit, as in the PHP application.
     pub timeout: Option<Duration>,
@@ -106,7 +101,7 @@ impl Asked<'_> {
     /// The torrents of Deluge.
     pub async fn deluge(&self) -> Result<Vec<Value>, ClientError> {
         let settings = self.settings;
-        let url = service_url(&settings.deluge_url, self.headers, self.client);
+        let url = service_url(&settings.deluge_url);
         let install = Downloader {
             url: &url,
             timeout: Some(DELUGE_TIME_LIMIT),
@@ -122,8 +117,7 @@ impl Asked<'_> {
     fn rtorrent_endpoint(&self) -> String {
         let address = &self.settings.rtorrent_url;
         let other = &self.settings.rtorrent_url_override;
-        let complete =
-            |address: &str| without_query(service_url(address, self.headers, self.client));
+        let complete = |address: &str| without_query(service_url(address));
         if other.is_empty() {
             let endpoint = complete(address);
             if address.contains(".php") {
@@ -178,11 +172,7 @@ impl Asked<'_> {
     /// The torrents of uTorrent, or nothing when uTorrent refused the request.
     pub async fn utorrent(&self) -> Result<Option<Vec<Value>>, ClientError> {
         let settings = self.settings;
-        let url = without_query(service_url(
-            &settings.utorrent_url,
-            self.headers,
-            self.client,
-        ));
+        let url = without_query(service_url(&settings.utorrent_url));
         let install = Downloader {
             url: &url,
             timeout: self.limit(settings.utorrent_refresh),
@@ -198,7 +188,7 @@ impl Asked<'_> {
     /// The answer of the service of JDownloader, or nothing when it refused the request.
     pub async fn jdownloader(&self) -> Result<Option<Value>, ClientError> {
         let settings = self.settings;
-        let url = service_url(&settings.jdownloader_url, self.headers, self.client);
+        let url = service_url(&settings.jdownloader_url);
         let install = Downloader {
             url: &url,
             timeout: self.limit(settings.jdownloader_refresh),
@@ -217,8 +207,6 @@ impl Asked<'_> {
 pub async fn deluge_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     deluge_permissions().check(&settings, &caller)?;
@@ -227,8 +215,6 @@ pub async fn deluge_queue(
         http: &state
             .outbound_for(settings.deluge_use_custom_certificate)
             .ok_or_else(no_requests)?,
-        headers: &headers,
-        client: &client,
         timeout: None,
     };
     let torrents = asked.deluge().await.map_err(|error| failed(&error))?;
@@ -250,8 +236,6 @@ pub async fn deluge_queue(
 pub async fn rtorrent_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     // The PHP application looks for the address before everything else.
@@ -262,8 +246,6 @@ pub async fn rtorrent_queue(
         http: &state
             .outbound_for(settings.rtorrent_use_custom_certificate)
             .ok_or_else(no_requests)?,
-        headers: &headers,
-        client: &client,
         timeout: None,
     };
     let rows = asked.rtorrent().await.map_err(|error| failed(&error))?;
@@ -288,8 +270,6 @@ pub async fn rtorrent_queue(
 pub async fn utorrent_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     utorrent_permissions().check(&settings, &caller)?;
@@ -298,8 +278,6 @@ pub async fn utorrent_queue(
         http: &state
             .outbound_for(settings.utorrent_use_custom_certificate)
             .ok_or_else(no_requests)?,
-        headers: &headers,
-        client: &client,
         timeout: None,
     };
     let rows = asked.utorrent().await.map_err(|error| failed(&error))?;
@@ -319,8 +297,6 @@ pub async fn utorrent_queue(
 pub async fn jdownloader_queue(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
-    Extension(client): Extension<Client>,
-    headers: HeaderMap,
 ) -> Result<Envelope<Value>, Refusal> {
     let settings = state.settings();
     jdownloader_permissions().check(&settings, &caller)?;
@@ -329,8 +305,6 @@ pub async fn jdownloader_queue(
         http: &state
             .outbound_for(settings.jdownloader_use_custom_certificate)
             .ok_or_else(no_requests)?,
-        headers: &headers,
-        client: &client,
         timeout: None,
     };
     let answer = asked.jdownloader().await.map_err(|error| failed(&error))?;
