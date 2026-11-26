@@ -1,7 +1,9 @@
 //! More sources of the calendar of the homepage: SickRage, CouchPotato, and
 //! calendars in the iCalendar format.
 
-use std::time::SystemTime;
+use std::collections::HashMap;
+use std::sync::{LazyLock, Mutex, PoisonError};
+use std::time::{Duration, Instant, SystemTime};
 
 use axum::Extension;
 use axum::extract::State;
@@ -167,6 +169,21 @@ fn ical_refusal(settings: &Settings, caller: &Caller) -> Option<Refusal> {
     None
 }
 
+/// How long the events of a feed are kept, so that a new look at the calendar neither
+/// downloads nor reads the feed again (D-142).
+const FEED_KEPT_FOR: Duration = Duration::from_mins(5);
+
+/// The most feeds whose events are kept.
+const MOST_FEEDS_KEPT: usize = 64;
+
+/// A feed as the settings name it: its address and the days around today.
+type FeedKey = (String, i64, i64);
+
+/// The events of the feeds that were read a moment ago, with when they were read.
+type KeptFeeds = HashMap<FeedKey, (Instant, Vec<Value>)>;
+
+static KEPT: LazyLock<Mutex<KeptFeeds>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
 /// The events of every iCal address of the settings. An address that gives no
 /// calendar is left out.
 async fn ical_events(settings: &Settings, http: &Outbound) -> Vec<Value> {
@@ -176,16 +193,52 @@ async fn ical_events(settings: &Settings, http: &Outbound) -> Vec<Value> {
         if address.trim().is_empty() {
             continue;
         }
+        let key = (address.to_owned(), window.days_before, window.days_after);
+        if let Some(events) = kept(&key) {
+            all.extend(events);
+            continue;
+        }
         // The address of a private calendar holds a key, so the log names the place
         // of the address in the setting only.
-        match ical::fetch(http, address).await {
-            Ok(text) => all.extend(ical::events(&text, &window)),
+        let text = match ical::fetch(http, address).await {
+            Ok(text) => text,
             Err(error) => {
                 tracing::warn!(%error, number, "a calendar in the iCal format could not be read");
+                continue;
             }
-        }
+        };
+        // Reading a feed and its repeats takes work, so it runs away from the tasks that
+        // serve requests.
+        let read = window.clone();
+        let Ok(events) = tokio::task::spawn_blocking(move || ical::events(&text, &read)).await
+        else {
+            tracing::warn!(number, "a calendar in the iCal format could not be read");
+            continue;
+        };
+        keep(key, events.clone());
+        all.extend(events);
     }
     all
+}
+
+/// The events of a feed, when they were read less than [`FEED_KEPT_FOR`] ago.
+fn kept(key: &FeedKey) -> Option<Vec<Value>> {
+    let feeds = KEPT.lock().unwrap_or_else(PoisonError::into_inner);
+    feeds
+        .get(key)
+        .filter(|(since, _)| since.elapsed() < FEED_KEPT_FOR)
+        .map(|(_, events)| events.clone())
+}
+
+fn keep(key: FeedKey, events: Vec<Value>) {
+    let mut feeds = KEPT.lock().unwrap_or_else(PoisonError::into_inner);
+    if feeds.len() >= MOST_FEEDS_KEPT {
+        feeds.retain(|_, (since, _)| since.elapsed() < FEED_KEPT_FOR);
+        if feeds.len() >= MOST_FEEDS_KEPT {
+            feeds.clear();
+        }
+    }
+    feeds.insert(key, (Instant::now(), events));
 }
 
 /// The `ical` part of `GET /homepage/calendar`: the events of the iCal addresses, or

@@ -809,6 +809,7 @@ The three forms are alike. Replace `<app>` with `sonarr`, `radarr` or `lidarr`, 
 **Good to know:**
 
 - A private calendar's address holds a key. Organizr never writes the address into its log or an error text.
+- Organizr keeps the events of each calendar for 5 minutes, so a new change can take that long to show. One calendar gives at most 5000 events, from its first 10 000 entries (D-142).
 - An event shows when its start is in the loaded days. It's "Upcoming" until its end and "Over" after that.
 - Events with another repeat rule than those below show once, on their first day. Dates that a calendar takes out of a rule (`EXDATE`) still show.
 - Scripts: `GET /api/v2/homepage/ical/calendar`. `GET /api/v2/homepage/calendar` returns the app events in `events` and the iCal events in `ical`.

@@ -23,6 +23,17 @@ const LARGEST: usize = 10 * 1024 * 1024;
 /// The most periods of a rule for repeats that are looked at.
 const MOST_PERIODS: i64 = 100_000;
 
+/// The most values of a list of a rule, such as `BYDAY`. A real rule names a few days;
+/// a rule with more is no rule, and its event shows once (D-142).
+const MOST_LIST_VALUES: usize = 100;
+
+/// The most events of one feed that are read, and the most that one feed gives.
+const MOST_ENTRIES: usize = 10_000;
+const MOST_RESULTS: usize = 5_000;
+
+/// The most periods of the rules of one feed together.
+const MOST_PERIODS_OF_A_FEED: i64 = 1_000_000;
+
 /// The days around today that the calendar shows.
 #[derive(Debug, Clone)]
 pub struct Window {
@@ -435,14 +446,25 @@ impl Rule {
                     });
                 }
                 "BYDAY" => {
+                    if value.split(',').count() > MOST_LIST_VALUES {
+                        return None;
+                    }
                     for day in value.split(',') {
-                        rule.days.push(weekday(day)?);
+                        let day = weekday(day)?;
+                        if !rule.days.contains(&day) {
+                            rule.days.push(day);
+                        }
                     }
                 }
                 "BYMONTHDAY" => {
+                    if value.split(',').count() > MOST_LIST_VALUES {
+                        return None;
+                    }
                     for day in value.split(',') {
                         let day = day.trim().parse().ok().filter(|day| *day != 0)?;
-                        rule.month_days.push(day);
+                        if !rule.month_days.contains(&day) {
+                            rule.month_days.push(day);
+                        }
                     }
                 }
                 "WKST" => {}
@@ -549,11 +571,44 @@ impl Rule {
         }
     }
 
-    /// The starts of the event from `first` to `last`.
-    fn starts(&self, start: DateTime, first: DateTime, last: DateTime) -> Vec<DateTime> {
+    /// The number of the last period that ends before `first`, or 0. A rule with a
+    /// `COUNT` counts from the first period, so it starts there.
+    fn first_period(&self, start: DateTime, first: DateTime) -> i64 {
+        if self.count.is_some() || first <= start {
+            return 0;
+        }
+        let (from, to) = (start.date(), first.date());
+        let units = match self.frequency {
+            Frequency::Daily => from.until(to).map_or(0, |span| i64::from(span.get_days())),
+            Frequency::Weekly => from
+                .until(to)
+                .map_or(0, |span| i64::from(span.get_days()) / 7),
+            Frequency::Monthly => {
+                (i64::from(to.year()) - i64::from(from.year())) * 12 + i64::from(to.month())
+                    - i64::from(from.month())
+            }
+            Frequency::Yearly => i64::from(to.year()) - i64::from(from.year()),
+        };
+        (units / self.interval - 1).max(0)
+    }
+
+    /// The starts of the event from `first` to `last`. Each period that is looked at
+    /// takes one from `budget`, the periods that are left for the feed (D-142).
+    fn starts(
+        &self,
+        start: DateTime,
+        (first, last): (DateTime, DateTime),
+        budget: &mut i64,
+    ) -> Vec<DateTime> {
         let mut found = Vec::new();
         let mut counted = 0_usize;
-        for index in 0..MOST_PERIODS {
+        // The repeats start near the window, not at the first period of long ago.
+        let from = self.first_period(start, first);
+        for index in from..from.saturating_add(MOST_PERIODS) {
+            if *budget <= 0 {
+                break;
+            }
+            *budget -= 1;
             let Some(candidates) = self.period(start, index) else {
                 break;
             };
@@ -654,7 +709,11 @@ pub fn events(text: &str, window: &Window) -> Vec<Value> {
         .unwrap_or_else(|| window.zone.clone());
 
     let mut all = Vec::new();
-    for entry in &calendar.entries {
+    let mut budget = MOST_PERIODS_OF_A_FEED;
+    for entry in calendar.entries.iter().take(MOST_ENTRIES) {
+        if all.len() >= MOST_RESULTS {
+            break;
+        }
         let (Some(title), Some(times)) = (entry.title.as_deref(), times(entry, &zones)) else {
             continue;
         };
@@ -680,7 +739,7 @@ pub fn events(text: &str, window: &Window) -> Vec<Value> {
         let (Some(first), Some(last), Ok(length)) = bounds else {
             continue;
         };
-        for start in rule.starts(times.start, first, last) {
+        for start in rule.starts(times.start, (first, last), &mut budget) {
             let Ok(end) = start.checked_add(length) else {
                 continue;
             };
@@ -691,6 +750,7 @@ pub fn events(text: &str, window: &Window) -> Vec<Value> {
             }
         }
     }
+    all.truncate(MOST_RESULTS);
     all
 }
 
@@ -725,6 +785,57 @@ mod tests {
             .iter()
             .map(|event| event["start"].as_str().unwrap_or("?"))
             .collect()
+    }
+
+    #[test]
+    fn rule_with_a_huge_list_of_days_is_no_rule() {
+        // A list longer than any real rule needs makes the rule unusable, and the event
+        // is shown once (D-142).
+        let days = vec!["MO"; 1000].join(",");
+        let rule = format!("RRULE:FREQ=MONTHLY;BYDAY={days}");
+        let text = calendar(&[
+            "BEGIN:VEVENT",
+            "DTSTART:20200113T090000Z",
+            rule.as_str(),
+            "SUMMARY:Hostile",
+            "END:VEVENT",
+        ]);
+        assert_eq!(events(&text, &window("UTC")).len(), 1);
+        assert!(Rule::parse("FREQ=WEEKLY;BYDAY=MO,MO,TU,MO", &TimeZone::UTC).is_some());
+    }
+
+    #[test]
+    fn old_daily_event_still_lands_on_its_days() {
+        // The repeats start near the window, not at the first one of 1990, and are the
+        // same days as when every period is counted from the start (D-142).
+        let text = calendar(&[
+            "BEGIN:VEVENT",
+            "DTSTART:19900102T090000Z",
+            "RRULE:FREQ=DAILY;INTERVAL=3",
+            "SUMMARY:Every third day",
+            "END:VEVENT",
+        ]);
+        let found = events(&text, &window("UTC"));
+        let first = jiff::civil::date(1990, 1, 2);
+        assert_ne!(found.len(), 0);
+        for start in starts(&found) {
+            let day: jiff::civil::Date = start.get(..10).expect("a date").parse().expect("a date");
+            let days = first.until(day).expect("a span").get_days();
+            assert_eq!(days % 3, 0, "{start}");
+        }
+    }
+
+    #[test]
+    fn feed_gives_no_more_than_the_most_events() {
+        let mut lines = Vec::new();
+        for n in 0..6000 {
+            lines.push("BEGIN:VEVENT".to_owned());
+            lines.push("DTSTART:20200115T090000Z".to_owned());
+            lines.push(format!("SUMMARY:Event {n}"));
+            lines.push("END:VEVENT".to_owned());
+        }
+        let lines: Vec<&str> = lines.iter().map(String::as_str).collect();
+        assert_eq!(events(&calendar(&lines), &window("UTC")).len(), 5000);
     }
 
     #[test]
