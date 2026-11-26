@@ -180,20 +180,60 @@ fn files_below(folder: &Path, left_out: &[PathBuf], found: &mut Vec<PathBuf>) ->
     Ok(())
 }
 
+/// The size from which an entry is written as a ZIP64 entry. ZIP64 is needed from 4 GiB;
+/// the margin leaves room for a file that grows while it is copied. Smaller entries stay
+/// plain, so that simple unzip tools list their real sizes.
+const LARGE_ENTRY: u64 = 2 << 30;
+
+/// The options of one entry: compressed, with the time of its last change, and ZIP64 only
+/// for a large file.
+fn entry_options(size: u64, changed: SystemTime) -> SimpleFileOptions {
+    let options = SimpleFileOptions::default()
+        .compression_method(CompressionMethod::Deflated)
+        .large_file(size >= LARGE_ENTRY);
+    match zip_time(changed) {
+        Some(time) => options.last_modified_time(time),
+        None => options,
+    }
+}
+
+/// A time as a ZIP file writes it: the date and time in UTC, from 1980 to 2107.
+fn zip_time(time: SystemTime) -> Option<zip::DateTime> {
+    let moment = jiff::Timestamp::try_from(time)
+        .ok()?
+        .to_zoned_datetime(jiff::tz::TimeZone::UTC)
+        .datetime();
+    zip::DateTime::from_date_and_time(
+        u16::try_from(moment.year()).ok()?,
+        u8::try_from(moment.month()).ok()?,
+        u8::try_from(moment.day()).ok()?,
+        u8::try_from(moment.hour()).ok()?,
+        u8::try_from(moment.minute()).ok()?,
+        u8::try_from(moment.second()).ok()?,
+    )
+    .ok()
+}
+
 /// Writes an archive to `target`. Returns the number of files of the data folder in it.
 ///
 /// This blocks while it reads and writes files, so a server calls it on a thread for
 /// blocking work.
 pub fn write_archive(target: &Path, source: Source<'_>, manifest: &Manifest) -> io::Result<usize> {
-    let options = SimpleFileOptions::default()
-        .compression_method(CompressionMethod::Deflated)
-        .large_file(true);
     let mut archive = ZipWriter::new(File::create(target)?);
-    archive.start_file(MANIFEST_FILE, options).map_err(other)?;
+    archive
+        .start_file(MANIFEST_FILE, entry_options(0, SystemTime::now()))
+        .map_err(other)?;
     archive.write_all(&serde_json::to_vec_pretty(manifest).map_err(other)?)?;
     if let Some(copy) = source.database_copy {
-        archive.start_file(DATABASE_FILE, options).map_err(other)?;
-        io::copy(&mut File::open(copy)?, &mut archive)?;
+        let mut file = File::open(copy)?;
+        let metadata = file.metadata()?;
+        archive
+            .start_file(
+                DATABASE_FILE,
+                entry_options(metadata.len(), SystemTime::now()),
+            )
+            .map_err(other)?;
+        io::copy(&mut file, &mut archive)?;
     }
 
     let mut files = Vec::new();
@@ -218,8 +258,13 @@ pub fn write_archive(target: &Path, source: Source<'_>, manifest: &Manifest) -> 
         if stays_out(&relative) || relative == MANIFEST_FILE {
             continue;
         }
-        archive.start_file(relative, options).map_err(other)?;
-        io::copy(&mut File::open(&file)?, &mut archive)?;
+        let mut opened = File::open(&file)?;
+        let metadata = opened.metadata()?;
+        let changed = metadata.modified().unwrap_or_else(|_| SystemTime::now());
+        archive
+            .start_file(relative, entry_options(metadata.len(), changed))
+            .map_err(other)?;
+        io::copy(&mut opened, &mut archive)?;
         count += 1;
     }
     archive.finish().map_err(other)?.sync_all()?;
@@ -394,6 +439,28 @@ mod tests {
         let manifest = Manifest::new("1.2.3", "2026-11-20T03:15:00Z".to_owned(), true, true);
         let count = write_archive(&target, source, &manifest).expect("the archive is written");
         (folder, target, count)
+    }
+
+    #[test]
+    fn small_entries_are_plain_zip_entries_with_their_dates() {
+        let (_folder, target, _) = archive_of_a_data_folder();
+
+        // The first local header holds real sizes, not the 0xFFFFFFFF of ZIP64, so a
+        // simple unzip tool lists them as they are.
+        let bytes = std::fs::read(&target).expect("the archive can be read");
+        assert_eq!(&bytes[..4], b"PK\x03\x04");
+        let size_at =
+            |at: usize| u32::from_le_bytes(bytes[at..at + 4].try_into().expect("4 bytes"));
+        assert_ne!(size_at(18), u32::MAX);
+        assert_ne!(size_at(22), u32::MAX);
+
+        let mut archive = ZipArchive::new(File::open(&target).expect("the archive opens"))
+            .expect("the archive is a zip file");
+        for index in 0..archive.len() {
+            let entry = archive.by_index(index).expect("the entry can be read");
+            let date = entry.last_modified().expect("the entry has a date");
+            assert!(date.year() >= 2026, "{:?}: {date:?}", entry.name());
+        }
     }
 
     #[test]
