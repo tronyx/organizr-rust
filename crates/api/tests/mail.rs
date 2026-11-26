@@ -441,7 +441,7 @@ async fn test_e_mail_goes_to_the_caller_and_reports_a_failure() {
         let cookie = login
             .cookies
             .iter()
-            .find(|cookie| cookie.starts_with("organizr_token_"))
+            .find(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
             .and_then(|cookie| cookie.split(';').next())
             .expect("the login sets the session cookie")
             .to_owned();

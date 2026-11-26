@@ -32,7 +32,7 @@ async fn session_cookie_of_a_login(app: &Router) -> String {
     answer
         .cookies
         .iter()
-        .find(|cookie| cookie.starts_with("organizr_token_"))
+        .find(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
         .and_then(|cookie| cookie.split('=').next())
         .expect("the login sets the session cookie")
         .to_owned()

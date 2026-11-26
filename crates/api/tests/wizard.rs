@@ -254,7 +254,12 @@ async fn running_application_uses_what_the_set_up_wrote() {
             })
             .collect();
         let cookie_name = format!("organizr_token_{}", stored["uuid"]);
-        let cookies = answer.cookies_named(&cookie_name);
+        // The answer also drops cookies of the name at the paths of the API (D-145).
+        let cookies: Vec<_> = answer
+            .cookies_named(&cookie_name)
+            .into_iter()
+            .filter(|cookie| !cookie.starts_with(&format!("{cookie_name}=;")))
+            .collect();
         assert_eq!(cookies.len(), 2, "{:?}", answer.cookies);
         for cookie in &cookies {
             assert!(cookie.ends_with("; SameSite=Lax; HttpOnly"), "{cookie}");
@@ -302,7 +307,12 @@ async fn running_application_uses_what_the_set_up_wrote() {
         )
         .await;
         assert_eq!(logged_in.status, 200, "{}", logged_in.body);
-        assert_eq!(logged_in.cookies_named(&cookie_name).len(), 2);
+        let with_token = logged_in
+            .cookies_named(&cookie_name)
+            .into_iter()
+            .filter(|cookie| !cookie.starts_with(&format!("{cookie_name}=;")))
+            .count();
+        assert_eq!(with_token, 2);
 
         // The registration password is stored as a hash, and the hash is sealed.
         let sealed = &stored["registrationPassword"];

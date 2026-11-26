@@ -72,7 +72,7 @@ async fn login_gets_a_session_of_komga_and_a_logout_ends_it() {
         let session = answer
             .cookies
             .iter()
-            .find(|cookie| cookie.starts_with("organizr_token_"))
+            .find(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
             .and_then(|cookie| cookie.split(';').next())
             .expect("a session cookie")
             .to_owned();

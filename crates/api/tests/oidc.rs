@@ -61,7 +61,7 @@ fn session_cookie(answer: &Answer) -> Option<String> {
     answer
         .cookies
         .iter()
-        .find(|cookie| cookie.starts_with("organizr_token_"))
+        .find(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
         .and_then(|cookie| cookie.split(';').next())
         .map(str::to_owned)
 }

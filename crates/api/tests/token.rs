@@ -223,8 +223,10 @@ async fn expired_session_makes_the_caller_a_guest_and_drops_the_cookie() {
         let revoke = delete(&app, "1", &cookie, &[]).await;
 
         assert_eq!(me.data(), Value::Null);
+        // Dropped at `/`, and at the two paths of the API that a planted cookie would use
+        // (D-145), each for the wide and the own domain.
         let dropped = me.cookies_named(SESSION_COOKIE);
-        assert_eq!(dropped.len(), 2, "{:?}", me.cookies);
+        assert_eq!(dropped.len(), 6, "{:?}", me.cookies);
         for cookie in dropped {
             assert!(
                 cookie.starts_with(&format!("{SESSION_COOKIE}=;")),
@@ -276,10 +278,23 @@ async fn login_with_a_stale_cookie_leaves_the_browser_with_the_new_session() {
         // A browser applies the cookies in order. The deletion of the stale cookie must
         // come first, so the new cookie stays.
         let cookies = answer.cookies_named(SESSION_COOKIE);
-        assert_eq!(cookies.len(), 4, "{:?}", answer.cookies);
-        assert!(cookies[0].starts_with(&format!("{SESSION_COOKIE}=;")));
-        assert!(cookies[1].starts_with(&format!("{SESSION_COOKIE}=;")));
-        let last = cookies[3]
+        let is_dropped_at_root = |cookie: &&str| {
+            cookie.starts_with(&format!("{SESSION_COOKIE}=;")) && cookie.contains("path=/;")
+        };
+        let with_token: Vec<usize> = (0..cookies.len())
+            .filter(|place| !cookies[*place].starts_with(&format!("{SESSION_COOKIE}=;")))
+            .collect();
+        let dropped_at_root: Vec<usize> = (0..cookies.len())
+            .filter(|place| is_dropped_at_root(&cookies[*place]))
+            .collect();
+        assert_eq!(with_token.len(), 2, "{:?}", answer.cookies);
+        assert_eq!(dropped_at_root.len(), 2, "{:?}", answer.cookies);
+        assert!(
+            dropped_at_root
+                .iter()
+                .all(|dropped| with_token.iter().all(|kept| dropped < kept))
+        );
+        let last = cookies[with_token[1]]
             .split(';')
             .next()
             .expect("the cookie has a value");
@@ -301,7 +316,7 @@ async fn browser_rule_rejects_a_session_from_another_browser() {
         assert_eq!(same.data()["username"], json!("admin"));
         assert_eq!(same.cookies_named(SESSION_COOKIE), Vec::<&str>::new());
         assert_eq!(other.data(), Value::Null);
-        assert_eq!(other.cookies_named(SESSION_COOKIE).len(), 2);
+        assert_eq!(other.cookies_named(SESSION_COOKIE).len(), 6);
 
         // Asking about the token from another browser: PHP answers "success" with
         // `false` and no message.

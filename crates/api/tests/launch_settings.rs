@@ -78,7 +78,7 @@ async fn co_admin_cookie(database: &Database, app: &Router) -> String {
     answer
         .cookies
         .iter()
-        .find(|cookie| cookie.starts_with("organizr_token_"))
+        .find(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
         .and_then(|cookie| cookie.split(';').next())
         .unwrap_or_else(|| panic!("the login sets the session cookie: {}", answer.body))
         .to_owned()

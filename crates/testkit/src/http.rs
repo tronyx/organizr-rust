@@ -55,9 +55,14 @@ impl Answer {
 
     /// The cookie of the given name as a browser sends it back: `name=value`. `None`
     /// when the answer does not set it.
+    /// An answer may drop cookies of the name at other paths before it sets one
+    /// (D-145), so the first cookie of the name with a value counts, or else the first.
     pub fn cookie(&self, name: &str) -> Option<String> {
-        self.cookies_named(name)
-            .first()
+        let named = self.cookies_named(name);
+        named
+            .iter()
+            .find(|cookie| !cookie.starts_with(&format!("{name}=;")))
+            .or_else(|| named.first())
             .and_then(|cookie| cookie.split(';').next())
             .map(str::to_owned)
     }

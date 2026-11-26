@@ -162,7 +162,7 @@ pub async fn wizard(
             .map(str::to_owned),
     };
     let logged_in = login::start_session(database, admin, device, now_stamp(now), ONE_DAY).await?;
-    let session_cookie = CookieScope::of(&headers, client.https).set_hidden(
+    let session_cookie = CookieScope::of(&headers, client.https).set_session(
         &session_cookie_name(&state.settings()),
         logged_in.token.expose(),
         now + ONE_DAY,

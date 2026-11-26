@@ -25,6 +25,9 @@ use crate::cookies::{self, CookieScope};
 use crate::error::ApiError;
 use crate::state::AppState;
 
+/// The most session cookies of a request that are looked at (D-145).
+pub const MOST_SESSION_COOKIES: usize = 4;
+
 /// The header that carries the API key.
 const API_KEY_HEADER: &str = "token";
 
@@ -152,25 +155,32 @@ pub async fn identify_caller(
     let has_api_key = presented_api_key(headers, request.uri().query())
         .is_some_and(|presented| is_api_key(&presented, &settings.api_key));
 
-    // An empty cookie counts as no cookie, as in the PHP application.
-    let sent = cookies::cookie_value(headers, &cookie_name).filter(|value| !value.is_empty());
-    let identity = match sent.map(SessionToken::parse) {
-        None => Identity::Guest,
-        Some(None) => Identity::Rejected,
-        Some(Some(token)) => {
-            let rule = browser_rule(&settings, headers);
-            match session::check(state.database(), &token, now_stamp(now), rule).await {
-                Ok(SessionCheck::Valid(authenticated)) => {
-                    Identity::User(Box::new(LoggedInCaller {
-                        token,
-                        authenticated: *authenticated,
-                    }))
-                }
-                Ok(SessionCheck::Unknown | SessionCheck::OtherBrowser) => Identity::Rejected,
-                Err(error) => return ApiError::Database(error).into_response(),
-            }
-        }
+    // An empty cookie counts as no cookie, as in the PHP application. Each cookie of
+    // the name counts, up to a few, and the first that names a session wins: another
+    // host of the cookie domain could have planted one that comes first (D-145).
+    let sent: Vec<&str> = cookies::cookie_values(headers, &cookie_name)
+        .filter(|value| !value.is_empty())
+        .take(MOST_SESSION_COOKIES)
+        .collect();
+    let mut identity = if sent.is_empty() {
+        Identity::Guest
+    } else {
+        Identity::Rejected
     };
+    let rule = browser_rule(&settings, headers);
+    for token in sent.into_iter().filter_map(SessionToken::parse) {
+        match session::check(state.database(), &token, now_stamp(now), rule).await {
+            Ok(SessionCheck::Valid(authenticated)) => {
+                identity = Identity::User(Box::new(LoggedInCaller {
+                    token,
+                    authenticated: *authenticated,
+                }));
+                break;
+            }
+            Ok(SessionCheck::Unknown | SessionCheck::OtherBrowser) => {}
+            Err(error) => return ApiError::Database(error).into_response(),
+        }
+    }
 
     let drop_cookie = matches!(identity, Identity::Rejected).then(|| {
         let secure = request
@@ -187,7 +197,7 @@ pub async fn identify_caller(
     let mut response = next.run(request).await;
 
     if let Some(scope) = drop_cookie {
-        match scope.delete_hidden(&cookie_name, now) {
+        match scope.delete_session(&cookie_name, now) {
             // Before the cookies of the handler: a login in the same request sets the
             // cookie again, and the browser keeps the last one.
             Ok(values) => cookies::prepend(&mut response, values),

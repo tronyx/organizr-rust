@@ -108,7 +108,12 @@ async fn registration_creates_an_account_in_the_default_group_and_logs_it_in() {
         // The answer logs the account in: a cookie that scripts cannot read, for the
         // seven days of the `rememberMeDays` setting.
         let cookie_name = format!("organizr_token_{}", seed::INSTALL_ID);
-        let cookies = answer.cookies_named(&cookie_name);
+        // The answer also drops cookies of the name at the paths of the API (D-145).
+        let cookies: Vec<_> = answer
+            .cookies_named(&cookie_name)
+            .into_iter()
+            .filter(|cookie| !cookie.starts_with(&format!("{cookie_name}=;")))
+            .collect();
         assert_eq!(cookies.len(), 2, "{:?}", answer.cookies);
         for cookie in &cookies {
             assert!(cookie.ends_with("; SameSite=Lax; HttpOnly"), "{cookie}");

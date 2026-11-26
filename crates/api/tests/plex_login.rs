@@ -65,7 +65,11 @@ fn cookie<'a>(answer: &'a Answer, name: &str) -> Option<&'a str> {
         .cookies
         .iter()
         .map(String::as_str)
-        .find(|cookie| cookie.starts_with(&format!("{name}=")))
+        // An answer drops the session cookie at other paths before it sets it (D-145).
+        .find(|cookie| {
+            cookie.starts_with(&format!("{name}="))
+                && !(name.starts_with("organizr_token_") && cookie.contains("=;"))
+        })
 }
 
 async fn user(database: &Database, name: &str) -> Option<organizr_domain::User> {

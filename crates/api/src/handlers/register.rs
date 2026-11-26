@@ -148,7 +148,7 @@ pub async fn register(
     let device = super::login::device_of(&client, &headers);
     let logged_in =
         login::start_session(state.database(), user, device, now_stamp(now), lifetime).await?;
-    let session_cookie = CookieScope::of(&headers, client.https).set_hidden(
+    let session_cookie = CookieScope::of(&headers, client.https).set_session(
         &session_cookie_name(&settings),
         logged_in.token.expose(),
         now + lifetime,

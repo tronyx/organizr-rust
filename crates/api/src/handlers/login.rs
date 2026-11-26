@@ -129,7 +129,7 @@ pub async fn login(
 
     tell_about_a_new_device(&state, &client, logged_in, now_stamp(now)).await?;
 
-    let session_cookie = CookieScope::of(&headers, client.https).set_hidden(
+    let session_cookie = CookieScope::of(&headers, client.https).set_session(
         &session_cookie_name(&settings),
         logged_in.token.expose(),
         now + lifetime,

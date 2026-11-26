@@ -23,6 +23,7 @@ use crate::client::Client;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
+use crate::same_origin::FromThisSite;
 use crate::state::AppState;
 
 /// What counts the requests for a new password of all clients together. No user can
@@ -319,6 +320,9 @@ fn server(settings: &Settings, status: StatusCode) -> Result<SmtpServer, Refusal
 pub async fn test(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
+    // It sends an e-mail with a GET request, so it takes requests from this site only
+    // (D-144).
+    _: FromThisSite,
 ) -> Result<Envelope<NoData>, Refusal> {
     caller.require(GroupLevel::CO_ADMIN)?;
     let settings = state.settings();

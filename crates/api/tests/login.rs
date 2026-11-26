@@ -43,11 +43,13 @@ struct Answer {
 
 impl Answer {
     /// The `Set-Cookie` values of the session cookie.
+    /// The session cookies that carry a token. The answer also drops cookies of the same
+    /// name at the paths of the API (D-145).
     fn session_cookies(&self) -> Vec<&str> {
         self.cookies
             .iter()
             .map(String::as_str)
-            .filter(|cookie| cookie.starts_with("organizr_token_"))
+            .filter(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
             .collect()
     }
 
@@ -148,6 +150,16 @@ async fn login_stores_a_session_for_the_token_of_the_cookie() {
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
         let session_cookies = answer.session_cookies();
         assert_eq!(session_cookies.len(), 2, "{:?}", answer.cookies);
+        // A cookie of the same name that another host planted for the API is dropped.
+        for path in ["path=/api;", "path=/api/v2;"] {
+            let dropped = answer
+                .cookies
+                .iter()
+                .filter(|cookie| cookie.starts_with("organizr_token_") && cookie.contains("=;"))
+                .filter(|cookie| cookie.contains(path))
+                .count();
+            assert_eq!(dropped, 2, "{path}: {:?}", answer.cookies);
+        }
         let value = |cookie: &str| cookie.split(';').next().map(str::to_owned);
         assert_eq!(
             session_cookies.first().copied().and_then(value),

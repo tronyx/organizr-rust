@@ -144,6 +144,46 @@ impl CookieScope {
         self.set(name, "", expired)
     }
 
+    /// The `Set-Cookie` values of the session cookie: the cookie itself at `/`, and the
+    /// deletion of cookies of the same name at the paths of the API. A host that shares
+    /// the cookie domain could plant such a cookie, which the browser sends first
+    /// (D-145).
+    pub fn set_session(
+        &self,
+        name: &str,
+        value: &str,
+        expires: SystemTime,
+    ) -> Result<Vec<HeaderValue>, CookieError> {
+        // The deletions come first, so a client that keeps one cookie per name, whatever
+        // its path, ends up with the session.
+        let mut values = self.drop_shadows(name, SystemTime::now())?;
+        values.extend(self.set_hidden(name, value, expires)?);
+        Ok(values)
+    }
+
+    /// The `Set-Cookie` values that make the browser drop the session cookie, at `/` and
+    /// at the paths of the API (D-145).
+    pub fn delete_session(
+        &self,
+        name: &str,
+        now: SystemTime,
+    ) -> Result<Vec<HeaderValue>, CookieError> {
+        let mut values = self.drop_shadows(name, now)?;
+        values.extend(self.delete_hidden(name, now)?);
+        Ok(values)
+    }
+
+    /// The deletion of cookies of the name at the paths that a planted cookie would use
+    /// to come before the one at `/`.
+    fn drop_shadows(&self, name: &str, now: SystemTime) -> Result<Vec<HeaderValue>, CookieError> {
+        let expired = now.checked_sub(DELETED_SINCE).ok_or(CookieError::Expiry)?;
+        let mut values = Vec::new();
+        for path in SHADOW_PATHS {
+            values.extend(self.render_at(name, "", expired, true, path)?);
+        }
+        Ok(values)
+    }
+
     /// As [`delete`](Self::delete), for a cookie that was set with
     /// [`set_hidden`](Self::set_hidden).
     pub fn delete_hidden(
@@ -155,6 +195,10 @@ impl CookieScope {
         self.set_hidden(name, "", expired)
     }
 }
+
+/// The paths of the API, where a cookie planted by another host of the cookie domain
+/// would come before the session cookie at `/` (D-145).
+const SHADOW_PATHS: [&str; 2] = ["/api", "/api/v2"];
 
 /// Adds `Set-Cookie` values to an answer, after the ones it already has.
 pub fn append(response: &mut Response, values: impl IntoIterator<Item = HeaderValue>) {
@@ -189,6 +233,14 @@ pub fn request_cookies(headers: &HeaderMap) -> impl Iterator<Item = (&str, &str)
             cookie.split_once('=').unwrap_or((cookie, ""))
         })
         .filter(|(name, _)| !name.is_empty())
+}
+
+/// The values of the cookies of the given name that the request carries, in the order
+/// of the request. A browser sends a cookie with a longer path first.
+pub fn cookie_values<'a>(headers: &'a HeaderMap, name: &str) -> impl Iterator<Item = &'a str> {
+    request_cookies(headers)
+        .filter(move |(cookie, _)| *cookie == name)
+        .map(|(_, value)| value)
 }
 
 /// The value of the first cookie of the given name that the request carries.

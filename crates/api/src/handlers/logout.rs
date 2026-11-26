@@ -8,7 +8,7 @@ use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 use organizr_auth::SessionToken;
 
-use crate::caller::session_cookie_name;
+use crate::caller::{MOST_SESSION_COOKIES, session_cookie_name};
 use crate::client::Client;
 use crate::cookies::{self, CookieScope};
 use crate::device_cookie::{DEVICE_COOKIE, new_device_cookie};
@@ -51,8 +51,12 @@ pub async fn logout(
     headers: HeaderMap,
 ) -> Result<Response, ApiError> {
     let session_cookie = session_cookie_name(&state.settings());
-    let token = cookies::cookie_value(&headers, &session_cookie).and_then(SessionToken::parse);
-    if let Some(token) = token {
+    // Every session cookie of the name counts, up to a few: another host of the cookie
+    // domain could have planted one that comes first (D-145).
+    let tokens = cookies::cookie_values(&headers, &session_cookie)
+        .take(MOST_SESSION_COOKIES)
+        .filter_map(SessionToken::parse);
+    for token in tokens {
         let existed = state
             .database()
             .sessions()
@@ -81,7 +85,7 @@ pub async fn logout(
     let now = SystemTime::now();
     let scope = CookieScope::of(&headers, client.https);
     let mut response = Envelope::success(NoData).into_response();
-    cookies::append(&mut response, scope.delete_hidden(&session_cookie, now)?);
+    cookies::append(&mut response, scope.delete_session(&session_cookie, now)?);
     for name in dropped {
         match scope.delete(name, now) {
             Ok(values) => cookies::append(&mut response, values),

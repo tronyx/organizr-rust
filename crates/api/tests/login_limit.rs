@@ -235,7 +235,7 @@ async fn lock_out_does_not_stop_other_routes_or_a_session_that_exists() {
             .await
             .cookies
             .iter()
-            .find(|cookie| cookie.starts_with("organizr_token_"))
+            .find(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
             .and_then(|cookie| cookie.split(';').next())
             .expect("the login sets the session cookie")
             .to_owned();

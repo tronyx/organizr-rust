@@ -327,6 +327,7 @@ impl Replay {
         for case in &recording.cases {
             let mut expected = self.expected(case);
             let mut actual = Answer::of(app, &recording, case, &mut browsers).await;
+            without_dropped_shadows(&mut actual.cookies);
             self.take_out_pending_parts(case, &mut expected, &mut actual, &mut problems);
             let differing: Vec<Aspect> = ASPECTS
                 .into_iter()
@@ -966,6 +967,21 @@ struct RecordedResponse {
     headers: BTreeMap<String, String>,
     cookies_set: Vec<RecordedCookie>,
     body: String,
+}
+
+/// Takes out of an answer the deletions of the session cookie at the paths of the API,
+/// which every answer that sets or drops the session cookie has and PHP does not
+/// (D-145). Without them, the answer is held to the recording as before.
+fn without_dropped_shadows(cookies: &mut Vec<String>) {
+    assert_approved("D-145");
+    cookies.retain(|cookie| {
+        let is_shadow = ["/api", "/api/v2"]
+            .iter()
+            .any(|path| cookie.contains(&format!("; path={path}; ")));
+        !(cookie.starts_with(&format!("{}; ", RecordedCookie::SESSION_COOKIE))
+            && is_shadow
+            && cookie.ends_with("lifetime=deleted"))
+    });
 }
 
 /// What is compared of a cookie that an answer sets.

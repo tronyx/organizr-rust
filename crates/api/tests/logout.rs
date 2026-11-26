@@ -70,7 +70,7 @@ async fn log_in(app: &Router) -> String {
     answer
         .cookies
         .iter()
-        .find(|cookie| cookie.starts_with(SESSION_COOKIE))
+        .find(|cookie| cookie.starts_with(SESSION_COOKIE) && !cookie.contains("=;"))
         .and_then(|cookie| cookie.split(';').next())
         .expect("the login sets the session cookie")
         .to_owned()
@@ -232,6 +232,65 @@ async fn another_site_cannot_log_a_user_out() {
         for headers in from_here {
             let answer = log_out(&app, "", headers).await;
             assert_eq!(answer.status, StatusCode::OK, "{headers:?}");
+        }
+    })
+    .await;
+}
+
+/// Sends `GET /api/v2/launch` with the cookies, and says whether it saw a logged-in user.
+async fn launch_with(app: &Router, cookies: &str) -> (bool, Vec<String>) {
+    let request = Request::builder()
+        .method("GET")
+        .uri("/api/v2/launch")
+        .header(header::HOST, "organizr.example.com")
+        .header(header::COOKIE, cookies)
+        .body(Body::empty())
+        .expect("the request is valid");
+    let answer = send(app, request).await;
+    let launch: serde_json::Value = serde_json::from_str(&answer.body).expect("the answer is JSON");
+    let logged_in = launch.pointer("/response/data/user/loggedin") == Some(&json!(true));
+    (logged_in, answer.cookies)
+}
+
+/// Whether the answer makes the browser drop the session cookie at the path.
+fn drops_at(cookies: &[String], path: &str) -> bool {
+    cookies.iter().any(|cookie| {
+        cookie.starts_with(&format!("{SESSION_COOKIE}=;"))
+            && cookie.contains(&format!("path={path};"))
+    })
+}
+
+#[tokio::test]
+async fn planted_session_cookie_hides_no_session_and_is_dropped() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let session = log_in(&app).await;
+
+        // A sibling host can plant a cookie of the same name for a longer path, which the
+        // browser sends first. The real session still counts (D-145).
+        let planted = format!("{SESSION_COOKIE}=not-a-session; {session}");
+        let (logged_in, cookies) = launch_with(&app, &planted).await;
+        assert!(logged_in, "{cookies:?}");
+
+        // A cookie that names no session is dropped at the paths a plant would use too.
+        let (logged_in, cookies) =
+            launch_with(&app, &format!("{SESSION_COOKIE}=not-a-session")).await;
+        assert!(!logged_in);
+        for path in ["/", "/api", "/api/v2"] {
+            assert!(drops_at(&cookies, path), "{path}: {cookies:?}");
+        }
+
+        // A logout behind a planted cookie ends the real session, and drops every path.
+        let answer = log_out(&app, &planted, &[]).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(session_ids(database).await, Vec::new());
+        for path in ["/", "/api", "/api/v2"] {
+            assert!(
+                drops_at(&answer.cookies, path),
+                "{path}: {:?}",
+                answer.cookies
+            );
         }
     })
     .await;

@@ -20,7 +20,7 @@ A logout of Organizr makes the browser drop the cookies.
 The cookies are set for the whole domain, for example `.example.com`. So the applications and Organizr must share it: `organizr.example.com`, `ombi.example.com`, and so on. An application reached by another domain, or by an IP address, doesn't get the cookies.
 
 > [!WARNING]
-> **Every site under that domain receives the cookies**, including the Organizr login cookie, whether it's one of your apps or not. A compromised or untrusted app on a sibling subdomain can read every visitor's Organizr session. Put only applications you trust under the same domain as Organizr.
+> **Every site under that domain receives the cookies**, including the Organizr login cookie, whether it's one of your apps or not. A compromised or untrusted app on a sibling subdomain can read every visitor's Organizr session. Put only applications you trust under the same domain as Organizr. Such an app could also set a cookie with the name of the Organizr login cookie; Organizr looks at each one it gets, and drops the ones that name no session (D-145).
 
 ## 🚀 Set it up
 

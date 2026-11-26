@@ -116,3 +116,54 @@ async fn path_that_is_no_route_is_not_found_whoever_asks() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn set_up_routes_that_change_something_refuse_another_site() {
+    on_each_engine(async |database| {
+        organizr_testkit::seed::installed(database).await;
+        let settings = [
+            ("BOOKMARK-enabled", serde_json::json!(true)),
+            ("PLEXLIBRARIES-enabled", serde_json::json!(true)),
+            ("PHPMAILER-enabled", serde_json::json!(true)),
+        ];
+        let app = organizr_testkit::installed_app_with(database, &settings);
+        let admin = organizr_testkit::seed::logged_in(database, &app, "ada", 0).await;
+        let tabs_before = database.tabs().list().await.expect("the tabs load").len();
+
+        // These GET routes change something, so a page of another site cannot make the
+        // browser of an Admin run them (D-144).
+        for path in [
+            "/api/v2/plugins/bookmark/setup/tab",
+            "/api/v2/plugins/bookmark/setup/category",
+            "/api/v2/plugins/plexlibraries/setup/tab",
+            "/api/v2/plugins/php-mailer/email/test",
+        ] {
+            let headers = [("cookie", admin.as_str()), ("sec-fetch-site", "cross-site")];
+            let (status, body) = send(&app, Method::GET, path, &headers).await;
+            assert_eq!(status, StatusCode::UNAUTHORIZED, "{path}: {body}");
+            assert!(
+                body.contains("Not authorized for current Route"),
+                "{path}: {body}"
+            );
+        }
+        assert_eq!(
+            database.tabs().list().await.expect("the tabs load").len(),
+            tabs_before
+        );
+
+        // From the application itself, the set-up still works.
+        let headers = [
+            ("cookie", admin.as_str()),
+            ("sec-fetch-site", "same-origin"),
+        ];
+        let (status, body) = send(
+            &app,
+            Method::GET,
+            "/api/v2/plugins/bookmark/setup/tab",
+            &headers,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{body}");
+    })
+    .await;
+}

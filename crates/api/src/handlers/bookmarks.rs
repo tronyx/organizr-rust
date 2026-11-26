@@ -22,6 +22,7 @@ use crate::caller::Caller;
 use crate::envelope::{Envelope, NoContent, NoData};
 use crate::handlers::fields::{Fields, Refusal, chosen, php_text, place_of, record_id};
 use crate::handlers::groups::GroupRow;
+use crate::same_origin::FromThisSite;
 use crate::state::AppState;
 
 /// The level that the routes for managing the bookmarks ask for.
@@ -628,6 +629,9 @@ pub async fn remove_category(
 pub async fn set_up_tab(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
+    // It changes something with a GET request, so it takes requests from this site
+    // only (D-144).
+    _: FromThisSite,
 ) -> Result<Response, Refusal> {
     check_manager(&state, &caller)?;
     let database = state.database();
@@ -686,6 +690,9 @@ pub async fn set_up_tab(
 pub async fn set_up_category(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
+    // It changes something with a GET request, so it takes requests from this site
+    // only (D-144).
+    _: FromThisSite,
 ) -> Result<Response, Refusal> {
     check_manager(&state, &caller)?;
     let bookmarks = state.database().bookmarks();

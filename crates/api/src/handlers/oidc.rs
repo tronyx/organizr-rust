@@ -524,7 +524,7 @@ async fn new_session(
         authentication_failed()
     })?;
     let session_cookie = CookieScope::of(headers, client.https)
-        .set_hidden(
+        .set_session(
             &session_cookie_name(&settings),
             logged_in.token.expose(),
             now + lifetime,

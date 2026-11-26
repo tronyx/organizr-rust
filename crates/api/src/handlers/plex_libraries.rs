@@ -22,6 +22,7 @@ use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::choice::Choice;
 use crate::handlers::fields::Refusal;
+use crate::same_origin::FromThisSite;
 use crate::state::AppState;
 
 /// The level that sees and changes every share.
@@ -249,6 +250,9 @@ pub const PAGE_ADDRESS: &str = "api/v2/plugins/plexlibraries/page";
 pub async fn set_up_tab(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
+    // It changes something with a GET request, so it takes requests from this site
+    // only (D-144).
+    _: FromThisSite,
 ) -> Result<Response, Refusal> {
     let settings = state.settings();
     if !settings.plex_libraries_enabled {
