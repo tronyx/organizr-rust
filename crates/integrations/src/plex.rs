@@ -40,6 +40,10 @@ pub enum PlexError {
     /// The answer is not what the service usually sends.
     #[error("the answer of plex.tv cannot be read: {0}")]
     Unreadable(String),
+    /// The account has the server already, or an invite to it: a share answered `400`
+    /// with a text that says so.
+    #[error("plex.tv says the server is already shared with the account")]
+    AlreadyShared,
 }
 
 /// A Plex account, as the service describes it.
@@ -477,11 +481,19 @@ impl PlexTv {
             .send()
             .await
             .map_err(PlexError::Unreachable)?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(PlexError::Status(response.status().as_u16()))
+        let status = response.status();
+        if status.is_success() {
+            return Ok(());
         }
+        // plex.tv answers `400` for an account that has the server, and also for other
+        // faults, such as an address that is no account. Only its text tells them apart.
+        if status == reqwest::StatusCode::BAD_REQUEST {
+            let text = response.text().await.unwrap_or_default();
+            if says_already_shared(&text) {
+                return Err(PlexError::AlreadyShared);
+            }
+        }
+        Err(PlexError::Status(status.as_u16()))
     }
 
     /// Makes a new Plex account. `client_id` is the id of this install.
@@ -553,6 +565,13 @@ impl PlexTv {
 
 /// Whether a text can be the id of a server: it is a part of an address, and plex.tv
 /// knows no id with other characters.
+/// Whether the text of a refused share says that the account has the server already,
+/// or an invite to it. plex.tv writes, for example, "already sharing this server" or
+/// "has already been invited".
+fn says_already_shared(text: &str) -> bool {
+    text.to_ascii_lowercase().contains("already")
+}
+
 fn is_server_id(server: &str) -> bool {
     !server.is_empty()
         && server
@@ -649,8 +668,26 @@ fn servers_in(xml: &str) -> Result<Vec<PlexServer>, PlexError> {
 #[cfg(test)]
 mod tests {
     use super::{
-        AccountAnswer, PlexAccount, PlexFriend, friend_in, friends_in, join_errors, servers_in,
+        AccountAnswer, PlexAccount, PlexFriend, friend_in, friends_in, join_errors,
+        says_already_shared, servers_in,
     };
+
+    #[test]
+    fn only_a_text_about_access_counts_as_a_share_that_exists() {
+        for text in [
+            "<Response code=\"400\" status=\"Username is already sharing this server\"/>",
+            "{\"errors\":[{\"code\":1999,\"message\":\"pat has Already been invited\"}]}",
+        ] {
+            assert!(says_already_shared(text), "{text}");
+        }
+        for text in [
+            "",
+            "Invalid email",
+            "<Response code=\"400\" status=\"Bad Request\"/>",
+        ] {
+            assert!(!says_already_shared(text), "{text}");
+        }
+    }
 
     /// The friend list as the service sends it, with made-up accounts.
     const FRIENDS: &str = r#"<?xml version="1.0" encoding="UTF-8"?>

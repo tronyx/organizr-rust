@@ -2,7 +2,7 @@
   // The menu at the left: the tabs that the caller sees, under their categories.
 
   import Picture from '../components/Picture.svelte';
-  import { buildMenu, opensNewWindow } from '../lib/menu';
+  import { buildMenu, opensNewWindow, tabAddress } from '../lib/menu';
   import { pingStatus, pingTime, type PingResult } from '../lib/pings';
   import { tabHash } from '../lib/route.svelte';
   import type { MenuCategory, MenuTab, UnsortedPlace } from '../lib/types';
@@ -80,10 +80,10 @@
 
 {#snippet entry(tab: MenuTab)}
   <li>
-    {#if opensNewWindow(tab) && tab.access_url}
+    {#if opensNewWindow(tab) && tabAddress(tab)}
       <a
         onclick={onpick}
-        href={tab.access_url}
+        href={tabAddress(tab)}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={tab.name}

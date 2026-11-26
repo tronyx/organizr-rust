@@ -131,6 +131,23 @@ export function jellyStatPoster(url: string, id: unknown): string | null {
   return `${base}/proxy/Items/Images/Primary?id=${encodeURIComponent(text)}&fillWidth=200&quality=90`;
 }
 
+/**
+ * The sandbox of a frame. A frame of another site keeps its own origin, so its login
+ * works. A frame of this site does not get the origin of Organizr: with it, the page in
+ * the frame could reach the session of the person who looks at it.
+ */
+export function frameSandbox(address: string, origin: string = window.location.origin): string {
+  let sameOrigin = true;
+  try {
+    sameOrigin = new URL(address, origin).origin === origin;
+  } catch {
+    // An address that does not parse gets the stricter sandbox.
+  }
+  return sameOrigin
+    ? 'allow-scripts allow-forms allow-popups'
+    : 'allow-scripts allow-same-origin allow-forms allow-popups';
+}
+
 /** The address of a frame, when it is a web address or a path of this site. */
 export function frameAddress(url: string): string | null {
   return /^https?:\/\//i.test(url) || url.startsWith('/') ? url : null;

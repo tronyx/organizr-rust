@@ -2,7 +2,7 @@
   // The frames that show the applications of the tabs. A frame stays loaded when the
   // user goes to another tab, so the application in it keeps its state.
   import { frames } from '../lib/frames.svelte';
-  import { opensNewWindow } from '../lib/menu';
+  import { opensNewWindow, tabAddress } from '../lib/menu';
   import type { MenuTab } from '../lib/types';
 
   let {
@@ -27,7 +27,7 @@
       (tab) =>
         tab.type === 1 &&
         !opensNewWindow(tab) &&
-        Boolean(tab.access_url) &&
+        Boolean(tabAddress(tab)) &&
         (frames.opened.includes(tab.id) || tab.preload === 1),
     ),
   );
@@ -38,7 +38,7 @@
   <iframe
     class="absolute inset-0 size-full border-0"
     class:hidden={tab.id !== shown}
-    src={tab.access_url}
+    src={tabAddress(tab)}
     title={tab.name}
     allow="fullscreen"
   ></iframe>

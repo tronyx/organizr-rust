@@ -384,6 +384,10 @@ async fn plex_share(
     if invited == "broken" {
         return (StatusCode::INTERNAL_SERVER_ERROR, "Trouble").into_response();
     }
+    // plex.tv refuses an address that is no account with `400`, too.
+    if invited == "no-account" {
+        return (StatusCode::BAD_REQUEST, "Invalid email").into_response();
+    }
     let has_access = PLEX_USERS.iter().any(|user| {
         user.shared_servers.contains(&SERVER_ID)
             && (user.username.to_lowercase() == invited || user.email.to_lowercase() == invited)

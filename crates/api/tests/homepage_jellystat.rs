@@ -303,6 +303,64 @@ async fn details_of_an_item_come_from_the_media_server_or_from_jellystat() {
 }
 
 #[tokio::test]
+async fn media_server_is_asked_only_for_a_caller_with_its_level() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let service = homepage_services::jellystat().await;
+        let jellyfin = homepage_services::jellyfin().await;
+        let mut changed = with(
+            settings(&service.url()),
+            "homepageJellyStatAuth",
+            json!("999"),
+        );
+        changed.extend([
+            ("homepageJellyfinEnabled", json!(true)),
+            ("homepageJellyfinAuth", json!("1")),
+            ("jellyfinURL", json!(jellyfin.url())),
+            ("jellyfinToken", json!(MEDIA_SERVER_KEY)),
+            ("jellyfinTabName", json!("Jellyfin")),
+        ]);
+        let app = installed_app_with(database, &changed);
+
+        // A guest sees JellyStat, but not the Jellyfin item: JellyStat is asked.
+        let answer = call(
+            &app,
+            As::Guest,
+            "POST",
+            DETAILS,
+            Some(json!({"key": "815"})),
+        )
+        .await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let item = answer.data()["content"][0].clone();
+        assert_eq!(
+            item["metadata"]["summary"],
+            "A film, as JellyStat knows it."
+        );
+        assert_eq!(item["openTab"], false);
+        assert!(jellyfin.seen().is_empty(), "Jellyfin was not asked");
+        assert_eq!(service.seen().len(), 1);
+
+        // The Admin has the level of the Jellyfin item.
+        let answer = call(
+            &app,
+            As::Admin,
+            "POST",
+            DETAILS,
+            Some(json!({"key": "815"})),
+        )
+        .await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(
+            answer.data()["content"][0]["metadata"]["summary"],
+            "A film."
+        );
+        assert_eq!(service.seen().len(), 1);
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn connection_test_asks_for_the_libraries_or_for_the_page() {
     on_each_engine(async |database| {
         seed::installed(database).await;

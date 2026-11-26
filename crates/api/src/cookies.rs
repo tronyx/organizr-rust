@@ -71,7 +71,8 @@ impl CookieScope {
     /// The two `Set-Cookie` values for a cookie that another application reads: the
     /// session that a single sign-on got from it. The value is written with `%xx` for
     /// every character that is no letter, digit, `-`, `_`, `.` or `~`, as PHP writes it.
-    /// `path` is the path of the application on its host.
+    /// `path` is the path of the application on its host. `http_only` hides the cookie
+    /// from scripts, over HTTPS and over plain HTTP.
     pub fn set_for_application(
         &self,
         name: &str,
@@ -88,7 +89,9 @@ impl CookieScope {
                 let _ = write!(encoded, "%{byte:02X}");
             }
         }
-        self.render_at(name, &encoded, expires, http_only && self.secure, path)
+        // A cookie that the application wants hidden from scripts stays hidden over plain
+        // HTTP too. PHP sends `HttpOnly` only over HTTPS.
+        self.render_at(name, &encoded, expires, http_only, path)
     }
 
     fn render(
@@ -286,8 +289,8 @@ mod tests {
         );
         assert!(over_https[1].contains("; domain=organizr.example.com;"));
 
-        // Not hidden from scripts when the application did not ask for that, and never
-        // over plain HTTP, as in the PHP application.
+        // Not hidden from scripts when the application did not ask for that. A cookie
+        // that is hidden stays hidden over plain HTTP; PHP drops `HttpOnly` there.
         let readable = text(
             scope("organizr.example.com", true)
                 .set_for_application("mpt", "token-1_2~3", expiry(), false, "/")
@@ -301,7 +304,7 @@ mod tests {
                 .expect("the cookie can be written"),
         );
         assert!(
-            !plain[0].contains("HttpOnly") && !plain[0].contains("Secure"),
+            plain[0].contains("; HttpOnly") && !plain[0].contains("Secure"),
             "{}",
             plain[0]
         );

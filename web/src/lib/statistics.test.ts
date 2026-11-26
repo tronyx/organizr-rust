@@ -5,6 +5,7 @@ import {
   dollars,
   donateOptions,
   frameAddress,
+  frameSandbox,
   jellyStatOptions,
   jellyStatPoster,
   liveTvOptions,
@@ -132,5 +133,21 @@ describe('frameAddress', () => {
     expect(frameAddress('/jellystat')).toBe('/jellystat');
     expect(frameAddress('javascript:alert(1)')).toBeNull();
     expect(frameAddress('')).toBeNull();
+  });
+});
+
+describe('frameSandbox', () => {
+  const origin = 'https://organizr.example.com';
+
+  it('keeps the frame of another site on its own origin', () => {
+    expect(frameSandbox('https://stats.example.com', origin)).toBe(
+      'allow-scripts allow-same-origin allow-forms allow-popups',
+    );
+  });
+
+  it('gives a frame of this site no access to Organizr', () => {
+    for (const address of ['/jellystat', 'https://organizr.example.com/jellystat/']) {
+      expect(frameSandbox(address, origin), address).toBe('allow-scripts allow-forms allow-popups');
+    }
   });
 });

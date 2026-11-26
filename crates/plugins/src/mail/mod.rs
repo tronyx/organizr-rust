@@ -78,8 +78,8 @@ pub struct MailValues<'a> {
 /// How the values go into a text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TextForm {
-    /// The text is HTML: the body of an e-mail. A value from a person is written so
-    /// that a mail program shows it as text, whatever characters it holds.
+    /// The text is HTML: the body of an e-mail. Each value is written so that a mail
+    /// program shows it as text, whatever characters it holds.
     Html,
     /// The text is plain: the subject of an e-mail.
     Plain,
@@ -105,7 +105,8 @@ pub fn escaped(value: &str) -> String {
 /// not have leaves nothing in its place. The text is read once, so a value that holds a
 /// placeholder stays as it is.
 pub fn fill_in(text: &str, values: MailValues<'_>, form: TextForm) -> String {
-    let from_a_person = |value: Option<&str>| {
+    // Every value is written as text. The text of the Admin around it stays HTML.
+    let written = |value: Option<&str>| {
         let value = value.unwrap_or_default();
         match form {
             TextForm::Html => escaped(value),
@@ -113,12 +114,12 @@ pub fn fill_in(text: &str, values: MailValues<'_>, form: TextForm) -> String {
         }
     };
     let placeholders = [
-        ("{user}", from_a_person(values.user)),
-        ("{password}", from_a_person(values.password)),
-        ("{inviteCode}", from_a_person(values.invite_code)),
-        ("{domain}", values.site.to_owned()),
-        ("{fullDomain}", values.site.to_owned()),
-        ("{title}", values.title.to_owned()),
+        ("{user}", written(values.user)),
+        ("{password}", written(values.password)),
+        ("{inviteCode}", written(values.invite_code)),
+        ("{domain}", written(Some(values.site))),
+        ("{fullDomain}", written(Some(values.site))),
+        ("{title}", written(Some(values.title))),
     ];
 
     replace_each(text, "{", &placeholders)
@@ -186,12 +187,14 @@ pub fn lay_out(frame: Frame<'_>, subject: &str, body: &str) -> String {
         // The subject is plain text. Inside the layout it is shown as text.
         ("[[subject]]", escaped(subject)),
         ("[[body]]", body.to_owned()),
-        ("[[site]]", frame.site.to_owned()),
+        // The site and the logo stand in attributes and in text. Written as text, they
+        // cannot leave the attribute.
+        ("[[site]]", escaped(frame.site)),
         (
             "[[invite_code]]",
             escaped(frame.invite_code.unwrap_or_default()),
         ),
-        ("[[setting:PHPMAILER-logo]]", frame.logo.to_owned()),
+        ("[[setting:PHPMAILER-logo]]", escaped(frame.logo)),
     ];
 
     replace_each(html, "[[", &markers)
@@ -327,6 +330,52 @@ mod tests {
             fill_in("For {user}", values, TextForm::Plain),
             "For <a href=\"https://evil.example\">Tom & 'Jerry'</a>"
         );
+    }
+
+    #[test]
+    fn title_and_site_cannot_put_markup_into_the_body() {
+        let values = MailValues {
+            site: "https://organizr.example.com/?a=1&b=\"><script>",
+            title: "Tom & <b>Jerry</b>",
+            ..VALUES
+        };
+
+        assert_eq!(
+            fill_in(
+                "<a href=\"{domain}\">{title}</a> {fullDomain}",
+                values,
+                TextForm::Html
+            ),
+            concat!(
+                "<a href=\"https://organizr.example.com/?a=1&amp;b=&quot;&gt;&lt;script&gt;\">",
+                "Tom &amp; &lt;b&gt;Jerry&lt;/b&gt;</a> ",
+                "https://organizr.example.com/?a=1&amp;b=&quot;&gt;&lt;script&gt;"
+            )
+        );
+        // The subject is no HTML.
+        assert_eq!(
+            fill_in("{title}", values, TextForm::Plain),
+            "Tom & <b>Jerry</b>"
+        );
+    }
+
+    #[test]
+    fn logo_and_site_cannot_leave_their_attribute() {
+        for layout in layout_names() {
+            let frame = Frame {
+                logo: "https://example.com/logo.png\" onerror=\"x",
+                site: "https://organizr.example.com/\"><script>x</script>",
+                ..frame(layout, MailKind::Invite)
+            };
+            let html = lay_out(frame, "S", "<p>B</p>");
+
+            assert!(!html.contains("\" onerror"), "{layout}");
+            assert!(!html.contains("<script>"), "{layout}");
+            // The layout "gray" has no logo.
+            if layout != "gray" {
+                assert!(html.contains("logo.png&quot; onerror=&quot;x"), "{layout}");
+            }
+        }
     }
 
     fn frame(layout: &'static str, kind: MailKind) -> Frame<'static> {

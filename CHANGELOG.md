@@ -79,6 +79,15 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - The address to come back to after a forward auth login is encoded as one value of the query (D-171).
 - A cron schedule whose step counts past the largest number, such as `5/4294967295`, is refused (D-172).
 - Only Organizr itself may put an answer of the server in a frame: every answer sends `X-Frame-Options` and `frame-ancestors` (D-173).
+- A tab address that runs a script, such as `javascript:`, is refused, and the interface never opens one in a frame or a link (D-174).
+- The JellyStat details ask Jellyfin or Emby only for a caller who has the level of that server on the homepage (D-175).
+- The Overseerr list asks Overseerr for at most 50 requests at a time, or for the **Item Limit** when that is larger (D-176).
+- The Tautulli statistic of the top libraries needs the level of the libraries (D-177).
+- Single sign-on cookies that are hidden from scripts stay hidden over plain HTTP (D-178).
+- The title, the site address and the logo address are written as text in the HTML of an e-mail (D-179).
+- An invite counts as "already has access" only when plex.tv says so; another refusal leaves the code for another try (D-180).
+- An invite never makes a Komga account with the `ADMIN` role (D-181).
+- Guests never make, list or delete invites, whatever level the invites plugin names (D-182).
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 
 ### Documentation

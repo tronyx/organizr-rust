@@ -4,7 +4,7 @@
 
 import { api } from './api';
 import { frames } from './frames.svelte';
-import { opensNewWindow } from './menu';
+import { opensNewWindow, tabAddress } from './menu';
 import { pingInterval, pingList, type PingResult } from './pings';
 import { PAGES, router } from './route.svelte';
 import { session } from './session.svelte';
@@ -91,7 +91,7 @@ export class Pings {
 /** The tab on top, when it shows another application in a frame. */
 export function framedTab(shown: number | undefined): MenuTab | undefined {
   const tab = session.tabs.find((one) => one.id === shown);
-  return tab && tab.type === 1 && !opensNewWindow(tab) && tab.access_url ? tab : undefined;
+  return tab && tab.type === 1 && !opensNewWindow(tab) && tabAddress(tab) ? tab : undefined;
 }
 
 /** Loads what the main area shows again: the frame of a tab, or the page. */
@@ -115,7 +115,8 @@ export function closeShown(shown: number | undefined): void {
 
 /** Opens what the main area shows in a tab of the browser. */
 export function openShown(shown: number | undefined): void {
-  window.open(framedTab(shown)?.access_url ?? window.location.href, '_blank', 'noopener');
+  const framed = framedTab(shown);
+  window.open((framed && tabAddress(framed)) ?? window.location.href, '_blank', 'noopener');
 }
 
 export function toggleFullScreen(): void {

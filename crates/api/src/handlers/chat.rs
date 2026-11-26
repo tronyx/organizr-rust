@@ -48,6 +48,10 @@ const STREAM_LIFETIME: Duration = Duration::from_secs(300);
 /// How many new messages wait for a slow stream before it skips them.
 const WAITING_MESSAGES: usize = 64;
 
+/// The most streams of events that one reader has open at a time. A browser opens one
+/// for each window of the chat.
+const MOST_STREAMS: usize = 5;
+
 /// What the chat routes share: the channel of new messages, and the times of the last
 /// messages of each sender.
 #[derive(Debug)]
@@ -55,6 +59,8 @@ pub struct ChatHub {
     messages: broadcast::Sender<Arc<str>>,
     closing: watch::Sender<bool>,
     sent: std::sync::Mutex<HashMap<String, VecDeque<Instant>>>,
+    /// The number of open streams of events of each reader.
+    streams: std::sync::Mutex<HashMap<String, usize>>,
 }
 
 impl Default for ChatHub {
@@ -63,11 +69,48 @@ impl Default for ChatHub {
             messages: broadcast::channel(WAITING_MESSAGES).0,
             closing: watch::channel(false).0,
             sent: std::sync::Mutex::default(),
+            streams: std::sync::Mutex::default(),
+        }
+    }
+}
+
+/// One open stream of events of a reader. The stream holds it, and it counts no more
+/// when the stream ends.
+#[derive(Debug)]
+struct StreamPermit {
+    hub: Arc<ChatHub>,
+    reader: String,
+}
+
+impl Drop for StreamPermit {
+    fn drop(&mut self) {
+        if let Ok(mut streams) = self.hub.streams.lock()
+            && let Some(count) = streams.get_mut(&self.reader)
+        {
+            *count = count.saturating_sub(1);
+            if *count == 0 {
+                streams.remove(&self.reader);
+            }
         }
     }
 }
 
 impl ChatHub {
+    /// Counts a new stream of events of a reader, unless the reader has
+    /// [`MOST_STREAMS`] open already.
+    fn open_stream(self: &Arc<Self>, reader: &str) -> Option<StreamPermit> {
+        let mut streams = self.streams.lock().ok()?;
+        let count = streams.entry(reader.to_owned()).or_default();
+        if *count >= MOST_STREAMS {
+            return None;
+        }
+        *count += 1;
+        Some(StreamPermit {
+            hub: Arc::clone(self),
+            reader: reader.to_owned(),
+        })
+    }
+
     /// Ends every stream of events, for the end of the server: an open stream would
     /// keep the server from stopping.
     pub fn close(&self) {
@@ -139,6 +182,14 @@ fn reader_level(settings: &Settings) -> GroupLevel {
     GroupLevel::new(level.min(GroupLevel::LOGGED_IN.get())).unwrap_or(GroupLevel::ADMIN)
 }
 
+/// Who reads or sends, for the limits: a user by the id, or the API key.
+fn reader_of(caller: &Caller) -> String {
+    caller.user().map_or_else(
+        || "\0api key".to_owned(),
+        |user| format!("user {}", user.authenticated.user.id.get()),
+    )
+}
+
 /// The checks of the routes that read and send messages.
 fn check_reader(settings: &Settings, caller: &Caller) -> Result<(), Refusal> {
     check_enabled(settings)?;
@@ -184,7 +235,7 @@ pub async fn send(
     let (sender, username, gravatar, uid) = caller.user().map_or_else(
         || {
             (
-                "\0api key".to_owned(),
+                reader_of(&caller),
                 "Organizr API".to_owned(),
                 String::new(),
                 String::new(),
@@ -193,7 +244,7 @@ pub async fn send(
         |user| {
             let user = &user.authenticated.user;
             (
-                format!("user {}", user.id.get()),
+                reader_of(&caller),
                 user.username.clone(),
                 user.image.clone().unwrap_or_default(),
                 user.id.get().to_string(),
@@ -239,12 +290,18 @@ pub async fn events(
 ) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, Refusal> {
     check_reader(&state.settings(), &caller)?;
     let hub = state.chat_hub();
+    let permit = hub.open_stream(&reader_of(&caller)).ok_or_else(|| {
+        Refusal::Request(
+            StatusCode::TOO_MANY_REQUESTS,
+            "Too many open chat windows. Close one, then try again.".to_owned(),
+        )
+    })?;
     let receiver = hub.messages.subscribe();
     let closing = hub.closing.subscribe();
     let deadline = tokio::time::Instant::now() + STREAM_LIFETIME;
     let stream = futures_util::stream::unfold(
-        (receiver, closing),
-        move |(mut receiver, mut closing)| async move {
+        (receiver, closing, permit),
+        move |(mut receiver, mut closing, permit)| async move {
             loop {
                 if *closing.borrow() {
                     return None;
@@ -259,7 +316,7 @@ pub async fn events(
                     message = receiver.recv() => match message {
                         Ok(message) => {
                             let event = Event::default().event("message").data(&*message);
-                            return Some((Ok(event), (receiver, closing)));
+                            return Some((Ok(event), (receiver, closing, permit)));
                         }
                         // A stream that fell behind skips what it missed.
                         Err(broadcast::error::RecvError::Lagged(_)) => {}
@@ -286,6 +343,24 @@ mod tests {
         assert!(!hub.may_send("user 1", start));
         assert!(hub.may_send("user 2", start), "each sender counts alone");
         assert!(hub.may_send("user 1", start + SEND_WINDOW));
+    }
+
+    #[test]
+    fn a_reader_has_at_most_five_open_streams() {
+        let hub = Arc::new(ChatHub::default());
+        let open: Vec<StreamPermit> = (0..MOST_STREAMS)
+            .map(|_| hub.open_stream("user 1").expect("the stream may open"))
+            .collect();
+        assert!(hub.open_stream("user 1").is_none());
+        assert!(
+            hub.open_stream("user 2").is_some(),
+            "each reader counts alone"
+        );
+        drop(open);
+        assert!(
+            hub.open_stream("user 1").is_some(),
+            "a closed stream counts no more"
+        );
     }
 
     #[test]

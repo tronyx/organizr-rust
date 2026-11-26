@@ -364,9 +364,77 @@ pub fn qualify(address: &str, https: bool, server: &str) -> String {
     qualified
 }
 
+/// The schemes whose address a browser runs as a script or shows as a page of its own,
+/// in lower case. Such an address must never open in a frame or behind a link.
+const SCRIPT_SCHEMES: [&str; 3] = ["javascript", "data", "vbscript"];
+
+/// Whether an address has a scheme that runs a script: `javascript:`, `data:` or
+/// `vbscript:`, in any case.
+///
+/// The address is read as a browser reads it: control characters and spaces at the
+/// start are left out, and so are tabs and line breaks anywhere. So
+/// `" Java\nScript:alert(1)"` counts too.
+pub fn has_script_scheme(address: &str) -> bool {
+    let cleaned: String = address
+        .trim_start_matches(|character: char| character <= ' ')
+        .chars()
+        .filter(|character| !matches!(character, '\t' | '\n' | '\r'))
+        .collect();
+    let Some((scheme, _)) = cleaned.split_once(':') else {
+        return false;
+    };
+    let mut characters = scheme.chars();
+    let is_scheme = characters
+        .next()
+        .is_some_and(|first| first.is_ascii_alphabetic())
+        && characters.all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '+' | '-' | '.')
+        });
+    is_scheme
+        && SCRIPT_SCHEMES
+            .iter()
+            .any(|known| scheme.eq_ignore_ascii_case(known))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Parts, leading_number, parse, qualify};
+    use super::{Parts, has_script_scheme, leading_number, parse, qualify};
+
+    #[test]
+    fn scripts_are_found_in_every_spelling() {
+        for address in [
+            "javascript:alert(1)",
+            "javascript:%0aalert(1)",
+            " JavaScript:alert(1)",
+            "\u{1}javascript:alert(1)",
+            "java\nscript:alert(1)",
+            "java\tscr\ript:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "DATA:text/html,x",
+            "vbscript:msgbox(1)",
+            "javascript://%0aalert(1)",
+        ] {
+            assert!(has_script_scheme(address), "{address:?}");
+        }
+    }
+
+    #[test]
+    fn other_addresses_are_no_scripts() {
+        for address in [
+            "https://plex.example.com/",
+            "http://10.0.0.5:32400/web",
+            "/plex/",
+            "plex.example.com/javascript:x",
+            "steam://run/440",
+            "vnc://10.0.0.7",
+            "?page=javascript:x",
+            "#javascript:x",
+            "",
+            "java script:alert(1)",
+        ] {
+            assert!(!has_script_scheme(address), "{address:?}");
+        }
+    }
 
     #[test]
     fn address_is_taken_apart() {

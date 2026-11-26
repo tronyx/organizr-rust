@@ -134,6 +134,19 @@ describe('contentFor', () => {
     });
   });
 
+  it('opens no tab whose address runs a script', () => {
+    const script = tab(9, 'Script', { access_url: 'javascript://%0aalert(1)' });
+    const popup = tab(10, 'Window', { type: 2, access_url: ' data:text/html,x' });
+    expect(contentFor({ page: 'tab', name: 'Script' }, [script], USER)).toEqual({
+      kind: 'noAddress',
+      tab: script,
+    });
+    expect(contentFor({ page: 'tab', name: 'Window' }, [popup], USER)).toEqual({
+      kind: 'noAddress',
+      tab: popup,
+    });
+  });
+
   it('shows the start tab for an address without a page', () => {
     expect(contentFor({ page: 'home' }, [plex, docs], USER)).toEqual({ kind: 'frame', tab: plex });
     expect(contentFor({ page: 'home' }, [], USER)).toEqual({ kind: 'noTabs' });

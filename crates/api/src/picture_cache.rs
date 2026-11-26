@@ -112,6 +112,10 @@ pub fn picture_width(content: &[u8]) -> Option<u32> {
 /// How many pictures [`PictureCache::random_wide_picture`] reads at most.
 const RANDOM_TRIES: usize = 20;
 
+/// How many bytes of a picture [`PictureCache::random_wide_picture`] reads to find its
+/// width. The header of a picture is near the start; the rest is not needed.
+const HEAD_LIMIT: usize = 128 * 1024;
+
 impl PictureCache {
     /// A cache in the given folder. The folder is made when the first picture comes.
     pub fn new(folder: PathBuf) -> Self {
@@ -143,6 +147,22 @@ impl PictureCache {
         tokio::fs::read(self.file(name)).await.ok()
     }
 
+    /// The first bytes of a picture, at most [`HEAD_LIMIT`], when the cache holds it.
+    async fn head(&self, name: &str) -> Option<Vec<u8>> {
+        use tokio::io::AsyncReadExt;
+
+        if !is_cache_name(name) {
+            return None;
+        }
+        let file = tokio::fs::File::open(self.file(name)).await.ok()?;
+        let mut head = Vec::with_capacity(HEAD_LIMIT);
+        file.take(u64::try_from(HEAD_LIMIT).ok()?)
+            .read_to_end(&mut head)
+            .await
+            .ok()?;
+        Some(head)
+    }
+
     /// The address of a picture of something that plays, chosen at random, that is at
     /// least `least_width` pixels wide: `data/cache/<name>.jpg`. As `getRandomMediaImage`
     /// of PHP, for the login page. The pictures of something that plays have names that
@@ -165,7 +185,9 @@ impl PictureCache {
             let count = u64::try_from(names.len()).ok().filter(|count| *count > 0)?;
             let index = usize::try_from(getrandom::u64().ok()? % count).ok()?;
             let name = names.swap_remove(index);
-            if let Some(content) = self.read(&name).await
+            // Only the start of each file is read: this runs for every caller of the
+            // login page, who need not be logged in.
+            if let Some(content) = self.head(&name).await
                 && picture_width(&content).is_some_and(|width| width >= least_width)
             {
                 return Some(format!("data/cache/{name}.jpg"));
@@ -299,7 +321,27 @@ pub fn picture_response(content: Vec<u8>) -> Option<Response> {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_cache_name, picture_type, picture_width};
+    use super::{HEAD_LIMIT, PictureCache, is_cache_name, picture_type, picture_width};
+
+    #[tokio::test]
+    async fn random_picture_reads_only_the_start_of_each_file() {
+        let folder = tempfile::tempdir().expect("a folder can be made");
+        let cache = PictureCache::new(folder.path().to_path_buf());
+        // A JPEG 2000 pixels wide, and a megabyte after its header.
+        let mut jpeg = vec![0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x04, 0x00, 0x00];
+        jpeg.extend_from_slice(&[0xFF, 0xC0, 0x00, 0x11, 0x08, 0x02, 0xA3, 0x07, 0xD0]);
+        jpeg.resize(1024 * 1024, 0);
+        cache.keep("movie-1-np", &jpeg).await.expect("it is kept");
+
+        let head = cache.head("movie-1-np").await.expect("the start is read");
+        assert_eq!(head.len(), HEAD_LIMIT);
+        assert_eq!(picture_width(&head), Some(2000));
+        assert_eq!(
+            cache.random_wide_picture(1200).await.as_deref(),
+            Some("data/cache/movie-1-np.jpg")
+        );
+        assert_eq!(cache.random_wide_picture(2400).await, None);
+    }
 
     #[test]
     fn width_is_read_from_the_header_of_a_jpeg_or_png() {

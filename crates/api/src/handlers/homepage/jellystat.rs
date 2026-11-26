@@ -226,7 +226,10 @@ pub async fn metadata(
         .outbound_for(settings.jelly_stat_use_custom_certificate)
         .ok_or_else(no_requests)?;
 
-    let kind = media_server(&settings);
+    // The media server is asked as its administrator, so only for a caller who has the
+    // level of its item on the homepage. Another caller gets what JellyStat knows.
+    let kind = media_server(&settings)
+        .filter(|kind| media::permissions(*kind, media::Part::Metadata).allow(&settings, &caller));
     let media_url = kind.map(|kind| service_url(media::install(&settings, kind).address));
     let mut details = None;
     if let (Some(kind), Some(url)) = (kind, media_url.as_deref()) {

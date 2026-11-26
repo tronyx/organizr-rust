@@ -236,6 +236,80 @@ async fn used_invite_makes_a_komga_account_for_the_address_of_the_invite() {
     .await;
 }
 
+#[tokio::test]
+async fn guest_never_makes_lists_or_deletes_invites() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        // Guests have no name, so they would share the invites of each other. PHP lets
+        // them in when the setting names the level of guests.
+        let (app, _outbox) = app_with(
+            database,
+            &plex,
+            &[
+                ("INVITES-Auth-include", json!("999")),
+                ("INVITES-allow-delete-include", json!(true)),
+            ],
+        );
+        assert_eq!(invite(&app, As::Admin, "one").await.status, StatusCode::OK);
+
+        let made = invite(&app, As::Guest, "two").await;
+        let listed = call(&app, As::Guest, "GET", "/plugins/invites", None).await;
+        let deleted = call(&app, As::Guest, "DELETE", "/plugins/invites/one", None).await;
+        for answer in [made, listed, deleted] {
+            assert_eq!(answer.status, StatusCode::UNAUTHORIZED, "{answer:?}");
+        }
+        let list = call(&app, As::Admin, "GET", "/plugins/invites", None).await;
+        assert_eq!(list.data().as_array().map(Vec::len), Some(1));
+        // A guest still uses a code.
+        assert_eq!(verify(&app, "one").await.status, StatusCode::OK);
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn komga_account_of_an_invite_never_gets_the_admin_role() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let komga = services::komga().await;
+        // A Co-Admin can write this setting. PHP sends the roles as they are.
+        let (app, _outbox) = app_with(
+            database,
+            &plex,
+            &[
+                ("INVITES-komga-enabled", json!(true)),
+                ("INVITES-komga-uri", json!(komga.url())),
+                ("INVITES-komga-api-key", json!(KOMGA_API_KEY)),
+                (
+                    "INVITES-komga-default-user-password",
+                    json!("first password"),
+                ),
+                (
+                    "INVITES-komga-roles",
+                    json!("admin,FILE_DOWNLOAD; Admin ;ADMIN,PAGE_STREAMING"),
+                ),
+                ("INVITES-komga-libraryIds", json!("0A1B")),
+            ],
+        );
+        invite(&app, As::Admin, "one").await;
+
+        let used = use_code(&app, "one", "Sam").await;
+
+        assert_eq!(used.status, StatusCode::OK, "{used:?}");
+        let made = komga
+            .seen()
+            .into_iter()
+            .find(|seen| seen.path == "/api/v2/users")
+            .expect("Komga was asked for an account");
+        assert_eq!(
+            made.json()["roles"],
+            json!(["FILE_DOWNLOAD", "PAGE_STREAMING"])
+        );
+    })
+    .await;
+}
+
 /// The settings of Nextcloud in the invites plugin, for the stand-in at `url`.
 fn nextcloud_settings(url: &str, plex_sso: bool) -> Vec<(&'static str, Value)> {
     vec![
@@ -414,6 +488,9 @@ async fn refusal_of_plex_leaves_the_code_for_another_try() {
                 "Libraries not setup correct",
             ),
             (None, "broken", "An Error Occurred"),
+            // Another refusal with `400` does not count as access. PHP takes every `400`
+            // for "already has access".
+            (None, "no-account", "An Error Occurred"),
         ];
         for (number, (wrong, account, message)) in cases.into_iter().enumerate() {
             let settings: Vec<(&'static str, Value)> = wrong

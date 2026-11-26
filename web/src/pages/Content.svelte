@@ -1,7 +1,7 @@
 <script lang="ts">
   // What the main area shows when it is not the frame of a tab.
   import Notice from '../components/Notice.svelte';
-  import type { Content } from '../lib/menu';
+  import { tabAddress, type Content } from '../lib/menu';
   import { PAGES } from '../lib/route.svelte';
   import { session } from '../lib/session.svelte';
   import Account from './Account.svelte';
@@ -70,7 +70,7 @@
     <div class="card-actions">
       <a
         class="btn btn-primary"
-        href={content.tab.access_url}
+        href={tabAddress(content.tab)}
         target="_blank"
         rel="noopener noreferrer"
       >

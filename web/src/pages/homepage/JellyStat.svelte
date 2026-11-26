@@ -3,7 +3,12 @@
   // JellyStat in a frame.
   import { itemData } from '../../lib/itemData.svelte';
   import type { PlexItem } from '../../lib/plex';
-  import { frameAddress, type JellyStatOptions, jellyStatPoster } from '../../lib/statistics';
+  import {
+    frameAddress,
+    frameSandbox,
+    type JellyStatOptions,
+    jellyStatPoster,
+  } from '../../lib/statistics';
   import { fromNow } from '../../lib/time';
   import PlexPosters from './PlexPosters.svelte';
 
@@ -122,7 +127,7 @@
       src={frame}
       height={options.frameHeight}
       scrolling={options.frameScrolling ? 'auto' : 'no'}
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      sandbox={frameSandbox(frame)}
       referrerpolicy="no-referrer"
       loading="lazy"
     ></iframe>

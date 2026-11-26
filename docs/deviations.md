@@ -41,24 +41,24 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Sign-in, sessions and lockouts | D-02, D-03, D-04, D-09, D-18, D-27, D-30, D-33, D-34, D-35, D-57, D-58, D-73, D-127, D-129, D-139, D-140, D-145, D-146, D-159, D-160, D-161, D-163 |
 | Logins through Plex, LDAP, FTP, Emby and Jellyfin | D-60, D-85, D-86, D-99, D-107, D-124, D-127, D-137, D-154, D-165 |
 | OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156 |
-| Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150, D-165 |
+| Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150, D-165, D-178 |
 | Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157, D-170, D-171 |
 | The set-up wizard and the database | D-19, D-38, D-46, D-97, D-158 |
 | Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129, D-160, D-164 |
-| Tabs and categories | D-28, D-32, D-39, D-47, D-48 |
+| Tabs and categories | D-28, D-32, D-39, D-47, D-48, D-174 |
 | Settings and configuration | D-06, D-07, D-14, D-29, D-45, D-53, D-96, D-106, D-112, D-116, D-162 |
 | Pictures, icons and favicons | D-10, D-54, D-56, D-93, D-123, D-126, D-168 |
 | Backups and restore | D-10, D-26, D-74, D-147, D-169 |
 | Updates | D-23 |
 | Log, errors and request ids | D-13, D-34, D-84 |
-| E-mail | D-09, D-58, D-82, D-138, D-160 |
+| E-mail | D-09, D-58, D-82, D-138, D-160, D-179 |
 | Scheduled jobs | D-33, D-43, D-66, D-74, D-172 |
-| Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154, D-165, D-166, D-167 |
+| Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154, D-165, D-166, D-167, D-175, D-176, D-177 |
 | Custom HTML items | D-61, D-76, D-111, D-131 |
 | Connection tests (`/test/*`) | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102, D-165, D-172 |
 | Certificates and TLS | D-11, D-17, D-60, D-85, D-86, D-98, D-104 |
 | Outbound requests and SSRF | D-08, D-16, D-55, D-81, D-91, D-122, D-165, D-166, D-167 |
-| Built-in plugins | D-44, D-66, D-67, D-68, D-69, D-94, D-95, D-115, D-116, D-118 to D-121, D-130, D-134, D-144, D-149 |
+| Built-in plugins | D-44, D-66, D-67, D-68, D-69, D-94, D-95, D-115, D-116, D-118 to D-121, D-130, D-134, D-144, D-149, D-180, D-181, D-182 |
 | Extensions and the marketplaces | D-17, D-40, D-41, D-75, D-94, D-122, D-143 |
 | Look, themes, custom CSS and JavaScript | D-42, D-92, D-93, D-110, D-125 |
 | Languages | D-109 |
@@ -71,7 +71,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 
 | Route | Entries |
 |---|---|
-| `POST /login`, `/logout` | D-02, D-04, D-34, D-60, D-127, D-159, D-161, D-163 |
+| `POST /login`, `/logout` | D-02, D-04, D-34, D-60, D-127, D-159, D-161, D-163, D-178 |
 | `/token/*` | D-18, D-34 |
 | `/2fa`, `/2fa/{type}` | D-57, D-159 |
 | `/wizard` | D-19, D-38, D-46, D-138 |
@@ -87,7 +87,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `POST /users/import/{type}` | D-82 |
 | `PUT /user/look` | D-125 |
 | `/groups` | D-31, D-51, D-164 |
-| `/tabs` | D-28, D-32, D-39, D-47 |
+| `/tabs` | D-28, D-32, D-39, D-47, D-174 |
 | `/categories` | D-32, D-48 |
 | `/image`, `/image/select`, `data/userTabs/` | D-10, D-54, D-56, D-168 |
 | `data/favicon/{name}` | D-93 |
@@ -98,7 +98,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/page/{page}`, `/organizr/{page}` | D-22, D-82, D-84 |
 | `/settings/*` and `/plugins/*/settings` (form routes of PHP) | D-22, D-96 |
 | `/auth/…`, `/auth-{group}` (forward auth) | D-01, D-59, D-136, D-141, D-157, D-170, D-171 |
-| `POST /plex/register`, `POST /emby/register` | D-83 |
+| `POST /plex/register`, `POST /emby/register` | D-83, D-180 |
 | `GET /plex/servers` | D-107 |
 | `/oidc/*` | D-87, D-88, D-89, D-90, D-105 |
 | `GET /oauth/trakt` | D-81 |
@@ -107,13 +107,13 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/homepage/calendar` and the calendars | D-62, D-79, D-81, D-165, D-167 |
 | `/homepage/plex/*` | D-64, D-165 |
 | `/homepage/emby/*`, `/homepage/jellyfin/*` | D-77, D-81, D-165 |
-| `/homepage/overseerr/*` | D-65, D-108, D-165 |
+| `/homepage/overseerr/*` | D-65, D-108, D-165, D-176 |
 | `/homepage/ombi/*` | D-79, D-108, D-165 |
 | `/homepage/jackett/*`, `/homepage/prowlarr/*` | D-80, D-112, D-165 |
 | `/homepage/<download client>/queue` | D-63, D-70, D-78, D-100, D-103, D-113 |
-| `/homepage/tautulli/*`, `/homepage/weather/*` | D-63, D-81 |
+| `/homepage/tautulli/*`, `/homepage/weather/*` | D-63, D-81, D-177 |
 | `/homepage/pihole/stats`, `/homepage/adguard/stats` | D-71, D-80, D-101, D-102, D-165 |
-| `/homepage/netdata`, `monitorr`, `octoprint`, `unifi`, `prompage`, `jellystat` | D-80, D-81, D-165 |
+| `/homepage/netdata`, `monitorr`, `octoprint`, `unifi`, `prompage`, `jellystat` | D-80, D-81, D-165, D-175 |
 | `/homepage/netronome/data` | D-128 |
 | `/homepage/healthchecks` | D-165 |
 | `/homepage/kuma/data` | D-166 |
@@ -125,8 +125,8 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/plugins/healthchecks/*` | D-66, D-130, D-134 |
 | `/plugins/speedtest/*` | D-67 |
 | `/plugins/bookmark/*` | D-32, D-68, D-115 |
-| `/plugins/invites/*` | D-69, D-118, D-119, D-120 |
-| `/plugins/php-mailer/*` | D-58 |
+| `/plugins/invites/*` | D-69, D-118, D-119, D-120, D-180, D-181, D-182 |
+| `/plugins/php-mailer/*` | D-58, D-179 |
 | `/plugins/plexlibraries/*` | D-96, D-121 |
 | `/extensions*`, `/extension/{id}/…` | D-75, D-122 |
 | `/themes*` | D-92 |
@@ -333,6 +333,15 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-171 | **The address to come back to after the login is encoded as one value of the query.** Forward auth, on top of D-59. When a refused check redirects to the login page, PHP writes the address of the visitor into `?return=` as it is, so an `&` or a space of that address is read as a part of the query of the login page. Here the address is percent-encoded: `?return=https%3A%2F%2Fsonarr.example.com%2Fseries`. The interface reads both forms, so a link with the old form still works. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 | D-172 | **A cron schedule whose step counts past the largest number is refused.** `POST /test/cron` and the scheduler, on top of D-43. A step such as `5/4294967295` made the counting of the values run past the largest number that it holds: a server built for testing stopped the request, and a release build read wrong minutes. PHP takes such a step. Here the schedule is refused as any other wrong schedule: `POST /test/cron` answers `500` with the reason, and the scheduler logs the schedule and does not run the job. A step larger than its field, such as `*/60`, still names only the first value. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 | D-173 | **Only Organizr itself may put an answer of the server in a frame.** Every route and every file of the interface. PHP sends no such header. The page already sent `frame-ancestors 'self'` in its policy, but the other answers did not. (1) Every answer has `X-Frame-Options: SAMEORIGIN`, unless it sends one of its own. (2) An answer whose `Content-Security-Policy` does not name `frame-ancestors` gets a second policy `frame-ancestors 'self'`, which adds that rule and takes nothing from the first. The page keeps its whole policy, and an answer that names its frames itself, such as the notice page, keeps its own rule. (3) Organizr still frames its own pages, such as custom HTML items and pages of plugins, and the applications in the tabs are not affected. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-174 | **A tab address that runs a script is refused.** `POST /tabs` and `PUT /tabs/{id}`. A `url` or a `url_local` with the scheme `javascript:`, `data:` or `vbscript:` gets `422` with "Tab url is not valid" or "Tab url_local is not valid". The scheme is read as a browser reads it: in any case, after spaces and control characters at the start, and without tabs and line breaks, so ` JavaScript:` and `java\nscript:` count too. PHP stores such an address, and its interface puts it into the frame or the link of the tab. Other schemes, such as `steam://` or `vnc://` for tabs that open in a new window, and paths such as `/plex/`, still work. A tab imported from PHP keeps its stored address; the interface then opens no frame and no link for it. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-175 | **The JellyStat details ask the media server only for a caller with the level of its item.** `POST /homepage/jellystat/metadata`. The route asks Jellyfin or Emby as the administrator of that server. It now does so only when the caller also has the level of that server on the homepage (`homepageJellyfinAuth` or `homepageEmbyAuth`), as `POST /homepage/jellyfin/metadata` asks (D-77). Another caller gets what JellyStat knows about the item, and no link to the media server. PHP asks the media server for every caller with the level `homepageJellyStatAuth`. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-176 | **The Overseerr list asks for at most 50 requests, or for `overseerrLimit` when that is larger.** `GET /homepage/overseerr/requests/{type}/{limit}` and `.../{limit}/{offset}`. Each request in the list costs one more question to Overseerr, so a larger `{limit}` is cut down, and `count.limit` says the limit that was used. PHP asks for as many as the path says. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-177 | **The Tautulli statistic `top_libraries` needs the level of the libraries.** `GET /homepage/tautulli/data`. The statistic is left out of `homestats` for a caller without the level `homepageTautulliLibraryAuth`, as the table of the libraries is. PHP sends it to every caller of the item. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-178 | **A single sign-on cookie that is hidden from scripts stays hidden over plain HTTP.** `POST /login`, and each login that sets the cookies of other applications, such as the Tautulli session. A cookie that the application marks `HttpOnly` gets `HttpOnly` also when Organizr is reached over plain HTTP. PHP sends `HttpOnly` for these cookies only over HTTPS. `Secure` is still sent only over HTTPS. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-179 | **Values in an e-mail are written as text.** The e-mails of the mail plugin. `{title}`, `{domain}` and `{fullDomain}` in the HTML of an e-mail, and the address of the site and the logo (`PHPMAILER-domain`, `PHPMAILER-logo`) in the layout, are escaped for HTML, as `{user}` already was. So `&` becomes `&amp;`, and a quote cannot end the attribute that holds the value. The subject stays plain text, and the text that an Admin writes for an e-mail stays HTML. PHP puts these values in as they are. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-180 | **Only a refused share that says so counts as "already has access".** `POST /plugins/invites/{code}`, and the registration of a Plex account through an invite. plex.tv answers `400` both for an account that has the server and for other faults. Now only an answer whose text says "already" counts as access: the code is used, and the accounts of the other services are made. Another `400` gets `409` with "An Error Occurred", and the code stays good for another try. PHP takes every `400` for "Plex User already has access". Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-181 | **An invite never makes a Komga administrator.** The Komga account that an invite makes. The role `ADMIN`, in any case, is left out of `INVITES-komga-roles` before the roles go to Komga, because a Co-Admin can write that setting. When no other role is left, no account is made. PHP sends the roles as they are. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
+| D-182 | **A guest never makes, lists or deletes invites.** `GET /plugins/invites`, `POST /plugins/invites` and `DELETE /plugins/invites/{code}`. When `INVITES-Auth-include` names the level of guests (999), a caller without a session and without the API key still gets `401`. Guests have no name, so they would share their invites and could see and delete the invites of each other. Using a code (`GET` and `POST /plugins/invites/{code}`) is still for everybody. PHP lets guests in. Found by the security audit of 2026-11-25; decided under the owner's go-ahead of 2026-11-26. |
 
 ## ✅ Kept exactly as PHP has it
 

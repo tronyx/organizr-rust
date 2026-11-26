@@ -1,5 +1,6 @@
 // The menu of tabs and categories, and what the main area shows for an address.
 
+import { safeAddress } from './addresses';
 import { findTab, type Route, type SettingsSection } from './route.svelte';
 import type { MenuCategory, MenuTab, UnsortedPlace } from './types';
 
@@ -54,6 +55,14 @@ export function buildMenu(
 /** Whether a tab opens in a new browser window and not inside the interface. */
 export function opensNewWindow(tab: MenuTab): boolean {
   return tab.type === 2;
+}
+
+/**
+ * The address that a tab opens, in a frame or a new window. An address that runs a
+ * script is no address.
+ */
+export function tabAddress(tab: MenuTab): string | undefined {
+  return safeAddress(tab.access_url);
 }
 
 /**
@@ -113,7 +122,7 @@ function contentOfTab(tab: MenuTab, caller: Caller): Content {
     }
     return { kind: 'homepage', tab };
   }
-  if (!tab.access_url) {
+  if (!tabAddress(tab)) {
     return { kind: 'noAddress', tab };
   }
   return opensNewWindow(tab) ? { kind: 'newWindow', tab } : { kind: 'frame', tab };

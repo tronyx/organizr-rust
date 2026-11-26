@@ -316,6 +316,18 @@ async fn category_of(
     })
 }
 
+/// An address of a tab from a field. An address that runs a script in the browser,
+/// such as `javascript:alert(1)`, is refused. PHP stores it.
+fn address_of(fields: &Fields<'_>, name: &str) -> Result<Change<Option<String>>, Refusal> {
+    let change = fields.text(name)?;
+    if let Change::Set(Some(address)) = &change
+        && php_url::has_script_scheme(address)
+    {
+        return Err(fields.not_valid(name));
+    }
+    Ok(change)
+}
+
 /// The id of a tab from the path. Text that is no whole number names no tab.
 fn tab_id(text: &str) -> Option<TabId> {
     record_id(text).map(TabId::new)
@@ -445,8 +457,8 @@ pub async fn add(
         position,
         category: category.id,
         name: name.clone(),
-        url: chosen(fields.text("url")?),
-        url_local: chosen(fields.text("url_local")?),
+        url: chosen(address_of(&fields, "url")?),
+        url_local: chosen(address_of(&fields, "url_local")?),
         is_default: switch("default")?,
         enabled: switch("enabled")?,
         access,
@@ -546,8 +558,8 @@ pub async fn change(
             Change::Keep => Change::Keep,
         },
         name: name.clone(),
-        url: fields.text("url")?,
-        url_local: fields.text("url_local")?,
+        url: address_of(&fields, "url")?,
+        url_local: address_of(&fields, "url_local")?,
         is_default: fields.switch("default")?,
         enabled: fields.switch("enabled")?,
         access: access_of(&fields, &tab)?,

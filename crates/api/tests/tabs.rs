@@ -354,6 +354,61 @@ async fn tab_cannot_be_without_a_name() {
 }
 
 #[tokio::test]
+async fn address_that_runs_a_script_is_refused() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let plex = store_tab(database, "Plex", |_| {}).await;
+        let path = format!("/tabs/{}", plex.id);
+        let before = stored_tabs(database).await;
+
+        // PHP stores each of these, and the browser would run it.
+        let scripts = [
+            "javascript:alert(1)",
+            "javascript:%0aalert(1)",
+            " JavaScript:alert(1)",
+            "java\nscript:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+            "vbscript:msgbox(1)",
+        ];
+        for field in ["url", "url_local"] {
+            for address in scripts {
+                let body = new_tab("Sonarr", &json!({field: address}));
+                let added = call(&app, As::Admin, "POST", "/tabs", Some(body)).await;
+                let changed =
+                    call(&app, As::Admin, "PUT", &path, Some(json!({field: address}))).await;
+                for answer in [added, changed] {
+                    assert_refused(
+                        &answer,
+                        StatusCode::UNPROCESSABLE_ENTITY,
+                        &format!("Tab {field} is not valid"),
+                        &format!("{field}: {address:?}"),
+                    );
+                }
+            }
+        }
+        assert_eq!(stored_tabs(database).await, before, "nothing was stored");
+
+        // Other schemes still work, for tabs that open in a new window.
+        for (name, address) in [("Steam", "steam://run/440"), ("Vnc", "vnc://10.0.0.7")] {
+            let body = new_tab(name, &json!({"url": address, "type": 2}));
+            let answer = call(&app, As::Admin, "POST", "/tabs", Some(body)).await;
+            assert_eq!(answer.status, StatusCode::OK, "{address}: {}", answer.body);
+        }
+        let answer = call(
+            &app,
+            As::Admin,
+            "PUT",
+            &path,
+            Some(json!({"url": "/plex/"})),
+        )
+        .await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn id_of_a_tab_cannot_be_chosen_or_changed() {
     on_each_engine(async |database| {
         seed::installed(database).await;

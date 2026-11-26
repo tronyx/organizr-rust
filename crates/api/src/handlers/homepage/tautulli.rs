@@ -20,6 +20,9 @@ const VIEWS: [&str; 4] = ["top_movies", "popular_movies", "popular_tv", "top_tv"
 /// The statistics about who watches, and on what.
 const MISC: [&str; 2] = ["top_platforms", "top_users"];
 
+/// The statistics about the libraries, which need the level of the libraries.
+const LIBRARIES: [&str; 1] = ["top_libraries"];
+
 /// The statistics that the homepage never shows.
 const NEVER: [&str; 4] = [
     "top_music",
@@ -35,6 +38,22 @@ pub fn permissions() -> Permissions {
         auth: vec!["homepageTautulliAuth".to_owned()],
         not_empty: vec!["tautulliURL".to_owned(), "tautulliApikey".to_owned()],
     }
+}
+
+/// The ids of the statistics that a caller does not get: those the homepage never
+/// shows, and those of each part whose level the caller does not have.
+fn hidden_statistics(libraries: bool, views: bool, misc: bool) -> Vec<&'static str> {
+    let mut hidden: Vec<&str> = NEVER.to_vec();
+    if !libraries {
+        hidden.extend(LIBRARIES);
+    }
+    if !views {
+        hidden.extend(VIEWS);
+    }
+    if !misc {
+        hidden.extend(MISC);
+    }
+    hidden
 }
 
 /// A value of Tautulli as text. Tautulli sends an id as a number in some answers and
@@ -175,13 +194,7 @@ pub async fn data(
     let Some(mut statistics) = statistics else {
         return Ok(Envelope::success(answer));
     };
-    let mut hidden: Vec<&str> = NEVER.to_vec();
-    if !views {
-        hidden.extend(VIEWS);
-    }
-    if !misc {
-        hidden.extend(MISC);
-    }
+    let hidden = hidden_statistics(libraries, views, misc);
     let excluded: Vec<&str> = settings
         .homepage_tautulli_viewing_stats_exclude
         .split(',')
@@ -219,7 +232,30 @@ pub async fn data(
 mod tests {
     use serde_json::json;
 
-    use super::{picture_sizes, shown_statistics};
+    use super::{hidden_statistics, picture_sizes, shown_statistics};
+
+    #[test]
+    fn each_statistic_follows_the_level_of_its_part() {
+        let all = hidden_statistics(true, true, true);
+        assert!(!all.contains(&"top_libraries"));
+        assert!(!all.contains(&"top_movies"));
+        assert!(all.contains(&"last_watched"));
+
+        let no_libraries = hidden_statistics(false, true, true);
+        assert!(no_libraries.contains(&"top_libraries"));
+        assert!(!no_libraries.contains(&"top_users"));
+
+        let nothing = hidden_statistics(false, false, false);
+        for id in [
+            "top_libraries",
+            "top_movies",
+            "popular_tv",
+            "top_users",
+            "top_platforms",
+        ] {
+            assert!(nothing.contains(&id), "{id}");
+        }
+    }
 
     #[test]
     fn statistics_lose_hidden_ids_and_the_rows_of_excluded_libraries() {

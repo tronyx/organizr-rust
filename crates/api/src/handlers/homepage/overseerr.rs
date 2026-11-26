@@ -228,11 +228,18 @@ async fn details_of(
     all
 }
 
+/// The most requests that the path can ask for, unless `overseerrLimit` is larger.
+/// Each request of the list costs one more question to Overseerr.
+const LIST_LIMIT: i64 = 50;
+
 /// The paging of the list: the limit and the offset of the path, or the defaults.
-fn paging(settings: &Settings, limit: Option<&str>, offset: Option<&str>) -> (i64, i64) {
+/// `default` is the `overseerrLimit` setting. The limit of the path is at most the
+/// larger of [`LIST_LIMIT`] and `default`.
+fn paging(default: u32, limit: Option<&str>, offset: Option<&str>) -> (i64, i64) {
     let whole = |text: Option<&str>| text.and_then(|text| text.trim().parse::<i64>().ok());
+    let default = i64::from(default);
     (
-        whole(limit).unwrap_or_else(|| i64::from(settings.overseerr_limit)),
+        whole(limit).map_or(default, |limit| limit.min(LIST_LIMIT.max(default))),
         whole(offset).unwrap_or(0),
     )
 }
@@ -247,7 +254,7 @@ async fn list(
     permissions().check(&settings, caller)?;
     let http = &outbound(state, &settings)?;
     let install = install(&settings, true);
-    let (limit, offset) = paging(&settings, limit, offset);
+    let (limit, offset) = paging(settings.overseerr_limit, limit, offset);
     let (mut films, mut series) = (0_u32, 0_u32);
     let mut rows: Vec<(i64, &'static str, Map<String, Value>)> = Vec::new();
 
@@ -657,7 +664,17 @@ pub async fn add_request_for_seasons(
 mod tests {
     use serde_json::json;
 
-    use super::{kind, number, request_row, seasons_for};
+    use super::{LIST_LIMIT, kind, number, paging, request_row, seasons_for};
+
+    #[test]
+    fn limit_of_the_path_has_a_cap() {
+        assert_eq!(paging(50, None, None), (50, 0));
+        assert_eq!(paging(50, Some("20"), Some("40")), (20, 40));
+        assert_eq!(paging(50, Some("100000"), None), (LIST_LIMIT, 0));
+        // A larger limit in the settings is the cap.
+        assert_eq!(paging(200, Some("100000"), None), (200, 0));
+        assert_eq!(paging(200, Some("150"), None), (150, 0));
+    }
 
     #[test]
     fn seasons_of_a_new_request_follow_the_setting() {

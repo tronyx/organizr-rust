@@ -94,10 +94,17 @@ pub(crate) fn check_enabled(state: &AppState) -> Result<(), Refusal> {
 }
 
 /// The checks of the routes for the members who make invites.
+///
+/// A guest is never such a member, whatever level the setting names. Guests have no
+/// name, so they would see and delete the invites of each other. PHP lets them in when
+/// the setting names the level of guests.
 fn check_member(state: &AppState, caller: &Caller) -> Result<(), Refusal> {
     check_enabled(state)?;
     let level = u16::try_from(state.settings().invites_auth_include).unwrap_or(0);
     caller.require(GroupLevel::new(level).unwrap_or(GroupLevel::ADMIN))?;
+    if caller.user().is_none() && !caller.has_api_key {
+        return Err(ApiError::NotAuthorized.into());
+    }
     Ok(())
 }
 
@@ -506,7 +513,12 @@ async fn make_komga_account(
     settings: &Settings,
     email: &str,
 ) {
-    let roles = list_of(&settings.invites_komga_roles);
+    // A Co-Admin can write the roles, so an invite never makes a Komga administrator.
+    // PHP sends the roles as they are.
+    let roles: Vec<String> = list_of(&settings.invites_komga_roles)
+        .into_iter()
+        .filter(|role| !role.eq_ignore_ascii_case("ADMIN"))
+        .collect();
     let library_ids = list_of(&settings.invites_komga_library_ids);
     if settings.invites_komga_uri.is_empty()
         || settings.invites_komga_api_key.is_empty()
@@ -572,7 +584,7 @@ pub(crate) async fn share_plex_server(
         .await
     {
         Ok(()) => return Ok(Access::Given),
-        Err(PlexError::Status(400)) => return Ok(Access::AlreadyHad),
+        Err(PlexError::AlreadyShared) => return Ok(Access::AlreadyHad),
         Err(PlexError::Status(401)) => "Incorrect Token",
         Err(PlexError::Status(404)) => "Libraries not setup correct",
         Err(PlexError::Status(_)) => "An Error Occurred",
