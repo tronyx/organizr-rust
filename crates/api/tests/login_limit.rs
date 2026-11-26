@@ -83,6 +83,34 @@ async fn fifth_failed_login_locks_out_and_tells_how_long() {
 }
 
 #[tokio::test]
+async fn logins_at_the_same_time_get_no_more_checks_than_the_limit() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+
+        // Nineteen wrong passwords and then the right one, all at once. Each attempt
+        // counts before its password check, so only the five of the limit are checked
+        // and the right password, which comes last, is never tried (D-139). Without
+        // that, every one of them would be checked, and the guess would get in.
+        let passwords = std::iter::repeat_n("not-it", 19).chain([seed::ADMIN_PASSWORD]);
+        let logins = passwords.map(|password| login(&app, HOME, seed::ADMIN_NAME, password));
+        let answers = futures_util::future::join_all(logins).await;
+        let statuses: Vec<u16> = answers
+            .iter()
+            .map(|answer| answer.status.as_u16())
+            .collect();
+        assert_eq!(
+            statuses.iter().filter(|status| **status == 401).count(),
+            4,
+            "{statuses:?}"
+        );
+        let right = answers.last().expect("twenty logins were sent");
+        assert!(is_lock_out(right), "{}", right.body);
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn what_the_client_says_about_its_own_count_changes_nothing() {
     on_each_engine(async |database| {
         seed::installed(database).await;

@@ -81,9 +81,14 @@ pub async fn register(
 
     let limiter = state.login_limiter();
     let attempt = Attempt::new(client.address, LIMIT_KEY);
-    if let Some(retry_after) = limiter.locked_for(&attempt, Instant::now()) {
-        return Err(ApiError::LockedOut { retry_after });
-    }
+    let policy = LimitPolicy {
+        failures: settings.login_attempts,
+        lockout: Duration::from_millis(settings.login_lockout),
+    };
+    // The attempt counts before the check of the registration password (D-139).
+    let pending = limiter
+        .begin(&attempt, policy, Instant::now())
+        .map_err(|retry_after| ApiError::LockedOut { retry_after })?;
 
     let now = SystemTime::now();
     let request = Registration {
@@ -105,11 +110,7 @@ pub async fn register(
         Ok(user) => user,
         Err(RegistrationError::WrongRegistrationPassword) => {
             tracing::warn!(client = %client.address, "a registration failed: the registration password is wrong");
-            let policy = LimitPolicy {
-                failures: settings.login_attempts,
-                lockout: Duration::from_millis(settings.login_lockout),
-            };
-            return match limiter.record_failure(&attempt, policy, Instant::now()) {
+            return match pending.failed() {
                 Some(retry_after) => Err(ApiError::LockedOut { retry_after }),
                 None => Ok(refused(
                     StatusCode::UNAUTHORIZED,

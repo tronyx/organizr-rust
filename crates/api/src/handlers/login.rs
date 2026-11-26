@@ -59,10 +59,19 @@ pub async fn login(
 
     let limiter = state.login_limiter();
     let attempt = Attempt::new(client.address, &name);
-    if let Some(retry_after) = limiter.locked_for(&attempt, Instant::now()) {
-        tracing::warn!(name = %name, client = %client.address, "a login was refused during a lock-out");
-        return Err(ApiError::LockedOut { retry_after });
-    }
+    let policy = LimitPolicy {
+        failures: settings.login_attempts,
+        lockout: Duration::from_millis(settings.login_lockout),
+    };
+    // The attempt counts before the check, so logins at the same time cannot all be
+    // checked before the first failure counts (D-139).
+    let pending = match limiter.begin(&attempt, policy, Instant::now()) {
+        Ok(pending) => pending,
+        Err(retry_after) => {
+            tracing::warn!(name = %name, client = %client.address, "a login was refused during a lock-out");
+            return Err(ApiError::LockedOut { retry_after });
+        }
+    };
 
     let now = SystemTime::now();
     let device = device_of(&client, &headers);
@@ -92,29 +101,23 @@ pub async fn login(
         // A wrong code counts as a failed login, as a wrong password does.
         Err(error @ (LoginError::WrongCredentials | LoginError::WrongSecondFactor)) => {
             tracing::warn!(name = %name, client = %client.address, %error, "a login failed");
-            let policy = LimitPolicy {
-                failures: settings.login_attempts,
-                lockout: Duration::from_millis(settings.login_lockout),
-            };
             // The failure that reaches the limit already gets the lock-out answer.
-            return Err(
-                match limiter.record_failure(&attempt, policy, Instant::now()) {
-                    Some(retry_after) => {
-                        tracing::warn!(
-                            name = %name,
-                            client = %client.address,
-                            seconds = retry_after.as_secs(),
-                            "too many logins failed; the client and the name are locked out"
-                        );
-                        ApiError::LockedOut { retry_after }
-                    }
-                    None => error.into(),
-                },
-            );
+            return Err(match pending.failed() {
+                Some(retry_after) => {
+                    tracing::warn!(
+                        name = %name,
+                        client = %client.address,
+                        seconds = retry_after.as_secs(),
+                        "too many logins failed; the client and the name are locked out"
+                    );
+                    ApiError::LockedOut { retry_after }
+                }
+                None => error.into(),
+            });
         }
         Err(error) => return Err(error.into()),
     };
-    limiter.record_success(&attempt);
+    pending.succeeded();
     let logged_in = &outcome.logged_in;
     tracing::info!(user = %logged_in.user.username, client = %client.address, "a user logged in");
     if outcome.created {

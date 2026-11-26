@@ -227,35 +227,47 @@ pub(crate) async fn usable(
 ) -> Result<Invite, Refusal> {
     let limiter = state.login_limiter();
     let attempt = Attempt::new(client.address, LIMIT_KEY);
-    if let Some(retry_after) = limiter.locked_for(&attempt, Instant::now()) {
-        return Err(ApiError::LockedOut { retry_after }.into());
-    }
+    // The attempt counts before the code is looked up (D-139).
+    let pending = limiter
+        .begin(&attempt, limit_policy(state), Instant::now())
+        .map_err(|retry_after| Refusal::from(ApiError::LockedOut { retry_after }))?;
     let found = if is_code(code) {
         state.database().invites().find(code).await?
     } else {
         None
     };
     if let Some(invite) = found.filter(|invite| invite.is_valid) {
+        // A usable code counts for nothing.
+        drop(pending);
         return Ok(invite);
     }
     tracing::warn!(client = %client.address, "an invite code was refused");
-    Err(wrong_code(state, &attempt))
+    Err(wrong_code_answer(pending.failed()))
+}
+
+/// The limit of the settings for wrong codes, as for failed logins.
+fn limit_policy(state: &AppState) -> LimitPolicy {
+    let settings = state.settings();
+    LimitPolicy {
+        failures: settings.login_attempts,
+        lockout: Duration::from_millis(settings.login_lockout),
+    }
+}
+
+/// The answer for a wrong code, with the lock that it caused.
+fn wrong_code_answer(locked: Option<Duration>) -> Refusal {
+    match locked {
+        Some(retry_after) => ApiError::LockedOut { retry_after }.into(),
+        None => Refusal::not_authorized("Code is invalid"),
+    }
 }
 
 /// Counts a wrong code, and gives the answer for it.
 fn wrong_code(state: &AppState, attempt: &Attempt) -> Refusal {
-    let settings = state.settings();
-    let policy = LimitPolicy {
-        failures: settings.login_attempts,
-        lockout: Duration::from_millis(settings.login_lockout),
-    };
-    match state
+    let locked = state
         .login_limiter()
-        .record_failure(attempt, policy, Instant::now())
-    {
-        Some(retry_after) => ApiError::LockedOut { retry_after }.into(),
-        None => Refusal::not_authorized("Code is invalid"),
-    }
+        .record_failure(attempt, limit_policy(state), Instant::now());
+    wrong_code_answer(locked)
 }
 
 /// `GET /plugins/invites/{code}`: says whether a code can be used. Everybody can ask.

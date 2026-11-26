@@ -92,27 +92,26 @@ pub async fn unlock_own(
     };
     let limiter = state.login_limiter();
     let attempt = Attempt::new(client.address, &user.username);
-    if let Some(retry_after) = limiter.locked_for(&attempt, Instant::now()) {
-        return Err(ApiError::LockedOut { retry_after }.into());
-    }
+    let settings = state.settings();
+    let policy = LimitPolicy {
+        failures: settings.login_attempts,
+        lockout: Duration::from_millis(settings.login_lockout),
+    };
+    // The attempt counts before the check of the password (D-139).
+    let pending = limiter
+        .begin(&attempt, policy, Instant::now())
+        .map_err(|retry_after| Refusal::from(ApiError::LockedOut { retry_after }))?;
     if !matches!(
         password::verify(&given, &user.password_hash),
         PasswordCheck::Correct { .. }
     ) {
         tracing::warn!(user = %user.username, client = %client.address, "a wrong password for the lock screen");
-        let settings = state.settings();
-        let policy = LimitPolicy {
-            failures: settings.login_attempts,
-            lockout: Duration::from_millis(settings.login_lockout),
-        };
-        return Err(
-            match limiter.record_failure(&attempt, policy, Instant::now()) {
-                Some(retry_after) => ApiError::LockedOut { retry_after }.into(),
-                None => Refusal::not_authorized("Password Incorrect"),
-            },
-        );
+        return Err(match pending.failed() {
+            Some(retry_after) => ApiError::LockedOut { retry_after }.into(),
+            None => Refusal::not_authorized("Password Incorrect"),
+        });
     }
-    limiter.record_success(&attempt);
+    pending.succeeded();
     set_locked(&state, &user, false).await
 }
 

@@ -113,10 +113,96 @@ impl Attempt {
     }
 }
 
+/// An attempt that the limiter counted before its check, until the check says how it
+/// went (D-139).
+///
+/// The attempt counts as a failed one from the start, so attempts that run at the same
+/// time cannot all be checked before the first failure is counted. [`Pending::failed`]
+/// keeps the count, [`Pending::succeeded`] clears the counts as after a login, and an
+/// attempt that ends without either, such as a form with a missing field, gives its
+/// count back.
+#[derive(Debug)]
+#[must_use = "an attempt that is dropped gives its count back"]
+pub struct Pending<'a> {
+    limiter: &'a LoginLimiter,
+    attempt: Attempt,
+    policy: LimitPolicy,
+    /// The lock that this attempt caused, when it reached the limit.
+    locked: Option<Duration>,
+    settled: bool,
+}
+
+impl Pending<'_> {
+    /// The check failed: the count stays. Returns how long the client or the name is
+    /// locked, when this attempt reached the limit.
+    pub fn failed(mut self) -> Option<Duration> {
+        self.settled = true;
+        self.locked
+    }
+
+    /// The check succeeded: the counts of the client and of the name start again.
+    pub fn succeeded(mut self) {
+        self.settled = true;
+        self.limiter.record_success(&self.attempt);
+    }
+}
+
+impl Drop for Pending<'_> {
+    fn drop(&mut self) {
+        if !self.settled {
+            self.limiter
+                .give_back(&self.attempt, self.policy, self.locked.is_some());
+        }
+    }
+}
+
 impl LoginLimiter {
     /// A limiter without counts.
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Starts an attempt: refuses it with the time to wait while its client or its name
+    /// is locked, and otherwise counts it as a failed one at once, in the same step
+    /// (D-139). The answer says how the check went.
+    pub fn begin(
+        &self,
+        attempt: &Attempt,
+        policy: LimitPolicy,
+        now: Instant,
+    ) -> Result<Pending<'_>, Duration> {
+        let mut entries = self.entries.lock().unwrap_or_else(PoisonError::into_inner);
+        let wait = attempt
+            .keys()
+            .into_iter()
+            .filter_map(|key| entries.get(key)?.locked_until)
+            .filter(|until| now < *until)
+            .max();
+        if let Some(until) = wait {
+            return Err(until.duration_since(now));
+        }
+        let locked = count_failure(&mut entries, attempt, policy, now);
+        Ok(Pending {
+            limiter: self,
+            attempt: attempt.clone(),
+            policy,
+            locked,
+            settled: false,
+        })
+    }
+
+    /// Takes back the count of an attempt that ended without a verdict, and the lock it
+    /// caused.
+    fn give_back(&self, attempt: &Attempt, policy: LimitPolicy, caused_lock: bool) {
+        let mut entries = self.entries.lock().unwrap_or_else(PoisonError::into_inner);
+        for key in attempt.keys() {
+            if let Some(entry) = entries.get_mut(key) {
+                entry.failures = entry.failures.saturating_sub(1);
+                if caused_lock && entry.failures < policy.failures.max(1) {
+                    entry.locked_until = None;
+                }
+            }
+        }
     }
 
     /// Says how long an attempt must wait, when its client or its name is locked.
@@ -141,31 +227,7 @@ impl LoginLimiter {
         now: Instant,
     ) -> Option<Duration> {
         let mut entries = self.entries.lock().unwrap_or_else(PoisonError::into_inner);
-        if entries.len() > SWEEP_ABOVE {
-            entries.retain(|_, entry| entry.matters(now));
-        }
-
-        let mut locked = None;
-        for key in attempt.keys() {
-            let entry = entries.entry(key.clone()).or_insert(Entry {
-                failures: 0,
-                forget_at: now,
-                locked_until: None,
-            });
-            // A count that is forgotten, or that belongs to a lock that has ended,
-            // starts again.
-            if !entry.matters(now) {
-                entry.failures = 0;
-                entry.locked_until = None;
-            }
-            entry.failures = entry.failures.saturating_add(1);
-            entry.forget_at = now + FAILURE_MEMORY.max(policy.lockout);
-            if entry.failures >= policy.failures.max(1) {
-                entry.locked_until = Some(now + policy.lockout);
-                locked = Some(policy.lockout);
-            }
-        }
-        locked
+        count_failure(&mut entries, attempt, policy, now)
     }
 
     /// Forgets the failed logins of the client and for the name of an attempt, after a
@@ -182,12 +244,47 @@ impl LoginLimiter {
     }
 }
 
+/// Counts a failed attempt for the client and for the name. Returns how long they are
+/// locked, when this failure caused a lock.
+fn count_failure(
+    entries: &mut HashMap<Key, Entry>,
+    attempt: &Attempt,
+    policy: LimitPolicy,
+    now: Instant,
+) -> Option<Duration> {
+    if entries.len() > SWEEP_ABOVE {
+        entries.retain(|_, entry| entry.matters(now));
+    }
+
+    let mut locked = None;
+    for key in attempt.keys() {
+        let entry = entries.entry(key.clone()).or_insert(Entry {
+            failures: 0,
+            forget_at: now,
+            locked_until: None,
+        });
+        // A count that is forgotten, or that belongs to a lock that has ended,
+        // starts again.
+        if !entry.matters(now) {
+            entry.failures = 0;
+            entry.locked_until = None;
+        }
+        entry.failures = entry.failures.saturating_add(1);
+        entry.forget_at = now + FAILURE_MEMORY.max(policy.lockout);
+        if entry.failures >= policy.failures.max(1) {
+            entry.locked_until = Some(now + policy.lockout);
+            locked = Some(policy.lockout);
+        }
+    }
+    locked
+}
+
 #[cfg(test)]
 mod tests {
     use std::net::IpAddr;
     use std::time::{Duration, Instant};
 
-    use super::{Attempt, FAILURE_MEMORY, LimitPolicy, LoginLimiter, SWEEP_ABOVE};
+    use super::{Attempt, FAILURE_MEMORY, LimitPolicy, LoginLimiter, Pending, SWEEP_ABOVE};
 
     const POLICY: LimitPolicy = LimitPolicy {
         failures: 3,
@@ -440,5 +537,70 @@ mod tests {
         let after = limiter.entries.lock().expect("the lock is free").len();
         assert!(before > SWEEP_ABOVE, "{before}");
         assert_eq!(after, 2, "only the new client and the new name are left");
+    }
+
+    #[test]
+    fn attempts_under_way_count_before_their_check_ends() {
+        // A burst of logins for one name gets as many checks as the limit, however many
+        // run at once (D-139).
+        let limiter = LoginLimiter::new();
+        let now = Instant::now();
+        let attempt = attempt("192.0.2.7", "robin");
+        let under_way: Vec<_> = (0..3)
+            .map(|_| {
+                limiter
+                    .begin(&attempt, POLICY, now)
+                    .expect("not locked yet")
+            })
+            .collect();
+        assert!(limiter.begin(&attempt, POLICY, now).is_err());
+        // The attempt that reached the limit says so when it fails.
+        let mut causes = under_way.into_iter().map(Pending::failed);
+        assert_eq!(causes.next(), Some(None));
+        assert_eq!(causes.next(), Some(None));
+        assert_eq!(causes.next(), Some(Some(POLICY.lockout)));
+    }
+
+    #[test]
+    fn attempt_that_ends_without_a_verdict_counts_for_nothing() {
+        let limiter = LoginLimiter::new();
+        let now = Instant::now();
+        let attempt = attempt("192.0.2.7", "robin");
+        for _ in 0..10 {
+            drop(limiter.begin(&attempt, POLICY, now).expect("not locked"));
+        }
+        // Two failures and a third attempt under way: the third may still go on.
+        limiter
+            .begin(&attempt, POLICY, now)
+            .expect("not locked")
+            .failed();
+        limiter
+            .begin(&attempt, POLICY, now)
+            .expect("not locked")
+            .failed();
+        let last = limiter.begin(&attempt, POLICY, now).expect("not locked");
+        drop(last);
+        assert_eq!(limiter.locked_for(&attempt, now), None);
+        assert!(limiter.begin(&attempt, POLICY, now).is_ok());
+    }
+
+    #[test]
+    fn attempt_that_succeeds_clears_the_counts() {
+        let limiter = LoginLimiter::new();
+        let now = Instant::now();
+        let attempt = attempt("192.0.2.7", "robin");
+        limiter
+            .begin(&attempt, POLICY, now)
+            .expect("not locked")
+            .failed();
+        limiter
+            .begin(&attempt, POLICY, now)
+            .expect("not locked")
+            .failed();
+        limiter
+            .begin(&attempt, POLICY, now)
+            .expect("not locked")
+            .succeeded();
+        assert_eq!(fail(&limiter, &attempt, 2, now), None);
     }
 }
