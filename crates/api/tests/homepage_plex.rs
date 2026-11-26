@@ -10,6 +10,7 @@
 use axum::Router;
 use axum::http::StatusCode;
 use organizr_db::Database;
+use organizr_integrations::plex_server::picture_name;
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::homepage_services::{self, JPEG, PLEX_SERVER_TOKEN, TAUTULLI_KEY};
 use organizr_testkit::http::{Answer, As, call};
@@ -328,8 +329,19 @@ async fn pictures_are_fetched_and_kept(database: &Database) {
         "/photo/:/transcode?height=300&width=200&upscale=1&url=%2Flibrary%2Fmetadata%2F815%2Fthumb%2F1"
     );
     assert_eq!(seen[0].header("x-plex-token"), Some(PLEX_SERVER_TOKEN));
-    let file = folder.path().join("cache").join("plex-815-list.jpg");
+    // The cache names the picture after its path and its size, not after the key that
+    // the caller sent (D-153).
+    let name = picture_name("/library/metadata/815/thumb/1", (200, 300), "815-list");
+    assert!(name.ends_with("-list"), "{name}");
+    let file = folder.path().join("cache").join(format!("plex-{name}.jpg"));
     assert_eq!(std::fs::read(file).expect("the file is there"), JPEG);
+    assert!(
+        !folder
+            .path()
+            .join("cache")
+            .join("plex-815-list.jpg")
+            .exists()
+    );
 
     // The second time, the picture comes from the cache. A `$` asks for it anew.
     picture(&app, As::Admin, path).await;
@@ -337,6 +349,22 @@ async fn pictures_are_fetched_and_kept(database: &Database) {
     let again = picture(&app, As::Admin, &format!("{path}$abc")).await;
     assert_eq!(again.status, StatusCode::OK);
     assert_eq!(server.seen().len(), 2);
+
+    // Another picture under the key of the first one, with `$` to write it anew: it is
+    // kept under its own name, and the first one stays.
+    let other = "/homepage/image?source=plex&img=/library/metadata/816/thumb/1&height=300&width=200&key=815-list$x";
+    let answer = picture(&app, As::Admin, other).await;
+    assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+    let other_name = picture_name("/library/metadata/816/thumb/1", (200, 300), "815-list");
+    assert_ne!(other_name, name);
+    assert!(
+        folder
+            .path()
+            .join("cache")
+            .join(format!("plex-{other_name}.jpg"))
+            .exists()
+    );
+    let seen_before = server.seen().len();
 
     // A guest has no level for Plex. An address that is no path of the server, a size
     // that is too large and a key that could leave the folder are refused.
@@ -348,11 +376,15 @@ async fn pictures_are_fetched_and_kept(database: &Database) {
         "/homepage/image?source=plex&img=/library/metadata/1/thumb/1&height=30000&width=200&key=1-list",
         "/homepage/image?source=plex&img=/library/metadata/1/thumb/1&height=300&width=200&key=..%2Fsecret",
         "/homepage/image?source=emby&img=/library/metadata/1/thumb/1&height=300&width=200&key=1-list",
+        // Only a picture of the library, never a nested transcode with another address.
+        "/homepage/image?source=plex&img=%2Fphoto%2F%3A%2Ftranscode%3Furl%3Dhttp%253A%252F%252F127.0.0.1%252Fa.png&height=300&width=200&key=1-list",
+        "/homepage/image?source=plex&img=/library/metadata/1/thumb/1%3Fx%3D1&height=300&width=200&key=1-list",
+        "/homepage/image?source=plex&img=/library/metadata/abc/thumb/1&height=300&width=200&key=1-list",
     ] {
         let refused = picture(&app, As::Admin, wrong).await;
         assert_eq!(refused.status, StatusCode::NOT_FOUND, "{wrong}");
     }
-    assert_eq!(server.seen().len(), 2);
+    assert_eq!(server.seen().len(), seen_before);
 }
 
 #[tokio::test]

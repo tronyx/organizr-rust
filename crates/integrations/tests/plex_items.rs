@@ -10,7 +10,7 @@
 )]
 
 use organizr_integrations::plex_server::{
-    ItemContext, Playlist, items, playlist_videos, playlists,
+    ItemContext, Playlist, items, picture_name, playlist_videos, playlists,
 };
 use serde_json::{Map, Value, json};
 
@@ -71,8 +71,16 @@ fn episode_that_plays_becomes_an_item_with_its_stream() {
 
     // The entry without a library is left out.
     assert_eq!(made.len(), 2);
-    let wide = "api/v2/homepage/image?source=plex&img=/library/metadata/30/art/1&height=675&width=1200&key=30-np";
-    let poster = "api/v2/homepage/image?source=plex&img=/library/metadata/300/thumb/1&height=300&width=200&key=301-list";
+    // The key of a picture is the name of the picture in the cache, made from the
+    // picture and its size (D-153). The item keeps its keys as in PHP.
+    let wide_name = picture_name("/library/metadata/30/art/1", (1200, 675), "30-np");
+    let poster_name = picture_name("/library/metadata/300/thumb/1", (200, 300), "301-list");
+    let wide = format!(
+        "api/v2/homepage/image?source=plex&img=/library/metadata/30/art/1&height=675&width=1200&key={wide_name}"
+    );
+    let poster = format!(
+        "api/v2/homepage/image?source=plex&img=/library/metadata/300/thumb/1&height=300&width=200&key={poster_name}"
+    );
     assert_eq!(
         made[0],
         json!({
@@ -186,7 +194,9 @@ fn caller_without_the_level_sees_no_name_and_no_address() {
 fn settings_change_the_name_the_link_and_the_source_of_a_picture() {
     let mut names = Map::new();
     names.insert("robin".to_owned(), json!("Robin R."));
-    let is_cached: &(dyn Fn(&str) -> bool + Sync) = &|key| key == "30-np";
+    let wide_name = picture_name("/library/metadata/30/art/1", (1200, 675), "30-np");
+    let cached = wide_name.clone();
+    let is_cached: &(dyn Fn(&str) -> bool + Sync) = &move |key| key == cached;
     let changed = ItemContext {
         tab_url: "https://plex.example.com",
         tab_name: "Plex",
@@ -204,7 +214,10 @@ fn settings_change_the_name_the_link_and_the_source_of_a_picture() {
     assert_eq!(made[0]["openTab"], true);
     assert_eq!(made[0]["tabName"], "Plex");
     // The wide picture is in the cache. The poster is not.
-    assert_eq!(made[0]["nowPlayingImageURL"], "data/cache/plex-30-np.jpg");
+    assert_eq!(
+        made[0]["nowPlayingImageURL"],
+        format!("data/cache/plex-{wide_name}.jpg")
+    );
     assert!(
         made[0]["imageURL"]
             .as_str()

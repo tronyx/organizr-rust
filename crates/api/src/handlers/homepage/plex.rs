@@ -480,7 +480,28 @@ pub async fn image(
         Some((key, _)) => (key, true),
         None => (field("key"), false),
     };
-    let name = format!("plex-{key}");
+    // The picture is a picture of the library of the Plex server, and nothing else. The
+    // Plex server would fetch any address for the caller (D-153).
+    let picture = field("img");
+    let side = |name: &str| {
+        field(name)
+            .parse::<u32>()
+            .ok()
+            .filter(|side| (1..=LARGEST_SIDE).contains(side))
+    };
+    let (true, Some(width), Some(height)) = (
+        plex_server::is_library_picture(picture),
+        side("width"),
+        side("height"),
+    ) else {
+        return Err(not_found());
+    };
+    // The name of the cache comes from the picture and its size, so a caller can fill
+    // only the name of the picture that it asks for (D-153).
+    let name = format!(
+        "plex-{}",
+        plex_server::picture_name(picture, (width, height), key)
+    );
     let cache = state
         .picture_cache()
         .filter(|_| picture_cache::is_cache_name(&name))
@@ -491,21 +512,6 @@ pub async fn image(
     {
         return picture_cache::picture_response(content).ok_or_else(not_found);
     }
-
-    // The picture is a path of the Plex server, and nothing else. The Plex server
-    // would fetch any address for the caller.
-    let picture = field("img");
-    let is_path =
-        picture.starts_with('/') && !picture.starts_with("//") && !picture.contains("://");
-    let side = |name: &str| {
-        field(name)
-            .parse::<u32>()
-            .ok()
-            .filter(|side| (1..=LARGEST_SIDE).contains(side))
-    };
-    let (true, Some(width), Some(height)) = (is_path, side("width"), side("height")) else {
-        return Err(not_found());
-    };
     let http = &state
         .outbound_for(asked.settings.plex_use_custom_certificate)
         .ok_or_else(no_requests)?;

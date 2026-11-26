@@ -176,10 +176,67 @@ fn stream_type(decision: &str) -> &'static str {
     }
 }
 
+/// The name of a picture of the server in the cache: a short hash of the path and the
+/// size of the picture, with the ending of the key (`-np` for a wide picture, `-list`
+/// for a poster). The route that fetches the picture makes the same name from what it
+/// fetches, so a caller can fill only the name of the picture that it asks for (D-153).
+/// A key with another ending is the name as it is.
+pub fn picture_name(picture: &str, (width, height): (u32, u32), key: &str) -> String {
+    use sha1::Digest as _;
+    use std::fmt::Write as _;
+    let ending = if key.ends_with("-np") {
+        "np"
+    } else if key.ends_with("-list") {
+        "list"
+    } else {
+        return key.to_owned();
+    };
+    let digest = sha1::Sha1::digest(
+        format!(
+            "{picture}
+{width}x{height}"
+        )
+        .as_bytes(),
+    );
+    let mut name = digest
+        .iter()
+        .take(10)
+        .fold(String::new(), |mut name, byte| {
+            // Writing into a text cannot fail.
+            let _ = write!(name, "{byte:02x}");
+            name
+        });
+    name.push('-');
+    name.push_str(ending);
+    name
+}
+
+/// Whether a path is a picture of the library of a Plex server: of an item
+/// (`/library/metadata/<id>/thumb|art|…[/<version>]`), of a collection, or the picture
+/// that Plex makes of a playlist. Nothing else goes to the transcoder of the server,
+/// which would fetch any address that it is given (D-153).
+pub fn is_library_picture(path: &str) -> bool {
+    const KINDS: [&str; 6] = ["thumb", "art", "banner", "clearLogo", "theme", "composite"];
+    let is_number = |part: &str| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit());
+    let parts: Vec<&str> = path.split('/').collect();
+    match parts.as_slice() {
+        ["", "library", "metadata" | "collections", id, kind] | ["", "playlists", id, kind] => {
+            is_number(id) && KINDS.contains(kind)
+        }
+        ["", "library", "metadata" | "collections", id, kind, version]
+        | ["", "playlists", id, kind, version] => {
+            is_number(id) && KINDS.contains(kind) && is_number(version)
+        }
+        _ => false,
+    }
+}
+
 /// The address of the route that gives a picture of the server.
-fn picture_route(picture: &str, (width, height): (u32, u32), key: &str) -> String {
+fn picture_route(picture: &str, size: (u32, u32), key: &str) -> String {
+    let (width, height) = size;
+    let name = picture_name(picture, size, key);
     format!(
-        "api/v2/homepage/image?source=plex&img={picture}&height={height}&width={width}&key={key}"
+        "api/v2/homepage/image?source=plex&img={picture}&height={height}&width={width}&key={name}"
     )
 }
 
@@ -536,8 +593,9 @@ pub fn item(item: Node<'_, '_>, context: &ItemContext<'_>) -> Value {
     // A picture that the cache holds comes from there, and else from the route that
     // fetches it.
     let cached_or_route = |picture: &str, size: (u32, u32), key: &str| {
-        if (context.is_cached)(key) {
-            format!("data/cache/plex-{key}.jpg")
+        let name = picture_name(picture, size, key);
+        if (context.is_cached)(&name) {
+            format!("data/cache/plex-{name}.jpg")
         } else {
             picture_route(picture, size, key)
         }
@@ -642,4 +700,59 @@ pub fn playlist_videos(
         .filter(|entry| entry.is_element() && entry.tag_name().name() == "Video")
         .map(|entry| item(entry, context))
         .collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_library_picture, picture_name};
+
+    #[test]
+    fn picture_name_comes_from_the_picture_and_its_size() {
+        let poster = picture_name("/library/metadata/815/thumb/1", (200, 300), "815-list");
+        assert!(poster.ends_with("-list"), "{poster}");
+        assert_eq!(poster.len(), 25);
+        // The same picture under the key of another item has the same name; another
+        // picture or another size has another one (D-153).
+        assert_eq!(
+            picture_name("/library/metadata/815/thumb/1", (200, 300), "999-list"),
+            poster
+        );
+        assert_ne!(
+            picture_name("/library/metadata/816/thumb/1", (200, 300), "815-list"),
+            poster
+        );
+        assert_ne!(
+            picture_name("/library/metadata/815/thumb/1", (300, 300), "815-list"),
+            poster
+        );
+        assert!(
+            picture_name("/library/metadata/815/art/1", (1280, 720), "815-np").ends_with("-np")
+        );
+        // A key with another ending stays as it is.
+        assert_eq!(picture_name("/x", (1, 1), "livetv.png"), "livetv.png");
+    }
+
+    #[test]
+    fn only_pictures_of_the_library_go_to_the_transcoder() {
+        for path in [
+            "/library/metadata/815/thumb/1599999999",
+            "/library/metadata/815/art",
+            "/library/collections/12/composite/1600000000",
+            "/playlists/456/composite/1600000000",
+        ] {
+            assert!(is_library_picture(path), "{path}");
+        }
+        for path in [
+            "/photo/:/transcode?url=http%3A%2F%2Fevil.example%2Fa.png",
+            "/library/metadata/815/thumb/1?x=1",
+            "/library/metadata/abc/thumb/1",
+            "/library/metadata/815/file/1",
+            "//evil.example/a.png",
+            "https://evil.example/a.png",
+            "/library/metadata/815/thumb/1/../../x",
+            "",
+        ] {
+            assert!(!is_library_picture(path), "{path}");
+        }
+    }
 }
