@@ -6,8 +6,8 @@
 
 [Organizr](https://github.com/causefx/Organizr) is one start page for your home server: Plex, Sonarr, your downloaders and the rest as tabs, behind one login that decides who sees what. This is a rewrite of PHP Organizr 2.1.5000 in Rust, in one small container, and it keeps the PHP API, so your scripts and reverse proxy rules keep working.
 
-> [!NOTE]
-> Not released yet. The image tag `develop` holds the newest state, and it can change at any time. Try it, and keep your PHP install until you're happy with it.
+> [!WARNING]
+> **This is beta software, and it may include bugs.** There is no release yet: the image tag `develop` holds the newest state, and it can change at any time. Back up your data before you update, keep your PHP install until you're happy with this one, and report what you find in [Issues](https://github.com/tronyx/organizr-rust/issues).
 
 ![The homepage on the modern layout, with a download queue, Plex streams and recently added items](docs/images/homepage-modern.png)
 
