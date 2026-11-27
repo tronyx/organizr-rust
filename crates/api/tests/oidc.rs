@@ -1236,6 +1236,49 @@ async fn linked_account_is_unlinked_with_its_password() {
     .await;
 }
 
+/// A wrong password for the unlink counts like a failed login of the account, so the
+/// unlink cannot be used to guess the password.
+#[tokio::test]
+async fn wrong_unlink_passwords_lock_the_account_out() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let provider = OidcProvider::start().await;
+        person(&provider, "chief", "chief@provider.example.com");
+        let app = app(database, &provider, &[("loginAttempts", json!("3"))]);
+        let session = seed::logged_in(database, &app, "chief", 0).await;
+        let (back, cookie) = start_link(&app, &provider, &session).await;
+        let answer = finish_link(&app, &back, &[&cookie, &session]).await;
+        assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
+        let unlink = async |password: &str| {
+            call(
+                &app,
+                As::User(&session),
+                "DELETE",
+                "/oidc/link",
+                Some(json!({ "password": password })),
+            )
+            .await
+        };
+
+        for _ in 0..2 {
+            let wrong = unlink("not the password").await;
+            assert_eq!(
+                wrong.status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "{}",
+                wrong.body
+            );
+        }
+        let locked = unlink("not the password").await;
+        assert_eq!(locked.status, StatusCode::FORBIDDEN, "{}", locked.body);
+        assert_eq!(locked.message(), json!("User is locked out"));
+        let locked = unlink(seed::USER_PASSWORD).await;
+        assert_eq!(locked.status, StatusCode::FORBIDDEN, "{}", locked.body);
+        assert_eq!(auth_service(&app, "chief").await, json!("oidc::keycloak"));
+    })
+    .await;
+}
+
 #[tokio::test]
 async fn link_is_found_by_the_checked_address_when_the_names_differ() {
     on_each_engine(async |database| {

@@ -403,6 +403,7 @@ pub async fn linked(
 /// and only from a page of this site (D-105).
 pub async fn unlink(
     State(state): State<AppState>,
+    Extension(client): Extension<Client>,
     Extension(caller): Extension<Caller>,
     _: FromThisSite,
     data: ApiData,
@@ -410,19 +411,24 @@ pub async fn unlink(
     let Some(user) = caller.user() else {
         return Err(ApiError::NotAuthorized.into());
     };
-    let given = data.text("password").unwrap_or_default();
-    if given.is_empty() {
-        return Err(Refusal::unprocessable("Enter the password of the account"));
+    let account = &user.authenticated.user;
+    // An account that is not linked has nothing to unlink, and is told so before any
+    // password is checked.
+    if accounts::linked_provider(state.database(), account.id)
+        .await
+        .map_err(ApiError::from)?
+        .is_none()
+    {
+        return Err(Refusal::conflict("The account is not linked to a provider"));
     }
-    match accounts::unlink(state.database(), user.authenticated.user.id, &given).await {
+    // A wrong password counts like a failed login of the account.
+    proof::password(&state, &client, account, data.text("password")).await?;
+    match accounts::unlink(state.database(), account.id).await {
         Ok(_) => Ok(Envelope::success(NoData)
             .with_message("The account is no longer linked to the provider")),
         Err(OidcUnlinkError::NotLinked) => {
             Err(Refusal::conflict("The account is not linked to a provider"))
         }
-        Err(OidcUnlinkError::WrongPassword) => Err(Refusal::unprocessable(
-            "The password is not the password of the account",
-        )),
         Err(OidcUnlinkError::NoAccount) => Err(ApiError::NotAuthorized.into()),
         Err(error) => {
             tracing::error!(%error, "an account could not be unlinked from its provider");
