@@ -194,7 +194,7 @@ The list is a JSON file:
 
 `id`, `name`, `version`, `download` and `sha256` are required. The other fields mean what they mean in `plugin.json`, and an install writes them into the extension's `plugin.json`.
 
-When the list's address uses `https`, every `download` must use `https` too. A `download` on another host than the list must be on the internet: an install from this computer or a private network address is refused, unless the list is on that same host. Every redirect of a download is checked the same way before Organizr follows it, so a file that moves to another public host, as GitHub release files do, still installs.
+When the list's address uses `https`, every `download` must use `https` too. A `download` on another host than the list must be on the internet: an install from this computer or a private network address is refused, unless the list is on that same host. Every redirect of a download is checked the same way before Organizr follows it, so a file that moves to another public host, as GitHub release files do, still installs. Each request goes to the address that the check found, so a name that answers with another address the second time it is looked up cannot lead the download elsewhere. Such a request does not use a proxy set in the environment (`HTTPS_PROXY` and the like); a download on the host of the list still does.
 
 ### 🔗 The routes
 

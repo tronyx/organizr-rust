@@ -1,6 +1,7 @@
 //! One request to a service, for a connection test: the status and the text of the
 //! answer.
 
+use std::net::SocketAddr;
 use std::time::Duration;
 
 use crate::http::{Outbound, without_address};
@@ -95,9 +96,29 @@ pub enum Step {
 /// As [`download`], with a client that follows no redirect. A redirect gives its
 /// address, so that the caller can check it before it follows. A redirect without an
 /// address that can be read fails.
-pub async fn download_step(http: &Outbound, url: &str, limit: usize) -> Result<Step, String> {
-    let response = http
-        .direct_client_for(url)
+///
+/// With `pinned`, the request reaches the host of `url` at that address and nowhere
+/// else, without a new lookup of the name, so a name that answers with another address
+/// the second time cannot lead the request elsewhere (see [`Outbound::pinned`]).
+pub async fn download_step(
+    http: &Outbound,
+    url: &str,
+    limit: usize,
+    pinned: Option<SocketAddr>,
+) -> Result<Step, String> {
+    let pinned_client;
+    let client = match pinned {
+        Some(address) => {
+            let parsed = reqwest::Url::parse(url).map_err(|error| error.to_string())?;
+            let host = parsed
+                .host_str()
+                .ok_or_else(|| "the address has no host".to_owned())?;
+            pinned_client = http.pinned(host, address).map_err(without_address)?;
+            &pinned_client
+        }
+        None => http.direct_client_for(url),
+    };
+    let response = client
         .get(url)
         .timeout(DOWNLOAD_TIME_LIMIT)
         .send()
@@ -138,4 +159,31 @@ async fn body_of(mut response: reqwest::Response, limit: usize) -> Result<Vec<u8
         bytes.extend_from_slice(&piece);
     }
     Ok(bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::Router;
+    use axum::routing::get;
+    use organizr_testkit::services::StandIn;
+
+    /// A step with a pinned address reaches that address, not one that a new lookup of
+    /// the name would give. The name here never resolves, so only the pin reaches it.
+    #[tokio::test]
+    async fn pinned_step_reaches_the_checked_address_without_a_lookup() {
+        let site = StandIn::start(Router::new().route("/file", get(|| async { "the file" }))).await;
+        let address: std::net::SocketAddr = site
+            .url()
+            .trim_start_matches("http://")
+            .parse()
+            .expect("the address of the site");
+        let http = Outbound::new().expect("the client can be built");
+        let url = format!("http://download.invalid:{}/file", address.port());
+
+        let pinned = download_step(&http, &url, 100, Some(address)).await;
+        assert_eq!(pinned, Ok(Step::File(b"the file".to_vec())));
+        let looked_up = download_step(&http, &url, 100, None).await;
+        assert!(looked_up.is_err(), "{looked_up:?}");
+    }
 }

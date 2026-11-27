@@ -534,37 +534,54 @@ fn is_https(url: &str) -> bool {
 /// SHA-256 of the list still checks the file. A download from another host than the
 /// host of the list goes to the wide web only, not to this computer or to a private
 /// network.
-async fn check_download(list: &str, download: &str) -> Result<(), String> {
+///
+/// The answer is the address that the download must reach for a host name that was
+/// looked up here, so that the request does not look the name up again and reach
+/// another address than the checked one. A download on the host of the list, and one
+/// that names its host by an address, need no such address.
+async fn check_download(
+    list: &str,
+    download: &str,
+) -> Result<Option<std::net::SocketAddr>, String> {
     let (host, port) = scrape::target(download)
         .ok_or_else(|| "the download is no http or https address with a host".to_owned())?;
     if is_https(list) && !is_https(download) {
         return Err("the download is not over HTTPS".to_owned());
     }
     if scrape::target(list).is_some_and(|(list_host, _)| list_host.eq_ignore_ascii_case(&host)) {
-        return Ok(());
+        return Ok(None);
     }
-    let addresses: Vec<std::net::SocketAddr> = match host.parse::<std::net::IpAddr>() {
-        Ok(address) => vec![std::net::SocketAddr::new(address, port)],
-        Err(_) => tokio::net::lookup_host((host.as_str(), port))
-            .await
-            .map_err(|_| "the host of the download does not resolve".to_owned())?
-            .collect(),
-    };
+    if let Ok(address) = host.parse::<std::net::IpAddr>() {
+        return if scrape::is_public(address) {
+            Ok(None)
+        } else {
+            Err("the download is on a local network".to_owned())
+        };
+    }
+    let addresses: Vec<std::net::SocketAddr> = tokio::net::lookup_host((host.as_str(), port))
+        .await
+        .map_err(|_| "the host of the download does not resolve".to_owned())?
+        .collect();
     if addresses
         .iter()
         .any(|address| !scrape::is_public(address.ip()))
     {
         return Err("the download is on a local network".to_owned());
     }
-    Ok(())
+    addresses
+        .first()
+        .copied()
+        .map(Some)
+        .ok_or_else(|| "the host of the download does not resolve".to_owned())
 }
 
 /// The most redirects that a download follows.
 const MOST_REDIRECTS: usize = 10;
 
 /// Downloads the file of an entry of the list at `list`. The first address and every
-/// redirect are checked with [`check_download`] before they are requested, so a redirect
-/// cannot lead to an address that the list could not name.
+/// redirect are checked with [`check_download`] before they are requested, and each
+/// request reaches the address that the check looked up, so neither a redirect nor a
+/// second lookup of a name can lead to an address that the list could not name.
 async fn download_checked(
     http: &organizr_integrations::http::Outbound,
     list: &str,
@@ -573,8 +590,8 @@ async fn download_checked(
 ) -> Result<Vec<u8>, String> {
     let mut url = download.to_owned();
     for _ in 0..=MOST_REDIRECTS {
-        check_download(list, &url).await?;
-        match probe::download_step(http, &url, limit).await? {
+        let pinned = check_download(list, &url).await?;
+        match probe::download_step(http, &url, limit, pinned).await? {
             probe::Step::File(bytes) => return Ok(bytes),
             probe::Step::Redirect(next) => url = next,
         }
@@ -886,7 +903,7 @@ mod tests {
             (plain, "http://192.168.1.5/files/a.wasm"),
             (plain, "https://192.168.1.5/files/a.wasm"),
         ] {
-            assert_eq!(check_download(list, download).await, Ok(()), "{download}");
+            assert_eq!(check_download(list, download).await, Ok(None), "{download}");
         }
         for (list, download) in [
             (secure, "http://market.example/files/a.wasm"),
