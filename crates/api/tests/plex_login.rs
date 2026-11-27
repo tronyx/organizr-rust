@@ -489,17 +489,19 @@ async fn second_factor_of_organizr_is_asked_after_plex_unless_the_setting_says_n
         let app = app_with(database, &plex, &settings);
         // The first login makes the account. Then the user adds a second factor.
         let first = log_in_with_token(&app, ROBIN.token).await;
+        assert_eq!(first.status, StatusCode::OK, "{}", first.body);
+        // A login with the Plex password makes it the password of the account, which
+        // the second factor asks for (D-186). The new password ends the session from
+        // before (D-146), so the change uses the session of this login.
+        let mirrored = log_in_with_password(&app, "robin", ROBIN.password).await;
+        assert_eq!(mirrored.status, StatusCode::OK, "{}", mirrored.body);
         let session = cookie(
-            &first,
+            &mirrored,
             "organizr_token_5d0c6f0e-2b7a-4a36-8e55-9c1f4d3a7b21",
         )
         .and_then(|cookie| cookie.split(';').next())
         .expect("the login sets the session cookie")
         .to_owned();
-        // A login with the Plex password makes it the password of the account, which
-        // the second factor asks for (D-186).
-        let mirrored = log_in_with_password(&app, "robin", ROBIN.password).await;
-        assert_eq!(mirrored.status, StatusCode::OK, "{}", mirrored.body);
         let secret = "JBSWY3DPEHPK3PXP";
         let body = json!({"secret": secret, "type": "google", "password": ROBIN.password});
         let saved = call(&app, As::User(&session), "PUT", "/2fa", Some(body)).await;
