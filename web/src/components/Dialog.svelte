@@ -1,17 +1,21 @@
 <script lang="ts">
   // A dialog on top of the page. It is open as long as it is part of the page. The ×
-  // in its corner closes it, as in PHP, and so does the Escape key.
+  // in its corner closes it, as in PHP, and so does the Escape key. A wide dialog takes
+  // ten of the twelve columns of a wide screen, as the settings of a plugin do in PHP.
   import type { Snippet } from 'svelte';
 
   let {
     title,
     onclose,
     children,
+    wide = false,
   }: {
     title: string;
     /** Called when the user closes the dialog, for example with the Escape key. */
     onclose: () => void;
     children: Snippet;
+    /** Whether the dialog takes most of the width of the screen. */
+    wide?: boolean;
   } = $props();
 
   const titleId = $props.id();
@@ -33,7 +37,7 @@
 </script>
 
 <dialog class="modal" bind:this={dialog} {onclose} aria-labelledby={titleId}>
-  <div class="modal-box max-w-2xl">
+  <div class={['modal-box', wide ? 'max-w-none md:w-10/12' : 'max-w-2xl']}>
     <button
       type="button"
       class="btn btn-sm btn-circle btn-ghost absolute top-2 right-2"

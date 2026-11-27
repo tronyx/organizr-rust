@@ -15,4 +15,16 @@ describe('Dialog', () => {
 
     expect(onclose).toHaveBeenCalledOnce();
   });
+
+  it('is narrow unless asked to be wide, like the settings of a plugin in PHP', () => {
+    const { unmount } = render(Dialog, { title: 'A', onclose: vi.fn(), children: BODY });
+    const narrow = screen.getByRole('dialog', { hidden: true }).firstElementChild;
+    expect(narrow?.classList.contains('max-w-2xl')).toBe(true);
+    unmount();
+
+    render(Dialog, { title: 'B', onclose: vi.fn(), children: BODY, wide: true });
+    const wide = screen.getByRole('dialog', { hidden: true }).firstElementChild;
+    expect(wide?.classList.contains('max-w-2xl')).toBe(false);
+    expect(wide?.classList.contains('md:w-10/12')).toBe(true);
+  });
 });

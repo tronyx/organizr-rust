@@ -167,7 +167,7 @@
 
 {#if open}
   {@const form = FORMS[open.name]}
-  <Dialog title={`${open.name} Settings`} onclose={() => (open = null)}>
+  <Dialog title={`${open.name} Settings`} wide onclose={() => (open = null)}>
     {#if form}
       {#key form.id}
         <SettingsForm
