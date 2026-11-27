@@ -276,9 +276,12 @@ fn call_that_waits_without_an_end_is_stopped_at_its_deadline() {
     let host = Extensions::new()
         .expect("the runtime starts")
         .with_call_deadline(Duration::from_millis(500));
+    // The guest is built before the clock starts: the first test that needs it waits for
+    // the build, which takes longer than the bound below on a slow machine.
+    let guest = hostile();
     let started = Instant::now();
     let stopped = host.handle(
-        hostile(),
+        guest,
         "hostile",
         call(false, BTreeMap::new()),
         request("GET", "/sleep"),
