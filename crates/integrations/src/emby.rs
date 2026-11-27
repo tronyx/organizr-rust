@@ -337,6 +337,44 @@ fn stream_type(method: &str) -> &'static str {
     }
 }
 
+/// The name of a picture of the server in the cache: a short hash of the item, the type
+/// and the size of the picture, with the ending of the key (`-np` for a wide picture,
+/// `-list` for a poster, `-cast` for an actor). The route that fetches a picture makes
+/// the same name from what it fetches, so a caller can fill only the name of the picture
+/// that it asks for (D-153). A key with another ending names no picture of the cache.
+pub fn picture_name(
+    item: &str,
+    picture: &str,
+    (width, height): (u32, u32),
+    key: &str,
+) -> Option<String> {
+    use sha1::Digest as _;
+    use std::fmt::Write as _;
+    let ending = ["np", "list", "cast"].into_iter().find(|ending| {
+        key.strip_suffix(ending)
+            .is_some_and(|rest| rest.ends_with('-'))
+    })?;
+    let digest = sha1::Sha1::digest(
+        format!(
+            "{item}
+{picture}
+{width}x{height}"
+        )
+        .as_bytes(),
+    );
+    let mut name = digest
+        .iter()
+        .take(10)
+        .fold(String::new(), |mut name, byte| {
+            // Writing into a text cannot fail.
+            let _ = write!(name, "{byte:02x}");
+            name
+        });
+    name.push('-');
+    name.push_str(ending);
+    Some(name)
+}
+
 /// The address of the route that gives a picture of the server.
 pub(crate) fn picture_route(
     kind: Kind,
@@ -549,10 +587,12 @@ fn metadata_of(item: &Value, context: &ItemContext<'_>) -> Value {
                 .map(|person| {
                     let id = text(person.get("Id"));
                     let key = format!("{id}-cast");
+                    let cached = picture_name(&id, "Primary", ACTOR_SIZE, &key)
+                        .filter(|name| (context.is_cached)(name));
                     let thumb = if !is_id(&id) {
                         String::new()
-                    } else if (context.is_cached)(&key) {
-                        format!("data/cache/{source}-{key}.jpg")
+                    } else if let Some(name) = cached {
+                        format!("data/cache/{source}-{name}.jpg")
                     } else {
                         picture_route(context.kind, "Primary", &id, ACTOR_SIZE, &key)
                     };
@@ -749,20 +789,33 @@ pub fn item(details: &Value, context: &ItemContext<'_>) -> Option<Value> {
 
     // A picture that the cache holds comes from there, and else from the route that
     // fetches it.
-    let cached_or_route = |route: String, key: &str| {
-        if (context.is_cached)(key) {
-            format!("data/cache/{source}-{key}.jpg")
-        } else {
-            route
-        }
-    };
+    let cached_or_route =
+        |route: String, item: Option<&str>, picture: &str, size: (u32, u32), key: &str| match item
+            .and_then(|item| picture_name(item, picture, size, key))
+            .filter(|name| (context.is_cached)(name))
+        {
+            Some(name) => format!("data/cache/{source}-{name}.jpg"),
+            None => route,
+        };
     out.insert(
         "nowPlayingImageURL".to_owned(),
-        json!(cached_or_route(wide_route, &wide_key)),
+        json!(cached_or_route(
+            wide_route,
+            wide_id.as_deref(),
+            &wide_type,
+            context.wide,
+            &wide_key
+        )),
     );
     out.insert(
         "imageURL".to_owned(),
-        json!(cached_or_route(poster_route, &poster_key)),
+        json!(cached_or_route(
+            poster_route,
+            poster_id.as_deref(),
+            poster_type,
+            context.poster,
+            &poster_key
+        )),
     );
     if wide_id.is_none() {
         let none = json!("plugins/images/homepage/no-np.png");
@@ -793,7 +846,7 @@ pub fn items(list: &Value, context: &ItemContext<'_>) -> Vec<Value> {
 mod tests {
     use serde_json::{Value, json};
 
-    use super::{ItemContext, Kind, is_id, item, items, user_of};
+    use super::{ACTOR_SIZE, ItemContext, Kind, is_id, item, items, picture_name, user_of};
 
     fn context(kind: Kind, is_cached: &(dyn Fn(&str) -> bool + Sync)) -> ItemContext<'_> {
         ItemContext {
@@ -871,7 +924,10 @@ mod tests {
 
     #[test]
     fn names_and_addresses_stay_back_and_cached_pictures_come_from_the_cache() {
-        let cached = |key: &str| key == "30-list" || key == "9-cast";
+        // The cache holds a picture by the name that the route makes from it (D-153).
+        let poster = picture_name("30", "Primary", (400, 600), "30-list").expect("a name");
+        let actor = picture_name("9", "Primary", ACTOR_SIZE, "9-cast").expect("a name");
+        let cached = |name: &str| name == poster || name == actor;
         let mut context = context(Kind::Jellyfin, &cached);
         context.show_names = false;
         context.link = "";
@@ -886,11 +942,14 @@ mod tests {
         assert_eq!(built["user"], "");
         assert_eq!(built["userAddress"], "x.x.x.x");
         assert_eq!(built["address"], Value::Null);
-        assert_eq!(built["imageURL"], "data/cache/jellyfin-30-list.jpg");
+        assert_eq!(
+            built["imageURL"],
+            format!("data/cache/jellyfin-{poster}.jpg")
+        );
         assert_eq!(
             built["metadata"]["actors"],
             json!([
-                {"name": "An Actor", "role": "The Hero", "thumb": "data/cache/jellyfin-9-cast.jpg"},
+                {"name": "An Actor", "role": "The Hero", "thumb": format!("data/cache/jellyfin-{actor}.jpg")},
                 {"name": "A Third", "role": "The Friend", "thumb": "api/v2/homepage/image?source=jellyfin&type=Primary&img=11&height=450&width=300&key=11-cast"},
             ])
         );

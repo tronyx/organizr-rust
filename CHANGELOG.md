@@ -38,6 +38,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 
 ### Security
 
+- The picture cache names an Emby or Jellyfin picture after the picture it fetched, so nobody can put one picture under the name of another, as for Plex (D-153).
 - A new e-mail address, a change of the second factor, an unlinked OpenID Connect provider and a password stored from a login service now end the other sessions of the account, as a new password does (D-146).
 - A Co-Admin can no longer rename or delete another Co-Admin; only an Admin does that (D-188).
 - A password check keeps its place in the queue until it ends, also when the client hangs up, so the limit on password checks running at once holds (D-140).

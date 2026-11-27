@@ -574,10 +574,13 @@ async fn pictures_are_fetched_and_kept(database: &Database, kind: Kind) {
     );
     // The server gives pictures without the key, so the key is not sent.
     assert_eq!(seen[0].header(kind.header.0), None);
+    // The name comes from the picture that was fetched (D-153).
+    let name = organizr_integrations::emby::picture_name("815", "Primary", (400, 600), "815-list")
+        .expect("a poster key names a picture");
     let file = folder
         .path()
         .join("cache")
-        .join(format!("{source}-815-list.jpg"));
+        .join(format!("{source}-{name}.jpg"));
     assert_eq!(std::fs::read(file).expect("the file is there"), JPEG);
 
     // The second time, the picture comes from the cache. A `$` asks for it anew.
@@ -599,7 +602,7 @@ async fn pictures_are_fetched_and_kept(database: &Database, kind: Kind) {
     assert_eq!(streams.status, StatusCode::OK, "{}", streams.body);
     assert_eq!(
         streams.data()["content"][1]["imageURL"],
-        format!("data/cache/{source}-815-list.jpg")
+        format!("data/cache/{source}-{name}.jpg")
     );
     let asked = server.seen().len();
 

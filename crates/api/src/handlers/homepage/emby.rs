@@ -340,7 +340,6 @@ pub async fn image(
         Some((key, _)) => (key, true),
         None => (field("key"), false),
     };
-    let name = format!("{}-{key}", kind.source());
     let side = |name: &str| {
         field(name)
             .parse::<u32>()
@@ -349,12 +348,19 @@ pub async fn image(
     };
     // The id and the type go into the path of a request to the server.
     let (item, picture) = (field("img"), field("type"));
-    let is_known = emby::is_id(item)
-        && PICTURE_TYPES.contains(&picture)
-        && picture_cache::is_cache_name(&name);
-    let (true, Some(width), Some(height)) = (is_known, side("width"), side("height")) else {
+    let (true, Some(width), Some(height)) = (
+        emby::is_id(item) && PICTURE_TYPES.contains(&picture),
+        side("width"),
+        side("height"),
+    ) else {
         return Err(not_found());
     };
+    // The name in the cache comes from the picture that is fetched, not from the key
+    // alone, so one picture cannot take the place of another (D-153).
+    let name = emby::picture_name(item, picture, (width, height), key)
+        .map(|name| format!("{}-{name}", kind.source()))
+        .filter(|name| picture_cache::is_cache_name(name))
+        .ok_or_else(not_found)?;
     let asked = request.asked(kind, Part::Metadata)?;
     let cache = request.state.picture_cache().ok_or_else(not_found)?;
     if !refresh
