@@ -69,24 +69,24 @@ jobs:
         env:
           IMAGE: ${{ steps.pull.outputs.image }}
           ARCHITECTURE: ${{ matrix.architecture }}
+        # Trivy reads a saved copy of the image. Through the Docker socket it cannot open
+        # an image of the other architecture than the runner's.
         run: |
           mkdir -p "$RUNNER_TEMP/trivy-cache"
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          docker save --platform "linux/${ARCHITECTURE}" -o "$RUNNER_TEMP/image.tar" "${IMAGE}"
+          docker run --rm -v "$RUNNER_TEMP:/out" \
             -v "$RUNNER_TEMP/trivy-cache:/root/.cache/trivy" "${TRIVY}" image \
-            --platform "linux/${ARCHITECTURE}" --scanners vuln --severity HIGH,CRITICAL \
-            --no-progress "${IMAGE}"
+            --input /out/image.tar --scanners vuln --severity HIGH,CRITICAL \
+            --no-progress
 
       - name: Write the findings that have a correction
         if: steps.pull.outputs.found == 'true'
-        env:
-          IMAGE: ${{ steps.pull.outputs.image }}
-          ARCHITECTURE: ${{ matrix.architecture }}
         run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          docker run --rm \
             -v "$RUNNER_TEMP/trivy-cache:/root/.cache/trivy" -v "$RUNNER_TEMP:/out" "${TRIVY}" image \
-            --platform "linux/${ARCHITECTURE}" --scanners vuln --severity HIGH,CRITICAL \
+            --input /out/image.tar --scanners vuln --severity HIGH,CRITICAL \
             --ignore-unfixed --skip-db-update --no-progress \
-            --format json --output /out/trivy.json "${IMAGE}"
+            --format json --output /out/trivy.json
           docker run --rm -v "$RUNNER_TEMP:/out" "${TRIVY}" convert \
             --format sarif --output /out/trivy.sarif /out/trivy.json
 
