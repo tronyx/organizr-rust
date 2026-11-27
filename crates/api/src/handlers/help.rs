@@ -43,13 +43,13 @@ fn stored_value(value: &Value) -> Value {
 /// and `false` when it refused the request.
 ///
 /// The request changes settings, so it must come from this site or carry the API key
-/// (D-03).
+/// (D-03). It changes the SMTP server, which only an Admin changes (D-197).
 pub async fn smtp(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
     _: FromThisSite,
 ) -> Result<Envelope<bool>, Refusal> {
-    caller.require(GroupLevel::CO_ADMIN)?;
+    caller.require(GroupLevel::ADMIN)?;
     let http = state.outbound().ok_or_else(no_requests)?;
     let answer = match organizr_app::shared_smtp(http, state.organizr_api()).await {
         Ok(Some(answer)) => answer,

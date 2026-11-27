@@ -51,7 +51,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Backups and restore | D-10, D-26, D-74, D-147, D-169, D-183 |
 | Updates | D-23 |
 | Log, errors and request ids | D-13, D-34, D-84, D-190 |
-| E-mail | D-09, D-58, D-82, D-138, D-160, D-179, D-193 |
+| E-mail | D-09, D-58, D-82, D-138, D-160, D-179, D-193, D-197 |
 | Scheduled jobs | D-33, D-43, D-66, D-74, D-172 |
 | Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154, D-165, D-166, D-167, D-175, D-176, D-177, D-196 |
 | Custom HTML items | D-61, D-76, D-111, D-131 |
@@ -77,11 +77,11 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/wizard` | D-19, D-38, D-46, D-138 |
 | `GET /status` | D-21, D-46 |
 | `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125, D-128, D-158 |
-| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135, D-158, D-162, D-183, D-189, D-191 |
+| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135, D-158, D-162, D-183, D-189, D-191, D-197 |
 | `DELETE /import-notice` | D-158 |
 | `/users`, `/users/{id}` | D-05, D-15, D-52, D-57, D-185, D-188 |
 | `POST /users/register` | D-36, D-37, D-38 |
-| `POST /users/recover` | D-09, D-58, D-138, D-160 |
+| `POST /users/recover` | D-09, D-58, D-138, D-160, D-197 |
 | `/users/lock`, `/users/unlock` | D-73, D-161, D-188 |
 | `/users/2fa/{id}` | D-129, D-186, D-188 |
 | `POST /users/import/{type}` | D-82 |
@@ -134,7 +134,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/certificate/custom` | D-98, D-104 |
 | `/database/journal` | D-97 |
 | `GET /log`, `DELETE /log` | D-84, D-190 |
-| `GET /ip/{ip}`, `GET /help/smtp`, `GET /icon`, `GET /sponsors/github` | D-82 |
+| `GET /ip/{ip}`, `GET /help/smtp`, `GET /icon`, `GET /sponsors/github` | D-82, D-197 (`/help/smtp`) |
 | `GET /sponsors/*` | D-167 |
 
 ## 🔒 Security fixes
@@ -356,6 +356,7 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-194 | **A health check that sends the API key stops at a redirect to another host.** The health checks plugin, on top of D-130. A service with the switch `Send API Key` on gets the API key of Organizr in the header `Token`. A redirect to the same host and port, or from `http` to `https` on the same host, is still followed with the key. A redirect to any other place is not followed, so the key does not reach it. The check then has the redirect as its answer, and only a `2xx` answer passes, so the service counts as down (`Error`, and the ping `/fail`). A service without the key follows every redirect, as before. PHP follows every redirect, up to 10, and sends the key each time. To check a service that sends visitors to another host, such as a login portal, turn its switch `Send API Key` off, or use the address that the redirect points to. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 | D-195 | **The shared fallback account of Ombi, Overseerr or Petio goes only to a user who sees the application.** The single sign-on of a login, `POST /login`. When Ombi, Overseerr or Petio does not know the user, Organizr logs in with the fallback account of the settings (`ombiFallbackUser`, `overseerrFallbackUser`, `petioFallbackUser`) and hands its session to the browser. Now that happens only when the user (1) has the level of the homepage item of the application (`homepageOmbiAuth`, `homepageOverseerrAuth`; Petio has no homepage item), or (2) sees an enabled tab of it: a tab whose name or address holds the name of the application, such as `Ombi` or `https://example.com/petio/`, or whose address is on the host and port of the address setting of the application. Without either, the user gets no session of that application, and the fallback account is not asked. A user whom the application knows still gets an own session, as before. PHP hands the fallback account to every user who logs in. The homepage items of Ombi and Overseerr are for Co-Admins by default, so on an install whose users reach these applications, give the item their level or make sure their tab of the application matches. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 | D-196 | **The Netdata and OctoPrint items no longer send the address of the service, unless the page needs it.** `GET /homepage/netdata/data` answers `url` as an empty text. The page does not use it. `GET /homepage/octoprint/data` answers `data.url` with the address of OctoPrint only when the webcam is on and the address of its stream is a path, such as `/webcam/?action=stream`: the page puts the two together to show the webcam. Else `data.url` is an empty text. The address can name a host of the local network, and every viewer of the item got it. PHP always sends the address of the settings. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-197 | **Only an Admin changes how e-mails go out and what the recovery e-mail says.** `PUT /config` with `PHPMAILER-enabled`, any setting whose key starts with `PHPMAILER-smtpHost` (the address, port, account, password, encryption and sender of the SMTP server), `PHPMAILER-verifyCert`, or `PHPMAILER-emailTemplateReset` and `PHPMAILER-emailTemplateResetSubject`. A Co-Admin gets `401` with "Config item: <key> can only be changed by an admin", and nothing of the request is stored. `GET /help/smtp`, which stores the shared SMTP account of the project (D-82), is for an Admin only too; a Co-Admin gets `401`. A Co-Admin still reads these settings, changes the other e-mail texts, the layout and the link address, and sends test and group e-mails. The settings page shows these fields to a Co-Admin as ones that only an Admin changes. Before, a Co-Admin could point the SMTP server at a host of their own (D-191 was met by sending an empty password), or put `{password}` into a picture address of the recovery template, and then ask a recovery for the Admin: the new password of the Admin reached the Co-Admin, who then logged in as the Admin. PHP lets a Co-Admin change all e-mail settings. Found by the security audit of 2026-11-27; decided by the owner on 2026-11-27. |
 
 ## ✅ Kept exactly as PHP has it
 

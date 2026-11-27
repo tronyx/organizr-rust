@@ -329,15 +329,20 @@ async fn shared_smtp_account_sets_only_the_mail_server() {
         .await;
         let app = app_of(installed_state(database, &[]).with_organizr_api(&service.url()));
         is_for_co_admins(database, &app, "GET", "/help/smtp").await;
+        // It changes the SMTP server, which only an Admin changes (D-197).
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+        let answer = call(&app, As::User(&co_admin), "GET", "/help/smtp", None).await;
+        assert_eq!(answer.status, StatusCode::UNAUTHORIZED, "{}", answer.body);
+        assert_eq!(service.seen().len(), 0);
 
         // The route changes settings, so another site cannot ask it.
-        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+        let admin = seed::logged_in(database, &app, "ada", 0).await;
         let refused = send(
             &app,
             request(
                 "GET",
                 "/api/v2/help/smtp",
-                &[("cookie", &co_admin), ("sec-fetch-site", "cross-site")],
+                &[("cookie", &admin), ("sec-fetch-site", "cross-site")],
                 "",
             ),
         )
@@ -345,7 +350,7 @@ async fn shared_smtp_account_sets_only_the_mail_server() {
         assert_eq!(refused.status, StatusCode::UNAUTHORIZED);
         assert_eq!(service.seen().len(), 0);
 
-        let answer = call(&app, As::User(&co_admin), "GET", "/help/smtp", None).await;
+        let answer = call(&app, As::User(&admin), "GET", "/help/smtp", None).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
         assert_eq!(
             answer.message(),

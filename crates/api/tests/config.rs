@@ -166,6 +166,16 @@ async fn some_settings_are_changed_by_the_admin_only() {
             ("modernColorSet", json!("light")),
             ("homepageCustomHTML01Trusted", json!(true)),
             ("homepageCustomHTML08Trusted", json!("true")),
+            // The mail server and the recovery e-mail carry the recovery password of every
+            // account, the Admin's among them (D-197).
+            ("PHPMAILER-enabled", json!(true)),
+            ("PHPMAILER-smtpHost", json!("mx.example.net")),
+            ("PHPMAILER-smtpHostPort", json!("2525")),
+            ("PHPMAILER-smtpHostType", json!("none")),
+            ("PHPMAILER-smtpHostSenderEmail", json!("me@example.net")),
+            ("PHPMAILER-verifyCert", json!(false)),
+            ("PHPMAILER-emailTemplateReset", json!("{password}")),
+            ("PHPMAILER-emailTemplateResetSubject", json!("Hi")),
         ] {
             // The other setting of the request is not changed either.
             let body = json!({"title": "Home", key: value});

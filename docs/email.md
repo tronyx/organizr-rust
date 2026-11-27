@@ -6,7 +6,7 @@ Organizr sends e-mail through an SMTP server that you name in the settings: new 
 
 ## 🚀 Set up e-mail
 
-1. Log in as an Admin or a Co-Admin.
+1. Log in as an Admin. Only an Admin changes the mail server, the plugin's switch and the password-reset e-mail, because the reset e-mail carries a new password of any account (D-197). A Co-Admin can still read the settings, change the other e-mail texts and send test e-mails.
 2. Open **Settings › Plugins › Inactive**. Point at the **PHP Mailer** card, and select the button with the plug. The plugin moves to **Active**.
 3. Open **Settings › Plugins › Active**. Point at the **PHP Mailer** card, and select the button with the panel. The window **PHP Mailer Settings** opens.
 4. In the section **Host**, enter your mail server in **SMTP Host** and its port in **SMTP Port**.

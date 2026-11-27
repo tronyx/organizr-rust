@@ -176,7 +176,9 @@ fn secret_left_behind(
 /// that a login gives (D-133), and the services of the health checks plugin, which get
 /// the API key (D-134). Single sign-on sends the password of every login onward, so its
 /// switches are for Admins only, and so are its addresses while it is on (D-135). The
-/// folder of the backups is for Admins only too (D-183).
+/// folder of the backups is for Admins only too (D-183), and so is the way e-mails go
+/// out: the mail switch, the SMTP server and the recovery e-mail, since a recovery e-mail
+/// carries a new password of any account, the Admin's among them (D-197).
 ///
 /// `settings` decides the settings that are for Admins only some of the time. Such a rule
 /// reads only settings that are always for Admins only, so for a Co-Admin the copy that
@@ -192,6 +194,7 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
         || key == TRUSTED_PROXIES
         || key == IMPORT_NOTICE
         || key == BACKUP_LOCATION
+        || is_mail_delivery(key)
         || is_trusted_by_a_login(key, settings)
         || key == "customJava"
         || key == "customThemeJava"
@@ -207,6 +210,17 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
         || key
             .strip_prefix("customHTML")
             .is_some_and(|number| html::is_trusted(settings, number))
+}
+
+/// Whether a setting decides where e-mails go and what the recovery e-mail says: the mail
+/// switch, every setting of the SMTP server (its address, port, account, encryption and
+/// sender), the check of its certificate, and the text and subject of the recovery
+/// e-mail, which holds the new password (D-197).
+fn is_mail_delivery(key: &str) -> bool {
+    key == "PHPMAILER-enabled"
+        || key.starts_with("PHPMAILER-smtpHost")
+        || key == "PHPMAILER-verifyCert"
+        || key.starts_with("PHPMAILER-emailTemplateReset")
 }
 
 /// Whether a login trusts a setting that is open to a Co-Admin otherwise: the address of

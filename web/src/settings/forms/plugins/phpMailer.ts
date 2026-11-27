@@ -10,17 +10,27 @@ export const PHP_MAILER_PLUGIN: FormPage = {
       id: 'host',
       title: 'Host',
       entries: [
-        { key: 'PHPMAILER-smtpHost', kind: 'text', label: 'SMTP Host' },
-        { key: 'PHPMAILER-smtpHostPort', kind: 'text', label: 'SMTP Port' },
+        { key: 'PHPMAILER-smtpHost', kind: 'text', label: 'SMTP Host', adminChanges: true },
+        { key: 'PHPMAILER-smtpHostPort', kind: 'text', label: 'SMTP Port', adminChanges: true },
       ],
     },
     {
       id: 'authentication',
       title: 'Authentication',
       entries: [
-        { key: 'PHPMAILER-smtpHostUsername', kind: 'text', label: 'Username' },
-        { key: 'PHPMAILER-smtpHostPassword', kind: 'secret', label: 'Password' },
-        { key: 'PHPMAILER-smtpHostAuth', kind: 'switch', label: 'Authentication' },
+        { key: 'PHPMAILER-smtpHostUsername', kind: 'text', label: 'Username', adminChanges: true },
+        {
+          key: 'PHPMAILER-smtpHostPassword',
+          kind: 'secret',
+          label: 'Password',
+          adminChanges: true,
+        },
+        {
+          key: 'PHPMAILER-smtpHostAuth',
+          kind: 'switch',
+          label: 'Authentication',
+          adminChanges: true,
+        },
         {
           key: 'PHPMAILER-smtpHostType',
           kind: 'select',
@@ -30,20 +40,32 @@ export const PHP_MAILER_PLUGIN: FormPage = {
             { label: 'ssl', value: 'ssl' },
             { label: 'off', value: 'n/a' },
           ],
+          adminChanges: true,
         },
-        { key: 'PHPMAILER-verifyCert', kind: 'switch', label: 'Verify Certificate' },
+        {
+          key: 'PHPMAILER-verifyCert',
+          kind: 'switch',
+          label: 'Verify Certificate',
+          adminChanges: true,
+        },
       ],
     },
     {
       id: 'sender',
       title: 'Sender',
       entries: [
-        { key: 'PHPMAILER-smtpHostSenderName', kind: 'text', label: 'Sender Name' },
+        {
+          key: 'PHPMAILER-smtpHostSenderName',
+          kind: 'text',
+          label: 'Sender Name',
+          adminChanges: true,
+        },
         {
           key: 'PHPMAILER-smtpHostSenderEmail',
           kind: 'text',
           label: 'Sender Email',
           placeholder: 'i.e. same as username',
+          adminChanges: true,
         },
       ],
     },
@@ -111,6 +133,7 @@ export const PHP_MAILER_PLUGIN: FormPage = {
           kind: 'text',
           label: 'Subject',
           fold: 'Reset Password',
+          adminChanges: true,
         },
         {
           key: 'PHPMAILER-emailTemplateReset',
@@ -118,6 +141,7 @@ export const PHP_MAILER_PLUGIN: FormPage = {
           label: 'Body',
           wide: true,
           fold: 'Reset Password',
+          adminChanges: true,
         },
         {
           key: 'PHPMAILER-emailTemplateInviteUserSubject',
