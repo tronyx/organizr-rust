@@ -119,8 +119,9 @@ pub(crate) fn is_admin(groups: &[Group], user: &User) -> bool {
 }
 
 /// Whether a Co-Admin acts on the account of another Co-Admin. Such a caller cannot take
-/// over the account: change its password, address, lock or group, or remove its second
-/// factor (D-188).
+/// over the account: change its password, address, lock, group or name, delete it, or
+/// remove its second factor (D-188). A login service finds an account by its name, and a
+/// deleted account could be made again under the same name and address.
 pub(crate) fn is_another_co_admin(caller: &Caller, groups: &[Group], user: &User) -> bool {
     let is_co_admin = groups
         .iter()
@@ -439,12 +440,13 @@ pub async fn change_by_text(
     }
     let password = data.field("password").map(password_of).transpose()?;
     // A Co-Admin cannot take over another Co-Admin (D-188).
+    let new_name = matches!(&username, Change::Set(name) if *name != user.username);
     let new_lock = matches!(locked, Change::Set(lock) if lock != user.locked);
     let new_group = matches!(group, Change::Set(group) if group != user.group);
     let new_address =
         matches!(&email, Change::Set(address) if user.email.as_deref() != Some(address.as_str()));
     if is_another_co_admin(caller, &groups, &user)
-        && (password.is_some() || new_address || new_lock || new_group)
+        && (password.is_some() || new_address || new_lock || new_group || new_name)
     {
         return Err(Refusal::not_authorized(
             "Cannot update admin unless you are admin",
@@ -522,7 +524,10 @@ pub async fn remove_by_text(
     let not_found = || Refusal::not_found("id not found");
     let user = user_at(database, id).await?.ok_or_else(not_found)?;
     let groups = database.groups().list().await?;
-    if is_admin(&groups, &user) && caller.level() != GroupLevel::ADMIN {
+    // Nor does a Co-Admin delete another Co-Admin (D-188).
+    if (is_admin(&groups, &user) && caller.level() != GroupLevel::ADMIN)
+        || is_another_co_admin(caller, &groups, &user)
+    {
         return Err(Refusal::not_authorized(
             "Cannot delete admin unless you are admin",
         ));

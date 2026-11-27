@@ -653,12 +653,14 @@ async fn co_admin_cannot_take_over_another_co_admin() {
         let cole = format!("/users/{cole_id}");
         let update = "Cannot update admin unless you are admin";
 
-        // Cora cannot change the password, the address, the lock or the group of Cole.
+        // Cora cannot change the password, the address, the lock, the group or the name
+        // of Cole: a login service finds the account by its name (D-188).
         for body in [
             json!({"password": "taken-over"}),
             json!({"email": "cora@example.com"}),
             json!({"locked": true}),
             json!({"group_id": 4}),
+            json!({"username": "colette"}),
         ] {
             let answer = call(&app, As::User(&cora), "PUT", &cole, Some(body.clone())).await;
             assert_refused(&answer, StatusCode::UNAUTHORIZED, update);
@@ -691,8 +693,18 @@ async fn co_admin_cannot_take_over_another_co_admin() {
         }
         assert_eq!(user(&app, cole_id).await["locked"], json!(0));
 
+        // Nor delete Cole: the account could then be made again with Cole's name and
+        // address and a password of Cora's (D-188).
+        let answer = call(&app, As::User(&cora), "DELETE", &cole, None).await;
+        assert_refused(
+            &answer,
+            StatusCode::UNAUTHORIZED,
+            "Cannot delete admin unless you are admin",
+        );
+        assert_eq!(user(&app, cole_id).await["username"], json!("cole"));
+
         // The other fields of Cole, the own account and the accounts of users stay open.
-        let body = Some(json!({"username": "colette", "image": "c.png"}));
+        let body = Some(json!({"username": "cole", "image": "c.png"}));
         let answer = call(&app, As::User(&cora), "PUT", &cole, body).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
         let body =
