@@ -57,6 +57,8 @@ After someone changes their password on the service, **the old one keeps working
 ### 🧱 Failed logins
 
 - A login that the service refuses counts as a failed login. After **Max Login Attempts** (**Settings › System Settings › Login & Security**, section **Lockout and sessions**), the client address and the name are locked out for a while, whatever the service says.
+- Names that differ only by spaces, letter case or wide letters count as one name, since a service may take `robin `, `ro bin` and `robin` for the same person (D-199).
+- A name with an invisible character, such as a soft hyphen or a zero-width space, is refused without asking the service, and counts as a failed login (D-199).
 - A login with an empty password is refused without asking the LDAP or FTP server. Many servers treat an empty password as an anonymous login.
 
 > [!NOTE]
