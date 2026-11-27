@@ -244,16 +244,32 @@ async fn lists_take_addresses_of_both_kinds_and_host_names() {
         let app = app_behind_proxy(database, &[]);
         let local = [127, 0, 0, 1];
 
-        // A host name stands for its addresses. Spaces around an entry do not count.
-        let named = ask(&app, local, "/auth/0/allow/10.0.0.1,%20localhost", &[]).await;
+        // A host name stands for its addresses, in a check that a trusted proxy sends.
+        // Spaces around an entry do not count.
+        let from_local = [("x-forwarded-for", "127.0.0.1")];
+        let path = "/auth/0/allow/10.0.0.1,%20localhost";
+        let named = ask(&app, PROXY, path, &from_local).await;
         assert_eq!(
             named.message(),
             json!("User is whitelisted"),
             "{}",
             named.body
         );
-        let unknown = ask(&app, local, "/auth/0/allow/no-such-host.invalid", &[]).await;
+        let unknown = ask(
+            &app,
+            PROXY,
+            "/auth/0/allow/no-such-host.invalid",
+            &from_local,
+        )
+        .await;
         assert_eq!(unknown.status, StatusCode::UNAUTHORIZED);
+        // Whoever reaches Organizr without the proxy writes the path, so there only the
+        // addresses of a list count, and no host name is looked up (D-141).
+        let direct = ask(&app, local, path, &[]).await;
+        assert_eq!(direct.status, StatusCode::UNAUTHORIZED, "{}", direct.body);
+        let denied = ask(&app, local, "/auth/999/deny/localhost", &[]).await;
+        assert_eq!(denied.status, StatusCode::OK, "{}", denied.body);
+        assert_ne!(denied.message(), json!("User is blacklisted"));
 
         // An IPv6 address, written in two ways, and an IPv4 address inside an IPv6 one.
         let reported = [("x-forwarded-for", "2001:db8::7")];

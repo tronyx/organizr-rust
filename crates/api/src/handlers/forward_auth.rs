@@ -129,23 +129,26 @@ fn addresses_only(list: &str) -> String {
 /// it can only add a deny list, which makes the question stricter (D-136).
 #[cfg(test)]
 fn question(long_form: bool, parts: &[String], query: &str) -> Result<Question, UnknownKind> {
-    ask(long_form, parts, query, false)
+    ask(long_form, parts, query, false, true)
 }
 
 /// As [`question`]. `query_is_the_proxys` says that a trusted proxy wrote the query of
 /// the check itself, so that its allow list counts also when the path names a group
-/// (D-157).
+/// (D-157). `path_is_the_proxys` says that the check came from a trusted proxy, so that
+/// the operator wrote the path, and the host names of its lists count (D-141).
 fn ask(
     long_form: bool,
     parts: &[String],
     query: &str,
     query_is_the_proxys: bool,
+    path_is_the_proxys: bool,
 ) -> Result<Question, UnknownKind> {
     let mut group = parts.first().cloned();
     let path_names_group = group.as_deref().is_some_and(|group| !group.is_empty());
     // A list from the query is the visitor's to write, so only its addresses count: a
-    // host name there would make Organizr look it up (D-141). A list in the path is the
-    // operator's, and its host names count.
+    // host name there would make Organizr look it up (D-141). A list in the path of a
+    // check from a trusted proxy is the operator's, and its host names count; whoever
+    // reaches Organizr without the proxy writes the path too.
     let from_query = |key: &str| query_value(query, key).map(|list| addresses_only(&list));
     let mut kind = query_value(query, "type");
     let mut addresses = from_query("ips");
@@ -162,12 +165,15 @@ fn ask(
                 .cloned()
                 .unwrap_or_else(|| DEFAULT_KIND.to_owned()),
         );
-        addresses = Some(
-            parts
-                .get(2)
-                .cloned()
-                .unwrap_or_else(|| DEFAULT_ADDRESSES.to_owned()),
-        );
+        let listed = parts
+            .get(2)
+            .cloned()
+            .unwrap_or_else(|| DEFAULT_ADDRESSES.to_owned());
+        addresses = Some(if path_is_the_proxys {
+            listed
+        } else {
+            addresses_only(&listed)
+        });
     }
 
     // Whether the allow list of the query counts: the kind and addresses of the long
@@ -392,6 +398,7 @@ pub async fn answer(
         parts,
         query,
         is_the_proxys(client, headers, query),
+        client.via_trusted_proxy,
     ) {
         Ok(question) => question,
         Err(UnknownKind(kind)) => {
@@ -624,13 +631,15 @@ mod tests {
         // A proxy that sends the address the visitor asked for, with another query,
         // wrote this query itself, so its allow list counts (D-157).
         for (long_form, path) in [(false, &["1"][..]), (true, &["1"][..])] {
-            let own = ask(long_form, &parts(path), "whitelist=10.0.0.1", true).expect("known");
+            let own =
+                ask(long_form, &parts(path), "whitelist=10.0.0.1", true, true).expect("known");
             assert_eq!(own.allowed.as_deref(), Some("10.0.0.1"), "{path:?}");
             // The group of the path still wins over the query.
-            let group = ask(long_form, &parts(path), "group=999", true).expect("known");
+            let group = ask(long_form, &parts(path), "group=999", true, true).expect("known");
             assert_eq!(group.group, "1", "{path:?}");
         }
-        let by_kind = ask(false, &parts(&["1"]), "type=allow&ips=10.0.0.2", true).expect("known");
+        let by_kind =
+            ask(false, &parts(&["1"]), "type=allow&ips=10.0.0.2", true, true).expect("known");
         assert_eq!(by_kind.allowed.as_deref(), Some("10.0.0.2"));
     }
 
