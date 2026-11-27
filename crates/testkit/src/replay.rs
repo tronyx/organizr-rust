@@ -1095,7 +1095,7 @@ async fn log_in_again(app: &Router, browsers: &mut Browsers, jar: &str, login: &
 fn without_dropped_shadows(cookies: &mut Vec<String>) {
     assert_approved("D-145");
     cookies.retain(|cookie| {
-        let is_shadow = ["/api", "/api/v2"]
+        let is_shadow = ["/api", "/api/v2", "/api/v2/"]
             .iter()
             .any(|path| cookie.contains(&format!("; path={path}; ")));
         !(cookie.starts_with(&format!("{}; ", RecordedCookie::SESSION_COOKIE))
