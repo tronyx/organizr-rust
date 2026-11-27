@@ -30,7 +30,7 @@ use crate::envelope::{Envelope, NoContent, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
 use crate::handlers::proof::{self, Proof};
-use crate::handlers::users::{is_admin, user_at};
+use crate::handlers::users::{is_admin, is_another_co_admin, user_at};
 use crate::state::AppState;
 
 /// The name that an authenticator app shows for a script with the API key.
@@ -238,7 +238,8 @@ pub async fn remove(
 const MANAGER: GroupLevel = GroupLevel::CO_ADMIN;
 
 /// `DELETE /users/2fa/{id}`: removes the second factor of a user, for a person who has
-/// lost the authenticator app. Only an Admin removes the second factor of an Admin. A
+/// lost the authenticator app. Only an Admin removes the second factor of an Admin, or of
+/// a Co-Admin other than the caller (D-188). A
 /// user without a second factor is no error. The own second factor needs the proof of
 /// `DELETE /2fa` here too (D-186). PHP has no such route (D-129).
 pub async fn remove_for_user(
@@ -253,7 +254,9 @@ pub async fn remove_for_user(
     let not_found = || Refusal::not_found("User not found");
     let user = user_at(database, &id).await?.ok_or_else(not_found)?;
     let groups = database.groups().list().await?;
-    if is_admin(&groups, &user) && caller.level() != GroupLevel::ADMIN {
+    if (is_admin(&groups, &user) && caller.level() != GroupLevel::ADMIN)
+        || is_another_co_admin(&caller, &groups, &user)
+    {
         return Err(Refusal::not_authorized(
             "Only admins can remove the second factor of admins",
         ));

@@ -85,7 +85,7 @@ fn messages(data: &Value) -> Vec<String> {
 }
 
 #[tokio::test]
-async fn only_admins_and_co_admins_read_and_purge_the_log() {
+async fn admins_and_co_admins_read_the_log_and_only_admins_purge_it() {
     on_each_engine(async |database| {
         seed::installed(database).await;
         let folder = tempfile::tempdir().expect("a temporary folder can be made");
@@ -116,8 +116,21 @@ async fn only_admins_and_co_admins_read_and_purge_the_log() {
 
         let answer = call(&app, As::User(&co_admin), "GET", "/log", None).await;
         assert_eq!(answer.status, StatusCode::OK);
-        let answer = call(&app, As::User(&co_admin), "DELETE", "/log/1", None).await;
+        // The log holds what the Co-Admin did, so only an Admin purges it (D-190).
+        for path in ["/log", "/log/1"] {
+            let answer = call(&app, As::User(&co_admin), "DELETE", path, None).await;
+            assert_eq!(answer.status, StatusCode::UNAUTHORIZED, "{}", answer.body);
+            assert_eq!(answer.message(), json!("Not Authorized"));
+        }
+        let files = || {
+            std::fs::read_dir(folder.path().join("logs"))
+                .expect("listed")
+                .count()
+        };
+        assert_eq!(files(), 2);
+        let answer = call(&app, As::Admin, "DELETE", "/log/1", None).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert_eq!(files(), 1);
 
         // An application without a data folder has no log.
         let bare = installed_app_with(database, &[]);

@@ -19,7 +19,7 @@ use crate::client::Client;
 use crate::envelope::{Envelope, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
-use crate::handlers::users::{is_admin, user_at};
+use crate::handlers::users::{is_admin, is_another_co_admin, user_at};
 use crate::state::AppState;
 
 /// The level that locks and opens the accounts of other users.
@@ -126,7 +126,7 @@ pub async fn unlock_own(
 }
 
 /// The user of the path, for a caller who manages users. Only an Admin locks or opens
-/// the account of an Admin.
+/// the account of an Admin, or of a Co-Admin other than the caller (D-188).
 async fn managed(state: &AppState, caller: &Caller, id: &str) -> Result<User, Refusal> {
     caller.require(MANAGER)?;
     let database = state.database();
@@ -134,7 +134,9 @@ async fn managed(state: &AppState, caller: &Caller, id: &str) -> Result<User, Re
         .await?
         .ok_or_else(|| Refusal::not_found("User not found"))?;
     let groups = database.groups().list().await?;
-    if is_admin(&groups, &user) && caller.level() != GroupLevel::ADMIN {
+    if (is_admin(&groups, &user) && caller.level() != GroupLevel::ADMIN)
+        || is_another_co_admin(caller, &groups, &user)
+    {
         return Err(Refusal::not_authorized(
             "Only admins can lock or unlock admins",
         ));

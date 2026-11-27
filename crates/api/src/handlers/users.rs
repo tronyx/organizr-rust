@@ -118,6 +118,20 @@ pub(crate) fn is_admin(groups: &[Group], user: &User) -> bool {
         .any(|group| group.id == user.group && group.level == GroupLevel::ADMIN)
 }
 
+/// Whether a Co-Admin acts on the account of another Co-Admin. Such a caller cannot take
+/// over the account: change its password, address, lock or group, or remove its second
+/// factor (D-188).
+pub(crate) fn is_another_co_admin(caller: &Caller, groups: &[Group], user: &User) -> bool {
+    let is_co_admin = groups
+        .iter()
+        .any(|group| group.id == user.group && group.level == GroupLevel::CO_ADMIN);
+    caller.level() == GroupLevel::CO_ADMIN
+        && is_co_admin
+        && caller
+            .user()
+            .is_none_or(|caller| caller.authenticated.user.id != user.id)
+}
+
 /// Whether the user is the only one in the group of the Admin. That user cannot be
 /// deleted or leave the group, because an install without an Admin cannot be managed.
 async fn is_last_admin(
@@ -343,7 +357,8 @@ fn password_of(value: &Value) -> Result<String, Refusal> {
 /// the own account. A new password or a new address of the own account needs the
 /// current password in the field `currentPassword` (D-185). An Admin or a Co-Admin can
 /// change every user and also the group and the lock, but only an Admin can change an
-/// Admin. A field that the application does not know is ignored, and so is `id`.
+/// Admin, and only an Admin can change the password, the address, the lock or the group
+/// of a Co-Admin other than the caller (D-188). A field that the application does not know is ignored, and so is `id`.
 pub async fn change(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
@@ -423,10 +438,20 @@ pub async fn change_by_text(
         return Err(Refusal::not_authorized("Cannot change your own locked"));
     }
     let password = data.field("password").map(password_of).transpose()?;
-    // A new password or a new address of the own account needs the current password, so
-    // that a session alone cannot take the account over (D-185).
+    // A Co-Admin cannot take over another Co-Admin (D-188).
+    let new_lock = matches!(locked, Change::Set(lock) if lock != user.locked);
+    let new_group = matches!(group, Change::Set(group) if group != user.group);
     let new_address =
         matches!(&email, Change::Set(address) if user.email.as_deref() != Some(address.as_str()));
+    if is_another_co_admin(caller, &groups, &user)
+        && (password.is_some() || new_address || new_lock || new_group)
+    {
+        return Err(Refusal::not_authorized(
+            "Cannot update admin unless you are admin",
+        ));
+    }
+    // A new password or a new address of the own account needs the current password, so
+    // that a session alone cannot take the account over (D-185).
     if actor.is_target && (new_address || password.is_some()) {
         proof::password(state, client, &user, data.text("currentPassword")).await?;
     }

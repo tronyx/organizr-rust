@@ -93,6 +93,10 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - A new password or a new e-mail address of the own account needs the current password (D-185).
 - Turning the own second factor on needs the password; replacing it or turning it off needs the password or a code of the second factor (D-186).
 - A link of the own account to an OpenID Connect provider needs the password of the account (D-187).
+- Only an Admin changes the password, the e-mail address, the lock or the group of a Co-Admin, or removes its second factor; a Co-Admin keeps those for the own account (D-188).
+- Only an Admin changes the custom style sheets, which go into every page (D-189).
+- Only an Admin purges a log file (D-190).
+- A Co-Admin who changes the address of a service enters its stored secrets again in the same save (D-191).
 - `ORGANIZR_SESSION_COOKIE_HOST_ONLY=1` makes the session cookie one for the host of Organizr alone, for installs without forward auth on other hosts.
 - An OpenID Connect login comes back to Organizr once: a copy of its login cookie is refused until the cookie expires.
 - The approval of an extension also names the level of callers that the dialog showed, and a call of an extension ends after 30 seconds, also while it waits.

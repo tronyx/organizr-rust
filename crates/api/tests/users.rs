@@ -642,3 +642,96 @@ async fn guest_is_refused_before_the_id_is_looked_at() {
     })
     .await;
 }
+
+#[tokio::test]
+async fn co_admin_cannot_take_over_another_co_admin() {
+    on_each_engine(async |database| {
+        let app = install(database).await;
+        let cora = seed::logged_in(database, &app, "cora", 1).await;
+        let _cole = seed::logged_in(database, &app, "cole", 1).await;
+        let (cora_id, cole_id) = (6, 7);
+        let cole = format!("/users/{cole_id}");
+        let update = "Cannot update admin unless you are admin";
+
+        // Cora cannot change the password, the address, the lock or the group of Cole.
+        for body in [
+            json!({"password": "taken-over"}),
+            json!({"email": "cora@example.com"}),
+            json!({"locked": true}),
+            json!({"group_id": 4}),
+        ] {
+            let answer = call(&app, As::User(&cora), "PUT", &cole, Some(body.clone())).await;
+            assert_refused(&answer, StatusCode::UNAUTHORIZED, update);
+        }
+        let stored = user(&app, cole_id).await;
+        assert_eq!(stored["locked"], json!(0));
+        assert_eq!(stored["group_id"], json!(1));
+        assert_ne!(stored["email"], json!("cora@example.com"));
+        log_in(&app, "cole", seed::USER_PASSWORD).await;
+        // Nor lock or open the account, nor remove its second factor.
+        for (method, path, message) in [
+            (
+                "POST",
+                format!("/users/lock/{cole_id}"),
+                "Only admins can lock or unlock admins",
+            ),
+            (
+                "POST",
+                format!("/users/unlock/{cole_id}"),
+                "Only admins can lock or unlock admins",
+            ),
+            (
+                "DELETE",
+                format!("/users/2fa/{cole_id}"),
+                "Only admins can remove the second factor of admins",
+            ),
+        ] {
+            let answer = call(&app, As::User(&cora), method, &path, None).await;
+            assert_refused(&answer, StatusCode::UNAUTHORIZED, message);
+        }
+        assert_eq!(user(&app, cole_id).await["locked"], json!(0));
+
+        // The other fields of Cole, the own account and the accounts of users stay open.
+        let body = Some(json!({"username": "colette", "image": "c.png"}));
+        let answer = call(&app, As::User(&cora), "PUT", &cole, body).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let body =
+            Some(json!({"email": "cora@example.com", "currentPassword": seed::USER_PASSWORD}));
+        let own = format!("/users/{cora_id}");
+        let answer = call(&app, As::User(&cora), "PUT", &own, body).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        let zoe = format!("/users/{ZOE}");
+        for body in [json!({"password": "new-one"}), json!({"locked": true})] {
+            let answer = call(&app, As::User(&cora), "PUT", &zoe, Some(body)).await;
+            assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        }
+        let answer = call(
+            &app,
+            As::User(&cora),
+            "POST",
+            &format!("/users/unlock/{ZOE}"),
+            None,
+        )
+        .await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+
+        // The Admin still changes Cole.
+        change(
+            &app,
+            cole_id,
+            json!({"password": "by-the-admin", "locked": true}),
+        )
+        .await;
+        assert_eq!(user(&app, cole_id).await["locked"], json!(1));
+        let answer = call(
+            &app,
+            As::Admin,
+            "DELETE",
+            &format!("/users/2fa/{cole_id}"),
+            None,
+        )
+        .await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+    })
+    .await;
+}

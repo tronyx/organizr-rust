@@ -159,6 +159,8 @@ async fn some_settings_are_changed_by_the_admin_only() {
             ("authProxyHeaderName", json!("X-User")),
             ("customJava", json!("alert(1)")),
             ("customThemeJava", json!("alert(2)")),
+            ("customCss", json!("body { display: none; }")),
+            ("customThemeCss", json!("body { display: none; }")),
             ("layout", json!("modern")),
             ("modernTheme", json!("organizr")),
             ("modernColorSet", json!("light")),
@@ -192,8 +194,12 @@ async fn some_settings_are_changed_by_the_admin_only() {
         .await;
         assert_eq!(setting(&app, "layout").await, json!("modern"));
         assert_eq!(setting(&app, "modernColorSet").await, json!("light"));
-        // A Co-Admin changes the other settings, the style sheets among them.
-        let body = json!({"customCss": "body { margin: 0; }"});
+        // The style sheets go into every page, so only an Admin changes them (D-189). A
+        // Co-Admin still reads them, and changes the other settings.
+        change(&app, json!({"customCss": "body { margin: 0; }"})).await;
+        let answer = call(&app, As::User(&co_admin), "GET", "/config", None).await;
+        assert_eq!(answer.data()["customCss"], json!("body { margin: 0; }"));
+        let body = json!({"title": "Home"});
         let answer = call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
     })
@@ -674,6 +680,79 @@ async fn secret_is_stored_sealed_and_kept_when_the_form_sends_it_back() {
         change(&app, json!({"plexToken": ""})).await;
         assert_eq!(setting(&app, "plexToken").await, json!(""));
         assert!(!rows(database).await.contains_key("plexToken"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn co_admin_enters_the_secret_again_with_a_new_address() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let co_admin = seed::logged_in(database, &app, "cora", 1).await;
+        let put =
+            async |body: Value| call(&app, As::User(&co_admin), "PUT", "/config", Some(body)).await;
+        change(
+            &app,
+            json!({
+                "sonarrURL": "http://sonarr.lan:8989",
+                "sonarrToken": "the-sonarr-key",
+                "ombiURL": "http://ombi.lan",
+                "ombiToken": "the-ombi-key",
+                "ombiFallbackPassword": "the-ombi-password",
+            }),
+        )
+        .await;
+
+        // A new address without the key would send the key to that address (D-191).
+        for body in [
+            json!({"sonarrURL": "http://elsewhere.example", "title": "Home"}),
+            json!({"sonarrURL": "http://elsewhere.example", "sonarrToken": SECURE}),
+        ] {
+            let answer = put(body).await;
+            assert_refused(
+                &answer,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Config item: sonarrToken must be entered again when sonarrURL changes",
+            );
+        }
+        // Each secret of the service is needed.
+        let body = json!({"ombiURL": "http://elsewhere.example", "ombiToken": "a-new-key"});
+        assert_refused(
+            &put(body).await,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Config item: ombiFallbackPassword must be entered again when ombiURL changes",
+        );
+        assert_eq!(
+            setting(&app, "sonarrURL").await,
+            json!("http://sonarr.lan:8989")
+        );
+        assert_eq!(setting(&app, "ombiURL").await, json!("http://ombi.lan"));
+        assert_eq!(setting(&app, "title").await, json!("Organizr V2"));
+
+        // The same address, a service without a stored secret, or the address with its
+        // secrets, is taken.
+        for body in [
+            json!({"sonarrURL": "http://sonarr.lan:8989", "sonarrToken": SECURE}),
+            json!({"radarrURL": "http://radarr.example"}),
+            json!({"sonarrURL": "http://sonarr.example", "sonarrToken": "a-new-key"}),
+            json!({"ombiURL": "http://ombi.example", "ombiToken": "", "ombiFallbackPassword": "x"}),
+        ] {
+            let answer = put(body.clone()).await;
+            assert_eq!(answer.status, StatusCode::OK, "{body}: {}", answer.body);
+        }
+        assert_eq!(
+            setting(&app, "sonarrURL").await,
+            json!("http://sonarr.example")
+        );
+        let (settings, _) = stored_settings(database, &seed::secrets())
+            .await
+            .expect("the settings can be read");
+        assert_eq!(settings.sonarr_token, "a-new-key");
+
+        // The Admin changes the address alone.
+        change(&app, json!({"sonarrURL": "http://sonarr.lan"})).await;
+        assert_eq!(setting(&app, "sonarrURL").await, json!("http://sonarr.lan"));
     })
     .await;
 }

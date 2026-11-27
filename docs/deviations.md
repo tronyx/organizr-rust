@@ -44,13 +44,13 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150, D-165, D-178 |
 | Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157, D-170, D-171 |
 | The set-up wizard and the database | D-19, D-38, D-46, D-97, D-158 |
-| Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129, D-160, D-164, D-185, D-186 |
+| Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129, D-160, D-164, D-185, D-186, D-188 |
 | Tabs and categories | D-28, D-32, D-39, D-47, D-48, D-174 |
-| Settings and configuration | D-06, D-07, D-14, D-29, D-45, D-53, D-96, D-106, D-112, D-116, D-162 |
+| Settings and configuration | D-06, D-07, D-14, D-29, D-45, D-53, D-96, D-106, D-112, D-116, D-162, D-191 |
 | Pictures, icons and favicons | D-10, D-54, D-56, D-93, D-123, D-126, D-168 |
 | Backups and restore | D-10, D-26, D-74, D-147, D-169, D-183 |
 | Updates | D-23 |
-| Log, errors and request ids | D-13, D-34, D-84 |
+| Log, errors and request ids | D-13, D-34, D-84, D-190 |
 | E-mail | D-09, D-58, D-82, D-138, D-160, D-179 |
 | Scheduled jobs | D-33, D-43, D-66, D-74, D-172 |
 | Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154, D-165, D-166, D-167, D-175, D-176, D-177 |
@@ -60,7 +60,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Outbound requests and SSRF | D-08, D-16, D-55, D-81, D-91, D-122, D-165, D-166, D-167 |
 | Built-in plugins | D-44, D-66, D-67, D-68, D-69, D-94, D-95, D-115, D-116, D-118 to D-121, D-130, D-134, D-144, D-149, D-180, D-181, D-182 |
 | Extensions and the marketplaces | D-17, D-40, D-41, D-75, D-94, D-122, D-143 |
-| Look, themes, custom CSS and JavaScript | D-42, D-92, D-93, D-110, D-125 |
+| Look, themes, custom CSS and JavaScript | D-42, D-92, D-93, D-110, D-125, D-189 |
 | Languages | D-109 |
 | Settings pages of the interface | D-22, D-96, D-106, D-107 |
 | Answer format | D-20, D-21, D-24, D-25, D-29, D-50, D-173 |
@@ -77,13 +77,13 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/wizard` | D-19, D-38, D-46, D-138 |
 | `GET /status` | D-21, D-46 |
 | `GET /launch` | D-21, D-23, D-29, D-50, D-88, D-92, D-93, D-121, D-123, D-125, D-128, D-158 |
-| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135, D-158, D-162, D-183 |
+| `/config` | D-06, D-07, D-53, D-112, D-116, D-125, D-128, D-131, D-132, D-133, D-134, D-135, D-158, D-162, D-183, D-189, D-191 |
 | `DELETE /import-notice` | D-158 |
-| `/users`, `/users/{id}` | D-05, D-15, D-52, D-57, D-185 |
+| `/users`, `/users/{id}` | D-05, D-15, D-52, D-57, D-185, D-188 |
 | `POST /users/register` | D-36, D-37, D-38 |
 | `POST /users/recover` | D-09, D-58, D-138, D-160 |
-| `/users/lock`, `/users/unlock` | D-73, D-161 |
-| `/users/2fa/{id}` | D-129, D-186 |
+| `/users/lock`, `/users/unlock` | D-73, D-161, D-188 |
+| `/users/2fa/{id}` | D-129, D-186, D-188 |
 | `POST /users/import/{type}` | D-82 |
 | `PUT /user/look` | D-125 |
 | `/groups` | D-31, D-51, D-164 |
@@ -130,10 +130,10 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/plugins/plexlibraries/*` | D-96, D-121 |
 | `/extensions*`, `/extension/{id}/…` | D-75, D-122 |
 | `/themes*` | D-92 |
-| `GET /appearance/custom.css`, `GET /appearance/custom.js` | D-92, D-93 |
+| `GET /appearance/custom.css`, `GET /appearance/custom.js` | D-92, D-93, D-189 |
 | `/certificate/custom` | D-98, D-104 |
 | `/database/journal` | D-97 |
-| `GET /log` | D-84 |
+| `GET /log`, `DELETE /log` | D-84, D-190 |
 | `GET /ip/{ip}`, `GET /help/smtp`, `GET /icon`, `GET /sponsors/github` | D-82 |
 | `GET /sponsors/*` | D-167 |
 
@@ -347,6 +347,10 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-185 | **A new password or a new e-mail address of the own account needs the current password.** `PUT /users/{id}` for the account of the session. A body with `password`, or with an `email` that is not the address the account has, must also hold the current password of the account in the field `currentPassword` (the field `password` is the new password here). Without it the answer is `422 "Enter the password of the account"`, with a wrong one `422 "The password is not the password of the account"`, the words of the unlink of D-105. A wrong password counts like a failed login of the account, so the limit of D-04 locks it out after `loginAttempts` tries. The checks of the fields come first, in the order of PHP. Other fields of the own account (name, picture) need no password, and an Admin or a Co-Admin who changes another account, or a script with the API key, needs none. An account that a login with a token or a provider made has a random password, as for the unlink of D-105: the person sets a password first, for example with a reset by e-mail. The account page has the field "Current password". PHP changes the own password and address for a session alone, so a stolen session could take the account over for good. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 | D-186 | **A change of the own second factor needs the password, or a code of the second factor.** `PUT /2fa` and `DELETE /2fa`, and `DELETE /users/2fa/{id}` for the own account. The body holds the password of the account in the field `password`, or a code of the second factor that the account has in the field `code`. An account without a second factor has no code, so turning one on takes the password: without it `422 "Enter the password of the account"`. A replacement or the removal of a second factor without either is `422 "Enter the password of the account or a code of its second factor"`, a wrong password `422 "The password is not the password of the account"`, a wrong code `422 "The code is not a code of the second factor of the account"`. A code works once, as for a login (D-159), and wrong tries count like failed logins (D-04). `DELETE /2fa` for an account without a second factor still answers `204` and needs nothing. The removal of the second factor of another user by an Admin or a Co-Admin (D-129) is unchanged. The account page asks for the password when it turns the second factor on, and for the password or a code when it turns it off. PHP changes the second factor for a session alone. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 | D-187 | **A link to an OpenID Connect provider needs the password of the account.** On top of D-90. The link starts with `POST /oidc/{provider}/link`, with the password of the account in the field `password`, the same check and answers as the unlink of D-105; a wrong password counts like a failed login (D-04). The answer is `{"address": <login page of the provider>}` with the sealed login cookie of D-88, which the server makes only after the check; the page then goes to that address. `GET /oidc/{provider}/link` is gone, so a visit of an address no longer starts a link. Before, a session alone could add a login through a provider that skips the second factor of Organizr. An account that a provider made has a random password: the person resets it by e-mail first. The account page asks for the password next to the buttons "Link to <name>". PHP has no link. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-188 | **Only an Admin changes the password, the address, the lock or the group of a Co-Admin.** Who manages a Co-Admin, on top of D-129. A Co-Admin who acts on the account of another Co-Admin is refused for (1) `PUT /users/{id}` with a `password`, an `email` that is not the stored address, a `locked` that is not the stored lock, or a `group_id` that is not the stored group: `401 "Cannot update admin unless you are admin"`; (2) `POST /users/lock/{id}` and `POST /users/unlock/{id}`: `401 "Only admins can lock or unlock admins"`; (3) `DELETE /users/2fa/{id}`: `401 "Only admins can remove the second factor of admins"`. These are the answers that an Admin account already gets. The group is in the list because a Co-Admin could otherwise move the other Co-Admin to the group "User", change the password, and move the account back. A Co-Admin still changes the name and the picture of another Co-Admin, every field of the own account (with the current password of D-185), and every field of the accounts below Co-Admin. An Admin and a script with the API key are unchanged. PHP lets a Co-Admin change every account but an Admin, so a Co-Admin could take over another Co-Admin. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-189 | **Only an Admin changes the custom style sheets.** `PUT /config` with `customCss` or `customThemeCss`. A Co-Admin gets `401` with `Config item: {key} can only be changed by an admin`, and the request changes nothing. `GET /appearance/custom.css` puts both into every page, the login page and the pages of the Admin among them, so a Co-Admin could hide, move or cover parts of those pages and trick the Admin into a click. These are the only settings that put a style sheet into the page; the themes and the color sets come from the style sheet of the interface. A Co-Admin still sees both settings, and the settings page shows them to a Co-Admin without letting them change them, as the custom JavaScript of D-125. PHP lets a Co-Admin change them. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-190 | **Only an Admin purges a log file.** `DELETE /log` and `DELETE /log/{number}`. A Co-Admin gets `401 "Not Authorized"`, and the file stays. The log holds what each Co-Admin did, so a Co-Admin could take away the record of their own actions. A Co-Admin still reads the log with `GET /log`. The page Logs shows the button "Purge Log" to an Admin only. PHP lets a Co-Admin purge the log. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-191 | **A Co-Admin who changes the address of a service enters its stored secrets again.** `PUT /config`. A Co-Admin sees a secret only as `***Secure***` (D-06), but the server sends it to the address of its service. So when a request of a Co-Admin changes the address of a service to another value while a secret of that service has a stored value, the same request must hold a new value for each such secret (an empty value takes the secret away). Otherwise the answer is `422` with `Config item: {secret} must be entered again when {address} changes`, and the request changes nothing. The pairs are a table in the code: each address of a service (for example `sonarrURL`, `ombiURL`, `jellyStatURL` and `jellyStatInternalURL`, `INVITES-nextcloud-url`, `PHPMAILER-smtpHost`) with the secrets that the server sends there (for example `sonarrToken`; `ombiToken` and `ombiFallbackPassword`). A request with the same address, or for a service without a stored secret, is unchanged, and so is every request of an Admin or a script with the API key. The settings page shows the refusal above the form. PHP lets a Co-Admin change the address alone, so the server would send the secret to an address of the Co-Admin's choosing. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 
 ## ✅ Kept exactly as PHP has it
 

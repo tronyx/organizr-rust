@@ -158,8 +158,23 @@ export const APPEARANCE: FormPage = {
       id: 'custom-code',
       title: 'Custom code',
       entries: [
-        { key: 'customCss', kind: 'code', label: 'Custom CSS', wide: true, language: 'css' },
-        { key: 'customThemeCss', kind: 'code', label: 'Theme CSS', wide: true, language: 'css' },
+        // The style sheets go into every page, so only the Admin changes them (D-189).
+        {
+          key: 'customCss',
+          kind: 'code',
+          label: 'Custom CSS',
+          wide: true,
+          language: 'css',
+          adminChanges: true,
+        },
+        {
+          key: 'customThemeCss',
+          kind: 'code',
+          label: 'Theme CSS',
+          wide: true,
+          language: 'css',
+          adminChanges: true,
+        },
         { kind: 'part', id: 'scripts-note', adminOnly: true },
         {
           key: 'customJava',

@@ -1,7 +1,8 @@
 <script lang="ts">
   // The page Logs: the settings of the log above the log of the server. The log shows the
-  // records of a log file in pages, filtered by level, with a live update and a button that
-  // purges the file. A saved page size or refresh time applies to it at once.
+  // records of a log file in pages, filtered by level, with a live update and, for the Admin,
+  // a button that purges the file (D-190). A saved page size or refresh time applies to it at
+  // once.
   import { api, failureText } from '../../lib/api';
   import {
     levelClass,
@@ -11,7 +12,9 @@
     type LogPage,
     type LogRecord,
   } from '../../lib/logs';
+  import { session } from '../../lib/session.svelte';
   import { LOG_LEVELS } from '../../lib/settingsForm';
+  import { ADMIN } from '../../lib/types';
   import { LOGS } from '../../settings/forms';
   import SettingsForm from '../../settings/SettingsForm.svelte';
 
@@ -41,6 +44,8 @@
   let open = $state<string | null>(null);
   let details = $state<LogRecord | null>(null);
 
+  /** Only the Admin purges a log file: the log holds what the Co-Admins did. */
+  const isAdmin = $derived(session.launch?.user?.groupID === ADMIN);
   const rows = $derived(
     (page?.results ?? []).filter((record): record is LogRecord => record !== null),
   );
@@ -187,15 +192,17 @@
       >
         Live update
       </button>
-      <button
-        type="button"
-        class="btn btn-sm btn-error"
-        disabled={busy || file === 'all' || noFile}
-        onclick={purge}
-      >
-        {#if busy}<span class="loading loading-spinner loading-xs"></span>{/if}
-        Purge Log
-      </button>
+      {#if isAdmin}
+        <button
+          type="button"
+          class="btn btn-sm btn-error"
+          disabled={busy || file === 'all' || noFile}
+          onclick={purge}
+        >
+          {#if busy}<span class="loading loading-spinner loading-xs"></span>{/if}
+          Purge Log
+        </button>
+      {/if}
     </div>
 
     {#if noFile}

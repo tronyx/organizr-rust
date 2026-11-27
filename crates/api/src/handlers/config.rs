@@ -78,15 +78,105 @@ const BACKUP_LOCATION: &str = "backupLocation";
 /// each gets the API key.
 const HEALTH_CHECK_SERVICES: &str = "HEALTHCHECKS-all-items";
 
+/// The addresses of the services that the server sends a stored secret to, each with
+/// those secrets. A Co-Admin sees a secret only as `***Secure***`, so a Co-Admin who
+/// changes such an address enters each stored secret again in the same request (D-191).
+/// Otherwise the server would send the secret to an address of the Co-Admin's choosing.
+const SERVICE_SECRETS: [(&[&str], &[&str]); 34] = [
+    (&["plexURL"], &["plexToken"]),
+    (&["embyURL"], &["embyToken"]),
+    (&["jellyfinURL"], &["jellyfinToken"]),
+    (&["tautulliURL"], &["tautulliApikey"]),
+    (&["ombiURL"], &["ombiToken", "ombiFallbackPassword"]),
+    (
+        &["overseerrURL"],
+        &["overseerrToken", "overseerrFallbackPassword"],
+    ),
+    (&["petioURL"], &["petioToken", "petioFallbackPassword"]),
+    (
+        &["komgaURL"],
+        &["komgaFallbackPassword", "komgaSSOMasterPassword"],
+    ),
+    (&["sonarrURL"], &["sonarrToken"]),
+    (&["lidarrURL"], &["lidarrToken"]),
+    (&["radarrURL"], &["radarrToken"]),
+    (&["couchpotatoURL"], &["couchpotatoToken"]),
+    (&["sickrageURL"], &["sickrageToken"]),
+    (&["jdownloaderURL"], &["jdownloaderPassword"]),
+    (&["sabnzbdURL"], &["sabnzbdToken"]),
+    (&["nzbgetURL"], &["nzbgetPassword"]),
+    (&["transmissionURL"], &["transmissionPassword"]),
+    (&["delugeURL"], &["delugePassword"]),
+    (&["qBittorrentURL"], &["qBittorrentPassword"]),
+    (
+        &["uTorrentURL"],
+        &["uTorrentPassword", "uTorrentToken", "uTorrentCookie"],
+    ),
+    (
+        &["rTorrentURL", "rTorrentURLOverride"],
+        &["rTorrentPassword"],
+    ),
+    (&["jackettURL"], &["jackettToken"]),
+    (&["prowlarrURL"], &["prowlarrToken"]),
+    (
+        &["homepageUserWatchStatsURL"],
+        &["homepageUserWatchStatsToken"],
+    ),
+    (
+        &["jellyStatURL", "jellyStatInternalURL"],
+        &["jellyStatApikey"],
+    ),
+    (&["healthChecksURL"], &["healthChecksToken"]),
+    (&["unifiURL"], &["unifiPassword", "unifiCookie"]),
+    (&["piholeURL"], &["piholeToken"]),
+    (&["adguardURL"], &["adGuardPassword"]),
+    (&["octoprintURL"], &["octoprintToken"]),
+    (&["uptimeKumaURL"], &["uptimeKumaToken"]),
+    (
+        &["INVITES-komga-uri"],
+        &[
+            "INVITES-komga-api-key",
+            "INVITES-komga-default-user-password",
+        ],
+    ),
+    (
+        &["INVITES-nextcloud-url"],
+        &["INVITES-nextcloud-admin-password"],
+    ),
+    (&["PHPMAILER-smtpHost"], &["PHPMAILER-smtpHostPassword"]),
+];
+
+/// The first address of a service that the changes move while a stored secret of that
+/// service is not in the changes, with that secret (D-191). A secret that the form sent
+/// back as `***Secure***` is not in the changes.
+fn secret_left_behind(
+    stored: &Settings,
+    changes: &[(String, Value)],
+) -> Option<(&'static str, &'static str)> {
+    let sent = |key: &str| changes.iter().find(|(name, _)| name == key);
+    SERVICE_SECRETS.iter().find_map(|(addresses, secrets)| {
+        let moved = addresses.iter().find(|address| {
+            sent(address).is_some_and(|(_, value)| stored.get(address).as_ref() != Some(value))
+        })?;
+        let secret = secrets.iter().find(|secret| {
+            let has_value = stored
+                .get(secret)
+                .is_some_and(|value| value.as_str().is_some_and(|text| !text.is_empty()));
+            has_value && sent(secret).is_none()
+        })?;
+        Some((*moved, *secret))
+    })
+}
+
 /// Whether only an Admin can change a setting: the API key, the settings that let a
 /// proxy say who the caller is, the scripts that run on every page, the default look
-/// (D-125), the trust of a custom HTML item with the HTML of a trusted item (D-131), and
-/// the settings that a login trusts (D-132), among them every setting of OpenID Connect,
-/// which picks the providers and the group that a login gives (D-133), and the services of
-/// the health checks plugin, which get the API key (D-134). Single sign-on sends the
-/// password of every login onward, so its switches are for Admins only, and so are its
-/// addresses while it is on (D-135). The folder of the backups is for Admins only too
-/// (D-183).
+/// (D-125), the style sheets of every page (D-189), the trust of a custom HTML item with
+/// the HTML of a trusted item (D-131), and the settings that a login trusts (D-132),
+/// among them every setting of OpenID Connect, which picks the providers and the group
+/// that a login gives (D-133), and the services of the health checks plugin, which get
+/// the API key (D-134). Single sign-on sends the password of every login onward, so its
+/// switches are for Admins only, and so are its addresses while it is on (D-135). The
+/// folder of the backups is for Admins only too (D-183).
 ///
 /// `settings` decides the settings that are for Admins only some of the time. Such a rule
 /// reads only settings that are always for Admins only, so for a Co-Admin the copy that
@@ -105,6 +195,8 @@ fn is_for_admins_only(key: &str, settings: &Settings) -> bool {
         || is_trusted_by_a_login(key, settings)
         || key == "customJava"
         || key == "customThemeJava"
+        || key == "customCss"
+        || key == "customThemeCss"
         || key == "layout"
         || key == "modernTheme"
         || key == "modernColorSet"
@@ -344,6 +436,14 @@ pub async fn change(
         }
     }
 
+    if caller.level() != GroupLevel::ADMIN
+        && let Some((address, secret)) = secret_left_behind(&state.settings(), &changes)
+    {
+        return Err(Refusal::unprocessable(&format!(
+            "Config item: {secret} must be entered again when {address} changes"
+        )));
+    }
+
     let keys: Vec<&str> = changes.iter().map(|(key, _)| key.as_str()).collect();
     tracing::info!(settings = ?keys, "settings were changed");
     state
@@ -360,7 +460,7 @@ mod tests {
     use organizr_settings::Settings;
     use serde_json::Value;
 
-    use super::is_for_admins_only;
+    use super::{SERVICE_SECRETS, is_for_admins_only};
 
     #[test]
     fn settings_for_admins_only() {
@@ -374,6 +474,8 @@ mod tests {
             "authProxyWhitelist",
             "customJava",
             "customThemeJava",
+            "customCss",
+            "customThemeCss",
             "layout",
             "modernTheme",
             "modernColorSet",
@@ -394,7 +496,6 @@ mod tests {
         }
         for key in [
             "title",
-            "customCss",
             "plexToken",
             "customHTML01",
             "embyURL",
@@ -411,6 +512,19 @@ mod tests {
         assert!(is_for_admins_only("customHTML01", &settings));
         for key in ["customHTML02", "customHTML1", "customHTML01x"] {
             assert!(!is_for_admins_only(key, &settings), "{key}");
+        }
+    }
+
+    #[test]
+    fn each_address_of_a_service_is_a_setting_with_secrets() {
+        for (addresses, secrets) in SERVICE_SECRETS {
+            for address in addresses {
+                assert!(Settings::KEYS.contains(address), "{address}");
+                assert!(!Settings::is_secret(address), "{address}");
+            }
+            for secret in secrets {
+                assert!(Settings::is_secret(secret), "{secret}");
+            }
         }
     }
 }

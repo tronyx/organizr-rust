@@ -1,5 +1,5 @@
 //! `GET /log[/{number}[/{trace_id}]]` and `DELETE /log[/{number}]`: the log of Organizr,
-//! for Admins and Co-Admins.
+//! which Admins and Co-Admins read and only Admins purge (D-190).
 //!
 //! `number` picks a file from the list of log files, the newest first, or `all` and
 //! `combined-logs` for all of them. It is never a path: a value that is not the place of
@@ -22,6 +22,10 @@ use crate::state::AppState;
 
 /// The level that the log routes ask for.
 const READER: GroupLevel = GroupLevel::CO_ADMIN;
+
+/// The level that purges a log file. The log holds what the Co-Admins did, so a
+/// Co-Admin cannot purge it (D-190).
+const PURGER: GroupLevel = GroupLevel::ADMIN;
 
 /// The number of records of a page when the query names none.
 const PAGE_SIZE: usize = 1000;
@@ -216,12 +220,13 @@ pub struct PageInfo {
     page: i64,
 }
 
-/// `DELETE /log[/{number}]`: deletes a log file.
+/// `DELETE /log[/{number}]`: deletes a log file, for an Admin.
 pub async fn purge(
     State(state): State<AppState>,
     Extension(caller): Extension<Caller>,
     parts: RawPathParams,
 ) -> Result<Envelope<NoData>, Refusal> {
+    caller.require(PURGER)?;
     let folder = folder_for(&state, &caller)?;
     let number = parts.iter().next().map(|(_, value)| value.to_owned());
     let files = files_in(folder).await?;

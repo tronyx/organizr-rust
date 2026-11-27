@@ -2,6 +2,8 @@ import { fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { parseRoute } from '../../lib/route.svelte';
+import { session } from '../../lib/session.svelte';
+import type { Launch } from '../../lib/types';
 import { logPage, logRecord, stubApi } from '../../test-helpers';
 import LogViewer from './LogViewer.svelte';
 
@@ -15,8 +17,14 @@ function queries(): URLSearchParams[] {
     .map((address) => address.searchParams);
 }
 
+/** Makes the person who looks at the page a member of the group of the level. */
+function signIn(groupID: number) {
+  session.launch = { user: { loggedin: true, groupID, locked: 0 } } as unknown as Launch;
+}
+
 afterEach(() => {
   vi.useRealTimers();
+  session.launch = null;
 });
 
 describe('LogViewer', () => {
@@ -54,6 +62,7 @@ describe('LogViewer', () => {
       'GET log/1': logPage([logRecord('older')]),
       'GET log/all': logPage([logRecord('everything')]),
     });
+    signIn(0);
     render(LogViewer, { ondone: () => {} });
     await screen.findByText('one');
 
@@ -112,6 +121,7 @@ describe('LogViewer', () => {
       },
     });
     const ondone = vi.fn();
+    signIn(0);
     render(LogViewer, { ondone });
 
     await fireEvent.click(await screen.findByRole('button', { name: 'Purge Log' }));
@@ -119,6 +129,16 @@ describe('LogViewer', () => {
     expect(await screen.findByText('There is no log file yet.')).toBeTruthy();
     expect(ondone).toHaveBeenCalledWith('The log file is purged.');
     expect(sent.filter((request) => request.method === 'DELETE')).toHaveLength(1);
+  });
+
+  it('leaves the purge to the Admin', async () => {
+    stubApi({ 'GET config': CONFIG, 'GET log/0': logPage([logRecord('x')]) });
+    signIn(1);
+    render(LogViewer, { ondone: () => {} });
+
+    await screen.findByText('x');
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Purge Log' })).toBeNull();
   });
 
   it('loads the log again and again while the live update is on', async () => {

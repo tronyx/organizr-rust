@@ -174,6 +174,7 @@ The section **Custom code** of **Settings › Customize › Appearance** has two
 - The server serves them as one file, `api/v2/appearance/custom.css` (Theme CSS first, then Custom CSS).
 - The page loads styles only from its own server. An `@import` or a font from another site in your CSS does not load.
 - Everybody can read that file, guests too, so keep secrets out of it.
+- Only the Admin can change them, because they style every page, the login page and the Admin's pages too. A Co-Admin sees them but can't change them (D-189).
 
 Custom CSS written for PHP Organizr aims at names these pages don't have. [Custom CSS](custom-css.md) lists the names to use, and shows how to change a PHP rule.
 
