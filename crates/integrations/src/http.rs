@@ -69,6 +69,9 @@ impl Outbound {
             Client::builder()
                 .user_agent(user_agent())
                 .connect_timeout(CONNECT_TIMEOUT)
+                // A redirect would otherwise send the address it came from, whose query
+                // or path may hold the key of the service, to the next host.
+                .referer(false)
         };
         let direct = || builder().redirect(reqwest::redirect::Policy::none());
         let keyed = || builder().redirect(same_host_redirects());
@@ -161,6 +164,7 @@ impl Outbound {
         Client::builder()
             .user_agent(user_agent())
             .connect_timeout(CONNECT_TIMEOUT)
+            .referer(false)
             .redirect(reqwest::redirect::Policy::none())
             .no_proxy()
             .resolve(host, address)
@@ -239,6 +243,7 @@ fn custom_clients(certificate: &CustomCertificate) -> Result<CustomClients, reqw
         Client::builder()
             .user_agent(user_agent())
             .connect_timeout(CONNECT_TIMEOUT)
+            .referer(false)
             .tls_certs_merge(roots.clone())
     };
     Ok(CustomClients {
@@ -507,14 +512,19 @@ mod tests {
         assert_eq!(answer.status(), 307);
         assert!(elsewhere.seen().is_empty(), "the key went to another place");
 
-        // A request without a key still follows the redirect.
+        // A request without a key still follows the redirect, and the address that it
+        // came from, whose query may hold a key, is not sent along (no `Referer`).
+        let away_with_key = format!("{away}?apikey=secret");
         let answer = outbound
-            .client_for(&away)
-            .get(&away)
+            .client_for(&away_with_key)
+            .get(&away_with_key)
             .send()
             .await
             .expect("the site answers");
         assert_eq!(answer.text().await.expect("a text"), "away");
+        let seen = elsewhere.seen();
+        assert_eq!(seen.len(), 1);
+        assert_eq!(seen[0].header("referer"), None, "the key went along");
     }
 
     #[tokio::test]
