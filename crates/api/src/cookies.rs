@@ -221,6 +221,16 @@ impl CookieScope {
         Ok(values)
     }
 
+    /// The `Set-Cookie` values that drop cookies of the name at the paths of the API,
+    /// where another host may have planted them, and leave the one at `/` (D-145).
+    pub fn delete_shadows(
+        &self,
+        name: &str,
+        now: SystemTime,
+    ) -> Result<Vec<HeaderValue>, CookieError> {
+        self.drop_shadows(name, now)
+    }
+
     /// The deletion of cookies of the name at the paths that a planted cookie would use
     /// to come before the one at `/`.
     fn drop_shadows(&self, name: &str, now: SystemTime) -> Result<Vec<HeaderValue>, CookieError> {
@@ -245,8 +255,9 @@ impl CookieScope {
 }
 
 /// The paths of the API, where a cookie planted by another host of the cookie domain
-/// would come before the session cookie at `/` (D-145).
-const SHADOW_PATHS: [&str; 2] = ["/api", "/api/v2"];
+/// would come before the session cookie at `/` (D-145). For a browser, `/api/v2/` with
+/// the slash is another path than `/api/v2`.
+const SHADOW_PATHS: [&str; 3] = ["/api", "/api/v2", "/api/v2/"];
 
 /// Adds `Set-Cookie` values to an answer, after the ones it already has.
 pub fn append(response: &mut Response, values: impl IntoIterator<Item = HeaderValue>) {

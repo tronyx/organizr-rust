@@ -151,7 +151,7 @@ async fn login_stores_a_session_for_the_token_of_the_cookie() {
         let session_cookies = answer.session_cookies();
         assert_eq!(session_cookies.len(), 2, "{:?}", answer.cookies);
         // A cookie of the same name that another host planted for the API is dropped.
-        for path in ["path=/api;", "path=/api/v2;"] {
+        for path in ["path=/api;", "path=/api/v2;", "path=/api/v2/;"] {
             let dropped = answer
                 .cookies
                 .iter()

@@ -12,6 +12,7 @@ use axum::Router;
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use http_body_util::BodyExt;
+use organizr_auth::SessionToken;
 use organizr_db::Database;
 use organizr_domain::{SessionId, Timestamp};
 use organizr_testkit::engines::on_each_engine;
@@ -277,15 +278,39 @@ async fn planted_session_cookie_hides_no_session_and_is_dropped() {
         let (logged_in, cookies) =
             launch_with(&app, &format!("{SESSION_COOKIE}=not-a-session")).await;
         assert!(!logged_in);
-        for path in ["/", "/api", "/api/v2"] {
+        for path in ["/", "/api", "/api/v2", "/api/v2/"] {
             assert!(drops_at(&cookies, path), "{path}: {cookies:?}");
         }
+
+        // Plants that are no session token at all do not hide the real session.
+        let junk = vec![format!("{SESSION_COOKIE}=junk"); 6].join("; ");
+        let (logged_in, cookies) = launch_with(&app, &format!("{junk}; {session}")).await;
+        assert!(logged_in, "{cookies:?}");
+
+        // Plants that look like tokens can hide the real session from a request, but the
+        // answer leaves the cookie at `/` alone, so the browser stays logged in. The
+        // plants at the paths of the API are dropped.
+        let tokens: Vec<String> = (0..4)
+            .map(|_| {
+                let token = SessionToken::generate().expect("the system gives random bytes");
+                format!("{SESSION_COOKIE}={}", token.expose())
+            })
+            .collect();
+        let hidden = format!("{}; {session}", tokens.join("; "));
+        let (logged_in, cookies) = launch_with(&app, &hidden).await;
+        assert!(!logged_in);
+        assert!(!drops_at(&cookies, "/"), "{cookies:?}");
+        for path in ["/api", "/api/v2", "/api/v2/"] {
+            assert!(drops_at(&cookies, path), "{path}: {cookies:?}");
+        }
+        let (logged_in, cookies) = launch_with(&app, &session).await;
+        assert!(logged_in, "{cookies:?}");
 
         // A logout behind a planted cookie ends the real session, and drops every path.
         let answer = log_out(&app, &planted, &[]).await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
         assert_eq!(session_ids(database).await, Vec::new());
-        for path in ["/", "/api", "/api/v2"] {
+        for path in ["/", "/api", "/api/v2", "/api/v2/"] {
             assert!(
                 drops_at(&answer.cookies, path),
                 "{path}: {:?}",

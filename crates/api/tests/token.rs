@@ -223,10 +223,10 @@ async fn expired_session_makes_the_caller_a_guest_and_drops_the_cookie() {
         let revoke = delete(&app, "1", &cookie, &[]).await;
 
         assert_eq!(me.data(), Value::Null);
-        // Dropped at `/`, and at the two paths of the API that a planted cookie would use
+        // Dropped at `/`, and at the three paths of the API that a planted cookie would use
         // (D-145), each for the wide and the own domain.
         let dropped = me.cookies_named(SESSION_COOKIE);
-        assert_eq!(dropped.len(), 6, "{:?}", me.cookies);
+        assert_eq!(dropped.len(), 8, "{:?}", me.cookies);
         for cookie in dropped {
             assert!(
                 cookie.starts_with(&format!("{SESSION_COOKIE}=;")),
@@ -316,7 +316,7 @@ async fn browser_rule_rejects_a_session_from_another_browser() {
         assert_eq!(same.data()["username"], json!("admin"));
         assert_eq!(same.cookies_named(SESSION_COOKIE), Vec::<&str>::new());
         assert_eq!(other.data(), Value::Null);
-        assert_eq!(other.cookies_named(SESSION_COOKIE).len(), 6);
+        assert_eq!(other.cookies_named(SESSION_COOKIE).len(), 8);
 
         // Asking about the token from another browser: PHP answers "success" with
         // `false` and no message.

@@ -156,19 +156,24 @@ pub async fn identify_caller(
         .is_some_and(|presented| is_api_key(&presented, &settings.api_key));
 
     // An empty cookie counts as no cookie, as in the PHP application. Each cookie of
-    // the name counts, up to a few, and the first that names a session wins: another
-    // host of the cookie domain could have planted one that comes first (D-145).
+    // the name that holds a token counts, up to a few, and the first that names a
+    // session wins: another host of the cookie domain could have planted one that comes
+    // first (D-145).
     let sent: Vec<&str> = cookies::cookie_values(headers, &cookie_name)
         .filter(|value| !value.is_empty())
-        .take(MOST_SESSION_COOKIES)
         .collect();
+    let several = sent.len() > 1;
     let mut identity = if sent.is_empty() {
         Identity::Guest
     } else {
         Identity::Rejected
     };
     let rule = browser_rule(&settings, headers);
-    for token in sent.into_iter().filter_map(SessionToken::parse) {
+    let tokens = sent
+        .into_iter()
+        .filter_map(SessionToken::parse)
+        .take(MOST_SESSION_COOKIES);
+    for token in tokens {
         match session::check(state.database(), &token, now_stamp(now), rule).await {
             Ok(SessionCheck::Valid(authenticated)) => {
                 identity = Identity::User(Box::new(LoggedInCaller {
@@ -197,7 +202,16 @@ pub async fn identify_caller(
     let mut response = next.run(request).await;
 
     if let Some(scope) = drop_cookie {
-        match scope.delete_session(&cookie_name, now) {
+        // With several cookies of the name, the session cookie at `/` may be one that
+        // was not read, behind cookies that another host planted, so only the cookies at
+        // the paths of the API are dropped; otherwise the plants could log the browser
+        // out again and again (D-145).
+        let dropped = if several {
+            scope.delete_shadows(&cookie_name, now)
+        } else {
+            scope.delete_session(&cookie_name, now)
+        };
+        match dropped {
             // Before the cookies of the handler: a login in the same request sets the
             // cookie again, and the browser keeps the last one.
             Ok(values) => cookies::prepend(&mut response, values),
