@@ -101,6 +101,8 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - An OpenID Connect login comes back to Organizr once: a copy of its login cookie is refused until the cookie expires.
 - The approval of an extension also names the level of callers that the dialog showed, and a call of an extension ends after 30 seconds, also while it waits.
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
+- OpenID Connect links an existing account by e-mail address only when the provider says it checked the address; a missing `email_verified` no longer counts (D-192).
+- A member who is not an Admin can have only 10 invite e-mails sent in 24 hours (D-193).
 
 ### Documentation
 

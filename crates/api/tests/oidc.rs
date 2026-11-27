@@ -784,6 +784,26 @@ async fn address_that_the_provider_did_not_check_links_no_account() {
 }
 
 #[tokio::test]
+async fn address_without_a_verified_flag_links_no_account() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        store_user(database, "robin.smith", "robin@example.com", 2).await;
+        let provider = OidcProvider::start().await;
+        provider.set(|behavior| {
+            behavior.person.remove("email_verified");
+        });
+        let app = app(database, &provider, &[]);
+
+        let answer = log_in(&app, &provider).await;
+
+        // The provider did not say that it checked the address (D-192).
+        assert_failed(&answer, "Failed to create or link user");
+        assert_eq!(auth_service(&app, "robin.smith").await, json!("internal"));
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn without_linking_only_accounts_of_the_provider_are_used() {
     on_each_engine(async |database| {
         seed::installed(database).await;

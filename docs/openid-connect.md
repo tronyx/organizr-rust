@@ -134,7 +134,7 @@ A value that isn't a level from 0 to 999 doesn't count. When no Organizr group h
 For each linked account, Organizr stores the person's **subject** (`sub`) at the provider: the provider's permanent ID for that account, taken from the checked ID token. At each login, Organizr looks for the account in this order:
 
 1. **The account linked to this subject at this provider.** A new user name or e-mail address at the provider doesn't matter.
-2. **Else, an account with the same user name** (any letter case) as `preferred_username`, **or else the same e-mail address**. The display name (`name`) never finds an account, because people can often change it at the provider (D-184). The e-mail address is skipped when the provider says it hasn't checked it (`email_verified` is `false`). Such an account is used only:
+2. **Else, an account with the same user name** (any letter case) as `preferred_username`, **or else the same e-mail address**. The display name (`name`) never finds an account, because people can often change it at the provider (D-184). The e-mail address is used only when the provider says it checked it (`email_verified` is `true`). A provider that leaves out the flag, or sends `false`, no longer finds an account by e-mail (D-192). Such an account is used only:
    - when it's linked to no provider yet, **Link Existing Users** is on, and it is **not** an Admin or Co-Admin account; or
    - when it's linked to this provider but has no subject yet: an account that PHP Organizr linked, or that an older version of this application linked.
 
@@ -146,7 +146,7 @@ The first login of a linked account without a subject decides: that login's subj
 > [!IMPORTANT]
 > **Linking never hands out an Admin or Co-Admin account by name or e-mail address.** Such an account logs in through a provider only after it was linked on purpose (see below), whatever the settings say. The level counts as stored at the time of the login.
 >
-> Switch **Link Existing Users** on only when the provider decides the user names and e-mail addresses, checks e-mail addresses, and doesn't let people sign themselves up. Some providers leave out `email_verified`; Organizr then treats the address as checked.
+> Switch **Link Existing Users** on only when the provider decides the user names and e-mail addresses, checks e-mail addresses, and doesn't let people sign themselves up. Some providers leave out `email_verified`; Organizr then treats the address as not checked and doesn't link by e-mail. Such a provider can still link an account by user name.
 
 ### 👑 Link an Admin account safely
 

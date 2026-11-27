@@ -40,6 +40,16 @@ impl<'a> Invites<'a> {
             .await?)
     }
 
+    /// The number of invites that the person with the user name made at or after the
+    /// time, in seconds since 1970.
+    pub async fn count_since(&self, invited_by: &str, since: i64) -> Result<u64, DbError> {
+        Ok(invite::Entity::find()
+            .filter(invite::Column::InvitedBy.eq(invited_by))
+            .filter(invite::Column::CreatedAt.gte(since))
+            .count(self.connection)
+            .await?)
+    }
+
     /// The invite with the code, whatever its letter case.
     pub async fn find(&self, code: &str) -> Result<Option<Invite>, DbError> {
         let row = invite::Entity::find()

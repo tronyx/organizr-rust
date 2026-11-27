@@ -758,6 +758,44 @@ async fn invited_person_gets_an_e_mail_with_the_code_when_the_mailer_is_on() {
 }
 
 #[tokio::test]
+async fn member_may_send_ten_invite_mails_in_a_day_and_an_admin_any_number() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let mailer = [
+            ("PHPMAILER-enabled", json!(true)),
+            ("PHPMAILER-smtpHost", json!("smtp.example.com")),
+        ];
+        let (app, _outbox) = app_with(database, &plex, &mailer);
+        let robin = seed::logged_in(database, &app, "robin", 4).await;
+        for number in 0..10 {
+            let made = invite(&app, As::User(&robin), &format!("r{number}")).await;
+            assert_eq!(made.status, StatusCode::OK, "{number}");
+        }
+
+        let refused = invite(&app, As::User(&robin), "r10").await;
+        assert_eq!(refused.status, StatusCode::TOO_MANY_REQUESTS, "{refused:?}");
+        assert_eq!(
+            refused.message(),
+            json!("Too many invite e-mails in the last 24 hours")
+        );
+        // The refused invite is not stored, and an Admin has no such limit (D-193).
+        let listed = call(&app, As::Admin, "GET", "/plugins/invites", None).await;
+        assert_eq!(codes(&listed).len(), 10);
+        for number in 0..12 {
+            let made = invite(&app, As::Admin, &format!("a{number}")).await;
+            assert_eq!(made.status, StatusCode::OK, "{number}");
+        }
+
+        // Without the mailer, no e-mail goes out, so there is nothing to count.
+        let (app, _outbox) = app_with(database, &plex, &[]);
+        let made = invite(&app, As::User(&robin), "plain").await;
+        assert_eq!(made.status, StatusCode::OK, "{made:?}");
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn wrong_codes_lock_the_client_out_as_failed_logins_do() {
     on_each_engine(async |database| {
         seed::installed(database).await;

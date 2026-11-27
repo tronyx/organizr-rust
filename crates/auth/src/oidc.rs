@@ -229,8 +229,8 @@ enum LinkState {
 ///
 /// 1. The account that is linked to the subject of the ID token at this provider.
 /// 2. Else the account with the user name, whatever the letter case, when the name is the
-///    preferred user name of the provider, or else, unless the provider says that it has
-///    not checked it, the account with the e-mail address.
+///    preferred user name of the provider, or else, only when the provider says that it has
+///    checked it (`email_verified` is true), the account with the e-mail address.
 ///    Such an account is used only when it is linked to no provider yet (and then only
 ///    with `link_existing`, and never an Admin or a Co-Admin account), or when it is
 ///    linked to this provider without a stored subject, as an imported account is. The
@@ -264,7 +264,7 @@ pub async fn find_or_create(
     };
     let candidate = match by_name {
         Some(user) => Some(user),
-        None if !account.email.is_empty() && account.email_verified != Some(false) => {
+        None if !account.email.is_empty() && account.email_verified == Some(true) => {
             users.find_by_email(account.email).await?
         }
         None => None,

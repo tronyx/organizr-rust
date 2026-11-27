@@ -40,7 +40,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 |---|---|
 | Sign-in, sessions and lockouts | D-02, D-03, D-04, D-09, D-18, D-27, D-30, D-33, D-34, D-35, D-57, D-58, D-73, D-127, D-129, D-139, D-140, D-145, D-146, D-159, D-160, D-161, D-163, D-185, D-186, D-187 |
 | Logins through Plex, LDAP, FTP, Emby and Jellyfin | D-60, D-85, D-86, D-99, D-107, D-124, D-127, D-137, D-154, D-165 |
-| OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156, D-184, D-187 |
+| OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156, D-184, D-187, D-192 |
 | Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150, D-165, D-178 |
 | Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157, D-170, D-171 |
 | The set-up wizard and the database | D-19, D-38, D-46, D-97, D-158 |
@@ -51,7 +51,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Backups and restore | D-10, D-26, D-74, D-147, D-169, D-183 |
 | Updates | D-23 |
 | Log, errors and request ids | D-13, D-34, D-84, D-190 |
-| E-mail | D-09, D-58, D-82, D-138, D-160, D-179 |
+| E-mail | D-09, D-58, D-82, D-138, D-160, D-179, D-193 |
 | Scheduled jobs | D-33, D-43, D-66, D-74, D-172 |
 | Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154, D-165, D-166, D-167, D-175, D-176, D-177 |
 | Custom HTML items | D-61, D-76, D-111, D-131 |
@@ -100,7 +100,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/auth/…`, `/auth-{group}` (forward auth) | D-01, D-59, D-136, D-141, D-157, D-170, D-171 |
 | `POST /plex/register`, `POST /emby/register` | D-83, D-180 |
 | `GET /plex/servers` | D-107 |
-| `/oidc/*` | D-87, D-88, D-89, D-90, D-105, D-184, D-187 |
+| `/oidc/*` | D-87, D-88, D-89, D-90, D-105, D-184, D-187, D-192 |
 | `GET /oauth/trakt` | D-81 |
 | `GET /homepage/items`, `/homepage/html/{number}` | D-61, D-76 |
 | `GET /homepage/image` | D-64, D-77, D-81 |
@@ -125,7 +125,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/plugins/healthchecks/*` | D-66, D-130, D-134 |
 | `/plugins/speedtest/*` | D-67 |
 | `/plugins/bookmark/*` | D-32, D-68, D-115 |
-| `/plugins/invites/*` | D-69, D-118, D-119, D-120, D-180, D-181, D-182 |
+| `/plugins/invites/*` | D-69, D-118, D-119, D-120, D-180, D-181, D-182, D-193 |
 | `/plugins/php-mailer/*` | D-58, D-179 |
 | `/plugins/plexlibraries/*` | D-96, D-121 |
 | `/extensions*`, `/extension/{id}/…` | D-75, D-122 |
@@ -351,6 +351,8 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-189 | **Only an Admin changes the custom style sheets.** `PUT /config` with `customCss` or `customThemeCss`. A Co-Admin gets `401` with `Config item: {key} can only be changed by an admin`, and the request changes nothing. `GET /appearance/custom.css` puts both into every page, the login page and the pages of the Admin among them, so a Co-Admin could hide, move or cover parts of those pages and trick the Admin into a click. These are the only settings that put a style sheet into the page; the themes and the color sets come from the style sheet of the interface. A Co-Admin still sees both settings, and the settings page shows them to a Co-Admin without letting them change them, as the custom JavaScript of D-125. PHP lets a Co-Admin change them. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 | D-190 | **Only an Admin purges a log file.** `DELETE /log` and `DELETE /log/{number}`. A Co-Admin gets `401 "Not Authorized"`, and the file stays. The log holds what each Co-Admin did, so a Co-Admin could take away the record of their own actions. A Co-Admin still reads the log with `GET /log`. The page Logs shows the button "Purge Log" to an Admin only. PHP lets a Co-Admin purge the log. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 | D-191 | **A Co-Admin who changes the address of a service enters its stored secrets again.** `PUT /config`. A Co-Admin sees a secret only as `***Secure***` (D-06), but the server sends it to the address of its service. So when a request of a Co-Admin changes the address of a service to another value while a secret of that service has a stored value, the same request must hold a new value for each such secret (an empty value takes the secret away). Otherwise the answer is `422` with `Config item: {secret} must be entered again when {address} changes`, and the request changes nothing. The pairs are a table in the code: each address of a service (for example `sonarrURL`, `ombiURL`, `jellyStatURL` and `jellyStatInternalURL`, `INVITES-nextcloud-url`, `PHPMAILER-smtpHost`) with the secrets that the server sends there (for example `sonarrToken`; `ombiToken` and `ombiFallbackPassword`). A request with the same address, or for a service without a stored secret, is unchanged, and so is every request of an Admin or a script with the API key. The settings page shows the refusal above the form. PHP lets a Co-Admin change the address alone, so the server would send the secret to an address of the Co-Admin's choosing. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-192 | **An OpenID Connect login links an existing account by e-mail address only when the provider says it checked the address.** The accounts of the OpenID Connect login, on top of D-89 and D-184. The address of the person finds an account only when the claim `email_verified` is `true`. Before, a provider that left the claim out counted as having checked the address, and only `false` stopped the match. Now a missing claim counts like `false`: no account is found by e-mail, so the login continues as for an unknown person (a new account with **Auto Create Users**, else a refusal). An account is still found by its user name (`preferred_username`), and an account that is already linked to the subject still logs in. A provider that leaves out `email_verified` and relied on the e-mail match must send the claim or match by user name. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-193 | **A member who is not an Admin can have only 10 invite e-mails sent in 24 hours.** `POST /plugins/invites`, on top of D-69. Every invite sends an e-mail with the code to an address that the member types, so a member could use the install to send mail to anybody. When the mailer is on, a member below Admin who made 10 invites in the last 24 hours (counted from the stored invites by their time and their maker) gets `429 "Too many invite e-mails in the last 24 hours"`, and the invite is not stored. An Admin and a caller with the API key have no limit. PHP has no such limit. Invites that a member deleted no longer count. Without the mailer, nothing is sent and nothing is counted. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 
 ## ✅ Kept exactly as PHP has it
 

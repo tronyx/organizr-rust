@@ -149,6 +149,7 @@ The invite counts as used even when Nextcloud makes no user, for example because
 | Emby URL/Token not set | **Emby server address** or **Emby API key** is empty |
 | User is locked out | This address sent too many wrong codes. Wait for the **Login Lockout Seconds** to pass (see [Keep invites safe](#-keep-invites-safe)) |
 | Maximum number of invites reached | The user has as many invites as **Maximum number of invites permitted for users.** allows |
+| Too many invite e-mails in the last 24 hours | With e-mail on, a user below Admin made 10 invites in the last 24 hours. Wait, or ask an Admin to make the invite (D-193) |
 
 The code was used but nothing was shared? Check that **Media Server** is **Plex**.
 

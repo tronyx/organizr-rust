@@ -8,6 +8,7 @@ use std::time::{Duration, Instant, SystemTime};
 
 use axum::Extension;
 use axum::extract::{Path, State};
+use axum::http::StatusCode;
 use organizr_auth::login_limit::{Attempt, LimitPolicy};
 use organizr_db::DbError;
 use organizr_domain::email::{self, php_trim};
@@ -39,6 +40,12 @@ const CODE_LIMIT: usize = 50;
 
 /// The most characters of a name or an e-mail address.
 const TEXT_LIMIT: usize = 255;
+
+/// The most invite e-mails that a member who is not an Admin makes go out in one day.
+const MAIL_LIMIT: u64 = 10;
+
+/// The length of that day, in seconds.
+const MAIL_WINDOW: i64 = 24 * 60 * 60;
 
 /// An invite as the API shows it, with the field names of the PHP application.
 #[derive(Debug, Serialize)]
@@ -159,6 +166,18 @@ pub async fn create(
     if !is_manager(&caller) && most != 0 && invites.count_of(&maker).await? >= most {
         return Err(Refusal::conflict("Maximum number of invites reached"));
     }
+    // Every invite sends an e-mail to an address of the member's choice, so a member
+    // could use the install to send spam. An Admin has no limit (D-193).
+    let now = now_stamp(SystemTime::now()).unix_seconds();
+    if settings.mailer_enabled
+        && caller.level() != GroupLevel::ADMIN
+        && invites.count_since(&maker, now - MAIL_WINDOW).await? >= MAIL_LIMIT
+    {
+        return Err(Refusal::Request(
+            StatusCode::TOO_MANY_REQUESTS,
+            "Too many invite e-mails in the last 24 hours".to_owned(),
+        ));
+    }
 
     // What PHP takes for "nothing": no value, the empty text, and the text `0`.
     let field = |name: &str, message: &str| {
@@ -182,7 +201,7 @@ pub async fn create(
 
     let new = NewInvite {
         code: code.clone(),
-        created_at: now_stamp(SystemTime::now()).unix_seconds(),
+        created_at: now,
         email: address.clone(),
         username: username.clone(),
         kind: settings.invites_type_include.clone(),
