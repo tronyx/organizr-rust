@@ -3263,6 +3263,7 @@ dependencies = [
 name = "organizr-plugins"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "lettre",
  "organizr-integrations",
  "organizr-settings",

@@ -248,7 +248,9 @@ async fn netdata_gives_one_number_for_each_chart_that_is_on() {
         let answer = get(&app, "/homepage/netdata/data").await;
         assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
         let data = answer.data();
-        assert_eq!(data["url"], json!(service.url()));
+        // The page does not use the address of Netdata, so viewers do not get it (D-196).
+        assert_eq!(data["url"], json!(""));
+        assert!(!answer.body.contains(&service.url()), "{}", answer.body);
         let charts = data["data"].as_array().expect("the charts are a list");
         assert_eq!(charts.len(), 6);
         assert_eq!(

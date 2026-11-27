@@ -30,4 +30,6 @@ wasmtime-wasi = { workspace = true, optional = true }
 [dev-dependencies]
 organizr-testkit.workspace = true
 
+axum.workspace = true
+
 tokio = { workspace = true, features = ["time"] }

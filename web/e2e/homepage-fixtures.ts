@@ -1034,7 +1034,7 @@ export const HOMEPAGE_FIXTURES: HomepageFixture[] = [
       {
         pattern: 'homepage/netdata/data',
         normal: {
-          url: 'https://netdata.invalid',
+          url: '',
           data: [
             {
               title: 'CPU',

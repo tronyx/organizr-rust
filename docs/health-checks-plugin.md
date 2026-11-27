@@ -89,6 +89,8 @@ New services, and checks you import from Healthchecks, start with the switch off
 
 The catch: the key goes to **every** address of a service with the switch on, and Organizr doesn't check the service's certificate (many services on a home network have one that no authority signed). So anybody who can watch the traffic between Organizr and a listed address can copy the key and get Admin rights. Over `http://`, the key travels in plain text.
 
+A request with the key follows a redirect only on the same host and port, or from `http://` to `https://` on the same host. It stops at a redirect to another host, so the key doesn't go there, and the check counts as failed. If a service sends visitors to another host, such as a login portal, check the address it sends them to, or switch **API key** off (D-194).
+
 The safe setup:
 
 1. Switch **API key** on only for services you run yourself, behind Organizr's forward auth. Never for a site of somebody else.

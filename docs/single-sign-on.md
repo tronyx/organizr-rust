@@ -62,8 +62,10 @@ Ombi, Overseerr and Petio can have a fallback user: `ombiFallbackUser` with `omb
 
 For Overseerr, the fallback user is an e-mail address.
 
+A user gets the fallback account only when the user sees the application in Organizr: the user has the level of its homepage item (**Ombi** and **Overseerr**, Co-Admins by default), or sees an enabled tab of it. A tab counts when its name or address holds the name of the application, such as a tab **Ombi** or `https://example.com/petio/`, or when its address is on the host and port of the application's **URL**. Petio has no homepage item, so for Petio only a tab counts. PHP Organizr gives the fallback account to every user (D-195).
+
 > [!WARNING]
-> **Everyone the application doesn't know gets the rights of the fallback account**: guests who signed up with the registration password included. Make it an account with the fewest rights, never an admin of the application.
+> **Everyone the application doesn't know, and who sees the application, gets the rights of the fallback account**: guests who signed up with the registration password included. Make it an account with the fewest rights, never an admin of the application.
 
 ## 📥 Ombi imports its users
 

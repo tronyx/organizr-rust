@@ -5,7 +5,7 @@
 
   interface Answer {
     data: {
-      /** The address of OctoPrint, as the settings hold it. */
+      /** The address of OctoPrint, only when the stream of the webcam is a path of it. */
       url: string;
       job: {
         state?: string | null;

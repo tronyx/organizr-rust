@@ -15,6 +15,7 @@ use organizr_auth::password::{self, PasswordCheck};
 use organizr_auth::secrets::plex_token_name;
 use organizr_auth::two_factor::code_at;
 use organizr_db::Database;
+use organizr_domain::{GroupLevel, LevelRange, NewTab, TabKind};
 use organizr_testkit::engines::on_each_engine;
 use organizr_testkit::http::{Answer, As, call};
 use organizr_testkit::outbox::Outbox;
@@ -1002,6 +1003,116 @@ async fn first_login_with_plex_has_ombi_import_the_plex_users() {
         assert_eq!(again.status, StatusCode::OK, "{}", again.body);
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
         assert_eq!(ombi_imports(&ombi, 2).await.len(), 1);
+    })
+    .await;
+}
+
+/// Stores an enabled tab for the levels from Admin down to `least_access`.
+async fn store_tab(database: &Database, name: &str, url: &str, least_access: u16) {
+    let category = database
+        .categories()
+        .list()
+        .await
+        .expect("the categories can be read")
+        .into_iter()
+        .next()
+        .expect("the seed has a category");
+    let least_access = GroupLevel::new(least_access).expect("the level is valid");
+    database
+        .tabs()
+        .insert(NewTab {
+            position: 10,
+            category: category.id,
+            name: name.to_owned(),
+            url: Some(url.to_owned()),
+            url_local: None,
+            is_default: false,
+            enabled: true,
+            access: LevelRange::up_to(least_access),
+            add_to_admin: false,
+            image: None,
+            kind: TabKind::Iframe,
+            splash: false,
+            ping: false,
+            ping_url: None,
+            timeout: false,
+            timeout_ms: None,
+            preload: false,
+        })
+        .await
+        .expect("the tab can be stored");
+}
+
+#[tokio::test]
+async fn fallback_accounts_go_only_to_users_who_see_the_application() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let plex = services::plex_tv().await;
+        let (ombi, overseerr) = (services::ombi().await, services::overseerr().await);
+        let petio = services::petio().await;
+        let mut settings = vec![
+            ("loginAttempts", json!("1000000")),
+            ("ssoOmbi", json!(true)),
+            ("ombiURL", json!(ombi.url())),
+            ("ombiFallbackUser", json!(LOCAL_ACCOUNT.0)),
+            ("ombiFallbackPassword", json!(LOCAL_ACCOUNT.2)),
+            ("ssoOverseerr", json!(true)),
+            ("overseerrURL", json!(overseerr.url())),
+            ("overseerrFallbackUser", json!(LOCAL_ACCOUNT.1)),
+            ("overseerrFallbackPassword", json!(LOCAL_ACCOUNT.2)),
+            ("ssoPetio", json!(true)),
+            ("petioURL", json!(petio.url())),
+            ("petioFallbackUser", json!(LOCAL_ACCOUNT.0)),
+            ("petioFallbackPassword", json!(LOCAL_ACCOUNT.2)),
+        ];
+        let app = app_with(database, &plex, &settings);
+        seed::logged_in(database, &app, "zed", 4).await;
+        // A tab of Petio that only Co-Admins see.
+        store_tab(database, "Petio", "https://requests.example.com", 1).await;
+        let fallback_asked = || {
+            ombi.seen()
+                .iter()
+                .chain(&overseerr.seen())
+                .chain(&petio.seen())
+                .filter(|seen| seen.body.contains(LOCAL_ACCOUNT.2))
+                .count()
+        };
+
+        // The homepage items of Ombi and Overseerr are for Co-Admins, as by default, and
+        // the user does not see the tab of Petio: no fallback account.
+        let answer = log_in_with_password(&app, "zed", seed::USER_PASSWORD).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        for name in ["Auth", "connect.sid", "petio_jwt"] {
+            assert!(cookie(&answer, name).is_none(), "{name} is set");
+        }
+        assert_eq!(fallback_asked(), 0);
+
+        // The Admin still gets them.
+        let answer = log_in_with_password(&app, seed::ADMIN_NAME, seed::ADMIN_PASSWORD).await;
+        assert!(cookie(&answer, "Auth").is_some_and(|c| c.contains("ombi-token-of-fallback")));
+        assert!(cookie(&answer, "petio_jwt").is_some_and(|c| c.contains("of-fallback")));
+
+        // With the homepage items for users, and a tab of Petio that users see, the user
+        // gets the fallback accounts.
+        settings.extend([
+            ("homepageOmbiAuth", json!("4")),
+            ("homepageOverseerrAuth", json!("4")),
+        ]);
+        store_tab(database, "Requests", "https://example.com/petio/", 4).await;
+        let app = app_with(database, &plex, &settings);
+        let answer = log_in_with_password(&app, "zed", seed::USER_PASSWORD).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert!(
+            cookie(&answer, "Auth").is_some_and(|c| c.starts_with("Auth=ombi-token-of-fallback;"))
+        );
+        assert!(
+            cookie(&answer, "connect.sid")
+                .is_some_and(|c| c.contains("overseerr-session-of-fallback"))
+        );
+        assert!(
+            cookie(&answer, "petio_jwt")
+                .is_some_and(|c| c.starts_with("petio_jwt=petio-token-of-fallback;"))
+        );
     })
     .await;
 }

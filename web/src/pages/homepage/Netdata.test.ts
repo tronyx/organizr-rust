@@ -11,7 +11,7 @@ describe('Netdata', () => {
     stubApi({
       'GET homepage/netdata/data': {
         data: {
-          url: 'http://netdata.example.com:19999',
+          url: '',
           data: [
             {
               title: 'CPU',

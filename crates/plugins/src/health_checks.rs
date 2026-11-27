@@ -154,16 +154,22 @@ fn is_web_address(address: &str) -> bool {
 /// Asks one address of a service. With a key, the request carries the API key of
 /// Organizr in the header `Token`, so a service behind the forward auth of Organizr lets
 /// it in. The certificate of the service is not checked, as in the PHP application.
+///
+/// A request with the key follows a redirect only on the same host. It stops at a
+/// redirect to another host, so the key stays with the service, and the check fails
+/// (D-194).
 async fn answers(http: &Outbound, address: &str, api_key: Option<&str>, rules: Rules) -> bool {
     let address = address.trim();
     if !is_web_address(address) {
         tracing::warn!("an address of a health check has no http:// or https://");
         return false;
     }
-    let mut request = http
-        .client(address, true)
-        .get(address)
-        .timeout(SERVICE_TIME_LIMIT);
+    let client = if api_key.is_some() {
+        http.keyed_client(address, true)
+    } else {
+        http.client(address, true)
+    };
+    let mut request = client.get(address).timeout(SERVICE_TIME_LIMIT);
     if let Some(key) = api_key {
         request = request.header("Token", key);
     }
@@ -332,5 +338,47 @@ mod tests {
         assert!(loose.passes(401));
         assert!(loose.passes(403));
         assert!(!loose.passes(404));
+    }
+
+    #[tokio::test]
+    async fn key_does_not_follow_a_redirect_to_another_place() {
+        use axum::Router;
+        use axum::response::Redirect;
+        use axum::routing::get;
+        use organizr_integrations::http::Outbound;
+        use organizr_testkit::services::StandIn;
+
+        let elsewhere = StandIn::start(Router::new().route("/up", get(|| async { "up" }))).await;
+        let to = format!("{}/up", elsewhere.url());
+        let site = StandIn::start(
+            Router::new()
+                .route("/up", get(|| async { "up" }))
+                .route("/same", get(|| async { Redirect::temporary("/up") }))
+                .route(
+                    "/away",
+                    get(move || {
+                        let to = to.clone();
+                        async move { Redirect::temporary(&to) }
+                    }),
+                ),
+        )
+        .await;
+        let http = Outbound::new().expect("the client can be built");
+        let rules = Rules {
+            unauthorized_passes: false,
+            forbidden_passes: false,
+        };
+        let base = site.url();
+        let key = Some("the api key of organizr");
+
+        // A redirect on the same host is followed with the key.
+        assert!(super::answers(&http, &format!("{base}/same"), key, rules).await);
+        // A redirect to another place stops there, so the service counts as down, and
+        // the other place never sees the key.
+        assert!(!super::answers(&http, &format!("{base}/away"), key, rules).await);
+        assert!(elsewhere.seen().is_empty(), "the key went to another place");
+        // Without the key, the check follows the redirect as before.
+        assert!(super::answers(&http, &format!("{base}/away"), None, rules).await);
+        assert_eq!(elsewhere.seen().len(), 1);
     }
 }

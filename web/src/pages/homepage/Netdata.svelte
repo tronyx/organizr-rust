@@ -23,6 +23,7 @@
 
   interface Answer {
     data: Chart[];
+    /** Always empty: the server keeps the address of Netdata. */
     url: string;
   }
 

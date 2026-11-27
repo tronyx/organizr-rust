@@ -113,8 +113,10 @@ pub async fn data(
         }
         charts.push(Value::Object(data));
     }
+    // PHP sends the address of Netdata as well. The page does not use it, and it can name
+    // a host of the local network, so it stays empty (D-196).
     Ok(Envelope::success(json!({
         "data": charts,
-        "url": settings.netdata_url,
+        "url": "",
     })))
 }

@@ -41,7 +41,7 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Sign-in, sessions and lockouts | D-02, D-03, D-04, D-09, D-18, D-27, D-30, D-33, D-34, D-35, D-57, D-58, D-73, D-127, D-129, D-139, D-140, D-145, D-146, D-159, D-160, D-161, D-163, D-185, D-186, D-187 |
 | Logins through Plex, LDAP, FTP, Emby and Jellyfin | D-60, D-85, D-86, D-99, D-107, D-124, D-127, D-137, D-154, D-165 |
 | OpenID Connect | D-27, D-87, D-88, D-89, D-90, D-105, D-133, D-148, D-156, D-184, D-187, D-192 |
-| Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150, D-165, D-178 |
+| Single sign-on to other apps | D-60, D-114, D-117, D-135, D-150, D-165, D-178, D-195 |
 | Forward auth, proxies and client addresses | D-01, D-49, D-59, D-136, D-141, D-155, D-157, D-170, D-171 |
 | The set-up wizard and the database | D-19, D-38, D-46, D-97, D-158 |
 | Users and groups | D-05, D-15, D-31, D-36, D-37, D-38, D-51, D-52, D-57, D-82, D-129, D-160, D-164, D-185, D-186, D-188 |
@@ -53,12 +53,12 @@ What stays exactly as in PHP is listed in [Kept exactly as PHP has it](#-kept-ex
 | Log, errors and request ids | D-13, D-34, D-84, D-190 |
 | E-mail | D-09, D-58, D-82, D-138, D-160, D-179, D-193 |
 | Scheduled jobs | D-33, D-43, D-66, D-74, D-172 |
-| Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154, D-165, D-166, D-167, D-175, D-176, D-177 |
+| Homepage items | D-61 to D-65, D-70, D-71, D-77 to D-81, D-100 to D-103, D-108, D-113, D-115, D-123, D-126, D-128, D-137, D-142, D-151, D-152, D-153, D-154, D-165, D-166, D-167, D-175, D-176, D-177, D-196 |
 | Custom HTML items | D-61, D-76, D-111, D-131 |
 | Connection tests (`/test/*`) | D-72, D-77, D-78, D-79, D-80, D-81, D-86, D-101, D-102, D-165, D-172 |
 | Certificates and TLS | D-11, D-17, D-60, D-85, D-86, D-98, D-104 |
-| Outbound requests and SSRF | D-08, D-16, D-55, D-81, D-91, D-122, D-165, D-166, D-167 |
-| Built-in plugins | D-44, D-66, D-67, D-68, D-69, D-94, D-95, D-115, D-116, D-118 to D-121, D-130, D-134, D-144, D-149, D-180, D-181, D-182 |
+| Outbound requests and SSRF | D-08, D-16, D-55, D-81, D-91, D-122, D-165, D-166, D-167, D-194 |
+| Built-in plugins | D-44, D-66, D-67, D-68, D-69, D-94, D-95, D-115, D-116, D-118 to D-121, D-130, D-134, D-144, D-149, D-180, D-181, D-182, D-194 |
 | Extensions and the marketplaces | D-17, D-40, D-41, D-75, D-94, D-122, D-143 |
 | Look, themes, custom CSS and JavaScript | D-42, D-92, D-93, D-110, D-125, D-189 |
 | Languages | D-109 |
@@ -71,7 +71,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 
 | Route | Entries |
 |---|---|
-| `POST /login`, `/logout` | D-02, D-04, D-34, D-60, D-127, D-159, D-161, D-163, D-178 |
+| `POST /login`, `/logout` | D-02, D-04, D-34, D-60, D-127, D-159, D-161, D-163, D-178, D-195 |
 | `/token/*` | D-18, D-34 |
 | `/2fa`, `/2fa/{type}` | D-57, D-159, D-186 |
 | `/wizard` | D-19, D-38, D-46, D-138 |
@@ -113,7 +113,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/homepage/<download client>/queue` | D-63, D-70, D-78, D-100, D-103, D-113 |
 | `/homepage/tautulli/*`, `/homepage/weather/*` | D-63, D-81, D-177 |
 | `/homepage/pihole/stats`, `/homepage/adguard/stats` | D-71, D-80, D-101, D-102, D-165 |
-| `/homepage/netdata`, `monitorr`, `octoprint`, `unifi`, `prompage`, `jellystat` | D-80, D-81, D-165, D-175 |
+| `/homepage/netdata`, `monitorr`, `octoprint`, `unifi`, `prompage`, `jellystat` | D-80, D-81, D-165, D-175, D-196 |
 | `/homepage/netronome/data` | D-128 |
 | `/homepage/healthchecks` | D-165 |
 | `/homepage/kuma/data` | D-166 |
@@ -122,7 +122,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/socks/…`, `/multiple/socks/…` | D-91 |
 | `/plugins`, `/plugins/manage/{plugin}`, `/plugins/marketplace` | D-94, D-116 |
 | `/plugins/chat/*` | D-44, D-95 |
-| `/plugins/healthchecks/*` | D-66, D-130, D-134 |
+| `/plugins/healthchecks/*` | D-66, D-130, D-134, D-194 |
 | `/plugins/speedtest/*` | D-67 |
 | `/plugins/bookmark/*` | D-32, D-68, D-115 |
 | `/plugins/invites/*` | D-69, D-118, D-119, D-120, D-180, D-181, D-182, D-193 |
@@ -353,6 +353,9 @@ This table also holds every entry from D-47 on, whatever its kind: security fixe
 | D-191 | **A Co-Admin who changes the address of a service enters its stored secrets again.** `PUT /config`. A Co-Admin sees a secret only as `***Secure***` (D-06), but the server sends it to the address of its service. So when a request of a Co-Admin changes the address of a service to another value while a secret of that service has a stored value, the same request must hold a new value for each such secret (an empty value takes the secret away). Otherwise the answer is `422` with `Config item: {secret} must be entered again when {address} changes`, and the request changes nothing. The pairs are a table in the code: each address of a service (for example `sonarrURL`, `ombiURL`, `jellyStatURL` and `jellyStatInternalURL`, `INVITES-nextcloud-url`, `PHPMAILER-smtpHost`) with the secrets that the server sends there (for example `sonarrToken`; `ombiToken` and `ombiFallbackPassword`). A request with the same address, or for a service without a stored secret, is unchanged, and so is every request of an Admin or a script with the API key. The settings page shows the refusal above the form. PHP lets a Co-Admin change the address alone, so the server would send the secret to an address of the Co-Admin's choosing. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 | D-192 | **An OpenID Connect login links an existing account by e-mail address only when the provider says it checked the address.** The accounts of the OpenID Connect login, on top of D-89 and D-184. The address of the person finds an account only when the claim `email_verified` is `true`. Before, a provider that left the claim out counted as having checked the address, and only `false` stopped the match. Now a missing claim counts like `false`: no account is found by e-mail, so the login continues as for an unknown person (a new account with **Auto Create Users**, else a refusal). An account is still found by its user name (`preferred_username`), and an account that is already linked to the subject still logs in. A provider that leaves out `email_verified` and relied on the e-mail match must send the claim or match by user name. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 | D-193 | **A member who is not an Admin can have only 10 invite e-mails sent in 24 hours.** `POST /plugins/invites`, on top of D-69. Every invite sends an e-mail with the code to an address that the member types, so a member could use the install to send mail to anybody. When the mailer is on, a member below Admin who made 10 invites in the last 24 hours (counted from the stored invites by their time and their maker) gets `429 "Too many invite e-mails in the last 24 hours"`, and the invite is not stored. An Admin and a caller with the API key have no limit. PHP has no such limit. Invites that a member deleted no longer count. Without the mailer, nothing is sent and nothing is counted. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-194 | **A health check that sends the API key stops at a redirect to another host.** The health checks plugin, on top of D-130. A service with the switch `Send API Key` on gets the API key of Organizr in the header `Token`. A redirect to the same host and port, or from `http` to `https` on the same host, is still followed with the key. A redirect to any other place is not followed, so the key does not reach it. The check then has the redirect as its answer, and only a `2xx` answer passes, so the service counts as down (`Error`, and the ping `/fail`). A service without the key follows every redirect, as before. PHP follows every redirect, up to 10, and sends the key each time. To check a service that sends visitors to another host, such as a login portal, turn its switch `Send API Key` off, or use the address that the redirect points to. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-195 | **The shared fallback account of Ombi, Overseerr or Petio goes only to a user who sees the application.** The single sign-on of a login, `POST /login`. When Ombi, Overseerr or Petio does not know the user, Organizr logs in with the fallback account of the settings (`ombiFallbackUser`, `overseerrFallbackUser`, `petioFallbackUser`) and hands its session to the browser. Now that happens only when the user (1) has the level of the homepage item of the application (`homepageOmbiAuth`, `homepageOverseerrAuth`; Petio has no homepage item), or (2) sees an enabled tab of it: a tab whose name or address holds the name of the application, such as `Ombi` or `https://example.com/petio/`, or whose address is on the host and port of the address setting of the application. Without either, the user gets no session of that application, and the fallback account is not asked. A user whom the application knows still gets an own session, as before. PHP hands the fallback account to every user who logs in. The homepage items of Ombi and Overseerr are for Co-Admins by default, so on an install whose users reach these applications, give the item their level or make sure their tab of the application matches. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
+| D-196 | **The Netdata and OctoPrint items no longer send the address of the service, unless the page needs it.** `GET /homepage/netdata/data` answers `url` as an empty text. The page does not use it. `GET /homepage/octoprint/data` answers `data.url` with the address of OctoPrint only when the webcam is on and the address of its stream is a path, such as `/webcam/?action=stream`: the page puts the two together to show the webcam. Else `data.url` is an empty text. The address can name a host of the local network, and every viewer of the item got it. PHP always sends the address of the settings. Found by the security audit of 2026-11-25; decided by the owner on 2026-11-26. |
 
 ## ✅ Kept exactly as PHP has it
 

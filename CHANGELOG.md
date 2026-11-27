@@ -103,6 +103,9 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - The weekly scan of the published images files the vulnerabilities that have a fix in the Security tab, once the repository is public. See [Releases and images](docs/releases.md#-the-weekly-scan).
 - OpenID Connect links an existing account by e-mail address only when the provider says it checked the address; a missing `email_verified` no longer counts (D-192).
 - A member who is not an Admin can have only 10 invite e-mails sent in 24 hours (D-193).
+- A health check that sends the API key no longer follows a redirect to another host; the service then counts as down (D-194).
+- The shared fallback account of Ombi, Overseerr or Petio goes only to users who see the homepage item or a tab of that application (D-195).
+- The Netdata and OctoPrint items no longer send the address of the service to viewers, except the OctoPrint address when the webcam stream needs it (D-196).
 
 ### Documentation
 
