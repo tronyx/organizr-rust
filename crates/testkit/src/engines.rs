@@ -116,6 +116,12 @@ async fn create_postgres(server_url: &str) -> FreshPostgres {
     let server = sea_orm::Database::connect(server_url)
         .await
         .expect("the PostgreSQL test server accepts connections");
+    // A database of an earlier run can be left behind, for example when that run was
+    // stopped, and Windows gives process numbers out again. It is dropped first.
+    server
+        .execute_unprepared(&format!("DROP DATABASE IF EXISTS {name} WITH (FORCE)"))
+        .await
+        .expect("a left-behind test database can be dropped");
     server
         .execute_unprepared(&format!("CREATE DATABASE {name}"))
         .await
