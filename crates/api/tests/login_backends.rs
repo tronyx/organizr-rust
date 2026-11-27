@@ -608,3 +608,31 @@ async fn ldap_login_test_binds_with_the_name_and_password_of_the_body() {
     })
     .await;
 }
+
+/// A login through a back end changes nothing of an account with a second factor until
+/// the factor passed: the password that the back end took is not stored before that.
+#[tokio::test]
+async fn backend_login_stores_no_password_before_the_second_factor() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let server = ldap_server(false).await;
+        let app = installed_app_with(database, &ldap_settings(server.port(), "both", &[]));
+        let kim_session = seed::logged_in(database, &app, "kim", 4).await;
+        let created = call(&app, As::User(&kim_session), "POST", "/2fa/google", None).await;
+        assert_eq!(created.status, StatusCode::OK, "{}", created.body);
+        let secret = created.data()["secret"].clone();
+        let body = json!({"secret": secret, "type": "google", "password": seed::USER_PASSWORD});
+        let saved = call(&app, As::User(&kim_session), "PUT", "/2fa", Some(body)).await;
+        assert_eq!(saved.status, StatusCode::OK, "{}", saved.body);
+        let kim = LDAP_PEOPLE[1];
+
+        let answer = log_in(&app, "kim", kim.password).await;
+
+        assert!(!logged_in(&answer), "{}", answer.body);
+        assert!(answer.status.is_client_error(), "{}", answer.body);
+        let account = user(database, "kim").await.expect("the account is there");
+        assert!(has_password(&account, seed::USER_PASSWORD));
+        assert!(!has_password(&account, kim.password));
+    })
+    .await;
+}

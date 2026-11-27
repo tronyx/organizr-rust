@@ -80,7 +80,7 @@ pub async fn log_in(
     }
     let password = account.password.filter(|password| !password.is_empty());
 
-    let (user, created) = if let Some(user) = user {
+    let (user, created, mirrored) = if let Some(user) = user {
         let privileged = crate::oidc::is_privileged(database, &user).await?;
         if privileged && !account.may_open_privileged {
             tracing::warn!(
@@ -89,15 +89,22 @@ pub async fn log_in(
             );
             return Err(LoginError::WrongCredentials);
         }
-        if let Some(password) = password
-            && !privileged
-        {
-            mirror_password(database, &user, password).await?;
-        }
-        (user, false)
+        (user, false, password.filter(|_| !privileged))
     } else {
-        (new_account(database, account, password, now).await?, true)
+        (
+            new_account(database, account, password, now).await?,
+            true,
+            None,
+        )
     };
+
+    // The account changes only after its second factor passed, so a login that the
+    // service vouched for but whose code is wrong stores nothing.
+    let second_factor_checked =
+        login::check_second_factor(database, &user, second_factor, now).await?;
+    if let Some(password) = mirrored {
+        mirror_password(database, &user, password).await?;
+    }
 
     if let Some(token) = account.plex_token.filter(|token| !token.is_empty()) {
         let name = plex_token_name(user.id);
@@ -115,8 +122,6 @@ pub async fn log_in(
         }
     }
 
-    let second_factor_checked =
-        login::check_second_factor(database, &user, second_factor, now).await?;
     let mut logged_in = login::start_session(database, user, device, now, lifetime).await?;
     logged_in.second_factor_checked = second_factor_checked;
     Ok(ExternalLogin { logged_in, created })

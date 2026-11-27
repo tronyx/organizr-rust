@@ -123,9 +123,9 @@ pub async fn start(
     Ok(Some(Started { user, password }))
 }
 
-/// Whether `password` is the recovery password of the user and still works. When it
-/// is, it becomes the password of the account.
-pub(crate) async fn accept(
+/// Whether `password` is the recovery password of the user and still works. It changes
+/// nothing: the login checks the second factor first, then calls [`commit`].
+pub(crate) async fn matches(
     database: &Database,
     user: &User,
     password: &str,
@@ -142,9 +142,12 @@ pub(crate) async fn accept(
     let check = password::verify_in_turn(candidate, recovery.password_hash)
         .await
         .unwrap_or(PasswordCheck::Wrong);
-    if !matches!(check, PasswordCheck::Correct { .. }) {
-        return Ok(false);
-    }
+    Ok(matches!(check, PasswordCheck::Correct { .. }))
+}
+
+/// Makes the recovery password of the user, which [`matches`] accepted and whose second
+/// factor passed, the password of the account.
+pub(crate) async fn commit(database: &Database, user: &User) -> Result<(), DbError> {
     database.users().use_recovery(user.id).await?;
     // The person may have asked because somebody else has the account, so the sessions
     // from before end; the login makes a new one (D-146).
@@ -154,7 +157,7 @@ pub(crate) async fn accept(
         ended,
         "the user logged in with a recovery password, which is the password of the account now"
     );
-    Ok(true)
+    Ok(())
 }
 
 #[cfg(test)]

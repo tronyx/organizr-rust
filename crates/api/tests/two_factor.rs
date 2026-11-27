@@ -572,3 +572,73 @@ async fn second_factor_changes_need_the_password_or_a_code() {
     })
     .await;
 }
+
+/// The password from a recovery e-mail changes nothing until the second factor passed: a
+/// login with no code or a wrong code leaves the password, the recovery and the sessions
+/// of the account as they were.
+#[tokio::test]
+async fn recovery_password_changes_nothing_before_the_second_factor() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let owner = seed::logged_in(database, &app, "sam", 3).await;
+        let secret = add_second_factor(&app, &owner).await;
+        let user = database
+            .users()
+            .find_by_username("sam")
+            .await
+            .expect("the database answers")
+            .expect("the user exists");
+        database
+            .users()
+            .update(
+                user.id,
+                organizr_domain::UserChanges {
+                    email: organizr_domain::Change::Set("sam@example.test".to_owned()),
+                    ..organizr_domain::UserChanges::none()
+                },
+            )
+            .await
+            .expect("the database answers")
+            .expect("the user exists");
+        let stamp = organizr_domain::Timestamp::from_unix_seconds(
+            i64::try_from(now()).expect("the time fits"),
+        );
+        let started = organizr_auth::recovery::start(database, "sam@example.test", stamp)
+            .await
+            .expect("the database answers")
+            .expect("a recovery password is made");
+        let hash = user.password_hash.clone();
+
+        for code in [None, Some(wrong_code(&secret))] {
+            let mut body = json!({"username": "sam", "password": started.password});
+            if let Some(code) = &code {
+                body["tfaCode"] = json!(code);
+            }
+            let refused = call(&app, As::Guest, "POST", "/login", Some(body)).await;
+            assert!(refused.status.is_client_error(), "{}", refused.body);
+            let now_user = database
+                .users()
+                .find_by_username("sam")
+                .await
+                .expect("the database answers")
+                .expect("the user exists");
+            assert_eq!(now_user.password_hash, hash, "{code:?}");
+            assert!(
+                database
+                    .users()
+                    .recovery_of(user.id)
+                    .await
+                    .expect("the database answers")
+                    .is_some(),
+                "{code:?}"
+            );
+            let me = call(&app, As::User(&owner), "GET", "/token/me", None).await;
+            assert_eq!(me.data()["username"], json!("sam"), "{code:?}");
+        }
+        // The owner's own password still works.
+        let own = log_in(&app, "sam", Some(&code(&secret))).await;
+        assert_eq!(own.status, StatusCode::OK, "{}", own.body);
+    })
+    .await;
+}

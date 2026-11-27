@@ -38,6 +38,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 
 ### Security
 
+- A login with the password from a recovery e-mail, or through a login service, changes the account only after its second factor passed (D-198).
 - Only an Admin changes the mail server, the switch of the mail plugin and the password-reset e-mail, since that e-mail carries a new password of any account, the Admin's too (D-197).
 - Secrets (passwords, tokens and API keys of your services) are stored encrypted with a key of the install, and the API shows them masked. See [Secrets](docs/secrets.md).
 - A login through Plex or Emby Connect never opens an Admin or Co-Admin account, except the Plex owner's, and no outside service replaces an Admin or Co-Admin password (D-127).

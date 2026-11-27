@@ -223,8 +223,9 @@ pub async fn with_password(
 
     let (user, outdated, with_account_password) = match (user, check) {
         (Some(user), PasswordCheck::Correct { outdated }) => (user, outdated, true),
-        // A person who forgot the password logs in with the password from the e-mail.
-        (Some(user), _) if recovery::accept(database, &user, password, now).await? => {
+        // A person who forgot the password logs in with the password from the e-mail. It
+        // becomes the password of the account only after the second factor passed.
+        (Some(user), _) if recovery::matches(database, &user, password, now).await? => {
             (user, false, false)
         }
         (Some(user), PasswordCheck::Unusable) => {
@@ -237,6 +238,9 @@ pub async fn with_password(
         _ => return Err(LoginError::WrongCredentials),
     };
     let second_factor_checked = check_second_factor(database, &user, second_factor, now).await?;
+    if !with_account_password {
+        recovery::commit(database, &user).await?;
+    }
 
     // The person knew the password after all, so the password from an e-mail is not
     // needed any more, and nobody else can use it.
