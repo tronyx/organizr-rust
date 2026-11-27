@@ -235,10 +235,15 @@ pub async fn run(args: Args) -> anyhow::Result<()> {
 
     // The address of each connection goes to the application, which needs it to decide
     // whether a forwarding header can be believed.
-    crate::connections::serve(listener, app, crate::connections::HEADER_TIME, async move {
-        stop_requested().await;
-        chat_hub.close();
-    })
+    crate::connections::serve(
+        listener,
+        app,
+        crate::connections::Limits::of_this_process(),
+        async move {
+            stop_requested().await;
+            chat_hub.close();
+        },
+    )
     .await
     .context("the server stopped with an error")?;
 

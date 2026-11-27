@@ -107,7 +107,7 @@ tokio = { version = "1.54", features = ["macros", "rt"] }
 tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring"] }
 totp-rs = { version = "6.0.0", features = ["otpauth", "qr", "gen_secret", "zeroize"] }
 tower = { version = "0.5.3", features = ["util"] }
-tower-http = { version = "0.7.1", features = ["csrf", "set-header"] }
+tower-http = { version = "0.7.1", features = ["csrf", "set-header", "timeout"] }
 tracing = "0.1.44"
 unicode-normalization = "0.1.26"
 uuid = { version = "1.29", features = ["v4"] }

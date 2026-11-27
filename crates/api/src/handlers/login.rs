@@ -101,13 +101,7 @@ pub async fn login(
         now: now_stamp(now),
         lifetime,
     };
-    // A name with a character that shows nothing is no real name, and a login server
-    // could take it for another one, so no server is asked; it fails as a wrong password.
-    let result = if has_hidden_characters(&name) {
-        Err(LoginError::WrongCredentials)
-    } else {
-        check_login(&state, &settings, request).await
-    };
+    let result = check_login(&state, &settings, request).await;
     let outcome = match result {
         Ok(outcome) => outcome,
         // A wrong code counts as a failed login, as a wrong password does.
@@ -284,6 +278,12 @@ async fn check_login(
     settings: &Settings,
     request: Attempted<'_>,
 ) -> Result<Outcome, LoginError> {
+    // A name with a character that shows nothing is no real name, and a login server
+    // could take it for another one, so no server is asked; it fails as a wrong password
+    // (D-199).
+    if has_hidden_characters(request.name) {
+        return Err(LoginError::WrongCredentials);
+    }
     let database = state.database();
     let with_plex_token = request.plex_token.is_some();
     let vouched = if let Some(token) = &request.plex_token {

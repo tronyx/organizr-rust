@@ -3116,6 +3116,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tower",
+ "tower-http 0.7.1",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -5350,8 +5351,10 @@ dependencies = [
  "bitflags",
  "bytes",
  "http",
+ "http-body",
  "percent-encoding",
  "pin-project-lite",
+ "tokio",
  "tower-layer",
  "tower-service",
 ]
