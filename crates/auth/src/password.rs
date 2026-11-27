@@ -12,7 +12,7 @@
 use argon2::password_hash::phc;
 use argon2::{ARGON2ID_IDENT, Argon2, Params, PasswordHasher, PasswordVerifier, Version};
 use organizr_domain::PasswordHash;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 use std::time::Duration;
 
 use thiserror::Error;
@@ -60,14 +60,14 @@ pub enum InTurnError {
 /// [`FEWEST_AT_ONCE`] and [`MOST_AT_ONCE`]. With all taken, a check waits for its turn,
 /// so many logins at once use at most that many times 19 MiB (D-140).
 struct Turns {
-    places: Semaphore,
+    places: Arc<Semaphore>,
     longest_wait: Duration,
 }
 
 impl Turns {
     fn new(places: usize, longest_wait: Duration) -> Self {
         Self {
-            places: Semaphore::new(places),
+            places: Arc::new(Semaphore::new(places)),
             longest_wait,
         }
     }
@@ -76,13 +76,19 @@ impl Turns {
         &self,
         work: impl FnOnce() -> T + Send + 'static,
     ) -> Result<T, InTurnError> {
-        let place = tokio::time::timeout(self.longest_wait, self.places.acquire())
+        let place = tokio::time::timeout(self.longest_wait, self.places.clone().acquire_owned())
             .await
             .map_err(|_| InTurnError::Busy)?
             .map_err(|_| InTurnError::Busy)?;
-        let done = tokio::task::spawn_blocking(work).await;
-        drop(place);
-        done.map_err(InTurnError::Task)
+        // The place goes with the work: a caller that gives up (a client that hangs up)
+        // does not free it while the check still runs on its thread.
+        tokio::task::spawn_blocking(move || {
+            let result = work();
+            drop(place);
+            result
+        })
+        .await
+        .map_err(InTurnError::Task)
     }
 }
 
@@ -218,6 +224,36 @@ mod tests {
                 .expect("each check gets its turn");
         }
         assert_eq!(most.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test]
+    async fn caller_that_gives_up_keeps_its_place_until_the_check_ends() {
+        // A login whose client hangs up drops its future, but the check still runs on
+        // its thread, so its place stays taken until the check ends (D-140).
+        let turns = Arc::new(Turns::new(2, Duration::from_secs(10)));
+        let (running, most) = (Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0)));
+        for _ in 0..6 {
+            let (turns, running, most) = (turns.clone(), running.clone(), most.clone());
+            let caller = tokio::spawn(async move {
+                turns
+                    .run(move || {
+                        let now = running.fetch_add(1, Ordering::SeqCst) + 1;
+                        most.fetch_max(now, Ordering::SeqCst);
+                        std::thread::sleep(Duration::from_millis(200));
+                        running.fetch_sub(1, Ordering::SeqCst);
+                    })
+                    .await
+            });
+            tokio::time::sleep(Duration::from_millis(10)).await;
+            caller.abort();
+        }
+        tokio::time::sleep(Duration::from_millis(900)).await;
+        assert!(
+            most.load(Ordering::SeqCst) <= 2,
+            "{}",
+            most.load(Ordering::SeqCst)
+        );
+        assert_eq!(running.load(Ordering::SeqCst), 0);
     }
 
     #[tokio::test]
