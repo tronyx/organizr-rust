@@ -8,6 +8,10 @@
 //!
 //! A job that still runs is not started a second time, and a job is stopped when it
 //! runs longer than its time limit.
+//!
+//! The timer and the clock can differ by a few milliseconds, so the task can wake just
+//! before the minute it waited for. It then sleeps the rest of the way, and the jobs of
+//! one minute start only once.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -119,6 +123,19 @@ fn until_next_minute(now: &ZonedDateTime) -> Duration {
         .max(Duration::from_millis(1))
 }
 
+/// The second (Unix time) at which the next full minute after `now` begins.
+fn next_minute(now: &ZonedDateTime) -> i64 {
+    (now.timestamp().as_second().div_euclid(60) + 1) * 60
+}
+
+/// Whether the scheduler, woken at `now` for the minute that begins at `target`, starts
+/// the jobs of that minute. It does not when it woke before the minute, or when the
+/// jobs of the minute of `now` started already (`last`, in minutes of Unix time).
+fn is_minute_to_run(now: &ZonedDateTime, target: i64, last: Option<i64>) -> bool {
+    let second = now.timestamp().as_second();
+    second >= target && last != Some(second.div_euclid(60))
+}
+
 /// The mark that a job runs. Dropping it frees the job again, also when the job
 /// panics, so that a failed run does not keep the job from starting until a restart.
 struct Busy(Arc<AtomicBool>);
@@ -141,10 +158,17 @@ pub async fn run(state: AppState) {
     let running: Vec<Arc<AtomicBool>> = Job::ALL.iter().map(|_| Arc::default()).collect();
     // `GET /test/cron` says from this whether the scheduler runs.
     state.scheduler_woke(ZonedDateTime::now().timestamp().as_second());
+    let mut last_minute = None;
     loop {
-        tokio::time::sleep(until_next_minute(&ZonedDateTime::now())).await;
+        let before = ZonedDateTime::now();
+        let target = next_minute(&before);
+        tokio::time::sleep(until_next_minute(&before)).await;
         let now = ZonedDateTime::now();
         state.scheduler_woke(now.timestamp().as_second());
+        if !is_minute_to_run(&now, target, last_minute) {
+            continue;
+        }
+        last_minute = Some(now.timestamp().as_second().div_euclid(60));
         for job in due_jobs(&state.settings(), &now) {
             let Some(busy) = Job::ALL
                 .iter()
@@ -188,7 +212,7 @@ mod tests {
     use std::sync::Arc;
     use std::sync::atomic::{AtomicBool, Ordering};
 
-    use super::{Busy, Job, due_jobs, is_due, until_next_minute};
+    use super::{Busy, Job, due_jobs, is_due, is_minute_to_run, next_minute, until_next_minute};
 
     fn at(time: &str) -> ZonedDateTime {
         format!("{time}[UTC]").parse().expect("the time is valid")
@@ -349,6 +373,48 @@ mod tests {
         assert!(task.await.is_err());
         assert!(!flag.load(Ordering::SeqCst));
         assert!(Busy::take(&flag).is_some());
+    }
+
+    #[test]
+    fn scheduler_that_wakes_before_the_minute_waits_for_it() {
+        let target = next_minute(&at("2026-11-20T10:09:15+00:00"));
+        assert_eq!(
+            target,
+            at("2026-11-20T10:10:00+00:00").timestamp().as_second()
+        );
+        // A timer can end a few milliseconds before the clock shows the minute.
+        assert!(!is_minute_to_run(
+            &at("2026-11-20T10:09:59.995+00:00"),
+            target,
+            None
+        ));
+        assert!(is_minute_to_run(
+            &at("2026-11-20T10:10:00.001+00:00"),
+            target,
+            None
+        ));
+        assert!(is_minute_to_run(
+            &at("2026-11-20T10:10:01+00:00"),
+            target,
+            None
+        ));
+    }
+
+    #[test]
+    fn scheduler_starts_the_jobs_of_a_minute_once() {
+        let target = next_minute(&at("2026-11-20T10:09:15+00:00"));
+        let ten_past = Some(at("2026-11-20T10:10:00+00:00").timestamp().as_second() / 60);
+        // The clock went back after the jobs of 10:10 started.
+        assert!(!is_minute_to_run(
+            &at("2026-11-20T10:10:30+00:00"),
+            target,
+            ten_past
+        ));
+        assert!(is_minute_to_run(
+            &at("2026-11-20T10:11:00+00:00"),
+            target,
+            ten_past
+        ));
     }
 
     #[test]

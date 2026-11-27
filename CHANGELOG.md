@@ -34,6 +34,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 
 ### Fixed
 
+- The jobs of a schedule start once per minute. The server could wake a few milliseconds before the minute and start the jobs of the minute before a second time; a job that still ran then logged "the job still runs; this start is left out".
 - The settings of a plugin open in a wide window, as in PHP Organizr: ten of the twelve columns of a wide screen. The table of the HealthChecks services fits in it without scrolling to the side.
 - Album covers in the poster rows of the homepage show as in PHP Organizr: a square cover with a darkened copy of it above and below, instead of a cover stretched to the shape of a poster.
 
