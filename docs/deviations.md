@@ -103,7 +103,7 @@ Every route is below `/api/v2`. Entries that touch every route: D-03 (same-origi
 | `/oidc/*` | D-87, D-88, D-89, D-90, D-105, D-184, D-187, D-192 |
 | `GET /oauth/trakt` | D-81 |
 | `GET /homepage/items`, `/homepage/html/{number}` | D-61, D-76 |
-| `GET /homepage/image` | D-64, D-77, D-81 |
+| `GET /homepage/image` | D-64, D-77, D-81, D-153 |
 | `/homepage/calendar` and the calendars | D-62, D-79, D-81, D-165, D-167 |
 | `/homepage/plex/*` | D-64, D-165 |
 | `/homepage/emby/*`, `/homepage/jellyfin/*` | D-77, D-81, D-165 |

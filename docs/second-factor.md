@@ -90,7 +90,7 @@ The setting **Ignore External 2FA on Local Subnet** (`ignoreTFALocal`, in **Sett
 |---|---|
 | `POST /api/v2/2fa/google` | Makes a new secret. The answer has `secret`, and `url`, a `data:` address of the QR code. Nothing is stored |
 | `POST /api/v2/2fa` | Checks `code` against `secret`. `type` is `google`. A wrong code gets status `401` |
-| `PUT /api/v2/2fa` | Saves `secret` as the second factor of the caller. `type` is `google` |
-| `DELETE /api/v2/2fa` | Removes the second factor of the caller |
-| `DELETE /api/v2/users/2fa/{id}` | Removes the second factor of the user with the id. For an Admin or a Co-Admin; only an Admin for an Admin. Not in PHP Organizr ([D-129](deviations.md)) |
+| `PUT /api/v2/2fa` | Saves `secret` as the second factor of the caller. `type` is `google`. Ends the caller's other sessions ([D-146](deviations.md)) |
+| `DELETE /api/v2/2fa` | Removes the second factor of the caller, and ends the caller's other sessions ([D-146](deviations.md)) |
+| `DELETE /api/v2/users/2fa/{id}` | Removes the second factor of the user with the id, and ends every session of that user ([D-146](deviations.md)). For an Admin or a Co-Admin; only an Admin for an Admin or another Co-Admin ([D-188](deviations.md)). Not in PHP Organizr ([D-129](deviations.md)) |
 | `POST /api/v2/login` | Takes the code in the field `tfaCode`. Without it, an account with a second factor gets `422 "2FA Code Needed"` |

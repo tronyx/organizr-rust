@@ -103,7 +103,7 @@ pub fn breaking_changes(
         changes.push(format!(
             "These accounts are Co-Admins: {}. Only an Admin now changes trusted custom HTML \
              items, the sign-in settings, OpenID Connect, the services of the health checks, \
-             single sign-on, and the allowed hosts and trusted proxies (D-131 to D-135, D-155).",
+             single sign-on, the allowed hosts and trusted proxies, the mail server and the              password-reset e-mail, and the accounts of other Co-Admins (D-131 to D-135,              D-155, D-188, D-197).",
             co_admins.join(", ")
         ));
     }

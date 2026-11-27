@@ -42,7 +42,7 @@ When the service says yes, Organizr picks the Organizr account like this:
 3. **Or make one.** If there isn't one, Organizr makes an account in the group for new users:
    - The name is what the person typed. For Emby Connect, it's the name of the Emby Connect account.
    - The e-mail address is the `mail` of the LDAP entry, or the address of the Emby Connect account. Other services get a stand-in address, as in PHP Organizr.
-4. **The password.** The password of the login becomes the password of the Organizr account. So the person can still log in when the service is down, if **Authentication Type** allows Organizr passwords.
+4. **The password.** The password of the login becomes the password of the Organizr account, after the second factor of the account passed, and a new one ends the account's other sessions (D-146, D-198). So the person can still log in when the service is down, if **Authentication Type** allows Organizr passwords.
 5. **The second factor.** An account with a [second factor](second-factor.md) asks for its code, as in every login.
 
 > [!IMPORTANT]
