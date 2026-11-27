@@ -26,6 +26,7 @@ use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use organizr_domain::UserId;
+use unicode_normalization::UnicodeNormalization;
 
 /// How long a failed login counts when no lock follows. A lock-out time longer than
 /// this is used instead, so a failure never ends before the lock it can cause.
@@ -91,6 +92,56 @@ impl Entry {
     }
 }
 
+/// The name of a login as the limiter counts it: in the compatibility form of Unicode
+/// (NFKC, so a name in wide letters is the same name in plain ones), in lower case, and
+/// without white space, control characters and characters that show nothing. A login
+/// server such as LDAP, Jellyfin or Emby may take `robin `, `ro bin` or `robin` with a
+/// soft hyphen for `robin`; counted apart, each of them would get its own failures after
+/// `robin` is locked out. Names that only differ in this way share one count, which can
+/// only lock out sooner.
+pub fn name_key(name: &str) -> String {
+    name.nfkc()
+        .filter(|character| {
+            !character.is_whitespace() && !character.is_control() && !is_invisible(*character)
+        })
+        .flat_map(char::to_lowercase)
+        .take(NAME_KEY_LENGTH)
+        .collect()
+}
+
+/// Whether a name holds a control character or a character that shows nothing, such as
+/// a soft hyphen or a zero-width space. No real name of a login needs one, and a login
+/// server may drop them, so such a name is refused before any server is asked.
+pub fn has_hidden_characters(name: &str) -> bool {
+    name.chars()
+        .any(|character| character.is_control() || is_invisible(character))
+}
+
+/// The characters that Unicode lets a program show as nothing (the property
+/// `Default_Ignorable_Code_Point`).
+fn is_invisible(character: char) -> bool {
+    matches!(
+        character,
+        '\u{ad}'
+            | '\u{34f}'
+            | '\u{61c}'
+            | '\u{115f}'..='\u{1160}'
+            | '\u{17b4}'..='\u{17b5}'
+            | '\u{180b}'..='\u{180f}'
+            | '\u{200b}'..='\u{200f}'
+            | '\u{202a}'..='\u{202e}'
+            | '\u{2060}'..='\u{206f}'
+            | '\u{3164}'
+            | '\u{fe00}'..='\u{fe0f}'
+            | '\u{feff}'
+            | '\u{ffa0}'
+            | '\u{fff0}'..='\u{fff8}'
+            | '\u{1bca0}'..='\u{1bca3}'
+            | '\u{1d173}'..='\u{1d17a}'
+            | '\u{e0000}'..='\u{e0fff}'
+    )
+}
+
 /// Counts failed logins and says who is locked out.
 #[derive(Debug, Default)]
 pub struct LoginLimiter {
@@ -107,14 +158,14 @@ pub struct Attempt {
 impl Attempt {
     /// An attempt from the given address to log in with the given name or address.
     ///
-    /// The letter case of the name does not matter. All addresses of one IPv6 network
-    /// (the first 64 bits) count as one client, because one client usually has the
-    /// whole network to choose from.
+    /// The name counts as [`name_key`] has it, so names that a login server may take
+    /// for the same one share a count. All addresses of one IPv6 network (the first 64
+    /// bits) count as one client, because one client usually has the whole network to
+    /// choose from.
     pub fn new(client: IpAddr, name: &str) -> Self {
-        let name = name.to_lowercase().chars().take(NAME_KEY_LENGTH).collect();
         Self {
             client: client_key(client),
-            name: Key::Name(name),
+            name: Key::Name(name_key(name)),
         }
     }
 
@@ -304,7 +355,33 @@ mod tests {
     use std::net::IpAddr;
     use std::time::{Duration, Instant};
 
-    use super::{Attempt, FAILURE_MEMORY, LimitPolicy, LoginLimiter, Pending, SWEEP_ABOVE};
+    use super::{
+        Attempt, FAILURE_MEMORY, LimitPolicy, LoginLimiter, Pending, SWEEP_ABOVE,
+        has_hidden_characters, name_key,
+    };
+
+    #[test]
+    fn names_that_a_login_server_may_take_for_one_share_a_key() {
+        for name in [
+            "robin",
+            "ROBIN",
+            " robin",
+            "robin ",
+            "ro bin",
+            "ro\tbin",
+            "rob\u{ad}in",
+            "r\u{200b}obin",
+            "\u{ff52}\u{ff4f}\u{ff42}\u{ff49}\u{ff4e}",
+        ] {
+            assert_eq!(name_key(name), "robin", "{name:?}");
+        }
+        assert_ne!(name_key("robyn"), "robin");
+        assert!(has_hidden_characters("rob\u{ad}in"));
+        assert!(has_hidden_characters("robin\u{feff}"));
+        assert!(has_hidden_characters("rob\u{7}in"));
+        assert!(!has_hidden_characters("ro bin"));
+        assert!(!has_hidden_characters("rob\u{e9}rt"));
+    }
 
     const POLICY: LimitPolicy = LimitPolicy {
         failures: 3,

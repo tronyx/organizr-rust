@@ -109,6 +109,7 @@ totp-rs = { version = "6.0.0", features = ["otpauth", "qr", "gen_secret", "zeroi
 tower = { version = "0.5.3", features = ["util"] }
 tower-http = { version = "0.7.1", features = ["csrf", "set-header"] }
 tracing = "0.1.44"
+unicode-normalization = "0.1.26"
 uuid = { version = "1.29", features = ["v4"] }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 zeroize = "1.9.2"

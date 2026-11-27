@@ -640,3 +640,93 @@ async fn backend_login_stores_no_password_before_the_second_factor() {
     })
     .await;
 }
+
+/// Logs in from the given address.
+async fn log_in_from(app: &Router, from: [u8; 4], name: &str, password: &str) -> Answer {
+    let body = json!({"username": name, "password": password}).to_string();
+    let mut request = request(
+        "POST",
+        "/api/v2/login",
+        &[("content-type", "application/json")],
+        &body,
+    );
+    request
+        .extensions_mut()
+        .insert(axum::extract::ConnectInfo(std::net::SocketAddr::from((
+            from, 40_000,
+        ))));
+    send(app, request).await
+}
+
+#[tokio::test]
+async fn names_that_differ_only_by_spaces_or_letter_forms_share_one_lock_out() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let stand_in = media_stand_in("/Users/authenticatebyname").await;
+        let settings = installed_settings(&[
+            ("authType", json!("external")),
+            ("authBackend", json!("jellyfin")),
+            ("jellyfinURL", json!(stand_in.url())),
+            ("loginAttempts", json!("2")),
+        ]);
+        let app = router(state_with(database, settings)).expect("the route table is valid");
+
+        for last in [1, 2] {
+            log_in_from(&app, [198, 51, 100, last], "robin", "wrong").await;
+        }
+        let locked = log_in_from(&app, [198, 51, 100, 3], "robin", "robin-media-password").await;
+        assert_eq!(locked.status, StatusCode::FORBIDDEN, "{}", locked.body);
+        let asked = stand_in.seen().len();
+
+        // A back end may take these for "robin" too, so they count as "robin".
+        for (last, name) in [
+            (4, "robin "),
+            (5, " Robin"),
+            (6, "ro bin"),
+            (7, "ｒｏｂｉｎ"),
+        ] {
+            let answer =
+                log_in_from(&app, [198, 51, 100, last], name, "robin-media-password").await;
+            assert_eq!(
+                answer.status,
+                StatusCode::FORBIDDEN,
+                "{name:?}: {}",
+                answer.body
+            );
+        }
+        assert_eq!(
+            stand_in.seen().len(),
+            asked,
+            "a variant reached the back end"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn names_with_invisible_characters_never_reach_the_back_end() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let stand_in = media_stand_in("/Users/authenticatebyname").await;
+        let app = media_app(database, &stand_in, "jellyfin");
+
+        for name in [
+            "rob\u{ad}in",
+            "r\u{200b}obin",
+            "robin\u{feff}",
+            "rob\u{7}in",
+        ] {
+            let answer = log_in(&app, name, "robin-media-password").await;
+            assert_eq!(
+                answer.status,
+                StatusCode::UNAUTHORIZED,
+                "{name:?}: {}",
+                answer.body
+            );
+        }
+        assert!(stand_in.seen().is_empty(), "a name reached the back end");
+        let plain = log_in(&app, "robin", "robin-media-password").await;
+        assert!(logged_in(&plain), "{}", plain.body);
+    })
+    .await;
+}

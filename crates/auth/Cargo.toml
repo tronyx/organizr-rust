@@ -29,6 +29,7 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["sync", "time"] }
 totp-rs.workspace = true
 tracing.workspace = true
+unicode-normalization.workspace = true
 uuid.workspace = true
 zeroize.workspace = true
 

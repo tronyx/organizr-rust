@@ -9,7 +9,7 @@ use axum::response::{IntoResponse, Response};
 use organizr_auth::SessionToken;
 use organizr_auth::external::{self, ExternalAccount};
 use organizr_auth::login::{self, Device, LoggedIn, LoginError, SecondFactor};
-use organizr_auth::login_limit::{Attempt, LimitPolicy};
+use organizr_auth::login_limit::{Attempt, LimitPolicy, has_hidden_characters};
 use organizr_domain::{GroupLevel, Timestamp, User};
 use organizr_integrations::plex::PlexAccount;
 use organizr_settings::{AuthType, Settings};
@@ -101,7 +101,13 @@ pub async fn login(
         now: now_stamp(now),
         lifetime,
     };
-    let result = check_login(&state, &settings, request).await;
+    // A name with a character that shows nothing is no real name, and a login server
+    // could take it for another one, so no server is asked; it fails as a wrong password.
+    let result = if has_hidden_characters(&name) {
+        Err(LoginError::WrongCredentials)
+    } else {
+        check_login(&state, &settings, request).await
+    };
     let outcome = match result {
         Ok(outcome) => outcome,
         // A wrong code counts as a failed login, as a wrong password does.

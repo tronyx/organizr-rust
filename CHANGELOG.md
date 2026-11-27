@@ -38,6 +38,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 
 ### Security
 
+- Names that differ only by spaces, letter case or wide letters share one count of failed logins, and a login name with hidden characters is refused, so look-alike names can't get around the lock-out at LDAP, FTP, Emby or Jellyfin (D-199).
 - Host names in the lists of a forward auth path are looked up only when the check comes from a trusted proxy, so a visitor who reaches Organizr directly can't make it run DNS lookups (D-141).
 - Requests to your services send no `Referer`, so a redirect can't hand an API key from the address to another host (D-165).
 - A `#` in the address of a forward auth check no longer makes a visitor's allow list count as one the proxy wrote (D-157).
