@@ -355,6 +355,10 @@ pub async fn check(
 /// Whether a trusted proxy wrote the query of the check itself: it sends the address
 /// that the visitor asked for (`X-Forwarded-Uri`, as Caddy and Traefik do), and that
 /// address has another query, so the query of the check is not the visitor's (D-157).
+///
+/// The header is read with the same parser as the address of the check, which leaves out
+/// everything from a `#`; a visitor who adds one cannot make the two queries differ. A
+/// header that the parser does not take counts as the visitor's.
 fn is_the_proxys(client: &Client, headers: &HeaderMap, query: &str) -> bool {
     if !client.via_trusted_proxy || query.is_empty() {
         return false;
@@ -362,7 +366,8 @@ fn is_the_proxys(client: &Client, headers: &HeaderMap, query: &str) -> bool {
     headers
         .get("x-forwarded-uri")
         .and_then(|value| value.to_str().ok())
-        .is_some_and(|asked| asked.split_once('?').map_or("", |(_, rest)| rest) != query)
+        .and_then(|asked| asked.parse::<Uri>().ok())
+        .is_some_and(|asked| asked.query().unwrap_or_default() != query)
 }
 
 /// Answers the question of a request.

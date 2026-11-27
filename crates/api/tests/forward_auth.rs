@@ -379,6 +379,34 @@ async fn allow_list_that_the_proxy_wrote_itself_counts() {
             "{}",
             visitors.body
         );
+        // A '#' that the visitor adds is cut from the address of the check, but not from
+        // the header: the two queries are still the same.
+        let fragment = ask(
+            &app,
+            PROXY,
+            "/auth-1?whitelist=172.18.0.2#z",
+            &[("x-forwarded-uri", "/app?whitelist=172.18.0.2#z")],
+        )
+        .await;
+        assert_eq!(
+            fragment.status,
+            StatusCode::UNAUTHORIZED,
+            "{}",
+            fragment.body
+        );
+        let long_form = ask(
+            &app,
+            PROXY,
+            "/auth/1?whitelist=172.18.0.2#z",
+            &[("x-forwarded-uri", "/app?whitelist=172.18.0.2#z")],
+        )
+        .await;
+        assert_eq!(
+            long_form.status,
+            StatusCode::UNAUTHORIZED,
+            "{}",
+            long_form.body
+        );
         // Without the header, or from a sender that is no trusted proxy, nothing counts.
         let bare = ask(&app, PROXY, path, &[]).await;
         assert_eq!(bare.status, StatusCode::UNAUTHORIZED, "{}", bare.body);
