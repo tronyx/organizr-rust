@@ -141,6 +141,8 @@ Each call of an extension has limits. A call that passes one is stopped, and the
 
 An extension gets these request headers: `accept`, `accept-language`, `content-type` and `user-agent`. It can set these answer headers: `content-type`, `cache-control` and `content-disposition`.
 
+Organizr also adds the header `x-organizr-same-site` to every request. It is `true` when the browser said that a page of this Organizr sent the request (`Sec-Fetch-Site: same-origin`, or an `Origin` that names the host of Organizr), and `false` otherwise: for a link on another site, an address the user typed, or a script that sends the API key. Organizr refuses a request from another site that would change something, but it lets every `GET` and `HEAD` through. So when a `GET` or `HEAD` route of your extension changes something, check that this header is `true`. A request from a page of the extension itself is `false` too, because the browser keeps that page apart from Organizr. A header of the same name that the caller sends never reaches the extension.
+
 ### 🔍 How Organizr checks a request to another site
 
 An extension sends a request with the function `send-request` of `host`. It reaches only the sites its `plugin.json` names, and only after the Admin approved them (D-122). Before each request, the server:
@@ -192,7 +194,7 @@ The list is a JSON file:
 
 `id`, `name`, `version`, `download` and `sha256` are required. The other fields mean what they mean in `plugin.json`, and an install writes them into the extension's `plugin.json`.
 
-When the list's address uses `https`, every `download` must use `https` too. A `download` on another host than the list must be on the internet: an install from this computer or a private network address is refused, unless the list is on that same host.
+When the list's address uses `https`, every `download` must use `https` too. A `download` on another host than the list must be on the internet: an install from this computer or a private network address is refused, unless the list is on that same host. Every redirect of a download is checked the same way before Organizr follows it, so a file that moves to another public host, as GitHub release files do, still installs.
 
 ### 🔗 The routes
 

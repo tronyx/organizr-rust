@@ -123,11 +123,65 @@ fn comes_from_another_site(headers: &HeaderMap) -> bool {
     }
 }
 
+/// Whether a browser said that a request comes from a page of this site: a
+/// `Sec-Fetch-Site` of `same-origin`, or, without that header, an `Origin` that names the
+/// host of the request. Stricter than [`comes_from_another_site`]: a request that the user
+/// typed in, and a request without browser headers, are not from this site.
+/// Extensions get the answer (see `handlers::extensions`).
+#[cfg(feature = "wasm-plugins")]
+pub fn is_from_this_site(headers: &HeaderMap) -> bool {
+    let text = |name: &str| headers.get(name).map(|value| value.to_str().unwrap_or(""));
+
+    match (text("sec-fetch-site"), text("origin")) {
+        (Some(site), _) => site == "same-origin",
+        (None, Some(origin)) => {
+            let authority = origin.split_once("://").map(|(_, authority)| authority);
+            authority.is_some() && authority == text("host")
+        }
+        (None, None) => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use axum::http::{HeaderMap, HeaderName, HeaderValue};
 
     use super::comes_from_another_site;
+    #[cfg(feature = "wasm-plugins")]
+    use super::is_from_this_site;
+
+    #[cfg(feature = "wasm-plugins")]
+    #[test]
+    fn only_a_page_of_this_site_is_from_this_site() {
+        let from_here: [&[(&str, &str)]; 4] = [
+            &[("sec-fetch-site", "same-origin")],
+            &[
+                ("sec-fetch-site", "same-origin"),
+                ("origin", "https://evil.example.net"),
+            ],
+            &[("origin", "https://organizr.example.com")],
+            &[("origin", "http://organizr.example.com")],
+        ];
+        for headers in from_here {
+            assert!(is_from_this_site(&request(headers)), "{headers:?}");
+        }
+        let not_from_here: [&[(&str, &str)]; 8] = [
+            &[],
+            &[("sec-fetch-site", "none")],
+            &[("sec-fetch-site", "same-site")],
+            &[("sec-fetch-site", "cross-site")],
+            &[
+                ("sec-fetch-site", "cross-site"),
+                ("origin", "https://organizr.example.com"),
+            ],
+            &[("origin", "https://evil.example.net")],
+            &[("origin", "https://organizr.example.com:8443")],
+            &[("origin", "null")],
+        ];
+        for headers in not_from_here {
+            assert!(!is_from_this_site(&request(headers)), "{headers:?}");
+        }
+    }
 
     fn request(headers: &[(&'static str, &'static str)]) -> HeaderMap {
         let mut map = HeaderMap::new();

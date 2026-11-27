@@ -459,8 +459,25 @@ async fn marketplace() -> StandIn {
             entry("greedy", "hello.wasm", good.clone(), json!(["network"])),
             entry("missing", "nothing.wasm", good.clone(), json!([])),
             entry("local", "local/hello.wasm", good.clone(), json!([])),
+            // The file moved on the host of the list, as a release file of GitHub moves
+            // to another public host.
+            entry("moved", "moved.wasm", good.clone(), json!([])),
+            // A redirect to another host on this computer.
+            entry("bounced", "bounced.wasm", good.clone(), json!([])),
             entry("Bad Id", "hello.wasm", good, json!([])),
         ]}))
+    }
+    /// Sends the download to the same file on the same server by another name, which is
+    /// a host on this computer that is not the host of the list.
+    async fn bounced(headers: axum::http::HeaderMap) -> axum::response::Redirect {
+        let host = headers
+            .get("host")
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        axum::response::Redirect::temporary(&format!(
+            "http://localhost:{}/files/hello.wasm",
+            host.rsplit(':').next().unwrap_or_default()
+        ))
     }
     StandIn::start(
         Router::new()
@@ -472,7 +489,14 @@ async fn marketplace() -> StandIn {
             .route(
                 "/files/hostile.wasm",
                 axum::routing::get(|| async { hostile() }),
-            ),
+            )
+            .route(
+                "/files/moved.wasm",
+                axum::routing::get(|| async {
+                    axum::response::Redirect::permanent("/files/hello.wasm")
+                }),
+            )
+            .route("/files/bounced.wasm", axum::routing::get(bounced)),
     )
     .await
 }
@@ -510,7 +534,12 @@ async fn extension_of_the_marketplace_is_installed_when_its_file_is_the_named_on
             .iter()
             .filter_map(|row| row["id"].as_str())
             .collect();
-        assert_eq!(ids, ["hello", "swapped", "greedy", "missing", "local"]);
+        assert_eq!(
+            ids,
+            [
+                "hello", "swapped", "greedy", "missing", "local", "moved", "bounced"
+            ]
+        );
         assert_eq!(offered[0]["installed"], json!(false));
         assert_eq!(offered[0]["problem"], Value::Null);
         assert!(
@@ -571,6 +600,21 @@ async fn extension_of_the_marketplace_is_installed_when_its_file_is_the_named_on
         );
         let (status, ..) = raw(&app, Some(&boss), "GET", "/extension/hello/hello", "").await;
         assert_eq!(status, StatusCode::OK);
+
+        // A redirect on the host of the list is followed.
+        let moved = call(
+            &app,
+            As::Admin,
+            "POST",
+            "/extensions/marketplace/moved",
+            None,
+        )
+        .await;
+        assert_eq!(moved.status, StatusCode::OK, "{}", moved.body);
+        assert_eq!(
+            std::fs::read(data.join("plugins/moved/plugin.wasm")).expect("the file is there"),
+            template()
+        );
     })
     .await;
 }
@@ -606,6 +650,13 @@ async fn nothing_is_installed_when_the_file_or_the_entry_is_wrong() {
         assert_eq!(local.status, StatusCode::CONFLICT);
         assert_eq!(
             local.message(),
+            json!("The extension could not be downloaded")
+        );
+        // So is a redirect to such a host, which is checked as the first address is.
+        let bounced = install("bounced").await;
+        assert_eq!(bounced.status, StatusCode::CONFLICT, "{}", bounced.body);
+        assert_eq!(
+            bounced.message(),
             json!("The extension could not be downloaded")
         );
         let missing = install("missing").await;

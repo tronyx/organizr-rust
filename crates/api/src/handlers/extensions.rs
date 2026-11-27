@@ -61,6 +61,26 @@ const BODY_LIMIT: usize = 1024 * 1024;
 /// caller are never among them.
 const REQUEST_HEADERS: [&str; 4] = ["accept", "accept-language", "content-type", "user-agent"];
 
+/// The header that tells an extension whether a page of this site sent the request:
+/// `true` or `false`. Organizr refuses a request from another site that would change
+/// something, but lets every GET and HEAD through, so an extension that changes
+/// something on such a request can check this header.
+const SAME_SITE_HEADER: &str = "x-organizr-same-site";
+
+/// The headers of a request that an extension sees: the ones of [`REQUEST_HEADERS`] that
+/// the request has, and [`SAME_SITE_HEADER`].
+fn request_headers(headers: &HeaderMap) -> Vec<(String, String)> {
+    let same_site = crate::same_origin::is_from_this_site(headers);
+    REQUEST_HEADERS
+        .iter()
+        .filter_map(|name| {
+            let value = headers.get(*name)?.to_str().ok()?;
+            Some(((*name).to_owned(), value.to_owned()))
+        })
+        .chain([(SAME_SITE_HEADER.to_owned(), same_site.to_string())])
+        .collect()
+}
+
 /// The headers of an answer that an extension can set.
 const RESPONSE_HEADERS: [&str; 3] = ["cache-control", "content-disposition", "content-type"];
 
@@ -539,6 +559,29 @@ async fn check_download(list: &str, download: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// The most redirects that a download follows.
+const MOST_REDIRECTS: usize = 10;
+
+/// Downloads the file of an entry of the list at `list`. The first address and every
+/// redirect are checked with [`check_download`] before they are requested, so a redirect
+/// cannot lead to an address that the list could not name.
+async fn download_checked(
+    http: &organizr_integrations::http::Outbound,
+    list: &str,
+    download: &str,
+    limit: usize,
+) -> Result<Vec<u8>, String> {
+    let mut url = download.to_owned();
+    for _ in 0..=MOST_REDIRECTS {
+        check_download(list, &url).await?;
+        match probe::download_step(http, &url, limit).await? {
+            probe::Step::File(bytes) => return Ok(bytes),
+            probe::Step::Redirect(next) => url = next,
+        }
+    }
+    Err("the download has too many redirects".to_owned())
+}
+
 /// `GET /extensions/marketplace`: the extensions that the marketplace offers.
 pub async fn marketplace(
     State(state): State<AppState>,
@@ -599,13 +642,7 @@ pub async fn install(
         .ok_or_else(|| Refusal::conflict("No requests can be sent"))?;
     let limit = usize::try_from(COMPONENT_LIMIT).unwrap_or(usize::MAX);
     let list = state.extension_marketplace().unwrap_or_default();
-    check_download(list, &entry.download)
-        .await
-        .map_err(|error| {
-            tracing::warn!(extension = id, error, "an extension was not downloaded");
-            Refusal::conflict("The extension could not be downloaded")
-        })?;
-    let bytes = probe::download(http, &entry.download, limit)
+    let bytes = download_checked(http, list, &entry.download, limit)
         .await
         .map_err(|error| {
             tracing::warn!(
@@ -743,13 +780,7 @@ pub async fn call(
         method: method.as_str().to_owned(),
         path: format!("/{path}"),
         query: query.unwrap_or_default(),
-        headers: REQUEST_HEADERS
-            .iter()
-            .filter_map(|name| {
-                let value = headers.get(*name)?.to_str().ok()?;
-                Some(((*name).to_owned(), value.to_owned()))
-            })
-            .collect(),
+        headers: request_headers(&headers),
         body: body.to_vec(),
         caller: ExtensionCaller {
             username: caller
@@ -867,6 +898,48 @@ mod tests {
             (plain, "https://127.0.0.1/a.wasm"),
         ] {
             assert!(check_download(list, download).await.is_err(), "{download}");
+        }
+    }
+
+    #[test]
+    fn extension_sees_a_few_headers_and_whether_this_site_sent_the_request() {
+        let headers_of = |pairs: &[(&'static str, &'static str)]| {
+            let mut map = HeaderMap::new();
+            map.insert(
+                header::HOST,
+                HeaderValue::from_static("organizr.example.com"),
+            );
+            for (name, value) in pairs {
+                map.insert(*name, HeaderValue::from_static(value));
+            }
+            request_headers(&map)
+        };
+        let pair = |name: &str, value: &str| (name.to_owned(), value.to_owned());
+        assert_eq!(
+            headers_of(&[
+                ("accept", "text/html"),
+                ("cookie", "organizr_token_x=secret"),
+                ("sec-fetch-site", "same-origin"),
+                // A header of the caller with the name of the flag is not passed on.
+                (SAME_SITE_HEADER, "true"),
+            ]),
+            [pair("accept", "text/html"), pair(SAME_SITE_HEADER, "true")]
+        );
+        assert_eq!(
+            headers_of(&[("origin", "https://organizr.example.com")]),
+            [pair(SAME_SITE_HEADER, "true")]
+        );
+        for pairs in [
+            &[("sec-fetch-site", "cross-site")][..],
+            &[("origin", "https://evil.example.net")],
+            &[(SAME_SITE_HEADER, "true")],
+            &[],
+        ] {
+            assert_eq!(
+                headers_of(pairs),
+                [pair(SAME_SITE_HEADER, "false")],
+                "{pairs:?}"
+            );
         }
     }
 

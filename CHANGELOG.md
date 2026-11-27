@@ -106,6 +106,8 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - A health check that sends the API key no longer follows a redirect to another host; the service then counts as down (D-194).
 - The shared fallback account of Ombi, Overseerr or Petio goes only to users who see the homepage item or a tab of that application (D-195).
 - The Netdata and OctoPrint items no longer send the address of the service to viewers, except the OctoPrint address when the webcam stream needs it (D-196).
+- An extension download from the marketplace checks every redirect as it checks the first address, so a redirect cannot lead to this computer or a private network.
+- An extension gets the header `x-organizr-same-site` (`true` or `false`) with each call, so it can tell whether a page of Organizr sent a GET or HEAD request.
 
 ### Documentation
 

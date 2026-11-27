@@ -73,14 +73,52 @@ const DOWNLOAD_TIME_LIMIT: Duration = Duration::from_secs(120);
 /// Downloads a file of at most `limit` bytes. Fails when the server cannot be reached,
 /// when it answers with an error, and when the file is larger than the limit.
 pub async fn download(http: &Outbound, url: &str, limit: usize) -> Result<Vec<u8>, String> {
-    let too_large = || format!("the file is larger than {limit} bytes");
-    let mut response = http
+    let response = http
         .client_for(url)
         .get(url)
         .timeout(DOWNLOAD_TIME_LIMIT)
         .send()
         .await
         .map_err(without_address)?;
+    body_of(response, limit).await
+}
+
+/// What one request of a download gave.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Step {
+    /// The file.
+    File(Vec<u8>),
+    /// A redirect to this whole address.
+    Redirect(String),
+}
+
+/// As [`download`], with a client that follows no redirect. A redirect gives its
+/// address, so that the caller can check it before it follows. A redirect without an
+/// address that can be read fails.
+pub async fn download_step(http: &Outbound, url: &str, limit: usize) -> Result<Step, String> {
+    let response = http
+        .direct_client_for(url)
+        .get(url)
+        .timeout(DOWNLOAD_TIME_LIMIT)
+        .send()
+        .await
+        .map_err(without_address)?;
+    if response.status().is_redirection() {
+        let next = response
+            .headers()
+            .get(reqwest::header::LOCATION)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|location| response.url().join(location).ok())
+            .ok_or_else(|| "the server answered with a redirect without an address".to_owned())?;
+        return Ok(Step::Redirect(next.into()));
+    }
+    body_of(response, limit).await.map(Step::File)
+}
+
+/// The body of an answer of at most `limit` bytes. Fails when the answer is an error
+/// and when the body is larger than the limit.
+async fn body_of(mut response: reqwest::Response, limit: usize) -> Result<Vec<u8>, String> {
+    let too_large = || format!("the file is larger than {limit} bytes");
     if !response.status().is_success() {
         return Err(format!(
             "the server answered with the status {}",
