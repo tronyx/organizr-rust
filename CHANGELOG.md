@@ -32,6 +32,10 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 - Dates show as PHP shows them, in the local time of the browser: "Nov 18, 2026 1:02 PM" in Manage Users, and "November 18, 2026 1:02 PM" for sessions, chat messages and donations.
 - Each service of the health checks plugin has an **API key** switch. Only a service with the switch on gets Organizr's API key; services from before the switch keep getting it, and new or imported ones start with it off (D-130).
 
+### Fixed
+
+- Album covers in the poster rows of the homepage show as in PHP Organizr: a square cover with a darkened copy of it above and below, instead of a cover stretched to the shape of a poster.
+
 ### Security
 
 - Secrets (passwords, tokens and API keys of your services) are stored encrypted with a key of the install, and the API shows them masked. See [Secrets](docs/secrets.md).
