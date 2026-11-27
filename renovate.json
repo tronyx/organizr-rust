@@ -46,6 +46,17 @@
       "groupName": "Workflow tools"
     },
     {
+      "description": "wasmtime-wasi needs the wasmtime of the same version, so both change in one pull request.",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["wasmtime", "wasmtime-wasi"],
+      "groupName": "wasmtime"
+    },
+    {
+      "description": "The Node.js of the image build and of the workflows stay the same version, so both change in one pull request.",
+      "matchDepNames": ["node"],
+      "groupName": "Node.js"
+    },
+    {
       "description": "The image of the PHP application is the reference for the parity tests. Its version stays.",
       "matchFileNames": ["parity/**"],
       "enabled": false

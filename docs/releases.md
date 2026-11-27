@@ -139,6 +139,8 @@ What it updates, and how it groups the pull requests:
 - **Rust libraries**: minor and patch updates in one pull request.
 - **Web libraries**: minor and patch updates in one pull request.
 - **Workflow tools**: the actions and tools in `.github/workflows/` in one pull request. Renovate keeps the commits and digests of the pins up to date with the versions.
+- **wasmtime**: `wasmtime` and `wasmtime-wasi` in one pull request, also for a major update. `wasmtime-wasi` needs the `wasmtime` of the same version, so the build fails when only one of them changes.
+- **Node.js**: the Node.js image of `docker/Dockerfile` and the `node-version` of the workflows in one pull request, so the image build and the checks use the same version.
 - It leaves the folder `parity` alone. The PHP image there is the reference for the parity tests, and its version stays.
 
 The workflows `ci` and `lint` run for each Renovate pull request, as for every other pull request.
