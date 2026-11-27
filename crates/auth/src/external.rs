@@ -139,6 +139,10 @@ async fn mirror_password(
         let candidate = password.to_owned();
         let hash = password::hash_in_turn(candidate).await??;
         database.users().set_password_hash(user.id, &hash).await?;
+        // A new password ends the sessions from before, as a change in Organizr does;
+        // the login makes its own session after this (D-146).
+        let ended = database.sessions().delete_all_of_user(user.id).await?;
+        tracing::info!(user = %user.username, ended, "the sessions of a user with a password from a login service were ended");
         tracing::info!(user = %user.username, "the password of the user was updated from the service");
     }
     Ok(())

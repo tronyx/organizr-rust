@@ -30,7 +30,7 @@ use crate::envelope::{Envelope, NoContent, NoData};
 use crate::error::ApiError;
 use crate::handlers::fields::Refusal;
 use crate::handlers::proof::{self, Proof};
-use crate::handlers::users::{is_admin, is_another_co_admin, user_at};
+use crate::handlers::users::{end_other_sessions, is_admin, is_another_co_admin, user_at};
 use crate::state::AppState;
 
 /// The name that an authenticator app shows for a script with the API key.
@@ -208,6 +208,7 @@ pub async fn save(
         .await
         .map_err(ApiError::from)?;
     tracing::info!(user = %user.username, "a user added a second factor");
+    end_other_sessions(state.database(), &caller, user, true, "a new second factor").await?;
     Ok(Envelope::success(NoData).with_message("2FA Added"))
 }
 
@@ -230,6 +231,14 @@ pub async fn remove(
             .set_two_factor(user.id, None)
             .await?;
         tracing::info!(user = %user.username, "a user removed the second factor");
+        end_other_sessions(
+            state.database(),
+            &caller,
+            user,
+            true,
+            "a removed second factor",
+        )
+        .await?;
     }
     Ok(NoContent.into_response())
 }
@@ -264,7 +273,8 @@ pub async fn remove_for_user(
     let own = caller
         .user()
         .is_some_and(|caller| caller.authenticated.user.id == user.id);
-    if own && has_second_factor(&state, &user).await? {
+    let had_one = has_second_factor(&state, &user).await?;
+    if own && had_one {
         owner_proof(&state, &client, &user, &data).await?;
     }
     if !database.users().set_two_factor(user.id, None).await? {
@@ -275,5 +285,8 @@ pub async fn remove_for_user(
         caller.authenticated.user.username.as_str()
     });
     tracing::info!(user = %user.username, by, "the second factor of a user was removed");
+    if had_one {
+        end_other_sessions(database, &caller, &user, own, "a removed second factor").await?;
+    }
     Ok(Envelope::success(NoData).with_message("Second factor removed"))
 }

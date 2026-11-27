@@ -291,10 +291,34 @@ async fn password_change_ends_the_other_sessions() {
         assert!(!is_logged_in(&app, &here).await);
         assert!(!is_logged_in(&app, &again).await);
 
-        // A change of another field ends nothing.
+        // A new address ends them too: a recovery e-mail goes to it (D-146). By an Admin,
+        // every session ends.
         let kept = log_in(&app, "zoe", "the password the admin chose").await;
         change(&app, ZOE, json!({"email": "zoe@example.org"})).await;
-        assert!(is_logged_in(&app, &kept).await);
+        assert!(!is_logged_in(&app, &kept).await);
+
+        // A change of the own address keeps the session of the change.
+        let here = log_in(&app, "zoe", "the password the admin chose").await;
+        let elsewhere = log_in(&app, "zoe", "the password the admin chose").await;
+        let body = json!({
+            "email": "zoe@example.net",
+            "currentPassword": "the password the admin chose",
+        });
+        let answer = call(
+            &app,
+            As::User(&here),
+            "PUT",
+            &format!("/users/{ZOE}"),
+            Some(body),
+        )
+        .await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert!(is_logged_in(&app, &here).await);
+        assert!(!is_logged_in(&app, &elsewhere).await);
+
+        // A change of another field ends nothing.
+        change(&app, ZOE, json!({"image": "zoe.png"})).await;
+        assert!(is_logged_in(&app, &here).await);
     })
     .await;
 }

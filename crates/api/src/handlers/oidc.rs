@@ -44,6 +44,7 @@ use crate::handlers::login::device_of;
 use crate::handlers::mail::request_site;
 use crate::handlers::notice_page;
 use crate::handlers::proof;
+use crate::handlers::users::end_other_sessions;
 use crate::router::API_BASE;
 use crate::same_origin::FromThisSite;
 use crate::state::AppState;
@@ -424,8 +425,18 @@ pub async fn unlink(
     // A wrong password counts like a failed login of the account.
     proof::password(&state, &client, account, data.text("password")).await?;
     match accounts::unlink(state.database(), account.id).await {
-        Ok(_) => Ok(Envelope::success(NoData)
-            .with_message("The account is no longer linked to the provider")),
+        Ok(_) => {
+            end_other_sessions(
+                state.database(),
+                &caller,
+                account,
+                true,
+                "an unlinked provider",
+            )
+            .await?;
+            Ok(Envelope::success(NoData)
+                .with_message("The account is no longer linked to the provider"))
+        }
         Err(OidcUnlinkError::NotLinked) => {
             Err(Refusal::conflict("The account is not linked to a provider"))
         }

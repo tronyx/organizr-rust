@@ -23,7 +23,7 @@ The move never changes your old install. You can run both side by side, and swit
 > - **Komga single sign-on with a master password** asks Komga with the e-mail address of the Plex account after a Plex login (D-150).
 > - **The donation history** of the Donate item shows only the payments that this version marked, not the ones from before the move (D-152).
 > - **Invites for Emby** make an Emby user only while the invites plugin is set to Emby (D-149).
-> - **A new password ends the account's other sessions** (D-146).
+> - **A new password, a new e-mail address, a change of the second factor or an unlinked provider ends the account's other sessions** (D-146).
 > - **Scripts** that call `GET /plugins/bookmark/setup/…`, `GET /plugins/plexlibraries/setup/tab` or the test e-mail route from another site are refused (D-144).
 >
 > [Deviations](deviations.md) has the reason for each.

@@ -642,3 +642,65 @@ async fn recovery_password_changes_nothing_before_the_second_factor() {
     })
     .await;
 }
+
+/// Logs in with the password and the code of the second factor, if any, and returns the
+/// session cookie.
+async fn session_of(app: &Router, name: &str, code: Option<&str>) -> String {
+    let answer = log_in(app, name, code).await;
+    assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+    answer
+        .cookies
+        .iter()
+        .find(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
+        .and_then(|cookie| cookie.split(';').next())
+        .expect("the login sets the session cookie")
+        .to_owned()
+}
+
+async fn is_logged_in(app: &Router, cookie: &str) -> bool {
+    let me = call(app, As::User(cookie), "GET", "/token/me", None).await;
+    me.data()["loggedin"] == json!(true)
+}
+
+/// Turning the second factor on, replacing it or turning it off ends the other sessions
+/// of the account and keeps the session of the change; a manager who removes the second
+/// factor of a user ends every session of that user (D-146).
+#[tokio::test]
+async fn second_factor_changes_end_the_other_sessions() {
+    on_each_engine(async |database| {
+        seed::installed(database).await;
+        let app = installed_app(database);
+        let here = seed::logged_in(database, &app, "sam", 4).await;
+        let elsewhere = session_of(&app, "sam", None).await;
+
+        let secret = add_second_factor(&app, &here).await;
+        assert!(is_logged_in(&app, &here).await);
+        assert!(!is_logged_in(&app, &elsewhere).await);
+
+        let elsewhere = session_of(&app, "sam", Some(&code(&secret))).await;
+        let answer = call(
+            &app,
+            As::User(&here),
+            "DELETE",
+            "/2fa",
+            Some(with_password()),
+        )
+        .await;
+        assert!(answer.status.is_success(), "{}", answer.body);
+        assert!(is_logged_in(&app, &here).await);
+        assert!(!is_logged_in(&app, &elsewhere).await);
+
+        let _ = add_second_factor(&app, &here).await;
+        let id = database
+            .users()
+            .find_by_username("sam")
+            .await
+            .expect("the database answers")
+            .expect("the user exists")
+            .id;
+        let answer = call(&app, As::Admin, "DELETE", &format!("/users/2fa/{id}"), None).await;
+        assert_eq!(answer.status, StatusCode::OK, "{}", answer.body);
+        assert!(!is_logged_in(&app, &here).await);
+    })
+    .await;
+}

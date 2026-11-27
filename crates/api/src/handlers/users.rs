@@ -370,14 +370,16 @@ pub async fn change(
     change_by_text(&state, &caller, &client, &id, &data).await
 }
 
-/// Ends the sessions of a user whose password was changed, so that a stolen session
-/// stops working (D-146). A change of the own password keeps the session of the change;
-/// a change by somebody else ends every session of the user.
-async fn end_sessions_after_new_password(
+/// Ends the sessions of a user whose password, e-mail address, second factor or provider
+/// link changed, so that a stolen session stops working (D-146). A change of the own
+/// account keeps the session of the change; a change by somebody else ends every session
+/// of the user. `what` names the change for the log.
+pub(crate) async fn end_other_sessions(
     database: &Database,
     caller: &Caller,
     user: &User,
     own: bool,
+    what: &str,
 ) -> Result<(), Refusal> {
     let sessions = database.sessions();
     let kept = caller
@@ -388,7 +390,7 @@ async fn end_sessions_after_new_password(
         Some(kept) => sessions.delete_all_of_user_except(user.id, kept).await?,
         None => sessions.delete_all_of_user(user.id).await?,
     };
-    tracing::info!(user = %user.username, ended, "the sessions of a user with a new password were ended");
+    tracing::info!(user = %user.username, ended, what, "the other sessions of a user were ended");
     Ok(())
 }
 
@@ -479,8 +481,13 @@ pub async fn change_by_text(
     match database.users().update(user.id, changes).await {
         Ok(Some(_)) => {
             tracing::info!(user = %user.username, id = %user.id, "a user was changed");
-            if new_password {
-                end_sessions_after_new_password(database, caller, &user, actor.is_target).await?;
+            if new_password || new_address {
+                let what = if new_password {
+                    "a new password"
+                } else {
+                    "a new e-mail address"
+                };
+                end_other_sessions(database, caller, &user, actor.is_target, what).await?;
             }
             Ok(Envelope::success(NoData)
                 .with_message("User info updated")

@@ -135,7 +135,7 @@ async fn ldap_login_finds_the_account_by_the_typed_name_and_updates_its_password
         let server = ldap_server(false).await;
         // The account "kim" exists, with another password and its own address.
         let app = installed_app_with(database, &ldap_settings(server.port(), "both", &[]));
-        let _ = seed::logged_in(database, &app, "kim", 4).await;
+        let kim_session = seed::logged_in(database, &app, "kim", 4).await;
         let kim = LDAP_PEOPLE[1];
 
         let answer = log_in(&app, "KIM", kim.password).await;
@@ -144,6 +144,10 @@ async fn ldap_login_finds_the_account_by_the_typed_name_and_updates_its_password
         let account = user(database, "kim").await.expect("the account is there");
         assert!(has_password(&account, kim.password));
         assert!(!has_password(&account, seed::USER_PASSWORD));
+        // The new password ends the sessions from before, as a change in Organizr does
+        // (D-146).
+        let before = call(&app, As::User(&kim_session), "GET", "/token/me", None).await;
+        assert_ne!(before.data()["loggedin"], json!(true), "{}", before.body);
         // No second account was made.
         assert_eq!(database.users().list().await.expect("it loads").len(), 2);
     })

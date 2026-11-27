@@ -1198,6 +1198,22 @@ async fn linked_account_is_unlinked_with_its_password() {
             json!("The account is not linked to a provider")
         );
 
+        // A second session of the account, as a thief could have it.
+        let second = call(
+            &app,
+            As::Guest,
+            "POST",
+            "/login",
+            Some(json!({"username": "chief", "password": seed::USER_PASSWORD})),
+        )
+        .await;
+        let elsewhere = second
+            .cookies
+            .iter()
+            .find(|cookie| cookie.starts_with("organizr_token_") && !cookie.contains("=;"))
+            .and_then(|cookie| cookie.split(';').next())
+            .expect("the login sets the session cookie")
+            .to_owned();
         let (back, cookie) = start_link(&app, &provider, &session).await;
         let answer = finish_link(&app, &back, &[&cookie, &session]).await;
         assert_eq!(answer.status, StatusCode::FOUND, "{}", answer.body);
@@ -1232,6 +1248,11 @@ async fn linked_account_is_unlinked_with_its_password() {
         assert_eq!(auth_service(&app, "chief").await, json!("internal"));
         let linked = call(&app, As::User(&session), "GET", "/oidc/link", None).await;
         assert_eq!(linked.data(), json!({"provider": null, "name": null}));
+        // The unlink ends the other sessions of the account and keeps this one (D-146).
+        let other = call(&app, As::User(&elsewhere), "GET", "/token/me", None).await;
+        assert_ne!(other.data()["loggedin"], json!(true), "{}", other.body);
+        let this = call(&app, As::User(&session), "GET", "/token/me", None).await;
+        assert_eq!(this.data()["loggedin"], json!(true), "{}", this.body);
     })
     .await;
 }
