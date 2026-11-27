@@ -375,6 +375,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(feature = "embedded-web"))]
     async fn send_accepting(path: &str, accept: &str) -> Answer {
         let request = Request::builder()
             .uri(path)
