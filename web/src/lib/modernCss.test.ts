@@ -167,6 +167,9 @@ const HOMEPAGE_CLASSES = [
   'org-today',
   'org-posters',
   'org-poster',
+  'org-poster-music',
+  'org-poster-picture',
+  'org-poster-shade',
   'org-poster-corner',
   'org-stream',
   'org-stream-picture',
@@ -413,6 +416,9 @@ describe('the modern CSS', () => {
       'org-header-link',
       'org-form-control',
       'org-form-button',
+      // Only where the darkened copies of an album cover sit; the frame is the same.
+      'org-poster-shade-top',
+      'org-poster-shade-bottom',
     ]);
     const unknown = [...used].filter(
       (name) => !known.has(name) && !/^org-(item|tone)(-[a-z]+)?$/.test(name),

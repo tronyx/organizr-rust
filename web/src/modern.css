@@ -1073,6 +1073,12 @@
     outline-offset: 1px;
   }
 
+  /* The square cover of an album and its darkened copies fit inside the frame. */
+  [data-layout='modern'] .org-poster-music .org-poster-picture,
+  [data-layout='modern'] .org-poster .org-poster-shade {
+    width: 100%;
+  }
+
   [data-layout='modern'] .org-poster-corner {
     border-top: 30px solid var(--org-state, var(--color-primary));
     border-left: 30px solid transparent;

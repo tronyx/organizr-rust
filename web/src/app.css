@@ -3520,6 +3520,32 @@
     background: var(--color-base-300);
   }
 
+  /* Music, as in PHP Organizr: the square cover 37px down the slot, and a darkened copy
+     of its top 37px above it and of its bottom 38px below it, with the filter of PHP. */
+  .org-poster-music .org-poster-picture {
+    position: absolute;
+    top: 37px;
+    left: 0;
+    height: 150px;
+  }
+
+  .org-poster .org-poster-shade {
+    position: absolute;
+    left: 0;
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    filter: contrast(309%) brightness(5%) saturate(32) grayscale(96%);
+  }
+
+  .org-poster .org-poster-shade-top {
+    top: 0;
+  }
+
+  .org-poster .org-poster-shade-bottom {
+    top: 73px;
+  }
+
   .org-poster-corner {
     position: absolute;
     top: 0;

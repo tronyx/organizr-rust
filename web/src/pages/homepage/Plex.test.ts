@@ -249,6 +249,42 @@ describe('plex helpers', () => {
     );
   });
 
+  it('shows an album as a square cover between darkened copies, as PHP Organizr does', async () => {
+    stubApi({
+      'GET homepage/plex/recent': {
+        data: {
+          content: [
+            item('The Album', { type: 'music', imageURL: 'data/cache/plex-9-list.jpg' }),
+            item('The Film'),
+          ],
+        },
+      },
+    });
+    render(Plex, { part: 'recent' });
+
+    const album = await screen.findByRole('button', { name: /The Album/ });
+    expect(album.closest('li')?.classList.contains('org-poster-music')).toBe(true);
+    const shades = album.querySelectorAll<HTMLImageElement>('.org-poster-shade');
+    expect(shades).toHaveLength(2);
+    for (const shade of shades) {
+      expect(shade.getAttribute('src')).toBe('data/cache/plex-9-list.jpg');
+      expect(shade.getAttribute('alt')).toBe('');
+    }
+    expect(album.querySelector('.org-poster-picture')?.getAttribute('src')).toBe(
+      'data/cache/plex-9-list.jpg',
+    );
+    // A copy that does not load is left out, not replaced by "Poster coming soon".
+    const [top] = shades;
+    expect(top).toBeDefined();
+    await fireEvent.error(top as HTMLImageElement);
+    expect(top?.hidden).toBe(true);
+
+    // A film keeps its one tall poster.
+    const film = screen.getByRole('button', { name: /The Film/ });
+    expect(film.closest('li')?.classList.contains('org-poster-music')).toBe(false);
+    expect(film.querySelectorAll('img')).toHaveLength(1);
+  });
+
   it('filters the recently added items by kind, as PHP Organizr does', async () => {
     stubApi({
       'GET homepage/plex/recent': {

@@ -50,6 +50,11 @@
   function show(item: PlexItem) {
     open = item;
   }
+
+  /** A darkened copy of a cover that does not load is left out. */
+  function hideShade(event: Event) {
+    (event.currentTarget as HTMLImageElement).hidden = true;
+  }
 </script>
 
 {#snippet kindFilters()}
@@ -63,9 +68,33 @@
 <PosterRow {title} {label} filters={byKind && kinds.length > 0 ? kindFilters : undefined}>
   {#each listed as item, index (index)}
     {@const picture = posterAddress(item.imageURL)}
-    <li class="org-poster">
+    <li class={['org-poster', item.type === 'music' && 'org-poster-music']}>
       <button type="button" title="{item.title} {subtitleOf(item)}" onclick={() => show(item)}>
-        <img src={picture} alt="" loading="lazy" onerror={showNoPoster} />
+        {#if item.type === 'music'}
+          <!-- An album cover is square, as in PHP Organizr: the cover in the middle, and
+               a darkened copy of its top and of its bottom above and below it. -->
+          <img
+            class="org-poster-shade org-poster-shade-top"
+            src={picture}
+            alt=""
+            loading="lazy"
+            onerror={hideShade}
+          />
+          <img
+            class="org-poster-shade org-poster-shade-bottom"
+            src={picture}
+            alt=""
+            loading="lazy"
+            onerror={hideShade}
+          />
+        {/if}
+        <img
+          class="org-poster-picture"
+          src={picture}
+          alt=""
+          loading="lazy"
+          onerror={showNoPoster}
+        />
         <span class="sr-only">{item.title}</span>
         <span class="sr-only">{subtitleOf(item)}</span>
       </button>
