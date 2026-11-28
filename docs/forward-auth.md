@@ -35,8 +35,7 @@ After the login, Organizr sends the browser back to the address it wanted (see [
 
 - **One domain.** The application and Organizr share a domain, for example `sonarr.example.com` and `organizr.example.com`. The Organizr login cookie is set for the whole domain (`.example.com`), so the browser sends it to both.
 
-  > [!CAUTION]
-  > Every site under that domain gets the Organizr login cookie. Put only applications you trust under the same domain.
+  > 🛑 **Caution:** every site under that domain gets the Organizr login cookie. Put only applications you trust under the same domain.
   >
   > With `ORGANIZR_SESSION_COOKIE_HOST_ONLY=1` the cookie is for the Organizr host alone, and forward auth for applications on other hosts can't work. See [Configuration](configuration.md).
 
