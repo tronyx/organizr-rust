@@ -55,7 +55,7 @@ These steps use Docker Compose with SQLite. For PostgreSQL, see [With PostgreSQL
    `/path/to/old/config` is the old folder from step 1 of the checklist. `:ro` mounts it read-only, so nothing can change it.
 
    > [!TIP]
-   > **`permission denied`?** The import runs as the user `65532`, and PHP Organizr often lets only its owner into `www/db`. The error starts with `cannot look at /old/www/db/...: Permission denied (os error 13)`. ([Importing](importing.md#-if-you-see-permission-denied) has the whole message.) Let that one user in, just for the import:
+   > **`permission denied`?** The import runs as the user `65532`, and PHP Organizr often lets only its owner into `www/db`. The error starts with `cannot look at /old/www/db/...: Permission denied (os error 13)`. ([Importing](importing.md#-if-you-see-permission-denied) has the whole message.) Let that one user in, just for the import (logged in as root, leave out `sudo`):
    >
    > ```bash
    > sudo setfacl -R -m u:65532:rX /path/to/old/config/www/db

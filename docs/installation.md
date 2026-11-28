@@ -163,6 +163,8 @@ sudo mkdir -p /srv/organizr
 sudo chown 65532:65532 /srv/organizr
 ```
 
+Logged in as root, for example on Unraid or Proxmox? Leave out `sudo`: the commands work the same without it.
+
 Then mount it with `- /srv/organizr:/config` in `compose.yaml` (or `-v /srv/organizr:/config` with `docker run`). On a NAS such as Unraid or Synology, the simplest choice is the named volume from the example.
 
 ### 🔑 Back up secret.key

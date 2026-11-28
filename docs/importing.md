@@ -52,7 +52,7 @@ The container runs the import as the user `65532`. That user must be able to ent
 cannot look at /old/www/db/<database file>: Permission denied (os error 13); the user that runs the import must be able to enter each folder of that path (in the container image, that user has the UID 65532)
 ```
 
-Let only that user in, for the import:
+Let only that user in, for the import. Logged in as root? Leave out `sudo` in the commands below.
 
 ```bash
 sudo setfacl -R -m u:65532:rX /path/to/old/config/www/db

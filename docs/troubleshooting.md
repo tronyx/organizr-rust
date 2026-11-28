@@ -43,6 +43,8 @@ A folder of the host that you mount as `/config` must belong to that user:
 sudo chown -R 65532:65532 /path/to/the/folder
 ```
 
+Logged in as root, for example on Unraid or Proxmox? Leave out `sudo`: the commands work the same without it.
+
 A named Docker volume needs nothing. See [Installation](installation.md#-the-data-folder).
 
 ### 🔑 After a restore or a move, settings with passwords and keys are empty

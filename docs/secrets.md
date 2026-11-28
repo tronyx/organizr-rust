@@ -127,6 +127,8 @@ You may prefer the key not to sit in the volume next to the database (for exampl
    sudo chmod 600 organizr.key
    ```
 
+   Logged in as root, for example on Unraid or Proxmox? Leave out `sudo`: the commands work the same without it.
+
 3. Give it to Organizr as a Compose secret:
 
    ```yaml

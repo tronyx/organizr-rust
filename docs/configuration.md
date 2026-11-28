@@ -111,7 +111,7 @@ The image keeps everything in the volume `/config`. Compose names the volume `<p
 | `backups/` | The backups, unless you set another **Backup Save Path** |
 | `logs/` | The log files, one per day. See [The log](log.md) |
 
-The container runs as the user and group `65532`, not as root. A named volume needs nothing. A folder of the host must belong to that user: `sudo chown -R 65532:65532 /path/on/the/host`. On Kubernetes, set `runAsUser: 65532` and `fsGroup: 65532`.
+The container runs as the user and group `65532`, not as root. A named volume needs nothing. A folder of the host must belong to that user: `sudo chown -R 65532:65532 /path/on/the/host` (logged in as root, leave out `sudo`). On Kubernetes, set `runAsUser: 65532` and `fsGroup: 65532`.
 
 > [!CAUTION]
 > `docker compose down -v` deletes the volume, and with it your install. Plain `docker compose down` keeps it.

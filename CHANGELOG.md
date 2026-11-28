@@ -132,6 +132,7 @@ Organizr Rust is a rewrite of PHP Organizr 2.1.5000 in Rust and Svelte. It keeps
 
 ### Documentation
 
+- The pages with host commands that use `sudo` (installation, configuration, importing, moving from PHP Organizr, secrets and troubleshooting) say to leave out `sudo` when you're logged in as root, for example on Unraid or Proxmox.
 - The docs are rewritten to be easier to follow, with screenshots, a [security policy](SECURITY.md) and a [contributing guide](CONTRIBUTING.md).
 - The reverse proxy and forward auth steps for Caddy, SWAG and Nginx Proxy Manager are tested. In NPM, the lines that pass the user to an application belong in a custom location for `/`, or a forged `X-Organizr-User` reaches the application. See [Forward auth](docs/forward-auth.md#-passing-the-user-to-the-application).
 - [Settings that could be removed](docs/unused-settings.md) lists the 82 settings from PHP that this version stores but never reads.
