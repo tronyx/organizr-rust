@@ -12,6 +12,7 @@
     categories,
     unsortedPlace,
     pings = {},
+    times = false,
     shown,
     onpick,
     variant = 'og',
@@ -23,6 +24,8 @@
     unsortedPlace: UnsortedPlace;
     /** What the server answered for the addresses to check of the tabs. */
     pings?: Record<string, PingResult>;
+    /** Whether to show the time of each answer, which the setting Show Ping Time turns on. */
+    times?: boolean;
     /** The id of the tab that the main area shows. */
     shown: number | undefined;
     /** Called when the user picks a tab. */
@@ -49,7 +52,7 @@
 <!-- `push` moves the dot to the end of the row; a modern row with the new-window icon has that icon do it. -->
 {#snippet status(tab: MenuTab, push: boolean)}
   {@const answer = pingStatus(tab, pings)}
-  {@const time = pingTime(tab, pings)}
+  {@const time = times ? pingTime(tab, pings) : null}
   {#if time !== null && !icons}
     <small class={['org-label', og && 'org-wide']}>{time}</small>
   {/if}

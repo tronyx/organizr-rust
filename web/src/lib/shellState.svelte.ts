@@ -5,7 +5,7 @@
 import { api } from './api';
 import { frames } from './frames.svelte';
 import { opensNewWindow, tabAddress } from './menu';
-import { pingInterval, pingList, type PingResult } from './pings';
+import { pingInterval, pingList, showsPingTime, type PingResult } from './pings';
 import { PAGES, router } from './route.svelte';
 import { session } from './session.svelte';
 import type { MenuTab } from './types';
@@ -66,6 +66,8 @@ export function extraLinks(): ExtraLink[] {
  */
 export class Pings {
   answers = $state<Record<string, PingResult>>({});
+  /** Whether the menu shows the time of each answer, as the settings say for this caller. */
+  times = $derived(session.launch ? showsPingTime(session.launch) : false);
 
   watch(): () => void {
     const list = pingList(session.tabs);

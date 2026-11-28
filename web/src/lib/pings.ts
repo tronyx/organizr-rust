@@ -36,6 +36,16 @@ export function pingInterval(launch: Launch): number | null {
   return Number.isFinite(interval) ? Math.max(interval, SHORTEST_INTERVAL) : null;
 }
 
+/**
+ * Whether the menu shows the time of each answer: Show Ping Time is on, and the caller has
+ * the level of Minimum Authentication for Time Display, as `pingMs` and `pingAuthMs` of PHP.
+ */
+export function showsPingTime(launch: Launch): boolean {
+  const ping = launch.settings.ping;
+  const level = launch.user?.groupID ?? 999;
+  return ping.ms === true && level <= Number(ping.authMs);
+}
+
 /** What the menu shows for a tab: it answers, it does not, or nothing is known. */
 export function pingStatus(
   tab: MenuTab,

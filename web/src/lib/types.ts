@@ -206,6 +206,10 @@ export interface Launch {
       adminRefresh: string;
       /** The time between two checks for everybody else, in milliseconds as text. */
       everyoneRefresh: string;
+      /** Whether the menu shows the time of each answer (Show Ping Time). */
+      ms?: boolean;
+      /** The level that sees the time of each answer, as text. */
+      authMs?: string;
     };
   };
   status: { status: 'ok' | 'wizard' };

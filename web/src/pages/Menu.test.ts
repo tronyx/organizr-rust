@@ -114,6 +114,23 @@ describe('Menu', () => {
     expect(dot(/Unchecked/)).toBeUndefined();
   });
 
+  it('shows the time of an answer only when asked to, as Show Ping Time of PHP', () => {
+    const checked = [tab(1, 'Up', { ping: 1, ping_url: 'up.example.com:80' })];
+    const props = {
+      tabs: checked,
+      categories: CATEGORIES,
+      shown: undefined,
+      unsortedPlace: 'top' as const,
+      pings: { 'up.example.com:80': 3.2 },
+    };
+    const { unmount } = render(Menu, props);
+    expect(screen.getByRole('link', { name: /Up/ }).textContent).not.toContain('3.2ms');
+    unmount();
+
+    render(Menu, { ...props, times: true });
+    expect(screen.getByRole('link', { name: /Up/ }).textContent).toContain('3.2ms');
+  });
+
   it('opens a tab of the kind "new window" in a new window, without a way back', () => {
     render(Menu, { tabs, categories: CATEGORIES, shown: undefined, unsortedPlace: 'top' });
 

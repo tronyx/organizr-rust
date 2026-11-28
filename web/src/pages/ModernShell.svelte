@@ -461,6 +461,7 @@
             variant="modern"
             collapsed={icons}
             {pings}
+            times={pinged.times}
             tabs={session.tabs}
             categories={session.categories}
             unsortedPlace={session.unsortedPlace}
@@ -477,6 +478,7 @@
           <Menu
             variant="modern"
             {pings}
+            times={pinged.times}
             tabs={session.tabs}
             categories={session.categories}
             unsortedPlace={session.unsortedPlace}

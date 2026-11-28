@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { pingInterval, pingList, pingStatus, SHORTEST_INTERVAL } from './pings';
+import {
+  pingInterval,
+  pingList,
+  pingStatus,
+  pingTime,
+  SHORTEST_INTERVAL,
+  showsPingTime,
+} from './pings';
 import type { Launch, MenuTab } from './types';
 
 function tab(id: number, changes: Partial<MenuTab>): MenuTab {
@@ -110,5 +117,35 @@ describe('pingStatus', () => {
     expect(pingStatus(tab(1, { ping: 1, ping_url: 'other.example.com' }), results)).toBe(undefined);
     expect(pingStatus(tab(1, { ping: 1, ping_url: null }), results)).toBe(undefined);
     expect(pingStatus(tab(1, { ping: 1, ping_url: 'toString' }), {})).toBe(undefined);
+  });
+});
+
+describe('showsPingTime', () => {
+  function withTime(groupID: number | null, ms: boolean | undefined, authMs = '1'): Launch {
+    const base = launch(groupID, '4');
+    return { ...base, settings: { ...base.settings, ping: { ...base.settings.ping, ms, authMs } } };
+  }
+
+  it('is on only when Show Ping Time is on and the caller has the level of its setting', () => {
+    expect(showsPingTime(withTime(0, true))).toBe(true);
+    expect(showsPingTime(withTime(1, true))).toBe(true);
+    expect(showsPingTime(withTime(4, true))).toBe(false);
+    expect(showsPingTime(withTime(4, true, '4'))).toBe(true);
+    expect(showsPingTime(withTime(null, true, '4'))).toBe(false);
+  });
+
+  it('is off when Show Ping Time is off, or the server did not say', () => {
+    expect(showsPingTime(withTime(0, false))).toBe(false);
+    expect(showsPingTime(withTime(0, undefined))).toBe(false);
+  });
+});
+
+describe('pingTime', () => {
+  it('shows the time of an answer with at most two decimals', () => {
+    const results = { 'plex.example.com:32400': 12.345, 'down.example.com': false as const };
+    expect(pingTime(tab(1, { ping: 1, ping_url: 'plex.example.com:32400' }), results)).toBe(
+      '12.35ms',
+    );
+    expect(pingTime(tab(1, { ping: 1, ping_url: 'down.example.com' }), results)).toBe(null);
   });
 });

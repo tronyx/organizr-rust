@@ -232,6 +232,7 @@
       categories={session.categories}
       unsortedPlace={session.unsortedPlace}
       {pings}
+      times={pinged.times}
       {shown}
       onpick={() => (menuOpen = false)}
     />
