@@ -117,7 +117,7 @@ These steps use Docker Compose with SQLite. For PostgreSQL, see [With PostgreSQL
 
    ```bash
    docker compose cp organizr:/config/secret.key ./secret.key
-chmod 600 ./secret.key
+   chmod 600 ./secret.key
    ```
 
    Without this file, the passwords and tokens in the database can't be read again. See [Secrets](secrets.md).
